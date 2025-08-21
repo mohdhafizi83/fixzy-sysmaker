@@ -49,80 +49,84 @@ export async function generateSidebarMenu() {
     }
 }
 
-// GANTIKAN KESELURUHAN FUNGSI LAMA DENGAN INI
 export function initializeSidebarInteractivity() {
-    const allLinks = document.querySelectorAll('.sidebar .nav-list a');
-    const menuListContainer = document.getElementById('table-menu-list');
-    
-    // Fungsi bantuan ini adalah betul dan akan kita gunakan
-    const closeAllSubmenus = (exceptThisLink = null) => {
-        if (!menuListContainer) return;
-        const allMenuLinks = menuListContainer.querySelectorAll('.has-submenu > a');
-        allMenuLinks.forEach(link => {
-            if (link === exceptThisLink) return; 
+    const sidebarList = document.querySelector('.sidebar .nav-list');
+    if (!sidebarList) return;
 
+    // Fungsi bantuan untuk menutup semua submenu
+    const closeAllSubmenus = (exceptThisLink = null) => {
+        const allTableLinks = sidebarList.querySelectorAll('.has-submenu > a');
+        allTableLinks.forEach(link => {
+            if (link === exceptThisLink) return;
             link.classList.remove('open');
             const submenu = link.nextElementSibling;
-            if (submenu) {
-                submenu.style.display = 'none';
-            }
+            if (submenu) submenu.style.display = 'none';
         });
     };
-    
-    allLinks.forEach(link => {
-        link.addEventListener('click', function(event) {
+
+    // SATU event listener utama untuk semua klik
+    sidebarList.addEventListener('click', function(event) {
+        const link = event.target.closest('a');
+        if (!link) return;
+        event.preventDefault();
+
+        // --- 1. URUSKAN STATUS AKTIF (SENTIASA JALAN DAHULU) ---
+        sidebarList.querySelectorAll('a.active').forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+        updateActionButtonsState();
+
+        // --- 2. TENTUKAN JENIS KLIK & LAKSANAKAN LOGIK ---
+        const isFieldLink = link.closest('ul.submenu-level-3');
+        const isTableLink = link.parentElement.classList.contains('has-submenu');
+        let tableName;
+
+        if (isFieldLink) {
+            // Apabila medan dipilih:
+            // ▼▼▼ PEMBETULAN UTAMA: PADAM BARIS closeAllSubmenus() DARI SINI ▼▼▼
+            // Baris "closeAllSubmenus();" telah dipadam dari blok ini.
             
-            if (event.target.classList.contains('toggle-icon')) {
-                event.preventDefault();
-                event.stopPropagation();
+            showPage('field-settings');
+            tableName = link.closest('li.has-submenu').querySelector('a > span').textContent.trim();
+            const fieldName = link.querySelector('span').textContent.trim();
+            document.querySelector('#field-settings-page .field-name').textContent = `${tableName}.${fieldName}`;
+            setupMediaTab(tableName, fieldName);
+            populateFieldSettings(tableName, fieldName);
 
-                // PERUBAHAN 1: Panggil fungsi tutup-auto di sini
-                closeAllSubmenus(this); 
-                
-                // Logik asal anda untuk toggle dikekalkan
-                const submenu = this.nextElementSibling;
-                this.classList.toggle('open');
-                if (submenu) {
-                    submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
-                }
-                return;
-            }
-
-            // Logik pemilihan asal anda dikekalkan
-            allLinks.forEach(l => l.classList.remove('active'));
-            this.classList.add('active');
-            updateActionButtonsState();
-
-            const isFieldLink = this.closest('ul.submenu-level-3');
-            let tableName;
-
-            if (isFieldLink) {
-                showPage('field-settings');
-                tableName = this.closest('li.has-submenu').querySelector('a > span').textContent.trim();
-                const fieldName = this.querySelector('span').textContent.trim();
-                document.querySelector('#field-settings-page .field-name').textContent = `${tableName}.${fieldName}`;
-                setupMediaTab(tableName, fieldName);
-                populateFieldSettings(tableName, fieldName);
-
-            } else if (this.parentElement.classList.contains('has-submenu')) {
-                showPage('table-settings');
-                tableName = this.querySelector('span').textContent.trim();
-                document.querySelector('#table-settings-page .table-name').textContent = tableName;
-                populateTableSettings(tableName);
-                populateParentChildTab(tableName);
-
+        } else if (isTableLink) {
+            // Apabila baris jadual diklik (sama ada pada nama atau ikon)
+            const isToggleClick = event.target.classList.contains('toggle-icon');
+            
+            // Tutup semua submenu LAIN dahulu
+            closeAllSubmenus(link);
+            
+            if (isToggleClick) {
+                // Klik pada ikon -> Toggle submenu semasa
+                link.classList.toggle('open');
+                link.nextElementSibling.style.display = link.classList.contains('open') ? 'block' : 'none';
             } else {
-                showPage('main-dashboard');
-                populateMainDashboard(activeProject);
-                
-                // PERUBAHAN 2: Pastikan panggilan ini ada di sini
-                closeAllSubmenus();
+                // Klik pada nama -> Sentiasa tutup submenu semasa
+                link.classList.remove('open');
+                link.nextElementSibling.style.display = 'none';
             }
 
-            if (tableName) {
-                populateSortByDropdown(tableName);
-                populateFocusFieldDropdown(tableName);
-            }
-        });
+            // Paparkan data jadual yang dipilih
+            showPage('table-settings');
+            tableName = link.querySelector('span').textContent.trim();
+            document.querySelector('#table-settings-page .table-name').textContent = tableName;
+            populateTableSettings(tableName);
+            populateParentChildTab(tableName);
+
+        } else {
+            // Apabila 'Project Setup' dipilih
+            showPage('main-dashboard');
+            populateMainDashboard(activeProject);
+            closeAllSubmenus();
+        }
+
+        // Kemas kini dropdown jika perlu
+        if (tableName) {
+            populateSortByDropdown(tableName);
+            populateFocusFieldDropdown(tableName);
+        }
     });
 }
