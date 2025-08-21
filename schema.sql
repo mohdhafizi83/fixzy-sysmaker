@@ -141,7 +141,7 @@ CREATE TABLE fields (
     lookup_caption_1             TEXT,
     lookup_separator             TEXT,
     lookup_caption_2             TEXT,
-    lookup_as_radios             INTEGER DEFAULT 0,
+    lookup_display_as            TEXT DEFAULT 'dropdown',
     lookup_inherit_permissions   INTEGER DEFAULT 0,
     lookup_link_behavior         TEXT DEFAULT 'modal',
     options_list_values          TEXT,
@@ -149,6 +149,7 @@ CREATE TABLE fields (
     format_as                    TEXT,
     calculated_enable            INTEGER DEFAULT 0,
     calculated_query             TEXT,
+	lookup_custom_query          TEXT, -- TAMBAH BARIS INI
     FOREIGN KEY (table_id) REFERENCES tables(table_id) ON DELETE CASCADE
 );
 

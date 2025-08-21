@@ -1091,3 +1091,14 @@ legend {
 .empty-state-label span {
     font-size: 0.9rem;
 }
+
+.lookup-caption-group {
+    display: flex;
+    align-items: flex-end; /* Menjajarkan elemen di bahagian bawah */
+    gap: 1rem; /* Ruang antara setiap elemen */
+    margin-bottom: 1.25rem;
+}
+
+.lookup-caption-group .form-group {
+    margin-bottom: 0;
+}

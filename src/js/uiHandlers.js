@@ -1124,10 +1124,12 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-lookup-caption-1', fieldData.lookup_caption_1);
     setElementValue('fld-lookup-separator', fieldData.lookup_separator);
     setElementValue('fld-lookup-caption-2', fieldData.lookup_caption_2);
-    setElementValue('fld-lookup-as-radios', fieldData.lookup_as_radios);
+    setRadioValue('fld-lookup-display-as', fieldData.lookup_display_as);
     setElementValue('fld-lookup-inherit-permissions', fieldData.lookup_inherit_permissions);
     setElementValue('fld-lookup-link-behavior', fieldData.lookup_link_behavior);
 
+// Logik baharu untuk custom query
+    setElementValue('fld-lookup-custom-query-hidden', fieldData.lookup_custom_query);
 
     // ▼▼▼ LOGIK PINTAR BAHARU UNTUK AUTO-DETECT FOREIGN KEY ▼▼▼
     // Hanya jalankan jika tiada 'Parent table' yang telah ditetapkan secara manual
@@ -1255,3 +1257,60 @@ export function populateMenuManagement(menuGroupsData) {
     });
 }
 
+// js/uiHandlers.js
+
+// Fungsi bantuan untuk menjana query lalai
+function generateDefaultLookupQuery() {
+    const parentTable = document.getElementById('fld-lookup-parent-table').value;
+    const caption1 = document.getElementById('fld-lookup-caption-1').value;
+    const caption2 = document.getElementById('fld-lookup-caption-2').value;
+    const separator = document.getElementById('fld-lookup-separator').value;
+
+    if (!parentTable || !caption1) return '';
+
+    let captionFields = `\`${parentTable}\`.\`${caption1}\``;
+    if (caption2 && separator) {
+        captionFields = `CONCAT(${captionFields}, '${separator}', \`${parentTable}\`.\`${caption2}\`)`;
+    }
+
+    // Dapatkan Primary Key dari jadual induk
+    const parentTableData = jsonData.database.table[parentTable];
+    const pkField = Object.keys(parentTableData.fields).find(f => parentTableData.fields[f].primary_key) || 'id';
+
+    return `SELECT \`${parentTable}\`.\`${pkField}\`, ${captionFields} FROM \`${parentTable}\` ORDER BY 2`;
+}
+
+export function initializeAdvancedLookupHandlers() {
+    const modal = document.getElementById('advanced-lookup-modal');
+    const openBtn = document.getElementById('fld-lookup-advanced-btn');
+    const closeBtn = document.getElementById('advanced-lookup-modal-close');
+    const okBtn = document.getElementById('advanced-lookup-ok-btn');
+    const cancelBtn = document.getElementById('advanced-lookup-cancel-btn');
+    const resetBtn = document.getElementById('advanced-lookup-reset-btn');
+    const queryTextarea = document.getElementById('fld-lookup-custom-query');
+    const hiddenQueryInput = document.getElementById('fld-lookup-custom-query-hidden');
+
+    const openModal = () => {
+        let currentQuery = hiddenQueryInput.value;
+        if (!currentQuery) {
+            currentQuery = generateDefaultLookupQuery();
+        }
+        queryTextarea.value = currentQuery;
+        modal.classList.remove('hidden');
+    };
+
+    const closeModal = () => modal.classList.add('hidden');
+
+    const saveAndClose = () => {
+        hiddenQueryInput.value = queryTextarea.value;
+        closeModal();
+    };
+
+    openBtn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    okBtn.addEventListener('click', saveAndClose);
+    resetBtn.addEventListener('click', () => {
+        queryTextarea.value = generateDefaultLookupQuery();
+    });
+}

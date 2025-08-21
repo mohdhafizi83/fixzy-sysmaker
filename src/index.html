@@ -1248,53 +1248,63 @@
                 </div>
             </div>
 
-            <div id="tab-field-lookup" class="tab-pane">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label>Parent table</label>
-                            <select id="fld-lookup-parent-table" name="fld-lookup-parent-table"></select>
-                        </div>
+ <div class="card-body">
+    <div class="form-group">
+        <label>Parent table</label>
+        <select id="fld-lookup-parent-table"></select>
+    </div>
 
-                        <div class="form-grid-3-col">
-                            <div class="form-group">
-                                <label>Parent caption field part 1</label>
-                                <select id="fld-lookup-caption-1" name="fld-lookup-caption-1"></select>
-                            </div>
-                            <div class="form-group">
-                                <label>Separator</label>
-                                <input type="text" id="fld-lookup-separator" name="fld-lookup-separator">
-                            </div>
-                            <div class="form-group">
-                                <label>Parent caption field part 2</label>
-                                <select id="fld-lookup-caption-2" name="fld-lookup-caption-2"></select>
-                            </div>
-                        </div>
+<div class="lookup-caption-group">
+    <div class="form-group" style="flex: 1;">
+        <label>Parent caption field part 1</label>
+        <select id="fld-lookup-caption-1"></select>
+    </div>
+    <div class="form-group" style="flex: 0 1 100px;">
+        <label>Separator</label>
+        <input type="text" id="fld-lookup-separator">
+    </div>
+    <div class="form-group" style="flex: 1;">
+        <label>Parent caption field part 2</label>
+        <div class="input-group">
+            <select id="fld-lookup-caption-2"></select>
+            <button class="btn" id="fld-lookup-advanced-btn" title="Advanced lookup query">
+                <i class="fas fa-cog"></i>
+            </button>
+        </div>
+    </div>
+</div>
 
-                        <div class="permission-grid" style="grid-template-columns: 1fr 1fr;">
-                            <label class="checkbox-label"><input type="checkbox" id="fld-lookup-as-radios" name="fld-lookup-as-radios"> Show as radio buttons</label>
-                            <label class="checkbox-label"><input type="checkbox" id="fld-lookup-inherit-permissions" name="fld-lookup-inherit-permissions"> Inherit access permissions</label>
-                        </div>
+    <div class="form-group radio-group-horizontal">
+        <label class="radio-label">
+            <input type="radio" name="fld-lookup-display-as" value="dropdown" checked> Dropdown
+        </label>
+        <label class="radio-label">
+            <input type="radio" name="fld-lookup-display-as" value="radios"> Show as radio buttons
+        </label>
+        <label class="checkbox-label" style="margin-left: auto;">
+            <input type="checkbox" id="fld-lookup-inherit-permissions"> Inherit access permissions
+        </label>
+    </div>
 
-                        <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
+    <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
 
-                        <div class="form-group">
-                            <label for="fld-lookup-link-behavior">Link to parent record in detail view</label>
-                            <select id="fld-lookup-link-behavior" name="fld-lookup-link-behavior">
-                                <option value="disable">Disable</option>
-                                <option value="modal" selected>Open parent record in a modal popup window</option>
-                                <option value="same_page">Open parent record in the same page</option>
-                                <option value="new_window">Open parent record in a new window</option>
-                            </select>
-                        </div>
-
+    <div class="form-group">
+        <label for="fld-lookup-link-behavior">Link to parent record in detail view</label>
+        <select id="fld-lookup-link-behavior">
+            <option value="disable">Disable</option>
+            <option value="modal" selected>Open parent record in a modal popup window</option>
+            <option value="same_page">Open parent record in the same page</option>
+            <option value="new_window">Open parent record in a new window</option>
+        </select>
+    </div>
+	
                         <div class="helper-box" style="background-color: transparent; border: none; padding: 0; font-size: 0.9em;">
                             <p style="margin-bottom: 0.5rem;">A lookup field displays a drop down menu containing items from another table. Users can select an item from that drop down menu to be stored in the lookup field.</p>
                             <a href="#">Click here for more info ...</a>
                         </div>
-                    </div>
-                </div>
-            </div>
+
+    <input type="hidden" id="fld-lookup-custom-query-hidden">
+</div>
 
             <div id="tab-field-options" class="tab-pane">
                 <div class="card">
@@ -1646,6 +1656,28 @@
         </div>
         <div class="modal-footer">
             <button class="btn btn-primary" id="close-tutorial-modal-btn">OK, Saya Faham</button>
+        </div>
+    </div>
+</div>
+
+<div id="advanced-lookup-modal" class="modal-overlay hidden">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h3>Advanced lookup options</h3>
+            <button id="advanced-lookup-modal-close" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Use this SQL query when listing records from the parent table</p>
+            <div class="form-group">
+                <textarea id="fld-lookup-custom-query" rows="8"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer" style="justify-content: space-between;">
+            <button class="btn btn-secondary" id="advanced-lookup-reset-btn">Reset to default query</button>
+            <div>
+                <button class="btn btn-secondary" id="advanced-lookup-cancel-btn">Cancel</button>
+                <button class="btn btn-primary" id="advanced-lookup-ok-btn">OK</button>
+            </div>
         </div>
     </div>
 </div>
