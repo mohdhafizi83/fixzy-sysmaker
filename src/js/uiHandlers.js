@@ -1096,13 +1096,13 @@ export function populateFieldSettings(tableName, fieldName) {
     // 1. Tetapkan nilai yang disimpan untuk 'Parent table'
     setElementValue('fld-lookup-parent-table', fieldData.lookup_parent_table);
     
-    // ▼▼▼ KUNCI KEPADA PEMBETULAN ADA DI SINI ▼▼▼
+
     // 2. Cetuskan event 'change' secara programatik
     const parentTableSelect = document.getElementById('fld-lookup-parent-table');
     if (parentTableSelect) {
         parentTableSelect.dispatchEvent(new Event('change'));
     }
-    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
+
 
     // 3. Sekarang, tetapkan nilai yang disimpan untuk dropdown 'caption'
     setElementValue('fld-lookup-caption-1', fieldData.lookup_caption_1);
@@ -1112,6 +1112,37 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-lookup-inherit-permissions', fieldData.lookup_inherit_permissions);
     setElementValue('fld-lookup-link-behavior', fieldData.lookup_link_behavior);
 
+
+    // ▼▼▼ LOGIK PINTAR BAHARU UNTUK AUTO-DETECT FOREIGN KEY ▼▼▼
+    // Hanya jalankan jika tiada 'Parent table' yang telah ditetapkan secara manual
+    if (parentTableSelect && !parentTableSelect.value) {
+        const relationship = jsonData.database.relationships.find(rel =>
+            rel.child_table_name === tableName && rel.fk_child_field === fieldName
+        );
+
+        if (relationship) {
+            const parentTable = relationship.parent_table_name;
+            const parentPKField = relationship.parent_field;
+
+            // 1. Tetapkan 'Parent table' secara automatik
+            setElementValue('fld-lookup-parent-table', parentTable);
+            parentTableSelect.dispatchEvent(new Event('change')); // Cetuskan untuk isi caption dropdown
+
+            // 2. Cari medan seterusnya selepas Primary Key untuk dijadikan cadangan caption
+            const parentTableFields = jsonData.database.table[parentTable]?.fields;
+            if (parentTableFields) {
+                const fieldNames = Object.keys(parentTableFields);
+                const pkIndex = fieldNames.indexOf(parentPKField);
+
+                // Pastikan PK ditemui dan ia bukan medan terakhir
+                if (pkIndex > -1 && pkIndex < fieldNames.length - 1) {
+                    const nextFieldName = fieldNames[pkIndex + 1];
+                    setElementValue('fld-lookup-caption-1', nextFieldName);
+                }
+            }
+        }
+    }
+    // ▲▲▲ TAMAT LOGIK PINTAR BAHARU ▲▲▲
 
     // Tab: Options list
     setElementValue('fld-options-list-values', fieldData.options_list_values);
