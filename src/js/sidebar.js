@@ -1,6 +1,6 @@
 import { showPage } from './pageManager.js';
 // Import fungsi dari uiHandlers.js
-import { populateMainDashboard, updateActionButtonsState, populateSortByDropdown, populateFocusFieldDropdown, setupMediaTab, populateParentChildTab  } from './uiHandlers.js'; 
+import { populateTableSettings, populateMainDashboard, updateActionButtonsState, populateSortByDropdown, populateFocusFieldDropdown, setupMediaTab, populateParentChildTab  } from './uiHandlers.js'; 
 import { jsonData } from './js.main.js';
 
 export async function generateSidebarMenu() {
@@ -85,6 +85,8 @@ export function initializeSidebarInteractivity() {
                 }
                 // HANYA PANGGIL FUNGSI INI APABILA 'MENU TABLE' DIKLIK
                 populateParentChildTab(tableName);
+				
+				populateTableSettings(tableName);
 
             } else {
                 // Ini adalah klik pada item menu utama seperti 'Project Setup'

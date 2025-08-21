@@ -2,6 +2,18 @@
 
 import { allTableNames, jsonData } from './js.main.js';
 
+// (Letakkan helper ini di luar mana-mana fungsi jika belum ada, supaya boleh diguna semula)
+const setElementValue = (id, value) => {
+    const element = document.getElementById(id);
+    if (element) {
+        if (element.type === 'checkbox' || element.type === 'radio') {
+            element.checked = value === 1 || value === true;
+        } else {
+            element.value = value;
+        }
+    }
+};
+
 // Pembolehubah untuk menjejaki kumpulan mana yang sedang diubah suai
 let currentTargetMenuSelector = null;
 
@@ -911,4 +923,56 @@ console.log(projectData);
     // Cetuskan event untuk kemas kini pratonton yang bergantung pada nilai ini
     document.getElementById('app-date-order')?.dispatchEvent(new Event('change'));
     document.getElementById('app-theme-select')?.dispatchEvent(new Event('change'));
+}
+
+export function populateTableSettings(tableName) {
+    const tableData = jsonData.database.table[tableName];
+    if (!tableData) {
+        console.error(`Tiada data ditemui untuk jadual: ${tableName}`);
+        return;
+    }
+
+    // Tab: Table view -> General
+    setElementValue('tbl-table-view-title', tableData.table_view_title);
+    setElementValue('tbl-table-description', tableData.table_description);
+
+    // Tab: Table view -> Display & Data
+    setElementValue('tbl-show-quick-search', tableData.show_quick_search);
+    setElementValue('tbl-records-per-page', tableData.records_per_page);
+    setElementValue('tbl-default-sort-by', tableData.default_sort_by);
+    setElementValue('tbl-sort-descending', tableData.sort_descending);
+
+    // Tab: Table view -> Permissions
+    setElementValue('tbl-allow-sorting', tableData.allow_sorting);
+    setElementValue('tbl-allow-filters', tableData.allow_filters);
+    setElementValue('tbl-allow-csv-export', tableData.allow_csv_export);
+    setElementValue('tbl-allow-print-view', tableData.allow_print_view);
+    setElementValue('tbl-allow-user-save-filters', tableData.allow_user_save_filters);
+    setElementValue('tbl-hide-homepage-link', tableData.hide_homepage_link);
+    setElementValue('tbl-allow-mass-delete', tableData.allow_mass_delete);
+    setElementValue('tbl-filter-before-view', tableData.filter_before_view);
+    setElementValue('tbl-hide-nav-menu-link', tableData.hide_nav_menu_link);
+    setElementValue('tbl-show-record-count', tableData.show_record_count);
+
+    // Tab: Table view -> Template
+    setElementValue('tbl-tv-template', tableData.tv_template);
+    setElementValue('tbl-hide-field-captions', tableData.hide_field_captions);
+    setElementValue('tbl-use-first-field-as-title', tableData.use_first_field_as_title);
+    setElementValue('tbl-table-view-classes-input', tableData.table_view_classes_input);
+    setElementValue('tbl-detail-view-classes-input', tableData.detail_view_classes_input);
+    
+    // Tab: Detail View -> General
+    setElementValue('tbl-detail-view-title', tableData.detail_view_title);
+    setElementValue('tbl-record-owner', tableData.record_owner);
+    setElementValue('tbl-default-focus', tableData.default_focus);
+    setElementValue('tbl-redirect-after-insert', tableData.redirect_after_insert);
+
+    // Tab: Detail View -> Permissions
+    setElementValue('tbl-enable-detail-view', tableData.enable_detail_view);
+    setElementValue('tbl-delete-with-children', tableData.delete_with_children);
+    setElementValue('tbl-dv-allow-print-view', tableData.dv_allow_print_view);
+    setElementValue('tbl-dv-separate-page', tableData.dv_separate_page);
+    setElementValue('tbl-dv-hide-save-as-copy', tableData.dv_hide_save_as_copy);
+    setElementValue('tbl-dv-sticky-buttons', tableData.dv_sticky_buttons);
+    setElementValue('tbl-dv-allow-add-from-homepage', tableData.dv_allow_add_from_homepage);
 }
