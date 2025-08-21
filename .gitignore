@@ -1,2 +1,4 @@
 /node_modules
 /docs
+*.ffs_gui
+*.ffs_db

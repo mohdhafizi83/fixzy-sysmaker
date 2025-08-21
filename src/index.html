@@ -815,11 +815,11 @@
                                             <div class="form-group">
                                                 <label>Table view template</label>
                                                 <select id="tbl-tv-template" name="tbl-tv-template">
-                                                    <option>Horizontal (Default)</option>
-                                                    <option>Vertical (1 field per line)</option>
-                                                    <option>Vertical (2 fields per line)</option>
-                                                    <option>Left image</option>
-                                                    <option>Right image</option>
+                                                    <option value="horizontal">Horizontal (Default)</option>
+                                                    <option value="vertical_1">Vertical (1 field per line)</option>
+                                                    <option value="vertical_2">Vertical (2 fields per line)</option>
+                                                    <option value="left_image">Left image</option>
+                                                    <option value="right_image">Right image</option>
                                                 </select>
                                             </div>
                                             <div class="form-group">
@@ -1031,9 +1031,9 @@
                                 <div class="form-group">
                                     <label>Alignment</label>
                                     <select id="fld-alignment" name="fld-alignment">
-                                        <option>Right</option>
-                                        <option>Left</option>
-                                        <option>Center</option>
+                                        <option value="right">Right</option>
+                                        <option value="left">Left</option>
+                                        <option value="center">Center</option>
                                     </select>
                                 </div>
                             </div>
@@ -1130,7 +1130,7 @@
                                     <div class="form-group">
                                         <label for="fld-max-file-size">Maximum acceptable file size (KB)</label>
                                         <div class="input-group" style="max-width: 200px;">
-                                            <input type="number" id="fld-max-file-size" name="fld-max-file-size" value="100">
+                                            <input type="number" id="fld-max-file-size" name="fld-max-file-size" value="250">
                                             <button class="btn-sidebar-icon" id="fld-image-size-info" name="fld-image-size-info" title="0 means no limit. The maximum file size is also limited by the 'upload_max_filesize' directive in php.ini." style="cursor: help;"><i class="fas fa-info"></i></button>
                                         </div>
                                     </div>

@@ -158,181 +158,186 @@ ipcMain.handle("tables:check-exists", async (event, projectId) => {
 // Handler untuk import SQL
 // main.js
 
-// GANTIKAN FUNGSI importSchema ANDA DENGAN VERSI MUKTAMAD INI
-// main.js
-
-// GANTIKAN FUNGSI importSchema ANDA DENGAN VERSI MUKTAMAD INI
 function importSchema(sql, projectId) {
-  let tablesCreated = 0;
-  let relationshipsCreated = 0;
-  const tableMap = {};
-  const foreignKeysToProcess = [];
+    let tablesCreated = 0;
+    let relationshipsCreated = 0;
+    const tableMap = {};
+    const foreignKeysToProcess = [];
 
-  const cleanedSql = sql.replace(
-    /\s+ENGINE=\w+\s*DEFAULT\s*CHARSET=\w+(\s*COLLATE=\w+)?(\s*COMMENT='.*?')?;/gi,
-    ";"
-  );
+    const cleanedSql = sql.replace(
+        /\s+ENGINE=\w+\s*DEFAULT\s*CHARSET=\w+(\s*COLLATE=\w+)?(\s*COMMENT='.*?')?;/gi,
+        ";"
+    );
 
-  const extractDefaultValue = (defaultNode) => {
-    if (!defaultNode || !defaultNode.value) return null;
-    const valueNode = defaultNode.value;
-    switch (valueNode.type) {
-      case "null":
-        return "NULL";
-      case "single_quote_string":
-      case "number":
-        return String(valueNode.value);
-      case "function":
-        if (
-          valueNode.name &&
-          valueNode.name.name &&
-          Array.isArray(valueNode.name.name) &&
-          valueNode.name.name.length > 0
-        ) {
-          return valueNode.name.name[0].value;
-        }
-        break;
-    }
-    return null;
-  };
-
-  const transaction = db.transaction((ast) => {
-    for (const statement of ast) {
-      if (statement.type === "create" && statement.keyword === "table") {
-        const tableName = statement.table[0].table;
-        const tableInfo = db
-          .prepare(
-            "INSERT INTO tables (project_id, table_name, table_view_title) VALUES (?, ?, ?)"
-          )
-          .run(projectId, tableName, tableName);
-        const tableId = tableInfo.lastInsertRowid;
-        tablesCreated++;
-        tableMap[tableName] = tableId;
-
-        const tableLevelConstraints = [];
-        for (const col of statement.create_definitions) {
-          if (col.resource === "column") {
-            let fieldData = {
-              table_id: tableId,
-              field_name: col.column.column,
-              data_type: col.definition.dataType,
-              length: col.definition.length || null,
-              required: 0,
-              auto_increment: 0,
-              unsigned: 0,
-              zero_fill: 0,
-              primary_key: 0,
-              unique: 0,
-              default_value: null,
-            };
-            if (col.auto_increment) fieldData.auto_increment = 1;
-            if (col.nullable && col.nullable.type === "not null")
-              fieldData.required = 1;
-            if (col.unsigned) fieldData.unsigned = 1;
-            if (col.zerofill) fieldData.zero_fill = 1;
-            if (col.default_val) {
-              fieldData.default_value = extractDefaultValue(col.default_val);
-            }
-            if (col.constraints) {
-              for (const constraint of col.constraints) {
-                const definition = constraint.definition || constraint;
-                switch (definition.constraint_type.toLowerCase()) {
-                  case "primary key":
-                    fieldData.primary_key = 1;
-                    break;
-                  case "unique key":
-                    fieldData.unique = 1;
-                    break;
-                  case "not null":
-                    fieldData.required = 1;
-                    break;
-                  case "auto_increment":
-                    fieldData.auto_increment = 1;
-                    break;
-                  case "default":
-                    if (!fieldData.default_value) {
-                      fieldData.default_value = extractDefaultValue(definition);
-                    }
-                    break;
+    const extractDefaultValue = (defaultNode) => {
+        // ... (fungsi ini tidak berubah) ...
+        if (!defaultNode || !defaultNode.value) return null;
+        const valueNode = defaultNode.value;
+        switch (valueNode.type) {
+            case "null":
+                return "NULL";
+            case "single_quote_string":
+            case "number":
+                return String(valueNode.value);
+            case "function":
+                if (
+                    valueNode.name &&
+                    valueNode.name.name &&
+                    Array.isArray(valueNode.name.name) &&
+                    valueNode.name.name.length > 0
+                ) {
+                    return valueNode.name.name[0].value;
                 }
-              }
-            }
-            db.prepare(
-              `INSERT INTO fields (table_id, field_name, data_type, length, required, auto_increment, unsigned, zero_fill, primary_key, "unique", default_value, caption) VALUES (@table_id, @field_name, @data_type, @length, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @default_value, @field_name)`
-            ).run(fieldData);
-          } else if (col.resource === "constraint") {
-            tableLevelConstraints.push(col);
-          }
+                break;
         }
-
-        // ▼▼▼ BLOK YANG TELAH DIPERBETULKAN SEPENUHNYA ▼▼▼
-        for (const constraint of tableLevelConstraints) {
-          // Pastikan property `constraint_type` wujud sebelum meneruskan
-          if (constraint.constraint_type) {
-            const constraintType = constraint.constraint_type.toLowerCase();
-
-            // Logik untuk Primary Key & Unique Key di peringkat jadual
-            if (
-              constraintType === "primary key" ||
-              constraintType === "unique key"
-            ) {
-              // Senarai lajur berada di dalam `constraint.definition`
-              if (
-                constraint.definition &&
-                Array.isArray(constraint.definition)
-              ) {
-                const fieldToUpdate =
-                  constraintType === "primary key" ? "primary_key" : '"unique"';
-                for (const col of constraint.definition) {
-                  db.prepare(
-                    `UPDATE fields SET ${fieldToUpdate} = 1 WHERE table_id = ? AND field_name = ?`
-                  ).run(tableId, col.column);
-                }
-              }
-            }
-            // Logik untuk Foreign Key di peringkat jadual
-            else if (
-              constraintType === "foreign key" &&
-              constraint.reference_definition
-            ) {
-              const parentTableName =
-                constraint.reference_definition.table[0].table;
-              foreignKeysToProcess.push({
-                childTableName: tableName,
-                parentTableName: parentTableName,
-                tabTitle: tableName
-                  .replace(/_/g, " ")
-                  .replace(/\b\w/g, (l) => l.toUpperCase()),
-              });
-            }
-          }
-        }
-      }
-    }
-
-    for (const fk of foreignKeysToProcess) {
-      const childTableId = tableMap[fk.childTableName];
-      const parentTableId = tableMap[fk.parentTableName];
-      if (childTableId && parentTableId) {
-        db.prepare(
-          `INSERT INTO parent_child_relationships (parent_table_id, child_table_id, tab_title) VALUES (?, ?, ?)`
-        ).run(parentTableId, childTableId, fk.tabTitle);
-        relationshipsCreated++;
-      }
-    }
-  });
-
-  try {
-    const ast = parser.astify(cleanedSql, { database: "MySQL" });
-    transaction(ast);
-    return {
-      success: true,
-      message: `${tablesCreated} jadual dan ${relationshipsCreated} hubungan berjaya diimport!`,
+        return null;
     };
-  } catch (error) {
-    console.error("Gagal mengimport SQL:", error);
-    return { success: false, message: `Ralat: ${error.message}` };
-  }
+
+    const transaction = db.transaction((ast) => {
+        for (const statement of ast) {
+            if (statement.type === "create" && statement.keyword === "table") {
+                const tableName = statement.table[0].table;
+                const tableInfo = db
+                    .prepare(
+                        "INSERT INTO tables (project_id, table_name, table_view_title) VALUES (?, ?, ?)"
+                    )
+                    .run(projectId, tableName, tableName);
+                const tableId = tableInfo.lastInsertRowid;
+                tablesCreated++;
+                tableMap[tableName] = tableId;
+
+                const tableLevelConstraints = [];
+                for (const col of statement.create_definitions) {
+                    if (col.resource === "column") {
+                        let fieldData = {
+                            table_id: tableId,
+                            field_name: col.column.column,
+                            data_type: col.definition.dataType,
+                            length: col.definition.length || null,
+                            required: 0,
+                            auto_increment: 0,
+                            unsigned: 0,
+                            zero_fill: 0,
+                            primary_key: 0,
+                            unique: 0,
+                            default_value: null,
+                        };
+                        if (col.auto_increment) fieldData.auto_increment = 1;
+                        if (col.nullable && col.nullable.type === "not null")
+                            fieldData.required = 1;
+                        if (col.unsigned) fieldData.unsigned = 1;
+                        if (col.zerofill) fieldData.zero_fill = 1;
+                        if (col.default_val) {
+                            fieldData.default_value = extractDefaultValue(col.default_val);
+                        }
+                        if (col.constraints) {
+                            for (const constraint of col.constraints) {
+                                const definition = constraint.definition || constraint;
+                                switch (definition.constraint_type.toLowerCase()) {
+                                    case "primary key":
+                                        fieldData.primary_key = 1;
+                                        break;
+                                    case "unique key":
+                                        fieldData.unique = 1;
+                                        break;
+                                    case "not null":
+                                        fieldData.required = 1;
+                                        break;
+                                    case "auto_increment":
+                                        fieldData.auto_increment = 1;
+                                        break;
+                                    case "default":
+                                        if (!fieldData.default_value) {
+                                            fieldData.default_value = extractDefaultValue(definition);
+                                        }
+                                        break;
+                                }
+                            }
+                        }
+                        db.prepare(
+                            `INSERT INTO fields (table_id, field_name, data_type, length, required, auto_increment, unsigned, zero_fill, primary_key, "unique", default_value, caption) VALUES (@table_id, @field_name, @data_type, @length, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @default_value, @field_name)`
+                        ).run(fieldData);
+                    } else if (col.resource === "constraint") {
+                        tableLevelConstraints.push(col);
+                    }
+                }
+
+                for (const constraint of tableLevelConstraints) {
+                    if (constraint.constraint_type) {
+                        const constraintType = constraint.constraint_type.toLowerCase();
+
+                        if (
+                            constraintType === "primary key" ||
+                            constraintType === "unique key"
+                        ) {
+                            if (
+                                constraint.definition &&
+                                Array.isArray(constraint.definition)
+                            ) {
+                                const fieldToUpdate =
+                                    constraintType === "primary key" ? "primary_key" : '"unique"';
+                                for (const col of constraint.definition) {
+                                    db.prepare(
+                                        `UPDATE fields SET ${fieldToUpdate} = 1 WHERE table_id = ? AND field_name = ?`
+                                    ).run(tableId, col.column);
+                                }
+                            }
+                        }
+                        
+                        // ▼▼▼ KOD YANG TELAH DIPERBAIKI SEPENUHNYA ▼▼▼
+                        else if (
+                            constraintType === "foreign key" &&
+                            constraint.reference_definition &&
+                            constraint.definition && constraint.definition.length > 0 &&
+                            // Gunakan 'definition' bukannya 'columns'
+                            constraint.reference_definition.definition && constraint.reference_definition.definition.length > 0
+                        ) {
+                            const parentTableName = constraint.reference_definition.table[0].table;
+                            const fkChildField = constraint.definition[0].column;
+                            // Ekstrak dari 'definition' bukannya 'columns'
+                            const parentField = constraint.reference_definition.definition[0].column;
+
+                            foreignKeysToProcess.push({
+                                childTableName: tableName,
+                                parentTableName: parentTableName,
+                                fkChildField: fkChildField,
+                                parentField: parentField,
+                                tabTitle: tableName
+                                    .replace(/_/g, " ")
+                                    .replace(/\b\w/g, (l) => l.toUpperCase()),
+                            });
+                        }
+                        // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
+                    }
+                }
+            }
+        }
+
+        for (const fk of foreignKeysToProcess) {
+            const childTableId = tableMap[fk.childTableName];
+            const parentTableId = tableMap[fk.parentTableName];
+            if (childTableId && parentTableId) {
+                db.prepare(
+                    `INSERT INTO parent_child_relationships 
+                     (parent_table_id, child_table_id, fk_child_field, parent_field, tab_title) 
+                     VALUES (?, ?, ?, ?, ?)`
+                ).run(parentTableId, childTableId, fk.fkChildField, fk.parentField, fk.tabTitle);
+                relationshipsCreated++;
+            }
+        }
+    });
+
+    try {
+        const ast = parser.astify(cleanedSql, { database: "MySQL" });
+        transaction(ast);
+        return {
+            success: true,
+            message: `${tablesCreated} jadual dan ${relationshipsCreated} hubungan berjaya diimport!`,
+        };
+    } catch (error) {
+        console.error("Gagal mengimport SQL:", error);
+        return { success: false, message: `Ralat: ${error.message}` };
+    }
 }
 
 ipcMain.handle("sql:import-file", async (event, projectId) => {

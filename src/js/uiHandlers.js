@@ -985,13 +985,30 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-dv-allow-add-from-homepage', tableData.dv_allow_add_from_homepage);
 }
 
+/**
+ * Mengisi dropdown 'Parent table' dengan semua jadual lain dalam projek.
+ * @param {string} currentTableName - Nama jadual semasa, untuk dikecualikan.
+ */
+function populateParentTableDropdown(currentTableName) {
+    const parentTableSelect = document.getElementById('fld-lookup-parent-table');
+    parentTableSelect.innerHTML = '<option value=""></option>'; // Kosongkan dan tambah opsyen lalai
+
+    const otherTables = allTableNames.filter(name => name !== currentTableName);
+    otherTables.forEach(tableName => {
+        const option = document.createElement('option');
+        option.value = tableName;
+        option.textContent = tableName;
+        parentTableSelect.appendChild(option);
+    });
+}
+
 export function populateFieldSettings(tableName, fieldName) {
     const fieldData = jsonData.database.table[tableName]?.fields[fieldName];
     if (!fieldData) {
         console.error(`Tiada data ditemui untuk medan: ${tableName}.${fieldName}`);
         return;
     }
-
+    populateParentTableDropdown(tableName);
     // Tab: General
     setElementValue('fld-caption', fieldData.caption);
     setElementValue('fld-description', fieldData.description);
@@ -1048,13 +1065,25 @@ export function populateFieldSettings(tableName, fieldName) {
     // (Anda boleh tambah opsyen Media lain di sini jika perlu)
 
     // Tab: Lookup field
+    // 1. Tetapkan nilai yang disimpan untuk 'Parent table'
     setElementValue('fld-lookup-parent-table', fieldData.lookup_parent_table);
+    
+    // ▼▼▼ KUNCI KEPADA PEMBETULAN ADA DI SINI ▼▼▼
+    // 2. Cetuskan event 'change' secara programatik
+    const parentTableSelect = document.getElementById('fld-lookup-parent-table');
+    if (parentTableSelect) {
+        parentTableSelect.dispatchEvent(new Event('change'));
+    }
+    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
+
+    // 3. Sekarang, tetapkan nilai yang disimpan untuk dropdown 'caption'
     setElementValue('fld-lookup-caption-1', fieldData.lookup_caption_1);
     setElementValue('fld-lookup-separator', fieldData.lookup_separator);
     setElementValue('fld-lookup-caption-2', fieldData.lookup_caption_2);
     setElementValue('fld-lookup-as-radios', fieldData.lookup_as_radios);
     setElementValue('fld-lookup-inherit-permissions', fieldData.lookup_inherit_permissions);
     setElementValue('fld-lookup-link-behavior', fieldData.lookup_link_behavior);
+
 
     // Tab: Options list
     setElementValue('fld-options-list-values', fieldData.options_list_values);
@@ -1066,5 +1095,45 @@ export function populateFieldSettings(tableName, fieldName) {
     // Tab: Calculated field
     setElementValue('fld-calculated-enable', fieldData.calculated_enable);
     setElementValue('fld-calculated-query', fieldData.calculated_query);
+}
+
+/**
+ * Mengisi dropdown Parent Caption (Part 1 & 2) dengan senarai medan
+ * dari jadual induk yang dipilih.
+ * @param {string} parentTableName - Nama jadual induk yang dipilih.
+ */
+function populateParentCaptionDropdowns(parentTableName) {
+    const caption1Select = document.getElementById('fld-lookup-caption-1');
+    const caption2Select = document.getElementById('fld-lookup-caption-2');
+
+    // Kosongkan kedua-dua dropdown
+    caption1Select.innerHTML = '<option value=""></option>';
+    caption2Select.innerHTML = '<option value=""></option>';
+
+    if (parentTableName && jsonData.database.table[parentTableName]) {
+        const parentFields = Object.keys(jsonData.database.table[parentTableName].fields);
+        parentFields.forEach(fieldName => {
+            const option1 = document.createElement('option');
+            option1.value = fieldName;
+            option1.textContent = fieldName;
+            caption1Select.appendChild(option1);
+
+            const option2 = document.createElement('option');
+            option2.value = fieldName;
+            option2.textContent = fieldName;
+            caption2Select.appendChild(option2);
+        });
+    }
+}
+
+export function initializeLookupFieldHandlers() {
+    const parentTableSelect = document.getElementById('fld-lookup-parent-table');
+
+    if (parentTableSelect) {
+        parentTableSelect.addEventListener('change', () => {
+            const selectedTable = parentTableSelect.value;
+            populateParentCaptionDropdowns(selectedTable);
+        });
+    }
 }
 
