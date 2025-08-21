@@ -1,6 +1,6 @@
 import { showPage } from './pageManager.js';
 // Import fungsi dari uiHandlers.js
-import { populateTableSettings, populateMainDashboard, updateActionButtonsState, populateSortByDropdown, populateFocusFieldDropdown, setupMediaTab, populateParentChildTab  } from './uiHandlers.js'; 
+import { populateFieldSettings, populateTableSettings, populateMainDashboard, updateActionButtonsState, populateSortByDropdown, populateFocusFieldDropdown, setupMediaTab, populateParentChildTab  } from './uiHandlers.js'; 
 import { jsonData } from './js.main.js';
 
 export async function generateSidebarMenu() {
@@ -74,6 +74,7 @@ export function initializeSidebarInteractivity() {
                     fieldSettingsTitle.textContent = `${tableName}.${fieldName}`;
                 }
                 setupMediaTab(tableName, fieldName);
+				populateFieldSettings(tableName, fieldName);
 
             } else if (this.parentElement.classList.contains('has-submenu')) {
                 // INI ADALAH KLIK PADA 'MENU TABLE' (cth: pelajar)

@@ -2,7 +2,7 @@
 
 import { allTableNames, jsonData } from './js.main.js';
 
-// (Letakkan helper ini di luar mana-mana fungsi jika belum ada, supaya boleh diguna semula)
+// (Pastikan helper ini wujud di skop yang boleh diakses)
 const setElementValue = (id, value) => {
     const element = document.getElementById(id);
     if (element) {
@@ -11,6 +11,14 @@ const setElementValue = (id, value) => {
         } else {
             element.value = value;
         }
+    }
+};
+
+const setRadioValue = (name, value) => {
+    const selector = `input[name="${name}"][value="${value}"]`;
+    const element = document.querySelector(selector);
+    if (element) {
+        element.checked = true;
     }
 };
 
@@ -865,7 +873,7 @@ export function populateMainDashboard(projectData) {
         console.warn("Tiada data projek untuk dipaparkan di papan pemuka.");
         return;
     }
-console.log(projectData);
+
     // Helper untuk menetapkan nilai elemen borang dengan selamat
     const setElementValue = (id, value) => {
         const element = document.getElementById(id);
@@ -976,3 +984,87 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-dv-sticky-buttons', tableData.dv_sticky_buttons);
     setElementValue('tbl-dv-allow-add-from-homepage', tableData.dv_allow_add_from_homepage);
 }
+
+export function populateFieldSettings(tableName, fieldName) {
+    const fieldData = jsonData.database.table[tableName]?.fields[fieldName];
+    if (!fieldData) {
+        console.error(`Tiada data ditemui untuk medan: ${tableName}.${fieldName}`);
+        return;
+    }
+
+    // Tab: General
+    setElementValue('fld-caption', fieldData.caption);
+    setElementValue('fld-description', fieldData.description);
+    setElementValue('fld-data-type', fieldData.data_type);
+    setElementValue('fld-length', fieldData.length);
+    setElementValue('fld-alignment', fieldData.alignment);
+    setElementValue('fld-default-value', fieldData.default_value);
+    setElementValue('fld-read-only', fieldData.read_only);
+    setElementValue('fld-primary-key', fieldData.primary_key);
+    setElementValue('fld-zero-fill', fieldData.zero_fill);
+    setElementValue('fld-required', fieldData.required);
+    setElementValue('fld-rich-html', fieldData.rich_html);
+    setElementValue('fld-auto-increment', fieldData.auto_increment);
+    setElementValue('fld-unique', fieldData.unique);
+    setElementValue('fld-show-sum', fieldData.show_sum);
+    setElementValue('fld-text-area', fieldData.text_area);
+    setElementValue('fld-unsigned', fieldData.unsigned);
+    setElementValue('fld-no-filter', fieldData.no_filter);
+    setElementValue('fld-binary', fieldData.binary);
+    setElementValue('fld-check-box', fieldData.check_box);
+    setElementValue('fld-hide-in-tv', fieldData.hide_in_tv);
+    setElementValue('fld-hide-in-dv', fieldData.hide_in_dv);
+    setElementValue('fld-enable-column-width', fieldData.enable_column_width);
+    setElementValue('fld-column-width', fieldData.column_width);
+
+    // Tab: Media
+    // Tetapkan jenis media dan cetuskan 'click' untuk memaparkan panel yang betul
+    const mediaType = fieldData.media_type || 'link'; // Lalai kepada 'link' jika tiada nilai
+    setRadioValue('fld-media-type', mediaType);
+    document.getElementById(`fld-media-${mediaType}`)?.dispatchEvent(new Event('click'));
+    
+    // Opsyen Link
+    setElementValue('fld-media-link-behavior', fieldData.media_link_behavior);
+    setElementValue('fld-media-link-display-as', fieldData.media_link_display_as);
+    setElementValue('fld-media-link-other-field', fieldData.media_link_other_field);
+    
+    // Opsyen Imej
+    setElementValue('fld-allow-image-uploads', fieldData.allow_image_uploads);
+    setElementValue('fld-max-file-size', fieldData.max_file_size);
+    setElementValue('fld-delete-image-server', fieldData.delete_image_server);
+    setElementValue('fld-dont-rename-image', fieldData.dont_rename_image);
+    setElementValue('fld-tv-thumb-width', fieldData.tv_thumb_width);
+    setElementValue('fld-tv-thumb-height', fieldData.tv_thumb_height);
+    setElementValue('fld-tv-enable-zooming', fieldData.tv_enable_zooming);
+    setElementValue('fld-tv-show-full-size', fieldData.tv_show_full_size);
+    setElementValue('fld-dv-thumb-width', fieldData.dv_thumb_width);
+    setElementValue('fld-dv-thumb-height', fieldData.dv_thumb_height);
+    setElementValue('fld-dv-enable-zooming', fieldData.dv_enable_zooming);
+    setElementValue('fld-dv-show-full-size', fieldData.dv_show_full_size);
+
+    // Cetuskan event untuk mengemas kini UI bersyarat (cth: enable/disable zooming)
+    document.getElementById('fld-allow-image-uploads')?.dispatchEvent(new Event('change'));
+
+    // (Anda boleh tambah opsyen Media lain di sini jika perlu)
+
+    // Tab: Lookup field
+    setElementValue('fld-lookup-parent-table', fieldData.lookup_parent_table);
+    setElementValue('fld-lookup-caption-1', fieldData.lookup_caption_1);
+    setElementValue('fld-lookup-separator', fieldData.lookup_separator);
+    setElementValue('fld-lookup-caption-2', fieldData.lookup_caption_2);
+    setElementValue('fld-lookup-as-radios', fieldData.lookup_as_radios);
+    setElementValue('fld-lookup-inherit-permissions', fieldData.lookup_inherit_permissions);
+    setElementValue('fld-lookup-link-behavior', fieldData.lookup_link_behavior);
+
+    // Tab: Options list
+    setElementValue('fld-options-list-values', fieldData.options_list_values);
+    setRadioValue('fld-options-display', fieldData.options_display);
+
+    // Tab: Data format
+    setElementValue('fld-format-as', fieldData.format_as);
+
+    // Tab: Calculated field
+    setElementValue('fld-calculated-enable', fieldData.calculated_enable);
+    setElementValue('fld-calculated-query', fieldData.calculated_query);
+}
+

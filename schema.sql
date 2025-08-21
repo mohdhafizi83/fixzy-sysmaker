@@ -195,7 +195,7 @@ INSERT INTO fizisys_settings (setting_name, setting_value) VALUES
 ('icon_size', 'small'),
 ('doc_root', ''),
 ('base_url', 'http://localhost'),
-('field_default_type', 'VarChar'),
+('field_default_type', 'VARCHAR'),
 ('field_default_length', '40'),
 ('table_suggest_icon', '1'),
 ('table_allow_csv', '1'),
