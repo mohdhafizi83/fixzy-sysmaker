@@ -68,7 +68,6 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
       }
     });
 
-    // ▼▼▼ TAMBAH BLOK KOD INI ▼▼▼
     let relationships = [];
     if (tableIds.length > 0) {
       const placeholder = tableIds.map(() => "?").join(",");
@@ -82,14 +81,43 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
         )
         .all(...tableIds);
     }
-    // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
 
+    // ▼▼▼ TAMBAH BLOK KOD INI ▼▼▼
+    const groups = db
+      .prepare("SELECT * FROM menu_groups WHERE project_id = ? ORDER BY group_order, group_name")
+      .all(projectId);
+      
+    const groupIds = groups.map(g => g.menu_group_id);
+    let items = [];
+    if (groupIds.length > 0) {
+        const placeholder = groupIds.map(() => '?').join(',');
+        items = db
+            .prepare(`
+                SELECT mgi.*, t.table_name 
+                FROM menu_group_items mgi
+                JOIN tables t ON mgi.table_id = t.table_id
+                WHERE mgi.menu_group_id IN (${placeholder})
+                ORDER BY mgi.item_order
+            `)
+            .all(...groupIds);
+    }
+
+    // Gabungkan data items ke dalam data groups
+    const structuredMenuGroups = groups.map(group => {
+        return {
+            ...group,
+            items: items.filter(item => item.menu_group_id === group.menu_group_id)
+        };
+    });
+    // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
+	
     // ▼▼▼ KEMAS KINI KENYATAAN 'RETURN' ▼▼▼
     return {
       database: {
         name: project.app_title,
         table: structuredTables,
-        relationships: relationships, // Tambah data hubungan di sini
+        relationships: relationships,
+        menu_groups: structuredMenuGroups // Tambah data menu di sini
       },
     };
     // ▲▲▲ TAMAT KEMAS KINI ▲▲▲

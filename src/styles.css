@@ -1075,3 +1075,19 @@ legend {
     color: #D1D5DB;
     border: 1px solid #4B5563;
 }
+
+.empty-state-label {
+    padding: 2rem;
+    text-align: center;
+    color: var(--secondary-color);
+}
+
+.empty-state-label p {
+    font-weight: 500;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.empty-state-label span {
+    font-size: 0.9rem;
+}

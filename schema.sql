@@ -143,7 +143,7 @@ CREATE TABLE fields (
     lookup_caption_2             TEXT,
     lookup_as_radios             INTEGER DEFAULT 0,
     lookup_inherit_permissions   INTEGER DEFAULT 0,
-    lookup_link_behavior         TEXT,
+    lookup_link_behavior         TEXT DEFAULT 'modal',
     options_list_values          TEXT,
     options_display              TEXT,
     format_as                    TEXT,

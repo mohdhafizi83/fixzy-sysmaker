@@ -1165,3 +1165,47 @@ export function initializeLookupFieldHandlers() {
     }
 }
 
+export function populateMenuManagement(menuGroupsData) {
+    const menuGroupList = document.querySelector('.menu-group-list');
+    if (!menuGroupList) return;
+
+    // Kosongkan senarai sedia ada
+    menuGroupList.innerHTML = '';
+
+    if (!menuGroupsData || menuGroupsData.length === 0) {
+        // Jika tiada data, paparkan mesej
+        const emptyMessage = `
+            <div class="empty-state-label">
+                <p>Tiada kumpulan menu dicipta.</p>
+                <span>Klik butang 'Add Menu Group' untuk bermula.</span>
+            </div>
+        `;
+        menuGroupList.innerHTML = emptyMessage;
+        return;
+    }
+
+    // Bina setiap baris kumpulan menu
+    menuGroupsData.forEach(group => {
+        // Bina HTML untuk setiap tag menu di dalam kumpulan
+        const tagsHtml = group.items.map(item => `
+            <span class="tag">${item.table_name} <button class="remove-tag">&times;</button></span>
+        `).join('');
+
+        const groupElement = document.createElement('div');
+        groupElement.className = 'menu-group-item';
+        groupElement.innerHTML = `
+            <input type="text" class="group-name-input" value="${group.group_name}">
+            <div class="menu-selector">
+                ${tagsHtml}
+                <button class="add-menu-btn" title="Add menu to this group">+</button>
+            </div>
+            <div class="group-actions">
+                <button class="btn-sidebar-icon" title="Delete group">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        `;
+        menuGroupList.appendChild(groupElement);
+    });
+}
+
