@@ -1039,7 +1039,7 @@ export function populateFieldSettings(tableName, fieldName) {
     const mediaType = fieldData.media_type || 'link'; // Lalai kepada 'link' jika tiada nilai
     setRadioValue('fld-media-type', mediaType);
     document.getElementById(`fld-media-${mediaType}`)?.dispatchEvent(new Event('click'));
-    
+
     // Opsyen Link
     setElementValue('fld-media-link-behavior', fieldData.media_link_behavior);
     setElementValue('fld-media-link-display-as', fieldData.media_link_display_as);
@@ -1062,7 +1062,35 @@ export function populateFieldSettings(tableName, fieldName) {
     // Cetuskan event untuk mengemas kini UI bersyarat (cth: enable/disable zooming)
     document.getElementById('fld-allow-image-uploads')?.dispatchEvent(new Event('change'));
 
-    // (Anda boleh tambah opsyen Media lain di sini jika perlu)
+    // Opsyen File Upload
+    setElementValue('fld-allow-file-uploads', fieldData.allow_file_uploads);
+    setElementValue('fld-file-types', fieldData.file_types);
+    setElementValue('fld-file-max-size', fieldData.file_max_size);
+    setElementValue('fld-delete-file-server', fieldData.delete_file_server);
+    setElementValue('fld-dont-rename-file', fieldData.dont_rename_file);
+    setElementValue('fld-file-behavior', fieldData.file_behavior);
+    setElementValue('fld-file-display-as', fieldData.file_display_as);
+    setElementValue('fld-file-other-field', fieldData.file_other_field);
+    // Cetuskan event untuk mengemas kini UI bersyarat
+    document.getElementById('fld-allow-file-uploads')?.dispatchEvent(new Event('change'));
+
+    // Opsyen Google Map
+    setElementValue('fld-display-gmap', fieldData.display_gmap);
+    setRadioValue('fld-gmap-type', fieldData.gmap_type);
+    setElementValue('fld-gmap-tv-width', fieldData.gmap_tv_width);
+    setElementValue('fld-gmap-tv-height', fieldData.gmap_tv_height);
+    setElementValue('fld-gmap-dv-height', fieldData.gmap_dv_height);
+    // Cetuskan event untuk mengemas kini UI bersyarat
+    document.getElementById('fld-display-gmap')?.dispatchEvent(new Event('change'));
+
+    // Opsyen Youtube Video
+    setElementValue('fld-accept-video-url', fieldData.accept_video_url);
+    setElementValue('fld-youtube-tv-width', fieldData.youtube_tv_width);
+    setElementValue('fld-youtube-tv-height', fieldData.youtube_tv_height);
+    setElementValue('fld-youtube-dv-width', fieldData.youtube_dv_width);
+    setElementValue('fld-youtube-dv-height', fieldData.youtube_dv_height);
+    // Cetuskan event untuk mengemas kini UI bersyarat
+    document.getElementById('fld-accept-video-url')?.dispatchEvent(new Event('change'));
 
     // Tab: Lookup field
     // 1. Tetapkan nilai yang disimpan untuk 'Parent table'
