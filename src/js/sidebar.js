@@ -81,9 +81,7 @@ export function initializeSidebarInteractivity() {
         let tableName;
 
         if (isFieldLink) {
-            // Apabila medan dipilih:
-            // ▼▼▼ PEMBETULAN UTAMA: PADAM BARIS closeAllSubmenus() DARI SINI ▼▼▼
-            // Baris "closeAllSubmenus();" telah dipadam dari blok ini.
+            // ▼▼▼ PEMBETULAN UTAMA: Baris "closeAllSubmenus();" telah dipadam dari sini. ▼▼▼
             
             showPage('field-settings');
             tableName = link.closest('li.has-submenu').querySelector('a > span').textContent.trim();
@@ -93,23 +91,17 @@ export function initializeSidebarInteractivity() {
             populateFieldSettings(tableName, fieldName);
 
         } else if (isTableLink) {
-            // Apabila baris jadual diklik (sama ada pada nama atau ikon)
             const isToggleClick = event.target.classList.contains('toggle-icon');
-            
-            // Tutup semua submenu LAIN dahulu
             closeAllSubmenus(link);
             
             if (isToggleClick) {
-                // Klik pada ikon -> Toggle submenu semasa
                 link.classList.toggle('open');
                 link.nextElementSibling.style.display = link.classList.contains('open') ? 'block' : 'none';
             } else {
-                // Klik pada nama -> Sentiasa tutup submenu semasa
                 link.classList.remove('open');
                 link.nextElementSibling.style.display = 'none';
             }
 
-            // Paparkan data jadual yang dipilih
             showPage('table-settings');
             tableName = link.querySelector('span').textContent.trim();
             document.querySelector('#table-settings-page .table-name').textContent = tableName;
@@ -117,13 +109,11 @@ export function initializeSidebarInteractivity() {
             populateParentChildTab(tableName);
 
         } else {
-            // Apabila 'Project Setup' dipilih
             showPage('main-dashboard');
             populateMainDashboard(activeProject);
             closeAllSubmenus();
         }
 
-        // Kemas kini dropdown jika perlu
         if (tableName) {
             populateSortByDropdown(tableName);
             populateFocusFieldDropdown(tableName);

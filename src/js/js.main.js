@@ -60,7 +60,7 @@ async function loadProjectData(project) {
         
         // Jana semula menu sisi dan fungsikan interaktiviti
         await generateSidebarMenu();
-        initializeSidebarInteractivity();
+        //initializeSidebarInteractivity();
         
         // Semak jika projek ini kosong untuk tunjukkan tutorial
         const tablesExistResult = await window.electronAPI.checkTablesExist(project.project_id);
@@ -176,6 +176,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Mulakan aplikasi dengan cuba mendapatkan projek aktif dari DB
+    const project = await window.electronAPI.getActiveProject();
+    await loadProjectData(project);
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // ... (panggilan sedia ada yang lain)
+    initializeSidebarInteractivity(); // PASTIKAN PANGGILAN INI WUJUD DI SINI
+    
     const project = await window.electronAPI.getActiveProject();
     await loadProjectData(project);
 });
