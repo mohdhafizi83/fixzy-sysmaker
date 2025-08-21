@@ -799,12 +799,16 @@ export function initializeMediaVisibilityHandlers() {
     }
 }
 
+// js/uiHandlers.js
+
+// js/uiHandlers.js
+
 export function populateParentChildTab(currentTableName) {
-    // ▼▼▼ TAMBAH BLOK INI ▼▼▼
-    console.log(`-- Menjalankan populateParentChildTab untuk: ${currentTableName} --`);
-    console.log('Data Hubungan Tersedia:', jsonData.database.relationships);
-    // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
     const childList = document.getElementById('child-table-list');
+    // Gunakan selector yang lebih kukuh untuk mencari kedua-dua panel
+    const listPanel = childList.parentElement; 
+    const optionsPanel = listPanel.nextElementSibling;
+
     const optionsTitle = document.getElementById('selected-child-table-name');
     const formElements = {
         showTab: document.getElementById('parentchild-show-tab'),
@@ -817,54 +821,71 @@ export function populateParentChildTab(currentTableName) {
         allowAdd: document.getElementById('parentchild-allow-add-from-tv')
     };
     
-    if (!childList || !jsonData.database.relationships) return;
+    if (!childList || !jsonData.database.relationships || !optionsPanel) return;
 
     // Cari semua anak untuk jadual semasa
     const children = jsonData.database.relationships.filter(
         rel => rel.parent_table_name === currentTableName
     );
-    // ▼▼▼ TAMBAH BARIS INI ▼▼▼
-    console.log('Anak yang Ditemui selepas penapisan:', children);
-    // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
-    // Kosongkan senarai dan borang
+
+    // Kosongkan senarai
     childList.innerHTML = '';
-    Object.values(formElements).forEach(el => el.type === 'checkbox' ? el.checked = false : el.value = '');
-    optionsTitle.textContent = '...';
 
-    // Isi senarai 'Child Tables'
-    children.forEach(child => {
-        const li = document.createElement('li');
-        li.textContent = child.child_table_name;
-        li.dataset.childName = child.child_table_name;
-        childList.appendChild(li);
-    });
-    
-    const populateForm = (childName) => {
-        const relationData = children.find(c => c.child_table_name === childName);
-        if (!relationData) return;
+    if (children.length === 0) {
+        // KES 1: Tiada child table ditemui
+        optionsPanel.classList.add('hidden'); // Sembunyikan panel borang
+        const emptyMessage = `
+            <div class="empty-state-label" style="padding: 1rem; text-align: left;">
+                <p style="text-align: center; font-weight: 500;">This table has no child tables.</p>
+                <span style="display: block; text-align: center; margin-top: 0.5rem; font-size: 0.85em;">
+                    To create a relationship, select the foreign key field in the side menu and set the 'Parent table' in the 'Lookup field' tab.
+                </span>
+            </div>
+        `;
+        childList.innerHTML = emptyMessage;
+    } else {
+        // KES 2: Child table ditemui
+        optionsPanel.classList.remove('hidden'); // PASTIKAN panel borang kelihatan
 
-        optionsTitle.textContent = childName;
-        formElements.showTab.checked = relationData.show_tab === 1;
-        formElements.showIcon.checked = relationData.show_icon === 1;
-        formElements.autocloseModal.checked = relationData.autoclose_modal === 1;
-        formElements.tabTitle.value = relationData.tab_title || '';
-        formElements.copyRecords.checked = relationData.copy_records === 1;
-        formElements.showLinkAbove.checked = relationData.show_link_above === 1;
-        formElements.showCount.checked = relationData.show_count_in_tv === 1;
-        formElements.allowAdd.checked = relationData.allow_add_from_tv === 1;
-    };
+        Object.values(formElements).forEach(el => el.type === 'checkbox' ? el.checked = false : el.value = '');
+        optionsTitle.textContent = '...';
 
-    childList.addEventListener('click', (event) => {
-        if (event.target.tagName === 'LI') {
-            childList.querySelectorAll('li').forEach(li => li.classList.remove('active'));
-            event.target.classList.add('active');
-            populateForm(event.target.dataset.childName);
+        children.forEach(child => {
+            const li = document.createElement('li');
+            li.textContent = child.child_table_name;
+            li.dataset.childName = child.child_table_name;
+            childList.appendChild(li);
+        });
+        
+        const populateForm = (childName) => {
+            const relationData = children.find(c => c.child_table_name === childName);
+            if (!relationData) return;
+            optionsTitle.textContent = childName;
+            formElements.showTab.checked = relationData.show_tab === 1;
+            formElements.showIcon.checked = relationData.show_icon === 1;
+            formElements.autocloseModal.checked = relationData.autoclose_modal === 1;
+            formElements.tabTitle.value = relationData.tab_title || '';
+            formElements.copyRecords.checked = relationData.copy_records === 1;
+            formElements.showLinkAbove.checked = relationData.show_link_above === 1;
+            formElements.showCount.checked = relationData.show_count_in_tv === 1;
+            formElements.allowAdd.checked = relationData.allow_add_from_tv === 1;
+        };
+
+        // Elakkan menambah event listener berulang kali
+        const newChildList = childList.cloneNode(true);
+        childList.parentNode.replaceChild(newChildList, childList);
+
+        newChildList.addEventListener('click', (event) => {
+            if (event.target.tagName === 'LI') {
+                newChildList.querySelectorAll('li').forEach(li => li.classList.remove('active'));
+                event.target.classList.add('active');
+                populateForm(event.target.dataset.childName);
+            }
+        });
+
+        if (newChildList.firstChild) {
+            newChildList.firstChild.click();
         }
-    });
-
-    // Aktifkan item pertama secara lalai jika ada
-    if (childList.firstChild) {
-        childList.firstChild.click();
     }
 }
 

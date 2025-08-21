@@ -145,7 +145,7 @@ CREATE TABLE fields (
     lookup_inherit_permissions   INTEGER DEFAULT 0,
     lookup_link_behavior         TEXT DEFAULT 'modal',
     options_list_values          TEXT,
-    options_display              TEXT,
+    options_display              TEXT DEFAULT 'dropdown',
     format_as                    TEXT,
     calculated_enable            INTEGER DEFAULT 0,
     calculated_query             TEXT,
