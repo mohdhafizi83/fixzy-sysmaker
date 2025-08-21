@@ -1,6 +1,6 @@
 import { showPage } from './pageManager.js';
-// Import fungsi baru dari uiHandlers.js
-import { updateActionButtonsState, populateSortByDropdown, populateFocusFieldDropdown, setupMediaTab, populateParentChildTab  } from './uiHandlers.js'; 
+// Import fungsi dari uiHandlers.js
+import { populateMainDashboard, updateActionButtonsState, populateSortByDropdown, populateFocusFieldDropdown, setupMediaTab, populateParentChildTab  } from './uiHandlers.js'; 
 import { jsonData } from './js.main.js';
 
 export async function generateSidebarMenu() {
@@ -60,7 +60,6 @@ export function initializeSidebarInteractivity() {
             this.classList.add('active');
             updateActionButtonsState();
 
-            // ▼▼▼ LOGIK YANG DIPERBAIKI BERMULA DI SINI ▼▼▼
             const isFieldLink = this.closest('ul.submenu-level-3');
             let tableName;
 
@@ -88,8 +87,9 @@ export function initializeSidebarInteractivity() {
                 populateParentChildTab(tableName);
 
             } else {
-                // Ini adalah klik pada item menu utama seperti 'Project Core'
+                // Ini adalah klik pada item menu utama seperti 'Project Setup'
                 showPage('main-dashboard');
+                populateMainDashboard(activeProject); // Panggil fungsi untuk mengisi data
             }
 
             // Kemas kini dropdown yang berkaitan jika tableName wujud

@@ -15,7 +15,8 @@ import {
     initializeLinkOptionsHandlers,
     initializeImageOptionsHandlers,
     initializeFileUploadOptionsHandlers,
-    initializeMediaVisibilityHandlers 	
+    initializeMediaVisibilityHandlers,
+	populateMainDashboard 	
 } from './uiHandlers.js';
 
 // Pembolehubah global untuk menyimpan data projek semasa dan pengurusan UI
@@ -35,13 +36,14 @@ async function loadProjectData(project) {
     
     activeProject = project;
     console.log(`Memuatkan data untuk projek: ${project.app_title} (ID: ${project.project_id})`);
+	populateMainDashboard(activeProject);
 
     // Gantikan pembacaan data.json dengan panggilan ke backend SQLite
     const data = await window.electronAPI.getFullSchema(project.project_id);
 
     if (data && data.database) {
         jsonData = data;
-        // ▼▼▼ TAMBAH BARIS INI ▼▼▼
+
         console.log('Data Skema Penuh Diterima:', jsonData);
         allTableNames = Object.keys(jsonData.database.table || {});
 

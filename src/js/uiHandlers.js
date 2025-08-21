@@ -847,3 +847,68 @@ export function populateParentChildTab(currentTableName) {
         childList.firstChild.click();
     }
 }
+
+export function populateMainDashboard(projectData) {
+    if (!projectData) {
+        console.warn("Tiada data projek untuk dipaparkan di papan pemuka.");
+        return;
+    }
+console.log(projectData);
+    // Helper untuk menetapkan nilai elemen borang dengan selamat
+    const setElementValue = (id, value) => {
+        const element = document.getElementById(id);
+        if (element) {
+            if (element.type === 'checkbox') {
+                element.checked = value === 1;
+            } else {
+                element.value = value;
+            }
+        }
+    };
+    
+    // Helper untuk radio button
+    const setRadioValue = (name, value) => {
+        const selector = `input[name="${name}"][value="${value}"]`;
+        const element = document.querySelector(selector);
+        if (element) {
+            element.checked = true;
+        }
+    };
+
+    // Tab: Localization
+    setElementValue('app-title', projectData.app_title);
+    setElementValue('app-date-order', projectData.date_order);
+    setElementValue('app-separator', projectData.separator);
+    setElementValue('app-char-encoding', projectData.char_encoding);
+    setElementValue('app-language-select', projectData.language_select);
+    setElementValue('app-timezone-select', projectData.timezone_select);
+    setElementValue('app-use-24hr-format', projectData.use_24hr_format);
+    setElementValue('app-enforce_mysql_encoding', projectData.enforce_mysql_encoding);
+    
+    // Tab: Theme
+    setElementValue('app-theme-select', projectData.theme_select);
+    setElementValue('app-use_3d_effects', projectData.use_3d_effects);
+    setElementValue('app-rtl', projectData.rtl);
+    setElementValue('app-compact', projectData.compact);
+    
+    // Tab: Menu management
+    setRadioValue('app-menu_orientation', projectData.menu_orientation);
+    setElementValue('app-menu_at_homepage', projectData.menu_at_homepage);
+    setElementValue('app-tables-per-row', projectData.tables_per_row);
+    setRadioValue('app-extra-wide', projectData.extra_wide);
+    setElementValue('app-panel-height', projectData.panel_height);
+    
+    // Tab: Security & technical
+    setElementValue('app-hide_login', projectData.hide_login);
+    setElementValue('app-allow_sql_tool', projectData.allow_sql_tool);
+    setElementValue('app-allow_server_status', projectData.allow_server_status);
+    setElementValue('app-admins_group_access', projectData.admins_group_access);
+    setElementValue('app-allow_table_view_sql', projectData.allow_table_view_sql);
+    setElementValue('app-copy_children_async', projectData.copy_children_async);
+    setElementValue('app-allow_pwa_install', projectData.allow_pwa_install);
+    setElementValue('app-url', projectData.url);
+    
+    // Cetuskan event untuk kemas kini pratonton yang bergantung pada nilai ini
+    document.getElementById('app-date-order')?.dispatchEvent(new Event('change'));
+    document.getElementById('app-theme-select')?.dispatchEvent(new Event('change'));
+}
