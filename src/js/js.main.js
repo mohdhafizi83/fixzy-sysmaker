@@ -24,7 +24,7 @@ import {
 // Pembolehubah global untuk menyimpan data projek semasa dan pengurusan UI
 export let jsonData = null;
 export let allTableNames = [];
-let activeProject = null;
+export let activeProject = null;
 
 // =================================================================
 // ▼▼▼ FUNGSI UTAMA BAHARU UNTUK MEMUATKAN DATA PROJEK ▼▼▼

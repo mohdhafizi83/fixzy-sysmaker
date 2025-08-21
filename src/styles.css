@@ -345,7 +345,7 @@ html, body {
 /* Ikon Toggle (anak panah) */
 .toggle-icon {
     font-size: 0.8em;
-    color: var(--secondary-color);
+    color: var(--sidebar-text); /* Asal: var(--secondary-color) */
     transition: transform 0.3s ease;
 }
 
