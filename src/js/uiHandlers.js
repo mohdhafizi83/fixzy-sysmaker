@@ -237,7 +237,6 @@ export function initializeTabSystems() {
                             firstSubTabLink.click();
                         }
                     }
-                    // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
                 }
             });
         });
@@ -289,9 +288,6 @@ export function populateFocusFieldDropdown(tableName) {
         });
     }
 }
-// ▲▲▲ FUNGSI-FUNGSI YANG HILANG TAMAT DI SINI ▲▲▲
-
-// js/uiHandlers.js
 
 export function initializeModalHandlers() {
     const configBtn = document.getElementById('config-btn');
@@ -680,7 +676,6 @@ export function initializeImageOptionsHandlers() {
             }
         }
     };
-    // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
 
     if (mainCheckbox) {
         mainCheckbox.addEventListener('change', toggleImageOptions);
@@ -1163,7 +1158,6 @@ export function populateFieldSettings(tableName, fieldName) {
             }
         }
     }
-    // ▲▲▲ TAMAT LOGIK PINTAR BAHARU ▲▲▲
 
     // Tab: Options list
     setElementValue('fld-options-list-values', fieldData.options_list_values);

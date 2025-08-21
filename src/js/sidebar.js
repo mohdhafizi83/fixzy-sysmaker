@@ -1,6 +1,15 @@
 import { showPage } from './pageManager.js';
 // Import fungsi dari uiHandlers.js
-import { populateFieldSettings, populateTableSettings, populateMainDashboard, updateActionButtonsState, populateSortByDropdown, populateFocusFieldDropdown, setupMediaTab, populateParentChildTab  } from './uiHandlers.js'; 
+import { 
+populateFieldSettings, 
+populateTableSettings, 
+populateMainDashboard, 
+updateActionButtonsState, 
+populateSortByDropdown, 
+populateFocusFieldDropdown, 
+setupMediaTab, 
+populateParentChildTab
+  } from './uiHandlers.js'; 
 import { jsonData } from './js.main.js';
 
 export async function generateSidebarMenu() {
@@ -40,22 +49,27 @@ export async function generateSidebarMenu() {
     }
 }
 
+// GANTIKAN KESELURUHAN FUNGSI LAMA DENGAN INI
 export function initializeSidebarInteractivity() {
     const allLinks = document.querySelectorAll('.sidebar .nav-list a');
-    const submenuTriggers = document.querySelectorAll('.sidebar .has-submenu > a');
-
-    submenuTriggers.forEach(trigger => {
-        trigger.addEventListener('click', function(event) {
-            event.preventDefault();
-            const submenu = this.nextElementSibling;
-            this.classList.toggle('open');
-            if (submenu.style.display === 'block') { submenu.style.display = 'none'; }
-            else { submenu.style.display = 'block'; }
-        });
-    });
 
     allLinks.forEach(link => {
-        link.addEventListener('click', function() {
+        link.addEventListener('click', function(event) {
+            
+            // Periksa jika pengguna klik pada ikon toggle
+            if (event.target.classList.contains('toggle-icon')) {
+                event.preventDefault();
+                event.stopPropagation(); // Hentikan event dari mengaktifkan pautan utama
+
+                const submenu = this.nextElementSibling;
+                this.classList.toggle('open');
+                if (submenu) {
+                    submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                }
+                return; // Keluar dari fungsi selepas toggle
+            }
+
+            // Jika bukan ikon toggle yang diklik, jalankan logik pemilihan seperti biasa
             allLinks.forEach(l => l.classList.remove('active'));
             this.classList.add('active');
             updateActionButtonsState();
@@ -64,43 +78,33 @@ export function initializeSidebarInteractivity() {
             let tableName;
 
             if (isFieldLink) {
-                // INI ADALAH KLIK PADA 'MENU FIELD' (cth: id_pelajar)
+                // KLIK PADA 'MENU FIELD'
                 showPage('field-settings');
-                // Dapatkan nama jadual dari induknya
                 tableName = this.closest('li.has-submenu').querySelector('a > span').textContent.trim();
                 const fieldName = this.querySelector('span').textContent.trim();
-                const fieldSettingsTitle = document.querySelector('#field-settings-page .field-name');
-                if (fieldSettingsTitle) {
-                    fieldSettingsTitle.textContent = `${tableName}.${fieldName}`;
-                }
-                setupMediaTab(tableName, fieldName);
-				populateFieldSettings(tableName, fieldName);
+                document.querySelector('#field-settings-page .field-name').textContent = `${tableName}.${fieldName}`;
+				
+				setupMediaTab(tableName, fieldName);
+                populateFieldSettings(tableName, fieldName);
 
             } else if (this.parentElement.classList.contains('has-submenu')) {
-                // INI ADALAH KLIK PADA 'MENU TABLE' (cth: pelajar)
+                // KLIK PADA 'MENU TABLE'
                 showPage('table-settings');
                 tableName = this.querySelector('span').textContent.trim();
-                const tableSettingsTitle = document.querySelector('#table-settings-page .table-name');
-                if (tableSettingsTitle) {
-                    tableSettingsTitle.textContent = tableName;
-                }
-                // HANYA PANGGIL FUNGSI INI APABILA 'MENU TABLE' DIKLIK
+                document.querySelector('#table-settings-page .table-name').textContent = tableName;
+                populateTableSettings(tableName);
                 populateParentChildTab(tableName);
-				
-				populateTableSettings(tableName);
 
             } else {
-                // Ini adalah klik pada item menu utama seperti 'Project Setup'
+                // KLIK PADA 'PROJECT SETUP'
                 showPage('main-dashboard');
-                populateMainDashboard(activeProject); // Panggil fungsi untuk mengisi data
+                populateMainDashboard(activeProject);
             }
 
-            // Kemas kini dropdown yang berkaitan jika tableName wujud
             if (tableName) {
                 populateSortByDropdown(tableName);
                 populateFocusFieldDropdown(tableName);
             }
-            // ▲▲▲ LOGIK YANG DIPERBAIKI TAMAT DI SINI ▲▲▲
         });
     });
 }

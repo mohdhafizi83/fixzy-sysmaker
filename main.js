@@ -109,9 +109,7 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
             items: items.filter(item => item.menu_group_id === group.menu_group_id)
         };
     });
-    // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
-	
-    // ▼▼▼ KEMAS KINI KENYATAAN 'RETURN' ▼▼▼
+
     return {
       database: {
         name: project.app_title,
@@ -120,7 +118,6 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
         menu_groups: structuredMenuGroups // Tambah data menu di sini
       },
     };
-    // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
 	
     return { database: { name: project.app_title, table: structuredTables } };
   } catch (error) {
@@ -335,7 +332,6 @@ function importSchema(sql, projectId) {
                                     .replace(/\b\w/g, (l) => l.toUpperCase()),
                             });
                         }
-                        // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
                     }
                 }
             }
