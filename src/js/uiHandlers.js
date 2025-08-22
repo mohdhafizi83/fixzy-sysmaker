@@ -1539,3 +1539,40 @@ export function initializeCheckboxExclusivity() {
         }
     });
 }
+
+// js/uiHandlers.js
+
+export function initializePrimaryKeyHandlers() {
+    const primaryKeyCheckbox = document.getElementById('fld-primary-key');
+    const autoIncrementCheckbox = document.getElementById('fld-auto-increment');
+
+    if (!primaryKeyCheckbox || !autoIncrementCheckbox) return;
+
+    // Listener untuk Primary Key
+    primaryKeyCheckbox.addEventListener('change', () => {
+        // Hanya paparkan amaran jika pengguna cuba NYAH-TANDA
+        if (!primaryKeyCheckbox.checked) {
+            const message = "Warning: Changing a Primary Key can affect table relationships and data integrity.\n\nAre you sure you want to proceed?";
+            const userConfirmed = confirm(message);
+
+            // Jika pengguna batal, tandakan semula checkbox tersebut
+            if (!userConfirmed) {
+                primaryKeyCheckbox.checked = true;
+            }
+        }
+    });
+
+    // Listener untuk Auto Increment
+    autoIncrementCheckbox.addEventListener('change', () => {
+        // Hanya paparkan amaran jika pengguna cuba NYAH-TANDA
+        if (!autoIncrementCheckbox.checked) {
+            const message = "Warning: Disabling Auto Increment on a key field requires you to manage unique values manually, which can lead to data errors.\n\nAre you sure you want to disable it?";
+            const userConfirmed = confirm(message);
+
+            // Jika pengguna batal, tandakan semula checkbox tersebut
+            if (!userConfirmed) {
+                autoIncrementCheckbox.checked = true;
+            }
+        }
+    });
+}
