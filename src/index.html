@@ -1061,29 +1061,46 @@
                                         <button class="btn btn-secondary" id="auto-default-btn" name="auto-default-btn">Auto >></button>
                                     </div>
                                 </div>
-                                <div class="permission-grid" style="grid-template-columns: 1fr 1fr 1fr;">
-                                    <label class="checkbox-label"><input type="checkbox" id="fld-read-only" name="fld-read-only"> Read Only</label>
-                                    <label class="checkbox-label"><input type="checkbox" id="fld-primary-key" name="fld-primary-key" checked> Primary Key</label>
-                                    <label class="checkbox-label"><input type="checkbox" id="fld-zero-fill" name="fld-zero-fill"> Zero Fill</label>
-                                    <label class="checkbox-label"><input type="checkbox" id="fld-required" name="fld-required"> Required</label>
-                                    <label class="checkbox-label"><input type="checkbox" id="fld-rich-html" name="fld-rich-html"> Rich (HTML) area</label>
-                                    <label class="checkbox-label"><input type="checkbox" id="fld-auto-increment" name="fld-auto-increment" checked> Auto Increment</label>
-                                    <label class="checkbox-label"><input type="checkbox" id="fld-unique" name="fld-unique"> Unique</label>
-                                    <label class="checkbox-label"><input type="checkbox" id="fld-show-sum" name="fld-show-sum"> Show column sum</label>
-                                    <label class="checkbox-label"><input type="checkbox" id="fld-text-area" name="fld-text-area"> Text area</label>
-                                    <label class="checkbox-label"><input type="checkbox" id="fld-unsigned" name="fld-unsigned"> Unsigned</label>
-                                    <label class="checkbox-label"><input type="checkbox" id="fld-no-filter" name="fld-no-filter"> Do not filter</label>
-                                    <label class="checkbox-label"><input type="checkbox" id="fld-binary" name="fld-binary"> Binary</label>
-                                    <label class="checkbox-label"><input type="checkbox" id="fld-check-box" name="fld-check-box"> Check box</label>
-                                    <label class="checkbox-label"><input type="checkbox" id="fld-hide-in-tv" name="fld-hide-in-tv"> Hide in table view</label>
-                                    <label class="checkbox-label"><input type="checkbox" id="fld-hide-in-dv" name="fld-hide-in-dv"> Hide in detail view</label>
-                                </div>
-                                <div class="form-group mt-2">
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="fld-enable-column-width" name="fld-enable-column-width"> Column width (pixels)
-                                        <input type="number" id="fld-column-width" name="fld-column-width" value="150" style="width: 80px; margin-left: 10px;">
-                                    </label>
-                                </div>
+<div class="fieldset-grid">
+    <fieldset>
+        <legend>Database Properties</legend>
+        <div class="checkbox-group">
+            <label class="checkbox-label"><input type="checkbox" id="fld-primary-key" name="fld-primary-key"> Primary Key</label>
+            <label class="checkbox-label"><input type="checkbox" id="fld-auto-increment" name="fld-auto-increment"> Auto Increment</label>
+            <label class="checkbox-label"><input type="checkbox" id="fld-unique" name="fld-unique"> Unique</label>
+            <label class="checkbox-label"><input type="checkbox" id="fld-unsigned" name="fld-unsigned"> Unsigned</label>
+            <label class="checkbox-label"><input type="checkbox" id="fld-zero-fill" name="fld-zero-fill"> Zero Fill</label>
+            <label class="checkbox-label"><input type="checkbox" id="fld-binary" name="fld-binary"> Binary</label>
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Form Display & Behavior</legend>
+        <div class="checkbox-group">
+            <label class="checkbox-label"><input type="checkbox" id="fld-required" name="fld-required"> Required</label>
+            <label class="checkbox-label"><input type="checkbox" id="fld-read-only" name="fld-read-only"> Read Only</label>
+            <label class="checkbox-label"><input type="checkbox" id="fld-text-area" name="fld-text-area"> Text area</label>
+            <label class="checkbox-label"><input type="checkbox" id="fld-rich-html" name="fld-rich-html"> Rich (HTML) area</label>
+            <label class="checkbox-label"><input type="checkbox" id="fld-check-box" name="fld-check-box"> Check box</label>
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Application View Options</legend>
+        <div class="checkbox-group">
+            <label class="checkbox-label"><input type="checkbox" id="fld-hide-in-tv" name="fld-hide-in-tv"> Hide in table view</label>
+            <label class="checkbox-label"><input type="checkbox" id="fld-hide-in-dv" name="fld-hide-in-dv"> Hide in detail view</label>
+            <label class="checkbox-label"><input type="checkbox" id="fld-show-sum" name="fld-show-sum"> Show column sum</label>
+            <label class="checkbox-label"><input type="checkbox" id="fld-no-filter" name="fld-no-filter"> Do not filter</label>
+            <div class="form-group mt-1">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="fld-enable-column-width" name="fld-enable-column-width"> Column width (pixels)
+                    <input type="number" id="fld-column-width" name="fld-column-width" value="150" style="width: 80px; margin-left: 10px;">
+                </label>
+            </div>
+        </div>
+    </fieldset>
+</div>
                             </div>
                         </div>
                     </div>

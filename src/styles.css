@@ -1112,3 +1112,29 @@ legend {
 .form-row-condensed .form-group {
     flex: 1;
 }
+
+/* Gaya untuk kumpulan checkbox yang disusun semula */
+.fieldset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+fieldset {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1rem 1.5rem 1.5rem;
+}
+
+legend {
+    font-weight: 600;
+    font-size: 0.9em;
+    padding: 0 0.5rem;
+    margin-left: -0.5rem;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
