@@ -84,6 +84,8 @@ CREATE TABLE fields (
     description                  TEXT,
     data_type                    TEXT,
     length                       INTEGER,
+    precision                    INTEGER,
+    max_chars_in_tv              INTEGER DEFAULT 50,
     alignment                    TEXT DEFAULT 'left',
     default_value                TEXT,
     read_only                    INTEGER DEFAULT 0,

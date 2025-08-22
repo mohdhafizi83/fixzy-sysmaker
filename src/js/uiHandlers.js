@@ -1011,6 +1011,8 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-description', fieldData.description);
     setElementValue('fld-data-type', fieldData.data_type);
     setElementValue('fld-length', fieldData.length);
+	setElementValue('fld-precision', fieldData.precision);
+    setElementValue('fld-max-chars-in-tv', fieldData.max_chars_in_tv);
     setElementValue('fld-alignment', fieldData.alignment);
     setElementValue('fld-default-value', fieldData.default_value);
     setElementValue('fld-read-only', fieldData.read_only);

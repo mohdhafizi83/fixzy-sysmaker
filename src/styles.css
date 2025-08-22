@@ -1102,3 +1102,13 @@ legend {
 .lookup-caption-group .form-group {
     margin-bottom: 0;
 }
+
+.form-row-condensed {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.form-row-condensed .form-group {
+    flex: 1;
+}
