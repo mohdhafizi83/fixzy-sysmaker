@@ -1347,6 +1347,7 @@ function applyDataTypeRules() {
 
     // Kumpulkan semua elemen yang akan dikawal
     const elements = {
+		length: document.getElementById('fld-length'),
         precision: document.getElementById('fld-precision'),
         autoIncrement: document.getElementById('fld-auto-increment'),
         unsigned: document.getElementById('fld-unsigned'),
@@ -1354,7 +1355,9 @@ function applyDataTypeRules() {
         showSum: document.getElementById('fld-show-sum'),
         binary: document.getElementById('fld-binary'),
         mediaRadios: document.querySelectorAll('input[name="fld-media-type"]'),
-        behaviorOptions: document.querySelectorAll('#fld-media-link-behavior option[value="web_link"], #fld-media-link-behavior option[value="email_link"]')
+        behaviorOptions: document.querySelectorAll('#fld-media-link-behavior option[value="web_link"], #fld-media-link-behavior option[value="email_link"]'),
+		dbPropertiesFieldset: document.querySelector('#tab-field-general .fieldset-grid fieldset:nth-child(1)'),
+        formBehaviorFieldset: document.querySelector('#tab-field-general .fieldset-grid fieldset:nth-child(2)')
     };
 
     // 1. Reset: Aktifkan semua elemen secara lalai
@@ -1368,7 +1371,9 @@ function applyDataTypeRules() {
             el.disabled = false;
         }
     });
-
+    // Tambah reset untuk fieldset
+    elements.dbPropertiesFieldset.classList.remove('fieldset-disabled');
+    elements.formBehaviorFieldset.classList.remove('fieldset-disabled');
     // 2. Kumpulan Data Type
     const numericAndDate = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'FLOAT', 'DOUBLE', 'DECIMAL', 'DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR'];
     const integerOnly = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'];
@@ -1409,6 +1414,24 @@ function applyDataTypeRules() {
      if (binaryString.includes(selectedType)) {
          if (elements.binary) elements.binary.disabled = true;
      }
+	 
+    if (selectedType === 'VARCHAR') {
+        if (!elements.length.value) elements.length.value = 255;
+    }
+    if (selectedType === 'INT') {
+        elements.unsigned.checked = true;
+    }
+    if (selectedType === 'DECIMAL') {
+        if (!elements.length.value) elements.length.value = 10;
+        if (!elements.precision.value) elements.precision.value = 2;
+    }
+	
+    // Logik untuk menyahaktifkan fieldset
+    if (textOnly.includes(selectedType) || binaryString.includes(selectedType)) {
+        if(selectedType !== 'CHAR' && selectedType !== 'VARCHAR') {
+             elements.dbPropertiesFieldset.classList.add('fieldset-disabled');
+        }
+    }
 }
 
 export function initializeDataTypeRules() {
@@ -1573,6 +1596,22 @@ export function initializePrimaryKeyHandlers() {
             if (!userConfirmed) {
                 autoIncrementCheckbox.checked = true;
             }
+        }
+    });
+}
+
+export function initializeRealtimeValidation() {
+    const numericInputs = [
+        document.getElementById('fld-length'),
+        document.getElementById('fld-precision')
+    ];
+
+    numericInputs.forEach(input => {
+        if (input) {
+            input.addEventListener('input', () => {
+                // Buang semua aksara yang bukan nombor
+                input.value = input.value.replace(/[^0-9]/g, '');
+            });
         }
     });
 }

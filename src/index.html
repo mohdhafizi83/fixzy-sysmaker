@@ -1062,17 +1062,40 @@
                                     </div>
                                 </div>
 <div class="fieldset-grid">
-    <fieldset>
-        <legend>Database Properties</legend>
-        <div class="checkbox-group">
-            <label class="checkbox-label"><input type="checkbox" id="fld-primary-key" name="fld-primary-key"> Primary Key</label>
-            <label class="checkbox-label"><input type="checkbox" id="fld-auto-increment" name="fld-auto-increment"> Auto Increment</label>
-            <label class="checkbox-label"><input type="checkbox" id="fld-unique" name="fld-unique"> Unique</label>
-            <label class="checkbox-label"><input type="checkbox" id="fld-unsigned" name="fld-unsigned"> Unsigned</label>
-            <label class="checkbox-label"><input type="checkbox" id="fld-zero-fill" name="fld-zero-fill"> Zero Fill</label>
-            <label class="checkbox-label"><input type="checkbox" id="fld-binary" name="fld-binary"> Binary</label>
-        </div>
-    </fieldset>
+<fieldset>
+    <legend>Database Properties</legend>
+    <div class="checkbox-group">
+        <label class="checkbox-label"><input type="checkbox" id="fld-primary-key" name="fld-primary-key"> Primary Key</label>
+        <label class="checkbox-label"><input type="checkbox" id="fld-auto-increment" name="fld-auto-increment"> Auto Increment</label>
+        <label class="checkbox-label"><input type="checkbox" id="fld-unique" name="fld-unique"> Unique</label>
+
+
+<label class="checkbox-label">
+    <input type="checkbox" id="fld-unsigned" name="fld-unsigned"> Unsigned
+    <span class="tooltip-container">
+        <i class="fas fa-question-circle"></i>
+        <span class="tooltip-text">Only allows positive numbers (0 and above). Ideal for ID fields.</span>
+    </span>
+</label>
+
+
+<label class="checkbox-label">
+    <input type="checkbox" id="fld-zero-fill" name="fld-zero-fill"> Zero Fill
+    <span class="tooltip-container">
+        <i class="fas fa-question-circle"></i>
+        <span class="tooltip-text">Pads numbers with leading zeros up to the specified length (e.g., 5 becomes 00005).</span>
+    </span>
+</label>
+
+<label class="checkbox-label">
+    <input type="checkbox" id="fld-binary" name="fld-binary"> Binary
+    <span class="tooltip-container">
+        <i class="fas fa-question-circle"></i>
+        <span class="tooltip-text">Treats character strings as binary data, which is case-sensitive.</span>
+    </span>
+</label>
+    </div>
+</fieldset>
 
     <fieldset>
         <legend>Form Display & Behavior</legend>

@@ -24,7 +24,8 @@ import {
     initializeDataTypeRules,
     initializeFormDisplayRules,
     initializeCheckboxExclusivity,
-    initializePrimaryKeyHandlers  	
+    initializePrimaryKeyHandlers,
+    initializeRealtimeValidation  	
 } from './uiHandlers.js';
 
 // Pembolehubah global untuk menyimpan data projek semasa dan pengurusan UI
@@ -135,6 +136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	initializeFormDisplayRules();
 	initializeCheckboxExclusivity();
 	initializePrimaryKeyHandlers();
+	initializeRealtimeValidation();
 	
     // Setup Event Listeners
     const newProjectBtn = document.getElementById('new-project-btn');
