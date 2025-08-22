@@ -269,20 +269,32 @@ export function populateSortByDropdown(tableName, elementId = 'tbl-default-sort-
     }
 }
 
+// js/uiHandlers.js
+
 export function populateFocusFieldDropdown(tableName) {
     const defaultFocusDropdown = document.getElementById('tbl-default-focus');
     if (!defaultFocusDropdown || !jsonData) return;
 
     defaultFocusDropdown.innerHTML = ''; // Kosongkan senarai
-    
+
     const table = jsonData.database.table[tableName];
     if (table && table.fields) {
-        const fieldNames = Object.keys(table.fields);
-        const firstEditableField = fieldNames.length > 0 ? fieldNames[0] : '';
+        // ▼▼▼ KEMAS KINI UTAMA DI SINI ▼▼▼
+        // 1. Dapatkan semua nama medan
+        const allFieldNames = Object.keys(table.fields);
+
+        // 2. Tapis untuk mendapatkan medan yang boleh disunting sahaja
+        const editableFields = allFieldNames.filter(fieldName => {
+            return table.fields[fieldName].read_only !== 1;
+        });
+        // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
+
+        const firstEditableField = editableFields.length > 0 ? editableFields[0] : '';
         
-        defaultFocusDropdown.innerHTML = `<option value="__first__">First editable field (${firstEditableField})</option><option value="__none__">Don't focus any field</option>`;
+        defaultFocusDropdown.innerHTML = `<option value="${firstEditableField}">First editable field (${firstEditableField})</option><option value="__none__">Don't focus any field</option>`;
         
-        fieldNames.forEach(fieldName => {
+        // 3. Gunakan senarai yang telah ditapis untuk menjana opsyen
+        editableFields.forEach(fieldName => {
             const option = document.createElement('option');
             option.value = fieldName;
             option.textContent = fieldName;
