@@ -669,39 +669,44 @@
                             </div>
                             <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
                             <div class="form-group">
-                                <div class="radio-group">
-                                    <label><input type="radio" name="app-menu_orientation" id="app-app-menu_orientation_top" value="top" checked> Top Menu</label>
-                                    <label><input type="radio" name="app-menu_orientation" id="app-app-menu_orientation_side" value="side"> Left Side Menu</label>
+                                <label for="app-tables-per-row">Default navigation menu orientation</label>
+                                <div class="radio-group-horizontal">
+                                    <label><input type="radio" name="app-menu_orientation" id="app-app-menu_orientation_top" value="top" checked> Top Menu (Horizontal)</label>
+                                    <label><input type="radio" name="app-menu_orientation" id="app-app-menu_orientation_side" value="side"> Left Side Menu (Vertical)</label>
                                 </div>
                             </div>
 
                             <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
-                            <div class="form-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="app-menu_at_homepage" name="app-menu_at_homepage" checked> Menu at Homepage
-                                </label>
-                            </div>
-                            <div class="form-group">
-                                <label for="app-tables-per-row">Number of tables per row in the homepage</label>
-                                <select id="app-tables-per-row" name="app-tables-per-row">
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4" selected>4</option>
-                                    <option value="5">5</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Make first table in the homepage extra wide?</label>
-                                <div class="radio-group">
-                                    <label><input type="radio" name="app-extra-wide" id="app-extra_wide_yes" value="yes" checked> Yes</label>
-                                    <label><input type="radio" name="app-extra-wide" id="app-extra_wide_no" value="no"> No</label>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="app-panel-height">Height of table panel in the homepage (pixels)</label>
-                                <input type="number" id="app-panel-height" name="app-panel-height" value="100">
-                            </div>
+<div class="form-group">
+    <label class="checkbox-label">
+        <input type="checkbox" id="app-menu_at_homepage" name="app-menu_at_homepage" checked> Menu at Homepage
+    </label>
+</div>
+
+<div class="form-grid  homepage-menu-option">
+    <div class="form-group">
+        <label for="app-tables-per-row">Number of tables per row in the homepage</label>
+        <select id="app-tables-per-row" name="app-tables-per-row">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="app-panel-height">Height of table panel in the homepage (pixels)</label>
+        <input type="number" id="app-panel-height" name="app-panel-height" value="100">
+    </div>
+</div>
+
+<div class="form-group  homepage-menu-option">
+    <label>Make first table in the homepage extra wide?</label>
+    <div class="radio-group-horizontal">
+        <label><input type="radio" name="app-extra-wide" id="app-extra_wide_yes" value="1" checked> Yes</label>
+        <label><input type="radio" name="app-extra-wide" id="app-extra-wide_no" value="0"> No</label>
+    </div>
+</div>
                         </div>
                     </div>
                 </div>

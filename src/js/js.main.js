@@ -19,7 +19,8 @@ import {
 	populateMainDashboard,
     initializeLookupFieldHandlers,
     populateMenuManagement,
-    initializeAdvancedLookupHandlers	
+    initializeAdvancedLookupHandlers,
+    initializeHomepageMenuHandlers 	
 } from './uiHandlers.js';
 
 // Pembolehubah global untuk menyimpan data projek semasa dan pengurusan UI
@@ -125,6 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	initializeMediaVisibilityHandlers();
 	initializeLookupFieldHandlers();
 	initializeAdvancedLookupHandlers();
+	initializeHomepageMenuHandlers();
 
     // Setup Event Listeners
     const newProjectBtn = document.getElementById('new-project-btn');

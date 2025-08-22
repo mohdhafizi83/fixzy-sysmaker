@@ -1295,3 +1295,24 @@ export function initializeAdvancedLookupHandlers() {
         queryTextarea.value = generateDefaultLookupQuery();
     });
 }
+
+export function initializeHomepageMenuHandlers() {
+    const menuAtHomepageCheckbox = document.getElementById('app-menu_at_homepage');
+    const dependentOptions = document.querySelectorAll('.homepage-menu-option');
+
+    if (!menuAtHomepageCheckbox || dependentOptions.length === 0) return;
+
+    const toggleOptionsVisibility = () => {
+        const isChecked = menuAtHomepageCheckbox.checked;
+        dependentOptions.forEach(option => {
+            // Gunakan style.display untuk kawalan terus
+            option.style.display = isChecked ? '' : 'none';
+        });
+    };
+
+    // Tambah listener pada checkbox
+    menuAtHomepageCheckbox.addEventListener('change', toggleOptionsVisibility);
+
+    // Panggil sekali semasa muat untuk menetapkan keadaan awal yang betul
+    toggleOptionsVisibility();
+}
