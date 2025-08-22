@@ -1450,3 +1450,35 @@ function populateRecordOwnerDropdown(tableName) {
     });
     // ▲▲▲ TAMAT LOGIK YANG DIPERBAIKI ▲▲▲
 }
+
+// js/uiHandlers.js
+
+export function initializeFormDisplayRules() {
+    // Kenal pasti ID checkbox yang eksklusif
+    const exclusiveCheckboxIds = [
+        'fld-text-area',    // Text area
+        'fld-rich-html',    // Rich (HTML) area
+        'fld-check-box'     // Check box
+    ];
+
+    const checkboxElements = exclusiveCheckboxIds.map(id => document.getElementById(id));
+
+    // Tambah event listener pada setiap checkbox
+    checkboxElements.forEach(checkbox => {
+        if (!checkbox) return; // Langkau jika elemen tidak wujud
+
+        checkbox.addEventListener('change', (event) => {
+            const currentCheckbox = event.target;
+
+            // Jika checkbox ini baru sahaja ditanda (checked)
+            if (currentCheckbox.checked) {
+                // Nyahtanda (uncheck) semua checkbox lain dalam kumpulan ini
+                checkboxElements.forEach(otherCheckbox => {
+                    if (otherCheckbox !== currentCheckbox) {
+                        otherCheckbox.checked = false;
+                    }
+                });
+            }
+        });
+    });
+}
