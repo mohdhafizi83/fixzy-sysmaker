@@ -2,6 +2,49 @@
 
 import { allTableNames, jsonData } from './js.main.js';
 
+export function showCustomDialog({ title, message, onOk, onCancel, showCancelButton = false }) {
+    const modal = document.getElementById('custom-alert-modal');
+    const titleEl = document.getElementById('custom-alert-title');
+    const messageEl = document.getElementById('custom-alert-message');
+    const okBtn = document.getElementById('custom-alert-ok-btn');
+    const cancelBtn = document.getElementById('custom-alert-cancel-btn');
+    const closeBtn = document.getElementById('custom-alert-close');
+
+    titleEl.textContent = title || 'Notification';
+    messageEl.textContent = message;
+
+    // Tunjukkan atau sembunyikan butang Cancel
+    cancelBtn.style.display = showCancelButton ? 'inline-block' : 'none';
+
+    // Fungsi untuk menutup modal dan membuang listener
+    const closeModal = () => {
+        modal.classList.add('hidden');
+        // Buang listener lama untuk elak panggilan berganda
+        okBtn.replaceWith(okBtn.cloneNode(true));
+        cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+        closeBtn.replaceWith(closeBtn.cloneNode(true));
+    };
+
+    // Tambah listener baharu
+    document.getElementById('custom-alert-ok-btn').addEventListener('click', () => {
+        if (typeof onOk === 'function') {
+            onOk();
+        }
+        closeModal();
+    });
+
+    document.getElementById('custom-alert-cancel-btn').addEventListener('click', () => {
+        if (typeof onCancel === 'function') {
+            onCancel();
+        }
+        closeModal();
+    });
+
+    document.getElementById('custom-alert-close').addEventListener('click', closeModal);
+
+    modal.classList.remove('hidden');
+}
+
 // (Pastikan helper ini wujud di skop yang boleh diakses)
 const setElementValue = (id, value) => {
     const element = document.getElementById(id);
@@ -95,14 +138,21 @@ export function initializeMenuManagementHandlers() {
             }
         }
 
-        // Logik untuk padam kumpulan (ikon tong sampah)
-        // Kita periksa sama ada ikon <i> atau butang <button> yang diklik
-        else if (target.classList.contains('fa-trash-alt') || target.closest('.group-actions button')) {
-            const groupToRemove = target.closest('.menu-group-item');
-            if (groupToRemove && confirm('Are you sure you want to delete this menu group?')) {
+// Logik untuk padam kumpulan (ikon tong sampah)
+else if (target.classList.contains('fa-trash-alt') || target.closest('.group-actions button')) {
+    const groupToRemove = target.closest('.menu-group-item');
+    if (groupToRemove) {
+        showCustomDialog({
+            title: "Confirm Deletion",
+            message: "Are you sure you want to delete this menu group?",
+            showCancelButton: true,
+            onOk: () => {
+                // Kod ini hanya akan berjalan jika pengguna menekan "OK"
                 groupToRemove.remove();
             }
-        }
+        });
+    }
+}
     });
 
     // 3. Logik untuk memilih item dari modal
@@ -508,15 +558,12 @@ export function initializeSecurityTabHandlers() {
 
     if (hideLoginCheckbox) {
         hideLoginCheckbox.addEventListener('change', () => {
-            // Hanya paparkan amaran jika checkbox ditanda (checked)
             if (hideLoginCheckbox.checked) {
-                const message = "Important Note!\n\n" +
-                    "This will hide the 'Sign in' links and any membership features from visitors. " +
+                const message = "This will hide the 'Sign in' links and any membership features from visitors. " +
                     "However, you might still need to log in to the admin area to set the desired " +
                     "permissions for anonymous users. This is necessary sometimes when visitors " +
                     "are unable to access some tables.";
-                
-                alert(message);
+                showCustomDialog({ title: "Important Note!", message: message });
             }
         });
     }
@@ -534,7 +581,10 @@ export function initializeSecurityTabHandlers() {
             // Panggil fungsi yang didedahkan oleh preload.js
             window.electronAPI.openUrl(url);
         } else {
-            alert("Application URL is empty.");
+                showCustomDialog({
+                    title: "Input Error",
+                    message: "Application URL is empty."
+                });
         }
     });
 }
@@ -1032,6 +1082,14 @@ function populateParentTableDropdown(currentTableName) {
 }
 
 export function populateFieldSettings(tableName, fieldName) {
+	
+    const allFieldPageControls = document.querySelectorAll(
+        '#field-settings-page input, #field-settings-page select, #field-settings-page textarea, #field-settings-page button'
+    );
+    allFieldPageControls.forEach(control => {
+        control.disabled = false;
+    });
+	
     const fieldData = jsonData.database.table[tableName]?.fields[fieldName];
     if (!fieldData) {
         console.error(`Tiada data ditemui untuk medan: ${tableName}.${fieldName}`);
@@ -1188,6 +1246,13 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-calculated-query', fieldData.calculated_query);
 	
 	applyDataTypeRules();
+	
+    setTimeout(() => {
+        const queryTextarea = document.getElementById('fld-calculated-query');
+        if (queryTextarea) {
+            queryTextarea.disabled = false;
+        }
+    }, 50); // Delay kecil untuk memastikan DOM dikemas kini sepenuhnya
 }
 
 /**
@@ -1510,25 +1575,17 @@ function populateRecordOwnerDropdown(tableName) {
 // js/uiHandlers.js
 
 export function initializeFormDisplayRules() {
-    // Kenal pasti ID checkbox yang eksklusif
-    const exclusiveCheckboxIds = [
-        'fld-text-area',    // Text area
-        'fld-rich-html',    // Rich (HTML) area
-        'fld-check-box'     // Check box
-    ];
+    const dataTypeSelect = document.getElementById('fld-data-type');
 
+    // --- Bahagian 1: Logik Checkbox Eksklusif ---
+    const exclusiveCheckboxIds = ['fld-text-area', 'fld-rich-html', 'fld-check-box'];
     const checkboxElements = exclusiveCheckboxIds.map(id => document.getElementById(id));
 
-    // Tambah event listener pada setiap checkbox
     checkboxElements.forEach(checkbox => {
-        if (!checkbox) return; // Langkau jika elemen tidak wujud
-
+        if (!checkbox) return;
         checkbox.addEventListener('change', (event) => {
             const currentCheckbox = event.target;
-
-            // Jika checkbox ini baru sahaja ditanda (checked)
             if (currentCheckbox.checked) {
-                // Nyahtanda (uncheck) semua checkbox lain dalam kumpulan ini
                 checkboxElements.forEach(otherCheckbox => {
                     if (otherCheckbox !== currentCheckbox) {
                         otherCheckbox.checked = false;
@@ -1537,26 +1594,37 @@ export function initializeFormDisplayRules() {
             }
         });
     });
-	
-    const richHtmlCheckbox = document.getElementById('fld-rich-html'); 
-    const dataTypeSelect = document.getElementById('fld-data-type'); 
 
-    if (richHtmlCheckbox && dataTypeSelect) {
-        richHtmlCheckbox.addEventListener('change', () => {
-            // Hanya paparkan amaran jika checkbox ditanda
-            if (richHtmlCheckbox.checked) {
+    // --- Bahagian 2: Logik Amaran untuk Data Type ---
+    const richHtmlCheckbox = document.getElementById('fld-rich-html');
+    const textAreaCheckbox = document.getElementById('fld-text-area');
+
+    // Fungsi bantuan untuk menyemak keserasian dengan jenis data TEXT
+    const checkTextCompatibility = (checkbox, warningMessage) => {
+        if (!checkbox || !dataTypeSelect) return;
+
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
                 const currentDataType = dataTypeSelect.value.toUpperCase();
                 const suitableTypes = ['TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT'];
 
-                // Jika jenis data semasa BUKAN salah satu jenis teks
                 if (!suitableTypes.includes(currentDataType)) {
-                    const message = "Warning!\n\n" +
-                        "To enable this field to behave as a rich (HTML) box, you should change its data type to 'TEXT', 'MEDIUMTEXT' or 'LONGTEXT'.";
-                    alert(message);
+                    showCustomDialog({ title: "Warning!", message: warningMessage });
                 }
             }
         });
-    }
+    };
+
+    // Laksanakan semakan untuk kedua-dua checkbox
+    checkTextCompatibility(
+        richHtmlCheckbox,
+        "To enable this field to behave as a rich (HTML) box, you should change its data type to 'TEXT', 'MEDIUMTEXT' or 'LONGTEXT'."
+    );
+
+    checkTextCompatibility(
+        textAreaCheckbox,
+        "This field can only be set as a Text area if its data type is one of the 'TEXT' family data types."
+    );
 }
 
 export function initializeCheckboxExclusivity() {
@@ -1592,26 +1660,32 @@ export function initializeCheckboxExclusivity() {
 
             message += "Are you sure you want to switch to 'Required'?";
 
-            const userConfirmed = confirm(message);
-
-            if (userConfirmed) {
-                autoIncrementCheckbox.checked = false;
-            } else {
-                requiredCheckbox.checked = false;
-            }
+            showCustomDialog({
+                title: "Confirmation",
+                message: message,
+                showCancelButton: true,
+                onOk: () => { // Jika pengguna tekan OK
+                    autoIncrementCheckbox.checked = false;
+                },
+                onCancel: () => { // Jika pengguna tekan Cancel
+                    requiredCheckbox.checked = false;
+                }
+            });
         }
     });
 	
     // Tindakan 3: Apabila pengguna cuba mengubah 'Read Only'
     readOnlyCheckbox.addEventListener('change', () => {
-        // Jika pengguna cuba nyahtanda 'Read Only'...
-        if (!readOnlyCheckbox.checked) {
-            // ...ketika 'Auto Increment' sedang ditanda...
-            if (autoIncrementCheckbox.checked) {
-                // Paparkan amaran dan batalkan perubahan
-                alert("A field with 'Auto Increment' must remain 'Read Only'.");
-                readOnlyCheckbox.checked = true;
-            }
+        // Jika pengguna cuba nyahtanda 'Read Only' ketika 'Auto Increment' sedang ditanda
+        if (!readOnlyCheckbox.checked && autoIncrementCheckbox.checked) {
+            // 1. Batalkan perubahan serta-merta
+            readOnlyCheckbox.checked = true;
+            
+            // 2. Kemudian, maklumkan kepada pengguna menggunakan modal kustom
+            showCustomDialog({
+                title: "Validation Rule",
+                message: "A field with 'Auto Increment' must remain 'Read Only'."
+            });
         }
     });
 }
@@ -1626,15 +1700,16 @@ export function initializePrimaryKeyHandlers() {
 
     // Listener untuk Primary Key
     primaryKeyCheckbox.addEventListener('change', () => {
-        // Hanya paparkan amaran jika pengguna cuba NYAH-TANDA
         if (!primaryKeyCheckbox.checked) {
-            const message = "Warning: Changing a Primary Key can affect table relationships and data integrity.\n\nAre you sure you want to proceed?";
-            const userConfirmed = confirm(message);
-
-            // Jika pengguna batal, tandakan semula checkbox tersebut
-            if (!userConfirmed) {
-                primaryKeyCheckbox.checked = true;
-            }
+            const message = "Changing a Primary Key can affect table relationships and data integrity.\n\nAre you sure you want to proceed?";
+            showCustomDialog({
+                title: "Warning!",
+                message: message,
+                showCancelButton: true,
+                onCancel: () => {
+                    primaryKeyCheckbox.checked = true;
+                }
+            });
         }
     });
 
@@ -1643,12 +1718,14 @@ export function initializePrimaryKeyHandlers() {
         // Hanya paparkan amaran jika pengguna cuba NYAH-TANDA
         if (!autoIncrementCheckbox.checked) {
             const message = "Warning: Disabling Auto Increment on a key field requires you to manage unique values manually, which can lead to data errors.\n\nAre you sure you want to disable it?";
-            const userConfirmed = confirm(message);
-
-            // Jika pengguna batal, tandakan semula checkbox tersebut
-            if (!userConfirmed) {
-                autoIncrementCheckbox.checked = true;
-            }
+            showCustomDialog({
+                title: "Warning!",
+                message: message,
+                showCancelButton: true,
+                onCancel: () => {
+                    autoIncrementCheckbox.checked = true;
+                }
+            });
         }
     });
 }
@@ -1684,17 +1761,89 @@ export function initializeOptionsListRules() {
 
         // Semak jika jenis data semasa adalah salah satu dari yang dibenarkan
         const isAllowed = allowedTypes.some(type => currentDataType.includes(type));
-
         if (!isAllowed) {
-            // Jika tidak dibenarkan, halang perubahan dan paparkan amaran
             event.preventDefault();
-
             const message = "Multiple-selection list box can only work with Text or Blob data types.\n\n" +
                           "Please change the data type of the field first.";
-            alert(message);
-            
-            // Pastikan pilihan kembali kepada 'Drop-down list' yang selamat
+            showCustomDialog({ title: "Warning!", message: message });
             dropdownRadio.checked = true;
         }
     });
+}
+
+export function initializeCalculatedFieldRules() {
+    const enableCheckbox = document.getElementById('fld-calculated-enable');
+    const queryTextarea = document.getElementById('fld-calculated-query');
+
+    if (!enableCheckbox || !queryTextarea) return;
+
+    const validateConditions = () => {
+        const getEl = (id) => document.getElementById(id);
+        const getValue = (id) => getEl(id)?.value;
+        const isChecked = (id) => getEl(id)?.checked;
+        const errors = [];
+
+        if (!isChecked('fld-read-only')) errors.push("Field must be set as 'Read Only'.");
+        if (isChecked('fld-primary-key')) errors.push("Field cannot be a 'Primary Key'.");
+        if (isChecked('fld-required')) errors.push("Field cannot be 'Required'.");
+        if (isChecked('fld-text-area') || isChecked('fld-rich-html')) errors.push("Field cannot be a 'Text area' or 'Rich (HTML) area'.");
+        if (isChecked('fld-auto-increment')) errors.push("Field cannot be 'Auto Increment'.");
+        if (isChecked('fld-unique')) errors.push("Field cannot be 'Unique'.");
+        const mediaLinkBehavior = getValue('fld-media-link-behavior');
+        if (mediaLinkBehavior === 'web_link' || mediaLinkBehavior === 'email_link') errors.push("Field cannot be a 'Web/email link'.");
+        const mediaType = document.querySelector('input[name="fld-media-type"]:checked')?.value;
+        if (['image', 'upload'].includes(mediaType)) errors.push("Field cannot be an 'Image/file upload' type.");
+        if (['gmap', 'youtube'].includes(mediaType)) errors.push("Field cannot be a 'Map/video' type.");
+        if (getValue('fld-lookup-parent-table')) errors.push("Field cannot be a 'Lookup field'.");
+        if (getValue('fld-options-list-values')) errors.push("Field cannot be an 'Options list' field.");
+        if (getValue('fld-format-as') !== 'No special formatting (default)') errors.push("Field cannot have a 'Data format' specified.");
+        if (getValue('fld-default-value')) errors.push("Field cannot have a 'Default value'.");
+
+        return errors;
+    };
+
+    enableCheckbox.addEventListener('click', (event) => {
+        if (enableCheckbox.checked) {
+            const validationErrors = validateConditions();
+            if (validationErrors.length > 0) {
+                event.preventDefault();
+                let alertMessage = "This field cannot be set as a calculated field for the following reasons:\n\n";
+                validationErrors.forEach(error => {
+                    alertMessage += `- ${error}\n`;
+                });
+                showCustomDialog({ title: "Validation Error", message: alertMessage });
+                enableCheckbox.checked = false;
+            }
+        }
+    });
+
+    const checkAndDisableCalculatedField = () => {
+        if (!enableCheckbox.checked) return;
+        const validationErrors = validateConditions();
+        if (validationErrors.length > 0) {
+            showCustomDialog({
+                title: "Validation Rule",
+                message: "Calculated field has been disabled for the following reason:\n\n" +
+                         `- ${validationErrors[0]}`
+            });
+            enableCheckbox.checked = false;
+        }
+    };
+
+    const conflictingElementIds = [
+        'fld-read-only', 'fld-primary-key', 'fld-required', 'fld-text-area',
+        'fld-rich-html', 'fld-auto-increment', 'fld-unique',
+        'fld-media-link-behavior', 'fld-lookup-parent-table',
+        'fld-options-list-values', 'fld-format-as', 'fld-default-value',
+        'fld-media-image', 'fld-media-upload', 'fld-media-gmap', 'fld-media-youtube'
+    ];
+
+    conflictingElementIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('change', checkAndDisableCalculatedField);
+        }
+    });
+    // Pastikan textarea sentiasa aktif (enabled) dari mula
+    //queryTextarea.disabled = false;
 }

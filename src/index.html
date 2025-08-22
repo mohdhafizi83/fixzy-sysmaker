@@ -1411,7 +1411,7 @@
                         <div class="form-group">
                             <label>Format this field as</label>
                             <select id="fld-format-as" name="fld-format-as">
-                                <option>No special formatting (default)</option>
+                                <option value="null" selected>No special formatting (default)</option>
                                 <option>US Currency (example: $21,345.67)</option>
                                 <option>Euro Currency (example: €21,345.67)</option>
                                 <option>UK Currency (example: £21,345.67)</option>
@@ -1748,6 +1748,22 @@
                 <button class="btn btn-secondary" id="advanced-lookup-cancel-btn">Cancel</button>
                 <button class="btn btn-primary" id="advanced-lookup-ok-btn">OK</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<div id="custom-alert-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="custom-alert-title">Notification</h3>
+            <button id="custom-alert-close" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="custom-alert-message" style="white-space: pre-wrap;"></p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="custom-alert-cancel-btn">Cancel</button>
+            <button class="btn btn-primary" id="custom-alert-ok-btn">OK</button>
         </div>
     </div>
 </div>

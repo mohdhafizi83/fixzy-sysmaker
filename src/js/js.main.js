@@ -1,6 +1,7 @@
 // js/main.js (Proses Renderer)
 import { generateSidebarMenu, initializeSidebarInteractivity } from './sidebar.js';
 import { 
+   showCustomDialog,
     updateActionButtonsState, 
     initializeTabSystems, 
     initializeModalHandlers, 
@@ -26,8 +27,21 @@ import {
     initializeCheckboxExclusivity,
     initializePrimaryKeyHandlers,
     initializeRealtimeValidation,
-    initializeOptionsListRules  	
+    initializeOptionsListRules,
+    initializeCalculatedFieldRules  	
 } from './uiHandlers.js';
+
+function showConfirmationDialog(title, message) {
+    return new Promise((resolve) => {
+        showCustomDialog({
+            title: title,
+            message: message,
+            showCancelButton: true,
+            onOk: () => resolve(true),      // Jika OK, kembalikan 'true'
+            onCancel: () => resolve(false)  // Jika Cancel, kembalikan 'false'
+        });
+    });
+}
 
 // Pembolehubah global untuk menyimpan data projek semasa dan pengurusan UI
 export let jsonData = null;
@@ -82,32 +96,36 @@ async function loadProjectData(project) {
 }
 
 // Fungsi untuk menguruskan import SQL
+// js/js.main.js
+
 async function handleSqlImport(importFunction) {
     if (!activeProject) {
-        alert("Sila cipta atau pilih projek terlebih dahulu.");
+        showCustomDialog({ title: "Error", message: "Please create or select a project first." });
         return;
     }
 
-    // Semak jika sudah ada jadual
     const tablesExistResult = await window.electronAPI.checkTablesExist(activeProject.project_id);
     if (tablesExistResult && tablesExistResult.count > 0) {
-        const userConfirmed = confirm("Projek ini sudah mempunyai jadual. Mengimport skema baharu akan MEMADAM SEMUA jadual dan medan sedia ada. Teruskan?");
+        
+        
+        const message = "This project already has tables. Importing a new schema will DELETE ALL existing tables and fields. Continue?";
+        const userConfirmed = await showConfirmationDialog("Warning", message);
+        
         if (!userConfirmed) {
             return;
         }
-        // Padam skema lama
+        
+
         await window.electronAPI.deleteProjectSchema(activeProject.project_id);
     }
     
-    // Laksanakan fungsi import
     const result = await importFunction();
 
     if (result.success) {
-        alert(result.message);
-        // Muat semula data projek untuk memaparkan jadual baharu
+        showCustomDialog({ title: "Success", message: result.message });
         await loadProjectData(activeProject);
     } else {
-        alert(`Import gagal: ${result.message}`);
+        showCustomDialog({ title: "Import Failed", message: `Error: ${result.message}` });
     }
 }
 
@@ -139,6 +157,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	initializePrimaryKeyHandlers();
 	initializeRealtimeValidation();
 	initializeOptionsListRules();
+	initializeCalculatedFieldRules();
 	
     // Setup Event Listeners
     const newProjectBtn = document.getElementById('new-project-btn');
@@ -165,7 +184,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await loadProjectData(newProject);
             }
         } else {
-            alert("Sila masukkan nama projek.");
+            showCustomDialog({
+                title: "Input Required",
+                message: "Please enter a project name."
+            });
         }
     });
 
@@ -185,7 +207,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             pasteSqlModal.classList.add('hidden');
             handleSqlImport(() => window.electronAPI.importSqlText({ sql: sqlText, projectId: activeProject.project_id }));
         } else {
-            alert("Sila tampal arahan SQL.");
+            showCustomDialog({
+                title: "Input Required",
+                message: "Please paste the SQL commands."
+            });
         }
     });
 
