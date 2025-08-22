@@ -245,6 +245,7 @@ function importSchema(sql, projectId) {
                             zero_fill: 0,
                             primary_key: 0,
                             unique: 0,
+							read_only: 0,
                             default_value: null,
                         };
                         if (col.auto_increment) fieldData.auto_increment = 1;
@@ -261,6 +262,7 @@ function importSchema(sql, projectId) {
                                 switch (definition.constraint_type.toLowerCase()) {
                                     case "primary key":
                                         fieldData.primary_key = 1;
+                                        fieldData.read_only = 1; // Set read_only jika primary key
                                         break;
                                     case "unique key":
                                         fieldData.unique = 1;
@@ -280,7 +282,7 @@ function importSchema(sql, projectId) {
                             }
                         }
                         db.prepare(
-                            `INSERT INTO fields (table_id, field_name, data_type, length, required, auto_increment, unsigned, zero_fill, primary_key, "unique", default_value, caption) VALUES (@table_id, @field_name, @data_type, @length, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @default_value, @field_name)`
+                            `INSERT INTO fields (table_id, field_name, data_type, length, required, auto_increment, unsigned, zero_fill, primary_key, "unique", read_only, default_value, caption) VALUES (@table_id, @field_name, @data_type, @length, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @read_only, @default_value, @field_name)`
                         ).run(fieldData);
                     } else if (col.resource === "constraint") {
                         tableLevelConstraints.push(col);
@@ -291,25 +293,24 @@ function importSchema(sql, projectId) {
                     if (constraint.constraint_type) {
                         const constraintType = constraint.constraint_type.toLowerCase();
 
-                        if (
-                            constraintType === "primary key" ||
-                            constraintType === "unique key"
-                        ) {
-                            if (
-                                constraint.definition &&
-                                Array.isArray(constraint.definition)
-                            ) {
-                                const fieldToUpdate =
-                                    constraintType === "primary key" ? "primary_key" : '"unique"';
+                        if (constraintType === "primary key") {
+                            if (constraint.definition && Array.isArray(constraint.definition)) {
                                 for (const col of constraint.definition) {
                                     db.prepare(
-                                        `UPDATE fields SET ${fieldToUpdate} = 1 WHERE table_id = ? AND field_name = ?`
+                                        `UPDATE fields SET primary_key = 1, read_only = 1 WHERE table_id = ? AND field_name = ?`
+                                    ).run(tableId, col.column);
+                                }
+                            }
+                        } else if (constraintType === "unique key") {
+                             if (constraint.definition && Array.isArray(constraint.definition)) {
+                                for (const col of constraint.definition) {
+                                    db.prepare(
+                                        `UPDATE fields SET "unique" = 1 WHERE table_id = ? AND field_name = ?`
                                     ).run(tableId, col.column);
                                 }
                             }
                         }
                         
-                        // ▼▼▼ KOD YANG TELAH DIPERBAIKI SEPENUHNYA ▼▼▼
                         else if (
                             constraintType === "foreign key" &&
                             constraint.reference_definition &&
