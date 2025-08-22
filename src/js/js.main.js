@@ -24,8 +24,7 @@ import {
     initializeHomepageMenuHandlers,
     initializeDataTypeRules,
     initializeFormDisplayRules,
-    initializeCheckboxExclusivity,
-    initializePrimaryKeyHandlers,
+	initializeDatabasePropertiesHandlers,
     initializeRealtimeValidation,
     initializeOptionsListRules,
     initializeCalculatedFieldRules  	
@@ -153,8 +152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	initializeHomepageMenuHandlers();
     initializeDataTypeRules();
 	initializeFormDisplayRules();
-	initializeCheckboxExclusivity();
-	initializePrimaryKeyHandlers();
+	initializeDatabasePropertiesHandlers();
 	initializeRealtimeValidation();
 	initializeOptionsListRules();
 	initializeCalculatedFieldRules();

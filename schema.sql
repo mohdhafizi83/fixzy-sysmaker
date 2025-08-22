@@ -148,7 +148,7 @@ CREATE TABLE fields (
     lookup_link_behavior         TEXT DEFAULT 'modal',
     options_list_values          TEXT,
     options_display              TEXT DEFAULT 'dropdown',
-    format_as                    TEXT,
+    format_as                    TEXT DEFAULT 'default',
     calculated_enable            INTEGER DEFAULT 0,
     calculated_query             TEXT,
 	lookup_custom_query          TEXT, -- TAMBAH BARIS INI

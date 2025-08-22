@@ -1534,9 +1534,38 @@ function applyDataTypeRules() {
 
 export function initializeDataTypeRules() {
     const dataTypeSelect = document.getElementById('fld-data-type');
-    if (dataTypeSelect) {
-        dataTypeSelect.addEventListener('change', applyDataTypeRules);
-    }
+    if (!dataTypeSelect) return;
+
+    let previousDataType = ''; // Pembolehubah untuk simpan nilai sebelumnya
+
+    dataTypeSelect.addEventListener('focus', () => {
+        // Simpan nilai semasa setiap kali dropdown difokuskan
+        previousDataType = dataTypeSelect.value;
+    });
+
+    dataTypeSelect.addEventListener('change', () => {
+        const autoIncrementCheckbox = document.getElementById('fld-auto-increment');
+        
+        // Semak jika Auto Increment aktif
+        if (autoIncrementCheckbox && autoIncrementCheckbox.checked) {
+            const newDataType = dataTypeSelect.value.toUpperCase();
+            const integerTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'];
+
+            // Jika jenis data baharu BUKAN jenis integer
+            if (!integerTypes.includes(newDataType)) {
+                showCustomDialog({
+                    title: "Validation Rule",
+                    message: "An 'Auto Increment' field must have an Integer data type (e.g., INT, BIGINT)."
+                });
+                // Kembalikan kepada nilai sebelumnya
+                dataTypeSelect.value = previousDataType;
+                return; // Hentikan proses
+            }
+        }
+        
+        // Jika lulus pengesahan, jalankan peraturan sedia ada
+        applyDataTypeRules();
+    });
 }
 
 // js/uiHandlers.js
@@ -1627,109 +1656,6 @@ export function initializeFormDisplayRules() {
     );
 }
 
-export function initializeCheckboxExclusivity() {
-    const autoIncrementCheckbox = document.getElementById('fld-auto-increment');
-    const requiredCheckbox = document.getElementById('fld-required');
-    const primaryKeyCheckbox = document.getElementById('fld-primary-key');
-    const readOnlyCheckbox = document.getElementById('fld-read-only'); // Dapatkan checkbox Read Only
-
-    if (!autoIncrementCheckbox || !requiredCheckbox || !primaryKeyCheckbox || !readOnlyCheckbox) return;
-
-    // Tindakan 1: Apabila pengguna memilih 'Auto Increment'
-    autoIncrementCheckbox.addEventListener('change', () => {
-        if (autoIncrementCheckbox.checked) {
-            // Jika 'Auto Increment' ditanda, nyahtanda 'Required' dan tanda 'Read Only'
-            requiredCheckbox.checked = false;
-            readOnlyCheckbox.checked = true; // <-- TAMBAHAN BAHARU
-        }
-    });
-
-    // Tindakan 2: Apabila pengguna memilih 'Required'
-    requiredCheckbox.addEventListener('change', () => {
-        // Hanya paparkan amaran jika 'Required' ditanda DAN 'Auto Increment' sedang aktif.
-        if (requiredCheckbox.checked && autoIncrementCheckbox.checked) {
-            
-            let message = "Changing this option will disable 'Auto Increment'.\n\n";
-            message += "- Auto Increment: The value is provided automatically by the database.\n";
-            message += "- Required: The value must be provided manually by the user.\n\n";
-
-            const isPrimaryKey = primaryKeyCheckbox.checked;
-            if (isPrimaryKey) {
-                message += "Recommendation: A Primary Key field should remain 'Auto Increment'.\n\n";
-            }
-
-            message += "Are you sure you want to switch to 'Required'?";
-
-            showCustomDialog({
-                title: "Confirmation",
-                message: message,
-                showCancelButton: true,
-                onOk: () => { // Jika pengguna tekan OK
-                    autoIncrementCheckbox.checked = false;
-                },
-                onCancel: () => { // Jika pengguna tekan Cancel
-                    requiredCheckbox.checked = false;
-                }
-            });
-        }
-    });
-	
-    // Tindakan 3: Apabila pengguna cuba mengubah 'Read Only'
-    readOnlyCheckbox.addEventListener('change', () => {
-        // Jika pengguna cuba nyahtanda 'Read Only' ketika 'Auto Increment' sedang ditanda
-        if (!readOnlyCheckbox.checked && autoIncrementCheckbox.checked) {
-            // 1. Batalkan perubahan serta-merta
-            readOnlyCheckbox.checked = true;
-            
-            // 2. Kemudian, maklumkan kepada pengguna menggunakan modal kustom
-            showCustomDialog({
-                title: "Validation Rule",
-                message: "A field with 'Auto Increment' must remain 'Read Only'."
-            });
-        }
-    });
-}
-
-// js/uiHandlers.js
-
-export function initializePrimaryKeyHandlers() {
-    const primaryKeyCheckbox = document.getElementById('fld-primary-key');
-    const autoIncrementCheckbox = document.getElementById('fld-auto-increment');
-
-    if (!primaryKeyCheckbox || !autoIncrementCheckbox) return;
-
-    // Listener untuk Primary Key
-    primaryKeyCheckbox.addEventListener('change', () => {
-        if (!primaryKeyCheckbox.checked) {
-            const message = "Changing a Primary Key can affect table relationships and data integrity.\n\nAre you sure you want to proceed?";
-            showCustomDialog({
-                title: "Warning!",
-                message: message,
-                showCancelButton: true,
-                onCancel: () => {
-                    primaryKeyCheckbox.checked = true;
-                }
-            });
-        }
-    });
-
-    // Listener untuk Auto Increment
-    autoIncrementCheckbox.addEventListener('change', () => {
-        // Hanya paparkan amaran jika pengguna cuba NYAH-TANDA
-        if (!autoIncrementCheckbox.checked) {
-            const message = "Warning: Disabling Auto Increment on a key field requires you to manage unique values manually, which can lead to data errors.\n\nAre you sure you want to disable it?";
-            showCustomDialog({
-                title: "Warning!",
-                message: message,
-                showCancelButton: true,
-                onCancel: () => {
-                    autoIncrementCheckbox.checked = true;
-                }
-            });
-        }
-    });
-}
-
 export function initializeRealtimeValidation() {
     const numericInputs = [
         document.getElementById('fld-length'),
@@ -1796,7 +1722,7 @@ export function initializeCalculatedFieldRules() {
         if (['gmap', 'youtube'].includes(mediaType)) errors.push("Field cannot be a 'Map/video' type.");
         if (getValue('fld-lookup-parent-table')) errors.push("Field cannot be a 'Lookup field'.");
         if (getValue('fld-options-list-values')) errors.push("Field cannot be an 'Options list' field.");
-        if (getValue('fld-format-as') !== 'No special formatting (default)') errors.push("Field cannot have a 'Data format' specified.");
+        if (getValue('fld-format-as') !== 'default') errors.push("Field cannot have a 'Data format' specified.");
         if (getValue('fld-default-value')) errors.push("Field cannot have a 'Default value'.");
 
         return errors;
@@ -1846,4 +1772,84 @@ export function initializeCalculatedFieldRules() {
     });
     // Pastikan textarea sentiasa aktif (enabled) dari mula
     //queryTextarea.disabled = false;
+}
+
+export function initializeDatabasePropertiesHandlers() {
+    const primaryKeyCheckbox = document.getElementById('fld-primary-key');
+    const autoIncrementCheckbox = document.getElementById('fld-auto-increment');
+    const requiredCheckbox = document.getElementById('fld-required');
+    const readOnlyCheckbox = document.getElementById('fld-read-only');
+
+    if (!primaryKeyCheckbox || !autoIncrementCheckbox || !requiredCheckbox || !readOnlyCheckbox) return;
+
+    // --- Listener untuk Auto Increment ---
+    autoIncrementCheckbox.addEventListener('change', () => {
+        if (autoIncrementCheckbox.checked) {
+            // Logik apabila MENANDA 'Auto Increment'
+            if (!primaryKeyCheckbox.checked) {
+                showCustomDialog({
+                    title: "Validation Rule",
+                    message: "'Auto Increment' can only be enabled for a 'Primary Key' field."
+                });
+                autoIncrementCheckbox.checked = false;
+                return;
+            }
+            requiredCheckbox.checked = false;
+            readOnlyCheckbox.checked = true;
+        } else {
+            // Logik apabila MENYAH-TANDA 'Auto Increment'
+            const message = "Warning: Disabling Auto Increment on a key field requires you to manage unique values manually, which can lead to data errors.\n\nAre you sure you want to disable it?";
+            showCustomDialog({
+                title: "Warning!",
+                message: message,
+                showCancelButton: true,
+                onCancel: () => {
+                    autoIncrementCheckbox.checked = true; // Tandakan semula jika batal
+                }
+            });
+        }
+    });
+
+    // --- Listener untuk Primary Key (Hanya untuk menyah-tanda) ---
+    primaryKeyCheckbox.addEventListener('change', () => {
+        if (!primaryKeyCheckbox.checked) {
+            const message = "Warning: Changing a Primary Key can affect table relationships and data integrity.\n\nAre you sure you want to proceed?";
+            showCustomDialog({
+                title: "Warning!",
+                message: message,
+                showCancelButton: true,
+                onCancel: () => {
+                    primaryKeyCheckbox.checked = true;
+                }
+            });
+        }
+    });
+    
+    // --- Listener untuk Required (Tidak berubah) ---
+    requiredCheckbox.addEventListener('change', () => {
+        if (requiredCheckbox.checked && autoIncrementCheckbox.checked) {
+            let message = "Changing this option will disable 'Auto Increment'.\n\n- Auto Increment: The value is provided automatically by the database.\n- Required: The value must be provided manually by the user.\n\n";
+            const isPrimaryKey = primaryKeyCheckbox.checked;
+            if (isPrimaryKey) {
+                message += "Recommendation: A Primary Key field should remain 'Auto Increment'.\n\n";
+            }
+            message += "Are you sure you want to switch to 'Required'?";
+            showCustomDialog({
+                title: "Confirmation", message: message, showCancelButton: true,
+                onOk: () => { autoIncrementCheckbox.checked = false; },
+                onCancel: () => { requiredCheckbox.checked = false; }
+            });
+        }
+    });
+
+    // --- Listener untuk Read Only (Tidak berubah) ---
+    readOnlyCheckbox.addEventListener('change', () => {
+        if (!readOnlyCheckbox.checked && autoIncrementCheckbox.checked) {
+            readOnlyCheckbox.checked = true;
+            showCustomDialog({
+                title: "Validation Rule",
+                message: "A field with 'Auto Increment' must remain 'Read Only'."
+            });
+        }
+    });
 }
