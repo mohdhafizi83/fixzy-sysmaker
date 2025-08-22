@@ -943,6 +943,9 @@ export function populateMainDashboard(projectData) {
 }
 
 export function populateTableSettings(tableName) {
+	
+	populateRecordOwnerDropdown(tableName);
+		
     const tableData = jsonData.database.table[tableName];
     if (!tableData) {
         console.error(`Tiada data ditemui untuk jadual: ${tableName}`);
@@ -1413,4 +1416,37 @@ export function initializeDataTypeRules() {
     if (dataTypeSelect) {
         dataTypeSelect.addEventListener('change', applyDataTypeRules);
     }
+}
+
+// js/uiHandlers.js
+
+function populateRecordOwnerDropdown(tableName) {
+    const recordOwnerDropdown = document.getElementById('tbl-record-owner');
+    if (!recordOwnerDropdown || !jsonData) return;
+
+    // Kosongkan opsyen sedia ada
+    recordOwnerDropdown.innerHTML = '';
+
+    // 1. Tambah opsyen lalai
+    const defaultOption = document.createElement('option');
+    defaultOption.value = ''; // Nilai kosong untuk 'Current user'
+    defaultOption.textContent = 'Current user (default)';
+    recordOwnerDropdown.appendChild(defaultOption);
+
+    // ▼▼▼ LOGIK YANG DIPERBAIKI ▼▼▼
+    // 2. Cari dan tambah semua medan kunci asing (foreign key) berdasarkan data hubungan
+    const relationships = jsonData.database.relationships || [];
+    
+    relationships.forEach(rel => {
+        // Cari hubungan di mana jadual semasa adalah JADUAL ANAK (child)
+        if (rel.child_table_name === tableName) {
+            const fkFieldName = rel.fk_child_field;
+            
+            const lookupOption = document.createElement('option');
+            lookupOption.value = fkFieldName;
+            lookupOption.textContent = fkFieldName;
+            recordOwnerDropdown.appendChild(lookupOption);
+        }
+    });
+    // ▲▲▲ TAMAT LOGIK YANG DIPERBAIKI ▲▲▲
 }
