@@ -10,6 +10,8 @@ const setElementValue = (id, value) => {
             element.checked = value === 1 || value === true;
         } else {
             element.value = value;
+            // Secara paksa aktifkan elemen apabila datanya diisi
+            element.disabled = false;
         }
     }
 };
@@ -889,27 +891,6 @@ export function populateMainDashboard(projectData) {
         console.warn("Tiada data projek untuk dipaparkan di papan pemuka.");
         return;
     }
-
-    // Helper untuk menetapkan nilai elemen borang dengan selamat
-    const setElementValue = (id, value) => {
-        const element = document.getElementById(id);
-        if (element) {
-            if (element.type === 'checkbox') {
-                element.checked = value === 1;
-            } else {
-                element.value = value;
-            }
-        }
-    };
-    
-    // Helper untuk radio button
-    const setRadioValue = (name, value) => {
-        const selector = `input[name="${name}"][value="${value}"]`;
-        const element = document.querySelector(selector);
-        if (element) {
-            element.checked = true;
-        }
-    };
 
     // Tab: Localization
     setElementValue('app-title', projectData.app_title);
