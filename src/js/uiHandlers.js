@@ -1154,6 +1154,8 @@ export function populateFieldSettings(tableName, fieldName) {
     // Tab: Calculated field
     setElementValue('fld-calculated-enable', fieldData.calculated_enable);
     setElementValue('fld-calculated-query', fieldData.calculated_query);
+	
+	applyDataTypeRules();
 }
 
 /**
@@ -1317,4 +1319,86 @@ export function initializeHomepageMenuHandlers() {
 
     // Panggil sekali semasa muat untuk menetapkan keadaan awal yang betul
     toggleOptionsVisibility();
+}
+
+// js/uiHandlers.js
+
+// Fungsi ini akan dipanggil dari populateFieldSettings juga, jadi kita letakkan di luar
+function applyDataTypeRules() {
+    const dataTypeSelect = document.getElementById('fld-data-type');
+    if (!dataTypeSelect) return;
+
+    const selectedType = dataTypeSelect.value;
+
+    // Kumpulkan semua elemen yang akan dikawal
+    const elements = {
+        precision: document.getElementById('fld-precision'),
+        autoIncrement: document.getElementById('fld-auto-increment'),
+        unsigned: document.getElementById('fld-unsigned'),
+        zeroFill: document.getElementById('fld-zero-fill'),
+        showSum: document.getElementById('fld-show-sum'),
+        binary: document.getElementById('fld-binary'),
+        mediaRadios: document.querySelectorAll('input[name="fld-media-type"]'),
+        behaviorOptions: document.querySelectorAll('#fld-media-link-behavior option[value="web_link"], #fld-media-link-behavior option[value="email_link"]')
+    };
+
+    // 1. Reset: Aktifkan semua elemen secara lalai
+    Object.values(elements).forEach(el => {
+        if (el.forEach) { // Untuk NodeList seperti radio dan options
+            el.forEach(item => {
+                item.disabled = false;
+                item.hidden = false;
+            });
+        } else if (el) { // Untuk elemen tunggal
+            el.disabled = false;
+        }
+    });
+
+    // 2. Kumpulan Data Type
+    const numericAndDate = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'FLOAT', 'DOUBLE', 'DECIMAL', 'DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR'];
+    const integerOnly = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'];
+    const floatOnly = ['FLOAT', 'DOUBLE', 'DECIMAL'];
+    const dateOnly = ['DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR'];
+    const binaryString = ['CHAR', 'VARCHAR', 'TINYBLOB', 'BLOB', 'MEDIUMBLOB', 'LONGBLOB'];
+    const textOnly = ['TINYTEXT', 'TEXT', 'MEDIUMTEXT', 'LONGTEXT'];
+
+    // 3. Laksanakan Peraturan
+    if (numericAndDate.includes(selectedType)) {
+        elements.mediaRadios.forEach(radio => { if (radio.value !== 'link') radio.disabled = true; });
+        elements.behaviorOptions.forEach(opt => opt.hidden = true);
+    }
+    if (integerOnly.includes(selectedType)) {
+        if (elements.binary) elements.binary.disabled = true;
+        if (elements.precision) elements.precision.disabled = true;
+    }
+    if (floatOnly.includes(selectedType)) {
+        if (elements.binary) elements.binary.disabled = true;
+        if (elements.autoIncrement) elements.autoIncrement.disabled = true;
+        if (elements.precision) elements.precision.disabled = false; // Pastikan ia enabled
+    }
+    if (dateOnly.includes(selectedType)) {
+        if (elements.autoIncrement) elements.autoIncrement.disabled = true;
+        if (elements.unsigned) elements.unsigned.disabled = true;
+        if (elements.zeroFill) elements.zeroFill.disabled = true;
+        if (elements.showSum) elements.showSum.disabled = true;
+        if (elements.binary) elements.binary.disabled = true;
+        if (elements.precision) elements.precision.disabled = true;
+    }
+    if (binaryString.includes(selectedType) || textOnly.includes(selectedType)) {
+        if (elements.autoIncrement) elements.autoIncrement.disabled = true;
+        if (elements.unsigned) elements.unsigned.disabled = true;
+        if (elements.zeroFill) elements.zeroFill.disabled = true;
+        if (elements.showSum) elements.showSum.disabled = true;
+        if (elements.precision) elements.precision.disabled = true;
+    }
+     if (binaryString.includes(selectedType)) {
+         if (elements.binary) elements.binary.disabled = true;
+     }
+}
+
+export function initializeDataTypeRules() {
+    const dataTypeSelect = document.getElementById('fld-data-type');
+    if (dataTypeSelect) {
+        dataTypeSelect.addEventListener('change', applyDataTypeRules);
+    }
 }

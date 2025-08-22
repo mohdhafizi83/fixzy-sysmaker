@@ -20,7 +20,8 @@ import {
     initializeLookupFieldHandlers,
     populateMenuManagement,
     initializeAdvancedLookupHandlers,
-    initializeHomepageMenuHandlers 	
+    initializeHomepageMenuHandlers,
+    initializeDataTypeRules  	
 } from './uiHandlers.js';
 
 // Pembolehubah global untuk menyimpan data projek semasa dan pengurusan UI
@@ -127,7 +128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	initializeLookupFieldHandlers();
 	initializeAdvancedLookupHandlers();
 	initializeHomepageMenuHandlers();
-
+    initializeDataTypeRules();
     // Setup Event Listeners
     const newProjectBtn = document.getElementById('new-project-btn');
     const saveNewProjectBtn = document.getElementById('save-new-project-btn');
