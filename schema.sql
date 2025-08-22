@@ -122,7 +122,7 @@ CREATE TABLE fields (
     dv_enable_zooming            INTEGER DEFAULT 0,
     dv_show_full_size            INTEGER DEFAULT 0,
     allow_file_uploads           INTEGER DEFAULT 0,
-    file_types                   TEXT,
+    file_types                   TEXT DEFAULT 'images',
 	file_max_size                INTEGER DEFAULT 1001,
     delete_file_server           INTEGER DEFAULT 0,
     dont_rename_file             INTEGER DEFAULT 0,
