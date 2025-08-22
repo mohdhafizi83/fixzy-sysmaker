@@ -1482,3 +1482,60 @@ export function initializeFormDisplayRules() {
         });
     });
 }
+
+export function initializeCheckboxExclusivity() {
+    const autoIncrementCheckbox = document.getElementById('fld-auto-increment');
+    const requiredCheckbox = document.getElementById('fld-required');
+    const primaryKeyCheckbox = document.getElementById('fld-primary-key');
+    const readOnlyCheckbox = document.getElementById('fld-read-only'); // Dapatkan checkbox Read Only
+
+    if (!autoIncrementCheckbox || !requiredCheckbox || !primaryKeyCheckbox || !readOnlyCheckbox) return;
+
+    // Tindakan 1: Apabila pengguna memilih 'Auto Increment'
+    autoIncrementCheckbox.addEventListener('change', () => {
+        if (autoIncrementCheckbox.checked) {
+            // Jika 'Auto Increment' ditanda, nyahtanda 'Required' dan tanda 'Read Only'
+            requiredCheckbox.checked = false;
+            readOnlyCheckbox.checked = true; // <-- TAMBAHAN BAHARU
+        }
+    });
+
+    // Tindakan 2: Apabila pengguna memilih 'Required'
+    requiredCheckbox.addEventListener('change', () => {
+        // Hanya paparkan amaran jika 'Required' ditanda DAN 'Auto Increment' sedang aktif.
+        if (requiredCheckbox.checked && autoIncrementCheckbox.checked) {
+            
+            let message = "Changing this option will disable 'Auto Increment'.\n\n";
+            message += "- Auto Increment: The value is provided automatically by the database.\n";
+            message += "- Required: The value must be provided manually by the user.\n\n";
+
+            const isPrimaryKey = primaryKeyCheckbox.checked;
+            if (isPrimaryKey) {
+                message += "Recommendation: A Primary Key field should remain 'Auto Increment'.\n\n";
+            }
+
+            message += "Are you sure you want to switch to 'Required'?";
+
+            const userConfirmed = confirm(message);
+
+            if (userConfirmed) {
+                autoIncrementCheckbox.checked = false;
+            } else {
+                requiredCheckbox.checked = false;
+            }
+        }
+    });
+	
+    // Tindakan 3: Apabila pengguna cuba mengubah 'Read Only'
+    readOnlyCheckbox.addEventListener('change', () => {
+        // Jika pengguna cuba nyahtanda 'Read Only'...
+        if (!readOnlyCheckbox.checked) {
+            // ...ketika 'Auto Increment' sedang ditanda...
+            if (autoIncrementCheckbox.checked) {
+                // Paparkan amaran dan batalkan perubahan
+                alert("A field with 'Auto Increment' must remain 'Read Only'.");
+                readOnlyCheckbox.checked = true;
+            }
+        }
+    });
+}
