@@ -245,12 +245,25 @@ function importSchema(sql, projectId) {
                             zero_fill: 0,
                             primary_key: 0,
                             unique: 0,
+                            text_area: 0, // Tambah nilai lalai
+                            rich_html: 0, // Tambah nilai lalai
 							read_only: 0,
                             default_value: null,
                         };
+                        const dataType = fieldData.data_type.toUpperCase();
+
+                        if (dataType === 'TEXT') {
+                            fieldData.text_area = 1;
+                        } else if (dataType === 'MEDIUMTEXT' || dataType === 'LONGTEXT') {
+                            fieldData.rich_html = 1;
+                        }
                         if (col.auto_increment) fieldData.auto_increment = 1;
-                        if (col.nullable && col.nullable.type === "not null")
+
+                        // Medan hanya 'required' jika ia NOT NULL dan BUKAN auto-increment
+                        if ((col.nullable && col.nullable.type === "not null") && !col.auto_increment) {
                             fieldData.required = 1;
+                        }
+						
                         if (col.unsigned) fieldData.unsigned = 1;
                         if (col.zerofill) fieldData.zero_fill = 1;
                         if (col.default_val) {
@@ -282,7 +295,7 @@ function importSchema(sql, projectId) {
                             }
                         }
                         db.prepare(
-                            `INSERT INTO fields (table_id, field_name, data_type, length, required, auto_increment, unsigned, zero_fill, primary_key, "unique", read_only, default_value, caption) VALUES (@table_id, @field_name, @data_type, @length, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @read_only, @default_value, @field_name)`
+                            `INSERT INTO fields (table_id, field_name, data_type, length, required, auto_increment, unsigned, zero_fill, primary_key, "unique", text_area, rich_html, read_only, default_value, caption) VALUES (@table_id, @field_name, @data_type, @length, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @text_area, @rich_html, @read_only, @default_value, @field_name)`
                         ).run(fieldData);
                     } else if (col.resource === "constraint") {
                         tableLevelConstraints.push(col);
