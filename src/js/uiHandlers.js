@@ -504,6 +504,23 @@ export function initializeSecurityTabHandlers() {
     const openBrowserBtn = document.getElementById('open-browser-btn');
     const appUrlInput = document.getElementById('app-url');
 
+    const hideLoginCheckbox = document.getElementById('app-hide_login');
+
+    if (hideLoginCheckbox) {
+        hideLoginCheckbox.addEventListener('change', () => {
+            // Hanya paparkan amaran jika checkbox ditanda (checked)
+            if (hideLoginCheckbox.checked) {
+                const message = "Important Note!\n\n" +
+                    "This will hide the 'Sign in' links and any membership features from visitors. " +
+                    "However, you might still need to log in to the admin area to set the desired " +
+                    "permissions for anonymous users. This is necessary sometimes when visitors " +
+                    "are unable to access some tables.";
+                
+                alert(message);
+            }
+        });
+    }
+	
     if (!openBrowserBtn || !appUrlInput) {
         console.warn("Security tab elements not found. Skipping initialization.");
         return;
@@ -1432,6 +1449,22 @@ function applyDataTypeRules() {
              elements.dbPropertiesFieldset.classList.add('fieldset-disabled');
         }
     }
+	
+    const multiSelectRadio = document.querySelector('input[name="fld-options-display"][value="multi"]');
+    const dropdownRadio = document.querySelector('input[name="fld-options-display"][value="dropdown"]');
+
+    // Semak jika 'Multiple-choice' sedang dipilih
+    if (multiSelectRadio && multiSelectRadio.checked) {
+        const selectedType = document.getElementById('fld-data-type').value.toUpperCase();
+        const allowedTypes = ['TEXT', 'BLOB'];
+        const isAllowed = allowedTypes.some(type => selectedType.includes(type));
+
+        // Jika Data Type yang baru dipilih tidak serasi
+        if (!isAllowed) {
+            // Tukar pilihan kembali kepada default (Drop-down list)
+            dropdownRadio.checked = true;
+        }
+    }
 }
 
 export function initializeDataTypeRules() {
@@ -1504,6 +1537,26 @@ export function initializeFormDisplayRules() {
             }
         });
     });
+	
+    const richHtmlCheckbox = document.getElementById('fld-rich-html'); 
+    const dataTypeSelect = document.getElementById('fld-data-type'); 
+
+    if (richHtmlCheckbox && dataTypeSelect) {
+        richHtmlCheckbox.addEventListener('change', () => {
+            // Hanya paparkan amaran jika checkbox ditanda
+            if (richHtmlCheckbox.checked) {
+                const currentDataType = dataTypeSelect.value.toUpperCase();
+                const suitableTypes = ['TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT'];
+
+                // Jika jenis data semasa BUKAN salah satu jenis teks
+                if (!suitableTypes.includes(currentDataType)) {
+                    const message = "Warning!\n\n" +
+                        "To enable this field to behave as a rich (HTML) box, you should change its data type to 'TEXT', 'MEDIUMTEXT' or 'LONGTEXT'.";
+                    alert(message);
+                }
+            }
+        });
+    }
 }
 
 export function initializeCheckboxExclusivity() {
@@ -1612,6 +1665,36 @@ export function initializeRealtimeValidation() {
                 // Buang semua aksara yang bukan nombor
                 input.value = input.value.replace(/[^0-9]/g, '');
             });
+        }
+    });
+}
+
+export function initializeOptionsListRules() {
+    const multiSelectRadio = document.querySelector('input[name="fld-options-display"][value="multi"]');
+    const dropdownRadio = document.querySelector('input[name="fld-options-display"][value="dropdown"]');
+    const dataTypeSelect = document.getElementById('fld-data-type');
+
+    if (!multiSelectRadio || !dataTypeSelect || !dropdownRadio) return;
+
+    multiSelectRadio.addEventListener('click', (event) => {
+        const currentDataType = dataTypeSelect.value.toUpperCase();
+        
+        // Senarai jenis data yang dibenarkan (keluarga TEXT dan BLOB)
+        const allowedTypes = ['TEXT', 'BLOB'];
+
+        // Semak jika jenis data semasa adalah salah satu dari yang dibenarkan
+        const isAllowed = allowedTypes.some(type => currentDataType.includes(type));
+
+        if (!isAllowed) {
+            // Jika tidak dibenarkan, halang perubahan dan paparkan amaran
+            event.preventDefault();
+
+            const message = "Multiple-selection list box can only work with Text or Blob data types.\n\n" +
+                          "Please change the data type of the field first.";
+            alert(message);
+            
+            // Pastikan pilihan kembali kepada 'Drop-down list' yang selamat
+            dropdownRadio.checked = true;
         }
     });
 }
