@@ -436,28 +436,28 @@ export function initializeMenuManagementHandlers() {
 
         // Logik untuk padam tag (butang 'x')
         else if (target.classList.contains('remove-tag')) {
-            // Dapatkan elemen 'tag' dan padamkannya
             const tagToRemove = target.closest('.tag');
             if (tagToRemove) {
                 tagToRemove.remove();
+                saveMenuStructure(); // Auto-save selepas memadam item
             }
         }
 
 // Logik untuk padam kumpulan (ikon tong sampah)
-else if (target.classList.contains('fa-trash-alt') || target.closest('.group-actions button')) {
-    const groupToRemove = target.closest('.menu-group-item');
-    if (groupToRemove) {
-        showCustomDialog({
-            title: "Confirm Deletion",
-            message: "Are you sure you want to delete this menu group?",
-            showCancelButton: true,
-            onOk: () => {
-                // Kod ini hanya akan berjalan jika pengguna menekan "OK"
-                groupToRemove.remove();
+        else if (target.classList.contains('fa-trash-alt') || target.closest('.group-actions button')) {
+            const groupToRemove = target.closest('.menu-group-item');
+            if (groupToRemove) {
+                showCustomDialog({
+                    title: "Confirm Deletion",
+                    message: "Are you sure you want to delete this menu group?",
+                    showCancelButton: true,
+                    onOk: () => {
+                        groupToRemove.remove();
+                        saveMenuStructure(); // Auto-save selepas memadam kumpulan
+                    }
+                });
             }
-        });
-    }
-}
+        }
     });
 
     // 3. Logik untuk memilih item dari modal
