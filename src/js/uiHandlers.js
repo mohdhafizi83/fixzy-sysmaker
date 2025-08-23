@@ -608,10 +608,41 @@ export function initializeModalHandlers() {
     const configBtn = document.getElementById('config-btn');
     const configModal = document.getElementById('config-modal');
     const configModalClose = document.getElementById('config-modal-close');
-    
-    // ▼▼▼ TAMBAH PENGISYTIHARAN INI ▼▼▼
     const configModalCancel = document.getElementById('config-modal-cancel');
     const configModalOk = document.getElementById('config-modal-ok');
+    
+    // Fungsi untuk mengumpul semua data dari modal FiziSysMaker Preferences
+    const gatherFizisysSettings = () => {
+        const settings = {};
+        // Gunakan ID sebenar dari HTML (dengan sempang)
+        const settingIds = [
+            'check-updates', 'autosave-interval', 'show-begin-box', 'doc-root',
+            'base-url', 'field-default-type', 'field-default-length', 'table-suggest-icon',
+            'table-allow-csv', 'table-dv-separate-page', 'table-hide-save-as-copy',
+            'table-allow-add-from-homepage', 'table-show-record-count', 'project-encoding',
+            'project-rtl', 'project-doxygen', 'project-hide-footer', 'max-entries', 'project-no-trim'
+        ];
+
+        settingIds.forEach(id => {
+            const element = document.getElementById(`fizisys-${id}`);
+            if (element) {
+                // Tukar ID kepada nama lajur DB (dengan garis bawah)
+                const settingKey = id.replace(/-/g, '_');
+                if (element.type === 'checkbox') {
+                    settings[settingKey] = element.checked ? '1' : '0';
+                } else {
+                    settings[settingKey] = element.value;
+                }
+            }
+        });
+        
+        const iconSize = document.querySelector('input[name="fizisys-icon-size"]:checked');
+        if (iconSize) {
+            settings.icon_size = iconSize.value;
+        }
+        
+        return settings;
+    };
     
     if (configBtn) {
         configBtn.addEventListener('click', async () => {
@@ -620,28 +651,25 @@ export function initializeModalHandlers() {
         });
     }
 
-    if (configModalClose) {
-        configModalClose.addEventListener('click', () => {
-            configModal?.classList.add('hidden');
-        });
-    }
+    const closeModal = () => configModal?.classList.add('hidden');
 
-    // ▼▼▼ TAMBAH DUA BLOK KOD INI ▼▼▼
-    // Pengendali untuk butang 'Cancel'
-    if (configModalCancel) {
-        configModalCancel.addEventListener('click', () => {
-            configModal?.classList.add('hidden');
-        });
-    }
+    if (configModalClose) configModalClose.addEventListener('click', closeModal);
+    if (configModalCancel) configModalCancel.addEventListener('click', closeModal);
 
-    // Pengendali untuk butang 'OK'
     if (configModalOk) {
-        configModalOk.addEventListener('click', () => {
-            configModal?.classList.add('hidden');
+        configModalOk.addEventListener('click', async () => {
+            const settingsData = gatherFizisysSettings();
+            const result = await window.electronAPI.saveAllSettings(settingsData);
+            
+            if (result.success) {
+                showCustomDialog({ title: "Success", message: "Preferences have been saved." });
+            } else {
+                showCustomDialog({ title: "Error", message: `Failed to save preferences: ${result.message}` });
+            }
+            
+            closeModal();
         });
     }
-    
-    // Tambah pengendali modal lain jika perlu
 }
 
 export function initializeMediaTabHandlers() {

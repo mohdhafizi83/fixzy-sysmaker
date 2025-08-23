@@ -601,3 +601,22 @@ ipcMain.handle('field:update', async (event, data) => {
         return { success: false, message: error.message };
     }
 });
+
+// Handler baharu untuk menyimpan semua tetapan FiziSysMaker
+ipcMain.handle('settings:save-all', async (event, settingsData) => {
+    try {
+        const updateStmt = db.prepare('UPDATE fizisys_settings SET setting_value = ? WHERE setting_name = ?');
+        
+        const saveTransaction = db.transaction(() => {
+            for (const [key, value] of Object.entries(settingsData)) {
+                updateStmt.run(value, key);
+            }
+        });
+
+        saveTransaction();
+        return { success: true, message: 'Settings saved successfully.' };
+    } catch (error) {
+        console.error("Gagal menyimpan tetapan FiziSysMaker:", error);
+        return { success: false, message: error.message };
+    }
+});
