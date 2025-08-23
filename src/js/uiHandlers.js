@@ -1799,11 +1799,41 @@ function populateParentCaptionDropdowns(parentTableName) {
 
 export function initializeLookupFieldHandlers() {
     const parentTableSelect = document.getElementById('fld-lookup-parent-table');
+    const caption1Select = document.getElementById('fld-lookup-caption-1');
 
-    if (parentTableSelect) {
+    if (parentTableSelect && caption1Select) {
         parentTableSelect.addEventListener('change', () => {
             const selectedTable = parentTableSelect.value;
+            
+            // 1. Isi dropdown caption dengan semua medan seperti biasa
             populateParentCaptionDropdowns(selectedTable);
+
+            // ▼▼▼ LOGIK BAHARU YANG LEBIH PINTAR ▼▼▼
+            if (selectedTable && jsonData.database.table[selectedTable]) {
+                const parentFields = jsonData.database.table[selectedTable].fields;
+                const fieldNames = Object.keys(parentFields);
+                const integerTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'];
+
+                let defaultCaptionField = null;
+
+                // 1. Cuba cari medan BUKAN integer yang pertama
+                const firstNonIntegerField = fieldNames.find(name => 
+                    !integerTypes.includes(parentFields[name].data_type.toUpperCase())
+                );
+
+                if (firstNonIntegerField) {
+                    defaultCaptionField = firstNonIntegerField;
+                } else if (fieldNames.length > 1) {
+                    // 2. Jika tiada, kembali kepada logik lama (pilih medan kedua)
+                    defaultCaptionField = fieldNames[1];
+                }
+
+                // Tetapkan nilai dropdown jika medan lalai ditemui
+                if (defaultCaptionField) {
+                    caption1Select.value = defaultCaptionField;
+                }
+            }
+            // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
         });
     }
 }
