@@ -680,3 +680,41 @@ ipcMain.handle('menu:update-order', async (event, { projectId, orderData }) => {
         return { success: false, message: error.message };
     }
 });
+
+// main.js
+
+// Handler baharu untuk mengemas kini tetapan hubungan
+ipcMain.handle('relationship:update', async (event, data) => {
+    try {
+        const { relationship_id, ...fieldsToUpdate } = data;
+        if (!relationship_id) {
+            throw new Error("Relationship ID tidak dibekalkan.");
+        }
+
+        const allowedColumns = [
+            'show_tab', 'show_icon', 'autoclose_modal', 'tab_title', 'copy_records',
+            'show_link_above', 'show_count_in_tv', 'allow_add_from_tv'
+        ];
+
+        const setClause = Object.keys(fieldsToUpdate)
+            .filter(key => allowedColumns.includes(key))
+            .map(key => `${key} = ?`)
+            .join(', ');
+
+        if (!setClause) {
+            return { success: true, message: 'Tiada medan yang sah untuk dikemas kini.' };
+        }
+
+        const values = Object.keys(fieldsToUpdate)
+            .filter(key => allowedColumns.includes(key))
+            .map(key => fieldsToUpdate[key]);
+
+        const stmt = db.prepare(`UPDATE parent_child_relationships SET ${setClause} WHERE relationship_id = ?`);
+        stmt.run(...values, relationship_id);
+
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal mengemas kini hubungan:", error);
+        return { success: false, message: error.message };
+    }
+});

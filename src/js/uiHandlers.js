@@ -2,6 +2,79 @@
 
 import { allTableNames, jsonData, loadProjectData, activeProject } from './js.main.js';
 
+// js/uiHandlers.js
+
+export function initializeRelationshipSaveHandlers() {
+    const form = document.getElementById('tab-detail-parent-child');
+    const saveStatus = document.getElementById('save-status');
+    if (!form || !saveStatus) return;
+
+    let saveTimer;
+
+    const gatherData = () => {
+        const data = {};
+        const inputs = form.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            if (!input.id) return;
+            const id = input.id.replace('parentchild-', '').replace(/-/g, '_');
+            if (input.type === 'checkbox') {
+                data[id] = input.checked ? 1 : 0;
+            } else if (input.id) {
+                data[id] = input.value;
+            }
+        });
+        return data;
+    };
+
+    const onInputChange = () => {
+        saveStatus.textContent = 'Unsaved changes...';
+        saveStatus.className = '';
+
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(async () => {
+            saveStatus.textContent = 'Saving...';
+            saveStatus.className = 'saving';
+
+            const dataToSave = gatherData();
+			console.log('1. Data yang dikumpul dari borang:', dataToSave); // Log 1
+            
+            // Dapatkan relationship_id dari jsonData
+            const parentTable = document.querySelector('#table-settings-page .table-name').textContent;
+            const childTable = document.querySelector('#selected-child-table-name').textContent;
+			console.log(`2. Mencari hubungan -> Induk: ${parentTable}, Anak: ${childTable}`); // Log 2
+            const relationship = jsonData.database.relationships.find(
+                r => r.parent_table_name === parentTable && r.child_table_name === childTable
+            );
+console.log('3. Objek Hubungan Ditemui:', relationship); // Log 3
+            if (!relationship) {
+                saveStatus.textContent = 'Error: Active relationship not found!';
+                saveStatus.className = 'error';
+                return;
+            }
+            dataToSave.relationship_id = relationship.relationship_id;
+console.log('4. Data akhir yang akan disimpan:', dataToSave); // Log 4
+            const result = await window.electronAPI.updateRelationship(dataToSave);
+
+            if (result.success) {
+                saveStatus.textContent = 'All changes saved ✔';
+                saveStatus.className = 'saved';
+            } else {
+                saveStatus.textContent = 'Save failed!';
+                saveStatus.className = 'error';
+            }
+            setTimeout(() => saveStatus.textContent = '', 3000);
+
+        }, 1500);
+    };
+
+    form.querySelectorAll('input, select').forEach(input => {
+        input.addEventListener('change', onInputChange);
+        if (input.type === 'text') {
+            input.addEventListener('input', onInputChange);
+        }
+    });
+}
+
 // Fungsi untuk mengumpul data menu semasa dari UI
 function gatherMenuData() {
     const menuGroupList = document.querySelector('.menu-group-list');

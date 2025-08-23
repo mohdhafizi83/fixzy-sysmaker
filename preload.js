@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updateProject: (data) => ipcRenderer.invoke('project:update', data),
   updateTable: (data) => ipcRenderer.invoke('table:update', data),
   updateField: (data) => ipcRenderer.invoke('field:update', data),
+  updateRelationship: (data) => ipcRenderer.invoke('relationship:update', data),
+  
   saveAllSettings: (data) => ipcRenderer.invoke('settings:save-all', data),
   saveMenuStructure: (data) => ipcRenderer.invoke('menu:save-structure', data),
   updateMenuOrder: (data) => ipcRenderer.invoke('menu:update-order', data),
