@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updateTable: (data) => ipcRenderer.invoke('table:update', data),
   updateField: (data) => ipcRenderer.invoke('field:update', data),
   saveAllSettings: (data) => ipcRenderer.invoke('settings:save-all', data),
+  saveMenuStructure: (data) => ipcRenderer.invoke('menu:save-structure', data),
   getAllSettings: () => ipcRenderer.invoke('settings:get-all'),
   getFullSchema: (projectId) => ipcRenderer.invoke('project:get-full-schema', projectId),
   // Fungsi sedia ada

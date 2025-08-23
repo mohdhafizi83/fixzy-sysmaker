@@ -2,6 +2,59 @@
 
 import { allTableNames, jsonData, loadProjectData, activeProject } from './js.main.js';
 
+// Fungsi untuk mengumpul data menu semasa dari UI
+function gatherMenuData() {
+    const menuGroupList = document.querySelector('.menu-group-list');
+    const groupElements = menuGroupList.querySelectorAll('.menu-group-item');
+    
+    const menuData = Array.from(groupElements).map(groupEl => {
+        const groupName = groupEl.querySelector('.group-name-input').value;
+        const itemElements = groupEl.querySelectorAll('.menu-selector .tag');
+        const items = Array.from(itemElements).map(itemEl => ({
+            // Ambil nama jadual dari teks tag
+            table_name: itemEl.childNodes[0].textContent.trim()
+        }));
+
+        return { group_name: groupName, items: items };
+    });
+
+    return menuData;
+}
+
+// Fungsi untuk mencetuskan proses simpanan
+// js/uiHandlers.js
+
+async function saveMenuStructure() {
+    const saveStatus = document.getElementById('save-status');
+    if (saveStatus) {
+        saveStatus.textContent = 'Saving...';
+        saveStatus.className = 'saving';
+    }
+
+    const menuData = gatherMenuData();
+    const result = await window.electronAPI.saveMenuStructure({
+        projectId: activeProject.project_id,
+        menuData: menuData
+    });
+
+    if (saveStatus) {
+        if (result.success) {
+            saveStatus.textContent = 'All changes saved ✔';
+            saveStatus.className = 'saved';
+        } else {
+            saveStatus.textContent = 'Save failed!';
+            saveStatus.className = 'error';
+            // Paparkan mesej ralat yang lebih terperinci juga
+            showCustomDialog({ title: "Error", message: `Failed to save menu structure: ${result.message}` });
+        }
+        
+        // Sembunyikan mesej status selepas 3 saat
+        setTimeout(() => {
+            saveStatus.textContent = '';
+        }, 3000);
+    }
+}
+
 export function initializeProjectSaveHandlers() {
     const form = document.getElementById('main-dashboard-page');
     const saveStatus = document.getElementById('save-status');
@@ -359,6 +412,7 @@ export function initializeMenuManagementHandlers() {
             </div>
         `;
         menuGroupList.appendChild(newGroup);
+		saveMenuStructure();
     });
 
     // 2. Logik untuk butang '+' menggunakan event delegation
@@ -424,6 +478,7 @@ else if (target.classList.contains('fa-trash-alt') || target.closest('.group-act
                 // Tutup modal dan reset target
                 addMenuModal.classList.add('hidden');
                 currentTargetMenuSelector = null;
+				saveMenuStructure();
             }
         }
     });

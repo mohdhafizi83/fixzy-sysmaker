@@ -620,3 +620,37 @@ ipcMain.handle('settings:save-all', async (event, settingsData) => {
         return { success: false, message: error.message };
     }
 });
+
+ipcMain.handle('menu:save-structure', async (event, { projectId, menuData }) => {
+    if (!projectId) {
+        return { success: false, message: 'Project ID tidak dibekalkan.' };
+    }
+    try {
+        const deleteItemsStmt = db.prepare('DELETE FROM menu_group_items WHERE menu_group_id IN (SELECT menu_group_id FROM menu_groups WHERE project_id = ?)');
+        const deleteGroupsStmt = db.prepare('DELETE FROM menu_groups WHERE project_id = ?');
+        const insertGroupStmt = db.prepare('INSERT INTO menu_groups (project_id, group_name, group_order) VALUES (?, ?, ?)');
+        const insertItemStmt = db.prepare('INSERT INTO menu_group_items (menu_group_id, table_id, item_order) VALUES (?, (SELECT table_id FROM tables WHERE table_name = ? AND project_id = ?), ?)');
+
+        const transaction = db.transaction(() => {
+            // Padam semua data menu lama untuk projek ini
+            deleteItemsStmt.run(projectId);
+            deleteGroupsStmt.run(projectId);
+
+            // Masukkan semula data baharu
+            menuData.forEach((group, groupIndex) => {
+                const info = insertGroupStmt.run(projectId, group.group_name, groupIndex);
+                const newGroupId = info.lastInsertRowid;
+                
+                group.items.forEach((item, itemIndex) => {
+                    insertItemStmt.run(newGroupId, item.table_name, projectId, itemIndex);
+                });
+            });
+        });
+
+        transaction();
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal menyimpan struktur menu:", error);
+        return { success: false, message: error.message };
+    }
+});
