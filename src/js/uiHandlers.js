@@ -1,6 +1,143 @@
 // js/uiHandlers.js - VERSI LENGKAP & MUKTAMAD
 
-import { allTableNames, jsonData, loadProjectData } from './js.main.js';
+import { allTableNames, jsonData, loadProjectData, activeProject } from './js.main.js';
+
+export function initializeProjectSaveHandlers() {
+    const form = document.getElementById('main-dashboard-page');
+    const saveStatus = document.getElementById('save-status');
+	const appTitleInput = document.getElementById('app-title'); // Dapatkan input App title
+	
+    if (!form || !saveStatus) return;
+
+    let saveTimer;
+
+    // Fungsi untuk mengumpul semua data dari borang
+    const gatherData = () => {
+        const data = {};
+        const inputs = form.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            const id = input.id.replace('app-', '').replace(/-/g, '_');
+            if (input.type === 'checkbox') {
+                data[id] = input.checked ? 1 : 0;
+            } else if (input.type === 'radio') {
+                if (input.checked) {
+                    data[input.name.replace('app-', '').replace(/-/g, '_')] = input.value;
+                }
+            } else if (input.id) {
+                data[id] = input.value;
+            }
+        });
+		// Tambah nilai App title ke dalam data yang akan disimpan
+        data.app_title = appTitleInput.value;
+        return data;
+    };
+
+    // Fungsi yang dicetuskan setiap kali ada perubahan
+    const onInputChange = () => {
+        saveStatus.textContent = 'Unsaved changes...';
+        saveStatus.className = '';
+
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(async () => {
+            saveStatus.textContent = 'Saving...';
+            saveStatus.className = 'saving';
+
+            const dataToSave = gatherData();
+            dataToSave.project_id = activeProject.project_id;
+
+            const result = await window.electronAPI.updateProject(dataToSave);
+
+            if (result.success) {
+                saveStatus.textContent = 'All changes saved ✔';
+                saveStatus.className = 'saved';
+            } else {
+                saveStatus.textContent = 'Save failed!';
+                saveStatus.className = 'error'; // Anda boleh tambah gaya untuk 'error' jika mahu
+            }
+            // Sembunyikan mesej selepas 3 saat
+            setTimeout(() => saveStatus.textContent = '', 3000);
+
+        }, 1500); // Tunggu 1.5 saat sebelum menyimpan
+    };
+
+    // Pasang listener pada semua elemen input di dalam borang
+    form.querySelectorAll('input, select').forEach(input => {
+        input.addEventListener('change', onInputChange);
+        // Untuk textbox, 'input' lebih responsif
+        if (input.type === 'text' || input.type === 'number') {
+            input.addEventListener('input', onInputChange);
+        }
+    });
+	
+    // Pasang listener yang sama pada input App title
+    appTitleInput.addEventListener('input', onInputChange);
+}
+
+export function initializeTableSaveHandlers() {
+    const form = document.getElementById('table-settings-page');
+    const saveStatus = document.getElementById('save-status');
+    if (!form || !saveStatus) return;
+
+    let saveTimer;
+
+    const gatherData = () => {
+        const data = {};
+        const inputs = form.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            const id = input.id.replace('tbl-', '').replace(/-/g, '_');
+            if (input.type === 'checkbox') {
+                data[id] = input.checked ? 1 : 0;
+            } else if (input.id) {
+                data[id] = input.value;
+            }
+        });
+        return data;
+    };
+
+    const onInputChange = () => {
+        saveStatus.textContent = 'Unsaved changes...';
+        saveStatus.className = '';
+
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(async () => {
+            saveStatus.textContent = 'Saving...';
+            saveStatus.className = 'saving';
+
+            const dataToSave = gatherData();
+            
+            // Dapatkan table_id dari jsonData berdasarkan nama jadual yang aktif
+            const activeTableName = document.querySelector('#table-settings-page .table-name').textContent;
+            const tableData = Object.values(jsonData.database.table).find(t => t.table_name === activeTableName);
+            
+            if (!tableData) {
+                saveStatus.textContent = 'Error: Active table not found!';
+                saveStatus.className = 'error';
+                return;
+            }
+            dataToSave.table_id = tableData.table_id;
+
+            const result = await window.electronAPI.updateTable(dataToSave);
+
+            if (result.success) {
+                saveStatus.textContent = 'All changes saved ✔';
+                saveStatus.className = 'saved';
+            } else {
+                saveStatus.textContent = 'Save failed!';
+                saveStatus.className = 'error';
+
+            }
+            setTimeout(() => saveStatus.textContent = '', 3000);
+
+        }, 1500);
+    };
+
+    form.querySelectorAll('input, select, textarea').forEach(input => {
+        input.addEventListener('change', onInputChange);
+        if (input.type === 'text' || input.type === 'number' || input.tagName.toLowerCase() === 'textarea') {
+            input.addEventListener('input', onInputChange);
+        }
+    });
+}
 
 export async function populateProjectDropdown() {
     const projectListContainer = document.getElementById('project-menu-list');

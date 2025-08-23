@@ -145,8 +145,22 @@ html, body {
     font-weight: 600;
 }
 
-.header-actions .btn {
-    margin-left: 0.5rem;
+/* Gaya untuk Header Actions */
+.header-actions {
+    display: flex; /* Kunci utama: gunakan flexbox */
+    align-items: center; /* Jajarkan semua item secara menegak di tengah */
+    gap: 0.75rem; /* Jarak seragam antara semua item */
+}
+
+#save-status {
+    margin-right: 0.25rem; /* Kurangkan sedikit margin jika perlu */
+	position: absolute;
+	z-index: 10; 
+	display: flex;
+    align-items: center;
+	justify-content: center;
+	top: 90px;
+	right: 10px;
 }
 
 /* Butang (Buttons) */
@@ -1219,4 +1233,22 @@ fieldset.fieldset-disabled {
     font-weight: 700;
     color: var(--sidebar-text-active);
     background-color: var(--primary-color);
+}
+
+/* styles.css */
+
+#save-status {
+    margin-right: 1rem;
+    font-weight: 500;
+    font-size: 0.9em;
+    color: var(--secondary-color);
+    transition: opacity 0.3s ease;
+}
+
+#save-status.saving {
+    color: #FBBF24; /* Kuning */
+}
+
+#save-status.saved {
+    color: #10B981; /* Hijau */
 }

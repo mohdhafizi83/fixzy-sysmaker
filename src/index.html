@@ -76,14 +76,18 @@
         <input type="text" id="app-title" name="app-title" value="Project Name">
     </div>
     <div class="header-actions">
+		<div style="grid-area: buttons; display: flex; gap: 0.5rem;">
         <button class="btn btn-primary" id="app-generate_app" name="app-generate_app"><i class="fas fa-robot"></i> Generate app</button>
         <button class="btn" id="app-view_files" name="app-view_files"><i class="fas fa-folder-open"></i> View files</button>
         <button class="btn" id="config-btn"  title="Configuration">
             <i class="fas fa-cog"></i>
         </button>
+		</div>
     </div>
-</header>
 
+	
+</header>
+	<span id="save-status"></span>
 <main class="main-content">
     <div id="main-dashboard-page">
         <div class="tabs-container">

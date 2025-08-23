@@ -465,3 +465,88 @@ ipcMain.handle('project:set-active', async (event, projectId) => {
         return null;
     }
 });
+
+// Handler baharu untuk mengemas kini tetapan projek
+ipcMain.handle('project:update', async (event, data) => {
+    try {
+        const { project_id, ...fieldsToUpdate } = data;
+        if (!project_id) {
+            throw new Error("Project ID tidak dibekalkan.");
+        }
+
+        const allowedColumns = [
+            'app_title', 'date_order', 'separator', 'char_encoding', 'language_select',
+            'timezone_select', 'use_24hr_format', 'enforce_mysql_encoding', 'theme_select',
+            'use_3d_effects', 'rtl', 'compact', 'menu_orientation', 'menu_at_homepage',
+            'tables_per_row', 'extra_wide', 'panel_height', 'hide_login', 'allow_sql_tool',
+            'allow_server_status', 'admins_group_access', 'allow_table_view_sql',
+            'copy_children_async', 'allow_pwa_install', 'url'
+        ];
+
+        const setClause = Object.keys(fieldsToUpdate)
+            .filter(key => allowedColumns.includes(key))
+            .map(key => `${key} = ?`)
+            .join(', ');
+
+        if (!setClause) {
+            return { success: true, message: 'Tiada medan yang sah untuk dikemas kini.' };
+        }
+
+        const values = Object.keys(fieldsToUpdate)
+            .filter(key => allowedColumns.includes(key))
+            .map(key => fieldsToUpdate[key]);
+
+        const stmt = db.prepare(`UPDATE projects SET ${setClause} WHERE project_id = ?`);
+        stmt.run(...values, project_id);
+
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal mengemas kini projek:", error);
+        return { success: false, message: error.message };
+    }
+});
+
+// main.js
+
+// Handler baharu untuk mengemas kini tetapan jadual
+ipcMain.handle('table:update', async (event, data) => {
+    try {
+        const { table_id, ...fieldsToUpdate } = data;
+        if (!table_id) {
+            throw new Error("Table ID tidak dibekalkan.");
+        }
+
+        // Senarai lajur yang dibenarkan untuk dikemas kini dalam jadual 'tables'
+        const allowedColumns = [
+            'table_view_title', 'table_description', 'show_quick_search', 'records_per_page',
+            'default_sort_by', 'sort_descending', 'allow_sorting', 'allow_filters', 'allow_csv_export',
+            'allow_print_view', 'allow_user_save_filters', 'hide_homepage_link', 'allow_mass_delete',
+            'filter_before_view', 'hide_nav_menu_link', 'show_record_count', 'tv_template',
+            'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input',
+            'detail_view_classes_input', 'detail_view_title', 'record_owner', 'default_focus',
+            'redirect_after_insert', 'enable_detail_view', 'delete_with_children', 'dv_allow_print_view',
+            'dv_separate_page', 'dv_hide_save_as_copy', 'dv_sticky_buttons', 'dv_allow_add_from_homepage'
+        ];
+
+        const setClause = Object.keys(fieldsToUpdate)
+            .filter(key => allowedColumns.includes(key))
+            .map(key => `${key} = ?`)
+            .join(', ');
+
+        if (!setClause) {
+            return { success: true, message: 'Tiada medan yang sah untuk dikemas kini.' };
+        }
+
+        const values = Object.keys(fieldsToUpdate)
+            .filter(key => allowedColumns.includes(key))
+            .map(key => fieldsToUpdate[key]);
+
+        const stmt = db.prepare(`UPDATE tables SET ${setClause} WHERE table_id = ?`);
+        stmt.run(...values, table_id);
+
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal mengemas kini jadual:", error);
+        return { success: false, message: error.message };
+    }
+});

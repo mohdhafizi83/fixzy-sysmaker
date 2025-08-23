@@ -28,7 +28,9 @@ import {
     initializeRealtimeValidation,
     initializeOptionsListRules,
     initializeCalculatedFieldRules,
-    populateProjectDropdown  	
+    populateProjectDropdown,
+    initializeProjectSaveHandlers,
+    initializeTableSaveHandlers  	
 } from './uiHandlers.js';
 
 function showConfirmationDialog(title, message) {
@@ -160,6 +162,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 	initializeRealtimeValidation();
 	initializeOptionsListRules();
 	initializeCalculatedFieldRules();
+	initializeProjectSaveHandlers();
+	initializeTableSaveHandlers();
 	
     // Setup Event Listeners
     const newProjectBtn = document.getElementById('new-project-btn');
