@@ -718,3 +718,50 @@ ipcMain.handle('relationship:update', async (event, data) => {
         return { success: false, message: error.message };
     }
 });
+
+// main.js
+
+// Handler baharu untuk mencipta/mengemas kini hubungan (Upsert)
+ipcMain.handle('relationship:upsert', async (event, data) => {
+    try {
+        const { parentTableName, childTableName, fk_child_field } = data;
+
+        const transaction = db.transaction(() => {
+            // Dapatkan ID yang diperlukan
+            const childTable = db.prepare('SELECT table_id FROM tables WHERE table_name = ?').get(childTableName);
+            if (!childTable) throw new Error(`Jadual anak tidak ditemui: ${childTableName}`);
+            
+            // Padam hubungan lama untuk medan ini (jika ada)
+            db.prepare('DELETE FROM parent_child_relationships WHERE child_table_id = ? AND fk_child_field = ?')
+              .run(childTable.table_id, fk_child_field);
+
+            // Jika pengguna memilih parent table (bukan pilihan kosong)
+            if (parentTableName) {
+                const parentTable = db.prepare('SELECT table_id FROM tables WHERE table_name = ?').get(parentTableName);
+                if (!parentTable) throw new Error(`Jadual induk tidak ditemui: ${parentTableName}`);
+                
+                // Cari primary key jadual induk
+                const parentPkField = db.prepare(`
+                    SELECT f.field_name 
+                    FROM fields f 
+                    JOIN tables t ON f.table_id = t.table_id 
+                    WHERE t.table_name = ? AND f.primary_key = 1
+                `).get(parentTableName);
+                if (!parentPkField) throw new Error(`Primary key tidak ditemui untuk jadual: ${parentTableName}`);
+                
+                // Masukkan hubungan baharu
+                db.prepare(`
+                    INSERT INTO parent_child_relationships 
+                    (parent_table_id, child_table_id, fk_child_field, parent_field, tab_title) 
+                    VALUES (?, ?, ?, ?, ?)
+                `).run(parentTable.table_id, childTable.table_id, fk_child_field, parentPkField.field_name, childTableName);
+            }
+        });
+
+        transaction();
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal mencipta/mengemas kini hubungan:", error);
+        return { success: false, message: error.message };
+    }
+});

@@ -4,6 +4,44 @@ import { allTableNames, jsonData, loadProjectData, activeProject } from './js.ma
 
 // js/uiHandlers.js
 
+export function initializeLookupFieldSaveHandler() {
+    const parentTableSelect = document.getElementById('fld-lookup-parent-table');
+    if (!parentTableSelect) return;
+
+    let saveTimer;
+
+    parentTableSelect.addEventListener('change', () => {
+        const saveStatus = document.getElementById('save-status');
+        saveStatus.textContent = 'Unsaved changes...';
+        saveStatus.className = '';
+
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(async () => {
+            saveStatus.textContent = 'Saving...';
+            saveStatus.className = 'saving';
+
+            const parentTableName = parentTableSelect.value;
+            const [childTableName, fk_child_field] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
+            
+            const result = await window.electronAPI.upsertRelationship({
+                parentTableName,
+                childTableName,
+                fk_child_field
+            });
+
+            if (result.success) {
+                saveStatus.textContent = 'All changes saved ✔';
+                saveStatus.className = 'saved';
+            } else {
+                saveStatus.textContent = 'Save failed!';
+                saveStatus.className = 'error';
+                showCustomDialog({ title: "Error", message: `Failed to save relationship: ${result.message}` });
+            }
+            setTimeout(() => saveStatus.textContent = '', 3000);
+        }, 1500);
+    });
+}
+
 export function initializeRelationshipSaveHandlers() {
     const form = document.getElementById('tab-detail-parent-child');
     const saveStatus = document.getElementById('save-status');

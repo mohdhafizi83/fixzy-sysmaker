@@ -32,7 +32,8 @@ import {
     initializeProjectSaveHandlers,
     initializeTableSaveHandlers,
     initializeFieldSaveHandlers,
-    initializeRelationshipSaveHandlers  	
+    initializeRelationshipSaveHandlers,
+    initializeLookupFieldSaveHandler  	
 } from './uiHandlers.js';
 
 function showConfirmationDialog(title, message) {
@@ -169,7 +170,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 	initializeTableSaveHandlers();
 	initializeFieldSaveHandlers();
 
-	initializeRelationshipSaveHandlers();	
+	initializeRelationshipSaveHandlers();
+	initializeLookupFieldSaveHandler();	
 	
     // Setup Event Listeners
     const newProjectBtn = document.getElementById('new-project-btn');
