@@ -2,90 +2,6 @@
 
 import { allTableNames, jsonData, loadProjectData, activeProject } from './js.main.js';
 
-// js/uiHandlers.js
-
-export function initializeMenuDragDropAndSave() {
-    const container = document.querySelector('.menu-group-list');
-    if (!container) return;
-
-    let draggedItem = null;
-
-    // Fungsi untuk mencetuskan auto-save
-    const triggerSave = () => {
-        const saveStatus = document.getElementById('save-status');
-        const groups = Array.from(container.querySelectorAll('.menu-group-item'));
-        const orderData = groups.map(group => {
-            const items = Array.from(group.querySelectorAll('.tag'));
-            return {
-                groupId: group.dataset.groupId,
-                items: items.map(item => ({ itemId: item.dataset.itemId }))
-            };
-        });
-
-        saveStatus.textContent = 'Saving...';
-        saveStatus.className = 'saving';
-
-        window.electronAPI.updateMenuOrder({ projectId: activeProject.project_id, orderData })
-            .then(result => {
-                if (result.success) {
-                    saveStatus.textContent = 'All changes saved ✔';
-                    saveStatus.className = 'saved';
-                } else {
-                    saveStatus.textContent = 'Save failed!';
-                    saveStatus.className = 'error';
-                }
-                setTimeout(() => saveStatus.textContent = '', 3000);
-            });
-    };
-
-    container.addEventListener('dragstart', (e) => {
-        draggedItem = e.target;
-        if (draggedItem.matches('.menu-group-item, .tag')) {
-            setTimeout(() => draggedItem.classList.add('dragging'), 0);
-        } else {
-            e.preventDefault(); // Elak elemen lain diseret
-        }
-    });
-
-    container.addEventListener('dragend', () => {
-        if (draggedItem) draggedItem.classList.remove('dragging');
-        draggedItem = null;
-    });
-
-    container.addEventListener('dragover', (e) => {
-        e.preventDefault(); // Ini sahaja yang diperlukan di sini
-    });
-
-    container.addEventListener('drop', (e) => {
-        e.preventDefault();
-        if (!draggedItem) return;
-
-        const dropTarget = e.target.closest('[draggable="true"]');
-
-        // Pastikan kita tidak drop item ke atas dirinya sendiri
-        if (dropTarget && draggedItem !== dropTarget) {
-            // Pastikan kita hanya drop item dalam bekas yang sama dan jenis yang sama
-            if (draggedItem.parentElement === dropTarget.parentElement) {
-                const rect = dropTarget.getBoundingClientRect();
-                
-                // Tentukan posisi berdasarkan titik tengah elemen sasaran
-                const isAfter = (e.clientY > rect.top + rect.height / 2) || 
-                                (e.clientX > rect.left + rect.width / 2);
-
-                if (isAfter) {
-                    // Masukkan selepas elemen sasaran
-                    dropTarget.parentElement.insertBefore(draggedItem, dropTarget.nextSibling);
-                } else {
-                    // Masukkan sebelum elemen sasaran
-                    dropTarget.parentElement.insertBefore(draggedItem, dropTarget);
-                }
-                
-                triggerSave(); // Cetuskan auto-save
-            }
-        }
-    });
-}
-
 // Fungsi untuk mengumpul data menu semasa dari UI
 function gatherMenuData() {
     const menuGroupList = document.querySelector('.menu-group-list');
@@ -476,15 +392,63 @@ export function initializeMenuManagementHandlers() {
     const modalCloseBtn = addMenuModal.querySelector('.modal-close');
 
     if (!addGroupBtn || !menuGroupList || !addMenuModal || !availableMenusList || !modalCloseBtn) {
-        console.warn("Menu management elements not found. Skipping initialization.");
         return;
     }
 
-    // 1. Logik untuk butang "Add Menu Group"
+    let draggedItem = null;
+    let saveTimer;
+    let currentTargetMenuSelector = null;
+
+    // Fungsi utama untuk mengumpul data dan mencetuskan auto-save
+    const triggerSave = () => {
+        const saveStatus = document.getElementById('save-status');
+        saveStatus.textContent = 'Unsaved changes...';
+        saveStatus.className = '';
+
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(async () => {
+            saveStatus.textContent = 'Saving...';
+            saveStatus.className = 'saving';
+            
+            const groupElements = menuGroupList.querySelectorAll('.menu-group-item');
+            const menuData = Array.from(groupElements).map(groupEl => {
+                const groupName = groupEl.querySelector('.group-name-input').value;
+                const itemElements = groupEl.querySelectorAll('.menu-selector .tag');
+                const items = Array.from(itemElements).map(itemEl => ({
+                    table_name: itemEl.childNodes[0].textContent.trim()
+                }));
+                return { group_name: groupName, items: items };
+            });
+
+            const result = await window.electronAPI.saveMenuStructure({
+                projectId: activeProject.project_id,
+                menuData: menuData
+            });
+
+            if (result.success) {
+                saveStatus.textContent = 'All changes saved ✔';
+                saveStatus.className = 'saved';
+            } else {
+                saveStatus.textContent = 'Save failed!';
+                saveStatus.className = 'error';
+                showCustomDialog({ title: "Error", message: `Failed to save menu structure: ${result.message}` });
+            }
+            setTimeout(() => saveStatus.textContent = '', 3000);
+        }, 1500);
+    };
+	
+    function getUsedMenuNames() {
+        const usedTags = menuGroupList.querySelectorAll('.tag');
+        return Array.from(usedTags).map(tag => tag.childNodes[0].textContent.trim());
+    }
+
+    // Listener untuk butang "Add Menu Group"
     addGroupBtn.addEventListener('click', () => {
         const newGroup = document.createElement('div');
         newGroup.className = 'menu-group-item';
+        newGroup.setAttribute('draggable', 'true');
         newGroup.innerHTML = `
+            <i class="fas fa-grip-vertical drag-handle"></i>
             <input type="text" class="group-name-input" value="New Group">
             <div class="menu-selector">
                 <button class="add-menu-btn" title="Add menu to this group">+</button>
@@ -496,17 +460,18 @@ export function initializeMenuManagementHandlers() {
             </div>
         `;
         menuGroupList.appendChild(newGroup);
-		saveMenuStructure();
+        triggerSave();
     });
 
-    // 2. Logik untuk butang '+' menggunakan event delegation
- menuGroupList.addEventListener('click', (event) => {
-        const target = event.target;
-
-        // Logik untuk butang '+'
+    // --- EVENT LISTENERS BERPUSAT (DELEGATION) ---
+    
+    // Untuk KLIK (tambah item, padam, dll)
+    menuGroupList.addEventListener('click', (e) => {
+        const target = e.target;
         if (target.classList.contains('add-menu-btn')) {
             const usedNames = getUsedMenuNames();
             const availableTables = allTableNames.filter(name => !usedNames.includes(name));
+
             availableMenusList.innerHTML = '';
             availableTables.forEach(tableName => {
                 const li = document.createElement('li');
@@ -514,21 +479,14 @@ export function initializeMenuManagementHandlers() {
                 li.dataset.menuName = tableName;
                 availableMenusList.appendChild(li);
             });
-            currentTargetMenuSelector = target.parentElement;
+            
+            currentTargetMenuSelector = target.closest('.menu-selector');
             addMenuModal.classList.remove('hidden');
-        }
-
-        // Logik untuk padam tag (butang 'x')
+        } 
         else if (target.classList.contains('remove-tag')) {
-            const tagToRemove = target.closest('.tag');
-            if (tagToRemove) {
-                tagToRemove.remove();
-                saveMenuStructure(); // Auto-save selepas memadam item
-            }
-        }
-
-// Logik untuk padam kumpulan (ikon tong sampah)
-        else if (target.classList.contains('fa-trash-alt') || target.closest('.group-actions button')) {
+            target.closest('.tag')?.remove();
+            triggerSave();
+        } else if (target.classList.contains('fa-trash-alt') || target.closest('.group-actions button')) {
             const groupToRemove = target.closest('.menu-group-item');
             if (groupToRemove) {
                 showCustomDialog({
@@ -537,48 +495,74 @@ export function initializeMenuManagementHandlers() {
                     showCancelButton: true,
                     onOk: () => {
                         groupToRemove.remove();
-                        saveMenuStructure(); // Auto-save selepas memadam kumpulan
+                        triggerSave();
                     }
                 });
             }
         }
     });
 
-    // 3. Logik untuk memilih item dari modal
-    availableMenusList.addEventListener('click', (event) => {
-        if (event.target.tagName === 'LI') {
-            const menuName = event.target.dataset.menuName;
+    // Untuk MULA SERET (dragstart)
+    menuGroupList.addEventListener('dragstart', (e) => {
+        draggedItem = e.target;
+        if (draggedItem.matches('.menu-group-item')) {
+            setTimeout(() => draggedItem.classList.add('dragging'), 0);
+        } else {
+            e.preventDefault();
+        }
+    });
 
+    // Untuk BERHENTI SERET (dragend)
+    menuGroupList.addEventListener('dragend', () => {
+        if (draggedItem) draggedItem.classList.remove('dragging');
+        draggedItem = null;
+    });
+
+    // Untuk SERET DI ATAS (dragover)
+    menuGroupList.addEventListener('dragover', (e) => {
+        e.preventDefault();
+    });
+
+    // Untuk LEPASKAN (drop)
+    menuGroupList.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (!draggedItem) return;
+        const dropTarget = e.target.closest('.menu-group-item');
+        if (dropTarget && draggedItem !== dropTarget) {
+            const rect = dropTarget.getBoundingClientRect();
+            const isAfter = e.clientY > rect.top + rect.height / 2;
+            if (isAfter) {
+                dropTarget.parentElement.insertBefore(draggedItem, dropTarget.nextSibling);
+            } else {
+                dropTarget.parentElement.insertBefore(draggedItem, dropTarget);
+            }
+            triggerSave();
+        }
+    });
+
+    // Listener untuk modal
+    availableMenusList.addEventListener('click', (e) => {
+        if (e.target.tagName === 'LI') {
+            const menuName = e.target.dataset.menuName;
             if (menuName && currentTargetMenuSelector) {
-                // Cipta tag baharu
                 const newTag = document.createElement('span');
                 newTag.className = 'tag';
+                newTag.setAttribute('draggable', 'true'); // Pastikan tag baharu juga boleh diseret
+                // Anda perlu tambah data-item-id di sini selepas save, tetapi buat masa ini kita biarkan
                 newTag.innerHTML = `${menuName} <button class="remove-tag">&times;</button>`;
-
-                // Masukkan tag baharu sebelum butang '+'
+                
                 const addBtn = currentTargetMenuSelector.querySelector('.add-menu-btn');
                 currentTargetMenuSelector.insertBefore(newTag, addBtn);
-
-                // Tutup modal dan reset target
+                
                 addMenuModal.classList.add('hidden');
                 currentTargetMenuSelector = null;
-				saveMenuStructure();
+                triggerSave();
             }
         }
     });
-
-    // 4. Logik untuk menutup modal
-    const closeModal = () => {
-        addMenuModal.classList.add('hidden');
-        currentTargetMenuSelector = null;
-    };
-    modalCloseBtn.addEventListener('click', closeModal);
-    addMenuModal.addEventListener('click', (event) => {
-        if (event.target === addMenuModal) {
-            closeModal();
-        }
-    });
+    modalCloseBtn.addEventListener('click', () => addMenuModal.classList.add('hidden'));
 }
+
 // =================================================================
 // ▼▼▼ FUNGSI UNTUK MENGISI MODAL TETAPAN ▼▼▼
 // =================================================================
