@@ -185,10 +185,10 @@ CREATE TABLE menu_groups (
 
 -- 7. Jadual penghubung antara Kumpulan Menu dan Jadual (Tables)
 CREATE TABLE menu_group_items (
+    item_id         INTEGER PRIMARY KEY AUTOINCREMENT,
     menu_group_id   INTEGER NOT NULL,
     table_id        INTEGER NOT NULL,
     item_order      INTEGER,
-    PRIMARY KEY (menu_group_id, table_id),
     FOREIGN KEY (menu_group_id) REFERENCES menu_groups(menu_group_id) ON DELETE CASCADE,
     FOREIGN KEY (table_id) REFERENCES tables(table_id) ON DELETE CASCADE
 );

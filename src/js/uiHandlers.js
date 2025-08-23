@@ -2,6 +2,90 @@
 
 import { allTableNames, jsonData, loadProjectData, activeProject } from './js.main.js';
 
+// js/uiHandlers.js
+
+export function initializeMenuDragDropAndSave() {
+    const container = document.querySelector('.menu-group-list');
+    if (!container) return;
+
+    let draggedItem = null;
+
+    // Fungsi untuk mencetuskan auto-save
+    const triggerSave = () => {
+        const saveStatus = document.getElementById('save-status');
+        const groups = Array.from(container.querySelectorAll('.menu-group-item'));
+        const orderData = groups.map(group => {
+            const items = Array.from(group.querySelectorAll('.tag'));
+            return {
+                groupId: group.dataset.groupId,
+                items: items.map(item => ({ itemId: item.dataset.itemId }))
+            };
+        });
+
+        saveStatus.textContent = 'Saving...';
+        saveStatus.className = 'saving';
+
+        window.electronAPI.updateMenuOrder({ projectId: activeProject.project_id, orderData })
+            .then(result => {
+                if (result.success) {
+                    saveStatus.textContent = 'All changes saved ✔';
+                    saveStatus.className = 'saved';
+                } else {
+                    saveStatus.textContent = 'Save failed!';
+                    saveStatus.className = 'error';
+                }
+                setTimeout(() => saveStatus.textContent = '', 3000);
+            });
+    };
+
+    container.addEventListener('dragstart', (e) => {
+        draggedItem = e.target;
+        if (draggedItem.matches('.menu-group-item, .tag')) {
+            setTimeout(() => draggedItem.classList.add('dragging'), 0);
+        } else {
+            e.preventDefault(); // Elak elemen lain diseret
+        }
+    });
+
+    container.addEventListener('dragend', () => {
+        if (draggedItem) draggedItem.classList.remove('dragging');
+        draggedItem = null;
+    });
+
+    container.addEventListener('dragover', (e) => {
+        e.preventDefault(); // Ini sahaja yang diperlukan di sini
+    });
+
+    container.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (!draggedItem) return;
+
+        const dropTarget = e.target.closest('[draggable="true"]');
+
+        // Pastikan kita tidak drop item ke atas dirinya sendiri
+        if (dropTarget && draggedItem !== dropTarget) {
+            // Pastikan kita hanya drop item dalam bekas yang sama dan jenis yang sama
+            if (draggedItem.parentElement === dropTarget.parentElement) {
+                const rect = dropTarget.getBoundingClientRect();
+                
+                // Tentukan posisi berdasarkan titik tengah elemen sasaran
+                const isAfter = (e.clientY > rect.top + rect.height / 2) || 
+                                (e.clientX > rect.left + rect.width / 2);
+
+                if (isAfter) {
+                    // Masukkan selepas elemen sasaran
+                    dropTarget.parentElement.insertBefore(draggedItem, dropTarget.nextSibling);
+                } else {
+                    // Masukkan sebelum elemen sasaran
+                    dropTarget.parentElement.insertBefore(draggedItem, dropTarget);
+                }
+                
+                triggerSave(); // Cetuskan auto-save
+            }
+        }
+    });
+}
+
 // Fungsi untuk mengumpul data menu semasa dari UI
 function gatherMenuData() {
     const menuGroupList = document.querySelector('.menu-group-list');
@@ -1650,14 +1734,19 @@ export function populateMenuManagement(menuGroupsData) {
 
     // Bina setiap baris kumpulan menu
     menuGroupsData.forEach(group => {
-        // Bina HTML untuk setiap tag menu di dalam kumpulan
         const tagsHtml = group.items.map(item => `
-            <span class="tag">${item.table_name} <button class="remove-tag">&times;</button></span>
+            <span class="tag" draggable="true" data-item-id="${item.item_id}">
+                ${item.table_name} <button class="remove-tag">&times;</button>
+            </span>
         `).join('');
 
         const groupElement = document.createElement('div');
         groupElement.className = 'menu-group-item';
+        groupElement.setAttribute('draggable', 'true');
+        groupElement.dataset.groupId = group.menu_group_id;
+        
         groupElement.innerHTML = `
+            <i class="fas fa-grip-vertical drag-handle"></i>
             <input type="text" class="group-name-input" value="${group.group_name}">
             <div class="menu-selector">
                 ${tagsHtml}

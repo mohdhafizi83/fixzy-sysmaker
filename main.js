@@ -654,3 +654,29 @@ ipcMain.handle('menu:save-structure', async (event, { projectId, menuData }) => 
         return { success: false, message: error.message };
     }
 });
+
+// main.js
+
+ipcMain.handle('menu:update-order', async (event, { projectId, orderData }) => {
+    try {
+        const updateGroup = db.prepare('UPDATE menu_groups SET group_order = ? WHERE menu_group_id = ? AND project_id = ?');
+        const updateItem = db.prepare('UPDATE menu_group_items SET item_order = ?, menu_group_id = ? WHERE item_id = ?');
+
+        const transaction = db.transaction(() => {
+            orderData.forEach((group, groupIndex) => {
+                updateGroup.run(groupIndex, group.groupId, projectId);
+                if (group.items) {
+                    group.items.forEach((item, itemIndex) => {
+                        updateItem.run(itemIndex, group.groupId, item.itemId);
+                    });
+                }
+            });
+        });
+
+        transaction();
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal menyimpan susunan menu:", error);
+        return { success: false, message: error.message };
+    }
+});

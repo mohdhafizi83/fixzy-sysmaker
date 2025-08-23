@@ -31,7 +31,8 @@ import {
     populateProjectDropdown,
     initializeProjectSaveHandlers,
     initializeTableSaveHandlers,
-    initializeFieldSaveHandlers  	
+    initializeFieldSaveHandlers,
+    initializeMenuDragDropAndSave  	
 } from './uiHandlers.js';
 
 function showConfirmationDialog(title, message) {
@@ -147,6 +148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	initializeLocalizationHandlers();
 	initializeThemeHandlers();
 	initializeMenuManagementHandlers();
+	initializeMenuDragDropAndSave();
 	initializeSecurityTabHandlers();
 	initializeClassSelectorHandlers();
 	initializeAutoDefaultHandlers();

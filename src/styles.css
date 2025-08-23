@@ -1252,3 +1252,26 @@ fieldset.fieldset-disabled {
 #save-status.saved {
     color: #10B981; /* Hijau */
 }
+
+/* styles.css */
+
+.drag-handle {
+    cursor: grab;
+    color: var(--secondary-color);
+    margin: 0 0.5rem;
+    flex-shrink: 0;
+}
+
+.menu-selector .tag {
+    cursor: grab;
+}
+
+/* Kelas untuk elemen yang sedang diseret */
+.dragging {
+    opacity: 0.4;
+}
+
+/* Garisan biru untuk menunjukkan di mana elemen akan diletakkan */
+.drag-over {
+    border-top: 2px solid var(--primary-color) !important;
+}
