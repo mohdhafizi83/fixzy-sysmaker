@@ -27,7 +27,8 @@ import {
 	initializeDatabasePropertiesHandlers,
     initializeRealtimeValidation,
     initializeOptionsListRules,
-    initializeCalculatedFieldRules  	
+    initializeCalculatedFieldRules,
+    populateProjectDropdown  	
 } from './uiHandlers.js';
 
 function showConfirmationDialog(title, message) {
@@ -50,7 +51,7 @@ export let activeProject = null;
 // =================================================================
 // ▼▼▼ FUNGSI UTAMA BAHARU UNTUK MEMUATKAN DATA PROJEK ▼▼▼
 // =================================================================
-async function loadProjectData(project) {
+export async function loadProjectData(project) {
     if (!project || !project.project_id) {
         console.log("Tiada projek aktif, memaparkan modal projek baharu.");
         document.getElementById('new-project-modal')?.classList.remove('hidden');
@@ -92,6 +93,9 @@ async function loadProjectData(project) {
         console.error("Gagal memuatkan data skema dari backend.");
         // Mungkin boleh paparkan mesej ralat kepada pengguna di sini
     }
+	
+    // Panggil fungsi untuk kemas kini senarai projek dalam dropdown
+    await populateProjectDropdown();
 }
 
 // Fungsi untuk menguruskan import SQL
@@ -211,16 +215,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
     });
-
-    // Mulakan aplikasi dengan cuba mendapatkan projek aktif dari DB
-    const project = await window.electronAPI.getActiveProject();
-    await loadProjectData(project);
-});
-
-document.addEventListener('DOMContentLoaded', async () => {
-    // ... (panggilan sedia ada yang lain)
+	
     initializeSidebarInteractivity(); // PASTIKAN PANGGILAN INI WUJUD DI SINI
-    
+    // Mulakan aplikasi dengan cuba mendapatkan projek aktif dari DB
     const project = await window.electronAPI.getActiveProject();
     await loadProjectData(project);
 });

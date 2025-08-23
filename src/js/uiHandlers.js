@@ -1,6 +1,48 @@
 // js/uiHandlers.js - VERSI LENGKAP & MUKTAMAD
 
-import { allTableNames, jsonData } from './js.main.js';
+import { allTableNames, jsonData, loadProjectData } from './js.main.js';
+
+export async function populateProjectDropdown() {
+    const projectListContainer = document.getElementById('project-menu-list');
+    const newProjectBtn = document.getElementById('new-project-btn-dropdown');
+    const newProjectModal = document.getElementById('new-project-modal');
+
+    if (!projectListContainer || !newProjectBtn || !newProjectModal) return;
+
+    // Bersihkan senarai lama (kecuali item 'New project...' dan pemisah)
+    projectListContainer.querySelectorAll('.project-item').forEach(item => item.remove());
+
+    // Dapatkan semua projek dari backend
+    const projects = await window.electronAPI.getAllProjects();
+
+    // Cipta dan tambah setiap projek ke dalam senarai
+    projects.forEach(project => {
+        const projectLink = document.createElement('a');
+        projectLink.href = '#';
+        projectLink.textContent = project.app_title;
+        projectLink.className = 'project-item';
+        if (project.is_active) {
+            projectLink.classList.add('active-project');
+        }
+        
+        projectLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const newActiveProject = await window.electronAPI.setActiveProject(project.project_id);
+            if (newActiveProject) {
+                // Muat semula keseluruhan UI dengan data projek baharu
+                await loadProjectData(newActiveProject);
+            }
+        });
+
+        projectListContainer.appendChild(projectLink);
+    });
+
+    // Pasang listener untuk butang 'New project...'
+    newProjectBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        newProjectModal.classList.remove('hidden');
+    });
+}
 
 export function showCustomDialog({ title, message, onOk, onCancel, showCancelButton = false }) {
     const modal = document.getElementById('custom-alert-modal');

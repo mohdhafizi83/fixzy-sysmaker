@@ -1205,3 +1205,18 @@ fieldset.fieldset-disabled {
     opacity: 1;
     visibility: visible;
 }
+
+/* styles.css */
+
+.menu-separator {
+    height: 1px;
+    background-color: #4B5563;
+    margin: 0.5rem 0;
+}
+
+/* Gaya untuk item projek yang aktif dalam dropdown */
+#project-menu-list a.active-project {
+    font-weight: 700;
+    color: var(--sidebar-text-active);
+    background-color: var(--primary-color);
+}

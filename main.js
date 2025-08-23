@@ -440,3 +440,28 @@ app.on("window-all-closed", () => {
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
+
+// Handler baharu untuk mendapatkan semua projek
+ipcMain.handle('projects:get-all', async () => {
+    try {
+        return db.prepare('SELECT project_id, app_title, is_active FROM projects ORDER BY app_title').all();
+    } catch (error) {
+        console.error("Gagal mendapatkan senarai projek:", error);
+        return [];
+    }
+});
+
+// Handler baharu untuk menetapkan projek aktif
+ipcMain.handle('project:set-active', async (event, projectId) => {
+    try {
+        const setActiveTransaction = db.transaction(() => {
+            db.prepare('UPDATE projects SET is_active = 0').run(); // Set semua sebagai tidak aktif
+            db.prepare('UPDATE projects SET is_active = 1 WHERE project_id = ?').run(projectId); // Aktifkan yang dipilih
+        });
+        setActiveTransaction();
+        return db.prepare('SELECT * FROM projects WHERE project_id = ?').get(projectId);
+    } catch (error) {
+        console.error(`Gagal menetapkan projek aktif (ID: ${projectId}):`, error);
+        return null;
+    }
+});

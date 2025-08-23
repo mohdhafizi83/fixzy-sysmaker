@@ -14,16 +14,22 @@
         <nav class="sidebar">
             <div class="sidebar-header">
                 <h3><i class="fas fa-database"></i> FiziSysMaker</h3>
-        <div class="main-menu">
-            <button id="new-project-btn" class="main-menu-btn">New project...</button>
-            <div class="main-menu-dropdown">
-                <button class="main-menu-btn">Import SQL</button>
-                <div class="main-menu-content">
-                    <a href="#" id="import-sql-file-btn">Upload file</a>
-                    <a href="#" id="import-sql-paste-btn">Copy/Paste</a>
-                </div>
+<div class="main-menu">
+    <div class="main-menu-dropdown" id="project-dropdown-container">
+        <button class="main-menu-btn" id="project-menu-btn">Project...</button>
+        <div class="main-menu-content" id="project-menu-list">
+            <a href="#" id="new-project-btn-dropdown">New project...</a>
+            <div class="menu-separator"></div>
             </div>
+    </div>
+    <div class="main-menu-dropdown">
+        <button class="main-menu-btn">Import SQL</button>
+        <div class="main-menu-content">
+            <a href="#" id="import-sql-file-btn">Upload file</a>
+            <a href="#" id="import-sql-paste-btn">Copy/Paste</a>
         </div>
+    </div>
+</div>
                 <div class="sidebar-actions">
                     <div class="action-group">
                         <button class="btn-sidebar"><i class="fas fa-plus"></i><span>New Table</span></button>

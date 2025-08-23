@@ -6,7 +6,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openUrl: (url) => ipcRenderer.invoke('open-url', url),
   getActiveProject: () => ipcRenderer.invoke('project:get-active'),
   createProject: (projectName) => ipcRenderer.invoke('project:create', projectName),
-  // ▼▼▼ TAMBAH FUNGSI BAHARU INI ▼▼▼
+
+  getAllProjects: () => ipcRenderer.invoke('projects:get-all'),
+  setActiveProject: (projectId) => ipcRenderer.invoke('project:set-active', projectId),
+
   getAllSettings: () => ipcRenderer.invoke('settings:get-all'),
   getFullSchema: (projectId) => ipcRenderer.invoke('project:get-full-schema', projectId),
   // Fungsi sedia ada
