@@ -550,3 +550,54 @@ ipcMain.handle('table:update', async (event, data) => {
         return { success: false, message: error.message };
     }
 });
+
+// Handler baharu untuk mengemas kini tetapan medan
+ipcMain.handle('field:update', async (event, data) => {
+    try {
+        const { field_id, ...fieldsToUpdate } = data;
+        if (!field_id) {
+            throw new Error("Field ID tidak dibekalkan.");
+        }
+
+        // Senarai lajur yang dibenarkan untuk dikemas kini dalam jadual 'fields'
+        const allowedColumns = [
+            'caption', 'description', 'data_type', 'length', 'precision', 'max_chars_in_tv', 'alignment',
+            'default_value', 'read_only', 'primary_key', 'zero_fill', 'required', 'rich_html',
+            'auto_increment', 'unique', 'show_sum', 'text_area', 'unsigned', 'no_filter', 'binary',
+            'check_box', 'hide_in_tv', 'hide_in_dv', 'enable_column_width', 'column_width',
+            'media_type', 'media_link_behavior', 'media_link_display_as', 'media_link_other_field',
+            'allow_image_uploads', 'max_file_size', 'delete_image_server', 'dont_rename_image',
+            'tv_thumb_width', 'tv_thumb_height', 'tv_enable_zooming', 'tv_show_full_size',
+            'dv_thumb_width', 'dv_thumb_height', 'dv_enable_zooming', 'dv_show_full_size',
+            'allow_file_uploads', 'file_types', 'file_max_size', 'delete_file_server',
+            'dont_rename_file', 'file_behavior', 'file_display_as', 'file_other_field',
+            'display_gmap', 'gmap_type', 'gmap_tv_width', 'gmap_tv_height', 'gmap_dv_height',
+            'accept_video_url', 'youtube_tv_width', 'youtube_tv_height', 'youtube_dv_width',
+            'youtube_dv_height', 'lookup_parent_table', 'lookup_caption_1', 'lookup_separator',
+            'lookup_caption_2', 'lookup_display_as', 'lookup_inherit_permissions',
+            'lookup_link_behavior', 'options_list_values', 'options_display', 'format_as',
+            'calculated_enable', 'calculated_query', 'lookup_custom_query'
+        ];
+
+        const setClause = Object.keys(fieldsToUpdate)
+            .filter(key => allowedColumns.includes(key))
+            .map(key => `"${key}" = ?`) // Guna petikan berganda untuk kata kunci 'unique'
+            .join(', ');
+
+        if (!setClause) {
+            return { success: true, message: 'Tiada medan yang sah untuk dikemas kini.' };
+        }
+
+        const values = Object.keys(fieldsToUpdate)
+            .filter(key => allowedColumns.includes(key))
+            .map(key => fieldsToUpdate[key]);
+
+        const stmt = db.prepare(`UPDATE fields SET ${setClause} WHERE field_id = ?`);
+        stmt.run(...values, field_id);
+
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal mengemas kini medan:", error);
+        return { success: false, message: error.message };
+    }
+});

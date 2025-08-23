@@ -139,6 +139,78 @@ export function initializeTableSaveHandlers() {
     });
 }
 
+export function initializeFieldSaveHandlers() {
+    const form = document.getElementById('field-settings-page');
+    const saveStatus = document.getElementById('save-status');
+    if (!form || !saveStatus) return;
+
+    let saveTimer;
+
+    const gatherData = () => {
+        const data = {};
+        const inputs = form.querySelectorAll('input, select, textarea');
+        
+        inputs.forEach(input => {
+            if (!input.id) return;
+            const id = input.id.replace('fld-', '').replace(/-/g, '_');
+
+            if (input.type === 'checkbox') {
+                data[id] = input.checked ? 1 : 0;
+            } else if (input.type === 'radio') {
+                if (input.checked) {
+                    data[input.name.replace('fld-', '').replace(/-/g, '_')] = input.value;
+                }
+            } else if (input.id) {
+                data[id] = input.value;
+            }
+        });
+        return data;
+    };
+
+    const onInputChange = () => {
+        saveStatus.textContent = 'Unsaved changes...';
+        saveStatus.className = '';
+
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(async () => {
+            saveStatus.textContent = 'Saving...';
+            saveStatus.className = 'saving';
+
+            const dataToSave = gatherData();
+            
+            // Dapatkan field_id dari jsonData berdasarkan nama jadual & medan yang aktif
+            const [tableName, fieldName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
+            const fieldData = jsonData.database.table[tableName]?.fields[fieldName];
+            
+            if (!fieldData) {
+                saveStatus.textContent = 'Error: Active field not found!';
+                saveStatus.className = 'error';
+                return;
+            }
+            dataToSave.field_id = fieldData.field_id;
+
+            const result = await window.electronAPI.updateField(dataToSave);
+
+            if (result.success) {
+                saveStatus.textContent = 'All changes saved ✔';
+                saveStatus.className = 'saved';
+            } else {
+                saveStatus.textContent = 'Save failed!';
+                saveStatus.className = 'error';
+            }
+            setTimeout(() => saveStatus.textContent = '', 3000);
+
+        }, 1500);
+    };
+
+    form.querySelectorAll('input, select, textarea').forEach(input => {
+        input.addEventListener('change', onInputChange);
+        if (input.type === 'text' || input.type === 'number' || input.tagName.toLowerCase() === 'textarea') {
+            input.addEventListener('input', onInputChange);
+        }
+    });
+}
+
 export async function populateProjectDropdown() {
     const projectListContainer = document.getElementById('project-menu-list');
     const newProjectBtn = document.getElementById('new-project-btn-dropdown');

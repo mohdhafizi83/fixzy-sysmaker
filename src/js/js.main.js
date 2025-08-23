@@ -30,7 +30,8 @@ import {
     initializeCalculatedFieldRules,
     populateProjectDropdown,
     initializeProjectSaveHandlers,
-    initializeTableSaveHandlers  	
+    initializeTableSaveHandlers,
+    initializeFieldSaveHandlers  	
 } from './uiHandlers.js';
 
 function showConfirmationDialog(title, message) {
@@ -164,6 +165,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	initializeCalculatedFieldRules();
 	initializeProjectSaveHandlers();
 	initializeTableSaveHandlers();
+	initializeFieldSaveHandlers(); 
 	
     // Setup Event Listeners
     const newProjectBtn = document.getElementById('new-project-btn');

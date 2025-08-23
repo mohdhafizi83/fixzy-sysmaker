@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setActiveProject: (projectId) => ipcRenderer.invoke('project:set-active', projectId),
   updateProject: (data) => ipcRenderer.invoke('project:update', data),
   updateTable: (data) => ipcRenderer.invoke('table:update', data),
+  updateField: (data) => ipcRenderer.invoke('field:update', data),
   getAllSettings: () => ipcRenderer.invoke('settings:get-all'),
   getFullSchema: (projectId) => ipcRenderer.invoke('project:get-full-schema', projectId),
   // Fungsi sedia ada

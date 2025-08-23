@@ -123,7 +123,7 @@ CREATE TABLE fields (
     dv_show_full_size            INTEGER DEFAULT 0,
     allow_file_uploads           INTEGER DEFAULT 0,
     file_types                   TEXT DEFAULT 'images',
-	file_max_size                INTEGER DEFAULT 1001,
+	file_max_size                INTEGER DEFAULT 1074,
     delete_file_server           INTEGER DEFAULT 0,
     dont_rename_file             INTEGER DEFAULT 0,
     file_behavior                TEXT DEFAULT 'download_link',
