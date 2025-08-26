@@ -1275,3 +1275,12 @@ fieldset.fieldset-disabled {
 .drag-over {
     border-top: 2px solid var(--primary-color) !important;
 }
+
+/* Menjadikan kedudukan menu tindakan tetap */
+.sidebar-header {
+    position: sticky;
+    top: 0;
+    background-color: var(--sidebar-bg); /* Warna latar belakang yang sama dengan sidebar */
+    z-index: 10; /* Pastikan ia berada di atas elemen lain */
+    padding-bottom: 1rem; /* Tambah sedikit ruang di bawah */
+}
