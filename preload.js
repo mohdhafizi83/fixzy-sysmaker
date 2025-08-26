@@ -6,7 +6,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openUrl: (url) => ipcRenderer.invoke('open-url', url),
   getActiveProject: () => ipcRenderer.invoke('project:get-active'),
   createProject: (projectName) => ipcRenderer.invoke('project:create', projectName),
-createTable: (projectId) => ipcRenderer.invoke('table:create', projectId),
+  createTable: (projectId) => ipcRenderer.invoke('table:create', projectId),
+  deleteTables: (data) => ipcRenderer.invoke('table:delete', data),
 
   getAllProjects: () => ipcRenderer.invoke('projects:get-all'),
   setActiveProject: (projectId) => ipcRenderer.invoke('project:set-active', projectId),

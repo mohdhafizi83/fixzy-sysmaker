@@ -8,12 +8,14 @@ updateActionButtonsState,
 populateSortByDropdown, 
 populateFocusFieldDropdown, 
 setupMediaTab, 
-populateParentChildTab
+populateParentChildTab,
+showCustomDialog
   } from './uiHandlers.js'; 
 import { jsonData, activeProject, loadProjectData   } from './js.main.js';
 
 export function initializeSidebarButtons() {
     const newTableBtn = document.getElementById('btn-new-table');
+	const deleteBtn = document.getElementById('btn-delete');
 
     if (newTableBtn) {
         newTableBtn.addEventListener('click', async () => {
@@ -32,6 +34,69 @@ export function initializeSidebarButtons() {
             }
         });
     }
+	
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => {
+            const activeLink = document.querySelector('.sidebar .nav-list a.active');
+            if (!activeLink) return;
+
+            const isTableLink = activeLink.parentElement.classList.contains('has-submenu');
+            if (!isTableLink) { // Hanya berfungsi jika jadual dipilih, bukan medan
+                showCustomDialog({ title: "Info", message: "Please select a table to delete." });
+                return;
+            }
+
+            const tableNameToDelete = activeLink.querySelector('span').textContent.trim();
+
+            // Semak jika jadual ini adalah induk kepada jadual lain
+            const childTables = jsonData.database.relationships
+                .filter(r => r.parent_table_name === tableNameToDelete)
+                .map(r => r.child_table_name);
+
+            const performDelete = async (tablesToDelete) => {
+                const result = await window.electronAPI.deleteTables({
+                    projectId: activeProject.project_id,
+                    tableNamesToDelete: tablesToDelete
+                });
+                if (result.success) {
+                    showCustomDialog({ title: "Success", message: `${tablesToDelete.join(', ')} has been deleted.` });
+                    await loadProjectData(activeProject); // Muat semula UI
+                } else {
+                    showCustomDialog({ title: "Error", message: `Failed to delete tables: ${result.message}` });
+                }
+            };
+
+            if (childTables.length > 0) {
+                // KES 1: Jadual adalah induk
+                const message = `Warning: '${tableNameToDelete}' is a parent table for the following child tables:\n\n` +
+                              `- ${childTables.join('\n- ')}\n\n` +
+                              `Deleting '${tableNameToDelete}' will also permanently delete these child tables and all their data. Are you sure you want to proceed?`;
+                
+                showCustomDialog({
+                    title: "Confirm Deletion of Parent Table",
+                    message: message,
+                    showCancelButton: true,
+                    onOk: () => {
+                        const allTablesToDelete = [tableNameToDelete, ...childTables];
+                        performDelete(allTablesToDelete);
+                    }
+                });
+
+            } else {
+                // KES 2: Jadual bukan induk
+                const message = `Are you sure you want to permanently delete the table '${tableNameToDelete}' and all its fields?`;
+                showCustomDialog({
+                    title: "Confirm Deletion",
+                    message: message,
+                    showCancelButton: true,
+                    onOk: () => {
+                        performDelete([tableNameToDelete]);
+                    }
+                });
+            }
+        });
+    }	
+	
 }
 
 export async function generateSidebarMenu() {

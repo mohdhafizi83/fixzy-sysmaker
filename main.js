@@ -31,7 +31,33 @@ if (!dbExists) {
 // ▼▼▼ SEMUA IPC HANDLER DIKUMPULKAN DI SINI UNTUK KONSISTENSI ▼▼▼
 // =================================================================
 
-// main.js
+// Handler untuk memadam jadual
+ipcMain.handle('table:delete', async (event, { projectId, tableNamesToDelete }) => {
+    try {
+        if (!projectId || !tableNamesToDelete || tableNamesToDelete.length === 0) {
+            throw new Error("ID Projek atau nama jadual tidak dibekalkan.");
+        }
+
+        const transaction = db.transaction(() => {
+            const getTableId = db.prepare('SELECT table_id FROM tables WHERE project_id = ? AND table_name = ?');
+            const deleteTable = db.prepare('DELETE FROM tables WHERE table_id = ?');
+
+            for (const tableName of tableNamesToDelete) {
+                const table = getTableId.get(projectId, tableName);
+                if (table) {
+                    deleteTable.run(table.table_id);
+                }
+            }
+        });
+
+        transaction();
+        return { success: true };
+
+    } catch (error) {
+        console.error("Gagal memadam jadual:", error);
+        return { success: false, message: error.message };
+    }
+});
 
 // Handler untuk mencipta jadual baharu
 ipcMain.handle('table:create', async (event, projectId) => {
