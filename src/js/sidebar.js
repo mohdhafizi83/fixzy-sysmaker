@@ -129,7 +129,9 @@ export function initializeSidebarButtons() {
         });
                         if (result.success) {
                             showCustomDialog({ title: "Success", message: `'${fieldName}' has been deleted.` });
-                            await loadProjectData(activeProject);
+            // Selepas memuat semula data, aktifkan jadual induk
+            await loadProjectData(activeProject);
+            setActiveSidebarLink(tableName);
                         } else {
                             showCustomDialog({ title: "Error", message: `Failed to delete field: ${result.message}` });
                         }
