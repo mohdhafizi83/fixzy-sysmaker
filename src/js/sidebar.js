@@ -15,6 +15,7 @@ import { jsonData, activeProject, loadProjectData   } from './js.main.js';
 
 export function initializeSidebarButtons() {
     const newTableBtn = document.getElementById('btn-new-table');
+	const newFieldBtn = document.getElementById('btn-new-field');
 	const deleteBtn = document.getElementById('btn-delete');
 
     if (newTableBtn) {
@@ -95,7 +96,25 @@ export function initializeSidebarButtons() {
                 });
             }
         });
-    }	
+    }
+
+    if (newFieldBtn) {
+        newFieldBtn.addEventListener('click', async () => {
+            const activeLink = document.querySelector('.sidebar .nav-list a.active');
+            if (!activeLink || !activeProject) return;
+
+            const tableLink = activeLink.closest('.has-submenu').querySelector('a');
+            const tableName = tableLink.querySelector('span').textContent.trim();
+            const tableData = jsonData.database.table[tableName];
+
+            if (tableData) {
+                const newField = await window.electronAPI.createField(tableData.table_id);
+                if (newField) {
+                    await loadProjectData(activeProject);
+                }
+            }
+        });
+    }
 	
 }
 

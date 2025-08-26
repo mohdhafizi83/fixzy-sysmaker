@@ -31,6 +31,31 @@ if (!dbExists) {
 // ▼▼▼ SEMUA IPC HANDLER DIKUMPULKAN DI SINI UNTUK KONSISTENSI ▼▼▼
 // =================================================================
 
+// Handler untuk mencipta medan baharu
+ipcMain.handle('field:create', async (event, tableId) => {
+    try {
+        // Cari nama unik untuk medan baharu
+        const fields = db.prepare("SELECT field_name FROM fields WHERE table_id = ? AND field_name LIKE 'newField%'").all(tableId);
+        let n = 1;
+        const existingNumbers = fields.map(f => parseInt(f.field_name.split('_')[1] || 0));
+        while (existingNumbers.includes(n)) {
+            n++;
+        }
+        const newName = `newField_${n}`;
+
+        // Masukkan medan baharu dengan nilai lalai
+        const info = db.prepare(
+            `INSERT INTO fields (table_id, field_name, caption, data_type, length) VALUES (?, ?, ?, 'VARCHAR', 255)`
+        ).run(tableId, newName, newName);
+
+        // Kembalikan data medan yang baru dicipta
+        return db.prepare('SELECT * FROM fields WHERE field_id = ?').get(info.lastInsertRowid);
+    } catch (error) {
+        console.error("Gagal mencipta medan baharu:", error);
+        return null;
+    }
+});
+
 // Handler untuk memadam jadual
 ipcMain.handle('table:delete', async (event, { projectId, tableNamesToDelete }) => {
     try {
@@ -104,9 +129,7 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
     }
 
     const placeholder = tableIds.map(() => "?").join(",");
-    const fields = db
-      .prepare(`SELECT * FROM fields WHERE table_id IN (${placeholder})`)
-      .all(...tableIds);
+    const fields = db.prepare(`SELECT * FROM fields WHERE table_id IN (${placeholder}) ORDER BY field_id`).all(...tableIds);
 
     const structuredTables = {};
     tables.forEach((table) => {
