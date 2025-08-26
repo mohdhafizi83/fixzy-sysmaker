@@ -63,7 +63,11 @@ export function initializeSidebarButtons() {
                     message: message,
                     showCancelButton: true,
                     onOk: async () => {
-                        const result = await window.electronAPI.deleteField({ fieldIdToDelete: fieldObject.field_id });
+        const result = await window.electronAPI.deleteField({
+            fieldId: fieldObject.field_id,
+            tableName: tableName,
+            fieldName: fieldName
+        });
                         if (result.success) {
                             showCustomDialog({ title: "Success", message: `'${fieldName}' has been deleted.` });
                             await loadProjectData(activeProject);

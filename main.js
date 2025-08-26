@@ -31,13 +31,30 @@ if (!dbExists) {
 // ▼▼▼ SEMUA IPC HANDLER DIKUMPULKAN DI SINI UNTUK KONSISTENSI ▼▼▼
 // =================================================================
 
-// main.js
-ipcMain.handle('field:delete', async (event, { fieldIdToDelete }) => {
+ipcMain.handle('field:delete', async (event, { fieldId, tableName, fieldName }) => {
     try {
-        // ON DELETE CASCADE pada jadual relationships akan memadam hubungan secara automatik
-        db.prepare('DELETE FROM fields WHERE field_id = ?').run(fieldIdToDelete);
+        const transaction = db.transaction(() => {
+            // Dapatkan ID jadual anak
+            const childTable = db.prepare('SELECT table_id FROM tables WHERE table_name = ?').get(tableName);
+            if (!childTable) return;
+
+            // 1. Padam hubungan di mana medan ini adalah kunci asing (foreign key)
+            db.prepare('DELETE FROM parent_child_relationships WHERE child_table_id = ? AND fk_child_field = ?')
+              .run(childTable.table_id, fieldName);
+
+            // 2. Kosongkan rujukan 'lookup_caption' yang menggunakan medan ini
+            db.prepare("UPDATE fields SET lookup_caption_1 = '' WHERE lookup_caption_1 = ?")
+              .run(fieldName);
+            db.prepare("UPDATE fields SET lookup_caption_2 = '' WHERE lookup_caption_2 = ?")
+              .run(fieldName);
+
+            // 3. Akhir sekali, padam medan itu sendiri
+            db.prepare('DELETE FROM fields WHERE field_id = ?').run(fieldId);
+        });
+
+        transaction();
         return { success: true };
-    } catch (error) {
+    } catch (error){
         console.error("Gagal memadam medan:", error);
         return { success: false, message: error.message };
     }
