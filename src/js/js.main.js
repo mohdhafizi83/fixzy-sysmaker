@@ -1,5 +1,5 @@
 // js/main.js (Proses Renderer)
-import { generateSidebarMenu, initializeSidebarInteractivity, initializeSidebarButtons } from './sidebar.js';
+import { generateSidebarMenu, initializeSidebarInteractivity, initializeSidebarButtons, setActiveSidebarLink } from './sidebar.js';
 import { 
    showCustomDialog,
     updateActionButtonsState, 
@@ -56,7 +56,7 @@ export let activeProject = null;
 // =================================================================
 // ▼▼▼ FUNGSI UTAMA BAHARU UNTUK MEMUATKAN DATA PROJEK ▼▼▼
 // =================================================================
-export async function loadProjectData(project) {
+export async function loadProjectData(project, tableToSelect = null) {
     if (!project || !project.project_id) {
         console.log("Tiada projek aktif, memaparkan modal projek baharu.");
         document.getElementById('new-project-modal')?.classList.remove('hidden');
@@ -86,7 +86,11 @@ export async function loadProjectData(project) {
         
         // Jana semula menu sisi dan fungsikan interaktiviti
         await generateSidebarMenu();
-        //initializeSidebarInteractivity();
+
+        // Selepas menu dijana, cari dan klik pautan yang betul
+        if (tableToSelect) {
+setActiveSidebarLink(tableToSelect);
+        }
         
         // Semak jika projek ini kosong untuk tunjukkan tutorial
         const tablesExistResult = await window.electronAPI.checkTablesExist(project.project_id);

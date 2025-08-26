@@ -13,6 +13,35 @@ showCustomDialog
   } from './uiHandlers.js'; 
 import { jsonData, activeProject, loadProjectData   } from './js.main.js';
 
+// js/sidebar.js
+
+// Fungsi baharu untuk mengaktifkan pautan secara manual
+export function setActiveSidebarLink(tableName) {
+    if (!tableName) return;
+
+    const allLinks = document.querySelectorAll('.sidebar .nav-list a');
+    const tableLinks = document.querySelectorAll('.sidebar .nav-list .has-submenu > a');
+
+    const targetLink = Array.from(tableLinks).find(
+        link => link.querySelector('span').textContent.trim() === tableName
+    );
+
+    if (targetLink) {
+        // Nyahaktifkan semua pautan lain
+        allLinks.forEach(l => l.classList.remove('active'));
+        // Aktifkan pautan sasaran
+        targetLink.classList.add('active');
+        
+        // Paparkan halaman dan muatkan datanya
+        showPage('table-settings');
+        document.querySelector('#table-settings-page .table-name').textContent = tableName;
+        populateTableSettings(tableName);
+        populateParentChildTab(tableName);
+		
+		updateActionButtonsState();
+    }
+}
+
 export function initializeSidebarButtons() {
     const newTableBtn = document.getElementById('btn-new-table');
 	const newFieldBtn = document.getElementById('btn-new-field');
@@ -30,8 +59,8 @@ export function initializeSidebarButtons() {
             const newTable = await window.electronAPI.createTable(activeProject.project_id);
 
             if (newTable) {
-                // Muat semula semua data dan UI untuk memaparkan jadual baharu
-                await loadProjectData(activeProject);
+    // Muat semula data DAN hantar nama jadual baharu untuk dipilih
+    await loadProjectData(activeProject, newTable.table_name);
             }
         });
     }
