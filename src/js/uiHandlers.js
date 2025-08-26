@@ -267,11 +267,12 @@ export function initializeTableSaveHandlers() {
             saveStatus.textContent = 'Saving...';
             saveStatus.className = 'saving';
 
+            // Dapatkan nama jadual LAMA sebelum ia berubah
+            const oldTableName = document.querySelector('#table-settings-page .table-name').textContent;
             const dataToSave = gatherData();
+            const newTableName = dataToSave.table_name;
             
-            // Dapatkan table_id dari jsonData berdasarkan nama jadual yang aktif
-            const activeTableName = document.querySelector('#table-settings-page .table-name').textContent;
-            const tableData = Object.values(jsonData.database.table).find(t => t.table_name === activeTableName);
+            const tableData = Object.values(jsonData.database.table).find(t => t.table_name === oldTableName)
             
             if (!tableData) {
                 saveStatus.textContent = 'Error: Active table not found!';
@@ -285,10 +286,14 @@ export function initializeTableSaveHandlers() {
             if (result.success) {
                 saveStatus.textContent = 'All changes saved ✔';
                 saveStatus.className = 'saved';
+
+                // Jika nama telah ditukar, muat semula keseluruhan data aplikasi
+                if (oldTableName !== newTableName) {
+                    await loadProjectData(activeProject, newTableName);
+                }
             } else {
                 saveStatus.textContent = 'Save failed!';
                 saveStatus.className = 'error';
-
             }
             setTimeout(() => saveStatus.textContent = '', 3000);
 
@@ -1531,7 +1536,8 @@ export function populateTableSettings(tableName) {
         console.error(`Tiada data ditemui untuk jadual: ${tableName}`);
         return;
     }
-
+	
+    setElementValue('tbl-table-name', tableData.table_name);
     // Tab: Table view -> General
     setElementValue('tbl-table-view-title', tableData.table_view_title);
     setElementValue('tbl-table-description', tableData.table_description);

@@ -624,6 +624,7 @@ ipcMain.handle('table:update', async (event, data) => {
 
         // Senarai lajur yang dibenarkan untuk dikemas kini dalam jadual 'tables'
         const allowedColumns = [
+		    'table_name',
             'table_view_title', 'table_description', 'show_quick_search', 'records_per_page',
             'default_sort_by', 'sort_descending', 'allow_sorting', 'allow_filters', 'allow_csv_export',
             'allow_print_view', 'allow_user_save_filters', 'hide_homepage_link', 'allow_mass_delete',
