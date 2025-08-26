@@ -16,7 +16,7 @@ import { jsonData, activeProject, loadProjectData   } from './js.main.js';
 // js/sidebar.js
 
 // Fungsi baharu untuk mencari dan mengaktifkan medan spesifik
-function focusOnSidebarField(tableName, fieldName) {
+export function focusOnSidebarField(tableName, fieldName) {
     const tableLinks = document.querySelectorAll('.sidebar .nav-list .has-submenu > a');
     const parentLink = Array.from(tableLinks).find(
         link => link.querySelector('span').textContent.trim() === tableName

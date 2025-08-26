@@ -1,6 +1,6 @@
 // js/uiHandlers.js - VERSI LENGKAP & MUKTAMAD
 
-import { allTableNames, jsonData, loadProjectData, activeProject } from './js.main.js';
+import { allTableNames, jsonData, loadProjectData, activeProject, setActiveSidebarItem } from './js.main.js';
 
 // js/uiHandlers.js
 
@@ -289,7 +289,10 @@ export function initializeTableSaveHandlers() {
 
                 // Jika nama telah ditukar, muat semula keseluruhan data aplikasi
                 if (oldTableName !== newTableName) {
-                    await loadProjectData(activeProject, newTableName);
+                    // 1. Muat semula data & UI
+                    await loadProjectData(activeProject);
+                    // 2. Panggil fungsi baharu untuk aktifkan semula item
+                    setActiveSidebarItem(newTableName);
                 }
             } else {
                 saveStatus.textContent = 'Save failed!';
@@ -365,34 +368,11 @@ export function initializeFieldSaveHandlers() {
                 saveStatus.textContent = 'All changes saved ✔';
                 saveStatus.className = 'saved';
 
-               if (oldFieldName !== newFieldName) {
-                    // 1. Muat semula data dan jana semula sidebar dahulu
+                               if (oldFieldName !== newFieldName) {
+                    // 1. Muat semula data & UI
                     await loadProjectData(activeProject);
-
-                    // Beri sedikit masa untuk DOM dikemas kini sepenuhnya
-                    setTimeout(() => {
-                        // 2. Cari pautan jadual induk di sidebar yang baru
-                        const tableLinks = document.querySelectorAll('.sidebar .nav-list .has-submenu > a');
-                        const parentLink = Array.from(tableLinks).find(
-                            link => link.querySelector('span').textContent.trim() === tableName
-                        );
-
-                        if (parentLink) {
-                            // 3. Buka submenu secara paksa (lebih stabil)
-                            parentLink.classList.add('open');
-                            const submenu = parentLink.nextElementSibling;
-                            if (submenu) submenu.style.display = 'block';
-
-                            // 4. Cari medan dengan nama baharu dan klik untuk aktifkannya
-                            const fieldLinks = parentLink.parentElement.querySelectorAll('.submenu-level-3 a');
-                            const targetFieldLink = Array.from(fieldLinks).find(
-                                link => link.querySelector('span').textContent.trim() === newFieldName
-                            );
-                            if (targetFieldLink) {
-                                targetFieldLink.click();
-                            }
-                        }
-                    }, 150); // Kelewatan kecil untuk kestabilan
+                    // 2. Panggil fungsi baharu untuk aktifkan semula item
+                    setActiveSidebarItem(tableName, newFieldName);
                 }
             } else {
                 saveStatus.textContent = 'Save failed!';
