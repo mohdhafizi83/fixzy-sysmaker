@@ -15,6 +15,36 @@ import { jsonData, activeProject, loadProjectData   } from './js.main.js';
 
 // js/sidebar.js
 
+// Fungsi baharu untuk mencari dan mengaktifkan medan spesifik
+function focusOnSidebarField(tableName, fieldName) {
+    const tableLinks = document.querySelectorAll('.sidebar .nav-list .has-submenu > a');
+    const parentLink = Array.from(tableLinks).find(
+        link => link.querySelector('span').textContent.trim() === tableName
+    );
+
+    if (!parentLink) return;
+
+    // Fungsi untuk mencari dan mengklik pautan medan
+    const selectField = () => {
+        const fieldLinks = parentLink.parentElement.querySelectorAll('.submenu-level-3 a');
+        const targetFieldLink = Array.from(fieldLinks).find(
+            link => link.querySelector('span').textContent.trim() === fieldName
+        );
+        if (targetFieldLink) {
+            targetFieldLink.click();
+        }
+    };
+
+    // Jika submenu sudah terbuka, terus pilih medan
+    if (parentLink.classList.contains('open')) {
+        selectField();
+    } else {
+        // Jika tidak, klik ikon untuk buka, kemudian tunggu sebentar sebelum memilih
+        parentLink.querySelector('.toggle-icon').click();
+        setTimeout(selectField, 100); // Beri masa untuk animasi submenu
+    }
+}
+
 // Fungsi baharu untuk mengaktifkan pautan secara manual
 export function setActiveSidebarLink(tableName) {
     if (!tableName) return;
@@ -193,7 +223,10 @@ const performDelete = async (tablesToDelete) => {
             if (tableData) {
                 const newField = await window.electronAPI.createField(tableData.table_id);
                 if (newField) {
+                    // 1. Muat semula data dahulu
                     await loadProjectData(activeProject);
+                    // 2. Selepas UI dikemas kini, panggil fungsi fokus
+                    focusOnSidebarField(tableName, newField.field_name);
                 }
             }
         });

@@ -56,7 +56,7 @@ export let activeProject = null;
 // =================================================================
 // ▼▼▼ FUNGSI UTAMA BAHARU UNTUK MEMUATKAN DATA PROJEK ▼▼▼
 // =================================================================
-export async function loadProjectData(project, tableToSelect = null) {
+export async function loadProjectData(project, tableToSelect = null, itemToSelect = null) {
     if (!project || !project.project_id) {
         console.log("Tiada projek aktif, memaparkan modal projek baharu.");
         document.getElementById('new-project-modal')?.classList.remove('hidden');
@@ -72,20 +72,48 @@ export async function loadProjectData(project, tableToSelect = null) {
 
     if (data && data.database) {
         jsonData = data;
-
-        console.log('Data Skema Penuh Diterima:', jsonData);
         allTableNames = Object.keys(jsonData.database.table || {});
 
-        // Panggil fungsi untuk mengisi Papan Pemuka Utama
+        // Isi semua borang dengan data terkini
         populateMainDashboard(activeProject);
-
         populateMenuManagement(jsonData.database.menu_groups);
-		
-        // Kemas kini UI dengan data yang diterima
         document.getElementById('app-title').value = jsonData.database.name || 'Project Name';
         
         // Jana semula menu sisi dan fungsikan interaktiviti
         await generateSidebarMenu();
+		
+        // Logik baharu untuk memilih item secara automatik
+        if (itemToSelect) {
+            setTimeout(() => {
+                let linkToClick = null;
+                if (itemToSelect.field) { // Jika kita mahu memilih medan
+                    const tableLinks = document.querySelectorAll('.sidebar .nav-list .has-submenu > a');
+                    const parentLink = Array.from(tableLinks).find(
+                        link => link.querySelector('span').textContent.trim() === itemToSelect.table
+                    );
+                    if (parentLink) {
+                        // Buka submenu jika tertutup
+                        if (!parentLink.classList.contains('open')) {
+                            parentLink.querySelector('.toggle-icon').click();
+                        }
+                        // Cari pautan medan
+                        const fieldLinks = parentLink.parentElement.querySelectorAll('.submenu-level-3 a');
+                        linkToClick = Array.from(fieldLinks).find(
+                            link => link.querySelector('span').textContent.trim() === itemToSelect.field
+                        );
+                    }
+                } else if (itemToSelect.table) { // Jika kita hanya mahu memilih jadual
+                    const tableLinks = document.querySelectorAll('.sidebar .nav-list .has-submenu > a');
+                    linkToClick = Array.from(tableLinks).find(
+                        link => link.querySelector('span').textContent.trim() === itemToSelect.table
+                    );
+                }
+
+                if (linkToClick) {
+                    linkToClick.click();
+                }
+            }, 100); // Kelewatan kecil untuk memastikan submenu sempat dibuka
+        }
 
         // Selepas menu dijana, cari dan klik pautan yang betul
         if (tableToSelect) {
