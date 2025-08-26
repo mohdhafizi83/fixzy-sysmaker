@@ -365,9 +365,34 @@ export function initializeFieldSaveHandlers() {
                 saveStatus.textContent = 'All changes saved ✔';
                 saveStatus.className = 'saved';
 
-                // Jika nama telah ditukar, muat semula keseluruhan data aplikasi
-                if (oldFieldName !== newFieldName) {
-                    await loadProjectData(activeProject, { table: tableName, field: newFieldName });
+               if (oldFieldName !== newFieldName) {
+                    // 1. Muat semula data dan jana semula sidebar dahulu
+                    await loadProjectData(activeProject);
+
+                    // Beri sedikit masa untuk DOM dikemas kini sepenuhnya
+                    setTimeout(() => {
+                        // 2. Cari pautan jadual induk di sidebar yang baru
+                        const tableLinks = document.querySelectorAll('.sidebar .nav-list .has-submenu > a');
+                        const parentLink = Array.from(tableLinks).find(
+                            link => link.querySelector('span').textContent.trim() === tableName
+                        );
+
+                        if (parentLink) {
+                            // 3. Buka submenu secara paksa (lebih stabil)
+                            parentLink.classList.add('open');
+                            const submenu = parentLink.nextElementSibling;
+                            if (submenu) submenu.style.display = 'block';
+
+                            // 4. Cari medan dengan nama baharu dan klik untuk aktifkannya
+                            const fieldLinks = parentLink.parentElement.querySelectorAll('.submenu-level-3 a');
+                            const targetFieldLink = Array.from(fieldLinks).find(
+                                link => link.querySelector('span').textContent.trim() === newFieldName
+                            );
+                            if (targetFieldLink) {
+                                targetFieldLink.click();
+                            }
+                        }
+                    }, 150); // Kelewatan kecil untuk kestabilan
                 }
             } else {
                 saveStatus.textContent = 'Save failed!';
