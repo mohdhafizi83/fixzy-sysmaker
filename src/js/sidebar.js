@@ -76,7 +76,40 @@ export function initializeSidebarButtons() {
     const newTableBtn = document.getElementById('btn-new-table');
 	const newFieldBtn = document.getElementById('btn-new-field');
 	const deleteBtn = document.getElementById('btn-delete');
+    const moveUpBtn = document.getElementById('btn-move-up');
+    const moveDownBtn = document.getElementById('btn-move-down');
 
+    const handleMove = async (direction) => {
+        const activeLink = document.querySelector('.sidebar .nav-list a.active');
+        if (!activeLink || !activeLink.closest('ul.submenu-level-3')) {
+            return; // Lakukan hanya jika medan yang aktif
+        }
+
+        const fieldLi = activeLink.parentElement;
+        const sibling = direction === 'up' ? fieldLi.previousElementSibling : fieldLi.nextElementSibling;
+
+        if (sibling) {
+            // Gerakkan item dalam DOM
+            fieldLi.parentElement.insertBefore(
+                fieldLi,
+                direction === 'up' ? sibling : sibling.nextElementSibling
+            );
+
+            // Kumpul susunan baharu
+            const allFieldLis = fieldLi.parentElement.querySelectorAll('li');
+            const orderData = Array.from(allFieldLis).map((li, index) => ({
+                field_id: li.dataset.fieldId,
+                order: index
+            }));
+
+            // Hantar ke backend
+            await window.electronAPI.updateFieldOrder(orderData);
+        }
+    };
+
+    if (moveUpBtn) moveUpBtn.addEventListener('click', () => handleMove('up'));
+    if (moveDownBtn) moveDownBtn.addEventListener('click', () => handleMove('down'));
+	
     if (newTableBtn) {
         newTableBtn.addEventListener('click', async () => {
             if (!activeProject) {
@@ -255,6 +288,8 @@ export async function generateSidebarMenu() {
             let isFirstField = true;
             for (const fieldName in fields) {
                 const fieldLi = document.createElement('li');
+				fieldLi.dataset.fieldId = fields[fieldName].field_id;
+				
                 const fieldLink = document.createElement('a');
                 fieldLink.href = "#";
                 fieldLink.title = `Field Name: ${fieldName}`;

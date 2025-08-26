@@ -31,6 +31,26 @@ if (!dbExists) {
 // ▼▼▼ SEMUA IPC HANDLER DIKUMPULKAN DI SINI UNTUK KONSISTENSI ▼▼▼
 // =================================================================
 
+// main.js (tambah di mana-mana bersama handler IPC lain)
+
+ipcMain.handle('field:update-order', async (event, orderData) => {
+    try {
+        const updateStmt = db.prepare('UPDATE fields SET field_order = ? WHERE field_id = ?');
+        
+        const transaction = db.transaction(() => {
+            for (const item of orderData) {
+                updateStmt.run(item.order, item.field_id);
+            }
+        });
+
+        transaction();
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal mengemas kini susunan medan:", error);
+        return { success: false, message: error.message };
+    }
+});
+
 ipcMain.handle('field:delete', async (event, { fieldId, tableName, fieldName }) => {
     try {
         const transaction = db.transaction(() => {
@@ -74,8 +94,8 @@ ipcMain.handle('field:create', async (event, tableId) => {
 
         // Masukkan medan baharu dengan nilai lalai
         const info = db.prepare(
-            `INSERT INTO fields (table_id, field_name, caption, data_type, length) VALUES (?, ?, ?, 'VARCHAR', 255)`
-        ).run(tableId, newName, newName);
+            `INSERT INTO fields (table_id, field_name, caption, data_type, length, field_order) VALUES (?, ?, ?, 'VARCHAR', 255, ?)`
+        ).run(tableId, newName, newName, nextOrder);
 
         // Kembalikan data medan yang baru dicipta
         return db.prepare('SELECT * FROM fields WHERE field_id = ?').get(info.lastInsertRowid);
@@ -158,7 +178,7 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
     }
 
     const placeholder = tableIds.map(() => "?").join(",");
-    const fields = db.prepare(`SELECT * FROM fields WHERE table_id IN (${placeholder}) ORDER BY field_id`).all(...tableIds);
+    const fields = db.prepare(`SELECT * FROM fields WHERE table_id IN (${placeholder}) ORDER BY field_order, field_id`).all(...tableIds);
 
     const structuredTables = {};
     tables.forEach((table) => {
@@ -337,12 +357,14 @@ function importSchema(sql, projectId) {
                 tablesCreated++;
                 tableMap[tableName] = tableId;
 
+				let fieldOrder = 0;
                 const tableLevelConstraints = [];
                 for (const col of statement.create_definitions) {
                     if (col.resource === "column") {
                         let fieldData = {
                             table_id: tableId,
                             field_name: col.column.column,
+							field_order: fieldOrder,
                             data_type: col.definition.dataType,
                             length: col.definition.length || null,
                             required: 0,
@@ -401,8 +423,10 @@ function importSchema(sql, projectId) {
                             }
                         }
                         db.prepare(
-                            `INSERT INTO fields (table_id, field_name, data_type, length, required, auto_increment, unsigned, zero_fill, primary_key, "unique", text_area, rich_html, read_only, default_value, caption) VALUES (@table_id, @field_name, @data_type, @length, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @text_area, @rich_html, @read_only, @default_value, @field_name)`
+                            `INSERT INTO fields (table_id, field_name, data_type, length, required, auto_increment, unsigned, zero_fill, primary_key, "unique", text_area, rich_html, read_only, default_value, caption, field_order) VALUES (@table_id, @field_name, @data_type, @length, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @text_area, @rich_html, @read_only, @default_value, @field_name, @field_order)`
                         ).run(fieldData);
+                        
+                        fieldOrder++; // TAMBAH PADA PENGHITUNG
                     } else if (col.resource === "constraint") {
                         tableLevelConstraints.push(col);
                     }

@@ -80,6 +80,7 @@ CREATE TABLE fields (
     field_id                     INTEGER PRIMARY KEY AUTOINCREMENT,
     table_id                     INTEGER NOT NULL,
     field_name                   TEXT NOT NULL,
+	field_order                  INTEGER,
     caption                      TEXT,
     description                  TEXT,
     data_type                    TEXT,
