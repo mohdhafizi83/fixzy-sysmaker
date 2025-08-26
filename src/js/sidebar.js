@@ -114,18 +114,35 @@ export function initializeSidebarButtons() {
                 .filter(r => r.parent_table_name === tableNameToDelete)
                 .map(r => r.child_table_name);
 
-            const performDelete = async (tablesToDelete) => {
-                const result = await window.electronAPI.deleteTables({
-                    projectId: activeProject.project_id,
-                    tableNamesToDelete: tablesToDelete
-                });
-                if (result.success) {
-                    showCustomDialog({ title: "Success", message: `${tablesToDelete.join(', ')} has been deleted.` });
-                    await loadProjectData(activeProject); // Muat semula UI
-                } else {
-                    showCustomDialog({ title: "Error", message: `Failed to delete tables: ${result.message}` });
-                }
-            };
+const performDelete = async (tablesToDelete) => {
+    const result = await window.electronAPI.deleteTables({
+        projectId: activeProject.project_id,
+        tableNamesToDelete: tablesToDelete
+    });
+    if (result.success) {
+        showCustomDialog({ title: "Success", message: `${tablesToDelete.join(', ')} has been deleted.` });
+        await loadProjectData(activeProject);
+
+        // ▼▼▼ TAMBAHAN BAHARU DI SINI ▼▼▼
+        // Cari pautan 'Project Setup' dan aktifkannya
+        const projectSetupLink = document.querySelector('.sidebar .nav-list > li > a');
+        if (projectSetupLink) {
+            // Buang 'active' dari semua pautan lain
+            document.querySelectorAll('.sidebar .nav-list a.active').forEach(l => l.classList.remove('active'));
+            
+            // Aktifkan pautan 'Project Setup'
+            projectSetupLink.classList.add('active');
+            
+            // Paparkan halaman utama dan kemas kini keadaan butang
+            showPage('main-dashboard');
+            updateActionButtonsState();
+        }
+        // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
+        
+    } else {
+        showCustomDialog({ title: "Error", message: `Failed to delete tables: ${result.message}` });
+    }
+};
 
             if (childTables.length > 0) {
                 // KES 1: Jadual adalah induk
