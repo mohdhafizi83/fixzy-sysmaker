@@ -2,3 +2,4 @@
 /docs
 *.ffs_gui
 *.ffs_db
+backup.ffs_batch

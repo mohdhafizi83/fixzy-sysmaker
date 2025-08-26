@@ -41,12 +41,39 @@ export function initializeSidebarButtons() {
             const activeLink = document.querySelector('.sidebar .nav-list a.active');
             if (!activeLink) return;
 
+            const isFieldLink = activeLink.closest('ul.submenu-level-3');
             const isTableLink = activeLink.parentElement.classList.contains('has-submenu');
-            if (!isTableLink) { // Hanya berfungsi jika jadual dipilih, bukan medan
-                showCustomDialog({ title: "Info", message: "Please select a table to delete." });
-                return;
-            }
 
+            if (isFieldLink) {
+                // --- LOGIK PADAM MEDAN ---
+                const tableName = activeLink.closest('.has-submenu').querySelector('a > span').textContent.trim();
+                const fieldName = activeLink.querySelector('span').textContent.trim();
+                const fieldObject = jsonData.database.table[tableName].fields[fieldName];
+
+                let message = `Are you sure you want to permanently delete the field '${fieldName}'?`;
+                
+                // Semak jika ia adalah foreign key
+                const relationship = jsonData.database.relationships.find(r => r.child_table_name === tableName && r.fk_child_field === fieldName);
+                if (relationship) {
+                    message += `\n\nThis will also remove its parent/child relationship with the '${relationship.parent_table_name}' table.`;
+                }
+
+                showCustomDialog({
+                    title: "Confirm Field Deletion",
+                    message: message,
+                    showCancelButton: true,
+                    onOk: async () => {
+                        const result = await window.electronAPI.deleteField({ fieldIdToDelete: fieldObject.field_id });
+                        if (result.success) {
+                            showCustomDialog({ title: "Success", message: `'${fieldName}' has been deleted.` });
+                            await loadProjectData(activeProject);
+                        } else {
+                            showCustomDialog({ title: "Error", message: `Failed to delete field: ${result.message}` });
+                        }
+                    }
+                });
+
+            } else if (isTableLink) {
             const tableNameToDelete = activeLink.querySelector('span').textContent.trim();
 
             // Semak jika jadual ini adalah induk kepada jadual lain
@@ -95,6 +122,12 @@ export function initializeSidebarButtons() {
                     }
                 });
             }
+			
+			
+            } else {
+                showCustomDialog({ title: "Info", message: "Please select a table or field to delete." });
+            }			
+			
         });
     }
 

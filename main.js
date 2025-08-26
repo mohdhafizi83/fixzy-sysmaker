@@ -31,6 +31,18 @@ if (!dbExists) {
 // ▼▼▼ SEMUA IPC HANDLER DIKUMPULKAN DI SINI UNTUK KONSISTENSI ▼▼▼
 // =================================================================
 
+// main.js
+ipcMain.handle('field:delete', async (event, { fieldIdToDelete }) => {
+    try {
+        // ON DELETE CASCADE pada jadual relationships akan memadam hubungan secara automatik
+        db.prepare('DELETE FROM fields WHERE field_id = ?').run(fieldIdToDelete);
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal memadam medan:", error);
+        return { success: false, message: error.message };
+    }
+});
+
 // Handler untuk mencipta medan baharu
 ipcMain.handle('field:create', async (event, tableId) => {
     try {
