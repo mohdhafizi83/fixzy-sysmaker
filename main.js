@@ -673,8 +673,6 @@ ipcMain.handle('project:update', async (event, data) => {
     }
 });
 
-// main.js
-
 // Handler baharu untuk mengemas kini tetapan jadual
 ipcMain.handle('table:update', async (event, data) => {
     try {
@@ -683,6 +681,35 @@ ipcMain.handle('table:update', async (event, data) => {
             throw new Error("Table ID tidak dibekalkan.");
         }
 
+        if (fieldsToUpdate.hasOwnProperty('table_name')) {
+            const newTableName = fieldsToUpdate.table_name;
+            let isNameValid = true;
+
+            // 1. Semak jika null atau kosong
+            if (!newTableName || newTableName.trim() === '') {
+                isNameValid = false;
+            }
+            // 2. Semak jika mengandungi aksara tidak sah
+            else if (!/^[a-zA-Z_]+$/.test(newTableName)) {
+                isNameValid = false;
+            }
+            // 3. Semak jika nama sudah wujud (untuk jadual lain dalam projek yang sama)
+            else {
+                const projectInfo = db.prepare('SELECT project_id FROM tables WHERE table_id = ?').get(table_id);
+                const existingTable = db.prepare(
+                    'SELECT table_id FROM tables WHERE project_id = ? AND table_name = ? AND table_id != ?'
+                ).get(projectInfo.project_id, newTableName, table_id);
+                if (existingTable) {
+                    isNameValid = false;
+                }
+            }
+
+            // Jika tidak sah, buang 'table_name' dari senarai kemas kini
+            if (!isNameValid) {
+                delete fieldsToUpdate.table_name;
+            }
+        }
+		
         // Senarai lajur yang dibenarkan untuk dikemas kini dalam jadual 'tables'
         const allowedColumns = [
 		    'table_name',
@@ -727,6 +754,35 @@ ipcMain.handle('field:update', async (event, data) => {
             throw new Error("Field ID tidak dibekalkan.");
         }
 
+        if (fieldsToUpdate.hasOwnProperty('field_name')) {
+            const newFieldName = fieldsToUpdate.field_name;
+            let isNameValid = true;
+
+            // 1. Semak jika null atau kosong
+            if (!newFieldName || newFieldName.trim() === '') {
+                isNameValid = false;
+            }
+            // 2. Semak jika mengandungi aksara tidak sah
+            else if (!/^[a-zA-Z_]+$/.test(newFieldName)) {
+                isNameValid = false;
+            }
+            // 3. Semak jika nama sudah wujud (untuk medan lain dalam jadual yang sama)
+            else {
+                const tableInfo = db.prepare('SELECT table_id FROM fields WHERE field_id = ?').get(field_id);
+                const existingField = db.prepare(
+                    'SELECT field_id FROM fields WHERE table_id = ? AND field_name = ? AND field_id != ?'
+                ).get(tableInfo.table_id, newFieldName, field_id);
+                if (existingField) {
+                    isNameValid = false;
+                }
+            }
+            
+            // Jika tidak sah, buang 'field_name' dari senarai kemas kini
+            if (!isNameValid) {
+                delete fieldsToUpdate.field_name;
+            }
+        }
+		
         // Senarai lajur yang dibenarkan untuk dikemas kini dalam jadual 'fields'
         const allowedColumns = [
 		    'field_name',
