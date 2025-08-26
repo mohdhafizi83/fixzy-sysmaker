@@ -10,7 +10,29 @@ populateFocusFieldDropdown,
 setupMediaTab, 
 populateParentChildTab
   } from './uiHandlers.js'; 
-import { jsonData, activeProject  } from './js.main.js';
+import { jsonData, activeProject, loadProjectData   } from './js.main.js';
+
+export function initializeSidebarButtons() {
+    const newTableBtn = document.getElementById('btn-new-table');
+
+    if (newTableBtn) {
+        newTableBtn.addEventListener('click', async () => {
+            if (!activeProject) {
+                // Mungkin perlu paparkan notifikasi
+                console.error("Tiada projek aktif untuk menambah jadual.");
+                return;
+            }
+
+            // Panggil backend untuk cipta jadual
+            const newTable = await window.electronAPI.createTable(activeProject.project_id);
+
+            if (newTable) {
+                // Muat semula semua data dan UI untuk memaparkan jadual baharu
+                await loadProjectData(activeProject);
+            }
+        });
+    }
+}
 
 export async function generateSidebarMenu() {
     try {

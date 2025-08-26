@@ -1,5 +1,5 @@
 // js/main.js (Proses Renderer)
-import { generateSidebarMenu, initializeSidebarInteractivity } from './sidebar.js';
+import { generateSidebarMenu, initializeSidebarInteractivity, initializeSidebarButtons } from './sidebar.js';
 import { 
    showCustomDialog,
     updateActionButtonsState, 
@@ -227,7 +227,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
     });
-	
+
+	    // Aktifkan butang sidebar
+    initializeSidebarButtons(); // <-- TAMBAH PANGGILAN INI	
     initializeSidebarInteractivity(); // PASTIKAN PANGGILAN INI WUJUD DI SINI
     // Mulakan aplikasi dengan cuba mendapatkan projek aktif dari DB
     const project = await window.electronAPI.getActiveProject();

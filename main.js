@@ -31,6 +31,34 @@ if (!dbExists) {
 // ▼▼▼ SEMUA IPC HANDLER DIKUMPULKAN DI SINI UNTUK KONSISTENSI ▼▼▼
 // =================================================================
 
+// main.js
+
+// Handler untuk mencipta jadual baharu
+ipcMain.handle('table:create', async (event, projectId) => {
+    try {
+        // Cari nama unik
+        const tables = db.prepare("SELECT table_name FROM tables WHERE project_id = ? AND table_name LIKE 'newTable%'").all(projectId);
+        let n = 1;
+        const existingNumbers = tables.map(t => parseInt(t.table_name.split('_')[1] || 0));
+        while (existingNumbers.includes(n)) {
+            n++;
+        }
+        const newName = `newTable_${n}`;
+
+        // Masukkan jadual baharu
+        const info = db.prepare(
+            'INSERT INTO tables (project_id, table_name, table_view_title) VALUES (?, ?, ?)'
+        ).run(projectId, newName, newName);
+
+        // Kembalikan data jadual yang baru dicipta
+        return db.prepare('SELECT * FROM tables WHERE table_id = ?').get(info.lastInsertRowid);
+
+    } catch (error) {
+        console.error("Gagal mencipta jadual baharu:", error);
+        return null;
+    }
+});
+
 // Handler untuk mendapatkan skema penuh
 ipcMain.handle("project:get-full-schema", async (event, projectId) => {
   try {
@@ -41,7 +69,7 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
       throw new Error(`Projek dengan ID ${projectId} tidak ditemui.`);
 
     const tables = db
-      .prepare("SELECT * FROM tables WHERE project_id = ? ORDER BY table_name")
+      .prepare("SELECT * FROM tables WHERE project_id = ? ORDER BY table_id")
       .all(projectId);
     const tableIds = tables.map((t) => t.table_id);
 
