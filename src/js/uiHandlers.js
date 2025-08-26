@@ -2296,6 +2296,40 @@ export function initializeRealtimeValidation() {
             });
         }
     });
+
+    // 1. Dapatkan elemen input untuk nama jadual dan medan
+    const tableNameInput = document.getElementById('tbl-table-name');
+    const fieldNameInput = document.getElementById('fld-field-name');
+
+    // 2. Cipta fungsi bantuan untuk memasang logik validasi
+    const setupNameValidation = (inputElement) => {
+        if (!inputElement) return;
+
+        let previousValidValue = '';
+
+        // Simpan nilai sah terakhir apabila input difokuskan
+        inputElement.addEventListener('focus', () => {
+            previousValidValue = inputElement.value;
+        });
+
+        // Tapis aksara pada setiap ketikan
+        inputElement.addEventListener('input', () => {
+            // Hanya benarkan abjad dan garis bawah
+            inputElement.value = inputElement.value.replace(/[^a-zA-Z_]/g, '');
+        });
+
+        // Semak jika kosong apabila pengguna meninggalkan input
+        inputElement.addEventListener('blur', () => {
+            if (inputElement.value.trim() === '') {
+                // Kembalikan ke nilai sah sebelumnya jika kosong
+                inputElement.value = previousValidValue;
+            }
+        });
+    };
+
+    // 3. Pasang validasi pada kedua-dua input
+    setupNameValidation(tableNameInput);
+    setupNameValidation(fieldNameInput);
 }
 
 export function initializeOptionsListRules() {

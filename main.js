@@ -97,21 +97,29 @@ ipcMain.handle('field:delete', async (event, { fieldId, tableName, fieldName }) 
 });
 
 // Handler untuk mencipta medan baharu
+// main.js
+
 ipcMain.handle('field:create', async (event, tableId) => {
     try {
         // Cari nama unik untuk medan baharu
         const fields = db.prepare("SELECT field_name FROM fields WHERE table_id = ? AND field_name LIKE 'newField%'").all(tableId);
         let n = 1;
+        
         const existingNumbers = fields.map(f => parseInt(f.field_name.split('_')[1] || 0));
+
         while (existingNumbers.includes(n)) {
             n++;
         }
         const newName = `newField_${n}`;
 
-        // Masukkan medan baharu dengan nilai lalai
+        // Dapatkan 'order' seterusnya
+        const maxOrderResult = db.prepare('SELECT MAX(field_order) as max_order FROM fields WHERE table_id = ?').get(tableId);
+        const nextOrder = (maxOrderResult && maxOrderResult.max_order !== null ? maxOrderResult.max_order : -1) + 1;
+
+        // Pernyataan INSERT yang telah disahkan betul
         const info = db.prepare(
-            `INSERT INTO fields (table_id, field_name, caption, data_type, length, field_order) VALUES (?, ?, ?, 'VARCHAR', 255, ?)`
-        ).run(tableId, newName, newName, nextOrder);
+            `INSERT INTO fields (table_id, field_name, caption, data_type, length, field_order) VALUES (?, ?, ?, ?, ?, ?)`
+        ).run(tableId, newName, newName, 'VARCHAR', 255, nextOrder);
 
         // Kembalikan data medan yang baru dicipta
         return db.prepare('SELECT * FROM fields WHERE field_id = ?').get(info.lastInsertRowid);
