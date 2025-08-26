@@ -1284,3 +1284,10 @@ fieldset.fieldset-disabled {
     z-index: 10; /* Pastikan ia berada di atas elemen lain */
     padding-bottom: 1rem; /* Tambah sedikit ruang di bawah */
 }
+
+/* styles.css */
+
+/* Gaya untuk item yang sedang diseret */
+.menu-selector .tag.dragging {
+    opacity: 0.4;
+}

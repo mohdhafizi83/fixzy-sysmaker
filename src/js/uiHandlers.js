@@ -652,40 +652,79 @@ export function initializeMenuManagementHandlers() {
     // Untuk MULA SERET (dragstart)
     menuGroupList.addEventListener('dragstart', (e) => {
         draggedItem = e.target;
-        if (draggedItem.matches('.menu-group-item')) {
+        // Hanya benarkan seret pada Kumpulan (.menu-group-item) atau Tag Jadual (.tag)
+        if (draggedItem.matches('.menu-group-item') || draggedItem.matches('.tag')) {
             setTimeout(() => draggedItem.classList.add('dragging'), 0);
         } else {
-            e.preventDefault();
+            e.preventDefault(); // Halang item lain dari diseret
         }
     });
 
     // Untuk BERHENTI SERET (dragend)
     menuGroupList.addEventListener('dragend', () => {
-        if (draggedItem) draggedItem.classList.remove('dragging');
-        draggedItem = null;
+        if (draggedItem) {
+            draggedItem.classList.remove('dragging');
+            draggedItem = null;
+        }
     });
 
     // Untuk SERET DI ATAS (dragover)
     menuGroupList.addEventListener('dragover', (e) => {
-        e.preventDefault();
+        e.preventDefault(); // Ini penting untuk membenarkan 'drop' berlaku
+        
+        const dropTarget = e.target;
+        const isTag = draggedItem.matches('.tag');
+        const isGroup = draggedItem.matches('.menu-group-item');
+
+        // Logik untuk seret TAG JADUAL
+        if (isTag) {
+            const container = dropTarget.closest('.menu-selector');
+            if (container) {
+                const afterElement = getDragAfterElement(container, e.clientX);
+                if (afterElement == null) {
+                    container.appendChild(draggedItem);
+                } else {
+                    container.insertBefore(draggedItem, afterElement);
+                }
+            }
+        }
+
+        // Logik untuk seret KUMPULAN
+        if (isGroup) {
+            const container = dropTarget.closest('.menu-group-list');
+             if (container) {
+                const afterElement = getDragAfterElement(container, e.clientY, '.menu-group-item');
+                if (afterElement == null) {
+                    container.appendChild(draggedItem);
+                } else {
+                    container.insertBefore(draggedItem, afterElement);
+                }
+            }
+        }
     });
 
     // Untuk LEPASKAN (drop)
     menuGroupList.addEventListener('drop', (e) => {
         e.preventDefault();
-        if (!draggedItem) return;
-        const dropTarget = e.target.closest('.menu-group-item');
-        if (dropTarget && draggedItem !== dropTarget) {
-            const rect = dropTarget.getBoundingClientRect();
-            const isAfter = e.clientY > rect.top + rect.height / 2;
-            if (isAfter) {
-                dropTarget.parentElement.insertBefore(draggedItem, dropTarget.nextSibling);
-            } else {
-                dropTarget.parentElement.insertBefore(draggedItem, dropTarget);
-            }
-            triggerSave();
+        if (draggedItem) {
+            draggedItem.classList.remove('dragging');
+            triggerSave(); // Cetuskan simpanan selepas susunan berubah
         }
     });
+	
+    // Fungsi bantuan untuk menentukan kedudukan item akan diletakkan
+    function getDragAfterElement(container, x, selector = '.tag') {
+        const draggableElements = [...container.querySelectorAll(`${selector}:not(.dragging)`)];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = x - box.left - box.width / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
 
     // Listener untuk modal
     availableMenusList.addEventListener('click', (e) => {
