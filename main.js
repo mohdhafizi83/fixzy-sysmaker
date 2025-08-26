@@ -668,6 +668,7 @@ ipcMain.handle('field:update', async (event, data) => {
 
         // Senarai lajur yang dibenarkan untuk dikemas kini dalam jadual 'fields'
         const allowedColumns = [
+		    'field_name',
             'caption', 'description', 'data_type', 'length', 'precision', 'max_chars_in_tv', 'alignment',
             'default_value', 'read_only', 'primary_key', 'zero_fill', 'required', 'rich_html',
             'auto_increment', 'unique', 'show_sum', 'text_area', 'unsigned', 'no_filter', 'binary',

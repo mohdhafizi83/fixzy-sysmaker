@@ -345,11 +345,12 @@ export function initializeFieldSaveHandlers() {
             saveStatus.textContent = 'Saving...';
             saveStatus.className = 'saving';
 
+            // Dapatkan nama LAMA dari tajuk sebelum ia berubah
+            const [tableName, oldFieldName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
             const dataToSave = gatherData();
+            const newFieldName = dataToSave.field_name;
             
-            // Dapatkan field_id dari jsonData berdasarkan nama jadual & medan yang aktif
-            const [tableName, fieldName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
-            const fieldData = jsonData.database.table[tableName]?.fields[fieldName];
+            const fieldData = jsonData.database.table[tableName]?.fields[oldFieldName];
             
             if (!fieldData) {
                 saveStatus.textContent = 'Error: Active field not found!';
@@ -363,6 +364,11 @@ export function initializeFieldSaveHandlers() {
             if (result.success) {
                 saveStatus.textContent = 'All changes saved ✔';
                 saveStatus.className = 'saved';
+
+                // Jika nama telah ditukar, muat semula keseluruhan data aplikasi
+                if (oldFieldName !== newFieldName) {
+                    await loadProjectData(activeProject, { table: tableName, field: newFieldName });
+                }
             } else {
                 saveStatus.textContent = 'Save failed!';
                 saveStatus.className = 'error';
@@ -1615,6 +1621,8 @@ export function populateFieldSettings(tableName, fieldName) {
         return;
     }
     populateParentTableDropdown(tableName);
+	
+	setElementValue('fld-field-name', fieldData.field_name);
     // Tab: General
     setElementValue('fld-caption', fieldData.caption);
     setElementValue('fld-description', fieldData.description);
