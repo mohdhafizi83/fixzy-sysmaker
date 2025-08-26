@@ -81,29 +81,46 @@ export function initializeSidebarButtons() {
 
     const handleMove = async (direction) => {
         const activeLink = document.querySelector('.sidebar .nav-list a.active');
-        if (!activeLink || !activeLink.closest('ul.submenu-level-3')) {
-            return; // Lakukan hanya jika medan yang aktif
-        }
+        if (!activeLink) return;
 
-        const fieldLi = activeLink.parentElement;
-        const sibling = direction === 'up' ? fieldLi.previousElementSibling : fieldLi.nextElementSibling;
+        const isField = activeLink.closest('ul.submenu-level-3');
+        const isTable = activeLink.parentElement.classList.contains('has-submenu');
+
+        let itemLi, sibling;
+
+        if (isField) {
+            itemLi = activeLink.parentElement;
+            sibling = direction === 'up' ? itemLi.previousElementSibling : itemLi.nextElementSibling;
+        } else if (isTable) {
+            itemLi = activeLink.parentElement;
+            sibling = direction === 'up' ? itemLi.previousElementSibling : itemLi.nextElementSibling;
+        } else {
+            return; // Bukan medan atau jadual
+        }
 
         if (sibling) {
             // Gerakkan item dalam DOM
-            fieldLi.parentElement.insertBefore(
-                fieldLi,
+            itemLi.parentElement.insertBefore(
+                itemLi,
                 direction === 'up' ? sibling : sibling.nextElementSibling
             );
 
-            // Kumpul susunan baharu
-            const allFieldLis = fieldLi.parentElement.querySelectorAll('li');
-            const orderData = Array.from(allFieldLis).map((li, index) => ({
-                field_id: li.dataset.fieldId,
-                order: index
-            }));
-
-            // Hantar ke backend
-            await window.electronAPI.updateFieldOrder(orderData);
+            // Kumpul susunan baharu dan hantar ke backend
+            if (isField) {
+                const allFieldLis = itemLi.parentElement.querySelectorAll('li');
+                const orderData = Array.from(allFieldLis).map((li, index) => ({
+                    field_id: li.dataset.fieldId,
+                    order: index
+                }));
+                await window.electronAPI.updateFieldOrder(orderData);
+            } else if (isTable) {
+                const allTableLis = itemLi.parentElement.querySelectorAll('li');
+                const orderData = Array.from(allTableLis).map((li, index) => ({
+                    table_id: li.dataset.tableId,
+                    order: index
+                }));
+                await window.electronAPI.updateTableOrder(orderData);
+            }
         }
     };
 
@@ -279,6 +296,8 @@ export async function generateSidebarMenu() {
             const fields = tables[tableName].fields;
             const tableLi = document.createElement('li');
             tableLi.className = 'has-submenu';
+			tableLi.dataset.tableId = tables[tableName].table_id;
+			
             const tableLink = document.createElement('a');
             tableLink.href = "#";
             tableLink.title = `Table Name: ${tableName}`;

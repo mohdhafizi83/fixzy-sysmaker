@@ -10,7 +10,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   createField: (tableId) => ipcRenderer.invoke('field:create', tableId),
   deleteTables: (data) => ipcRenderer.invoke('table:delete', data),
   deleteField: (data) => ipcRenderer.invoke('field:delete', data),
+  
 	updateFieldOrder: (orderData) => ipcRenderer.invoke('field:update-order', orderData),
+	updateTableOrder: (orderData) => ipcRenderer.invoke('table:update-order', orderData),
 	
   getAllProjects: () => ipcRenderer.invoke('projects:get-all'),
   setActiveProject: (projectId) => ipcRenderer.invoke('project:set-active', projectId),

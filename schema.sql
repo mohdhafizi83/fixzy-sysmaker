@@ -40,6 +40,7 @@ CREATE TABLE tables (
     table_id                     INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id                   INTEGER NOT NULL,
     table_name                   TEXT NOT NULL,
+	table_order                  INTEGER,
     table_view_title             TEXT,
     table_description            TEXT,
     show_quick_search            INTEGER DEFAULT 1,

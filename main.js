@@ -31,7 +31,23 @@ if (!dbExists) {
 // ▼▼▼ SEMUA IPC HANDLER DIKUMPULKAN DI SINI UNTUK KONSISTENSI ▼▼▼
 // =================================================================
 
-// main.js (tambah di mana-mana bersama handler IPC lain)
+ipcMain.handle('table:update-order', async (event, orderData) => {
+    try {
+        const updateStmt = db.prepare('UPDATE tables SET table_order = ? WHERE table_id = ?');
+        
+        const transaction = db.transaction(() => {
+            for (const item of orderData) {
+                updateStmt.run(item.order, item.table_id);
+            }
+        });
+
+        transaction();
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal mengemas kini susunan jadual:", error);
+        return { success: false, message: error.message };
+    }
+});
 
 ipcMain.handle('field:update-order', async (event, orderData) => {
     try {
@@ -145,10 +161,13 @@ ipcMain.handle('table:create', async (event, projectId) => {
         }
         const newName = `newTable_${n}`;
 
+        const maxOrderResult = db.prepare('SELECT MAX(table_order) as max_order FROM tables WHERE project_id = ?').get(projectId);
+        const nextOrder = (maxOrderResult.max_order || 0) + 1;
+		
         // Masukkan jadual baharu
         const info = db.prepare(
-            'INSERT INTO tables (project_id, table_name, table_view_title) VALUES (?, ?, ?)'
-        ).run(projectId, newName, newName);
+            'INSERT INTO tables (project_id, table_name, table_view_title, table_order) VALUES (?, ?, ?, ?)'
+        ).run(projectId, newName, newName, nextOrder);
 
         // Kembalikan data jadual yang baru dicipta
         return db.prepare('SELECT * FROM tables WHERE table_id = ?').get(info.lastInsertRowid);
@@ -169,7 +188,7 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
       throw new Error(`Projek dengan ID ${projectId} tidak ditemui.`);
 
     const tables = db
-      .prepare("SELECT * FROM tables WHERE project_id = ? ORDER BY table_id")
+      .prepare("SELECT * FROM tables WHERE project_id = ? ORDER BY table_order, table_id")
       .all(projectId);
     const tableIds = tables.map((t) => t.table_id);
 
@@ -343,16 +362,21 @@ function importSchema(sql, projectId) {
         }
         return null;
     };
-
+	
+    let tableOrder = 0;
+	
     const transaction = db.transaction((ast) => {
         for (const statement of ast) {
             if (statement.type === "create" && statement.keyword === "table") {
                 const tableName = statement.table[0].table;
                 const tableInfo = db
                     .prepare(
-                        "INSERT INTO tables (project_id, table_name, table_view_title) VALUES (?, ?, ?)"
+                        // UBAH PENYATAAN INSERT DI BAWAH
+                        "INSERT INTO tables (project_id, table_name, table_view_title, table_order) VALUES (?, ?, ?, ?)"
                     )
-                    .run(projectId, tableName, tableName);
+                    .run(projectId, tableName, tableName, tableOrder); // TAMBAH 'tableOrder'
+                
+                tableOrder++;
                 const tableId = tableInfo.lastInsertRowid;
                 tablesCreated++;
                 tableMap[tableName] = tableId;
