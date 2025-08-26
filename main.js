@@ -101,27 +101,27 @@ ipcMain.handle('field:delete', async (event, { fieldId, tableName, fieldName }) 
 
 ipcMain.handle('field:create', async (event, tableId) => {
     try {
-        // Cari nama unik untuk medan baharu
-        const fields = db.prepare("SELECT field_name FROM fields WHERE table_id = ? AND field_name LIKE 'newField%'").all(tableId);
-        let n = 1;
+        let newName;
+        let isUnique = false;
+        const checkStmt = db.prepare('SELECT field_id FROM fields WHERE table_id = ? AND field_name = ?');
         
-        const existingNumbers = fields.map(f => parseInt(f.field_name.split('_')[1] || 0));
-
-        while (existingNumbers.includes(n)) {
-            n++;
+        while (!isUnique) {
+            // ▼▼▼ BARIS INI DIUBAH UNTUK MENJANA HURUF SAHAJA ▼▼▼
+            const randomChars = Array.from({ length: 6 }, () => 'abcdefghijklmnopqrstuvwxyz'.charAt(Math.floor(Math.random() * 26))).join('');
+            newName = `field_${randomChars}`;
+            const existingField = checkStmt.get(tableId, newName);
+            if (!existingField) {
+                isUnique = true;
+            }
         }
-        const newName = `newField_${n}`;
-
-        // Dapatkan 'order' seterusnya
+        
         const maxOrderResult = db.prepare('SELECT MAX(field_order) as max_order FROM fields WHERE table_id = ?').get(tableId);
         const nextOrder = (maxOrderResult && maxOrderResult.max_order !== null ? maxOrderResult.max_order : -1) + 1;
 
-        // Pernyataan INSERT yang telah disahkan betul
         const info = db.prepare(
             `INSERT INTO fields (table_id, field_name, caption, data_type, length, field_order) VALUES (?, ?, ?, ?, ?, ?)`
         ).run(tableId, newName, newName, 'VARCHAR', 255, nextOrder);
 
-        // Kembalikan data medan yang baru dicipta
         return db.prepare('SELECT * FROM fields WHERE field_id = ?').get(info.lastInsertRowid);
     } catch (error) {
         console.error("Gagal mencipta medan baharu:", error);
@@ -158,26 +158,31 @@ ipcMain.handle('table:delete', async (event, { projectId, tableNamesToDelete }) 
 });
 
 // Handler untuk mencipta jadual baharu
+// main.js
+
 ipcMain.handle('table:create', async (event, projectId) => {
     try {
-        // Cari nama unik
-        const tables = db.prepare("SELECT table_name FROM tables WHERE project_id = ? AND table_name LIKE 'newTable%'").all(projectId);
-        let n = 1;
-        const existingNumbers = tables.map(t => parseInt(t.table_name.split('_')[1] || 0));
-        while (existingNumbers.includes(n)) {
-            n++;
+        let newName;
+        let isUnique = false;
+        const checkStmt = db.prepare('SELECT table_id FROM tables WHERE project_id = ? AND table_name = ?');
+
+        while (!isUnique) {
+            // ▼▼▼ BARIS INI DIUBAH UNTUK MENJANA HURUF SAHAJA ▼▼▼
+            const randomChars = Array.from({ length: 6 }, () => 'abcdefghijklmnopqrstuvwxyz'.charAt(Math.floor(Math.random() * 26))).join('');
+            newName = `table_${randomChars}`;
+            const existingTable = checkStmt.get(projectId, newName);
+            if (!existingTable) {
+                isUnique = true;
+            }
         }
-        const newName = `newTable_${n}`;
 
         const maxOrderResult = db.prepare('SELECT MAX(table_order) as max_order FROM tables WHERE project_id = ?').get(projectId);
-        const nextOrder = (maxOrderResult.max_order || 0) + 1;
-		
-        // Masukkan jadual baharu
+        const nextOrder = (maxOrderResult ? (maxOrderResult.max_order || 0) : 0) + 1;
+
         const info = db.prepare(
             'INSERT INTO tables (project_id, table_name, table_view_title, table_order) VALUES (?, ?, ?, ?)'
         ).run(projectId, newName, newName, nextOrder);
 
-        // Kembalikan data jadual yang baru dicipta
         return db.prepare('SELECT * FROM tables WHERE table_id = ?').get(info.lastInsertRowid);
 
     } catch (error) {
