@@ -12,7 +12,96 @@ export function applyFontSize(size) {
     document.documentElement.style.fontSize = fontSizeValue;
 }
 
-import { allTableNames, jsonData, loadProjectData, activeProject, setActiveSidebarItem } from './js.main.js';
+import { allTableNames, jsonData, loadProjectData, activeProject, setActiveSidebarItem, isAutoSaveEnabled } from './js.main.js';
+
+
+// TAMBAH TIGA FUNGSI BARU INI DALAM uiHandlers.js
+
+// CARI DAN GANTIKAN FUNGSI INI DALAM uiHandlers.js
+
+export async function saveProjectSettings() {
+    const form = document.getElementById('main-dashboard-page');
+    if (!form || !activeProject) return;
+
+    const dataToSave = {};
+    const inputs = form.querySelectorAll('input, select');
+    inputs.forEach(input => {
+        const id = input.id.replace('app-', '').replace(/-/g, '_');
+        if (input.type === 'checkbox') dataToSave[id] = input.checked ? 1 : 0;
+        else if (input.type === 'radio') { if (input.checked) dataToSave[input.name.replace('app-', '').replace(/-/g, '_')] = input.value; }
+        else if (input.id) dataToSave[id] = input.value;
+    });
+    dataToSave.app_title = document.getElementById('app-title').value;
+    dataToSave.project_id = activeProject.project_id;
+    
+    const result = await window.electronAPI.updateProject(dataToSave);
+
+    // ▼▼▼ PEMBAIKAN: Muat semula data selepas simpanan berjaya ▼▼▼
+    if (result.success) {
+        await loadProjectData(activeProject);
+    }
+    return result;
+    // ▲▲▲ TAMAT PEMBAIKAN ▲▲▲
+}
+
+export async function saveTableSettings() {
+    const form = document.getElementById('table-settings-page');
+    if (form.classList.contains('hidden')) return;
+
+    const oldTableName = document.querySelector('#table-settings-page .table-name').textContent;
+    const tableData = Object.values(jsonData.database.table).find(t => t.table_name === oldTableName);
+    if (!tableData) return;
+
+    const dataToSave = {};
+    const inputs = form.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        const id = input.id.replace('tbl-', '').replace(/-/g, '_');
+        if (input.type === 'checkbox') dataToSave[id] = input.checked ? 1 : 0;
+        else if (input.id) dataToSave[id] = input.value;
+    });
+    dataToSave.table_id = tableData.table_id;
+
+    const result = await window.electronAPI.updateTable(dataToSave);
+    
+    // ▼▼▼ PEMBAIKAN: Muat semula data selepas simpanan berjaya ▼▼▼
+    if (result.success) {
+        // Hantar nama jadual (mungkin baharu) untuk dipilih semula
+        await loadProjectData(activeProject, dataToSave.table_name);
+    }
+    return result;
+    // ▲▲▲ TAMAT PEMBAIKAN ▲▲▲
+}
+
+export async function saveFieldSettings() {
+    const form = document.getElementById('field-settings-page');
+    if (form.classList.contains('hidden')) return;
+
+    const [tableName, oldFieldName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
+    const fieldData = jsonData.database.table[tableName]?.fields[oldFieldName];
+    if (!fieldData) return;
+
+    const dataToSave = {};
+    const inputs = form.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        if (!input.id) return;
+        const id = input.id.replace('fld-', '').replace(/-/g, '_');
+        if (input.type === 'checkbox') dataToSave[id] = input.checked ? 1 : 0;
+        else if (input.type === 'radio') { if (input.checked) dataToSave[input.name.replace('fld-', '').replace(/-/g, '_')] = input.value; }
+        else if (input.id) dataToSave[id] = input.value;
+    });
+    dataToSave.field_id = fieldData.field_id;
+
+    const result = await window.electronAPI.updateField(dataToSave);
+
+    // ▼▼▼ PEMBAIKAN: Muat semula data selepas simpanan berjaya ▼▼▼
+    if (result.success) {
+        // Hantar objek selector untuk memilih semula medan yang betul
+        const itemToSelect = { table: tableName, field: dataToSave.field_name };
+        await loadProjectData(activeProject, null, itemToSelect);
+    }
+    return result;
+    // ▲▲▲ TAMAT PEMBAIKAN ▲▲▲
+}
 
 // GANTIKAN FUNGSI LAMA DENGAN VERSI BAHARU INI
 export function initializeAlgorithmBuilder() {
@@ -251,6 +340,7 @@ export function initializeLookupFieldSaveHandler() {
 
     parentTableSelect.addEventListener('change', () => {
         const saveStatus = document.getElementById('save-status');
+		if (!isAutoSaveEnabled) return;
         saveStatus.textContent = 'Unsaved changes...';
         saveStatus.className = '';
 
@@ -304,6 +394,7 @@ export function initializeRelationshipSaveHandlers() {
     };
 
     const onInputChange = () => {
+		if (!isAutoSaveEnabled) return;
         saveStatus.textContent = 'Unsaved changes...';
         saveStatus.className = '';
 
@@ -313,23 +404,23 @@ export function initializeRelationshipSaveHandlers() {
             saveStatus.className = 'saving';
 
             const dataToSave = gatherData();
-			console.log('1. Data yang dikumpul dari borang:', dataToSave); // Log 1
+			//console.log('1. Data yang dikumpul dari borang:', dataToSave); // Log 1
             
             // Dapatkan relationship_id dari jsonData
             const parentTable = document.querySelector('#table-settings-page .table-name').textContent;
             const childTable = document.querySelector('#selected-child-table-name').textContent;
-			console.log(`2. Mencari hubungan -> Induk: ${parentTable}, Anak: ${childTable}`); // Log 2
+			//console.log(`2. Mencari hubungan -> Induk: ${parentTable}, Anak: ${childTable}`); // Log 2
             const relationship = jsonData.database.relationships.find(
                 r => r.parent_table_name === parentTable && r.child_table_name === childTable
             );
-console.log('3. Objek Hubungan Ditemui:', relationship); // Log 3
+//console.log('3. Objek Hubungan Ditemui:', relationship); // Log 3
             if (!relationship) {
                 saveStatus.textContent = 'Error: Active relationship not found!';
                 saveStatus.className = 'error';
                 return;
             }
             dataToSave.relationship_id = relationship.relationship_id;
-console.log('4. Data akhir yang akan disimpan:', dataToSave); // Log 4
+//console.log('4. Data akhir yang akan disimpan:', dataToSave); // Log 4
             const result = await window.electronAPI.updateRelationship(dataToSave);
 
             if (result.success) {
@@ -408,137 +499,61 @@ async function saveMenuStructure() {
 export function initializeProjectSaveHandlers() {
     const form = document.getElementById('main-dashboard-page');
     const saveStatus = document.getElementById('save-status');
-	const appTitleInput = document.getElementById('app-title'); // Dapatkan input App title
-	
     if (!form || !saveStatus) return;
-
     let saveTimer;
 
-    // Fungsi untuk mengumpul semua data dari borang
-    const gatherData = () => {
-        const data = {};
-        const inputs = form.querySelectorAll('input, select');
-        inputs.forEach(input => {
-            const id = input.id.replace('app-', '').replace(/-/g, '_');
-            if (input.type === 'checkbox') {
-                data[id] = input.checked ? 1 : 0;
-            } else if (input.type === 'radio') {
-                if (input.checked) {
-                    data[input.name.replace('app-', '').replace(/-/g, '_')] = input.value;
-                }
-            } else if (input.id) {
-                data[id] = input.value;
-            }
-        });
-		// Tambah nilai App title ke dalam data yang akan disimpan
-        data.app_title = appTitleInput.value;
-        return data;
-    };
-
-    // Fungsi yang dicetuskan setiap kali ada perubahan
     const onInputChange = () => {
+        if (!isAutoSaveEnabled) return;
         saveStatus.textContent = 'Unsaved changes...';
         saveStatus.className = '';
-
         clearTimeout(saveTimer);
         saveTimer = setTimeout(async () => {
             saveStatus.textContent = 'Saving...';
             saveStatus.className = 'saving';
-
-            const dataToSave = gatherData();
-            dataToSave.project_id = activeProject.project_id;
-
-            const result = await window.electronAPI.updateProject(dataToSave);
-
+            const result = await saveProjectSettings();
             if (result.success) {
                 saveStatus.textContent = 'All changes saved ✔';
                 saveStatus.className = 'saved';
             } else {
                 saveStatus.textContent = 'Save failed!';
-                saveStatus.className = 'error'; // Anda boleh tambah gaya untuk 'error' jika mahu
+                saveStatus.className = 'error';
             }
-            // Sembunyikan mesej selepas 3 saat
             setTimeout(() => saveStatus.textContent = '', 3000);
-
-        }, 1500); // Tunggu 1.5 saat sebelum menyimpan
+        }, 1500);
     };
 
-    // Pasang listener pada semua elemen input di dalam borang
     form.querySelectorAll('input, select').forEach(input => {
         input.addEventListener('change', onInputChange);
-        // Untuk textbox, 'input' lebih responsif
         if (input.type === 'text' || input.type === 'number') {
             input.addEventListener('input', onInputChange);
         }
     });
-	
-    // Pasang listener yang sama pada input App title
-    appTitleInput.addEventListener('input', onInputChange);
+    document.getElementById('app-title').addEventListener('input', onInputChange);
 }
 
 export function initializeTableSaveHandlers() {
     const form = document.getElementById('table-settings-page');
     const saveStatus = document.getElementById('save-status');
     if (!form || !saveStatus) return;
-
     let saveTimer;
 
-    const gatherData = () => {
-        const data = {};
-        const inputs = form.querySelectorAll('input, select, textarea');
-        inputs.forEach(input => {
-            const id = input.id.replace('tbl-', '').replace(/-/g, '_');
-            if (input.type === 'checkbox') {
-                data[id] = input.checked ? 1 : 0;
-            } else if (input.id) {
-                data[id] = input.value;
-            }
-        });
-        return data;
-    };
-
     const onInputChange = () => {
+        if (!isAutoSaveEnabled) return;
         saveStatus.textContent = 'Unsaved changes...';
         saveStatus.className = '';
-
         clearTimeout(saveTimer);
         saveTimer = setTimeout(async () => {
             saveStatus.textContent = 'Saving...';
             saveStatus.className = 'saving';
-
-            // Dapatkan nama jadual LAMA sebelum ia berubah
-            const oldTableName = document.querySelector('#table-settings-page .table-name').textContent;
-            const dataToSave = gatherData();
-            const newTableName = dataToSave.table_name;
-            
-            const tableData = Object.values(jsonData.database.table).find(t => t.table_name === oldTableName)
-            
-            if (!tableData) {
-                saveStatus.textContent = 'Error: Active table not found!';
-                saveStatus.className = 'error';
-                return;
-            }
-            dataToSave.table_id = tableData.table_id;
-
-            const result = await window.electronAPI.updateTable(dataToSave);
-
+            const result = await saveTableSettings();
             if (result.success) {
                 saveStatus.textContent = 'All changes saved ✔';
                 saveStatus.className = 'saved';
-
-                // Jika nama telah ditukar, muat semula keseluruhan data aplikasi
-                if (oldTableName !== newTableName) {
-                    // 1. Muat semula data & UI
-                    await loadProjectData(activeProject);
-                    // 2. Panggil fungsi baharu untuk aktifkan semula item
-                    setActiveSidebarItem(newTableName);
-                }
             } else {
                 saveStatus.textContent = 'Save failed!';
                 saveStatus.className = 'error';
             }
             setTimeout(() => saveStatus.textContent = '', 3000);
-
         }, 1500);
     };
 
@@ -554,72 +569,25 @@ export function initializeFieldSaveHandlers() {
     const form = document.getElementById('field-settings-page');
     const saveStatus = document.getElementById('save-status');
     if (!form || !saveStatus) return;
-
     let saveTimer;
 
-    const gatherData = () => {
-        const data = {};
-        const form = document.getElementById('field-settings-page');
-        const inputs = form.querySelectorAll('input, select, textarea');
-
-        inputs.forEach(input => {
-            if (!input.id) return;
-            const id = input.id.replace('fld-', '').replace(/-/g, '_');
-
-            if (input.type === 'checkbox') {
-                data[id] = input.checked ? 1 : 0;
-            } else if (input.type === 'radio') {
-                if (input.checked) {
-                    data[input.name.replace('fld-', '').replace(/-/g, '_')] = input.value;
-                }
-            } else if (input.id) {
-                data[id] = input.value;
-            }
-        });
-        return data;
-    };
-
     const onInputChange = () => {
+        if (!isAutoSaveEnabled) return;
         saveStatus.textContent = 'Unsaved changes...';
         saveStatus.className = '';
-
         clearTimeout(saveTimer);
         saveTimer = setTimeout(async () => {
             saveStatus.textContent = 'Saving...';
             saveStatus.className = 'saving';
-
-            // Dapatkan nama LAMA dari tajuk sebelum ia berubah
-            const [tableName, oldFieldName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
-            const dataToSave = gatherData();
-            const newFieldName = dataToSave.field_name;
-            
-            const fieldData = jsonData.database.table[tableName]?.fields[oldFieldName];
-            
-            if (!fieldData) {
-                saveStatus.textContent = 'Error: Active field not found!';
-                saveStatus.className = 'error';
-                return;
-            }
-            dataToSave.field_id = fieldData.field_id;
-			console.log('Data dihantar ke backend:', dataToSave);
-            const result = await window.electronAPI.updateField(dataToSave);
-
+            const result = await saveFieldSettings();
             if (result.success) {
                 saveStatus.textContent = 'All changes saved ✔';
                 saveStatus.className = 'saved';
-
-                               if (oldFieldName !== newFieldName) {
-                    // 1. Muat semula data & UI
-                    await loadProjectData(activeProject);
-                    // 2. Panggil fungsi baharu untuk aktifkan semula item
-                    setActiveSidebarItem(tableName, newFieldName);
-                }
             } else {
                 saveStatus.textContent = 'Save failed!';
                 saveStatus.className = 'error';
             }
             setTimeout(() => saveStatus.textContent = '', 3000);
-
         }, 1500);
     };
 
@@ -1891,6 +1859,10 @@ function populateParentTableDropdown(currentTableName) {
     });
 }
 
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
+
+// CARI DAN GANTIKAN KESELURUHAN FUNGSI INI DALAM: uiHandlers.js
+
 export function populateFieldSettings(tableName, fieldName) {
 	
     const allFieldPageControls = document.querySelectorAll(
@@ -1901,6 +1873,12 @@ export function populateFieldSettings(tableName, fieldName) {
     });
 	
     const fieldData = jsonData.database.table[tableName]?.fields[fieldName];
+     // ▼▼▼ CHECKPOINT #3: DATA SELEPAS DITERIMA DI FRONTEND ▼▼▼
+    console.log(`--- CHECKPOINT 3 (uiHandlers.js): Data Untuk Medan ${tableName}.${fieldName} ---`);
+    console.log(fieldData);
+    // ▲▲▲ TAMAT CHECKPOINT #3 ▲▲▲   
+    //console.log(`Mempaparkan data untuk medan: ${tableName}.${fieldName}`, fieldData);
+
     if (!fieldData) {
         console.error(`Tiada data ditemui untuk medan: ${tableName}.${fieldName}`);
         return;
@@ -1936,17 +1914,12 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-column-width', fieldData.column_width);
 
     // Tab: Media
-    // Tetapkan jenis media dan cetuskan 'click' untuk memaparkan panel yang betul
-    const mediaType = fieldData.media_type || 'link'; // Lalai kepada 'link' jika tiada nilai
+    const mediaType = fieldData.media_type || 'link';
     setRadioValue('fld-media-type', mediaType);
     document.getElementById(`fld-media-${mediaType}`)?.dispatchEvent(new Event('click'));
-
-    // Opsyen Link
     setElementValue('fld-media-link-behavior', fieldData.media_link_behavior);
     setElementValue('fld-media-link-display-as', fieldData.media_link_display_as);
     setElementValue('fld-media-link-other-field', fieldData.media_link_other_field);
-    
-    // Opsyen Imej
     setElementValue('fld-allow-image-uploads', fieldData.allow_image_uploads);
     setElementValue('fld-max-file-size', fieldData.max_file_size);
     setElementValue('fld-delete-image-server', fieldData.delete_image_server);
@@ -1959,11 +1932,7 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-dv-thumb-height', fieldData.dv_thumb_height);
     setElementValue('fld-dv-enable-zooming', fieldData.dv_enable_zooming);
     setElementValue('fld-dv-show-full-size', fieldData.dv_show_full_size);
-
-    // Cetuskan event untuk mengemas kini UI bersyarat (cth: enable/disable zooming)
     document.getElementById('fld-allow-image-uploads')?.dispatchEvent(new Event('change'));
-
-    // Opsyen File Upload
     setElementValue('fld-allow-file-uploads', fieldData.allow_file_uploads);
     setElementValue('fld-file-types', fieldData.file_types);
     setElementValue('fld-file-max-size', fieldData.file_max_size);
@@ -1972,72 +1941,47 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-file-behavior', fieldData.file_behavior);
     setElementValue('fld-file-display-as', fieldData.file_display_as);
     setElementValue('fld-file-other-field', fieldData.file_other_field);
-    // Cetuskan event untuk mengemas kini UI bersyarat
     document.getElementById('fld-allow-file-uploads')?.dispatchEvent(new Event('change'));
-
-    // Opsyen Google Map
     setElementValue('fld-display-gmap', fieldData.display_gmap);
     setRadioValue('fld-gmap-type', fieldData.gmap_type);
     setElementValue('fld-gmap-tv-width', fieldData.gmap_tv_width);
     setElementValue('fld-gmap-tv-height', fieldData.gmap_tv_height);
     setElementValue('fld-gmap-dv-height', fieldData.gmap_dv_height);
-    // Cetuskan event untuk mengemas kini UI bersyarat
     document.getElementById('fld-display-gmap')?.dispatchEvent(new Event('change'));
-
-    // Opsyen Youtube Video
     setElementValue('fld-accept-video-url', fieldData.accept_video_url);
     setElementValue('fld-youtube-tv-width', fieldData.youtube_tv_width);
     setElementValue('fld-youtube-tv-height', fieldData.youtube_tv_height);
     setElementValue('fld-youtube-dv-width', fieldData.youtube_dv_width);
     setElementValue('fld-youtube-dv-height', fieldData.youtube_dv_height);
-    // Cetuskan event untuk mengemas kini UI bersyarat
     document.getElementById('fld-accept-video-url')?.dispatchEvent(new Event('change'));
 
     // Tab: Lookup field
-    // 1. Tetapkan nilai yang disimpan untuk 'Parent table'
     setElementValue('fld-lookup-parent-table', fieldData.lookup_parent_table);
-    
-
-    // 2. Cetuskan event 'change' secara programatik
     const parentTableSelect = document.getElementById('fld-lookup-parent-table');
     if (parentTableSelect) {
         parentTableSelect.dispatchEvent(new Event('change'));
     }
-
-
-    // 3. Sekarang, tetapkan nilai yang disimpan untuk dropdown 'caption'
     setElementValue('fld-lookup-caption-1', fieldData.lookup_caption_1);
     setElementValue('fld-lookup-separator', fieldData.lookup_separator);
     setElementValue('fld-lookup-caption-2', fieldData.lookup_caption_2);
     setRadioValue('fld-lookup-display-as', fieldData.lookup_display_as);
     setElementValue('fld-lookup-inherit-permissions', fieldData.lookup_inherit_permissions);
     setElementValue('fld-lookup-link-behavior', fieldData.lookup_link_behavior);
-
-// Logik baharu untuk custom query
     setElementValue('fld-lookup-custom-query-hidden', fieldData.lookup_custom_query);
 
-    // ▼▼▼ LOGIK PINTAR BAHARU UNTUK AUTO-DETECT FOREIGN KEY ▼▼▼
-    // Hanya jalankan jika tiada 'Parent table' yang telah ditetapkan secara manual
     if (parentTableSelect && !parentTableSelect.value) {
         const relationship = jsonData.database.relationships.find(rel =>
             rel.child_table_name === tableName && rel.fk_child_field === fieldName
         );
-
         if (relationship) {
             const parentTable = relationship.parent_table_name;
             const parentPKField = relationship.parent_field;
-
-            // 1. Tetapkan 'Parent table' secara automatik
             setElementValue('fld-lookup-parent-table', parentTable);
-            parentTableSelect.dispatchEvent(new Event('change')); // Cetuskan untuk isi caption dropdown
-
-            // 2. Cari medan seterusnya selepas Primary Key untuk dijadikan cadangan caption
+            parentTableSelect.dispatchEvent(new Event('change'));
             const parentTableFields = jsonData.database.table[parentTable]?.fields;
             if (parentTableFields) {
                 const fieldNames = Object.keys(parentTableFields);
                 const pkIndex = fieldNames.indexOf(parentPKField);
-
-                // Pastikan PK ditemui dan ia bukan medan terakhir
                 if (pkIndex > -1 && pkIndex < fieldNames.length - 1) {
                     const nextFieldName = fieldNames[pkIndex + 1];
                     setElementValue('fld-lookup-caption-1', nextFieldName);
@@ -2049,6 +1993,26 @@ export function populateFieldSettings(tableName, fieldName) {
     // Tab: Options list
     setElementValue('fld-options-list-values', fieldData.options_list_values);
     setRadioValue('fld-options-display', fieldData.options_display);
+
+    // ▼▼▼ KOD PEMBAIKAN BUG ADA DI SINI ▼▼▼
+    const quickListSelect = document.getElementById('options-quick-list');
+    if (quickListSelect) {
+        const currentValue = fieldData.options_list_values || '';
+        let matchFound = false;
+        // Cari jika nilai semasa sepadan dengan mana-mana opsyen dalam "Quick List!"
+        for (const option of quickListSelect.options) {
+            if (option.value === currentValue) {
+                option.selected = true;
+                matchFound = true;
+                break;
+            }
+        }
+        // Jika tiada padanan, pastikan opsyen lalai "Quick List!" dipilih
+        if (!matchFound) {
+            quickListSelect.value = '';
+        }
+    }
+    // ▲▲▲ TAMAT PEMBAIKAN BUG ▲▲▲
 
     // Tab: Data format
     setElementValue('fld-format-as', fieldData.format_as);
@@ -2068,7 +2032,7 @@ export function populateFieldSettings(tableName, fieldName) {
         if (queryTextarea) {
             queryTextarea.disabled = false;
         }
-    }, 50); // Delay kecil untuk memastikan DOM dikemas kini sepenuhnya
+    }, 50);
 }
 
 /**

@@ -35,7 +35,10 @@ import {
     initializeFieldSaveHandlers,
     initializeRelationshipSaveHandlers,
     initializeLookupFieldSaveHandler,
-	initializeAlgorithmBuilder   	
+	initializeAlgorithmBuilder,
+    saveProjectSettings,    // <-- TAMBAH INI
+    saveTableSettings,      // <-- TAMBAH INI
+    saveFieldSettings       // <-- TAMBAH INI   	
 } from './uiHandlers.js';
 
 export function setActiveSidebarItem(tableName, fieldName = null) {
@@ -84,57 +87,58 @@ function showConfirmationDialog(title, message) {
 export let jsonData = null;
 export let allTableNames = [];
 export let activeProject = null;
-
+export let isAutoSaveEnabled = false;
 // =================================================================
 // ▼▼▼ FUNGSI UTAMA BAHARU UNTUK MEMUATKAN DATA PROJEK ▼▼▼
 // =================================================================
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: js.main.js
+
 export async function loadProjectData(project, tableToSelect = null, itemToSelect = null) {
     if (!project || !project.project_id) {
-        console.log("Tiada projek aktif, memaparkan modal projek baharu.");
+        //console.log("Tiada projek aktif, memaparkan modal projek baharu.");
         document.getElementById('new-project-modal')?.classList.remove('hidden');
         return;
     }
     
-    activeProject = project;
-    console.log(`Memuatkan data untuk projek: ${project.app_title} (ID: ${project.project_id})`);
-	
+    //console.log(`Memuatkan data untuk projek: ${project.app_title} (ID: ${project.project_id})`);
 
-    // Gantikan pembacaan data.json dengan panggilan ke backend SQLite
+    // Fetch the single, consolidated data package from the backend.
     const data = await window.electronAPI.getFullSchema(project.project_id);
 
-    if (data && data.database) {
+    if (data && data.project && data.database) {
+        // ▼▼▼ THE KEY FIX IS HERE ▼▼▼
+        activeProject = data.project; // Update activeProject with the FRESH, COMPLETE data.
         jsonData = data;
+        // ▲▲▲ END OF FIX ▲▲▲
+        
         allTableNames = Object.keys(jsonData.database.table || {});
 
-        // Isi semua borang dengan data terkini
-        populateMainDashboard(activeProject);
-        populateMenuManagement(jsonData.database.menu_groups);
-        document.getElementById('app-title').value = jsonData.database.name || 'Project Name';
+        // Now, this function will use the complete project data.
+        populateMainDashboard(activeProject); 
         
-        // Jana semula menu sisi dan fungsikan interaktiviti
+        populateMenuManagement(jsonData.database.menu_groups);
+        document.getElementById('app-title').value = activeProject.app_title || 'Project Name';
+        
         await generateSidebarMenu();
 		
-        // Logik baharu untuk memilih item secara automatik
         if (itemToSelect) {
             setTimeout(() => {
                 let linkToClick = null;
-                if (itemToSelect.field) { // Jika kita mahu memilih medan
+                if (itemToSelect.field) {
                     const tableLinks = document.querySelectorAll('.sidebar .nav-list .has-submenu > a');
                     const parentLink = Array.from(tableLinks).find(
                         link => link.querySelector('span').textContent.trim() === itemToSelect.table
                     );
                     if (parentLink) {
-                        // Buka submenu jika tertutup
                         if (!parentLink.classList.contains('open')) {
                             parentLink.querySelector('.toggle-icon').click();
                         }
-                        // Cari pautan medan
                         const fieldLinks = parentLink.parentElement.querySelectorAll('.submenu-level-3 a');
                         linkToClick = Array.from(fieldLinks).find(
                             link => link.querySelector('span').textContent.trim() === itemToSelect.field
                         );
                     }
-                } else if (itemToSelect.table) { // Jika kita hanya mahu memilih jadual
+                } else if (itemToSelect.table) {
                     const tableLinks = document.querySelectorAll('.sidebar .nav-list .has-submenu > a');
                     linkToClick = Array.from(tableLinks).find(
                         link => link.querySelector('span').textContent.trim() === itemToSelect.table
@@ -144,15 +148,13 @@ export async function loadProjectData(project, tableToSelect = null, itemToSelec
                 if (linkToClick) {
                     linkToClick.click();
                 }
-            }, 100); // Kelewatan kecil untuk memastikan submenu sempat dibuka
+            }, 100);
         }
 
-        // Selepas menu dijana, cari dan klik pautan yang betul
         if (tableToSelect) {
-setActiveSidebarLink(tableToSelect);
+            setActiveSidebarLink(tableToSelect);
         }
         
-        // Semak jika projek ini kosong untuk tunjukkan tutorial
         const tablesExistResult = await window.electronAPI.checkTablesExist(project.project_id);
         if (tablesExistResult && tablesExistResult.count === 0) {
             document.getElementById('tutorial-modal')?.classList.remove('hidden');
@@ -160,10 +162,8 @@ setActiveSidebarLink(tableToSelect);
 
     } else {
         console.error("Gagal memuatkan data skema dari backend.");
-        // Mungkin boleh paparkan mesej ralat kepada pengguna di sini
     }
 	
-    // Panggil fungsi untuk kemas kini senarai projek dalam dropdown
     await populateProjectDropdown();
 }
 
@@ -248,7 +248,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 	initializeRelationshipSaveHandlers();
 	initializeLookupFieldSaveHandler();	
-	
+
+    const autoSaveCheckbox = document.getElementById('toggle-autosave-btn');
+    if (autoSaveCheckbox) {
+        autoSaveCheckbox.addEventListener('change', () => {
+            isAutoSaveEnabled = autoSaveCheckbox.checked;
+            //console.log(`Auto-save is now ${isAutoSaveEnabled ? 'ON' : 'OFF'}`);
+        });
+    }	
     // Setup Event Listeners
     const newProjectBtn = document.getElementById('new-project-btn');
     const saveNewProjectBtn = document.getElementById('save-new-project-btn');
@@ -318,4 +325,53 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Mulakan aplikasi dengan cuba mendapatkan projek aktif dari DB
     const project = await window.electronAPI.getActiveProject();
     await loadProjectData(project);
+
+    // ▼▼▼ TAMBAH BLOK KOD INI ▼▼▼
+const saveAllBtn = document.getElementById('btn-save-all');
+if (saveAllBtn) {
+    saveAllBtn.addEventListener('click', async () => {
+        const saveStatus = document.getElementById('save-status');
+        saveStatus.textContent = 'Saving all data...';
+        saveStatus.className = 'saving';
+        let allSavesSuccessful = true;
+
+        try {
+            // Langkah 1: Simpan tetapan projek
+            const projectResult = await saveProjectSettings();
+            if (!projectResult.success) {
+                allSavesSuccessful = false;
+                throw new Error("Failed to save project settings.");
+            }
+
+            // Langkah 2: Simpan tetapan jadual (jika halamannya aktif)
+            const tableResult = await saveTableSettings();
+            if (tableResult && !tableResult.success) {
+                allSavesSuccessful = false;
+                throw new Error("Failed to save table settings.");
+            }
+            
+            // Langkah 3: Simpan tetapan medan (jika halamannya aktif)
+            const fieldResult = await saveFieldSettings();
+            if (fieldResult && !fieldResult.success) {
+                allSavesSuccessful = false;
+                throw new Error("Failed to save field settings.");
+            }
+
+            // Hanya tunjuk mesej berjaya jika semua langkah lulus
+            if (allSavesSuccessful) {
+                saveStatus.textContent = 'All changes saved ✔';
+                saveStatus.className = 'saved';
+            }
+
+        } catch (error) {
+            console.error("Manual save failed:", error);
+            saveStatus.textContent = `Save failed! (${error.message})`;
+            saveStatus.className = 'error';
+            allSavesSuccessful = false;
+        } finally {
+            setTimeout(() => saveStatus.textContent = '', 3000);
+        }
+    });
+}
+    // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
 });

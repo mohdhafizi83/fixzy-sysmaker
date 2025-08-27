@@ -75,15 +75,21 @@
         <label for="app-title">App title:</label>
         <input type="text" id="app-title" name="app-title" value="Project Name">
     </div>
-    <div class="header-actions">
-		<div style="grid-area: buttons; display: flex; gap: 0.5rem;">
+<div class="header-actions">
+    <label class="checkbox-label" title="Toggle auto-save ON/OFF" style="font-weight: 500;">
+        <input type="checkbox" id="toggle-autosave-btn">
+        Auto-Save
+    </label>
+
+    <div style="grid-area: buttons; display: flex; gap: 0.5rem;">
+        <button class="btn" id="btn-save-all"><i class="fas fa-save"></i> Save Project</button>
         <button class="btn btn-primary" id="app-generate_app" name="app-generate_app"><i class="fas fa-robot"></i> Generate app</button>
         <button class="btn" id="app-view_files" name="app-view_files"><i class="fas fa-folder-open"></i> View files</button>
         <button class="btn" id="config-btn"  title="Configuration">
             <i class="fas fa-cog"></i>
         </button>
-		</div>
     </div>
+</div>
 
 	
 </header>

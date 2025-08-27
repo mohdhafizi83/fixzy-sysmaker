@@ -14,14 +14,14 @@ const db = new Database(dbPath);
 
 // Logik First-Run
 if (!dbExists) {
-  console.log("Pangkalan data tidak ditemui, mencipta skema baharu...");
+  //console.log("Pangkalan data tidak ditemui, mencipta skema baharu...");
   try {
     const schemaSql = fs.readFileSync(
       path.join(__dirname, "schema.sql"),
       "utf8"
     );
     db.exec(schemaSql);
-    console.log("Skema berjaya dicipta.");
+    //console.log("Skema berjaya dicipta.");
   } catch (error) {
     console.error("Gagal mencipta skema pangkalan data:", error);
   }
@@ -207,6 +207,12 @@ ipcMain.handle('table:create', async (event, projectId) => {
 });
 
 // Handler untuk mendapatkan skema penuh
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: main.js
+
+// CARI DAN GANTIKAN KESELURUHAN FUNGSI INI DALAM main.js
+
+// CARI DAN GANTIKAN KESELURUHAN FUNGSI INI DALAM main.js
+
 ipcMain.handle("project:get-full-schema", async (event, projectId) => {
   try {
     const project = db
@@ -220,13 +226,18 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
       .all(projectId);
     const tableIds = tables.map((t) => t.table_id);
 
-    if (tableIds.length === 0) {
-      return { database: { name: project.app_title, table: {} } };
+    let fields = [];
+    if (tableIds.length > 0) {
+        const placeholder = tableIds.map(() => "?").join(",");
+        fields = db.prepare(`SELECT * FROM fields WHERE table_id IN (${placeholder}) ORDER BY field_order, field_id`).all(...tableIds);
+        
+        // ▼▼▼ CHECKPOINT #1 (DIUBAH SUAI): DATA MENTAH DITAPIS UNTUK field_id = 4 ▼▼▼
+        console.log("--- CHECKPOINT 1 (main.js): Data Mentah Dari SQLite (Ditapis untuk field_id = 4) ---");
+        // Menggunakan .filter() untuk hanya memaparkan data yang sepadan
+        console.log(JSON.stringify(fields.filter(f => f.field_id === 4), null, 2));
+        // ▲▲▲ TAMAT CHECKPOINT #1 ▲▲▲
     }
-
-    const placeholder = tableIds.map(() => "?").join(",");
-    const fields = db.prepare(`SELECT * FROM fields WHERE table_id IN (${placeholder}) ORDER BY field_order, field_id`).all(...tableIds);
-
+    
     const structuredTables = {};
     tables.forEach((table) => {
       structuredTables[table.table_name] = { ...table, fields: {} };
@@ -250,12 +261,11 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
            FROM parent_child_relationships r
            JOIN tables p ON r.parent_table_id = p.table_id
            JOIN tables c ON r.child_table_id = c.table_id
-           WHERE r.parent_table_id IN (${placeholder})`
+           WHERE r.parent_table_id IN (${placeholder}) OR r.child_table_id IN (${placeholder})`
         )
-        .all(...tableIds);
+        .all(...tableIds, ...tableIds);
     }
 
-    // ▼▼▼ TAMBAH BLOK KOD INI ▼▼▼
     const groups = db
       .prepare("SELECT * FROM menu_groups WHERE project_id = ? ORDER BY group_order, group_name")
       .all(projectId);
@@ -275,7 +285,6 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
             .all(...groupIds);
     }
 
-    // Gabungkan data items ke dalam data groups
     const structuredMenuGroups = groups.map(group => {
         return {
             ...group,
@@ -283,16 +292,34 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
         };
     });
 
-    return {
+    const fullDataObject = {
+      project: project,
       database: {
         name: project.app_title,
         table: structuredTables,
         relationships: relationships,
-        menu_groups: structuredMenuGroups // Tambah data menu di sini
+        menu_groups: structuredMenuGroups
       },
     };
+
+    // ▼▼▼ CHECKPOINT #2 (DIUBAH SUAI): CARI DAN PAPARKAN DATA TERSUSUN UNTUK field_id = 4 ▼▼▼
+    console.log("\n--- CHECKPOINT 2 (main.js): Data Tersusun (Ditapis untuk field_id = 4) ---");
+    let targetFieldData = null;
+    for (const tableName in fullDataObject.database.table) {
+        for (const fieldName in fullDataObject.database.table[tableName].fields) {
+            const field = fullDataObject.database.table[tableName].fields[fieldName];
+            if (field.field_id === 4) {
+                targetFieldData = field;
+                break;
+            }
+        }
+        if (targetFieldData) break;
+    }
+    console.log(JSON.stringify(targetFieldData, null, 2));
+    // ▲▲▲ TAMAT CHECKPOINT #2 ▲▲▲
+
+    return fullDataObject;
 	
-    return { database: { name: project.app_title, table: structuredTables } };
   } catch (error) {
     console.error("Gagal mengambil skema penuh:", error);
     return null;
@@ -776,7 +803,7 @@ ipcMain.handle('table:update', async (event, data) => {
 // Handler baharu untuk mengemas kini tetapan medan
 ipcMain.handle('field:update', async (event, data) => {
     try {
-		console.log('Data diterima dari frontend:', data);
+		//console.log('Data diterima dari frontend:', data);
         const { field_id, ...fieldsToUpdate } = data;
         if (!field_id) {
             throw new Error("Field ID tidak dibekalkan.");
