@@ -1433,21 +1433,21 @@
                             <label>Format this field as</label>
                             <select id="fld-format-as" name="fld-format-as">
                                 <option value="default" selected>No special formatting (default)</option>
-                                <option>US Currency (example: $21,345.67)</option>
-                                <option>Euro Currency (example: €21,345.67)</option>
-                                <option>UK Currency (example: £21,345.67)</option>
-                                <option>US Short Date/Time (example: 3/28/2008 5:42PM)</option>
-                                <option>UK Short Date/Time (example: 28/3/2008 5:42PM)</option>
-                                <option>US Long Date/Time (example: March 28th, 2008 5:42PM)</option>
-                                <option>UK Long Date/Time (example: 28th March 2008 5:42PM)</option>
-                                <option>Thousands separator, no decimals (example: 21,345)</option>
-                                <option>Thousands separator, 2 decimals (example: 21,345.67)</option>
-                                <option>Thousands separator, 3 decimals (example: 21,345.678)</option>
-                                <option>Phone numbers (example: 123-456-7890)</option>
-                                <option>Canadian Postal Code (example: M2H-1G1)</option>
-                                <option>12-hour time format (example: 05:42 PM instead of 17:42)</option>
-                                <option>European Short Date/Time (example: 2008-03-28 13:00)</option>
-                                <option>Points for thousands and comma for decimals, 2 decimals (example: 21.345,67)</option>
+                                <option value="US Currency">US Currency (example: $21,345.67)</option>
+                                <option value="Euro Currency">Euro Currency (example: €21,345.67)</option>
+                                <option value="UK Currency">UK Currency (example: £21,345.67)</option>
+                                <option value="US Short Date/Time">US Short Date/Time (example: 3/28/2008 5:42PM)</option>
+                                <option value="UK Short Date/Time">UK Short Date/Time (example: 28/3/2008 5:42PM)</option>
+                                <option value="US Long Date/Time">US Long Date/Time (example: March 28th, 2008 5:42PM)</option>
+                                <option value="UK Long Date/Time">UK Long Date/Time (example: 28th March 2008 5:42PM)</option>
+                                <option value="Thousands separator, no decimals">Thousands separator, no decimals (example: 21,345)</option>
+                                <option value="Thousands separator, 2 decimals">Thousands separator, 2 decimals (example: 21,345.67)</option>
+                                <option value="Thousands separator, 3 decimals">Thousands separator, 3 decimals (example: 21,345.678)</option>
+                                <option value="Phone numbers">Phone numbers (example: 123-456-7890)</option>
+                                <option value="Canadian Postal Code">Canadian Postal Code (example: M2H-1G1)</option>
+                                <option value="12-hour time format">12-hour time format (example: 05:42 PM instead of 17:42)</option>
+                                <option value="European Short Date/Time">European Short Date/Time (example: 2008-03-28 13:00)</option>
+                                <option value="">Points for thousands and comma for decimals, 2 decimals (example: 21.345,67)</option>
                             </select>
                         </div>
                     </div>
@@ -1490,7 +1490,12 @@
             </button>
             
             <input type="hidden" id="fld-algorithm-logic" name="fld-algorithm-logic">
-        </div>
+
+            <div class="form-group mt-2">
+                <label for="fld-hook-functions">Hook Functions</label>
+                <textarea id="fld-hook-functions" name="fld-hook-functions" rows="8" placeholder="Contoh: dv_after_insert(&#10;    'send_email_notification'&#10;);"></textarea>
+            </div>
+            </div>
     </div>
 </div>
 
