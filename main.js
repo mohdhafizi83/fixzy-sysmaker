@@ -107,12 +107,21 @@ ipcMain.handle('field:delete', async (event, { fieldId, tableName, fieldName }) 
 
 ipcMain.handle('field:create', async (event, tableId) => {
     try {
+		
+        const settings = db.prepare("SELECT setting_name, setting_value FROM fizisys_settings WHERE setting_name IN ('field_default_type', 'field_default_length')").all();
+        const defaultSettings = settings.reduce((acc, setting) => {
+            acc[setting.setting_name] = setting.setting_value;
+            return acc;
+        }, {});
+        
+        const defaultType = defaultSettings.field_default_type || 'VARCHAR';
+        const defaultLength = defaultSettings.field_default_length || 255;
+		
         let newName;
         let isUnique = false;
         const checkStmt = db.prepare('SELECT field_id FROM fields WHERE table_id = ? AND field_name = ?');
         
         while (!isUnique) {
-            // ▼▼▼ BARIS INI DIUBAH UNTUK MENJANA HURUF SAHAJA ▼▼▼
             const randomChars = Array.from({ length: 6 }, () => 'abcdefghijklmnopqrstuvwxyz'.charAt(Math.floor(Math.random() * 26))).join('');
             newName = `field_${randomChars}`;
             const existingField = checkStmt.get(tableId, newName);
@@ -126,7 +135,7 @@ ipcMain.handle('field:create', async (event, tableId) => {
 
         const info = db.prepare(
             `INSERT INTO fields (table_id, field_name, caption, data_type, length, field_order) VALUES (?, ?, ?, ?, ?, ?)`
-        ).run(tableId, newName, newName, 'VARCHAR', 255, nextOrder);
+        ).run(tableId, newName, newName, defaultType, defaultLength, nextOrder);
 
         return db.prepare('SELECT * FROM fields WHERE field_id = ?').get(info.lastInsertRowid);
     } catch (error) {

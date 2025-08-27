@@ -240,6 +240,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const saveNewProjectBtn = document.getElementById('save-new-project-btn');
     const newProjectNameInput = document.getElementById('new-project-name');
     const newProjectModal = document.getElementById('new-project-modal');
+	const newProjectModalCloseBtn = document.getElementById('new-project-modal-close');
+	
     const tutorialModal = document.getElementById('tutorial-modal');
     const closeTutorialBtn = document.getElementById('close-tutorial-modal-btn');
     const importSqlFileBtn = document.getElementById('import-sql-file-btn');
@@ -250,6 +252,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pasteSqlImportBtn = document.getElementById('paste-sql-modal-import-btn');
 
     if (newProjectBtn) newProjectBtn.addEventListener('click', () => newProjectModal.classList.remove('hidden'));
+
+    if (newProjectModalCloseBtn) {
+        newProjectModalCloseBtn.addEventListener('click', () => {
+            newProjectModal.classList.add('hidden');
+        });
+    }
     
     if (saveNewProjectBtn) saveNewProjectBtn.addEventListener('click', async () => {
         const projectName = newProjectNameInput.value.trim();

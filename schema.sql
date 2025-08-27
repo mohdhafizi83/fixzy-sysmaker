@@ -204,7 +204,7 @@ INSERT INTO fizisys_settings (setting_name, setting_value) VALUES
 ('doc_root', ''),
 ('base_url', 'http://localhost'),
 ('field_default_type', 'VARCHAR'),
-('field_default_length', '40'),
+('field_default_length', '255'),
 ('table_suggest_icon', '1'),
 ('table_allow_csv', '1'),
 ('table_dv_separate_page', '1'),
