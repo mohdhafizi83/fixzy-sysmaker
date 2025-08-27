@@ -34,7 +34,8 @@ import {
     initializeTableSaveHandlers,
     initializeFieldSaveHandlers,
     initializeRelationshipSaveHandlers,
-    initializeLookupFieldSaveHandler  	
+    initializeLookupFieldSaveHandler,
+	initializeAlgorithmBuilder   	
 } from './uiHandlers.js';
 
 export function setActiveSidebarItem(tableName, fieldName = null) {
@@ -239,6 +240,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 	initializeRealtimeValidation();
 	initializeOptionsListRules();
 	initializeCalculatedFieldRules();
+	initializeAlgorithmBuilder();
+	
 	initializeProjectSaveHandlers();
 	initializeTableSaveHandlers();
 	initializeFieldSaveHandlers();

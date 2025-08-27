@@ -996,6 +996,7 @@
             <button class="tab-link" data-tab="tab-field-options" id="fld-tab-options" name="fld-tab-options">Options list</button>
             <button class="tab-link" data-tab="tab-field-format" id="fld-tab-format" name="fld-tab-format">Data format</button>
             <button class="tab-link" data-tab="tab-field-calculated" id="fld-tab-calculated" name="fld-tab-calculated">Calculated field</button>
+			<button class="tab-link" data-tab="tab-field-algorithm" id="fld-tab-algorithm" name="fld-tab-algorithm">Algorithm field</button>
         </div>
 
         <div class="tabs-content">
@@ -1476,6 +1477,45 @@
                     </div>
                 </div>
             </div>
+
+            
+            <div id="tab-field-algorithm" class="tab-pane">
+                <div class="card">
+                    <div class="card-body">
+                        <p class="helper-text" style="margin-bottom: 1.5rem; color: var(--secondary-color);">Seret komponen dari palet di sebelah kiri ke kanvas di sebelah kanan untuk membina logik anda.</p>
+
+                        <input type="hidden" id="fld-algorithm-logic" name="fld-algorithm-logic">
+                        
+                        <div class="algorithm-builder-grid">
+<div class="algorithm-palette">
+    <h4>Komponen</h4>
+    <div class="algo-component" draggable="true" data-type="if">IF</div>
+	<div class="algo-component" draggable="true" data-type="then">THEN</div>
+    <div class="algo-component" draggable="true" data-type="else">ELSE</div>
+    <div class="algo-component" draggable="true" data-type="field">Table.Field</div>
+    <div class="algo-component" draggable="true" data-type="operator">Operator</div>
+    <div class="algo-component" draggable="true" data-type="string">String Value</div>
+    <div class="algo-component" draggable="true" data-type="number">Number Value</div>
+</div>
+
+                            <div id="algorithm-canvas" class="algorithm-canvas">
+                                <span class="canvas-placeholder">Drop components here</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+
+
+
+
+
+
+
+			
         </div>
     </div>
 </div>

@@ -776,6 +776,7 @@ ipcMain.handle('table:update', async (event, data) => {
 // Handler baharu untuk mengemas kini tetapan medan
 ipcMain.handle('field:update', async (event, data) => {
     try {
+		console.log('Data diterima dari frontend:', data);
         const { field_id, ...fieldsToUpdate } = data;
         if (!field_id) {
             throw new Error("Field ID tidak dibekalkan.");
@@ -828,7 +829,7 @@ ipcMain.handle('field:update', async (event, data) => {
             'youtube_dv_height', 'lookup_parent_table', 'lookup_caption_1', 'lookup_separator',
             'lookup_caption_2', 'lookup_display_as', 'lookup_inherit_permissions',
             'lookup_link_behavior', 'options_list_values', 'options_display', 'format_as',
-            'calculated_enable', 'calculated_query', 'lookup_custom_query'
+            'calculated_enable', 'calculated_query', 'lookup_custom_query', 'algorithm_logic'
         ];
 
         const setClause = Object.keys(fieldsToUpdate)

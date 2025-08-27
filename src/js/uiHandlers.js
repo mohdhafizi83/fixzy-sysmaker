@@ -14,6 +14,212 @@ export function applyFontSize(size) {
 
 import { allTableNames, jsonData, loadProjectData, activeProject, setActiveSidebarItem } from './js.main.js';
 
+// js/uiHandlers.js
+
+export function initializeAlgorithmBuilder() {
+    const palette = document.querySelector('.algorithm-palette');
+    const canvas = document.getElementById('algorithm-canvas');
+    const hiddenInput = document.getElementById('fld-algorithm-logic');
+    const placeholder = document.querySelector('.canvas-placeholder');
+
+    if (!palette || !canvas || !hiddenInput) return;
+
+    // 1. FUNGSI AUTO-SAVE KHAS (dari langkah sebelum ini)
+    let algorithmSaveTimer;
+    const saveStatus = document.getElementById('save-status');
+
+    const saveAlgorithmData = () => {
+        saveStatus.textContent = 'Unsaved changes...';
+        saveStatus.className = '';
+        clearTimeout(algorithmSaveTimer);
+
+        algorithmSaveTimer = setTimeout(async () => {
+            saveStatus.textContent = 'Saving...';
+            saveStatus.className = 'saving';
+
+            const [tableName, fieldName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
+            const fieldData = jsonData.database.table[tableName]?.fields[fieldName];
+            
+            if (!fieldData) {
+                saveStatus.textContent = 'Error: Active field not found!';
+                saveStatus.className = 'error';
+                return;
+            }
+
+            const dataToSave = {
+                field_id: fieldData.field_id,
+                algorithm_logic: hiddenInput.value
+            };
+
+            const result = await window.electronAPI.updateField(dataToSave);
+
+            if (result.success) {
+                saveStatus.textContent = 'All changes saved ✔';
+                saveStatus.className = 'saved';
+            } else {
+                saveStatus.textContent = 'Save failed!';
+                saveStatus.className = 'error';
+            }
+            setTimeout(() => saveStatus.textContent = '', 3000);
+        }, 1500);
+    };
+
+    // 2. FUNGSI UNTUK MENGEMAS KINI DATA (juga memanggil save khas)
+    const updateHiddenInput = () => {
+        const items = Array.from(canvas.querySelectorAll('.dropped-item'));
+        const logicArray = items.map(item => {
+            const type = item.dataset.itemType;
+            let itemData = { type };
+            if (type === 'field') {
+                itemData.table = item.querySelector('.table-select')?.value;
+                itemData.field = item.querySelector('.field-select')?.value;
+            } else if (type === 'operator') {
+                itemData.value = item.querySelector('.operator-select')?.value;
+            } else if (type === 'string' || type === 'number') {
+                itemData.value = item.querySelector('input')?.value;
+            } else {
+                itemData.value = type;
+            }
+            return itemData;
+        });
+        hiddenInput.value = JSON.stringify(logicArray, null, 2);
+        saveAlgorithmData();
+        if (items.length === 0 && placeholder) {
+            placeholder.style.display = 'block';
+        }
+    };
+
+    // 3. FUNGSI UNTUK MENCIPTA ELEMEN (termasuk butang padam)
+    const createInteractiveElement = (type) => {
+        const itemContainer = document.createElement('div');
+        itemContainer.className = 'dropped-item';
+        itemContainer.dataset.itemType = type;
+        const itemLabel = document.createElement('span');
+        itemLabel.textContent = `[${type.toUpperCase()}]`;
+        itemContainer.appendChild(itemLabel);
+        switch (type) {
+            case 'field':
+                const tableSelect = document.createElement('select');
+                tableSelect.className = 'table-select';
+                const [activeTable] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
+                const allTables = Object.keys(jsonData.database.table);
+                allTables.forEach(tableName => {
+                    const option = document.createElement('option');
+                    option.value = tableName;
+                    option.textContent = tableName;
+                    if (tableName === activeTable) option.selected = true;
+                    tableSelect.appendChild(option);
+                });
+                itemContainer.appendChild(tableSelect);
+                const fieldSelect = document.createElement('select');
+                fieldSelect.className = 'field-select';
+                const populateFields = (tableName) => {
+                    fieldSelect.innerHTML = '';
+                    const fields = Object.keys(jsonData.database.table[tableName].fields);
+                    fields.forEach(fieldName => {
+                        const option = document.createElement('option');
+                        option.value = fieldName;
+                        option.textContent = fieldName;
+                        fieldSelect.appendChild(option);
+                    });
+                };
+                tableSelect.addEventListener('change', () => {
+                    populateFields(tableSelect.value);
+                    updateHiddenInput();
+                });
+                populateFields(activeTable);
+                itemContainer.appendChild(fieldSelect);
+                fieldSelect.addEventListener('change', updateHiddenInput);
+                break;
+            case 'operator':
+                const operatorSelect = document.createElement('select');
+                operatorSelect.className = 'operator-select';
+                const operators = [
+                    { value: '==', text: 'Equal' }, { value: '!=', text: 'Not Equal' },
+                    { value: '>', text: 'Greater Than' }, { value: '<', text: 'Less Than' },
+                    { value: '>=', text: 'Greater Than or Equal' }, { value: '<=', text: 'Less Than or Equal' },
+                    { type: 'separator' },
+                    { value: '&&', text: 'AND' }, { value: '||', text: 'OR' },
+                    { type: 'separator' },
+                    { value: '+', text: 'Plus' }, { value: '-', text: 'Minus' },
+                    { value: '*', text: 'Times' }, { value: '/', text: 'Divide' }
+                ];
+                operators.forEach(op => {
+                    if(op.type === 'separator'){
+                         const option = document.createElement('option');
+                         option.disabled = true;
+                         option.textContent = '──────────';
+                         operatorSelect.appendChild(option);
+                    } else {
+                        const option = document.createElement('option');
+                        option.value = op.value;
+                        option.textContent = op.text;
+                        operatorSelect.appendChild(option);
+                    }
+                });
+                itemContainer.appendChild(operatorSelect);
+                operatorSelect.addEventListener('change', updateHiddenInput);
+                break;
+            case 'string':
+                const stringInput = document.createElement('input');
+                stringInput.type = 'text';
+                stringInput.placeholder = 'Enter value...';
+                stringInput.addEventListener('input', updateHiddenInput);
+                itemContainer.appendChild(stringInput);
+                break;
+            case 'number':
+                const numberInput = document.createElement('input');
+                numberInput.type = 'number';
+                numberInput.placeholder = '0';
+                numberInput.addEventListener('input', updateHiddenInput);
+                itemContainer.appendChild(numberInput);
+                break;
+        }
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-algo-item';
+        deleteBtn.innerHTML = '&times;';
+        deleteBtn.title = 'Padam komponen ini';
+        itemContainer.appendChild(deleteBtn);
+        return itemContainer;
+    };
+    
+    // 4. SEMUA EVENT LISTENER TERMASUK UNTUK PADAM
+    palette.addEventListener('dragstart', (e) => {
+        if (e.target.classList.contains('algo-component')) {
+            e.dataTransfer.setData('text/plain', e.target.dataset.type);
+        }
+    });
+    canvas.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        canvas.classList.add('dragging-over');
+    });
+    canvas.addEventListener('dragleave', () => {
+        canvas.classList.remove('dragging-over');
+    });
+    canvas.addEventListener('drop', (e) => {
+        e.preventDefault();
+        canvas.classList.remove('dragging-over');
+        if (placeholder) placeholder.style.display = 'none';
+        const componentType = e.dataTransfer.getData('text/plain');
+        const newItem = createInteractiveElement(componentType);
+        canvas.appendChild(newItem);
+        const newInpt = newItem.querySelector('input');
+        if(newInpt) newInpt.focus();
+        updateHiddenInput();
+    });
+
+    // ▼▼▼ EVENT LISTENER UNTUK PADAM YANG HILANG SEBELUM INI ▼▼▼
+    canvas.addEventListener('click', (e) => {
+        if (e.target.classList.contains('delete-algo-item')) {
+            const itemToRemove = e.target.closest('.dropped-item');
+            if (itemToRemove) {
+                itemToRemove.remove();
+                updateHiddenInput();
+            }
+        }
+    });
+}
+
 export function initializeLookupFieldSaveHandler() {
     const parentTableSelect = document.getElementById('fld-lookup-parent-table');
     if (!parentTableSelect) return;
@@ -330,8 +536,9 @@ export function initializeFieldSaveHandlers() {
 
     const gatherData = () => {
         const data = {};
+        const form = document.getElementById('field-settings-page');
         const inputs = form.querySelectorAll('input, select, textarea');
-        
+
         inputs.forEach(input => {
             if (!input.id) return;
             const id = input.id.replace('fld-', '').replace(/-/g, '_');
@@ -371,7 +578,7 @@ export function initializeFieldSaveHandlers() {
                 return;
             }
             dataToSave.field_id = fieldData.field_id;
-
+			console.log('Data dihantar ke backend:', dataToSave);
             const result = await window.electronAPI.updateField(dataToSave);
 
             if (result.success) {
@@ -1826,6 +2033,7 @@ export function populateFieldSettings(tableName, fieldName) {
     // Tab: Calculated field
     setElementValue('fld-calculated-enable', fieldData.calculated_enable);
     setElementValue('fld-calculated-query', fieldData.calculated_query);
+	setElementValue('fld-algorithm-logic', fieldData.algorithm_logic);
 	
 	applyDataTypeRules();
 	
