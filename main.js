@@ -1,6 +1,6 @@
 // main.js (Proses Utama Electron) - DIPERBETULKAN
 
-const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, dialog, Menu } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const Database = require("better-sqlite3");
@@ -27,6 +27,12 @@ if (!dbExists) {
   }
 }
 
+//app.whenReady().then(() => {
+//  // 2. TAMBAH BARIS INI sebelum mencipta tetingkap
+//  Menu.setApplicationMenu(null);
+//  
+//  createWindow();
+//});
 // =================================================================
 // ▼▼▼ SEMUA IPC HANDLER DIKUMPULKAN DI SINI UNTUK KONSISTENSI ▼▼▼
 // =================================================================
@@ -587,14 +593,26 @@ ipcMain.handle("settings:get-all", async () => {
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: 1200, // Lebar ini masih berguna sebagai saiz sandaran
+    height: 800, // Tinggi ini masih berguna sebagai saiz sandaran
+    show: false, // UBAH: Mulakan tetingkap secara tersembunyi
+	resizable: false, //Kunci saiz tetingkap
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
     },
   });
+
+  // TAMBAH: Panggil fungsi maximize() pada objek tetingkap
+  win.maximize();
+  
   win.loadFile("src/index.html");
-  // Buka DevTools secara automatik untuk memudahkan penyahpepijatan
+
+  // TAMBAH: Tunjukkan tetingkap hanya apabila ia sedia untuk dipaparkan
+  win.on('ready-to-show', () => {
+    win.show();
+  });
+  
+   // Buka DevTools secara automatik untuk memudahkan penyahpepijatan
   // win.webContents.openDevTools();
 }
 

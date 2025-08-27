@@ -1,6 +1,10 @@
 /* Import Fon Moden dari Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+html {
+    /* Saiz fon asal pelayar biasanya 16px. Kurangkan sedikit. */
+    font-size: 14px; 
+}
 .hidden {
     display: none !important;
 }
@@ -389,28 +393,31 @@ html, body {
 
 /* 1. Tetapan untuk pautan (bekas flex) */
 /* Cari blok CSS ini dan gantikannya */
+/* styles.css */
+
 .sidebar .nav-list a {
     display: flex;
     align-items: center;
     width: 100%;
     overflow: hidden;
     
-    /* UBAH DI SINI: Kurangkan padding atas dan bawah */
-    padding-top: 0.6rem;    /* Nilai asal: 0.75rem */
-    padding-bottom: 0.6rem; /* Nilai asal: 0.75rem */
+    /* ▼▼▼ NILAI DIUBAH DI SINI ▼▼▼ */
+    padding-top: 0.3rem;    /* Nilai asal: 0.6rem */
+    padding-bottom: 0.3rem; /* Nilai asal: 0.6rem */
     
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding-left: 0rem;
+    padding-right: 0rem;
     
-    /* UBAH DI SINI: Kecilkan saiz fon */
-    font-size: 0.9em; /* Nilai asal mungkin 1em atau tidak ditetapkan */
+    /*font-size: 0.9em;*/
     
-    /* Pastikan peraturan lain dikekalkan */
     border-radius: 6px;
     text-decoration: none;
     color: var(--sidebar-text);
     font-weight: 500;
-    margin-bottom: 0.25rem; /* Kurangkan juga margin bawah jika perlu */
+
+    /* ▼▼▼ DAN DI SINI ▼▼▼ */
+    margin-bottom: 0.1rem; /* Nilai asal: 0.25rem */
+
     transition: background-color 0.2s;
 }
 
