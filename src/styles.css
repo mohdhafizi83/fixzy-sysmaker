@@ -414,8 +414,6 @@ html, body {
     text-decoration: none;
     color: var(--sidebar-text);
     font-weight: 500;
-
-    /* ▼▼▼ DAN DI SINI ▼▼▼ */
     margin-bottom: 0.1rem; /* Nilai asal: 0.25rem */
 
     transition: background-color 0.2s;
@@ -432,7 +430,7 @@ html, body {
     text-overflow: ellipsis; /* Paparkan '...' */
     
     /* Jarak antara ikon kiri dan teks */
-    margin-left: 0.75rem; 
+    margin-left: 0rem; 
 }
 
 /* 3. Tetapan untuk semua ikon di dalam pautan */
@@ -1075,10 +1073,13 @@ legend {
 
 .main-menu-content a {
     color: var(--sidebar-text);
-    padding: 12px 16px;
+    padding: 6px 16px;
     text-decoration: none;
     display: block;
     font-size: 0.9em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .main-menu-content a:hover {

@@ -1,8 +1,18 @@
-// js/uiHandlers.js - VERSI LENGKAP & MUKTAMAD
+/**
+ * Mengaplikasikan saiz fon pada elemen akar (<html>) aplikasi.
+ * @param {string} size - Pilihan saiz ('small', 'medium', 'large').
+ */
+export function applyFontSize(size) {
+    let fontSizeValue = '16px'; // Saiz lalai (medium)
+    if (size === 'small') {
+        fontSizeValue = '14px';
+    } else if (size === 'large') {
+        fontSizeValue = '18px';
+    }
+    document.documentElement.style.fontSize = fontSizeValue;
+}
 
 import { allTableNames, jsonData, loadProjectData, activeProject, setActiveSidebarItem } from './js.main.js';
-
-// js/uiHandlers.js
 
 export function initializeLookupFieldSaveHandler() {
     const parentTableSelect = document.getElementById('fld-lookup-parent-table');
@@ -754,8 +764,8 @@ async function populateSettingsModal() {
     setValue('fizisys-check-updates', settings.check_updates);
     setValue('fizisys-autosave-interval', settings.autosave_interval);
     setValue('fizisys-show-begin-box', settings.show_begin_box);
-    const iconSizeRadio = document.querySelector(`input[name="fizisys-icon-size"][value="${settings.icon_size}"]`);
-    if (iconSizeRadio) iconSizeRadio.checked = true;
+    const fontSizeRadio = document.querySelector(`input[name="fizisys-font-size"][value="${settings.font_size}"]`);
+    if (fontSizeRadio) fontSizeRadio.checked = true;
     setValue('fizisys-doc-root', settings.doc_root);
     setValue('fizisys-base-url', settings.base_url);
     // Field defaults
@@ -925,9 +935,9 @@ export function initializeModalHandlers() {
             }
         });
         
-        const iconSize = document.querySelector('input[name="fizisys-icon-size"]:checked');
-        if (iconSize) {
-            settings.icon_size = iconSize.value;
+        const fontSize = document.querySelector('input[name="fizisys-font-size"]:checked');
+        if (fontSize) {
+            settings.font_size = fontSize.value;
         }
         
         return settings;
@@ -951,6 +961,7 @@ export function initializeModalHandlers() {
             const result = await window.electronAPI.saveAllSettings(settingsData);
             
             if (result.success) {
+                applyFontSize(settingsData.font_size); 
                 showCustomDialog({ title: "Success", message: "Preferences have been saved." });
             } else {
                 showCustomDialog({ title: "Error", message: `Failed to save preferences: ${result.message}` });

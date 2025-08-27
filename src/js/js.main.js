@@ -1,7 +1,8 @@
 // js/main.js (Proses Renderer)
 import { generateSidebarMenu, initializeSidebarInteractivity, initializeSidebarButtons, setActiveSidebarLink, focusOnSidebarField } from './sidebar.js';
 import { 
-   showCustomDialog,
+	applyFontSize,
+	showCustomDialog,
     updateActionButtonsState, 
     initializeTabSystems, 
     initializeModalHandlers, 
@@ -202,6 +203,16 @@ async function handleSqlImport(importFunction) {
 
 // Inisialisasi Aplikasi
 document.addEventListener('DOMContentLoaded', async () => {
+	
+    try {
+        const settings = await window.electronAPI.getAllSettings();
+        if (settings && settings.font_size) {
+            applyFontSize(settings.font_size);
+        }
+    } catch (error) {
+        console.error("Gagal memuatkan tetapan awal:", error);
+    }
+
     // Inisialisasi semua sistem UI
     initializeTabSystems();
     initializeModalHandlers();

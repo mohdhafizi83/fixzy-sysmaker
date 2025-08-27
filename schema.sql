@@ -200,7 +200,7 @@ INSERT INTO fizisys_settings (setting_name, setting_value) VALUES
 ('check_updates', '1'),
 ('autosave_interval', '15'),
 ('show_begin_box', '1'),
-('icon_size', 'small'),
+('font_size', 'small'),
 ('doc_root', ''),
 ('base_url', 'http://localhost'),
 ('field_default_type', 'VARCHAR'),
