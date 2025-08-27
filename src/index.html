@@ -1479,32 +1479,20 @@
             </div>
 
             
-            <div id="tab-field-algorithm" class="tab-pane">
-                <div class="card">
-                    <div class="card-body">
-                        <p class="helper-text" style="margin-bottom: 1.5rem; color: var(--secondary-color);">Seret komponen dari palet di sebelah kiri ke kanvas di sebelah kanan untuk membina logik anda.</p>
-
-                        <input type="hidden" id="fld-algorithm-logic" name="fld-algorithm-logic">
-                        
-                        <div class="algorithm-builder-grid">
-<div class="algorithm-palette">
-    <h4>Komponen</h4>
-    <div class="algo-component" draggable="true" data-type="if">IF</div>
-	<div class="algo-component" draggable="true" data-type="then">THEN</div>
-    <div class="algo-component" draggable="true" data-type="else">ELSE</div>
-    <div class="algo-component" draggable="true" data-type="field">Table.Field</div>
-    <div class="algo-component" draggable="true" data-type="operator">Operator</div>
-    <div class="algo-component" draggable="true" data-type="string">String Value</div>
-    <div class="algo-component" draggable="true" data-type="number">Number Value</div>
+<div id="tab-field-algorithm" class="tab-pane">
+    <div class="card">
+        <div class="card-body">
+            <p class="helper-text" style="color: var(--secondary-color);">
+                Bina logik kompleks untuk medan ini dengan membuka Algorithm Builder.
+            </p>
+            <button class="btn btn-secondary mt-1" id="open-algorithm-builder-btn">
+                <i class="fas fa-drafting-compass"></i> Open Algorithm Builder
+            </button>
+            
+            <input type="hidden" id="fld-algorithm-logic" name="fld-algorithm-logic">
+        </div>
+    </div>
 </div>
-
-                            <div id="algorithm-canvas" class="algorithm-canvas">
-                                <span class="canvas-placeholder">Drop components here</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
 
 
@@ -1826,6 +1814,36 @@
         <div class="modal-footer">
             <button class="btn btn-secondary" id="custom-alert-cancel-btn">Cancel</button>
             <button class="btn btn-primary" id="custom-alert-ok-btn">OK</button>
+        </div>
+    </div>
+</div>
+
+<div id="algorithm-builder-modal" class="modal-overlay hidden">
+    <div class="modal-content extra-large">
+        <div class="modal-header">
+            <h3>Algorithm Builder</h3>
+            <button id="algorithm-builder-close" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+             <div class="algorithm-builder-grid">
+                <div class="algorithm-palette">
+                    <h4>Komponen</h4>
+                    <div class="algo-component" draggable="true" data-type="if">IF</div>
+                    <div class="algo-component" draggable="true" data-type="then">THEN</div>
+                    <div class="algo-component" draggable="true" data-type="else">ELSE</div>
+                    <div class="algo-component" draggable="true" data-type="field">Table.Field</div>
+                    <div class="algo-component" draggable="true" data-type="operator">Operator</div>
+                    <div class="algo-component" draggable="true" data-type="string">String Value</div>
+                    <div class="algo-component" draggable="true" data-type="number">Number Value</div>
+                </div>
+                <div id="algorithm-canvas" class="algorithm-canvas">
+                    <span class="canvas-placeholder">Drop components here</span>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="algorithm-builder-cancel-btn">Close</button>
+            <button class="btn btn-primary" id="algorithm-builder-done-btn">Done</button>
         </div>
     </div>
 </div>

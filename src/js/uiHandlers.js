@@ -14,57 +14,55 @@ export function applyFontSize(size) {
 
 import { allTableNames, jsonData, loadProjectData, activeProject, setActiveSidebarItem } from './js.main.js';
 
-// js/uiHandlers.js
-
+// GANTIKAN KESELURUHAN FUNGSI LAMA DENGAN INI
 export function initializeAlgorithmBuilder() {
-    const palette = document.querySelector('.algorithm-palette');
-    const canvas = document.getElementById('algorithm-canvas');
+    // 1. Kenal pasti semua elemen UI yang terlibat
+    const modal = document.getElementById('algorithm-builder-modal');
+    const openBtn = document.getElementById('open-algorithm-builder-btn');
+    const closeBtn = document.getElementById('algorithm-builder-close');
+    const cancelBtn = document.getElementById('algorithm-builder-cancel-btn');
+    const doneBtn = document.getElementById('algorithm-builder-done-btn');
+
+    const palette = modal.querySelector('.algorithm-palette');
+    const canvas = modal.querySelector('#algorithm-canvas');
     const hiddenInput = document.getElementById('fld-algorithm-logic');
-    const placeholder = document.querySelector('.canvas-placeholder');
+    const placeholder = modal.querySelector('.canvas-placeholder');
 
-    if (!palette || !canvas || !hiddenInput) return;
+    if (!modal || !openBtn || !palette || !canvas) return;
 
-    // 1. FUNGSI AUTO-SAVE KHAS (dari langkah sebelum ini)
-    let algorithmSaveTimer;
-    const saveStatus = document.getElementById('save-status');
+    // 2. Fungsi untuk menyimpan data ke DB (tanpa auto-save timer)
+    const saveAlgorithmData = async () => {
+        const saveStatus = document.getElementById('save-status');
+        saveStatus.textContent = 'Saving...';
+        saveStatus.className = 'saving';
 
-    const saveAlgorithmData = () => {
-        saveStatus.textContent = 'Unsaved changes...';
-        saveStatus.className = '';
-        clearTimeout(algorithmSaveTimer);
+        const [tableName, fieldName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
+        const fieldData = jsonData.database.table[tableName]?.fields[fieldName];
+        
+        if (!fieldData) {
+            saveStatus.textContent = 'Error: Active field not found!';
+            saveStatus.className = 'error';
+            return;
+        }
 
-        algorithmSaveTimer = setTimeout(async () => {
-            saveStatus.textContent = 'Saving...';
-            saveStatus.className = 'saving';
+        const dataToSave = {
+            field_id: fieldData.field_id,
+            algorithm_logic: hiddenInput.value
+        };
 
-            const [tableName, fieldName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
-            const fieldData = jsonData.database.table[tableName]?.fields[fieldName];
-            
-            if (!fieldData) {
-                saveStatus.textContent = 'Error: Active field not found!';
-                saveStatus.className = 'error';
-                return;
-            }
+        const result = await window.electronAPI.updateField(dataToSave);
 
-            const dataToSave = {
-                field_id: fieldData.field_id,
-                algorithm_logic: hiddenInput.value
-            };
-
-            const result = await window.electronAPI.updateField(dataToSave);
-
-            if (result.success) {
-                saveStatus.textContent = 'All changes saved ✔';
-                saveStatus.className = 'saved';
-            } else {
-                saveStatus.textContent = 'Save failed!';
-                saveStatus.className = 'error';
-            }
-            setTimeout(() => saveStatus.textContent = '', 3000);
-        }, 1500);
+        if (result.success) {
+            saveStatus.textContent = 'All changes saved ✔';
+            saveStatus.className = 'saved';
+        } else {
+            saveStatus.textContent = 'Save failed!';
+            saveStatus.className = 'error';
+        }
+        setTimeout(() => saveStatus.textContent = '', 3000);
     };
 
-    // 2. FUNGSI UNTUK MENGEMAS KINI DATA (juga memanggil save khas)
+    // 3. Fungsi untuk mengemas kini HANYA 'hidden input'
     const updateHiddenInput = () => {
         const items = Array.from(canvas.querySelectorAll('.dropped-item'));
         const logicArray = items.map(item => {
@@ -83,13 +81,13 @@ export function initializeAlgorithmBuilder() {
             return itemData;
         });
         hiddenInput.value = JSON.stringify(logicArray, null, 2);
-        saveAlgorithmData();
-        if (items.length === 0 && placeholder) {
-            placeholder.style.display = 'block';
+        
+        if (placeholder) {
+            placeholder.style.display = items.length === 0 ? 'block' : 'none';
         }
     };
-
-    // 3. FUNGSI UNTUK MENCIPTA ELEMEN (termasuk butang padam)
+    
+    // Fungsi mencipta elemen interaktif (tidak berubah dari kod asal)
     const createInteractiveElement = (type) => {
         const itemContainer = document.createElement('div');
         itemContainer.className = 'dropped-item';
@@ -115,13 +113,15 @@ export function initializeAlgorithmBuilder() {
                 fieldSelect.className = 'field-select';
                 const populateFields = (tableName) => {
                     fieldSelect.innerHTML = '';
-                    const fields = Object.keys(jsonData.database.table[tableName].fields);
-                    fields.forEach(fieldName => {
-                        const option = document.createElement('option');
-                        option.value = fieldName;
-                        option.textContent = fieldName;
-                        fieldSelect.appendChild(option);
-                    });
+                    if (jsonData.database.table[tableName]) {
+                        const fields = Object.keys(jsonData.database.table[tableName].fields);
+                        fields.forEach(fieldName => {
+                            const option = document.createElement('option');
+                            option.value = fieldName;
+                            option.textContent = fieldName;
+                            fieldSelect.appendChild(option);
+                        });
+                    }
                 };
                 tableSelect.addEventListener('change', () => {
                     populateFields(tableSelect.value);
@@ -134,26 +134,15 @@ export function initializeAlgorithmBuilder() {
             case 'operator':
                 const operatorSelect = document.createElement('select');
                 operatorSelect.className = 'operator-select';
-                const operators = [
-                    { value: '==', text: 'Equal' }, { value: '!=', text: 'Not Equal' },
-                    { value: '>', text: 'Greater Than' }, { value: '<', text: 'Less Than' },
-                    { value: '>=', text: 'Greater Than or Equal' }, { value: '<=', text: 'Less Than or Equal' },
-                    { type: 'separator' },
-                    { value: '&&', text: 'AND' }, { value: '||', text: 'OR' },
-                    { type: 'separator' },
-                    { value: '+', text: 'Plus' }, { value: '-', text: 'Minus' },
-                    { value: '*', text: 'Times' }, { value: '/', text: 'Divide' }
-                ];
+                const operators = [ { value: '==', text: 'Equal' }, { value: '!=', text: 'Not Equal' }, { value: '>', text: 'Greater Than' }, { value: '<', text: 'Less Than' }, { value: '>=', text: 'Greater Than or Equal' }, { value: '<=', text: 'Less Than or Equal' }, { type: 'separator' }, { value: '&&', text: 'AND' }, { value: '||', text: 'OR' }, { type: 'separator' }, { value: '+', text: 'Plus' }, { value: '-', text: 'Minus' }, { value: '*', text: 'Times' }, { value: '/', text: 'Divide' } ];
                 operators.forEach(op => {
                     if(op.type === 'separator'){
                          const option = document.createElement('option');
-                         option.disabled = true;
-                         option.textContent = '──────────';
+                         option.disabled = true; option.textContent = '──────────';
                          operatorSelect.appendChild(option);
                     } else {
                         const option = document.createElement('option');
-                        option.value = op.value;
-                        option.textContent = op.text;
+                        option.value = op.value; option.textContent = op.text;
                         operatorSelect.appendChild(option);
                     }
                 });
@@ -162,15 +151,13 @@ export function initializeAlgorithmBuilder() {
                 break;
             case 'string':
                 const stringInput = document.createElement('input');
-                stringInput.type = 'text';
-                stringInput.placeholder = 'Enter value...';
+                stringInput.type = 'text'; stringInput.placeholder = 'Enter value...';
                 stringInput.addEventListener('input', updateHiddenInput);
                 itemContainer.appendChild(stringInput);
                 break;
             case 'number':
                 const numberInput = document.createElement('input');
-                numberInput.type = 'number';
-                numberInput.placeholder = '0';
+                numberInput.type = 'number'; numberInput.placeholder = '0';
                 numberInput.addEventListener('input', updateHiddenInput);
                 itemContainer.appendChild(numberInput);
                 break;
@@ -183,7 +170,52 @@ export function initializeAlgorithmBuilder() {
         return itemContainer;
     };
     
-    // 4. SEMUA EVENT LISTENER TERMASUK UNTUK PADAM
+    // Fungsi untuk memaparkan logik sedia ada ke dalam canvas
+    const populateCanvasFromHiddenInput = () => {
+        canvas.innerHTML = '';
+        try {
+            const logic = JSON.parse(hiddenInput.value || '[]');
+            if (logic.length === 0 && placeholder) {
+                 canvas.appendChild(placeholder);
+                 placeholder.style.display = 'block';
+            } else {
+                 if(placeholder) placeholder.style.display = 'none';
+                 logic.forEach(itemData => {
+                     const newItem = createInteractiveElement(itemData.type);
+                     if (itemData.type === 'field') {
+                         newItem.querySelector('.table-select').value = itemData.table;
+                         newItem.querySelector('.table-select').dispatchEvent(new Event('change'));
+                         newItem.querySelector('.field-select').value = itemData.field;
+                     } else if (itemData.type === 'operator') {
+                         newItem.querySelector('.operator-select').value = itemData.value;
+                     } else if (itemData.type === 'string' || itemData.type === 'number') {
+                         newItem.querySelector('input').value = itemData.value;
+                     }
+                     canvas.appendChild(newItem);
+                 });
+            }
+        } catch (e) {
+            console.error("Gagal memproses logik sedia ada:", e);
+            if(placeholder) canvas.appendChild(placeholder);
+        }
+    };
+    
+    // 4. Pasang semua Event Listener
+    openBtn.addEventListener('click', () => {
+        populateCanvasFromHiddenInput(); // Paparkan data terkini
+        modal.classList.remove('hidden');
+    });
+
+    closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+    cancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
+
+    doneBtn.addEventListener('click', async () => {
+        updateHiddenInput(); // Pastikan data terkini disalin ke hidden input
+        await saveAlgorithmData(); // Hantar ke DB
+        modal.classList.add('hidden'); // Tutup modal
+    });
+
+    // Event listener untuk fungsi seret, lepas, dan padam (logik tidak berubah)
     palette.addEventListener('dragstart', (e) => {
         if (e.target.classList.contains('algo-component')) {
             e.dataTransfer.setData('text/plain', e.target.dataset.type);
@@ -193,9 +225,7 @@ export function initializeAlgorithmBuilder() {
         e.preventDefault();
         canvas.classList.add('dragging-over');
     });
-    canvas.addEventListener('dragleave', () => {
-        canvas.classList.remove('dragging-over');
-    });
+    canvas.addEventListener('dragleave', () => canvas.classList.remove('dragging-over'));
     canvas.addEventListener('drop', (e) => {
         e.preventDefault();
         canvas.classList.remove('dragging-over');
@@ -205,17 +235,12 @@ export function initializeAlgorithmBuilder() {
         canvas.appendChild(newItem);
         const newInpt = newItem.querySelector('input');
         if(newInpt) newInpt.focus();
-        updateHiddenInput();
+        updateHiddenInput(); // Kemas kini hidden input setiap kali ada perubahan
     });
-
-    // ▼▼▼ EVENT LISTENER UNTUK PADAM YANG HILANG SEBELUM INI ▼▼▼
     canvas.addEventListener('click', (e) => {
         if (e.target.classList.contains('delete-algo-item')) {
-            const itemToRemove = e.target.closest('.dropped-item');
-            if (itemToRemove) {
-                itemToRemove.remove();
-                updateHiddenInput();
-            }
+            e.target.closest('.dropped-item')?.remove();
+            updateHiddenInput(); // Kemas kini hidden input setiap kali ada perubahan
         }
     });
 }
