@@ -91,10 +91,18 @@ export let allTableNames = [];
 export let activeProject = null;
 export let isAutoSaveEnabled = false;
 export let isPopulatingData = false;
+export let lastActiveChildTable = null;
 // =================================================================
 // ▼▼▼ FUNGSI UTAMA BAHARU UNTUK MEMUATKAN DATA PROJEK ▼▼▼
 // =================================================================
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: js.main.js
+
+/**
+ * Menetapkan nama child table yang aktif.
+ * @param {string | null} tableName - Nama jadual atau null untuk reset.
+ */
+export function setLastActiveChildTable(tableName) {
+    lastActiveChildTable = tableName;
+}
 
 export async function loadProjectData(project, tableToSelect = null, itemToSelect = null) {
     if (!project || !project.project_id) {

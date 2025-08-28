@@ -967,7 +967,7 @@ ipcMain.handle('menu:update-order', async (event, { projectId, orderData }) => {
 ipcMain.handle('relationship:update', async (event, data) => {
     try {
 		// LOG #1: Tunjuk data penuh yang diterima dari frontend
-        console.log('--- RELATIONSHIP UPDATE: Data Diterima ---', data);
+        //console.log('--- RELATIONSHIP UPDATE: Data Diterima ---', data);
 		
         const { relationship_id, ...fieldsToUpdate } = data;
         if (!relationship_id) {
@@ -975,7 +975,7 @@ ipcMain.handle('relationship:update', async (event, data) => {
         }
 		
         // LOG #2: Tunjuk relationship_id dan data yang akan diupdate
-        console.log(`--- RELATIONSHIP UPDATE: ID Sasaran: ${relationship_id} ---`, fieldsToUpdate);
+        //console.log(`--- RELATIONSHIP UPDATE: ID Sasaran: ${relationship_id} ---`, fieldsToUpdate);
 
         const allowedColumns = [
             'show_tab', 'show_icon', 'autoclose_modal', 'tab_title', 'copy_records',
@@ -988,25 +988,25 @@ ipcMain.handle('relationship:update', async (event, data) => {
             .join(', ');
 
         if (!setClause) {
-            console.log('--- RELATIONSHIP UPDATE: Tiada medan sah untuk dikemas kini. Operasi dihentikan.');
+            //console.log('--- RELATIONSHIP UPDATE: Tiada medan sah untuk dikemas kini. Operasi dihentikan.');
             return { success: true, message: 'Tiada medan yang sah untuk dikemas kini.' };
         }
 
         // LOG #3: Tunjuk klausa SET SQL yang dibina
-        console.log('--- RELATIONSHIP UPDATE: Klausa SET yang dibina ---', setClause);
+        //console.log('--- RELATIONSHIP UPDATE: Klausa SET yang dibina ---', setClause);
 		
         const values = Object.keys(fieldsToUpdate)
             .filter(key => allowedColumns.includes(key))
             .map(key => fieldsToUpdate[key]);
 
         // LOG #4: Tunjuk nilai-nilai yang akan digunakan dalam query
-        console.log('--- RELATIONSHIP UPDATE: Nilai yang akan dimasukkan ---', values);
+        //console.log('--- RELATIONSHIP UPDATE: Nilai yang akan dimasukkan ---', values);
 
         const stmt = db.prepare(`UPDATE parent_child_relationships SET ${setClause} WHERE relationship_id = ?`);
         stmt.run(...values, relationship_id);
 
         // LOG #5: Pengesahan selepas operasi run()
-        console.log(`--- RELATIONSHIP UPDATE: Operasi UPDATE untuk relationship_id ${relationship_id} telah dilaksanakan.`);
+        //console.log(`--- RELATIONSHIP UPDATE: Operasi UPDATE untuk relationship_id ${relationship_id} telah dilaksanakan.`);
 
         return { success: true };
     } catch (error) {

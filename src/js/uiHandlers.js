@@ -12,7 +12,7 @@ export function applyFontSize(size) {
     document.documentElement.style.fontSize = fontSizeValue;
 }
 
-import { allTableNames, jsonData, loadProjectData, activeProject, setActiveSidebarItem, isAutoSaveEnabled, isPopulatingData } from './js.main.js';
+import { allTableNames, jsonData, loadProjectData, activeProject, setActiveSidebarItem, isAutoSaveEnabled, isPopulatingData, lastActiveChildTable, setLastActiveChildTable } from './js.main.js';
 
 // TAMBAH FUNGSI BAHARU INI DALAM uiHandlers.js
 
@@ -447,8 +447,6 @@ export function initializeLookupFieldSaveHandler() {
     });
 }
 
-// GANTIKAN FUNGSI SEDIA ADA INI DALAM uiHandlers.js
-
 export function initializeRelationshipSaveHandlers() {
     const form = document.getElementById('tab-detail-parent-child');
     const saveStatus = document.getElementById('save-status');
@@ -457,7 +455,7 @@ export function initializeRelationshipSaveHandlers() {
     let saveTimer;
 
     const onInputChange = () => {
-		if (isPopulatingData) return;
+        if (isPopulatingData) return;
         if (!isAutoSaveEnabled) return;
         saveStatus.textContent = 'Unsaved changes...';
         saveStatus.className = '';
@@ -472,8 +470,19 @@ export function initializeRelationshipSaveHandlers() {
             if (result && result.success) {
                 saveStatus.textContent = 'All changes saved ✔';
                 saveStatus.className = 'saved';
-                // PENTING: Muat semula data untuk pastikan jsonData sentiasa terkini
+
+                const activeChildElement = form.querySelector('.item-list li.active');
+                if (activeChildElement) {
+                    setLastActiveChildTable(activeChildElement.dataset.childName);
+                }
+                
+                // Muat semula data projek
                 await loadProjectData(activeProject, document.querySelector('#table-settings-page .table-name').textContent);
+                
+                // ▼▼▼ KEMAS KINI: Reset pembolehubah di sini SELEPAS semuanya selesai ▼▼▼
+                setLastActiveChildTable(null);
+                // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
+
             } else {
                 saveStatus.textContent = 'Save failed!';
                 saveStatus.className = 'error';
@@ -1703,16 +1712,10 @@ export function initializeMediaVisibilityHandlers() {
     }
 }
 
-// js/uiHandlers.js
-
-// js/uiHandlers.js
-
 export function populateParentChildTab(currentTableName) {
     const childList = document.getElementById('child-table-list');
-    // Gunakan selector yang lebih kukuh untuk mencari kedua-dua panel
     const listPanel = childList.parentElement; 
     const optionsPanel = listPanel.nextElementSibling;
-
     const optionsTitle = document.getElementById('selected-child-table-name');
     const formElements = {
         showTab: document.getElementById('parentchild-show-tab'),
@@ -1727,17 +1730,14 @@ export function populateParentChildTab(currentTableName) {
     
     if (!childList || !jsonData.database.relationships || !optionsPanel) return;
 
-    // Cari semua anak untuk jadual semasa
     const children = jsonData.database.relationships.filter(
         rel => rel.parent_table_name === currentTableName
     );
 
-    // Kosongkan senarai
     childList.innerHTML = '';
 
     if (children.length === 0) {
-        // KES 1: Tiada child table ditemui
-        optionsPanel.classList.add('hidden'); // Sembunyikan panel borang
+        optionsPanel.classList.add('hidden');
         const emptyMessage = `
             <div class="empty-state-label" style="padding: 1rem; text-align: left;">
                 <p style="text-align: center; font-weight: 500;">This table has no child tables.</p>
@@ -1748,16 +1748,14 @@ export function populateParentChildTab(currentTableName) {
         `;
         childList.innerHTML = emptyMessage;
     } else {
-        // KES 2: Child table ditemui
-        optionsPanel.classList.remove('hidden'); // PASTIKAN panel borang kelihatan
-
+        optionsPanel.classList.remove('hidden');
         Object.values(formElements).forEach(el => el.type === 'checkbox' ? el.checked = false : el.value = '');
         optionsTitle.textContent = '...';
 
         children.forEach(child => {
             const li = document.createElement('li');
             li.textContent = child.child_table_name;
-            li.dataset.childName = child.child_table_name;
+            li.dataset.childName = child.child_table_name; // Pastikan dataset ini wujud
             childList.appendChild(li);
         });
         
@@ -1787,9 +1785,17 @@ export function populateParentChildTab(currentTableName) {
             }
         });
 
-        if (newChildList.firstChild) {
+        const itemToSelect = newChildList.querySelector(`li[data-child-name="${lastActiveChildTable}"]`);
+
+        if (itemToSelect) {
+            itemToSelect.click();
+        } else if (newChildList.firstChild && newChildList.firstChild.tagName === 'LI') {
             newChildList.firstChild.click();
         }
+        
+        // ▼▼▼ KEMAS KINI: Baris kod di bawah ini telah dibuang ▼▼▼
+        // setLastActiveChildTable(null); 
+        // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
     }
 }
 
