@@ -1784,6 +1784,11 @@ export function populateMainDashboard(projectData) {
     // Cetuskan event untuk kemas kini pratonton yang bergantung pada nilai ini
     document.getElementById('app-date-order')?.dispatchEvent(new Event('change'));
     document.getElementById('app-theme-select')?.dispatchEvent(new Event('change'));
+	
+    const menuCheckbox = document.getElementById('app-menu_at_homepage');
+    if (menuCheckbox) {
+        menuCheckbox.dispatchEvent(new Event('change'));
+    }
 }
 
 export function populateTableSettings(tableName) {
