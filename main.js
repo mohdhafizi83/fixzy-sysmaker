@@ -36,6 +36,144 @@ if (!dbExists) {
 // =================================================================
 // ▼▼▼ SEMUA IPC HANDLER DIKUMPULKAN DI SINI UNTUK KONSISTENSI ▼▼▼
 // =================================================================
+// GANTIKAN HANDLER SEDIA ADA DENGAN VERSI PENUH INI DALAM: main.js
+
+ipcMain.handle('database:batch-update', async (event, queue) => {
+    console.log("--- [Backend] Menerima & Memproses Queue Sebenar ---");
+    
+    // Transaksi memastikan semua operasi berjaya atau semua akan dibatalkan jika ada ralat
+    const transaction = db.transaction(() => {
+        const activeProject = db.prepare("SELECT * FROM projects WHERE is_active = 1").get();
+        if (!activeProject) throw new Error("Tiada projek aktif ditemui untuk kemas kini berkelompok.");
+
+        // 1. Proses Kemas Kini Projek
+        if (Object.keys(queue.project).length > 0) {
+            const fieldsToUpdate = queue.project;
+            const allowedColumns = [
+                'app_title', 'date_order', 'separator', 'char_encoding', 'language_select',
+                'timezone_select', 'use_24hr_format', 'enforce_mysql_encoding', 'theme_select',
+                'use_3d_effects', 'rtl', 'compact', 'menu_orientation', 'menu_at_homepage',
+                'tables_per_row', 'extra_wide', 'panel_height', 'hide_login', 'allow_sql_tool',
+                'allow_server_status', 'admins_group_access', 'allow_table_view_sql',
+                'copy_children_async', 'allow_pwa_install', 'url'
+            ];
+            const setClause = Object.keys(fieldsToUpdate)
+                .filter(key => allowedColumns.includes(key))
+                .map(key => `${key} = ?`).join(', ');
+            if (setClause) {
+                const values = Object.keys(fieldsToUpdate)
+                    .filter(key => allowedColumns.includes(key))
+                    .map(key => fieldsToUpdate[key]);
+                db.prepare(`UPDATE projects SET ${setClause} WHERE project_id = ?`).run(...values, activeProject.project_id);
+            }
+        }
+
+        // 2. Proses Kemas Kini Jadual
+        for (const tableId in queue.tables) {
+            const fieldsToUpdate = queue.tables[tableId];
+            const allowedColumns = [
+                'table_name', 'table_view_title', 'table_description', 'show_quick_search', 'records_per_page',
+                'default_sort_by', 'sort_descending', 'allow_sorting', 'allow_filters', 'allow_csv_export',
+                'allow_print_view', 'allow_user_save_filters', 'hide_homepage_link', 'allow_mass_delete',
+                'filter_before_view', 'hide_nav_menu_link', 'show_record_count', 'tv_template',
+                'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input',
+                'detail_view_classes_input', 'detail_view_title', 'record_owner', 'default_focus',
+                'redirect_after_insert', 'enable_detail_view', 'delete_with_children', 'dv_allow_print_view',
+                'dv_separate_page', 'dv_hide_save_as_copy', 'dv_sticky_buttons', 'dv_allow_add_from_homepage'
+            ];
+            const setClause = Object.keys(fieldsToUpdate)
+                .filter(key => allowedColumns.includes(key))
+                .map(key => `${key} = ?`).join(', ');
+            if (setClause) {
+                const values = Object.keys(fieldsToUpdate)
+                    .filter(key => allowedColumns.includes(key))
+                    .map(key => fieldsToUpdate[key]);
+                db.prepare(`UPDATE tables SET ${setClause} WHERE table_id = ?`).run(...values, tableId);
+            }
+        }
+
+        // 3. Proses Kemas Kini Medan
+        for (const fieldId in queue.fields) {
+            const fieldsToUpdate = queue.fields[fieldId];
+            const allowedColumns = [
+                'field_name', 'caption', 'description', 'data_type', 'length', 'precision', 
+                'max_chars_in_tv', 'alignment', 'default_value', 'read_only', 'primary_key', 
+                'zero_fill', 'required', 'rich_html', 'auto_increment', 'unique', 'show_sum', 
+                'text_area', 'unsigned', 'no_filter', 'binary', 'check_box', 'hide_in_tv', 
+                'hide_in_dv', 'enable_column_width', 'column_width', 'media_type', 
+                'media_link_behavior', 'media_link_display_as', 'media_link_other_field',
+                'allow_image_uploads', 'max_file_size', 'delete_image_server', 'dont_rename_image',
+                'tv_thumb_width', 'tv_thumb_height', 'tv_enable_zooming', 'tv_show_full_size',
+                'dv_thumb_width', 'dv_thumb_height', 'dv_enable_zooming', 'dv_show_full_size',
+                'allow_file_uploads', 'file_types', 'file_max_size', 'delete_file_server',
+                'dont_rename_file', 'file_behavior', 'file_display_as', 'file_other_field',
+                'display_gmap', 'gmap_type', 'gmap_tv_width', 'gmap_tv_height', 'gmap_dv_height',
+                'accept_video_url', 'youtube_tv_width', 'youtube_tv_height', 'youtube_dv_width',
+                'youtube_dv_height', 'lookup_parent_table', 'lookup_caption_1', 'lookup_separator',
+                'lookup_caption_2', 'lookup_display_as', 'lookup_inherit_permissions',
+                'lookup_link_behavior', 'options_list_values', 'options_display', 'format_as',
+                'calculated_enable', 'calculated_query', 'lookup_custom_query', 'algorithm_logic', 'hook_functions'
+            ];
+            const setClause = Object.keys(fieldsToUpdate)
+                .filter(key => allowedColumns.includes(key))
+                .map(key => `"${key}" = ?`).join(', ');
+            if (setClause) {
+                const values = Object.keys(fieldsToUpdate)
+                    .filter(key => allowedColumns.includes(key))
+                    .map(key => fieldsToUpdate[key]);
+                db.prepare(`UPDATE fields SET ${setClause} WHERE field_id = ?`).run(...values, fieldId);
+            }
+        }
+
+        // 4. Proses Kemas Kini Hubungan (Relationship)
+        for (const relationshipId in queue.relationships) {
+            const fieldsToUpdate = queue.relationships[relationshipId];
+            const allowedColumns = [
+                'show_tab', 'show_icon', 'autoclose_modal', 'tab_title', 'copy_records',
+                'show_link_above', 'show_count_in_tv', 'allow_add_from_tv'
+            ];
+            const setClause = Object.keys(fieldsToUpdate)
+                .filter(key => allowedColumns.includes(key))
+                .map(key => `${key} = ?`).join(', ');
+            if (setClause) {
+                const values = Object.keys(fieldsToUpdate)
+                    .filter(key => allowedColumns.includes(key))
+                    .map(key => fieldsToUpdate[key]);
+                db.prepare(`UPDATE parent_child_relationships SET ${setClause} WHERE relationship_id = ?`).run(...values, relationshipId);
+            }
+        }
+
+        // 5. Proses Kemas Kini Menu
+        if (queue.menus) {
+            const menuData = queue.menus;
+            const projectId = activeProject.project_id;
+            
+            db.prepare('DELETE FROM menu_group_items WHERE menu_group_id IN (SELECT menu_group_id FROM menu_groups WHERE project_id = ?)')
+              .run(projectId);
+            db.prepare('DELETE FROM menu_groups WHERE project_id = ?').run(projectId);
+
+            const insertGroupStmt = db.prepare('INSERT INTO menu_groups (project_id, group_name, group_order) VALUES (?, ?, ?)');
+            const insertItemStmt = db.prepare('INSERT INTO menu_group_items (menu_group_id, table_id, item_order) VALUES (?, (SELECT table_id FROM tables WHERE table_name = ? AND project_id = ?), ?)');
+            
+            menuData.forEach((group) => {
+                const info = insertGroupStmt.run(projectId, group.group_name, group.group_order);
+                const newGroupId = info.lastInsertRowid;
+                group.items.forEach((item) => {
+                    insertItemStmt.run(newGroupId, item.table_name, projectId, item.item_order);
+                });
+            });
+        }
+    });
+
+    try {
+        transaction();
+        console.log("[Backend] Transaksi kemas kini berkelompok berjaya.");
+        return { success: true };
+    } catch (error) {
+        console.error('Batch update transaction failed:', error);
+        return { success: false, message: error.message };
+    }
+});
 
 ipcMain.handle('table:update-order', async (event, orderData) => {
     try {

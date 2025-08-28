@@ -12,7 +12,7 @@ export function applyFontSize(size) {
     document.documentElement.style.fontSize = fontSizeValue;
 }
 
-import { allTableNames, jsonData, loadProjectData, activeProject, setActiveSidebarItem, isAutoSaveEnabled, isPopulatingData, lastActiveChildTable, setLastActiveChildTable } from './js.main.js';
+import { allTableNames, jsonData, loadProjectData, activeProject, SaveManager, setActiveSidebarItem, isAutoSaveEnabled, isPopulatingData, lastActiveChildTable, setLastActiveChildTable } from './js.main.js';
 
 // TAMBAH FUNGSI BAHARU INI DALAM uiHandlers.js
 
@@ -447,54 +447,42 @@ export function initializeLookupFieldSaveHandler() {
     });
 }
 
+// GANTIKAN FUNGSI SEDIA ADA INI DALAM: uiHandlers.js
+
 export function initializeRelationshipSaveHandlers() {
     const form = document.getElementById('tab-detail-parent-child');
-    const saveStatus = document.getElementById('save-status');
-    if (!form || !saveStatus) return;
+    if (!form) return;
 
-    let saveTimer;
-
-    const onInputChange = () => {
+    const handleInputChange = (event) => {
         if (isPopulatingData) return;
         if (!isAutoSaveEnabled) return;
-        saveStatus.textContent = 'Unsaved changes...';
-        saveStatus.className = '';
 
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(async () => {
-            saveStatus.textContent = 'Saving...';
-            saveStatus.className = 'saving';
+        // Dapatkan ID hubungan (relationship) yang sedang aktif
+        const parentTable = document.querySelector('#table-settings-page .table-name').textContent;
+        const childTableElement = form.querySelector('.item-list li.active');
+        if (!childTableElement) return; // Keluar jika tiada child table dipilih
+        const childTable = childTableElement.dataset.childName;
 
-            const result = await saveRelationshipSettings();
+        const relationship = jsonData.database.relationships.find(
+            r => r.parent_table_name === parentTable && r.child_table_name === childTable
+        );
+        if (!relationship) return; // Keluar jika hubungan tidak ditemui
+        const relationshipId = relationship.relationship_id;
 
-            if (result && result.success) {
-                saveStatus.textContent = 'All changes saved ✔';
-                saveStatus.className = 'saved';
+        // Dapatkan perubahan spesifik yang dibuat
+        const input = event.target;
+        const key = input.id.replace('parentchild-', '').replace(/-/g, '_');
+        const value = (input.type === 'checkbox') ? (input.checked ? 1 : 0) : input.value;
+        const dataToSave = { [key]: value };
 
-                const activeChildElement = form.querySelector('.item-list li.active');
-                if (activeChildElement) {
-                    setLastActiveChildTable(activeChildElement.dataset.childName);
-                }
-                
-                // Muat semula data projek
-                await loadProjectData(activeProject, document.querySelector('#table-settings-page .table-name').textContent);
-                
-                // Reset pembolehubah selepas semuanya selesai
-                setLastActiveChildTable(null);
-
-            } else {
-                saveStatus.textContent = 'Save failed!';
-                saveStatus.className = 'error';
-            }
-            setTimeout(() => saveStatus.textContent = '', 3000);
-
-        }, 1500);
+        // Hantar perubahan ke queue di bawah 'relationships'
+        SaveManager.addToQueue('relationships', relationshipId, dataToSave);
     };
 
     form.querySelectorAll('input, select').forEach(input => {
-        input.addEventListener('change', onInputChange);
+        input.addEventListener('change', handleInputChange);
         if (input.type === 'text') {
-            input.addEventListener('input', onInputChange);
+            input.addEventListener('input', handleInputChange);
         }
     });
 }
@@ -552,108 +540,140 @@ async function saveMenuStructure() {
     }
 }
 
+// GANTIKAN FUNGSI SEDIA ADA INI DALAM: uiHandlers.js
+
 export function initializeProjectSaveHandlers() {
     const form = document.getElementById('main-dashboard-page');
-    const saveStatus = document.getElementById('save-status');
-    if (!form || !saveStatus) return;
-    let saveTimer;
+    // 'app-title' berada di luar 'main-dashboard-page', jadi kita perlu sasarkannya secara berasingan
+    const header = document.querySelector('.main-header'); 
+    if (!form || !header) return;
 
-    const onInputChange = () => {
-		if (isPopulatingData) return;
+    const handleInputChange = (event) => {
+        if (isPopulatingData) return;
         if (!isAutoSaveEnabled) return;
-        saveStatus.textContent = 'Unsaved changes...';
-        saveStatus.className = '';
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(async () => {
-            saveStatus.textContent = 'Saving...';
-            saveStatus.className = 'saving';
-            const result = await saveProjectSettings();
-            if (result.success) {
-                saveStatus.textContent = 'All changes saved ✔';
-                saveStatus.className = 'saved';
-            } else {
-                saveStatus.textContent = 'Save failed!';
-                saveStatus.className = 'error';
-            }
-            setTimeout(() => saveStatus.textContent = '', 3000);
-        }, 1500);
+
+        const input = event.target;
+        let key = (input.type === 'radio')
+            ? input.name.replace('app-', '').replace(/-/g, '_')
+            : input.id.replace('app-', '').replace(/-/g, '_');
+        
+        // ▼▼▼ PENAMBAHBAIKAN: KES KHAS UNTUK 'app-title' ▼▼▼
+        // Betulkan nama kunci supaya sepadan dengan lajur pangkalan data 'app_title'
+        if (key === 'title') {
+            key = 'app_title';
+        }
+        // ▲▲▲ TAMAT PENAMBAHBAIKAN ▲▲▲
+        
+        let value;
+        if (input.type === 'checkbox') {
+            value = input.checked ? 1 : 0;
+        } else if (input.type === 'radio') {
+            if (!input.checked) return;
+            value = input.value;
+        } else {
+            value = input.value;
+        }
+
+        const dataToSave = { [key]: value };
+        
+        // Guna project_id dari activeProject yang sudah ada dalam memori
+        SaveManager.addToQueue('project', activeProject.project_id, dataToSave);
     };
 
-    form.querySelectorAll('input, select').forEach(input => {
-        input.addEventListener('change', onInputChange);
-        if (input.type === 'text' || input.type === 'number') {
-            input.addEventListener('input', onInputChange);
+    // Pasang event listener pada semua elemen borang di papan pemuka utama DAN di header
+    header.querySelectorAll('input, select').forEach(input => {
+        if (input.id === 'app-title') {
+            input.addEventListener('input', handleInputChange);
+        } else {
+            input.addEventListener('change', handleInputChange);
         }
     });
-    document.getElementById('app-title').addEventListener('input', onInputChange);
+
+    form.querySelectorAll('input, select').forEach(input => {
+        input.addEventListener('change', handleInputChange);
+    });
 }
+
+// GANTIKAN FUNGSI SEDIA ADA INI DALAM: uiHandlers.js
 
 export function initializeTableSaveHandlers() {
     const form = document.getElementById('table-settings-page');
-    const saveStatus = document.getElementById('save-status');
-    if (!form || !saveStatus) return;
-    let saveTimer;
+    if (!form) return;
 
-    const onInputChange = () => {
-		if (isPopulatingData) return;
+    const handleInputChange = (event) => {
+        if (isPopulatingData) return;
         if (!isAutoSaveEnabled) return;
-        saveStatus.textContent = 'Unsaved changes...';
-        saveStatus.className = '';
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(async () => {
-            saveStatus.textContent = 'Saving...';
-            saveStatus.className = 'saving';
-            const result = await saveTableSettings();
-            if (result.success) {
-                saveStatus.textContent = 'All changes saved ✔';
-                saveStatus.className = 'saved';
-            } else {
-                saveStatus.textContent = 'Save failed!';
-                saveStatus.className = 'error';
-            }
-            setTimeout(() => saveStatus.textContent = '', 3000);
-        }, 1500);
+
+        const input = event.target;
+
+        // ▼▼▼ PENAMBAHBAIKAN: Guard Clause ▼▼▼
+        // Hanya proses event dari elemen yang mempunyai ID bermula dengan 'tbl-'
+        if (!input.id || !input.id.startsWith('tbl-')) {
+            return;
+        }
+        // ▲▲▲ TAMAT PENAMBAHBAIKAN ▲▲▲
+
+        const tableName = document.querySelector('#table-settings-page .table-name').textContent;
+        const tableData = jsonData.database.table[tableName];
+        if (!tableData) return;
+        const tableId = tableData.table_id;
+        
+        const key = input.id.replace('tbl-', '').replace(/-/g, '_');
+        const value = (input.type === 'checkbox') ? (input.checked ? 1 : 0) : input.value;
+        const dataToSave = { [key]: value };
+
+        SaveManager.addToQueue('tables', tableId, dataToSave);
     };
 
     form.querySelectorAll('input, select, textarea').forEach(input => {
-        input.addEventListener('change', onInputChange);
+        input.addEventListener('change', handleInputChange);
         if (input.type === 'text' || input.type === 'number' || input.tagName.toLowerCase() === 'textarea') {
-            input.addEventListener('input', onInputChange);
+            input.addEventListener('input', handleInputChange);
         }
     });
 }
 
+// GANTIKAN FUNGSI SEDIA ADA INI DALAM: uiHandlers.js
+
 export function initializeFieldSaveHandlers() {
     const form = document.getElementById('field-settings-page');
-    const saveStatus = document.getElementById('save-status');
-    if (!form || !saveStatus) return;
-    let saveTimer;
+    if (!form) return;
 
-    const onInputChange = () => {
-		if (isPopulatingData) return;
+    const handleInputChange = (event) => {
+        if (isPopulatingData) return;
         if (!isAutoSaveEnabled) return;
-        saveStatus.textContent = 'Unsaved changes...';
-        saveStatus.className = '';
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(async () => {
-            saveStatus.textContent = 'Saving...';
-            saveStatus.className = 'saving';
-            const result = await saveFieldSettings();
-            if (result.success) {
-                saveStatus.textContent = 'All changes saved ✔';
-                saveStatus.className = 'saved';
-            } else {
-                saveStatus.textContent = 'Save failed!';
-                saveStatus.className = 'error';
-            }
-            setTimeout(() => saveStatus.textContent = '', 3000);
-        }, 1500);
+
+        // Dapatkan ID medan yang sedang diubah suai
+        const [tableName, fieldName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
+        const fieldData = jsonData.database.table[tableName]?.fields[fieldName];
+        if (!fieldData) return; // Keluar jika data medan tidak ditemui
+        const fieldId = fieldData.field_id;
+
+        const input = event.target;
+        const key = (input.type === 'radio')
+            ? input.name.replace('fld-', '').replace(/-/g, '_')
+            : input.id.replace('fld-', '').replace(/-/g, '_');
+
+        let value;
+        if (input.type === 'checkbox') {
+            value = input.checked ? 1 : 0;
+        } else if (input.type === 'radio') {
+            if (!input.checked) return;
+            value = input.value;
+        } else {
+            value = input.value;
+        }
+
+        const dataToSave = { [key]: value };
+
+        // Hantar perubahan ke queue di bawah 'fields' dengan fieldId sebagai kunci
+        SaveManager.addToQueue('fields', fieldId, dataToSave);
     };
 
     form.querySelectorAll('input, select, textarea').forEach(input => {
-        input.addEventListener('change', onInputChange);
+        input.addEventListener('change', handleInputChange);
         if (input.type === 'text' || input.type === 'number' || input.tagName.toLowerCase() === 'textarea') {
-            input.addEventListener('input', onInputChange);
+            input.addEventListener('input', handleInputChange);
         }
     });
 }
@@ -778,6 +798,8 @@ function getUsedMenuNames() {
     return [...usedTags].map(tag => tag.childNodes[0].textContent.trim());
 }
 
+// GANTIKAN KESELURUHAN FUNGSI SEDIA ADA INI DALAM: uiHandlers.js
+
 export function initializeMenuManagementHandlers() {
     const addGroupBtn = document.getElementById('app-add_menu_group');
     const menuGroupList = document.querySelector('.menu-group-list');
@@ -790,45 +812,32 @@ export function initializeMenuManagementHandlers() {
     }
 
     let draggedItem = null;
-    let saveTimer;
     let currentTargetMenuSelector = null;
 
-    // Fungsi utama untuk mengumpul data dan mencetuskan auto-save
+    // ▼▼▼ KEMAS KINI: triggerSave kini menggunakan SaveManager ▼▼▼
     const triggerSave = () => {
-        const saveStatus = document.getElementById('save-status');
-        saveStatus.textContent = 'Unsaved changes...';
-        saveStatus.className = '';
+        // Hanya hantar isyarat ke queue bahawa susunan menu perlu disimpan.
+        const menuData = gatherMenuData();
+        SaveManager.addToQueue('menus', null, menuData);
+    };
+    // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
 
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(async () => {
-            saveStatus.textContent = 'Saving...';
-            saveStatus.className = 'saving';
-            
-            const groupElements = menuGroupList.querySelectorAll('.menu-group-item');
-            const menuData = Array.from(groupElements).map(groupEl => {
-                const groupName = groupEl.querySelector('.group-name-input').value;
-                const itemElements = groupEl.querySelectorAll('.menu-selector .tag');
-                const items = Array.from(itemElements).map(itemEl => ({
-                    table_name: itemEl.childNodes[0].textContent.trim()
-                }));
-                return { group_name: groupName, items: items };
-            });
-
-            const result = await window.electronAPI.saveMenuStructure({
-                projectId: activeProject.project_id,
-                menuData: menuData
-            });
-
-            if (result.success) {
-                saveStatus.textContent = 'All changes saved ✔';
-                saveStatus.className = 'saved';
-            } else {
-                saveStatus.textContent = 'Save failed!';
-                saveStatus.className = 'error';
-                showCustomDialog({ title: "Error", message: `Failed to save menu structure: ${result.message}` });
-            }
-            setTimeout(() => saveStatus.textContent = '', 3000);
-        }, 1500);
+    const gatherMenuData = () => {
+        const groupElements = menuGroupList.querySelectorAll('.menu-group-item');
+        const menuData = Array.from(groupElements).map((groupEl, groupIndex) => {
+            const groupName = groupEl.querySelector('.group-name-input').value;
+            const itemElements = groupEl.querySelectorAll('.menu-selector .tag');
+            const items = Array.from(itemElements).map((itemEl, itemIndex) => ({
+                table_name: itemEl.childNodes[0].textContent.trim(),
+                item_order: itemIndex
+            }));
+            return { 
+                group_name: groupName, 
+                items: items,
+                group_order: groupIndex
+            };
+        });
+        return menuData;
     };
 	
     function getUsedMenuNames() {
@@ -836,7 +845,6 @@ export function initializeMenuManagementHandlers() {
         return Array.from(usedTags).map(tag => tag.childNodes[0].textContent.trim());
     }
 
-    // Listener untuk butang "Add Menu Group"
     addGroupBtn.addEventListener('click', () => {
         const newGroup = document.createElement('div');
         newGroup.className = 'menu-group-item';
@@ -854,12 +862,11 @@ export function initializeMenuManagementHandlers() {
             </div>
         `;
         menuGroupList.appendChild(newGroup);
+        // Tambah event listener pada input nama group baharu
+        newGroup.querySelector('.group-name-input').addEventListener('input', triggerSave);
         triggerSave();
     });
 
-    // --- EVENT LISTENERS BERPUSAT (DELEGATION) ---
-    
-    // Untuk KLIK (tambah item, padam, dll)
     menuGroupList.addEventListener('click', (e) => {
         const target = e.target;
         if (target.classList.contains('add-menu-btn')) {
@@ -880,7 +887,7 @@ export function initializeMenuManagementHandlers() {
         else if (target.classList.contains('remove-tag')) {
             target.closest('.tag')?.remove();
             triggerSave();
-        } else if (target.classList.contains('fa-trash-alt') || target.closest('.group-actions button')) {
+        } else if (target.closest('.group-actions button')) {
             const groupToRemove = target.closest('.menu-group-item');
             if (groupToRemove) {
                 showCustomDialog({
@@ -896,49 +903,46 @@ export function initializeMenuManagementHandlers() {
         }
     });
 
-    // Untuk MULA SERET (dragstart)
-    menuGroupList.addEventListener('dragstart', (e) => {
-        draggedItem = e.target;
-        // Hanya benarkan seret pada Kumpulan (.menu-group-item) atau Tag Jadual (.tag)
-        if (draggedItem.matches('.menu-group-item') || draggedItem.matches('.tag')) {
-            setTimeout(() => draggedItem.classList.add('dragging'), 0);
-        } else {
-            e.preventDefault(); // Halang item lain dari diseret
+    // Event listener untuk perubahan pada nama group yang sedia ada
+    menuGroupList.addEventListener('input', (e) => {
+        if (e.target.classList.contains('group-name-input')) {
+            triggerSave();
         }
     });
 
-    // Untuk BERHENTI SERET (dragend)
+    menuGroupList.addEventListener('dragstart', (e) => {
+        draggedItem = e.target.closest('.menu-group-item, .tag');
+        if (draggedItem) {
+            setTimeout(() => draggedItem.classList.add('dragging'), 0);
+        } else {
+            e.preventDefault();
+        }
+    });
+
     menuGroupList.addEventListener('dragend', () => {
         if (draggedItem) {
             draggedItem.classList.remove('dragging');
             draggedItem = null;
+            triggerSave(); // Simpan selepas operasi drag-and-drop selesai
         }
     });
 
-    // Untuk SERET DI ATAS (dragover)
     menuGroupList.addEventListener('dragover', (e) => {
-        e.preventDefault(); // Ini penting untuk membenarkan 'drop' berlaku
-        
-        const dropTarget = e.target;
-        const isTag = draggedItem.matches('.tag');
-        const isGroup = draggedItem.matches('.menu-group-item');
+        e.preventDefault();
+        if (!draggedItem) return;
 
-        // Logik untuk seret TAG JADUAL
-        if (isTag) {
-            const container = dropTarget.closest('.menu-selector');
+        if (draggedItem.classList.contains('tag')) {
+            const container = e.target.closest('.menu-selector');
             if (container) {
-                const afterElement = getDragAfterElement(container, e.clientX);
+                const afterElement = getDragAfterElement(container, e.clientX, '.tag');
                 if (afterElement == null) {
-                    container.appendChild(draggedItem);
+                    container.insertBefore(draggedItem, container.querySelector('.add-menu-btn'));
                 } else {
                     container.insertBefore(draggedItem, afterElement);
                 }
             }
-        }
-
-        // Logik untuk seret KUMPULAN
-        if (isGroup) {
-            const container = dropTarget.closest('.menu-group-list');
+        } else if (draggedItem.classList.contains('menu-group-item')) {
+            const container = e.target.closest('.menu-group-list');
              if (container) {
                 const afterElement = getDragAfterElement(container, e.clientY, '.menu-group-item');
                 if (afterElement == null) {
@@ -950,21 +954,11 @@ export function initializeMenuManagementHandlers() {
         }
     });
 
-    // Untuk LEPASKAN (drop)
-    menuGroupList.addEventListener('drop', (e) => {
-        e.preventDefault();
-        if (draggedItem) {
-            draggedItem.classList.remove('dragging');
-            triggerSave(); // Cetuskan simpanan selepas susunan berubah
-        }
-    });
-	
-    // Fungsi bantuan untuk menentukan kedudukan item akan diletakkan
-    function getDragAfterElement(container, x, selector = '.tag') {
+    function getDragAfterElement(container, y, selector) {
         const draggableElements = [...container.querySelectorAll(`${selector}:not(.dragging)`)];
         return draggableElements.reduce((closest, child) => {
             const box = child.getBoundingClientRect();
-            const offset = x - box.left - box.width / 2;
+            const offset = (selector === '.tag' ? y - box.left - box.width / 2 : y - box.top - box.height / 2);
             if (offset < 0 && offset > closest.offset) {
                 return { offset: offset, element: child };
             } else {
@@ -973,15 +967,13 @@ export function initializeMenuManagementHandlers() {
         }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
-    // Listener untuk modal
     availableMenusList.addEventListener('click', (e) => {
         if (e.target.tagName === 'LI') {
             const menuName = e.target.dataset.menuName;
             if (menuName && currentTargetMenuSelector) {
                 const newTag = document.createElement('span');
                 newTag.className = 'tag';
-                newTag.setAttribute('draggable', 'true'); // Pastikan tag baharu juga boleh diseret
-                // Anda perlu tambah data-item-id di sini selepas save, tetapi buat masa ini kita biarkan
+                newTag.setAttribute('draggable', 'true');
                 newTag.innerHTML = `${menuName} <button class="remove-tag">&times;</button>`;
                 
                 const addBtn = currentTargetMenuSelector.querySelector('.add-menu-btn');
@@ -993,6 +985,7 @@ export function initializeMenuManagementHandlers() {
             }
         }
     });
+    
     modalCloseBtn.addEventListener('click', () => addMenuModal.classList.add('hidden'));
 }
 

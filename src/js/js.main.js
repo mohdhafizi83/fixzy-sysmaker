@@ -43,6 +43,103 @@ import {
     saveRelationshipSettings   	
 } from './uiHandlers.js';
 
+// GANTIKAN KESELURUHAN OBJEK SAVEMANAGER SEDIA ADA DENGAN VERSI INI
+
+// GANTIKAN KESELURUHAN OBJEK SAVEMANAGER SEDIA ADA DENGAN VERSI INI
+
+export const SaveManager = {
+    saveQueue: {
+        project: {}, tables: {}, fields: {}, relationships: {}, menus: null
+    },
+    debounceTimer: null,
+    isProcessing: false,
+
+    addToQueue(type, id, data) {
+        if (type === 'menus') {
+            this.saveQueue.menus = data;
+        } else if (type === 'project') {
+            this.saveQueue.project = { ...this.saveQueue.project, ...data };
+        } else {
+            this.saveQueue[type][id] = { ...(this.saveQueue[type][id] || {}), ...data };
+        }
+        
+        clearTimeout(this.debounceTimer);
+        this.debounceTimer = setTimeout(() => this.processQueue(), 2500);
+    },
+
+    async processQueue() {
+        if (this.isProcessing || this.isQueueEmpty()) {
+            return;
+        }
+        
+        console.log("--- [SaveManager] Memproses & Menghantar Queue ke Backend ---", this.saveQueue);
+        this.isProcessing = true;
+        const saveStatus = document.getElementById('save-status');
+        saveStatus.textContent = 'Saving...';
+        saveStatus.className = 'saving';
+
+        try {
+            const result = await window.electronAPI.batchUpdate(this.saveQueue);
+
+            if (result.success) {
+                console.log("[SaveManager] Kemas kini berkelompok berjaya.");
+                this.clearQueue();
+                
+                // ▼▼▼ PENAMBAHBAIKAN BERMULA DI SINI ▼▼▼
+                // 1. Dapatkan konteks halaman (nama jadual) DAN child table yang sedang aktif
+                let activeTableName = null;
+                const tablePage = document.getElementById('table-settings-page');
+                const fieldPage = document.getElementById('field-settings-page');
+
+                if (tablePage && !tablePage.classList.contains('hidden')) {
+                    activeTableName = tablePage.querySelector('.table-name')?.textContent;
+                    
+                    // Ambil juga child table yang aktif jika berada di tab yang betul
+                    const activeChildElement = tablePage.querySelector('#tab-detail-parent-child .item-list li.active');
+                    if (activeChildElement) {
+                        setLastActiveChildTable(activeChildElement.dataset.childName);
+                    }
+                } else if (fieldPage && !fieldPage.classList.contains('hidden')) {
+                    activeTableName = fieldPage.querySelector('.field-name')?.textContent.split('.')[0];
+                }
+                
+                // 2. Muat semula semua data DAN pilih semula jadual/fokus yang betul
+                await loadProjectData(activeProject, activeTableName);
+                // ▲▲▲ TAMAT PENAMBAHBAIKAN ▲▲▲
+
+                saveStatus.textContent = 'All changes saved ✔';
+                saveStatus.className = 'saved';
+            } else {
+                throw new Error(result.message);
+            }
+        } catch (error) {
+            console.error("[SaveManager] Kemas kini berkelompok gagal:", error);
+            showCustomDialog({ title: "Save Failed", message: `Error during batch save: ${error.message}` });
+            saveStatus.textContent = 'Save failed!';
+            saveStatus.className = 'error';
+        } finally {
+            this.isProcessing = false;
+            // 3. Reset state di sini untuk kepastian selepas semua operasi selesai
+            setLastActiveChildTable(null); 
+            setTimeout(() => saveStatus.textContent = '', 3000);
+        }
+    },
+
+    clearQueue() {
+        this.saveQueue = { project: {}, tables: {}, fields: {}, relationships: {}, menus: null };
+    },
+
+    isQueueEmpty() {
+        return (
+            Object.keys(this.saveQueue.project).length === 0 &&
+            Object.keys(this.saveQueue.tables).length === 0 &&
+            Object.keys(this.saveQueue.fields).length === 0 &&
+            Object.keys(this.saveQueue.relationships).length === 0 &&
+            !this.saveQueue.menus
+        );
+    }
+};
+
 export function setActiveSidebarItem(tableName, fieldName = null) {
     // Beri sedikit masa untuk DOM "tenang" selepas dijana semula
     setTimeout(() => {
@@ -89,7 +186,7 @@ function showConfirmationDialog(title, message) {
 export let jsonData = null;
 export let allTableNames = [];
 export let activeProject = null;
-export let isAutoSaveEnabled = false;
+export let isAutoSaveEnabled = true;
 export let isPopulatingData = false;
 export let lastActiveChildTable = null;
 // =================================================================
@@ -216,6 +313,16 @@ async function handleSqlImport(importFunction) {
 
 // Inisialisasi Aplikasi
 document.addEventListener('DOMContentLoaded', async () => {
+
+// Jaring keselamatan untuk menghalang kehilangan data semasa reload/tutup
+window.addEventListener('beforeunload', (event) => {
+    // Periksa jika ada sebarang perubahan yang sedang menunggu di dalam queue
+    if (!SaveManager.isQueueEmpty()) {
+        // Baris ini akan menyebabkan pelayar memaparkan dialog pengesahan
+        event.preventDefault();
+        event.returnValue = ''; // Diperlukan untuk sesetengah pelayar
+    }
+});
 	
     try {
         const settings = await window.electronAPI.getAllSettings();
@@ -262,14 +369,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 	initializeRelationshipSaveHandlers();
 	initializeLookupFieldSaveHandler();	
-
-    const autoSaveCheckbox = document.getElementById('toggle-autosave-btn');
-    if (autoSaveCheckbox) {
-        autoSaveCheckbox.addEventListener('change', () => {
-            isAutoSaveEnabled = autoSaveCheckbox.checked;
-            //console.log(`Auto-save is now ${isAutoSaveEnabled ? 'ON' : 'OFF'}`);
-        });
-    }	
+	
     // Setup Event Listeners
     const newProjectBtn = document.getElementById('new-project-btn');
     const saveNewProjectBtn = document.getElementById('save-new-project-btn');
@@ -340,58 +440,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     const project = await window.electronAPI.getActiveProject();
     await loadProjectData(project);
 
-    // ▼▼▼ TAMBAH BLOK KOD INI ▼▼▼
-const saveAllBtn = document.getElementById('btn-save-all');
-if (saveAllBtn) {
-    saveAllBtn.addEventListener('click', async () => {
-        const saveStatus = document.getElementById('save-status');
-        saveStatus.textContent = 'Saving all data...';
-        saveStatus.className = 'saving';
-        let allSavesSuccessful = true;
-
-        try {
-            // Langkah 1: Simpan tetapan projek
-            const projectResult = await saveProjectSettings();
-            if (!projectResult.success) {
-                allSavesSuccessful = false;
-                throw new Error("Failed to save project settings.");
-            }
-
-            // Langkah 2: Simpan tetapan jadual (jika halamannya aktif)
-            const tableResult = await saveTableSettings();
-            if (tableResult && !tableResult.success) {
-                allSavesSuccessful = false;
-                throw new Error("Failed to save table settings.");
-            }
-            
-            // Langkah 3: Simpan tetapan medan (jika halamannya aktif)
-            const fieldResult = await saveFieldSettings();
-            if (fieldResult && !fieldResult.success) {
-                allSavesSuccessful = false;
-                throw new Error("Failed to save field settings.");
-            }
-			
-            const relationshipResult = await saveRelationshipSettings();
-            if (relationshipResult && !relationshipResult.success) allSavesSuccessful = false;
-
-            // Hanya tunjuk mesej berjaya jika semua langkah lulus
-            if (allSavesSuccessful) {
-                saveStatus.textContent = 'All changes saved ✔';
-                saveStatus.className = 'saved';
-                // Muat semula data selepas semua simpanan berjaya
-                await loadProjectData(activeProject, document.querySelector('#table-settings-page .table-name')?.textContent);
-            } else {
-                 throw new Error("One of the save operations failed.");
-            }
-
-        } catch (error) {
-            console.error("Manual save failed:", error);
-            saveStatus.textContent = `Save failed!`;
-            saveStatus.className = 'error';
-        } finally {
-            setTimeout(() => saveStatus.textContent = '', 3000);
-        }
-    });
-}
-    // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
 });
