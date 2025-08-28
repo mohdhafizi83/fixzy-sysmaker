@@ -479,9 +479,8 @@ export function initializeRelationshipSaveHandlers() {
                 // Muat semula data projek
                 await loadProjectData(activeProject, document.querySelector('#table-settings-page .table-name').textContent);
                 
-                // ▼▼▼ KEMAS KINI: Reset pembolehubah di sini SELEPAS semuanya selesai ▼▼▼
+                // Reset pembolehubah selepas semuanya selesai
                 setLastActiveChildTable(null);
-                // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
 
             } else {
                 saveStatus.textContent = 'Save failed!';
