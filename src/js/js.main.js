@@ -29,6 +29,7 @@ import {
     initializeRealtimeValidation,
     initializeOptionsListRules,
     initializeCalculatedFieldRules,
+	initializeTemplatePreviewHandlers,
     populateProjectDropdown,
     initializeProjectSaveHandlers,
     initializeTableSaveHandlers,
@@ -240,6 +241,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 	initializeRealtimeValidation();
 	initializeOptionsListRules();
 	initializeCalculatedFieldRules();
+	initializeTemplatePreviewHandlers();
+	
 	initializeAlgorithmBuilder();
 	
 	initializeProjectSaveHandlers();

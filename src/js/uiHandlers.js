@@ -15,9 +15,41 @@ export function applyFontSize(size) {
 import { allTableNames, jsonData, loadProjectData, activeProject, setActiveSidebarItem, isAutoSaveEnabled } from './js.main.js';
 
 
-// TAMBAH TIGA FUNGSI BARU INI DALAM uiHandlers.js
+// TAMBAH DUA FUNGSI BAHARU INI DALAM uiHandlers.js
 
-// CARI DAN GANTIKAN FUNGSI INI DALAM uiHandlers.js
+/**
+ * Mengemas kini imej di dalam kotak "Template preview" berdasarkan
+ * pilihan semasa dropdown 'tbl-tv-template'.
+ */
+function updateTableViewTemplatePreview() {
+    const templateSelect = document.getElementById('tbl-tv-template');
+    const previewArea = document.querySelector('#tab-template .theme-preview-window');
+
+    if (!templateSelect || !previewArea) {
+        console.warn("Elemen untuk template preview tidak ditemui.");
+        return;
+    }
+
+    const selectedValue = templateSelect.value;
+    if (selectedValue) {
+        const imagePath = `images/${selectedValue}.png`;
+        previewArea.innerHTML = `<img src="${imagePath}" alt="Preview untuk template ${selectedValue}" style="width: 100%; object-fit: contain;">`;
+    } else {
+        // Jika tiada pilihan, paparkan teks lalai
+        previewArea.innerHTML = '<p style="text-align: center; color: var(--secondary-color);">Template preview area</p>';
+    }
+}
+
+/**
+ * Memasang event listener pada dropdown 'tbl-tv-template'
+ * supaya ia mengemas kini imej setiap kali pilihan ditukar.
+ */
+export function initializeTemplatePreviewHandlers() {
+    const templateSelect = document.getElementById('tbl-tv-template');
+    if (templateSelect) {
+        templateSelect.addEventListener('change', updateTableViewTemplatePreview);
+    }
+}
 
 export async function saveProjectSettings() {
     const form = document.getElementById('main-dashboard-page');
@@ -1792,9 +1824,10 @@ export function populateMainDashboard(projectData) {
 }
 
 export function populateTableSettings(tableName) {
-	populateSortByDropdown(tableName);
+
+    populateSortByDropdown(tableName);
     populateFocusFieldDropdown(tableName);
-	populateRecordOwnerDropdown(tableName);
+    populateRecordOwnerDropdown(tableName);
 		
     const tableData = jsonData.database.table[tableName];
     if (!tableData) {
@@ -1846,6 +1879,8 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-dv-hide-save-as-copy', tableData.dv_hide_save_as_copy);
     setElementValue('tbl-dv-sticky-buttons', tableData.dv_sticky_buttons);
     setElementValue('tbl-dv-allow-add-from-homepage', tableData.dv_allow_add_from_homepage);
+	
+	updateTableViewTemplatePreview();
 }
 
 /**
