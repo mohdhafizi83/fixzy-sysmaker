@@ -1792,7 +1792,8 @@ export function populateMainDashboard(projectData) {
 }
 
 export function populateTableSettings(tableName) {
-	
+	populateSortByDropdown(tableName);
+    populateFocusFieldDropdown(tableName);
 	populateRecordOwnerDropdown(tableName);
 		
     const tableData = jsonData.database.table[tableName];

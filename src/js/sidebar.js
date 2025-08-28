@@ -356,13 +356,10 @@ export function initializeSidebarInteractivity() {
         // --- 2. TENTUKAN JENIS KLIK & LAKSANAKAN LOGIK ---
         const isFieldLink = link.closest('ul.submenu-level-3');
         const isTableLink = link.parentElement.classList.contains('has-submenu');
-        let tableName;
-
+        
         if (isFieldLink) {
-            // ▼▼▼ PEMBETULAN UTAMA: Baris "closeAllSubmenus();" telah dipadam dari sini. ▼▼▼
-            
             showPage('field-settings');
-            tableName = link.closest('li.has-submenu').querySelector('a > span').textContent.trim();
+            const tableName = link.closest('li.has-submenu').querySelector('a > span').textContent.trim();
             const fieldName = link.querySelector('span').textContent.trim();
             document.querySelector('#field-settings-page .field-name').textContent = `${tableName}.${fieldName}`;
             setupMediaTab(tableName, fieldName);
@@ -381,7 +378,7 @@ export function initializeSidebarInteractivity() {
             }
 
             showPage('table-settings');
-            tableName = link.querySelector('span').textContent.trim();
+            const tableName = link.querySelector('span').textContent.trim();
             document.querySelector('#table-settings-page .table-name').textContent = tableName;
             populateTableSettings(tableName);
             populateParentChildTab(tableName);
@@ -390,11 +387,6 @@ export function initializeSidebarInteractivity() {
             showPage('main-dashboard');
             populateMainDashboard(activeProject);
             closeAllSubmenus();
-        }
-
-        if (tableName) {
-            populateSortByDropdown(tableName);
-            populateFocusFieldDropdown(tableName);
         }
     });
 }
