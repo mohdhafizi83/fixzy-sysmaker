@@ -12,8 +12,51 @@ export function applyFontSize(size) {
     document.documentElement.style.fontSize = fontSizeValue;
 }
 
-import { allTableNames, jsonData, loadProjectData, activeProject, setActiveSidebarItem, isAutoSaveEnabled } from './js.main.js';
+import { allTableNames, jsonData, loadProjectData, activeProject, setActiveSidebarItem, isAutoSaveEnabled, isPopulatingData } from './js.main.js';
 
+// TAMBAH FUNGSI BAHARU INI DALAM uiHandlers.js
+
+export async function saveRelationshipSettings() {
+    const form = document.getElementById('tab-detail-parent-child');
+    // Pastikan tab ini sedang dilihat sebelum cuba menyimpan
+    if (!form || !form.classList.contains('active')) return;
+
+    const gatherData = () => {
+        const data = {};
+        const inputs = form.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            if (!input.id) return;
+            const id = input.id.replace('parentchild-', '').replace(/-/g, '_');
+            if (input.type === 'checkbox') {
+                data[id] = input.checked ? 1 : 0;
+            } else if (input.id) {
+                data[id] = input.value;
+            }
+        });
+        return data;
+    };
+
+    const dataToSave = gatherData();
+    const parentTable = document.querySelector('#table-settings-page .table-name').textContent;
+    const childTable = document.querySelector('#selected-child-table-name').textContent;
+
+    if (!parentTable || !childTable || childTable === '...') {
+        console.warn("Parent or child table not selected, skipping relationship save.");
+        return;
+    }
+
+    const relationship = jsonData.database.relationships.find(
+        r => r.parent_table_name === parentTable && r.child_table_name === childTable
+    );
+
+    if (!relationship) {
+        console.error("Active relationship not found in jsonData.");
+        return { success: false, message: 'Active relationship not found' };
+    }
+
+    dataToSave.relationship_id = relationship.relationship_id;
+    return await window.electronAPI.updateRelationship(dataToSave);
+}
 
 // TAMBAH DUA FUNGSI BAHARU INI DALAM uiHandlers.js
 
@@ -372,6 +415,7 @@ export function initializeLookupFieldSaveHandler() {
 
     parentTableSelect.addEventListener('change', () => {
         const saveStatus = document.getElementById('save-status');
+		if (isPopulatingData) return;
 		if (!isAutoSaveEnabled) return;
         saveStatus.textContent = 'Unsaved changes...';
         saveStatus.className = '';
@@ -403,6 +447,8 @@ export function initializeLookupFieldSaveHandler() {
     });
 }
 
+// GANTIKAN FUNGSI SEDIA ADA INI DALAM uiHandlers.js
+
 export function initializeRelationshipSaveHandlers() {
     const form = document.getElementById('tab-detail-parent-child');
     const saveStatus = document.getElementById('save-status');
@@ -410,23 +456,9 @@ export function initializeRelationshipSaveHandlers() {
 
     let saveTimer;
 
-    const gatherData = () => {
-        const data = {};
-        const inputs = form.querySelectorAll('input, select');
-        inputs.forEach(input => {
-            if (!input.id) return;
-            const id = input.id.replace('parentchild-', '').replace(/-/g, '_');
-            if (input.type === 'checkbox') {
-                data[id] = input.checked ? 1 : 0;
-            } else if (input.id) {
-                data[id] = input.value;
-            }
-        });
-        return data;
-    };
-
     const onInputChange = () => {
-		if (!isAutoSaveEnabled) return;
+		if (isPopulatingData) return;
+        if (!isAutoSaveEnabled) return;
         saveStatus.textContent = 'Unsaved changes...';
         saveStatus.className = '';
 
@@ -435,29 +467,13 @@ export function initializeRelationshipSaveHandlers() {
             saveStatus.textContent = 'Saving...';
             saveStatus.className = 'saving';
 
-            const dataToSave = gatherData();
-			//console.log('1. Data yang dikumpul dari borang:', dataToSave); // Log 1
-            
-            // Dapatkan relationship_id dari jsonData
-            const parentTable = document.querySelector('#table-settings-page .table-name').textContent;
-            const childTable = document.querySelector('#selected-child-table-name').textContent;
-			//console.log(`2. Mencari hubungan -> Induk: ${parentTable}, Anak: ${childTable}`); // Log 2
-            const relationship = jsonData.database.relationships.find(
-                r => r.parent_table_name === parentTable && r.child_table_name === childTable
-            );
-//console.log('3. Objek Hubungan Ditemui:', relationship); // Log 3
-            if (!relationship) {
-                saveStatus.textContent = 'Error: Active relationship not found!';
-                saveStatus.className = 'error';
-                return;
-            }
-            dataToSave.relationship_id = relationship.relationship_id;
-//console.log('4. Data akhir yang akan disimpan:', dataToSave); // Log 4
-            const result = await window.electronAPI.updateRelationship(dataToSave);
+            const result = await saveRelationshipSettings();
 
-            if (result.success) {
+            if (result && result.success) {
                 saveStatus.textContent = 'All changes saved ✔';
                 saveStatus.className = 'saved';
+                // PENTING: Muat semula data untuk pastikan jsonData sentiasa terkini
+                await loadProjectData(activeProject, document.querySelector('#table-settings-page .table-name').textContent);
             } else {
                 saveStatus.textContent = 'Save failed!';
                 saveStatus.className = 'error';
@@ -535,6 +551,7 @@ export function initializeProjectSaveHandlers() {
     let saveTimer;
 
     const onInputChange = () => {
+		if (isPopulatingData) return;
         if (!isAutoSaveEnabled) return;
         saveStatus.textContent = 'Unsaved changes...';
         saveStatus.className = '';
@@ -570,6 +587,7 @@ export function initializeTableSaveHandlers() {
     let saveTimer;
 
     const onInputChange = () => {
+		if (isPopulatingData) return;
         if (!isAutoSaveEnabled) return;
         saveStatus.textContent = 'Unsaved changes...';
         saveStatus.className = '';
@@ -604,6 +622,7 @@ export function initializeFieldSaveHandlers() {
     let saveTimer;
 
     const onInputChange = () => {
+		if (isPopulatingData) return;
         if (!isAutoSaveEnabled) return;
         saveStatus.textContent = 'Unsaved changes...';
         saveStatus.className = '';
@@ -1915,8 +1934,8 @@ export function populateFieldSettings(tableName, fieldName) {
 	
     const fieldData = jsonData.database.table[tableName]?.fields[fieldName];
      // ▼▼▼ CHECKPOINT #3: DATA SELEPAS DITERIMA DI FRONTEND ▼▼▼
-    console.log(`--- CHECKPOINT 3 (uiHandlers.js): Data Untuk Medan ${tableName}.${fieldName} ---`);
-    console.log(fieldData);
+    //console.log(`--- CHECKPOINT 3 (uiHandlers.js): Data Untuk Medan ${tableName}.${fieldName} ---`);
+    //console.log(fieldData);
     // ▲▲▲ TAMAT CHECKPOINT #3 ▲▲▲   
     //console.log(`Mempaparkan data untuk medan: ${tableName}.${fieldName}`, fieldData);
 

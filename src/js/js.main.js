@@ -37,9 +37,10 @@ import {
     initializeRelationshipSaveHandlers,
     initializeLookupFieldSaveHandler,
 	initializeAlgorithmBuilder,
-    saveProjectSettings,    // <-- TAMBAH INI
-    saveTableSettings,      // <-- TAMBAH INI
-    saveFieldSettings       // <-- TAMBAH INI   	
+    saveProjectSettings,
+    saveTableSettings, 
+    saveFieldSettings,
+    saveRelationshipSettings   	
 } from './uiHandlers.js';
 
 export function setActiveSidebarItem(tableName, fieldName = null) {
@@ -89,6 +90,7 @@ export let jsonData = null;
 export let allTableNames = [];
 export let activeProject = null;
 export let isAutoSaveEnabled = false;
+export let isPopulatingData = false;
 // =================================================================
 // ▼▼▼ FUNGSI UTAMA BAHARU UNTUK MEMUATKAN DATA PROJEK ▼▼▼
 // =================================================================
@@ -107,16 +109,15 @@ export async function loadProjectData(project, tableToSelect = null, itemToSelec
     const data = await window.electronAPI.getFullSchema(project.project_id);
 
     if (data && data.project && data.database) {
-        // ▼▼▼ THE KEY FIX IS HERE ▼▼▼
-        activeProject = data.project; // Update activeProject with the FRESH, COMPLETE data.
+        isPopulatingData = true; // <-- SET BENDERA KEPADA TRUE SEBELUM POPULASI
+
+        activeProject = data.project;
         jsonData = data;
-        // ▲▲▲ END OF FIX ▲▲▲
         
         allTableNames = Object.keys(jsonData.database.table || {});
 
         // Now, this function will use the complete project data.
-        populateMainDashboard(activeProject); 
-        
+        populateMainDashboard(activeProject);  
         populateMenuManagement(jsonData.database.menu_groups);
         document.getElementById('app-title').value = activeProject.app_title || 'Project Name';
         
@@ -160,6 +161,8 @@ export async function loadProjectData(project, tableToSelect = null, itemToSelec
         if (tablesExistResult && tablesExistResult.count === 0) {
             document.getElementById('tutorial-modal')?.classList.remove('hidden');
         }
+
+        isPopulatingData = false; // <-- SET SEMULA BENDERA KEPADA FALSE SELEPAS SELESAI
 
     } else {
         console.error("Gagal memuatkan data skema dari backend.");
@@ -359,18 +362,24 @@ if (saveAllBtn) {
                 allSavesSuccessful = false;
                 throw new Error("Failed to save field settings.");
             }
+			
+            const relationshipResult = await saveRelationshipSettings();
+            if (relationshipResult && !relationshipResult.success) allSavesSuccessful = false;
 
             // Hanya tunjuk mesej berjaya jika semua langkah lulus
             if (allSavesSuccessful) {
                 saveStatus.textContent = 'All changes saved ✔';
                 saveStatus.className = 'saved';
+                // Muat semula data selepas semua simpanan berjaya
+                await loadProjectData(activeProject, document.querySelector('#table-settings-page .table-name')?.textContent);
+            } else {
+                 throw new Error("One of the save operations failed.");
             }
 
         } catch (error) {
             console.error("Manual save failed:", error);
-            saveStatus.textContent = `Save failed! (${error.message})`;
+            saveStatus.textContent = `Save failed!`;
             saveStatus.className = 'error';
-            allSavesSuccessful = false;
         } finally {
             setTimeout(() => saveStatus.textContent = '', 3000);
         }

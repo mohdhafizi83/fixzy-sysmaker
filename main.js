@@ -232,9 +232,9 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
         fields = db.prepare(`SELECT * FROM fields WHERE table_id IN (${placeholder}) ORDER BY field_order, field_id`).all(...tableIds);
         
         // ▼▼▼ CHECKPOINT #1 (DIUBAH SUAI): DATA MENTAH DITAPIS UNTUK field_id = 4 ▼▼▼
-        console.log("--- CHECKPOINT 1 (main.js): Data Mentah Dari SQLite (Ditapis untuk field_id = 4) ---");
+        //console.log("--- CHECKPOINT 1 (main.js): Data Mentah Dari SQLite (Ditapis untuk field_id = 4) ---");
         // Menggunakan .filter() untuk hanya memaparkan data yang sepadan
-        console.log(JSON.stringify(fields.filter(f => f.field_id === 4), null, 2));
+        //console.log(JSON.stringify(fields.filter(f => f.field_id === 4), null, 2));
         // ▲▲▲ TAMAT CHECKPOINT #1 ▲▲▲
     }
     
@@ -303,7 +303,7 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
     };
 
     // ▼▼▼ CHECKPOINT #2 (DIUBAH SUAI): CARI DAN PAPARKAN DATA TERSUSUN UNTUK field_id = 4 ▼▼▼
-    console.log("\n--- CHECKPOINT 2 (main.js): Data Tersusun (Ditapis untuk field_id = 4) ---");
+    //console.log("\n--- CHECKPOINT 2 (main.js): Data Tersusun (Ditapis untuk field_id = 4) ---");
     let targetFieldData = null;
     for (const tableName in fullDataObject.database.table) {
         for (const fieldName in fullDataObject.database.table[tableName].fields) {
@@ -315,7 +315,7 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
         }
         if (targetFieldData) break;
     }
-    console.log(JSON.stringify(targetFieldData, null, 2));
+    //console.log(JSON.stringify(targetFieldData, null, 2));
     // ▲▲▲ TAMAT CHECKPOINT #2 ▲▲▲
 
     return fullDataObject;
@@ -966,10 +966,16 @@ ipcMain.handle('menu:update-order', async (event, { projectId, orderData }) => {
 // Handler baharu untuk mengemas kini tetapan hubungan
 ipcMain.handle('relationship:update', async (event, data) => {
     try {
+		// LOG #1: Tunjuk data penuh yang diterima dari frontend
+        console.log('--- RELATIONSHIP UPDATE: Data Diterima ---', data);
+		
         const { relationship_id, ...fieldsToUpdate } = data;
         if (!relationship_id) {
             throw new Error("Relationship ID tidak dibekalkan.");
         }
+		
+        // LOG #2: Tunjuk relationship_id dan data yang akan diupdate
+        console.log(`--- RELATIONSHIP UPDATE: ID Sasaran: ${relationship_id} ---`, fieldsToUpdate);
 
         const allowedColumns = [
             'show_tab', 'show_icon', 'autoclose_modal', 'tab_title', 'copy_records',
@@ -982,15 +988,25 @@ ipcMain.handle('relationship:update', async (event, data) => {
             .join(', ');
 
         if (!setClause) {
+            console.log('--- RELATIONSHIP UPDATE: Tiada medan sah untuk dikemas kini. Operasi dihentikan.');
             return { success: true, message: 'Tiada medan yang sah untuk dikemas kini.' };
         }
 
+        // LOG #3: Tunjuk klausa SET SQL yang dibina
+        console.log('--- RELATIONSHIP UPDATE: Klausa SET yang dibina ---', setClause);
+		
         const values = Object.keys(fieldsToUpdate)
             .filter(key => allowedColumns.includes(key))
             .map(key => fieldsToUpdate[key]);
 
+        // LOG #4: Tunjuk nilai-nilai yang akan digunakan dalam query
+        console.log('--- RELATIONSHIP UPDATE: Nilai yang akan dimasukkan ---', values);
+
         const stmt = db.prepare(`UPDATE parent_child_relationships SET ${setClause} WHERE relationship_id = ?`);
         stmt.run(...values, relationship_id);
+
+        // LOG #5: Pengesahan selepas operasi run()
+        console.log(`--- RELATIONSHIP UPDATE: Operasi UPDATE untuk relationship_id ${relationship_id} telah dilaksanakan.`);
 
         return { success: true };
     } catch (error) {
