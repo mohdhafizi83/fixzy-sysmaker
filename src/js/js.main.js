@@ -43,8 +43,7 @@ import {
     saveRelationshipSettings   	
 } from './uiHandlers.js';
 
-// GANTIKAN KESELURUHAN OBJEK SAVEMANAGER SEDIA ADA DENGAN YANG INI
-
+// KOD PENUH: Gantikan keseluruhan objek SaveManager sedia ada dengan yang ini.
 export const SaveManager = {
     saveQueue: {
         project: {}, tables: {}, fields: {}, relationships: {}, menus: null
@@ -76,14 +75,14 @@ export const SaveManager = {
         saveStatus.className = 'saving';
 
         try {
+            const activeElementId = document.activeElement ? document.activeElement.id : null;
             const result = await window.electronAPI.batchUpdate(this.saveQueue);
 
             if (result.success) {
                 console.log("[SaveManager] Kemas kini berkelompok berjaya.");
 
-                // ▼▼▼ LOGIK FOKUS YANG DISATUKAN BERMULA DI SINI ▼▼▼
                 let tableToFocus = null;
-                let itemToSelect = null; // Ini akan menjadi objek { table, field }
+                let itemToSelect = null;
 
                 const tablePage = document.getElementById('table-settings-page');
                 const fieldPage = document.getElementById('field-settings-page');
@@ -92,7 +91,6 @@ export const SaveManager = {
                     const originalTableName = tablePage.querySelector('.table-name')?.textContent;
                     if (originalTableName && jsonData.database.table[originalTableName]) {
                         const tableId = jsonData.database.table[originalTableName].table_id;
-                        // Guna nama baharu jika ada, jika tidak guna nama asal
                         tableToFocus = this.saveQueue.tables[tableId]?.table_name || originalTableName;
                     }
                 } else if (fieldPage && !fieldPage.classList.contains('hidden')) {
@@ -102,7 +100,6 @@ export const SaveManager = {
                     
                     if (originalTableName && originalFieldName && jsonData.database.table[originalTableName]?.fields[originalFieldName]) {
                         const fieldId = jsonData.database.table[originalTableName].fields[originalFieldName].field_id;
-                        // Guna nama medan baharu jika ada, jika tidak guna nama asal
                         const fieldNameToFocus = this.saveQueue.fields[fieldId]?.field_name || originalFieldName;
                         
                         tableToFocus = originalTableName;
@@ -110,15 +107,23 @@ export const SaveManager = {
                     }
                 }
 
-                // Kendalikan fokus child table (jika aktif)
                 const activeChildElement = document.querySelector('#tab-detail-parent-child .item-list li.active');
                 if (activeChildElement) {
                     setLastActiveChildTable(activeChildElement.dataset.childName);
                 }
-                // ▲▲▲ TAMAT LOGIK FOKUS ▲▲▲
                 
                 this.clearQueue();
                 await loadProjectData(activeProject, tableToFocus, itemToSelect);
+
+                if (activeElementId) {
+                    const elementToFocus = document.getElementById(activeElementId);
+                    if (elementToFocus) {
+                        elementToFocus.focus();
+                        if (typeof elementToFocus.selectionStart == "number") {
+                            elementToFocus.selectionStart = elementToFocus.selectionEnd = elementToFocus.value.length;
+                        }
+                    }
+                }
 
                 saveStatus.textContent = 'All changes saved ✔';
                 saveStatus.className = 'saved';
@@ -213,7 +218,7 @@ export function setLastActiveChildTable(tableName) {
     lastActiveChildTable = tableName;
 }
 
-// KOD PENUH: Gantikan keseluruhan fungsi sedia ada dengan yang ini.
+// KOD PENUH: Gantikan fungsi loadProjectData sedia ada dengan yang ini.
 export async function loadProjectData(project, tableToSelect = null, itemToSelect = null) {
     if (!project || !project.project_id) {
         document.getElementById('new-project-modal')?.classList.remove('hidden');
@@ -238,7 +243,6 @@ export async function loadProjectData(project, tableToSelect = null, itemToSelec
         await generateSidebarMenu();
 		
         if (itemToSelect && itemToSelect.field) {
-            // 'await' akan memastikan kod menunggu sehingga fungsi ini selesai sepenuhnya
             await focusOnSidebarField(itemToSelect.table, itemToSelect.field);
         } else if (tableToSelect) {
             setActiveSidebarLink(tableToSelect);

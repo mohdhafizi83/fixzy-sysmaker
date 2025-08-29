@@ -407,43 +407,24 @@ export function initializeAlgorithmBuilder() {
     });
 }
 
+// KOD PENUH: Gantikan keseluruhan fungsi ini.
 export function initializeLookupFieldSaveHandler() {
     const parentTableSelect = document.getElementById('fld-lookup-parent-table');
     if (!parentTableSelect) return;
 
-    let saveTimer;
-
     parentTableSelect.addEventListener('change', () => {
-        const saveStatus = document.getElementById('save-status');
 		if (isPopulatingData) return;
 		if (!isAutoSaveEnabled) return;
-        saveStatus.textContent = 'Unsaved changes...';
-        saveStatus.className = '';
-
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(async () => {
-            saveStatus.textContent = 'Saving...';
-            saveStatus.className = 'saving';
-
-            const parentTableName = parentTableSelect.value;
-            const [childTableName, fk_child_field] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
-            
-            const result = await window.electronAPI.upsertRelationship({
-                parentTableName,
-                childTableName,
-                fk_child_field
-            });
-
-            if (result.success) {
-                saveStatus.textContent = 'All changes saved ✔';
-                saveStatus.className = 'saved';
-            } else {
-                saveStatus.textContent = 'Save failed!';
-                saveStatus.className = 'error';
-                showCustomDialog({ title: "Error", message: `Failed to save relationship: ${result.message}` });
-            }
-            setTimeout(() => saveStatus.textContent = '', 3000);
-        }, 1500);
+        
+        const parentTableName = parentTableSelect.value;
+        const [childTableName, fk_child_field] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
+        
+        // Hantar tugasan "upsert" ke queue
+        SaveManager.addToQueue('upsertRelationship', null, {
+            parentTableName,
+            childTableName,
+            fk_child_field
+        });
     });
 }
 

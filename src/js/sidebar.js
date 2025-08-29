@@ -15,34 +15,49 @@ import { jsonData, activeProject, loadProjectData   } from './js.main.js';
 
 // KOD PENUH: Gantikan keseluruhan fungsi sedia ada dengan yang ini.
 export function focusOnSidebarField(tableName, fieldName) {
-
     return new Promise(resolve => {
+        const allLinks = document.querySelectorAll('.sidebar .nav-list a');
         const tableLinks = document.querySelectorAll('.sidebar .nav-list .has-submenu > a');
         const parentLink = Array.from(tableLinks).find(
             link => link.querySelector('span').textContent.trim() === tableName
         );
 
         if (!parentLink) {
-            resolve(); // Selesaikan janji walaupun pautan tidak ditemui
+            console.error(`Jadual '${tableName}' tidak ditemui di sidebar.`);
+            resolve();
             return;
         }
 
-        const selectField = () => {
+        const selectAndPopulate = () => {
             const fieldLinks = parentLink.parentElement.querySelectorAll('.submenu-level-3 a');
             const targetFieldLink = Array.from(fieldLinks).find(
                 link => link.querySelector('span').textContent.trim() === fieldName
             );
+
             if (targetFieldLink) {
-                targetFieldLink.click();
+                // 1. Urus status 'active' secara manual
+                allLinks.forEach(l => l.classList.remove('active'));
+                targetFieldLink.classList.add('active');
+                updateActionButtonsState();
+
+                // 2. Panggil fungsi paparan secara terus (KUNCI PENYELESAIAN)
+                showPage('field-settings');
+                document.querySelector('#field-settings-page .field-name').textContent = `${tableName}.${fieldName}`;
+                setupMediaTab(tableName, fieldName);
+                populateFieldSettings(tableName, fieldName);
             }
-            resolve(); // Selesaikan janji selepas klik dicetuskan
+            resolve();
         };
 
-        if (parentLink.classList.contains('open')) {
-            selectField();
+        // Buka submenu jika tertutup
+        if (!parentLink.classList.contains('open')) {
+            parentLink.classList.add('open');
+            const submenu = parentLink.nextElementSibling;
+            if (submenu) submenu.style.display = 'block';
+            // Beri sedikit masa untuk UI dikemas kini sebelum memilih
+            setTimeout(selectAndPopulate, 50); 
         } else {
-            parentLink.querySelector('.toggle-icon').click();
-            setTimeout(selectField, 100); // Beri masa untuk animasi submenu
+            selectAndPopulate();
         }
     });
 }
