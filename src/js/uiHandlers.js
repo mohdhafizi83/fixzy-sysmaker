@@ -1430,12 +1430,18 @@ export function initializeClassSelectorHandlers() {
     if (tvSelect && tvInput) {
         tvSelect.addEventListener('change', () => {
             tvInput.value = tvSelect.value;
+            // ▼▼▼ KEMAS KINI: Cetuskan event 'input' secara manual ▼▼▼
+            tvInput.dispatchEvent(new Event('input', { bubbles: true }));
+            // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
         });
     }
 
     if (dvSelect && dvInput) {
         dvSelect.addEventListener('change', () => {
             dvInput.value = dvSelect.value;
+            // ▼▼▼ KEMAS KINI: Cetuskan event 'input' secara manual ▼▼▼
+            dvInput.dispatchEvent(new Event('input', { bubbles: true }));
+            // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
         });
     }
 }
@@ -1896,6 +1902,18 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-dv-hide-save-as-copy', tableData.dv_hide_save_as_copy);
     setElementValue('tbl-dv-sticky-buttons', tableData.dv_sticky_buttons);
     setElementValue('tbl-dv-allow-add-from-homepage', tableData.dv_allow_add_from_homepage);
+	
+    const tvClassesInput = document.getElementById('tbl-table-view-classes-input');
+    const tvClassesSelect = document.getElementById('table-view-classes-select');
+    if (tvClassesInput && tvClassesSelect) {
+        tvClassesSelect.value = tvClassesInput.value;
+    }
+
+    const dvClassesInput = document.getElementById('tbl-detail-view-classes-input');
+    const dvClassesSelect = document.getElementById('detail-view-classes-select');
+    if (dvClassesInput && dvClassesSelect) {
+        dvClassesSelect.value = dvClassesInput.value;
+	}
 	
 	updateTableViewTemplatePreview();
 }

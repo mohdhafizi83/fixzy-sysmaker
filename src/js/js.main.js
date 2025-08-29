@@ -43,9 +43,7 @@ import {
     saveRelationshipSettings   	
 } from './uiHandlers.js';
 
-// GANTIKAN KESELURUHAN OBJEK SAVEMANAGER SEDIA ADA DENGAN VERSI INI
-
-// GANTIKAN KESELURUHAN OBJEK SAVEMANAGER SEDIA ADA DENGAN VERSI INI
+// GANTIKAN KESELURUHAN OBJEK SAVEMANAGER SEDIA ADA DENGAN YANG INI
 
 export const SaveManager = {
     saveQueue: {
@@ -72,7 +70,6 @@ export const SaveManager = {
             return;
         }
         
-        console.log("--- [SaveManager] Memproses & Menghantar Queue ke Backend ---", this.saveQueue);
         this.isProcessing = true;
         const saveStatus = document.getElementById('save-status');
         saveStatus.textContent = 'Saving...';
@@ -83,29 +80,45 @@ export const SaveManager = {
 
             if (result.success) {
                 console.log("[SaveManager] Kemas kini berkelompok berjaya.");
-                this.clearQueue();
-                
-                // ▼▼▼ PENAMBAHBAIKAN BERMULA DI SINI ▼▼▼
-                // 1. Dapatkan konteks halaman (nama jadual) DAN child table yang sedang aktif
-                let activeTableName = null;
+
+                // ▼▼▼ LOGIK FOKUS YANG DISATUKAN BERMULA DI SINI ▼▼▼
+                let tableToFocus = null;
+                let itemToSelect = null; // Ini akan menjadi objek { table, field }
+
                 const tablePage = document.getElementById('table-settings-page');
                 const fieldPage = document.getElementById('field-settings-page');
 
                 if (tablePage && !tablePage.classList.contains('hidden')) {
-                    activeTableName = tablePage.querySelector('.table-name')?.textContent;
-                    
-                    // Ambil juga child table yang aktif jika berada di tab yang betul
-                    const activeChildElement = tablePage.querySelector('#tab-detail-parent-child .item-list li.active');
-                    if (activeChildElement) {
-                        setLastActiveChildTable(activeChildElement.dataset.childName);
+                    const originalTableName = tablePage.querySelector('.table-name')?.textContent;
+                    if (originalTableName && jsonData.database.table[originalTableName]) {
+                        const tableId = jsonData.database.table[originalTableName].table_id;
+                        // Guna nama baharu jika ada, jika tidak guna nama asal
+                        tableToFocus = this.saveQueue.tables[tableId]?.table_name || originalTableName;
                     }
                 } else if (fieldPage && !fieldPage.classList.contains('hidden')) {
-                    activeTableName = fieldPage.querySelector('.field-name')?.textContent.split('.')[0];
+                    const nameParts = fieldPage.querySelector('.field-name')?.textContent.split('.');
+                    const originalTableName = nameParts[0];
+                    const originalFieldName = nameParts[1];
+                    
+                    if (originalTableName && originalFieldName && jsonData.database.table[originalTableName]?.fields[originalFieldName]) {
+                        const fieldId = jsonData.database.table[originalTableName].fields[originalFieldName].field_id;
+                        // Guna nama medan baharu jika ada, jika tidak guna nama asal
+                        const fieldNameToFocus = this.saveQueue.fields[fieldId]?.field_name || originalFieldName;
+                        
+                        tableToFocus = originalTableName;
+                        itemToSelect = { table: originalTableName, field: fieldNameToFocus };
+                    }
                 }
+
+                // Kendalikan fokus child table (jika aktif)
+                const activeChildElement = document.querySelector('#tab-detail-parent-child .item-list li.active');
+                if (activeChildElement) {
+                    setLastActiveChildTable(activeChildElement.dataset.childName);
+                }
+                // ▲▲▲ TAMAT LOGIK FOKUS ▲▲▲
                 
-                // 2. Muat semula semua data DAN pilih semula jadual/fokus yang betul
-                await loadProjectData(activeProject, activeTableName);
-                // ▲▲▲ TAMAT PENAMBAHBAIKAN ▲▲▲
+                this.clearQueue();
+                await loadProjectData(activeProject, tableToFocus, itemToSelect);
 
                 saveStatus.textContent = 'All changes saved ✔';
                 saveStatus.className = 'saved';
@@ -119,7 +132,6 @@ export const SaveManager = {
             saveStatus.className = 'error';
         } finally {
             this.isProcessing = false;
-            // 3. Reset state di sini untuk kepastian selepas semua operasi selesai
             setLastActiveChildTable(null); 
             setTimeout(() => saveStatus.textContent = '', 3000);
         }
@@ -201,6 +213,7 @@ export function setLastActiveChildTable(tableName) {
     lastActiveChildTable = tableName;
 }
 
+// GANTIKAN FUNGSI SEDIA ADA INI DALAM: js.main.js
 export async function loadProjectData(project, tableToSelect = null, itemToSelect = null) {
     if (!project || !project.project_id) {
         //console.log("Tiada projek aktif, memaparkan modal projek baharu.");
@@ -228,39 +241,15 @@ export async function loadProjectData(project, tableToSelect = null, itemToSelec
         
         await generateSidebarMenu();
 		
-        if (itemToSelect) {
-            setTimeout(() => {
-                let linkToClick = null;
-                if (itemToSelect.field) {
-                    const tableLinks = document.querySelectorAll('.sidebar .nav-list .has-submenu > a');
-                    const parentLink = Array.from(tableLinks).find(
-                        link => link.querySelector('span').textContent.trim() === itemToSelect.table
-                    );
-                    if (parentLink) {
-                        if (!parentLink.classList.contains('open')) {
-                            parentLink.querySelector('.toggle-icon').click();
-                        }
-                        const fieldLinks = parentLink.parentElement.querySelectorAll('.submenu-level-3 a');
-                        linkToClick = Array.from(fieldLinks).find(
-                            link => link.querySelector('span').textContent.trim() === itemToSelect.field
-                        );
-                    }
-                } else if (itemToSelect.table) {
-                    const tableLinks = document.querySelectorAll('.sidebar .nav-list .has-submenu > a');
-                    linkToClick = Array.from(tableLinks).find(
-                        link => link.querySelector('span').textContent.trim() === itemToSelect.table
-                    );
-                }
-
-                if (linkToClick) {
-                    linkToClick.click();
-                }
-            }, 100);
-        }
-
-        if (tableToSelect) {
+        // ▼▼▼ LOGIK FOKUS YANG DIPERBAIKI ▼▼▼
+        if (itemToSelect && itemToSelect.field) {
+            // Jika ada medan spesifik untuk difokuskan
+            focusOnSidebarField(itemToSelect.table, itemToSelect.field);
+        } else if (tableToSelect) {
+            // Jika hanya jadual yang perlu difokuskan
             setActiveSidebarLink(tableToSelect);
         }
+        // ▲▲▲ TAMAT LOGIK FOKUS ▲▲▲
         
         const tablesExistResult = await window.electronAPI.checkTablesExist(project.project_id);
         if (tablesExistResult && tablesExistResult.count === 0) {
