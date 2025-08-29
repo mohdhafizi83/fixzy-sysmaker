@@ -13,36 +13,38 @@ showCustomDialog
   } from './uiHandlers.js'; 
 import { jsonData, activeProject, loadProjectData   } from './js.main.js';
 
-// js/sidebar.js
-
-// Fungsi baharu untuk mencari dan mengaktifkan medan spesifik
+// KOD PENUH: Gantikan keseluruhan fungsi sedia ada dengan yang ini.
 export function focusOnSidebarField(tableName, fieldName) {
-    const tableLinks = document.querySelectorAll('.sidebar .nav-list .has-submenu > a');
-    const parentLink = Array.from(tableLinks).find(
-        link => link.querySelector('span').textContent.trim() === tableName
-    );
 
-    if (!parentLink) return;
-
-    // Fungsi untuk mencari dan mengklik pautan medan
-    const selectField = () => {
-        const fieldLinks = parentLink.parentElement.querySelectorAll('.submenu-level-3 a');
-        const targetFieldLink = Array.from(fieldLinks).find(
-            link => link.querySelector('span').textContent.trim() === fieldName
+    return new Promise(resolve => {
+        const tableLinks = document.querySelectorAll('.sidebar .nav-list .has-submenu > a');
+        const parentLink = Array.from(tableLinks).find(
+            link => link.querySelector('span').textContent.trim() === tableName
         );
-        if (targetFieldLink) {
-            targetFieldLink.click();
-        }
-    };
 
-    // Jika submenu sudah terbuka, terus pilih medan
-    if (parentLink.classList.contains('open')) {
-        selectField();
-    } else {
-        // Jika tidak, klik ikon untuk buka, kemudian tunggu sebentar sebelum memilih
-        parentLink.querySelector('.toggle-icon').click();
-        setTimeout(selectField, 100); // Beri masa untuk animasi submenu
-    }
+        if (!parentLink) {
+            resolve(); // Selesaikan janji walaupun pautan tidak ditemui
+            return;
+        }
+
+        const selectField = () => {
+            const fieldLinks = parentLink.parentElement.querySelectorAll('.submenu-level-3 a');
+            const targetFieldLink = Array.from(fieldLinks).find(
+                link => link.querySelector('span').textContent.trim() === fieldName
+            );
+            if (targetFieldLink) {
+                targetFieldLink.click();
+            }
+            resolve(); // Selesaikan janji selepas klik dicetuskan
+        };
+
+        if (parentLink.classList.contains('open')) {
+            selectField();
+        } else {
+            parentLink.querySelector('.toggle-icon').click();
+            setTimeout(selectField, 100); // Beri masa untuk animasi submenu
+        }
+    });
 }
 
 // Fungsi baharu untuk mengaktifkan pautan secara manual

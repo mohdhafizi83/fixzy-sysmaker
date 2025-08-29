@@ -213,50 +213,44 @@ export function setLastActiveChildTable(tableName) {
     lastActiveChildTable = tableName;
 }
 
-// GANTIKAN FUNGSI SEDIA ADA INI DALAM: js.main.js
+// KOD PENUH: Gantikan keseluruhan fungsi sedia ada dengan yang ini.
 export async function loadProjectData(project, tableToSelect = null, itemToSelect = null) {
     if (!project || !project.project_id) {
-        //console.log("Tiada projek aktif, memaparkan modal projek baharu.");
         document.getElementById('new-project-modal')?.classList.remove('hidden');
         return;
     }
     
-    //console.log(`Memuatkan data untuk projek: ${project.app_title} (ID: ${project.project_id})`);
-
-    // Fetch the single, consolidated data package from the backend.
     const data = await window.electronAPI.getFullSchema(project.project_id);
 
     if (data && data.project && data.database) {
-        isPopulatingData = true; // <-- SET BENDERA KEPADA TRUE SEBELUM POPULASI
+        console.log("%cLOG 1: Bendera 'isPopulatingData' dinaikkan kepada TRUE.", "color: blue; font-weight: bold;");
+        isPopulatingData = true;
 
         activeProject = data.project;
         jsonData = data;
         
         allTableNames = Object.keys(jsonData.database.table || {});
-
-        // Now, this function will use the complete project data.
+        
         populateMainDashboard(activeProject);  
         populateMenuManagement(jsonData.database.menu_groups);
         document.getElementById('app-title').value = activeProject.app_title || 'Project Name';
         
         await generateSidebarMenu();
 		
-        // ▼▼▼ LOGIK FOKUS YANG DIPERBAIKI ▼▼▼
         if (itemToSelect && itemToSelect.field) {
-            // Jika ada medan spesifik untuk difokuskan
-            focusOnSidebarField(itemToSelect.table, itemToSelect.field);
+            // 'await' akan memastikan kod menunggu sehingga fungsi ini selesai sepenuhnya
+            await focusOnSidebarField(itemToSelect.table, itemToSelect.field);
         } else if (tableToSelect) {
-            // Jika hanya jadual yang perlu difokuskan
             setActiveSidebarLink(tableToSelect);
         }
-        // ▲▲▲ TAMAT LOGIK FOKUS ▲▲▲
         
         const tablesExistResult = await window.electronAPI.checkTablesExist(project.project_id);
         if (tablesExistResult && tablesExistResult.count === 0) {
             document.getElementById('tutorial-modal')?.classList.remove('hidden');
         }
 
-        isPopulatingData = false; // <-- SET SEMULA BENDERA KEPADA FALSE SELEPAS SELESAI
+        isPopulatingData = false;
+        console.log("%cLOG 3: Bendera 'isPopulatingData' diturunkan kepada FALSE.", "color: blue; font-weight: bold;");
 
     } else {
         console.error("Gagal memuatkan data skema dari backend.");
