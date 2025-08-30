@@ -659,6 +659,9 @@ export function initializeFieldSaveHandlers() {
     });
 }
 
+// FIND THIS FUNCTION IN: uiHandlers.js
+// AND REPLACE THE EVENT LISTENER BLOCK WITHIN IT
+
 export async function populateProjectDropdown() {
     const projectListContainer = document.getElementById('project-menu-list');
     const newProjectBtn = document.getElementById('new-project-btn-dropdown');
@@ -666,13 +669,10 @@ export async function populateProjectDropdown() {
 
     if (!projectListContainer || !newProjectBtn || !newProjectModal) return;
 
-    // Bersihkan senarai lama (kecuali item 'New project...' dan pemisah)
     projectListContainer.querySelectorAll('.project-item').forEach(item => item.remove());
 
-    // Dapatkan semua projek dari backend
     const projects = await window.electronAPI.getAllProjects();
 
-    // Cipta dan tambah setiap projek ke dalam senarai
     projects.forEach(project => {
         const projectLink = document.createElement('a');
         projectLink.href = '#';
@@ -684,17 +684,28 @@ export async function populateProjectDropdown() {
         
         projectLink.addEventListener('click', async (e) => {
             e.preventDefault();
-            const newActiveProject = await window.electronAPI.setActiveProject(project.project_id);
-            if (newActiveProject) {
-                // Muat semula keseluruhan UI dengan data projek baharu
-                await loadProjectData(newActiveProject);
+            const overlay = document.getElementById('loading-overlay');
+            try {
+                // 1. Paparkan overlay serta-merta
+                if (overlay) overlay.classList.remove('loading-overlay-hidden');
+
+                const newActiveProject = await window.electronAPI.setActiveProject(project.project_id);
+                if (newActiveProject) {
+                    // Muat semula keseluruhan UI dengan data projek baharu
+                    await loadProjectData(newActiveProject);
+                }
+            } catch (error) {
+                console.error("Gagal menukar projek:", error);
+                showCustomDialog({ title: "Error", message: `Gagal menukar projek: ${error.message}` });
+            } finally {
+                // 2. Pastikan overlay sentiasa ditutup selepas proses selesai
+                if (overlay) overlay.classList.add('loading-overlay-hidden');
             }
         });
 
         projectListContainer.appendChild(projectLink);
     });
 
-    // Pasang listener untuk butang 'New project...'
     newProjectBtn.addEventListener('click', (e) => {
         e.preventDefault();
         newProjectModal.classList.remove('hidden');
