@@ -1420,6 +1420,8 @@ export function initializeClassSelectorHandlers() {
     }
 }
 
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
+
 export function initializeAutoDefaultHandlers() {
     const autoDefaultBtn = document.getElementById('auto-default-btn');
     const autoDefaultModal = document.getElementById('auto-default-modal');
@@ -1431,29 +1433,29 @@ export function initializeAutoDefaultHandlers() {
     const btnCancel = document.getElementById('auto-default-cancel');
     const btnClose = document.getElementById('auto-default-close');
 
-    // Pastikan semua elemen wujud
     if (!autoDefaultBtn || !autoDefaultModal || !defaultValueInput || !selectValue || !btnOk || !btnCancel || !btnClose) {
         console.warn("Auto-default handler elements not found. Skipping initialization.");
         return;
     }
 
-    // Fungsi untuk menutup modal
     const closeModal = () => autoDefaultModal.classList.add('hidden');
 
-    // 1. Apabila butang 'Auto >>' diklik, paparkan modal
     autoDefaultBtn.addEventListener('click', () => {
         autoDefaultModal.classList.remove('hidden');
     });
 
-    // 2. Apabila butang 'Select' (OK) di dalam modal diklik
     btnOk.addEventListener('click', () => {
-        // Salin nilai dari dropdown modal ke textbox 'Default'
+        // 1. Salin nilai dari dropdown modal ke textbox 'Default'
         defaultValueInput.value = selectValue.value;
-        // Tutup modal
+
+        // 2. ▼▼▼ BARIS KOD TAMBAHAN (PEMBETULAN) ▼▼▼
+        // Cetuskan acara 'input' untuk memaklumkan SaveManager tentang perubahan
+        defaultValueInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+        // 3. Tutup modal
         closeModal();
     });
 
-    // 3. Sambungkan butang 'Cancel' dan 'X' untuk menutup modal
     btnCancel.addEventListener('click', closeModal);
     btnClose.addEventListener('click', closeModal);
 }
@@ -2307,23 +2309,40 @@ function applyDataTypeRules() {
         mediaRadios: document.querySelectorAll('input[name="fld-media-type"]'),
         behaviorOptions: document.querySelectorAll('#fld-media-link-behavior option[value="web_link"], #fld-media-link-behavior option[value="email_link"]'),
 		dbPropertiesFieldset: document.querySelector('#tab-field-general .fieldset-grid fieldset:nth-child(1)'),
-        formBehaviorFieldset: document.querySelector('#tab-field-general .fieldset-grid fieldset:nth-child(2)')
+        formBehaviorFieldset: document.querySelector('#tab-field-general .fieldset-grid fieldset:nth-child(2)'),
+        defaultValue: document.getElementById('fld-default-value') // Tambah elemen Default Value
     };
 
     // 1. Reset: Aktifkan semua elemen secara lalai
     Object.values(elements).forEach(el => {
-        if (el.forEach) { // Untuk NodeList seperti radio dan options
-            el.forEach(item => {
-                item.disabled = false;
-                item.hidden = false;
-            });
-        } else if (el) { // Untuk elemen tunggal
+        if (el && el.forEach) {
+            el.forEach(item => { item.disabled = false; item.hidden = false; });
+        } else if (el) {
             el.disabled = false;
         }
     });
-    // Tambah reset untuk fieldset
     elements.dbPropertiesFieldset.classList.remove('fieldset-disabled');
     elements.formBehaviorFieldset.classList.remove('fieldset-disabled');
+	
+    // ▼▼▼ MULA LOGIK TAMBAHAN ▼▼▼
+    // Peraturan 1: Nyahaktifkan 'Length' untuk jenis data tertentu
+    const typesWithoutLength = ['TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT', 'DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'BLOB', 'TINYBLOB', 'MEDIUMBLOB', 'LONGBLOB'];
+    if (typesWithoutLength.includes(selectedType.toUpperCase())) {
+        if (elements.length) {
+            elements.length.disabled = true;
+            elements.length.value = ''; // Kosongkan nilai jika ada
+        }
+    }
+
+    // Peraturan 2: Nyahaktifkan 'Default Value' jika 'Auto Increment' aktif
+    if (elements.autoIncrement && elements.defaultValue) {
+        if (elements.autoIncrement.checked) {
+            elements.defaultValue.disabled = true;
+            elements.defaultValue.value = ''; // Kosongkan nilai jika ada
+        }
+    }
+    // ▲▲▲ TAMAT LOGIK TAMBAHAN ▲▲▲
+	
     // 2. Kumpulan Data Type
     const numericAndDate = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'FLOAT', 'DOUBLE', 'DECIMAL', 'DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR'];
     const integerOnly = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'];
