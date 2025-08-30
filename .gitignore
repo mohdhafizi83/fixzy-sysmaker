@@ -3,3 +3,4 @@
 *.ffs_gui
 *.ffs_db
 backup.ffs_batch
+BatchRun.ffs_batch
