@@ -2090,6 +2090,7 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-calculated-query', fieldData.calculated_query);
 	
 	// Tab: Algorithm field
+	setElementValue('fld-algorithm-enable', fieldData.algorithm_enable);
 	setElementValue('fld-algorithm-logic', fieldData.algorithm_logic);
 	setElementValue('fld-hook-functions', fieldData.hook_functions);
 	

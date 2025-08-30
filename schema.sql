@@ -154,6 +154,7 @@ CREATE TABLE fields (
     calculated_enable            INTEGER DEFAULT 0,
     calculated_query             TEXT,
 	lookup_custom_query          TEXT,
+	algorithm_enable             INTEGER DEFAULT 0,
 	algorithm_logic              TEXT,
 	hook_functions               TEXT,
     FOREIGN KEY (table_id) REFERENCES tables(table_id) ON DELETE CASCADE

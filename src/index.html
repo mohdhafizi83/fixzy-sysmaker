@@ -1488,9 +1488,17 @@
 <div id="tab-field-algorithm" class="tab-pane">
     <div class="card">
         <div class="card-body">
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="fld-algorithm-enable" name="fld-algorithm-enable">
+                    Automatically put the value of this field using the following algorithm
+                </label>
+            </div>
+
             <p class="helper-text" style="color: var(--secondary-color);">
-                Bina logik kompleks untuk medan ini dengan membuka Algorithm Builder.
+                Build complex logic for this field by opening the Algorithm Builder.
             </p>
+            
             <button class="btn btn-secondary mt-1" id="open-algorithm-builder-btn">
                 <i class="fas fa-drafting-compass"></i> Open Algorithm Builder
             </button>
@@ -1501,7 +1509,7 @@
                 <label for="fld-hook-functions">Hook Functions</label>
                 <textarea id="fld-hook-functions" name="fld-hook-functions" rows="8" placeholder="Contoh: dv_after_insert(&#10;    'send_email_notification'&#10;);"></textarea>
             </div>
-            </div>
+        </div>
     </div>
 </div>
 
