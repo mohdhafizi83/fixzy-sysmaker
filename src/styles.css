@@ -1407,3 +1407,54 @@ fieldset.fieldset-disabled {
     max-width: 1000px;
     width: 80%;
 }
+
+/* ADD THIS AT THE END OF styles.css */
+
+/* Gaya untuk bekas overlay */
+#loading-overlay {
+    position: fixed; /* Tetap pada skrin walaupun semasa skrol */
+    top: 0;
+    left: 0;
+    width: 100vw; /* Lebar penuh tetingkap */
+    height: 100vh; /* Tinggi penuh tetingkap */
+    background-color: rgba(255, 255, 255, 0.6); /* Warna putih separa lutsinar */
+    backdrop-filter: blur(4px); /* Kesan kabur pada kandungan di belakang */
+    z-index: 9999; /* Pastikan ia berada di lapisan paling atas */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    /* Tetapan untuk kesan fade */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease-out, visibility 0.25s ease-out;
+}
+
+/* Kelas untuk menyembunyikan overlay */
+.loading-overlay-hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none; /* Benarkan klik menembusinya apabila tersembunyi */
+}
+
+/* Apabila overlay dipaparkan, ia akan fade-in */
+#loading-overlay:not(.loading-overlay-hidden) {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Gaya untuk ikon 'spinner' */
+.loader {
+    border: 5px solid #f3f3f3; /* Kelabu cerah */
+    border-top: 5px solid var(--primary-color); /* Warna utama aplikasi */
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+}
+
+/* Animasi untuk putaran spinner */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

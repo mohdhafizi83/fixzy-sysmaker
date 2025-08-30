@@ -139,6 +139,16 @@ export const SaveManager = {
             this.isProcessing = false;
             setLastActiveChildTable(null); 
             setTimeout(() => saveStatus.textContent = '', 3000);
+
+            // ▼▼▼ LOGIK TAMBAHAN DI SINI ▼▼▼
+            // Periksa jika kita sedang menunggu simpanan menu group
+            if (isAwaitingMenuGroupSave) {
+                const overlay = document.getElementById('loading-overlay');
+                if (overlay) {
+                    overlay.classList.add('loading-overlay-hidden');
+                }
+                setAwaitingMenuGroupSave(false); // Reset flag
+            }
         }
     },
 
@@ -209,7 +219,10 @@ export let lastActiveChildTable = null;
 // =================================================================
 // ▼▼▼ FUNGSI UTAMA BAHARU UNTUK MEMUATKAN DATA PROJEK ▼▼▼
 // =================================================================
-
+export let isAwaitingMenuGroupSave = false;
+export function setAwaitingMenuGroupSave(value) {
+    isAwaitingMenuGroupSave = value;
+}
 /**
  * Menetapkan nama child table yang aktif.
  * @param {string | null} tableName - Nama jadual atau null untuk reset.

@@ -12,7 +12,7 @@ export function applyFontSize(size) {
     document.documentElement.style.fontSize = fontSizeValue;
 }
 
-import { allTableNames, jsonData, loadProjectData, activeProject, SaveManager, setActiveSidebarItem, isAutoSaveEnabled, isPopulatingData, lastActiveChildTable, setLastActiveChildTable } from './js.main.js';
+import { allTableNames, jsonData, loadProjectData, activeProject, SaveManager, setActiveSidebarItem, isAutoSaveEnabled, isPopulatingData, lastActiveChildTable, setLastActiveChildTable, setAwaitingMenuGroupSave } from './js.main.js';
 
 // TAMBAH FUNGSI BAHARU INI DALAM uiHandlers.js
 
@@ -827,6 +827,7 @@ export function initializeMenuManagementHandlers() {
     }
 
     addGroupBtn.addEventListener('click', () => {
+        // Logik asal untuk menambah kumpulan baharu
         const newGroup = document.createElement('div');
         newGroup.className = 'menu-group-item';
         newGroup.setAttribute('draggable', 'true');
@@ -843,8 +844,16 @@ export function initializeMenuManagementHandlers() {
             </div>
         `;
         menuGroupList.appendChild(newGroup);
-        // Tambah event listener pada input nama group baharu
         newGroup.querySelector('.group-name-input').addEventListener('input', triggerSave);
+
+        // Logik baharu untuk overlay
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+            overlay.classList.remove('loading-overlay-hidden');
+        }
+        
+        // Tetapkan flag dan cetuskan simpanan
+        setAwaitingMenuGroupSave(true);
         triggerSave();
     });
 
