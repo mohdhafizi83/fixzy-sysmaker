@@ -26,10 +26,10 @@ export function configureNewProjectModal(scenario) {
     const closeBtn = modal.querySelector('#new-project-modal-close');
 
     if (scenario === 'first-run') {
-        if (titleEl) titleEl.textContent = 'Selamat Datang! Sila Cipta Projek Pertama Anda';
+        if (titleEl) titleEl.textContent = 'Welcome! Please Create Your First Project';
         if (closeBtn) closeBtn.style.display = 'none'; // Sembunyikan butang X
     } else { // 'user-initiated'
-        if (titleEl) titleEl.textContent = 'Cipta Projek Baharu';
+        if (titleEl) titleEl.textContent = 'Create New Project';
         if (closeBtn) closeBtn.style.display = 'block'; // Paparkan butang X
     }
 }

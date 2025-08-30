@@ -58,7 +58,7 @@
             <button id="paste-sql-modal-close" class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
-            <p>Tampal (paste) arahan `CREATE TABLE` anda di bawah.</p>
+            <p>Paste your `CREATE TABLE` statements below.</p>
             <div class="form-group">
                 <textarea id="sql-paste-area" rows="15" placeholder="CREATE TABLE users (...);"></textarea>
             </div>
@@ -1022,7 +1022,7 @@
                                 <div class="form-group">
                                     <label>Data type</label>
                                     <select id="fld-data-type" name="fld-data-type">
-        <option value="" disabled selected>-- Sila Pilih Jenis Data --</option>
+        <option value="" disabled selected>-- Please Select a Data Type --</option>
         <optgroup label="Numeric Types">
             <option value="TINYINT">TINYINT</option>
             <option value="SMALLINT">SMALLINT</option>
@@ -1507,7 +1507,7 @@
 
             <div class="form-group mt-2">
                 <label for="fld-hook-functions">Hook Functions</label>
-                <textarea id="fld-hook-functions" name="fld-hook-functions" rows="8" placeholder="Contoh: dv_after_insert(&#10;    'send_email_notification'&#10;);"></textarea>
+                <textarea id="fld-hook-functions" name="fld-hook-functions" rows="8" placeholder="Example: dv_after_insert(&#10;    'send_email_notification'&#10;);"></textarea>
             </div>
         </div>
     </div>
@@ -1604,7 +1604,7 @@
                             <div class="form-group">
                                 <label>Default data type</label>
                                 <select id="fizisys-field-default-type" name="fizisys-field-default-type">
-        <option value="" disabled selected>-- Sila Pilih Jenis Data --</option>
+        <option value="" disabled selected>-- Please Select a Data Type --</option>
         <optgroup label="Numeric Types">
             <option value="TINYINT">TINYINT</option>
             <option value="SMALLINT">SMALLINT</option>
@@ -1748,17 +1748,18 @@
 <div id="new-project-modal" class="modal-overlay hidden">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Projek Baharu</h3> <button id="new-project-modal-close" class="modal-close">&times;</button>
+            <h3>New Project</h3>
+			<button id="new-project-modal-close" class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
-            <p>Sila cipta projek baharu untuk bermula.</p>
+            <p>Please create a new project to get started.</p>
             <div class="form-group">
-                <label for="new-project-name">Nama Projek</label>
-                <input type="text" id="new-project-name" name="new-project-name" placeholder="cth: Sistem Inventori Saya">
+                <label for="new-project-name">Project Name</label>
+                <input type="text" id="new-project-name" name="new-project-name" placeholder="e.g., My Inventory System">
             </div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-primary" id="save-new-project-btn">Cipta Projek</button>
+            <button class="btn btn-primary" id="save-new-project-btn">Create Project</button>
         </div>
     </div>
 </div>
@@ -1766,28 +1767,28 @@
 <div id="tutorial-modal" class="modal-overlay hidden">
     <div class="modal-content large">
         <div class="modal-header">
-            <h3>Selamat Datang ke Projek Baharu Anda!</h3>
+            <h3>Welcome to Your New Project!</h3>
         </div>
         <div class="modal-body">
-            <p>Projek anda masih kosong. Berikut adalah beberapa cara untuk anda bermula:</p>
+            <p>Your project is currently empty. Here are a few ways to get started:</p>
             
             <div class="helper-box mt-2">
-                <h4>1. Bina Secara Manual</h4>
-                <p>Gunakan butang <i class="fas fa-plus"></i> <b>New Table</b> dan <i class="fas fa-plus"></i> <b>New Field</b> di menu sisi untuk membina struktur pangkalan data anda dari awal.</p>
+                <h4>1. Build Manually</h4>
+                <p>Use the <i class="fas fa-plus"></i> <b>New Table</b> and <i class="fas fa-plus"></i> <b>New Field</b> buttons in the sidebar to build your database structure from scratch.</p>
             </div>
 
             <div class="helper-box mt-2">
-                <h4>2. Guna Bantuan AI (Akan Datang)</h4>
-                <p>Huraikan keperluan aplikasi anda dalam bahasa biasa, dan biarkan AI menjana skema pangkalan data yang lengkap untuk anda.</p>
+                <h4>2. Use AI Assistant (Coming Soon)</h4>
+                <p>Describe your application requirements in plain language, and let the AI generate a complete database schema for you.</p>
             </div>
             
             <div class="helper-box mt-2">
-                <h4>3. Import Fail .sql</h4>
-                <p>Jika anda sudah mempunyai skema dalam fail <b>.sql</b>, anda boleh mengimportnya secara terus untuk menjana semua jadual dan medan secara automatik.</p>
+                <h4>3. Import an .sql File</h4>
+                <p>If you already have a schema in an <b>.sql</b> file, you can import it directly to generate all tables and fields automatically.</p>
             </div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-primary" id="close-tutorial-modal-btn">OK, Saya Faham</button>
+            <button class="btn btn-primary" id="close-tutorial-modal-btn">OK, Got It</button>
         </div>
     </div>
 </div>

@@ -784,7 +784,7 @@ function importSchema(sql, projectId) {
         transaction(ast);
         return {
             success: true,
-            message: `${tablesCreated} jadual dan ${relationshipsCreated} hubungan berjaya diimport!`,
+            message: `Successfully imported ${tablesCreated} tables and ${relationshipsCreated} relationships!`,
         };
     } catch (error) {
         console.error("Gagal mengimport SQL:", error);
@@ -808,7 +808,7 @@ ipcMain.handle("sql:import-file", async (event, projectId) => {
     const sqlContent = fs.readFileSync(filePaths[0], "utf8");
     return importSchema(sqlContent, projectId);
   }
-  return { success: false, message: "Tiada fail dipilih." };
+  return { success: false, message: "No file selected." };
 });
 
 ipcMain.handle("sql:import-text", (event, { sql, projectId }) => {
