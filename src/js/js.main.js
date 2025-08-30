@@ -40,21 +40,29 @@ import {
     saveProjectSettings,
     saveTableSettings, 
     saveFieldSettings,
-	configureNewProjectModal, // <-- TAMBAH INI
+	configureNewProjectModal,
     showNewProjectModal,
+	initializeQueryBuilderModal,
+	initializeCalculationBuilderModal,
     saveRelationshipSettings   	
 } from './uiHandlers.js';
 
 // KOD PENUH: Gantikan keseluruhan objek SaveManager sedia ada dengan yang ini.
+// FIND AND REPLACE THIS ENTIRE OBJECT IN: js.main.js
+
 export const SaveManager = {
+    // 1. Tambah 'upserts: []' pada barisan simpanan
     saveQueue: {
-        project: {}, tables: {}, fields: {}, relationships: {}, menus: null
+        project: {}, tables: {}, fields: {}, relationships: {}, menus: null, upserts: []
     },
     debounceTimer: null,
     isProcessing: false,
 
+    // 2. Kemas kini addToQueue untuk mengendalikan jenis 'upsertRelationship'
     addToQueue(type, id, data) {
-        if (type === 'menus') {
+        if (type === 'upsertRelationship') {
+            this.saveQueue.upserts.push(data);
+        } else if (type === 'menus') {
             this.saveQueue.menus = data;
         } else if (type === 'project') {
             this.saveQueue.project = { ...this.saveQueue.project, ...data };
@@ -141,30 +149,23 @@ export const SaveManager = {
             this.isProcessing = false;
             setLastActiveChildTable(null); 
             setTimeout(() => saveStatus.textContent = '', 3000);
-
-            // ▼▼▼ LOGIK TAMBAHAN DI SINI ▼▼▼
-            // Periksa jika kita sedang menunggu simpanan menu group
-            if (isAwaitingMenuGroupSave) {
-                const overlay = document.getElementById('loading-overlay');
-                if (overlay) {
-                    overlay.classList.add('loading-overlay-hidden');
-                }
-                setAwaitingMenuGroupSave(false); // Reset flag
-            }
         }
     },
 
+    // 3. Kemas kini clearQueue untuk reset 'upserts'
     clearQueue() {
-        this.saveQueue = { project: {}, tables: {}, fields: {}, relationships: {}, menus: null };
+        this.saveQueue = { project: {}, tables: {}, fields: {}, relationships: {}, menus: null, upserts: [] };
     },
 
+    // 4. Kemas kini isQueueEmpty untuk memeriksa 'upserts'
     isQueueEmpty() {
         return (
             Object.keys(this.saveQueue.project).length === 0 &&
             Object.keys(this.saveQueue.tables).length === 0 &&
             Object.keys(this.saveQueue.fields).length === 0 &&
             Object.keys(this.saveQueue.relationships).length === 0 &&
-            !this.saveQueue.menus
+            !this.saveQueue.menus &&
+            this.saveQueue.upserts.length === 0
         );
     }
 };
@@ -370,7 +371,8 @@ window.addEventListener('beforeunload', (event) => {
 	initializeOptionsListRules();
 	initializeCalculatedFieldRules();
 	initializeTemplatePreviewHandlers();
-	
+	initializeQueryBuilderModal();
+	initializeCalculationBuilderModal();
 	initializeAlgorithmBuilder();
 	
 	initializeProjectSaveHandlers();

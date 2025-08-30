@@ -1,4 +1,168 @@
-// FIND AND EDIT THIS FUNCTION IN: uiHandlers.js
+/**
+ * Menyediakan Query Builder dengan medan-medan dari jadual semasa.
+ * @param {string} tableName - Nama jadual yang sedang aktif.
+ */
+export function setupQueryBuilder(tableName) {
+    const availableFieldsList = document.getElementById('qb-available-fields');
+    const selectedFieldsList = document.getElementById('qb-selected-fields');
+    const rulesContainer = document.getElementById('qb-rules-container');
+    const sortContainer = document.getElementById('qb-sort-container');
+
+    if (!availableFieldsList || !jsonData.database.table[tableName]) return;
+
+    availableFieldsList.innerHTML = '';
+    selectedFieldsList.innerHTML = '';
+    rulesContainer.innerHTML = '';
+    sortContainer.innerHTML = '';
+
+    const fields = Object.keys(jsonData.database.table[tableName].fields);
+    fields.forEach(fieldName => {
+        const li = document.createElement('li');
+        li.textContent = fieldName;
+        li.dataset.value = fieldName;
+        availableFieldsList.appendChild(li);
+    });
+}
+
+/**
+ * Memasang semua event listener untuk Query Builder Modal.
+ */
+export function initializeQueryBuilderModal() {
+    const modal = document.getElementById('query-builder-modal');
+    const openBtn = document.getElementById('open-query-builder-btn');
+    const closeBtn = document.getElementById('query-builder-close');
+    const cancelBtn = document.getElementById('query-builder-cancel-btn');
+
+    const generateBtn = document.getElementById('query-builder-generate-btn'); // <-- Tambah ini
+
+    if (!modal || !openBtn || !closeBtn || !cancelBtn || !generateBtn) return; // <-- Tambah generateBtn di sini
+
+    const showModal = () => {
+        const [tableName] = document.querySelector('#field-settings-page .field-name')?.textContent.split('.') || [];
+        if (tableName) {
+            setupQueryBuilder(tableName); // Sediakan kandungan sebelum paparkan
+            modal.classList.remove('hidden');
+        } else {
+            showCustomDialog({ title: "Error", message: "Could not determine the active table. Please select a field first." });
+        }
+    };
+    const hideModal = () => modal.classList.add('hidden');
+
+    openBtn.addEventListener('click', showModal);
+    closeBtn.addEventListener('click', hideModal);
+    cancelBtn.addEventListener('click', hideModal);
+	
+    generateBtn.addEventListener('click', () => {
+        // 1. Jana query dari UI builder
+        const generatedQuery = generateQueryFromBuilder();
+        if (!generatedQuery) {
+            showCustomDialog({ title: "Error", message: "Failed to generate query." });
+            return;
+        }
+
+        // 2. Dapatkan elemen di tab 'Calculated Field'
+        const queryTextarea = document.getElementById('fld-calculated-query');
+        const enableCheckbox = document.getElementById('fld-calculated-enable');
+
+        // 3. Masukkan query dan aktifkan checkbox
+        if (queryTextarea) {
+            queryTextarea.value = generatedQuery;
+            // Cetuskan 'input' untuk auto-save
+            queryTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        if (enableCheckbox) {
+            enableCheckbox.checked = true;
+            // Cetuskan 'change' untuk auto-save
+            enableCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        // 4. Tutup modal
+        hideModal();
+    });
+
+    // Logik Interaktiviti Dalam Modal
+    const container = document.getElementById('query-builder-container');
+    if (!container) return;
+
+    container.addEventListener('click', (e) => {
+        if (e.target.tagName === 'LI' && e.target.closest('.qb-field-list')) {
+            // Kod ini kini membenarkan pemilihan pelbagai item serentak
+            e.target.classList.toggle('selected');
+        }
+    });
+
+    document.getElementById('qb-add-field')?.addEventListener('click', () => {
+        const available = document.getElementById('qb-available-fields');
+        const selected = document.getElementById('qb-selected-fields');
+        const itemsToMove = available.querySelectorAll('li.selected');
+        itemsToMove.forEach(item => {
+            item.classList.remove('selected');
+            selected.appendChild(item);
+        });
+    });
+
+    document.getElementById('qb-remove-field')?.addEventListener('click', () => {
+        const available = document.getElementById('qb-available-fields');
+        const selected = document.getElementById('qb-selected-fields');
+        const itemsToMove = selected.querySelectorAll('li.selected');
+        itemsToMove.forEach(item => {
+            item.classList.remove('selected');
+            available.appendChild(item);
+        });
+    });
+
+    document.getElementById('qb-add-rule')?.addEventListener('click', () => {
+        const rulesContainer = document.getElementById('qb-rules-container');
+        const newRule = document.createElement('div');
+        newRule.className = 'qb-rule';
+        
+        const [tableName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
+        const fields = Object.keys(jsonData.database.table[tableName]?.fields || {});
+        const fieldOptions = fields.map(f => `<option value="${f}">${f}</option>`).join('');
+
+        newRule.innerHTML = `
+            <select class="qb-rule-field">${fieldOptions}</select>
+            <select class="qb-rule-operator">
+                <option value="=">is equal to</option>
+                <option value="!=">is not equal to</option>
+                <option value=">">is greater than</option>
+                <option value="<">is less than</option>
+                <option value="LIKE">contains</option>
+            </select>
+            <input type="text" class="qb-rule-value" placeholder="Value...">
+            <button class="qb-delete-btn">&times;</button>
+        `;
+        rulesContainer.appendChild(newRule);
+    });
+
+    // ▼▼▼ BLOK KOD BAHARU UNTUK 'ADD SORT LEVEL' ▼▼▼
+    document.getElementById('qb-add-sort-level')?.addEventListener('click', () => {
+        const sortContainer = document.getElementById('qb-sort-container');
+        const newSortRule = document.createElement('div');
+        newSortRule.className = 'qb-sort-rule';
+
+        const [tableName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
+        const fields = Object.keys(jsonData.database.table[tableName]?.fields || {});
+        const fieldOptions = fields.map(f => `<option value="${f}">${f}</option>`).join('');
+
+        newSortRule.innerHTML = `
+            <select class="qb-sort-field">${fieldOptions}</select>
+            <select class="qb-sort-direction">
+                <option value="ASC">Ascending (A-Z)</option>
+                <option value="DESC">Descending (Z-A)</option>
+            </select>
+            <button class="qb-delete-btn">&times;</button>
+        `;
+        sortContainer.appendChild(newSortRule);
+    });
+    // ▲▲▲ TAMAT BLOK KOD BAHARU ▲▲▲
+
+    container.addEventListener('click', (e) => {
+        if (e.target.classList.contains('qb-delete-btn')) {
+            e.target.closest('.qb-rule, .qb-sort-rule')?.remove();
+        }
+    });
+}
 
 export function showNewProjectModal() {
     configureNewProjectModal('user-initiated'); // <-- TAMBAH BARIS INI
@@ -2832,4 +2996,263 @@ export function initializeDatabasePropertiesHandlers() {
             });
         }
     });
+}
+
+// ADD THIS NEW FUNCTION IN: uiHandlers.js
+
+/**
+ * Membaca keadaan semasa Query Builder dan menjana string SQL SELECT.
+ * @returns {string} String SQL yang telah dijana.
+ */
+function generateQueryFromBuilder() {
+    const [tableName] = document.querySelector('#field-settings-page .field-name')?.textContent.split('.') || [];
+    if (!tableName) return '';
+
+    // 1. Bina klausa SELECT
+    const selectedFields = Array.from(document.querySelectorAll('#qb-selected-fields li'));
+    let selectClause = 'SELECT\n    ';
+    if (selectedFields.length === 0) {
+        selectClause += '*';
+    } else {
+        selectClause += selectedFields.map(li => `\`${li.dataset.value}\``).join(',\n    ');
+    }
+
+    // 2. Bina klausa FROM
+    const fromClause = `\nFROM\n    \`${tableName}\``;
+
+    // 3. Bina klausa WHERE
+    let whereClause = '';
+    const rules = Array.from(document.querySelectorAll('#qb-rules-container .qb-rule'));
+    if (rules.length > 0) {
+        const logic = document.querySelector('input[name="qb-logic"]:checked').value;
+        const conditions = rules.map(rule => {
+            const field = rule.querySelector('.qb-rule-field').value;
+            const operator = rule.querySelector('.qb-rule-operator').value;
+            let value = rule.querySelector('.qb-rule-value').value;
+
+            // Tambah petikan ('') pada nilai string
+            if (isNaN(value)) {
+                value = `'${value.replace(/'/g, "''")}'`; // Basic SQL injection escape
+            }
+            return `\`${field}\` ${operator} ${value}`;
+        }).join(`\n    ${logic} `);
+        
+        whereClause = `\nWHERE\n    ${conditions}`;
+    }
+
+    // 4. Bina klausa ORDER BY
+    let orderByClause = '';
+    const sortRules = Array.from(document.querySelectorAll('#qb-sort-container .qb-sort-rule'));
+    if (sortRules.length > 0) {
+        const sortConditions = sortRules.map(rule => {
+            const field = rule.querySelector('.qb-sort-field').value;
+            const direction = rule.querySelector('.qb-sort-direction').value;
+            return `\`${field}\` ${direction}`;
+        }).join(', ');
+
+        orderByClause = `\nORDER BY\n    ${sortConditions}`;
+    }
+
+    return `${selectClause}${fromClause}${whereClause}${orderByClause};`;
+}
+
+/**
+ * Menyediakan Calculation Builder dengan medan-medan dari jadual semasa.
+ * @param {string} tableName - Nama jadual yang sedang aktif.
+ */
+export function setupCalculationBuilder(tableName) {
+    const fieldDropdown = document.getElementById('cb-field');
+    const rulesContainer = document.getElementById('cb-rules-container');
+
+    if (!fieldDropdown || !rulesContainer || !jsonData.database.table[tableName]) return;
+
+    // Kosongkan senarai dan bekas sedia ada
+    fieldDropdown.innerHTML = '';
+    rulesContainer.innerHTML = '';
+
+    // Tentukan jenis data numerik
+    const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
+    
+    // Isi dropdown "For Field" dengan medan numerik sahaja
+    const fields = jsonData.database.table[tableName].fields;
+    for (const fieldName in fields) {
+        const fieldData = fields[fieldName];
+        // Semak jika jenis data medan adalah salah satu dari jenis numerik
+        if (numericTypes.includes(fieldData.data_type.toUpperCase())) {
+            const option = document.createElement('option');
+            option.value = fieldName;
+            option.textContent = fieldName;
+            fieldDropdown.appendChild(option);
+        }
+    }
+}
+
+/**
+ * Memasang semua event listener untuk Calculation Builder Modal.
+ */
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
+
+export function initializeCalculationBuilderModal() {
+    const modal = document.getElementById('calculation-builder-modal');
+    const openBtn = document.getElementById('open-calculation-builder-btn');
+    const closeBtn = document.getElementById('calculation-builder-close');
+    const cancelBtn = document.getElementById('calculation-builder-cancel-btn');
+    const functionDropdown = document.getElementById('cb-function');
+    const generateBtn = document.getElementById('calculation-builder-generate-btn');
+
+    if (!modal || !openBtn || !closeBtn || !cancelBtn || !functionDropdown || !generateBtn) return;
+
+    const showModal = () => {
+        const [tableName] = document.querySelector('#field-settings-page .field-name')?.textContent.split('.') || [];
+        if (tableName) {
+            setupCalculationBuilder(tableName);
+            modal.classList.remove('hidden');
+            functionDropdown.dispatchEvent(new Event('change'));
+        } else {
+            showCustomDialog({ title: "Error", message: "Could not determine the active table. Please select a field first." });
+        }
+    };
+    const hideModal = () => modal.classList.add('hidden');
+
+    openBtn.addEventListener('click', showModal);
+    closeBtn.addEventListener('click', hideModal);
+    cancelBtn.addEventListener('click', hideModal);
+
+    functionDropdown.addEventListener('change', () => {
+        const fieldContainer = document.getElementById('cb-field-container');
+        if (functionDropdown.value === 'COUNT') {
+            fieldContainer.style.display = 'none';
+        } else {
+            fieldContainer.style.display = 'flex';
+        }
+    });
+
+    generateBtn.addEventListener('click', () => {
+        const generatedQuery = generateCalculationQuery();
+        if (!generatedQuery) return;
+        const queryTextarea = document.getElementById('fld-calculated-query');
+        const enableCheckbox = document.getElementById('fld-calculated-enable');
+        if (queryTextarea) {
+            queryTextarea.value = generatedQuery;
+            queryTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        if (enableCheckbox) {
+            enableCheckbox.checked = true;
+            enableCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        hideModal();
+    });
+
+    const rulesContainer = document.getElementById('cb-rules-container');
+
+    // Listener untuk menambah baris peraturan baharu
+    document.getElementById('cb-add-rule')?.addEventListener('click', () => {
+        const newRule = document.createElement('div');
+        newRule.className = 'cb-rule'; // <-- Nama kelas yang betul
+        
+        const [currentTableName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
+        const relationships = jsonData.database.relationships || [];
+        const relatedTables = new Set([currentTableName]);
+        relationships.forEach(rel => {
+            if (rel.parent_table_name === currentTableName) relatedTables.add(rel.child_table_name);
+            if (rel.child_table_name === currentTableName) relatedTables.add(rel.parent_table_name);
+        });
+        const tableOptions = Array.from(relatedTables).map(t => `<option value="${t}">${t}</option>`).join('');
+        const fields = Object.keys(jsonData.database.table[currentTableName]?.fields || {});
+        const fieldOptions = fields.map(f => `<option value="${f}">${f}</option>`).join('');
+
+        newRule.innerHTML = `
+            <select class="cb-rule-table">${tableOptions}</select>
+            <select class="cb-rule-field">${fieldOptions}</select>
+            <select class="cb-rule-operator">
+                <option value="=">is equal to</option>
+                <option value="!=">is not equal to</option>
+                <option value=">">is greater than</option>
+                <option value="<">is less than</option>
+                <option value="LIKE">contains</option>
+            </select>
+            <input type="text" class="cb-rule-value" placeholder="Value...">
+            <button class="qb-delete-btn">&times;</button>
+        `;
+        rulesContainer.appendChild(newRule);
+    });
+
+    // Listener untuk dropdown jadual yang dinamik
+    rulesContainer?.addEventListener('change', (e) => {
+        if (e.target && e.target.classList.contains('cb-rule-table')) {
+            const selectedTable = e.target.value;
+            const ruleRow = e.target.closest('.cb-rule'); // <-- Nama kelas yang betul
+            const fieldDropdown = ruleRow.querySelector('.cb-rule-field');
+
+            if (!fieldDropdown || !jsonData.database.table[selectedTable]) return;
+
+            fieldDropdown.innerHTML = '';
+            const fields = Object.keys(jsonData.database.table[selectedTable].fields);
+            fields.forEach(fieldName => {
+                const option = document.createElement('option');
+                option.value = fieldName;
+                option.textContent = fieldName;
+                fieldDropdown.appendChild(option);
+            });
+        }
+    });
+
+    // Listener untuk memadam baris peraturan
+    rulesContainer?.addEventListener('click', (e) => {
+        if (e.target.classList.contains('qb-delete-btn')) {
+            e.target.closest('.cb-rule')?.remove(); // <-- Nama kelas yang betul
+        }
+    });
+}
+
+// ADD THIS NEW FUNCTION IN: uiHandlers.js
+
+/**
+ * Membaca keadaan semasa Calculation Builder dan menjana string SQL Agregat.
+ * @returns {string} String SQL yang telah dijana.
+ */
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
+
+function generateCalculationQuery() {
+    const [tableName] = document.querySelector('#field-settings-page .field-name')?.textContent.split('.') || [];
+    if (!tableName) return '';
+
+    const func = document.getElementById('cb-function').value;
+    let selectClause = 'SELECT ';
+    
+    if (func === 'COUNT') {
+        selectClause += 'COUNT(*)';
+    } else {
+        const field = document.getElementById('cb-field').value;
+        if (!field) {
+            showCustomDialog({ title: "Input Error", message: "Please select a field for the calculation." });
+            return '';
+        }
+        selectClause += `${func}(\`${field}\`)`;
+    }
+
+    const fromClause = `\nFROM \`${tableName}\``;
+
+    let whereClause = '';
+    // Cari elemen dengan nama kelas yang betul
+    const rules = Array.from(document.querySelectorAll('#cb-rules-container .cb-rule'));
+    if (rules.length > 0) {
+        const logic = document.querySelector('input[name="cb-logic"]:checked').value;
+        const conditions = rules.map(rule => {
+            // Guna nama kelas yang betul untuk membaca nilai
+            const table = rule.querySelector('.cb-rule-table').value;
+            const field = rule.querySelector('.cb-rule-field').value;
+            const operator = rule.querySelector('.cb-rule-operator').value;
+            let value = rule.querySelector('.cb-rule-value').value;
+
+            if (isNaN(value) || value === '') {
+                 value = `'${value.replace(/'/g, "''")}'`;
+            }
+            return `\`${table}\`.\`${field}\` ${operator} ${value}`;
+        }).join(` ${logic} `);
+        
+        whereClause = `\nWHERE ${conditions}`;
+    }
+
+    return `${selectClause}${fromClause}${whereClause};`;
 }

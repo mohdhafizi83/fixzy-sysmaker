@@ -1458,3 +1458,146 @@ fieldset.fieldset-disabled {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* ADD THIS AT THE END OF styles.css */
+
+/* Query Builder Modal Styles */
+#query-builder-modal .qb-section {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1.5rem;
+}
+#query-builder-modal .qb-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+#query-builder-modal .qb-section h4 {
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+#query-builder-modal .qb-fields-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+#query-builder-modal .qb-field-list-box {
+    flex: 1;
+}
+#query-builder-modal .qb-field-list-box label {
+    font-weight: 500;
+    font-size: 0.9em;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+#query-builder-modal .qb-field-list {
+    list-style: none;
+    padding: 0.5rem;
+    margin: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    height: 150px;
+    overflow-y: auto;
+    background-color: #F9FAFB;
+}
+#query-builder-modal .qb-field-list li {
+    padding: 0.5rem;
+    cursor: pointer;
+    border-radius: 4px;
+    user-select: none;
+}
+#query-builder-modal .qb-field-list li:hover {
+    background-color: #e9ecef;
+}
+#query-builder-modal .qb-field-list li.selected {
+    background-color: var(--primary-color);
+    color: white;
+}
+#query-builder-modal .qb-field-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+#query-builder-modal .qb-logic-toggle {
+    margin-bottom: 1rem;
+}
+#query-builder-modal .qb-rule, 
+#query-builder-modal .qb-sort-rule,
+#calculation-builder-modal .cb-rule {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    align-items: center;
+}
+#query-builder-modal .qb-rule select, 
+#query-builder-modal .qb-sort-rule select,
+#calculation-builder-modal .cb-rule select {
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background-color: white;
+}
+#query-builder-modal .qb-rule input[type="text"],
+#calculation-builder-modal .cb-rule input[type="text"] {
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+#query-builder-modal .qb-delete-btn {
+    background: none;
+    border: none;
+    color: var(--secondary-color);
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0 0.5rem;
+}
+#query-builder-modal .qb-delete-btn:hover {
+    color: #dc3545;
+}
+
+/* Fix for large modal content to be scrollable */
+#query-builder-modal .modal-content,
+#algorithm-builder-modal .modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: 85vh; /* Hadkan ketinggian maksimum modal kepada 85% ketinggian skrin */
+}
+
+#query-builder-modal .modal-body,
+#algorithm-builder-modal .modal-body {
+    flex-grow: 1; /* Benarkan bahagian body untuk mengisi ruang yang ada */
+    overflow-y: auto; /* Tambah bar skrol menegak HANYA apabila kandungan melimpah */
+    padding-right: 1rem; /* Beri sedikit ruang untuk bar skrol */
+}
+
+/* ADD THIS AT THE END OF styles.css */
+
+/* Calculation Builder Modal Styles */
+#calculation-builder-modal .cb-section {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1.5rem;
+}
+#calculation-builder-modal .cb-section:last-child {
+    border-bottom: none;
+}
+#calculation-builder-modal .cb-section h4 {
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+#calculation-builder-modal .cb-calculation-rule {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+#calculation-builder-modal .cb-calculation-rule label {
+    font-weight: 500;
+}
+#calculation-builder-modal .cb-calculation-rule select {
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background-color: white;
+}

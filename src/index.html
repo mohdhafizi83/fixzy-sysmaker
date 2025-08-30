@@ -1460,29 +1460,40 @@
                 </div>
             </div>
 
-            <div id="tab-field-calculated" class="tab-pane">
-                <div class="card">
-                    <div class="card-body">
-                        <label class="checkbox-label"><input type="checkbox" id="fld-calculated-enable" name="fld-calculated-enable"> Automatically calculate the value of this field using the following SQL query</label>
-                        <div class="form-grid mt-2">
-                            <div class="form-group">
-                                <textarea rows="8" placeholder="SELECT ..." id="fld-calculated-query" name="fld-calculated-query"></textarea>
-                            </div>
-                            <div class="helper-box">
-                                <h4>Variables</h4>
-                                <ul>
-                                    <li>Record ID</li>
-                                    <li>Table name</li>
-                                    <li>Username</li>
-                                    <li>Primary key field name</li>
-                                    <li>Group ID</li>
-                                    <li>Group name</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
+<div id="tab-field-calculated" class="tab-pane">
+    <div class="card">
+        <div class="card-body">
+            <label class="checkbox-label"><input type="checkbox" id="fld-calculated-enable" name="fld-calculated-enable"> Automatically calculate the value of this field using the following SQL query</label>
+            <div class="form-grid mt-2">
+                <div class="form-group">
+                    <textarea rows="8" placeholder="SELECT ..." id="fld-calculated-query" name="fld-calculated-query"></textarea>
                 </div>
+                <div class="helper-box">
+                    <h4>Variables</h4>
+                    <ul>
+                        <li>Record ID</li>
+                        <li>Table name</li>
+                        <li>Username</li>
+                        <li>Primary key field name</li>
+                        <li>Group ID</li>
+                        <li>Group name</li>
+                    </ul>
+    <h4 style="margin-top: 1rem;">Query Builder</h4>
+    <p>Use the query builder to generate a SELECT statement visually.</p>
+    <button class="btn btn-secondary mt-1" id="open-query-builder-btn">
+        <i class="fas fa-magic-wand-sparkles"></i> Open Query Builder
+    </button>
+    
+    <h4 style="margin-top: 1rem;">Calculation Builder</h4>
+    <p>Use the calculation builder to generate an aggregate query (e.g., SUM, COUNT).</p>
+    <button class="btn btn-secondary mt-1" id="open-calculation-builder-btn">
+        <i class="fas fa-calculator"></i> Open Calculation Builder
+    </button>
+    </div>
             </div>
+        </div>
+    </div>
+</div>
 
             
 <div id="tab-field-algorithm" class="tab-pane">
@@ -1870,7 +1881,109 @@
 <div id="loading-overlay" class="loading-overlay-hidden">
         <div class="loader"></div>
     </div>
-</body>
-</html>
+	
+<div id="query-builder-modal" class="modal-overlay hidden">
+    <div class="modal-content extra-large">
+        <div class="modal-header">
+            <h3>Query Builder</h3>
+            <button id="query-builder-close" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="query-builder-container">
+                
+                <div class="qb-section">
+                    <h4>1. Fields to Display</h4>
+                    <div class="qb-fields-container">
+                        <div class="qb-field-list-box">
+                            <label>Available Fields</label>
+                            <ul id="qb-available-fields" class="qb-field-list"></ul>
+                        </div>
+                        <div class="qb-field-controls">
+                            <button id="qb-add-field" class="btn">&gt;</button>
+                            <button id="qb-remove-field" class="btn">&lt;</button>
+                        </div>
+                        <div class="qb-field-list-box">
+                            <label>Fields in Report</label>
+                            <ul id="qb-selected-fields" class="qb-field-list"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="qb-section">
+                    <h4>2. Filter Rules</h4>
+                    <div class="qb-logic-toggle">
+                        <label><input type="radio" name="qb-logic" value="AND" checked> Match ALL of the following (AND)</label>
+                        <label><input type="radio" name="qb-logic" value="OR"> Match ANY of the following (OR)</label>
+                    </div>
+                    <div id="qb-rules-container">
+                        </div>
+                    <button id="qb-add-rule" class="btn btn-secondary mt-1"><i class="fas fa-plus"></i> Add Rule</button>
+                </div>
+
+                <div class="qb-section">
+                    <h4>3. Sorting</h4>
+                     <div id="qb-sort-container">
+                        </div>
+                    <button id="qb-add-sort-level" class="btn btn-secondary mt-1"><i class="fas fa-plus"></i> Add Sort Level</button>
+                </div>
+
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="query-builder-cancel-btn">Cancel</button>
+            <button class="btn btn-primary" id="query-builder-generate-btn">Generate & Use Query</button>
+        </div>
+    </div>
+</div>
+<div id="calculation-builder-modal" class="modal-overlay hidden">
+    <div class="modal-content extra-large">
+        <div class="modal-header">
+            <h3>Calculation Builder</h3>
+            <button id="calculation-builder-close" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="calculation-builder-container">
+                
+                <div class="cb-section">
+                    <h4>1. Main Calculation</h4>
+                    <div class="cb-calculation-rule">
+                        <label for="cb-function">Calculate the</label>
+                        <select id="cb-function">
+                            <option value="COUNT">Total number of records</option>
+                            <option value="SUM">Sum (total value) of</option>
+                            <option value="AVG">Average of</option>
+                            <option value="MIN">Minimum (smallest) value of</option>
+                            <option value="MAX">Maximum (largest) value of</option>
+                        </select>
+                        <div id="cb-field-container">
+                            <label for="cb-field">for field</label>
+                            <select id="cb-field">
+                                </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cb-section">
+                    <h4>2. Filter Rules (Optional)</h4>
+                    <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 1rem;">
+                        Only include records in the calculation where...
+                    </p>
+                    <div class="qb-logic-toggle">
+                        <label><input type="radio" name="cb-logic" value="AND" checked> Match ALL of the following (AND)</label>
+                        <label><input type="radio" name="cb-logic" value="OR"> Match ANY of the following (OR)</label>
+                    </div>
+                    <div id="cb-rules-container">
+                        </div>
+                    <button id="cb-add-rule" class="btn btn-secondary mt-1"><i class="fas fa-plus"></i> Add Rule</button>
+                </div>
+
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="calculation-builder-cancel-btn">Cancel</button>
+            <button class="btn btn-primary" id="calculation-builder-generate-btn">Generate & Use Query</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
