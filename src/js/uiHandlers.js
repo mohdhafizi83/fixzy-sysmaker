@@ -1249,18 +1249,6 @@ export function setupMediaTab(tableName, fieldName) {
     if (gmapDetails) gmapDetails.classList.add('hidden');
     if (youtubeDetails) youtubeDetails.classList.add('hidden');
 
-
-    const linkRadio = document.getElementById('fld-media-link');
-    const behaviorSelect = document.getElementById('fld-media-link-behavior');
-
-    if (linkRadio) {
-        linkRadio.checked = true;
-        linkRadio.dispatchEvent(new Event('click'));
-    }
-
-    if (behaviorSelect) {
-        behaviorSelect.dispatchEvent(new Event('change'));
-    }
 }
 
 export function initializeOptionsListHandlers() {
@@ -1921,10 +1909,6 @@ function populateParentTableDropdown(currentTableName) {
     });
 }
 
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
-
-// CARI DAN GANTIKAN KESELURUHAN FUNGSI INI DALAM: uiHandlers.js
-
 export function populateFieldSettings(tableName, fieldName) {
 	
     const allFieldPageControls = document.querySelectorAll(
@@ -2095,6 +2079,13 @@ export function populateFieldSettings(tableName, fieldName) {
             queryTextarea.disabled = false;
         }
     }, 50);
+
+
+    const behaviorSelect = document.getElementById('fld-media-link-behavior');
+    if (behaviorSelect) {
+        behaviorSelect.dispatchEvent(new Event('change'));
+    }
+
 }
 
 /**
