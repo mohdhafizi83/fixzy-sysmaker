@@ -1270,7 +1270,12 @@ export function initializeOptionsListHandlers() {
     if (quickListSelect && valuesInput) {
         quickListSelect.addEventListener('change', () => {
             if (quickListSelect.value) {
+                // 1. Tetapkan nilai textbox seperti biasa
                 valuesInput.value = quickListSelect.value;
+                
+                // 2. ▼▼▼ BARIS KOD KRITIKAL ▼▼▼
+                // Cetuskan acara 'input' secara manual untuk memaklumkan SaveManager
+                valuesInput.dispatchEvent(new Event('input', { bubbles: true }));
             }
         });
     }
