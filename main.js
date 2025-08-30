@@ -797,7 +797,14 @@ ipcMain.handle("sql:import-file", async (event, projectId) => {
     properties: ["openFile"],
     filters: [{ name: "SQL Files", extensions: ["sql"] }],
   });
+
   if (!canceled && filePaths.length > 0) {
+    // ▼▼▼ KEMAS KINI DI SINI ▼▼▼
+    // Hantar isyarat ke frontend untuk paparkan overlay SELEPAS fail dipilih
+    const win = BrowserWindow.fromWebContents(event.sender);
+    win?.webContents.send('show-overlay');
+    // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
+
     const sqlContent = fs.readFileSync(filePaths[0], "utf8");
     return importSchema(sqlContent, projectId);
   }

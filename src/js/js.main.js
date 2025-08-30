@@ -277,36 +277,41 @@ export async function loadProjectData(project, tableToSelect = null, itemToSelec
 }
 
 // Fungsi untuk menguruskan import SQL
-// js/js.main.js
-
 async function handleSqlImport(importFunction) {
-    if (!activeProject) {
-        showCustomDialog({ title: "Error", message: "Please create or select a project first." });
-        return;
-    }
-
-    const tablesExistResult = await window.electronAPI.checkTablesExist(activeProject.project_id);
-    if (tablesExistResult && tablesExistResult.count > 0) {
-        
-        
-        const message = "This project already has tables. Importing a new schema will DELETE ALL existing tables and fields. Continue?";
-        const userConfirmed = await showConfirmationDialog("Warning", message);
-        
-        if (!userConfirmed) {
+    // NOTA: Arahan untuk memaparkan overlay telah dibuang dari sini.
+    const overlay = document.getElementById('loading-overlay');
+    try {
+        if (!activeProject) {
+            showCustomDialog({ title: "Error", message: "Please create or select a project first." });
             return;
         }
+
+        const tablesExistResult = await window.electronAPI.checkTablesExist(activeProject.project_id);
+        if (tablesExistResult && tablesExistResult.count > 0) {
+            const message = "This project already has tables. Importing a new schema will DELETE ALL existing tables and fields. Continue?";
+            const userConfirmed = await showConfirmationDialog("Warning", message);
+            
+            if (!userConfirmed) {
+                return;
+            }
+            
+            await window.electronAPI.deleteProjectSchema(activeProject.project_id);
+        }
         
+        const result = await importFunction();
 
-        await window.electronAPI.deleteProjectSchema(activeProject.project_id);
-    }
-    
-    const result = await importFunction();
-
-    if (result.success) {
-        showCustomDialog({ title: "Success", message: result.message });
-        await loadProjectData(activeProject);
-    } else {
-        showCustomDialog({ title: "Import Failed", message: `Error: ${result.message}` });
+        if (result.success) {
+            showCustomDialog({ title: "Success", message: result.message });
+            await loadProjectData(activeProject);
+        } else {
+            showCustomDialog({ title: "Import Failed", message: `Error: ${result.message}` });
+        }
+    } catch (error) {
+        console.error("An unexpected error occurred during SQL import:", error);
+        showCustomDialog({ title: "Error", message: `An unexpected error occurred: ${error.message}` });
+    } finally {
+        // Logik untuk menutup overlay ini masih betul dan dikekalkan.
+        if (overlay) overlay.classList.add('loading-overlay-hidden');
     }
 }
 
@@ -424,6 +429,13 @@ window.addEventListener('beforeunload', (event) => {
         const sqlText = document.getElementById('sql-paste-area').value;
         if (sqlText.trim()) {
             pasteSqlModal.classList.add('hidden');
+            
+            // ▼▼▼ KEMAS KINI DI SINI ▼▼▼
+            // Paparkan overlay sejurus sebelum proses import bermula
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) overlay.classList.remove('loading-overlay-hidden');
+            // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
+
             handleSqlImport(() => window.electronAPI.importSqlText({ sql: sqlText, projectId: activeProject.project_id }));
         } else {
             showCustomDialog({
@@ -440,4 +452,13 @@ window.addEventListener('beforeunload', (event) => {
     const project = await window.electronAPI.getActiveProject();
     await loadProjectData(project);
 
+    // Pasang pendengar untuk mesej 'show-overlay' dari proses utama
+    if (window.electronAPI && typeof window.electronAPI.onShowOverlay === 'function') {
+        window.electronAPI.onShowOverlay(() => {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.classList.remove('loading-overlay-hidden');
+            }
+        });
+    }
 });
