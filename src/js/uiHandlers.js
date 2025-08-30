@@ -1,3 +1,39 @@
+// FIND AND EDIT THIS FUNCTION IN: uiHandlers.js
+
+export function showNewProjectModal() {
+    configureNewProjectModal('user-initiated'); // <-- TAMBAH BARIS INI
+
+    const modal = document.getElementById('new-project-modal');
+    const input = document.getElementById('new-project-name');
+
+    if (modal && input) {
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            input.focus();
+        }, 50);
+    }
+}
+
+/**
+ * Mengkonfigurasi modal 'New Project' berdasarkan senario.
+ * @param {string} scenario - 'first-run' atau 'user-initiated'.
+ */
+export function configureNewProjectModal(scenario) {
+    const modal = document.getElementById('new-project-modal');
+    if (!modal) return;
+
+    const titleEl = modal.querySelector('.modal-header h3');
+    const closeBtn = modal.querySelector('#new-project-modal-close');
+
+    if (scenario === 'first-run') {
+        if (titleEl) titleEl.textContent = 'Selamat Datang! Sila Cipta Projek Pertama Anda';
+        if (closeBtn) closeBtn.style.display = 'none'; // Sembunyikan butang X
+    } else { // 'user-initiated'
+        if (titleEl) titleEl.textContent = 'Cipta Projek Baharu';
+        if (closeBtn) closeBtn.style.display = 'block'; // Paparkan butang X
+    }
+}
+
 /**
  * Mengaplikasikan saiz fon pada elemen akar (<html>) aplikasi.
  * @param {string} size - Pilihan saiz ('small', 'medium', 'large').
@@ -659,12 +695,11 @@ export function initializeFieldSaveHandlers() {
     });
 }
 
-// FIND THIS FUNCTION IN: uiHandlers.js
-// AND REPLACE THE EVENT LISTENER BLOCK WITHIN IT
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
 
 export async function populateProjectDropdown() {
     const projectListContainer = document.getElementById('project-menu-list');
-    const newProjectBtn = document.getElementById('new-project-btn-dropdown');
+    let newProjectBtn = document.getElementById('new-project-btn-dropdown');
     const newProjectModal = document.getElementById('new-project-modal');
 
     if (!projectListContainer || !newProjectBtn || !newProjectModal) return;
@@ -686,19 +721,16 @@ export async function populateProjectDropdown() {
             e.preventDefault();
             const overlay = document.getElementById('loading-overlay');
             try {
-                // 1. Paparkan overlay serta-merta
                 if (overlay) overlay.classList.remove('loading-overlay-hidden');
 
                 const newActiveProject = await window.electronAPI.setActiveProject(project.project_id);
                 if (newActiveProject) {
-                    // Muat semula keseluruhan UI dengan data projek baharu
                     await loadProjectData(newActiveProject);
                 }
             } catch (error) {
                 console.error("Gagal menukar projek:", error);
                 showCustomDialog({ title: "Error", message: `Gagal menukar projek: ${error.message}` });
             } finally {
-                // 2. Pastikan overlay sentiasa ditutup selepas proses selesai
                 if (overlay) overlay.classList.add('loading-overlay-hidden');
             }
         });
@@ -706,9 +738,15 @@ export async function populateProjectDropdown() {
         projectListContainer.appendChild(projectLink);
     });
 
+    // Guna kaedah cloneNode untuk membuang semua event listener lama dari butang
+    // sebelum menambah event listener yang baharu dan terkini.
+    const newProjectBtnClone = newProjectBtn.cloneNode(true);
+    newProjectBtn.parentNode.replaceChild(newProjectBtnClone, newProjectBtn);
+    newProjectBtn = newProjectBtnClone; // Sasarkan semula pembolehubah kepada klon yang baharu
+
     newProjectBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        newProjectModal.classList.remove('hidden');
+        showNewProjectModal();
     });
 }
 

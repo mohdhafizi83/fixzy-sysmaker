@@ -40,6 +40,8 @@ import {
     saveProjectSettings,
     saveTableSettings, 
     saveFieldSettings,
+	configureNewProjectModal, // <-- TAMBAH INI
+    showNewProjectModal,
     saveRelationshipSettings   	
 } from './uiHandlers.js';
 
@@ -234,7 +236,10 @@ export function setLastActiveChildTable(tableName) {
 // KOD PENUH: Gantikan fungsi loadProjectData sedia ada dengan yang ini.
 export async function loadProjectData(project, tableToSelect = null, itemToSelect = null) {
     if (!project || !project.project_id) {
+        configureNewProjectModal('first-run');
         document.getElementById('new-project-modal')?.classList.remove('hidden');
+        // Pastikan input difokuskan juga dalam senario ini
+        setTimeout(() => document.getElementById('new-project-name')?.focus(), 100);
         return;
     }
     
@@ -391,7 +396,16 @@ window.addEventListener('beforeunload', (event) => {
     const pasteSqlCancelBtn = document.getElementById('paste-sql-modal-cancel');
     const pasteSqlImportBtn = document.getElementById('paste-sql-modal-import-btn');
 
-    if (newProjectBtn) newProjectBtn.addEventListener('click', () => newProjectModal.classList.remove('hidden'));
+    if (newProjectBtn) {
+        newProjectBtn.addEventListener('click', () => {
+            const modal = document.getElementById('new-project-modal');
+            const input = document.getElementById('new-project-name');
+            if (modal && input) {
+                modal.classList.remove('hidden');
+                setTimeout(() => input.focus(), 50); // Tambah fokus selepas modal dipaparkan
+            }
+        });
+    }
 
     if (newProjectModalCloseBtn) {
         newProjectModalCloseBtn.addEventListener('click', () => {
