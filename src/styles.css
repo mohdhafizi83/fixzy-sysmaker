@@ -1307,14 +1307,23 @@ fieldset.fieldset-disabled {
     min-height: 400px;
 }
 
+/* KOD PENUH: Cari dan gantikan keseluruhan blok CSS untuk .algorithm-palette dengan yang ini. */
 .algorithm-palette {
     border: 1px solid var(--border-color);
     border-radius: 6px;
     padding: 1rem;
     background-color: #F9FAFB;
+    
+    /* Mengekalkan kelakuan 'sticky' dari sebelum ini */
     position: sticky;
     top: 0;
-    align-self: start; /* Memastikan palet tidak meregang mengikut ketinggian kanvas */
+    align-self: start; 
+
+    /* ▼▼▼ MULA TAMBAHAN BAHARU ▼▼▼ */
+    /* Menetapkan ketinggian maksimum dan menambah skrol dalaman */
+    max-height: calc(85vh - 10rem); 
+    overflow-y: auto;              
+    /* ▲▲▲ TAMAT TAMBAHAN BAHARU ▲▲▲ */
 }
 
 .algorithm-palette h4 {
@@ -1340,12 +1349,16 @@ fieldset.fieldset-disabled {
     background-color: #f3f4f6;
 }
 
+/* KOD PENUH: Cari dan gantikan keseluruhan blok CSS untuk .algorithm-canvas dengan yang ini. */
 .algorithm-canvas {
     border: 2px dashed var(--border-color);
     border-radius: 6px;
     padding: 1rem;
     position: relative;
     transition: background-color 0.2s, border-color 0.2s;
+    /* ▼▼▼ TAMBAHAN BAHARU ▼▼▼ */
+    padding-bottom: 10rem; /* Mewujudkan 4+ ruang kosong di bawah */
+    /* ▲▲▲ TAMAT TAMBAHAN ▲▲▲ */
 }
 
 .algorithm-canvas.dragging-over {
