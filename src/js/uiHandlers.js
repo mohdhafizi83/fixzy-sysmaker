@@ -3104,6 +3104,8 @@ export function initializeCalculationBuilderModal() {
         if (tableName) {
             setupCalculationBuilder(tableName);
 			
+			populateBuilderFromQuery();
+			
             const mandatoryRuleTextElement = document.getElementById('cb-mandatory-rule-text');
             if (mandatoryRuleTextElement) {
                 const tableData = jsonData.database.table[tableName];
@@ -3273,4 +3275,109 @@ function generateCalculationQuery() {
     }
 
     return `${selectClause}${fromClause}${whereClause};`;
+}
+
+// FIND AND REPLACE ALL THREE OF THESE FUNCTIONS IN: uiHandlers.js
+
+function createAndPopulateRuleRow(condition) {
+    const rulesContainer = document.getElementById('cb-rules-container');
+    if (!condition || !rulesContainer) return;
+
+    const { table, field, operator, value } = condition;
+
+    const newRule = document.createElement('div');
+    newRule.className = 'cb-rule';
+
+    const [currentTableName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
+    const relationships = jsonData.database.relationships || [];
+    const relatedTables = new Set([currentTableName]);
+    relationships.forEach(rel => {
+        if (rel.parent_table_name === currentTableName) relatedTables.add(rel.child_table_name);
+        if (rel.child_table_name === currentTableName) relatedTables.add(rel.parent_table_name);
+    });
+    const tableOptions = Array.from(relatedTables).map(t => `<option value="${t}">${t}</option>`).join('');
+    
+    // Dapatkan senarai medan untuk jadual yang betul dari kondisi
+    const fieldOptions = Object.keys(jsonData.database.table[table]?.fields || {}).map(f => `<option value="${f}">${f}</option>`).join('');
+
+    newRule.innerHTML = `
+        <select class="cb-rule-table">${tableOptions}</select>
+        <select class="cb-rule-field">${fieldOptions}</select>
+        <select class="cb-rule-operator">
+            <option value="=">is equal to</option>
+            <option value="!=">is not equal to</option>
+            <option value=">">is greater than</option>
+            <option value="<">is less than</option>
+            <option value="LIKE">contains</option>
+        </select>
+        <input type="text" class="cb-rule-value" placeholder="Value...">
+        <button class="qb-delete-btn">&times;</button>
+    `;
+    
+    // Tetapkan nilai-nilai yang betul
+    newRule.querySelector('.cb-rule-table').value = table;
+    newRule.querySelector('.cb-rule-field').value = field;
+    newRule.querySelector('.cb-rule-operator').value = operator;
+    newRule.querySelector('.cb-rule-value').value = value;
+
+    rulesContainer.appendChild(newRule);
+}
+
+function populateBuilderFromAST(ast, originalSql) {
+    if (!ast || ast.type !== 'select' || !ast.columns || ast.columns.length === 0) return;
+    
+    // 1. Tetapkan Fungsi Agregat dan Medan (Guna AST - Bahagian ini stabil)
+    const funcExpr = ast.columns[0].expr;
+    if (funcExpr.type === 'aggr_func') {
+        const func = funcExpr.name.toUpperCase();
+        document.getElementById('cb-function').value = func;
+        if (func === 'COUNT' && funcExpr.args.expr.type === 'star') {
+            // Biarkan dropdown medan
+        } else if (funcExpr.args.expr) {
+            const field = funcExpr.args.expr.column;
+            document.getElementById('cb-field').value = field;
+        }
+        document.getElementById('cb-function').dispatchEvent(new Event('change'));
+    }
+
+    // 2. Tetapkan Peraturan Tapis (Guna RegEx - Lebih mudah & stabil)
+    const rulesContainer = document.getElementById('cb-rules-container');
+    rulesContainer.innerHTML = '';
+
+    const optionalFiltersMatch = originalSql.match(/\s+AND\s+\((.+)\)/is);
+    if (optionalFiltersMatch && optionalFiltersMatch[1]) {
+        const optionalFiltersString = optionalFiltersMatch[1];
+        
+        const logic = optionalFiltersString.includes(' OR ') ? 'OR' : 'AND';
+        document.querySelector(`input[name="cb-logic"][value="${logic}"]`).checked = true;
+
+        const conditions = optionalFiltersString.split(/\s+(?:AND|OR)\s+/i);
+        conditions.forEach(conditionStr => {
+            const match = conditionStr.match(/`?(\w+)`?\.`?(\w+)`?\s*([=<>! LIKE]+)\s*(.*)/i);
+            if (match) {
+                const [, table, field, operator, value] = match;
+                createAndPopulateRuleRow({
+                    table,
+                    field,
+                    operator: operator.trim(),
+                    value: value.replace(/['"]/g, '')
+                });
+            }
+        });
+    }
+}
+
+async function populateBuilderFromQuery() {
+    const queryTextarea = document.getElementById('fld-calculated-query');
+    const sql = queryTextarea.value;
+    if (!sql.trim()) return;
+
+    const result = await window.electronAPI.parseCalculationQuery(sql);
+
+    if (result.success && result.data && result.data.length > 0) {
+        // Hantar kedua-dua AST dan SQL asal ke fungsi pemapar
+        populateBuilderFromAST(result.data[0], sql);
+    } else if (result.error) {
+        console.error("Backend failed to parse SQL:", result.error);
+    }
 }

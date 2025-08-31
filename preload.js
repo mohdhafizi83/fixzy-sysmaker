@@ -36,4 +36,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   checkTablesExist: (projectId) => ipcRenderer.invoke('tables:check-exists', projectId),
   deleteProjectSchema: (projectId) => ipcRenderer.invoke('project:delete-schema', projectId),
   onShowOverlay: (callback) => ipcRenderer.on('show-overlay', (event) => callback()),
+  parseCalculationQuery: (sql) => ipcRenderer.invoke('sql:parse-calculation-query', sql),
 });

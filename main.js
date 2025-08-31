@@ -171,6 +171,21 @@ if (fieldsToUpdate.text_area === 1) {
     }
 });
 
+ipcMain.handle('sql:parse-calculation-query', (event, sql) => {
+    if (!sql) {
+        return { success: false, error: 'Empty query string.' };
+    }
+    try {
+        const ast = parser.astify(sql, { database: 'MySQL' });
+        // Hantar pokok sintaks (AST) kembali ke frontend
+        return { success: true, data: ast };
+    } catch (error) {
+        // Hantar mesej ralat jika penterjemahan gagal
+        console.warn('SQL parsing failed:', error.message);
+        return { success: false, error: error.message };
+    }
+});
+
 // KOD PENUH: Pastikan fungsi bantuan ini wujud di main.js
 async function getFullProjectSchema(projectId) {
   try {
