@@ -1476,22 +1476,26 @@ fieldset.fieldset-disabled {
     margin-bottom: 1rem;
     font-weight: 600;
 }
-#query-builder-modal .qb-fields-container {
+#query-builder-modal .qb-fields-container,
+#calculation-builder-modal .qb-fields-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
 }
-#query-builder-modal .qb-field-list-box {
+#query-builder-modal .qb-field-list-box,
+#calculation-builder-modal .qb-field-list-box {
     flex: 1;
 }
-#query-builder-modal .qb-field-list-box label {
+#query-builder-modal .qb-field-list-box,
+#calculation-builder-modal .qb-field-list-box label {
     font-weight: 500;
     font-size: 0.9em;
     margin-bottom: 0.5rem;
     display: block;
 }
-#query-builder-modal .qb-field-list {
+#query-builder-modal .qb-field-list,
+#calculation-builder-modal .qb-field-list {
     list-style: none;
     padding: 0.5rem;
     margin: 0;
@@ -1501,20 +1505,24 @@ fieldset.fieldset-disabled {
     overflow-y: auto;
     background-color: #F9FAFB;
 }
-#query-builder-modal .qb-field-list li {
+#query-builder-modal .qb-field-list,
+#calculation-builder-modal .qb-field-list li {
     padding: 0.5rem;
     cursor: pointer;
     border-radius: 4px;
     user-select: none;
 }
-#query-builder-modal .qb-field-list li:hover {
+#query-builder-modal .qb-field-list,
+#calculation-builder-modal .qb-field-list li:hover {
     background-color: #e9ecef;
 }
-#query-builder-modal .qb-field-list li.selected {
+#query-builder-modal .qb-field-list,
+#calculation-builder-modal .qb-field-list li.selected {
     background-color: var(--primary-color);
     color: white;
 }
-#query-builder-modal .qb-field-controls {
+#query-builder-modal .qb-field-controls,
+#calculation-builder-modal .qb-field-controls {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
@@ -1622,4 +1630,49 @@ fieldset.fieldset-disabled {
 .cb-mandatory-rule-display p i {
     color: #6B7280;
     margin-right: 0.5rem;
+}
+
+/* ADD THIS AT THE END OF styles.css */
+
+/* Advanced Mode Toggle for Calculation Builder */
+.cb-advanced-toggle {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.cb-advanced-toggle .checkbox-label {
+    font-weight: 500;
+}
+
+/* Advanced Calculation Rule Styles */
+.cb-advanced-rule {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+.cb-advanced-rule select {
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.cb-expression-builder {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #F9FAFB;
+    padding: 1rem;
+    border-radius: 6px;
+}
+.cb-expression-builder label {
+    font-weight: 500;
+}
+.cb-expression-builder select {
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
 }

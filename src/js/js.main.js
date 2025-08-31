@@ -43,6 +43,7 @@ import {
 	configureNewProjectModal,
     showNewProjectModal,
 	initializeQueryBuilderModal,
+	initializeAdvancedCalculationBuilder,
 	initializeCalculationBuilderModal,
     saveRelationshipSettings   	
 } from './uiHandlers.js';
@@ -373,6 +374,7 @@ window.addEventListener('beforeunload', (event) => {
 	initializeTemplatePreviewHandlers();
 	initializeQueryBuilderModal();
 	initializeCalculationBuilderModal();
+	initializeAdvancedCalculationBuilder();
 	initializeAlgorithmBuilder();
 	
 	initializeProjectSaveHandlers();

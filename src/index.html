@@ -1940,51 +1940,105 @@
             <h3>Calculation Builder</h3>
             <button id="calculation-builder-close" class="modal-close">&times;</button>
         </div>
-<div class="modal-body">
-    <div id="calculation-builder-container">
-        
-        <div class="cb-mandatory-rule-display" style="margin-bottom: 1.5rem;">
-            <p>
-                <i class="fas fa-info-circle"></i>
-                This calculation is automatically filtered where: 
-                <strong id="cb-mandatory-rule-text"></strong>
-            </p>
-        </div>
-        <div class="cb-section">
-            <h4>1. Main Calculation</h4>
-            <div class="cb-calculation-rule">
-                <label for="cb-function">Calculate the</label>
-                <select id="cb-function">
-                    <option value="COUNT">Total number of records</option>
-                    <option value="SUM">Sum (total value) of</option>
-                    <option value="AVG">Average of</option>
-                    <option value="MIN">Minimum (smallest) value of</option>
-                    <option value="MAX">Maximum (largest) value of</option>
-                </select>
-                <div id="cb-field-container">
-                    <label for="cb-field">for field</label>
-                    <select id="cb-field">
-                        </select>
+        <div class="modal-body">
+            <div id="calculation-builder-container">
+                
+                <div class="cb-mandatory-rule-display" style="margin-bottom: 1.5rem;">
+                    <p>
+                        <i class="fas fa-info-circle"></i>
+                        This calculation is automatically filtered where: 
+                        <strong id="cb-mandatory-rule-text"></strong>
+                    </p>
                 </div>
-            </div>
-        </div>
-
-        <div class="cb-section">
-            <h4>2. Filter Rules (Optional)</h4>
-            <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 1rem;">
-                You can add more optional filters below:
-            </p>
-            <div class="qb-logic-toggle">
-                <label><input type="radio" name="cb-logic" value="AND" checked> Match ALL of the following (AND)</label>
-                <label><input type="radio" name="cb-logic" value="OR"> Match ANY of the following (OR)</label>
-            </div>
-            <div id="cb-rules-container">
+                
+                <div class="cb-advanced-toggle">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="cb-advanced-mode-toggle"> Use Advanced Mode
+                    </label>
                 </div>
-            <button id="cb-add-rule" class="btn btn-secondary mt-1"><i class="fas fa-plus"></i> Add Rule</button>
-        </div>
 
-    </div>
+                <div class="cb-section">
+                    <h4>1. Main Calculation</h4>
+
+                    <div id="cb-basic-calculation">
+                        <div class="cb-calculation-rule">
+                            <label for="cb-function">Calculate the</label>
+                            <select id="cb-function">
+                                <option value="COUNT">Total number of records</option>
+                                <option value="SUM">Sum (total value) of</option>
+                                <option value="AVG">Average of</option>
+                                <option value="MIN">Minimum (smallest) value of</option>
+                                <option value="MAX">Maximum (largest) value of</option>
+                            </select>
+                            <div id="cb-field-container">
+                                <label for="cb-field">for field</label>
+                                <select id="cb-field"></select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="cb-advanced-calculation" class="hidden">
+                        <div class="cb-advanced-rule">
+                            <select id="cb-advanced-function" style="max-width: 150px;">
+                                <option value="SUM">SUM</option>
+                                <option value="AVG">AVG</option>
+                                <option value="MIN">MIN</option>
+                                <option value="MAX">MAX</option>
+                                <option value="COUNT">COUNT</option>
+                            </select>
+                            <label class="checkbox-label" style="margin-left: 1rem;">
+                                <input type="checkbox" id="cb-distinct-toggle"> DISTINCT
+                            </label>
+                        </div>
+                        <div class="cb-expression-builder">
+                            <label>Of Expression:</label>
+                            <select id="cb-expr-field1"></select>
+                            <select id="cb-expr-operator" style="max-width: 50px;">
+							    <option value="" selected>(none)</option>
+                                <option value="+">+</option>
+                                <option value="-">-</option>
+                                <option value="*">*</option>
+                                <option value="/">/</option>
+                            </select>
+                            <select id="cb-expr-field2"></select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cb-section">
+                    <h4>2. Filter Rules (Optional)</h4>
+                    <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 1rem;">
+                        You can add more optional filters below:
+                    </p>
+                    <div class="qb-logic-toggle">
+                        <label><input type="radio" name="cb-logic" value="AND" checked> Match ALL of the following (AND)</label>
+                        <label><input type="radio" name="cb-logic" value="OR"> Match ANY of the following (OR)</label>
+                    </div>
+                    <div id="cb-rules-container"></div>
+                    <button id="cb-add-rule" class="btn btn-secondary mt-1"><i class="fas fa-plus"></i> Add Rule</button>
+                </div>
+
+                <div id="cb-groupby-section" class="cb-section hidden">
+                    <h4>3. Group Results By</h4>
+                    <div class="qb-fields-container">
+                        <div class="qb-field-list-box">
+                            <label>Available Fields for Grouping</label>
+                            <ul id="cb-groupby-available-fields" class="qb-field-list"></ul>
+                        </div>
+                        <div class="qb-field-controls">
+                            <button id="cb-groupby-add-field" class="btn">&gt;</button>
+                            <button id="cb-groupby-remove-field" class="btn">&lt;</button>
+                        </div>
+<div class="qb-field-list-box">
+    <label>Group By These Fields</label>
+    <ul id="cb-groupby-selected-fields" class="qb-field-list"></ul>
+    <div id="debug-group-by-output" style="padding: 1rem; color: #ff0000; font-weight: bold;"></div>
 </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" id="calculation-builder-cancel-btn">Cancel</button>
             <button class="btn btn-primary" id="calculation-builder-generate-btn">Generate & Use Query</button>

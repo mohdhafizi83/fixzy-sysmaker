@@ -171,7 +171,14 @@ if (fieldsToUpdate.text_area === 1) {
     }
 });
 
+// FIND THIS HANDLER IN main.js AND ADD THE TWO CONSOLE.LOG LINES
+
 ipcMain.handle('sql:parse-calculation-query', (event, sql) => {
+    // ▼▼▼ TAMBAH DUA BARIS INI UNTUK DIAGNOSIS ▼▼▼
+    console.log("--- SQL received by backend parser ---");
+    console.log(sql);
+    // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
+
     if (!sql) {
         return { success: false, error: 'Empty query string.' };
     }

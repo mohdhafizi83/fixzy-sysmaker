@@ -3059,29 +3059,48 @@ function generateQueryFromBuilder() {
  * Menyediakan Calculation Builder dengan medan-medan dari jadual semasa.
  * @param {string} tableName - Nama jadual yang sedang aktif.
  */
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
+
 export function setupCalculationBuilder(tableName) {
     const fieldDropdown = document.getElementById('cb-field');
     const rulesContainer = document.getElementById('cb-rules-container');
+    const exprField1 = document.getElementById('cb-expr-field1');
+    const exprField2 = document.getElementById('cb-expr-field2');
+    const groupByAvailable = document.getElementById('cb-groupby-available-fields');
+    const groupBySelected = document.getElementById('cb-groupby-selected-fields');
 
     if (!fieldDropdown || !rulesContainer || !jsonData.database.table[tableName]) return;
 
-    // Kosongkan senarai dan bekas sedia ada
+    // Kosongkan semua senarai
     fieldDropdown.innerHTML = '';
     rulesContainer.innerHTML = '';
+    exprField1.innerHTML = '';
+    exprField2.innerHTML = '';
+    groupByAvailable.innerHTML = '';
+    groupBySelected.innerHTML = '';
 
-    // Tentukan jenis data numerik
     const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
-    
-    // Isi dropdown "For Field" dengan medan numerik sahaja
     const fields = jsonData.database.table[tableName].fields;
+    
     for (const fieldName in fields) {
         const fieldData = fields[fieldName];
-        // Semak jika jenis data medan adalah salah satu dari jenis numerik
+        
+        // ▼▼▼ MULA PEMBETULAN ▼▼▼
+        // Cipta elemen LI untuk senarai GROUP BY
+        const listItem = document.createElement('li');
+        listItem.dataset.value = fieldName;
+        listItem.textContent = fieldName;
+        groupByAvailable.appendChild(listItem);
+        // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
+
+        // Cipta elemen OPTION untuk dropdown (tidak berubah)
         if (numericTypes.includes(fieldData.data_type.toUpperCase())) {
-            const option = document.createElement('option');
-            option.value = fieldName;
-            option.textContent = fieldName;
-            fieldDropdown.appendChild(option);
+            const optionItem = document.createElement('option');
+            optionItem.value = fieldName;
+            optionItem.textContent = fieldName;
+            fieldDropdown.appendChild(optionItem.cloneNode(true));
+            exprField1.appendChild(optionItem.cloneNode(true));
+            exprField2.appendChild(optionItem.cloneNode(true));
         }
     }
 }
@@ -3214,37 +3233,63 @@ export function initializeCalculationBuilderModal() {
     });
 }
 
-// ADD THIS NEW FUNCTION IN: uiHandlers.js
-
 /**
  * Membaca keadaan semasa Calculation Builder dan menjana string SQL Agregat.
  * @returns {string} String SQL yang telah dijana.
  */
+
 function generateCalculationQuery() {
     const [tableName] = document.querySelector('#field-settings-page .field-name')?.textContent.split('.') || [];
     if (!tableName) return '';
 
-    // ▼▼▼ MULA BAHAGIAN YANG DIPERBAIKI ▼▼▼
-    // 1. Bina klausa SELECT AGREGAT (logik penuh)
-    const func = document.getElementById('cb-function').value;
+    const isAdvancedMode = document.getElementById('cb-advanced-mode-toggle').checked;
     let selectClause = 'SELECT ';
-    
-    if (func === 'COUNT') {
-        selectClause += 'COUNT(*)';
-    } else {
-        const field = document.getElementById('cb-field').value;
-        if (!field) {
-            showCustomDialog({ title: "Input Error", message: "Please select a field for the calculation." });
-            return '';
-        }
-        selectClause += `${func}(\`${field}\`)`;
-    }
-    // ▲▲▲ TAMAT BAHAGIAN YANG DIPERBAIKI ▲▲▲
+    let groupByClause = '';
 
-    // 2. Bina klausa FROM
+    // Bahagian 1: Bina Klausa SELECT
+    if (isAdvancedMode) {
+        // --- LOGIK MOD LANJUTAN ---
+        const func = document.getElementById('cb-advanced-function').value;
+        const isDistinct = document.getElementById('cb-distinct-toggle').checked ? 'DISTINCT ' : '';
+        const field1 = document.getElementById('cb-expr-field1').value;
+        const operator = document.getElementById('cb-expr-operator').value;
+        const field2 = document.getElementById('cb-expr-field2').value;
+
+        let expression;
+        if (operator && field2) {
+            // Jika ada operator, bina ekspresi penuh
+            expression = `\`${field1}\` ${operator} \`${field2}\``;
+        } else {
+            // Jika tiada operator, guna medan pertama sahaja
+            expression = `\`${field1}\``;
+        }
+        selectClause += `${func}(${isDistinct}${expression})`;
+
+        // --- Bina Klausa GROUP BY ---
+        const selectedGroupByFields = Array.from(document.querySelectorAll('#cb-groupby-selected-fields li'));
+        if (selectedGroupByFields.length > 0) {
+            groupByClause = '\nGROUP BY ' + selectedGroupByFields.map(li => `\`${li.dataset.value}\``).join(', ');
+        }
+
+    } else {
+        // --- LOGIK MOD ASAS (Sedia ada) ---
+        const func = document.getElementById('cb-function').value;
+        if (func === 'COUNT') {
+            selectClause += 'COUNT(*)';
+        } else {
+            const field = document.getElementById('cb-field').value;
+            if (!field) {
+                showCustomDialog({ title: "Input Error", message: "Please select a field for the calculation." });
+                return '';
+            }
+            selectClause += `${func}(\`${field}\`)`;
+        }
+    }
+
+    // Bahagian 2: Bina Klausa FROM (tidak berubah)
     const fromClause = `\nFROM \`${tableName}\``;
 
-    // 3. Bina klausa WHERE (dengan peraturan mandatori)
+    // Bahagian 3: Bina Klausa WHERE (tidak berubah)
     const tableData = jsonData.database.table[tableName];
     const primaryKeyField = Object.keys(tableData.fields).find(f => tableData.fields[f].primary_key);
     if (!primaryKeyField) {
@@ -3252,7 +3297,6 @@ function generateCalculationQuery() {
         return '';
     }
     const mandatoryCondition = `\`${tableName}\`.\`${primaryKeyField}\` = ##ID##`;
-
     let optionalConditions = '';
     const rules = Array.from(document.querySelectorAll('#cb-rules-container .cb-rule'));
     if (rules.length > 0) {
@@ -3268,13 +3312,13 @@ function generateCalculationQuery() {
             return `\`${table}\`.\`${field}\` ${operator} ${value}`;
         }).join(` ${logic} `);
     }
-    
     let whereClause = `\nWHERE ${mandatoryCondition}`;
     if (optionalConditions) {
         whereClause += `\n    AND (${optionalConditions})`;
     }
 
-    return `${selectClause}${fromClause}${whereClause};`;
+    // Gabungkan semua klausa
+    return `${selectClause}${fromClause}${whereClause}${groupByClause};`;
 }
 
 // FIND AND REPLACE ALL THREE OF THESE FUNCTIONS IN: uiHandlers.js
@@ -3323,34 +3367,80 @@ function createAndPopulateRuleRow(condition) {
     rulesContainer.appendChild(newRule);
 }
 
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
+
 function populateBuilderFromAST(ast, originalSql) {
-    if (!ast || ast.type !== 'select' || !ast.columns || ast.columns.length === 0) return;
+    const [tableName] = document.querySelector('#field-settings-page .field-name')?.textContent.split('.') || [];
+    if (!tableName) return;
+
+    if (!ast || ast.type !== 'select' || !ast.columns || !ast.columns.length === 0) return;
     
-    // 1. Tetapkan Fungsi Agregat dan Medan (Guna AST - Bahagian ini stabil)
+    // 1. Pengesanan Mod Lanjutan (dengan kedua-dua nama kunci yang betul)
     const funcExpr = ast.columns[0].expr;
-    if (funcExpr.type === 'aggr_func') {
-        const func = funcExpr.name.toUpperCase();
-        document.getElementById('cb-function').value = func;
-        if (func === 'COUNT' && funcExpr.args.expr.type === 'star') {
-            // Biarkan dropdown medan
-        } else if (funcExpr.args.expr) {
-            const field = funcExpr.args.expr.column;
-            document.getElementById('cb-field').value = field;
+    const isAdvanced = (ast.groupby) || // <-- Menggunakan 'groupby' (tanpa ruang) yang betul
+                       (funcExpr.args.expr && funcExpr.args.expr.type === 'binary_expr') ||
+                       (ast.distinct !== null); // <-- Menggunakan 'ast.distinct' yang betul
+    
+    const advancedToggle = document.getElementById('cb-advanced-mode-toggle');
+    advancedToggle.checked = isAdvanced;
+    advancedToggle.dispatchEvent(new Event('change'));
+
+    // 2. Isi Borang Berdasarkan Mod
+    if (isAdvanced) {
+        if (funcExpr.type === 'aggr_func') {
+            document.getElementById('cb-advanced-function').value = funcExpr.name.toUpperCase();
+            document.getElementById('cb-distinct-toggle').checked = ast.distinct !== null; // <-- Menggunakan 'ast.distinct' yang betul
+            const expression = funcExpr.args.expr;
+            if (expression.type === 'binary_expr') {
+                document.getElementById('cb-expr-field1').value = expression.left.column;
+                document.getElementById('cb-expr-operator').value = expression.operator;
+                document.getElementById('cb-expr-field2').value = expression.right.column;
+            } else if (expression.type === 'column_ref') {
+                document.getElementById('cb-expr-field1').value = expression.column;
+            }
         }
-        document.getElementById('cb-function').dispatchEvent(new Event('change'));
+    } else {
+        if (funcExpr.type === 'aggr_func') {
+            const func = funcExpr.name.toUpperCase();
+            document.getElementById('cb-function').value = func;
+            if (func === 'COUNT' && funcExpr.args.expr.type === 'star') {} else if (funcExpr.args.expr) {
+                document.getElementById('cb-field').value = funcExpr.args.expr.column;
+            }
+            document.getElementById('cb-function').dispatchEvent(new Event('change'));
+        }
     }
 
-    // 2. Tetapkan Peraturan Tapis (Guna RegEx - Lebih mudah & stabil)
+    // 3. Tetapkan Semula Pilihan GROUP BY (dengan nama kunci yang betul)
+    const groupBySelected = document.getElementById('cb-groupby-selected-fields');
+    const groupByAvailable = document.getElementById('cb-groupby-available-fields');
+    groupByAvailable.innerHTML = '';
+    groupBySelected.innerHTML = '';
+
+    let groupByFields = [];
+    if (ast.groupby && Array.isArray(ast.groupby.columns)) { // <-- Menggunakan 'groupby' (tanpa ruang) yang betul
+        groupByFields = ast.groupby.columns.map(item => item.column);
+    }
+
+    const allFields = Object.keys(jsonData.database.table[tableName].fields);
+    allFields.forEach(fieldName => {
+        const listItem = document.createElement('li');
+        listItem.dataset.value = fieldName;
+        listItem.textContent = fieldName;
+        if (groupByFields.includes(fieldName)) {
+            groupBySelected.appendChild(listItem);
+        } else {
+            groupByAvailable.appendChild(listItem);
+        }
+    });
+
+    // 4. Tetapkan Peraturan Tapis (tidak berubah)
     const rulesContainer = document.getElementById('cb-rules-container');
     rulesContainer.innerHTML = '';
-
     const optionalFiltersMatch = originalSql.match(/\s+AND\s+\((.+)\)/is);
     if (optionalFiltersMatch && optionalFiltersMatch[1]) {
         const optionalFiltersString = optionalFiltersMatch[1];
-        
         const logic = optionalFiltersString.includes(' OR ') ? 'OR' : 'AND';
         document.querySelector(`input[name="cb-logic"][value="${logic}"]`).checked = true;
-
         const conditions = optionalFiltersString.split(/\s+(?:AND|OR)\s+/i);
         conditions.forEach(conditionStr => {
             const match = conditionStr.match(/`?(\w+)`?\.`?(\w+)`?\s*([=<>! LIKE]+)\s*(.*)/i);
@@ -3367,17 +3457,104 @@ function populateBuilderFromAST(ast, originalSql) {
     }
 }
 
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
+
 async function populateBuilderFromQuery() {
     const queryTextarea = document.getElementById('fld-calculated-query');
     const sql = queryTextarea.value;
     if (!sql.trim()) return;
 
-    const result = await window.electronAPI.parseCalculationQuery(sql);
+    // ▼▼▼ MULA PEMBETULAN ▼▼▼
+    // Gantikan placeholder ##ID## dengan nilai yang sah dari segi sintaks (cth: 1)
+    // sebelum menghantarnya ke parser.
+    const parsableSql = sql.replace(/##ID##/g, '1');
+    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
+
+    const result = await window.electronAPI.parseCalculationQuery(parsableSql);
 
     if (result.success && result.data && result.data.length > 0) {
-        // Hantar kedua-dua AST dan SQL asal ke fungsi pemapar
+        // Hantar kedua-dua AST dan SQL asal (penting!) ke fungsi pemapar
         populateBuilderFromAST(result.data[0], sql);
     } else if (result.error) {
         console.error("Backend failed to parse SQL:", result.error);
     }
+}
+
+/**
+ * Memasang event listener untuk komponen-komponen mod Lanjutan di Calculation Builder.
+ */
+export function initializeAdvancedCalculationBuilder() {
+    const advancedToggle = document.getElementById('cb-advanced-mode-toggle');
+    if (!advancedToggle) return;
+
+    // Kenal pasti semua bekas (container) yang akan diubah
+    const basicContainer = document.getElementById('cb-basic-calculation');
+    const advancedContainer = document.getElementById('cb-advanced-calculation');
+    const groupByContainer = document.getElementById('cb-groupby-section');
+
+    // ▼▼▼ MULA LOGIK BAHARU ▼▼▼
+    const distinctToggle = document.getElementById('cb-distinct-toggle');
+    const exprOperator = document.getElementById('cb-expr-operator');
+    const exprField2 = document.getElementById('cb-expr-field2');
+
+    const enforceDistinctVsExpressionRule = () => {
+        // Anggap sedang membina ekspresi HANYA jika operator dipilih
+        const isBuildingExpression = exprOperator.value !== '';
+        distinctToggle.disabled = isBuildingExpression;
+        if (isBuildingExpression) {
+            distinctToggle.checked = false;
+        }
+
+        // Jika DISTINCT ditanda, nyahaktifkan pembina ekspresi
+        exprOperator.disabled = distinctToggle.checked;
+        exprField2.disabled = distinctToggle.checked;
+        if (distinctToggle.checked) {
+            exprOperator.value = '';
+        }
+    };
+
+    distinctToggle.addEventListener('change', enforceDistinctVsExpressionRule);
+    exprOperator.addEventListener('change', enforceDistinctVsExpressionRule);
+    exprField2.addEventListener('change', enforceDistinctVsExpressionRule);
+    // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
+	
+    // 1. Logik untuk suis togol
+    advancedToggle.addEventListener('change', () => {
+        const isAdvanced = advancedToggle.checked;
+        basicContainer.classList.toggle('hidden', isAdvanced);
+        advancedContainer.classList.toggle('hidden', !isAdvanced);
+        groupByContainer.classList.toggle('hidden', !isAdvanced);
+    });
+
+    // 2. Logik untuk interaktiviti GROUP BY
+    const groupByAvailable = document.getElementById('cb-groupby-available-fields');
+    const groupBySelected = document.getElementById('cb-groupby-selected-fields');
+    const btnAdd = document.getElementById('cb-groupby-add-field');
+    const btnRemove = document.getElementById('cb-groupby-remove-field');
+
+    // Pemilihan item
+    groupByAvailable.addEventListener('click', (e) => {
+        if (e.target.tagName === 'LI') e.target.classList.toggle('selected');
+    });
+    groupBySelected.addEventListener('click', (e) => {
+        if (e.target.tagName === 'LI') e.target.classList.toggle('selected');
+    });
+
+    // Butang >
+    btnAdd.addEventListener('click', () => {
+        const itemsToMove = groupByAvailable.querySelectorAll('li.selected');
+        itemsToMove.forEach(item => {
+            item.classList.remove('selected');
+            groupBySelected.appendChild(item);
+        });
+    });
+
+    // Butang <
+    btnRemove.addEventListener('click', () => {
+        const itemsToMove = groupBySelected.querySelectorAll('li.selected');
+        itemsToMove.forEach(item => {
+            item.classList.remove('selected');
+            groupByAvailable.appendChild(item);
+        });
+    });
 }
