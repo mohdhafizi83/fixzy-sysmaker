@@ -155,6 +155,13 @@ export function initializeQueryBuilderModal() {
         sortContainer.appendChild(newSortRule);
     });
     // ▲▲▲ TAMAT BLOK KOD BAHARU ▲▲▲
+	
+	// ADD THIS LISTENER IN: uiHandlers.js -> initializeQueryBuilderModal
+
+    document.getElementById('qb-add-group')?.addEventListener('click', () => {
+        const rulesContainer = document.getElementById('qb-rules-container');
+        rulesContainer.appendChild(createRuleGroupElement());
+    });
 
     container.addEventListener('click', (e) => {
         if (e.target.classList.contains('qb-delete-btn')) {
@@ -202,12 +209,9 @@ export function configureNewProjectModal(scenario) {
  * @param {string} size - Pilihan saiz ('small', 'medium', 'large').
  */
 export function applyFontSize(size) {
-    let fontSizeValue = '16px'; // Saiz lalai (medium)
-    if (size === 'small') {
-        fontSizeValue = '14px';
-    } else if (size === 'large') {
-        fontSizeValue = '18px';
-    }
+    let fontSizeValue = '16px';
+    if (size === 'small') fontSizeValue = '14px';
+    else if (size === 'large') fontSizeValue = '18px';
     document.documentElement.style.fontSize = fontSizeValue;
 }
 
@@ -813,46 +817,27 @@ export function initializeTableSaveHandlers() {
     });
 }
 
-// GANTIKAN FUNGSI SEDIA ADA INI DALAM: uiHandlers.js
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
 
 export function initializeFieldSaveHandlers() {
     const form = document.getElementById('field-settings-page');
     if (!form) return;
-
     const handleInputChange = (event) => {
         if (isPopulatingData) return;
-        if (!isAutoSaveEnabled) return;
-
-        // Dapatkan ID medan yang sedang diubah suai
         const [tableName, fieldName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
-        const fieldData = jsonData.database.table[tableName]?.fields[fieldName];
-        if (!fieldData) return; // Keluar jika data medan tidak ditemui
-        const fieldId = fieldData.field_id;
-
+        if (!tableName || !fieldName || !jsonData.database.table[tableName] || !jsonData.database.table[tableName].fields[fieldName]) return;
+        const fieldId = jsonData.database.table[tableName].fields[fieldName].field_id;
         const input = event.target;
-        const key = (input.type === 'radio')
-            ? input.name.replace('fld-', '').replace(/-/g, '_')
-            : input.id.replace('fld-', '').replace(/-/g, '_');
-
+        const key = (input.name && input.type === 'radio') ? input.name.replace('fld-', '').replace(/-/g, '_') : input.id.replace('fld-', '').replace(/-/g, '_');
         let value;
-        if (input.type === 'checkbox') {
-            value = input.checked ? 1 : 0;
-        } else if (input.type === 'radio') {
-            if (!input.checked) return;
-            value = input.value;
-        } else {
-            value = input.value;
-        }
-
-        const dataToSave = { [key]: value };
-
-        // Hantar perubahan ke queue di bawah 'fields' dengan fieldId sebagai kunci
-        SaveManager.addToQueue('fields', fieldId, dataToSave);
+        if (input.type === 'checkbox') value = input.checked ? 1 : 0;
+        else if (input.type === 'radio') { if (!input.checked) return; value = input.value; }
+        else value = input.value;
+        SaveManager.addToQueue('fields', fieldId, { [key]: value });
     };
-
     form.querySelectorAll('input, select, textarea').forEach(input => {
         input.addEventListener('change', handleInputChange);
-        if (input.type === 'text' || input.type === 'number' || input.tagName.toLowerCase() === 'textarea') {
+        if (input.type === 'text' || input.type === 'number' || input.tagName.toLowerCase() === 'textarea' || input.type === 'hidden') {
             input.addEventListener('input', handleInputChange);
         }
     });
@@ -961,11 +946,9 @@ const setElementValue = (id, value) => {
     const element = document.getElementById(id);
     if (element) {
         if (element.type === 'checkbox' || element.type === 'radio') {
-            element.checked = value === 1 || value === true;
+            element.checked = !!value;
         } else {
-            element.value = value;
-            // Secara paksa aktifkan elemen apabila datanya diisi
-            element.disabled = false;
+            element.value = value || '';
         }
     }
 };
@@ -973,9 +956,7 @@ const setElementValue = (id, value) => {
 const setRadioValue = (name, value) => {
     const selector = `input[name="${name}"][value="${value}"]`;
     const element = document.querySelector(selector);
-    if (element) {
-        element.checked = true;
-    }
+    if (element) element.checked = true;
 };
 
 // Pembolehubah untuk menjejaki kumpulan mana yang sedang diubah suai
@@ -3110,56 +3091,49 @@ export function setupCalculationBuilder(tableName) {
  */
 export function initializeCalculationBuilderModal() {
     const modal = document.getElementById('calculation-builder-modal');
+    if (!modal) return;
     const openBtn = document.getElementById('open-calculation-builder-btn');
     const closeBtn = document.getElementById('calculation-builder-close');
     const cancelBtn = document.getElementById('calculation-builder-cancel-btn');
-    const functionDropdown = document.getElementById('cb-function');
     const generateBtn = document.getElementById('calculation-builder-generate-btn');
 
-    if (!modal || !openBtn || !closeBtn || !cancelBtn || !functionDropdown || !generateBtn) return;
-
-    const showModal = () => {
-        const [tableName] = document.querySelector('#field-settings-page .field-name')?.textContent.split('.') || [];
-        if (tableName) {
-            setupCalculationBuilder(tableName);
-			
-			populateBuilderFromQuery();
-			
-            const mandatoryRuleTextElement = document.getElementById('cb-mandatory-rule-text');
-            if (mandatoryRuleTextElement) {
-                const tableData = jsonData.database.table[tableName];
-                const pkField = Object.keys(tableData.fields).find(f => tableData.fields[f].primary_key);
-                
-                // Bina ayat dalam bahasa biasa
-                mandatoryRuleTextElement.textContent = `the calculation is linked to the current '${tableName}' record via its key ('${pkField}').`;
-            }
-			
-            modal.classList.remove('hidden');
-            functionDropdown.dispatchEvent(new Event('change'));
-        } else {
-            showCustomDialog({ title: "Error", message: "Could not determine the active table. Please select a field first." });
-        }
-    };
     const hideModal = () => modal.classList.add('hidden');
-
-    openBtn.addEventListener('click', showModal);
-    closeBtn.addEventListener('click', hideModal);
-    cancelBtn.addEventListener('click', hideModal);
-
-    functionDropdown.addEventListener('change', () => {
-        const fieldContainer = document.getElementById('cb-field-container');
-        if (functionDropdown.value === 'COUNT') {
-            fieldContainer.style.display = 'none';
-        } else {
-            fieldContainer.style.display = 'flex';
+    
+    const showModal = () => {
+        const [tableName, fieldName] = document.querySelector('#field-settings-page .field-name')?.textContent.split('.') || [];
+        if (!tableName || !fieldName) {
+            showCustomDialog({ title: "Error", message: "Could not determine the active table. Please select a field first." });
+            return;
         }
-    });
 
-    generateBtn.addEventListener('click', () => {
+        setupCalculationBuilder(tableName);
+
+        // ▼▼▼ BLOK LOGIK YANG HILANG DITAMBAH SEMULA DI SINI ▼▼▼
+        const mandatoryRuleTextElement = document.getElementById('cb-mandatory-rule-text');
+        if (mandatoryRuleTextElement) {
+            const tableData = jsonData.database.table[tableName];
+            const pkField = Object.keys(tableData.fields).find(f => tableData.fields[f].primary_key);
+            
+            // Bina ayat dalam bahasa biasa
+            mandatoryRuleTextElement.textContent = `the calculation is linked to the current '${tableName}' record via its key ('${pkField || 'not found'}').`;
+        }
+        // ▲▲▲ TAMAT BLOK YANG DITAMBAH SEMULA ▲▲▲
+        
+        populateBuilderFromState();
+        modal.classList.remove('hidden');
+        document.getElementById('cb-function').dispatchEvent(new Event('change'));
+    };
+    
+    openBtn?.addEventListener('click', showModal);
+    closeBtn?.addEventListener('click', hideModal);
+    cancelBtn?.addEventListener('click', hideModal);
+
+    generateBtn?.addEventListener('click', () => {
         const generatedQuery = generateCalculationQuery();
         if (!generatedQuery) return;
         const queryTextarea = document.getElementById('fld-calculated-query');
         const enableCheckbox = document.getElementById('fld-calculated-enable');
+        const stateInput = document.getElementById('fld-calculation-builder-state');
         if (queryTextarea) {
             queryTextarea.value = generatedQuery;
             queryTextarea.dispatchEvent(new Event('input', { bubbles: true }));
@@ -3168,52 +3142,38 @@ export function initializeCalculationBuilderModal() {
             enableCheckbox.checked = true;
             enableCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
         }
+        if (stateInput) {
+            stateInput.value = getBuilderStateAsJson();
+            stateInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
         hideModal();
     });
 
-    const rulesContainer = document.getElementById('cb-rules-container');
+    const container = document.getElementById('calculation-builder-container');
+    container?.addEventListener('click', (e) => {
+        const addRuleBtn = e.target.closest('#cb-add-rule, .cb-add-rule-in-group');
+        const addGroupBtn = e.target.closest('#cb-add-group, .cb-add-group-in-group');
+        const deleteGroupBtn = e.target.closest('.cb-delete-group');
+        const deleteRuleBtn = e.target.closest('.cb-delete-btn');
 
-    // Listener untuk menambah baris peraturan baharu
-    document.getElementById('cb-add-rule')?.addEventListener('click', () => {
-        const newRule = document.createElement('div');
-        newRule.className = 'cb-rule'; // <-- Nama kelas yang betul
-        
-        const [currentTableName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
-        const relationships = jsonData.database.relationships || [];
-        const relatedTables = new Set([currentTableName]);
-        relationships.forEach(rel => {
-            if (rel.parent_table_name === currentTableName) relatedTables.add(rel.child_table_name);
-            if (rel.child_table_name === currentTableName) relatedTables.add(rel.parent_table_name);
-        });
-        const tableOptions = Array.from(relatedTables).map(t => `<option value="${t}">${t}</option>`).join('');
-        const fields = Object.keys(jsonData.database.table[currentTableName]?.fields || {});
-        const fieldOptions = fields.map(f => `<option value="${f}">${f}</option>`).join('');
-
-        newRule.innerHTML = `
-            <select class="cb-rule-table">${tableOptions}</select>
-            <select class="cb-rule-field">${fieldOptions}</select>
-            <select class="cb-rule-operator">
-                <option value="=">is equal to</option>
-                <option value="!=">is not equal to</option>
-                <option value=">">is greater than</option>
-                <option value="<">is less than</option>
-                <option value="LIKE">contains</option>
-            </select>
-            <input type="text" class="cb-rule-value" placeholder="Value...">
-            <button class="qb-delete-btn">&times;</button>
-        `;
-        rulesContainer.appendChild(newRule);
+        if (addRuleBtn) {
+            const targetContainer = addRuleBtn.closest('.qb-rule-group, #calculation-builder-container').querySelector('.qb-nested-rules, #cb-rules-container');
+            if (targetContainer) targetContainer.appendChild(createRuleElement());
+        } else if (addGroupBtn) {
+            const targetContainer = addGroupBtn.closest('.qb-rule-group, #calculation-builder-container').querySelector('.qb-nested-rules, #cb-rules-container');
+            if (targetContainer) targetContainer.appendChild(createRuleGroupElement());
+        } else if (deleteGroupBtn) {
+            deleteGroupBtn.closest('.qb-rule-group')?.remove();
+        } else if (deleteRuleBtn) {
+            deleteRuleBtn.closest('.cb-rule')?.remove();
+        }
     });
 
-    // Listener untuk dropdown jadual yang dinamik
-    rulesContainer?.addEventListener('change', (e) => {
+    document.getElementById('cb-rules-container')?.addEventListener('change', (e) => {
         if (e.target && e.target.classList.contains('cb-rule-table')) {
             const selectedTable = e.target.value;
-            const ruleRow = e.target.closest('.cb-rule'); // <-- Nama kelas yang betul
-            const fieldDropdown = ruleRow.querySelector('.cb-rule-field');
-
+            const fieldDropdown = e.target.closest('.cb-rule').querySelector('.cb-rule-field');
             if (!fieldDropdown || !jsonData.database.table[selectedTable]) return;
-
             fieldDropdown.innerHTML = '';
             const fields = Object.keys(jsonData.database.table[selectedTable].fields);
             fields.forEach(fieldName => {
@@ -3222,13 +3182,6 @@ export function initializeCalculationBuilderModal() {
                 option.textContent = fieldName;
                 fieldDropdown.appendChild(option);
             });
-        }
-    });
-
-    // Listener untuk memadam baris peraturan
-    rulesContainer?.addEventListener('click', (e) => {
-        if (e.target.classList.contains('qb-delete-btn')) {
-            e.target.closest('.cb-rule')?.remove(); // <-- Nama kelas yang betul
         }
     });
 }
@@ -3289,7 +3242,7 @@ function generateCalculationQuery() {
     // Bahagian 2: Bina Klausa FROM (tidak berubah)
     const fromClause = `\nFROM \`${tableName}\``;
 
-    // Bahagian 3: Bina Klausa WHERE (tidak berubah)
+    // ▼▼▼ MULA BLOK YANG DIUBAH SUAI ▼▼▼
     const tableData = jsonData.database.table[tableName];
     const primaryKeyField = Object.keys(tableData.fields).find(f => tableData.fields[f].primary_key);
     if (!primaryKeyField) {
@@ -3297,27 +3250,16 @@ function generateCalculationQuery() {
         return '';
     }
     const mandatoryCondition = `\`${tableName}\`.\`${primaryKeyField}\` = ##ID##`;
-    let optionalConditions = '';
-    const rules = Array.from(document.querySelectorAll('#cb-rules-container .cb-rule'));
-    if (rules.length > 0) {
-        const logic = document.querySelector('input[name="cb-logic"]:checked').value;
-        optionalConditions = rules.map(rule => {
-            const table = rule.querySelector('.cb-rule-table').value;
-            const field = rule.querySelector('.cb-rule-field').value;
-            const operator = rule.querySelector('.cb-rule-operator').value;
-            let value = rule.querySelector('.cb-rule-value').value;
-            if (isNaN(value) || value === '') {
-                 value = `'${value.replace(/'/g, "''")}'`;
-            }
-            return `\`${table}\`.\`${field}\` ${operator} ${value}`;
-        }).join(` ${logic} `);
-    }
+    
+    // Guna fungsi rekursif untuk membina peraturan pilihan
+    const optionalConditions = buildNestedWhereClause(document.getElementById('cb-rules-container'));
+
     let whereClause = `\nWHERE ${mandatoryCondition}`;
     if (optionalConditions) {
-        whereClause += `\n    AND (${optionalConditions})`;
+        whereClause += `\n    AND ${optionalConditions}`;
     }
+    // ▲▲▲ TAMAT BLOK YANG DIUBAH SUAI ▲▲▲
 
-    // Gabungkan semua klausa
     return `${selectClause}${fromClause}${whereClause}${groupByClause};`;
 }
 
@@ -3367,7 +3309,42 @@ function createAndPopulateRuleRow(condition) {
     rulesContainer.appendChild(newRule);
 }
 
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
+/**
+ * Recursively populates the UI with rule groups and rules from the AST.
+ * @param {object} astNode - The current node of the AST's 'where' clause.
+ * @param {HTMLElement} targetContainer - The DOM element to append rules/groups to.
+ */
+function populateRulesFromAST(astNode, targetContainer) {
+    if (!astNode) return;
+    
+    if (astNode.type === 'binary_expr' && ['AND', 'OR'].includes(astNode.operator.toUpperCase())) {
+        populateRulesFromAST(astNode.left, targetContainer);
+        populateRulesFromAST(astNode.right, targetContainer);
+    } else if (astNode.type === 'parentheses') {
+        const groupElement = createRuleGroupElement();
+        targetContainer.appendChild(groupElement);
+        const nestedContainer = groupElement.querySelector('.qb-nested-rules');
+        const groupLogic = astNode.expr.operator.toUpperCase();
+        if (['AND', 'OR'].includes(groupLogic)) {
+            groupElement.querySelector(`input[name^="cb-group-logic-"][value="${groupLogic}"]`).checked = true;
+        }
+        populateRulesFromAST(astNode.expr, nestedContainer);
+    } else if (astNode.type === 'binary_expr') {
+        const sql = document.getElementById('fld-calculated-query').value;
+        if (sql.includes('##ID##')) {
+            const pkMatch = sql.match(/`(\w+)`\.`(\w+)`\s*=\s*##ID##/);
+            if (pkMatch && pkMatch[1] === astNode.left.table && pkMatch[2] === astNode.left.column) {
+                return;
+            }
+        }
+        targetContainer.appendChild(createRuleElement({
+            table: astNode.left.table,
+            field: astNode.left.column,
+            operator: astNode.operator,
+            value: astNode.right.value,
+        }));
+    }
+}
 
 function populateBuilderFromAST(ast, originalSql) {
     const [tableName] = document.querySelector('#field-settings-page .field-name')?.textContent.split('.') || [];
@@ -3435,48 +3412,138 @@ function populateBuilderFromAST(ast, originalSql) {
 
     // 4. Tetapkan Peraturan Tapis (tidak berubah)
     const rulesContainer = document.getElementById('cb-rules-container');
-    rulesContainer.innerHTML = '';
-    const optionalFiltersMatch = originalSql.match(/\s+AND\s+\((.+)\)/is);
-    if (optionalFiltersMatch && optionalFiltersMatch[1]) {
-        const optionalFiltersString = optionalFiltersMatch[1];
-        const logic = optionalFiltersString.includes(' OR ') ? 'OR' : 'AND';
-        document.querySelector(`input[name="cb-logic"][value="${logic}"]`).checked = true;
-        const conditions = optionalFiltersString.split(/\s+(?:AND|OR)\s+/i);
-        conditions.forEach(conditionStr => {
-            const match = conditionStr.match(/`?(\w+)`?\.`?(\w+)`?\s*([=<>! LIKE]+)\s*(.*)/i);
-            if (match) {
-                const [, table, field, operator, value] = match;
-                createAndPopulateRuleRow({
-                    table,
-                    field,
-                    operator: operator.trim(),
-                    value: value.replace(/['"]/g, '')
-                });
+    rulesContainer.innerHTML = ''; // Kosongkan peraturan sedia ada
+    
+    if (ast.where) {
+        // Fungsi bantuan rekursif
+        const buildUiFromAstNode = (node, container) => {
+            if (!node) return;
+
+            // KES ASAS: Jika ia satu peraturan (cth: field = 'value')
+            if (node.type === 'binary_expr' && !['AND', 'OR'].includes(node.operator.toUpperCase())) {
+                // Abaikan peraturan mandatori yang merujuk kepada ##ID##
+                const sql = document.getElementById('fld-calculated-query').value;
+                if (node.right.type === 'number' && node.right.value === 1 && sql.includes('##ID##')) {
+                     const pkMatch = sql.match(/`(\w+)`\.`(\w+)`\s*=\s*##ID##/);
+                     if (pkMatch && pkMatch[1] === node.left.table && pkMatch[2] === node.left.column) {
+                         return; // Ini adalah peraturan mandatori, jadi langkau
+                     }
+                }
+                
+                container.appendChild(createRuleElement({
+                    table: node.left.table,
+                    field: node.left.column,
+                    operator: node.operator,
+                    value: node.right.value,
+                }));
+                return;
             }
-        });
+
+            // LANGKAH REKURSIF: Jika ia adalah gabungan logik (AND/OR)
+            if (node.type === 'binary_expr' && ['AND', 'OR'].includes(node.operator.toUpperCase())) {
+                // Proses bahagian kiri dan kanan secara rekursif
+                buildUiFromAstNode(node.left, container);
+                buildUiFromAstNode(node.right, container);
+            }
+
+            // LANGKAH REKURSIF: Jika ia adalah satu kumpulan di dalam kurungan ()
+            if (node.type === 'parentheses') {
+                const groupElement = createRuleGroupElement();
+                container.appendChild(groupElement);
+                const nestedContainer = groupElement.querySelector('.qb-nested-rules');
+                
+                // Tetapkan logik kumpulan (AND/OR)
+                const groupLogic = node.expr.operator.toUpperCase();
+                if (['AND', 'OR'].includes(groupLogic)) {
+                     groupElement.querySelector(`input[name^="cb-group-logic-"][value="${groupLogic}"]`).checked = true;
+                }
+                
+                // Panggil semula fungsi ini untuk memproses kandungan di dalam kurungan
+                buildUiFromAstNode(node.expr, nestedContainer);
+            }
+        };
+        
+        // Mulakan proses rekursif dari bahagian kanan klausa WHERE utama
+        // (untuk melangkau peraturan mandatori `... = ##ID##`)
+        if (ast.where.right) {
+            buildUiFromAstNode(ast.where.right, rulesContainer);
+        }
     }
 }
 
 // FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
 
 async function populateBuilderFromQuery() {
+    const stateInput = document.getElementById('fld-calculation-builder-state');
+    const jsonState = stateInput.value;
+
+    document.getElementById('cb-rules-container').innerHTML = ''; // Sentiasa kosongkan dahulu
+
+    if (jsonState) {
+        try {
+            const state = JSON.parse(jsonState);
+            
+            // 1. Tetapkan Mod (Asas/Lanjutan)
+            const advancedToggle = document.getElementById('cb-advanced-mode-toggle');
+            advancedToggle.checked = state.isAdvanced;
+            advancedToggle.dispatchEvent(new Event('change'));
+
+            // 2. Isi Borang Berdasarkan Keadaan
+            if (state.isAdvanced) {
+                document.getElementById('cb-advanced-function').value = state.advancedFunction;
+                document.getElementById('cb-distinct-toggle').checked = state.isDistinct;
+                document.getElementById('cb-expr-field1').value = state.expr1;
+                document.getElementById('cb-expr-operator').value = state.operator;
+                document.getElementById('cb-expr-field2').value = state.expr2;
+                
+                // Isi semula GROUP BY
+                const groupBySelected = document.getElementById('cb-groupby-selected-fields');
+                const groupByAvailable = document.getElementById('cb-groupby-available-fields');
+                const allFields = Array.from(groupByAvailable.children);
+                state.groupBy.forEach(fieldName => {
+                    const li = allFields.find(item => item.dataset.value === fieldName);
+                    if (li) groupBySelected.appendChild(li);
+                });
+
+            } else {
+                document.getElementById('cb-function').value = state.basicFunction;
+                document.getElementById('cb-field').value = state.field;
+                document.getElementById('cb-function').dispatchEvent(new Event('change'));
+            }
+
+            // 3. Bina semula peraturan tapis secara rekursif
+            const buildRulesUI = (container, filterGroup) => {
+                const logicRadio = container.parentElement.querySelector(`:scope > .qb-logic-toggle input[value="${filterGroup.logic}"]`);
+                if (logicRadio) logicRadio.checked = true;
+
+                filterGroup.rules.forEach(rule => {
+                    if (rule.type === 'rule') {
+                        const ruleEl = createRuleElement(rule);
+                        container.appendChild(ruleEl);
+                    } else if (rule.type === 'group') {
+                        const groupEl = createRuleGroupElement();
+                        container.appendChild(groupEl);
+                        const nestedContainer = groupEl.querySelector('.qb-nested-rules');
+                        buildRulesUI(nestedContainer, rule); // Panggilan Rekursif
+                    }
+                });
+            };
+            buildRulesUI(document.getElementById('cb-rules-container'), state.filters);
+
+            return; // Berjaya dimuatkan dari JSON, jadi berhenti di sini.
+        } catch (e) {
+            console.warn("Could not parse builder state from JSON. Falling back to SQL parser.", e);
+        }
+    }
+
+    // Jika tiada JSON, cuba terjemah dari SQL (sebagai sandaran)
     const queryTextarea = document.getElementById('fld-calculated-query');
     const sql = queryTextarea.value;
     if (!sql.trim()) return;
 
-    // ▼▼▼ MULA PEMBETULAN ▼▼▼
-    // Gantikan placeholder ##ID## dengan nilai yang sah dari segi sintaks (cth: 1)
-    // sebelum menghantarnya ke parser.
-    const parsableSql = sql.replace(/##ID##/g, '1');
-    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
-
-    const result = await window.electronAPI.parseCalculationQuery(parsableSql);
-
+    const result = await window.electronAPI.parseCalculationQuery(sql);
     if (result.success && result.data && result.data.length > 0) {
-        // Hantar kedua-dua AST dan SQL asal (penting!) ke fungsi pemapar
         populateBuilderFromAST(result.data[0], sql);
-    } else if (result.error) {
-        console.error("Backend failed to parse SQL:", result.error);
     }
 }
 
@@ -3557,4 +3624,203 @@ export function initializeAdvancedCalculationBuilder() {
             groupByAvailable.appendChild(item);
         });
     });
+}
+
+/**
+ * Creates a single, empty rule group element.
+ * @returns {HTMLElement}
+ */
+function createRuleGroupElement() {
+    const groupEl = document.createElement('div');
+    groupEl.className = 'qb-rule-group';
+    const uniqueName = `cb-group-logic-${Math.floor(Math.random() * 100000)}`;
+    groupEl.innerHTML = `
+        <div class="qb-logic-toggle">
+            <label><input type="radio" name="${uniqueName}" value="AND" checked> Match ALL</label>
+            <label><input type="radio" name="${uniqueName}" value="OR"> Match ANY</label>
+        </div>
+        <div class="qb-nested-rules"></div>
+        <div class="group-actions mt-1">
+            <button class="btn btn-secondary btn-sm cb-add-rule-in-group"><i class="fas fa-plus"></i> Add Rule</button>
+            <button class="btn btn-secondary btn-sm cb-add-group-in-group"><i class="fas fa-layer-group"></i> Add Group</button>
+            <button class="btn-danger btn-sm cb-delete-group" style="float: right;">&times;</button>
+        </div>`;
+    return groupEl;
+}
+
+/**
+ * Creates a single, populated rule row element.
+ * @param {object | null} data - Optional data object { table, field, operator, value }
+ * @returns {HTMLElement}
+ */
+function createRuleElement(data = null) {
+    const newRule = document.createElement('div');
+    newRule.className = 'cb-rule';
+    const [currentTableName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
+    const relationships = jsonData.database.relationships || [];
+    const relatedTables = new Set([currentTableName]);
+    relationships.forEach(rel => {
+        if (rel.parent_table_name === currentTableName) relatedTables.add(rel.child_table_name);
+        if (rel.child_table_name === currentTableName) relatedTables.add(rel.parent_table_name);
+    });
+    const tableOptions = Array.from(relatedTables).map(t => `<option value="${t}">${t}</option>`).join('');
+    const initialTable = data ? data.table : currentTableName;
+    const fields = jsonData.database.table[initialTable]?.fields || {};
+    const fieldOptions = Object.keys(fields).map(f => `<option value="${f}">${f}</option>`).join('');
+    newRule.innerHTML = `
+        <select class="cb-rule-table">${tableOptions}</select>
+        <select class="cb-rule-field">${fieldOptions}</select>
+        <select class="cb-rule-operator"><option value="=">is equal to</option><option value="!=">is not equal to</option><option value=">">is greater than</option><option value="<">is less than</option><option value="LIKE">contains</option></select>
+        <input type="text" class="cb-rule-value" placeholder="Value...">
+        <button class="cb-delete-btn">&times;</button>`;
+    if (data) {
+        newRule.querySelector('.cb-rule-table').value = data.table;
+        newRule.querySelector('.cb-rule-field').value = data.field;
+        newRule.querySelector('.cb-rule-operator').value = data.operator;
+        newRule.querySelector('.cb-rule-value').value = data.value;
+    }
+    return newRule;
+}
+
+
+// ADD THIS NEW HELPER FUNCTION IN: uiHandlers.js
+
+/**
+ * Membina klausa WHERE secara rekursif dengan membaca struktur UI.
+ * @param {HTMLElement} container - Bekas yang mengandungi peraturan atau kumpulan peraturan.
+ * @returns {string} String SQL yang telah dibina untuk klausa WHERE.
+ */
+function buildNestedWhereClause(container) {
+    const children = Array.from(container.children);
+    if (children.length === 0) return '';
+
+    const logicRadio = container.parentElement.querySelector(':scope > .qb-logic-toggle input:checked');
+    const logic = logicRadio ? logicRadio.value : 'AND';
+    
+    const conditions = children.map(child => {
+        if (child.classList.contains('cb-rule')) {
+            const table = child.querySelector('.cb-rule-table').value;
+            const field = child.querySelector('.cb-rule-field').value;
+            const operator = child.querySelector('.cb-rule-operator').value;
+            let value = child.querySelector('.cb-rule-value').value;
+            if (isNaN(value) || value === '') {
+                 value = `'${value.replace(/'/g, "''")}'`;
+            }
+            return `\`${table}\`.\`${field}\` ${operator} ${value}`;
+        } else if (child.classList.contains('qb-rule-group')) {
+            const nestedContainer = child.querySelector('.qb-nested-rules');
+            return buildNestedWhereClause(nestedContainer); // Panggilan Rekursif
+        }
+        return '';
+    }).filter(c => c); // Buang string kosong
+
+    if (conditions.length === 0) return '';
+    
+    return `(${conditions.join(` ${logic} `)})`;
+}
+
+/**
+ * Membaca keadaan UI 'Filter Rules' secara rekursif dan memulangkannya sebagai objek.
+ * @param {HTMLElement} container - Bekas yang mengandungi peraturan.
+ * @returns {object} Objek yang mewakili keadaan penapis.
+ */
+function readRuleState(container) {
+    const logicRadio = container.parentElement.querySelector(':scope > .qb-logic-toggle input:checked');
+    const logic = logicRadio ? logicRadio.value : 'AND';
+    let rules = [];
+    Array.from(container.children).forEach(child => {
+        if (child.classList.contains('cb-rule')) {
+            rules.push({
+                type: 'rule',
+                table: child.querySelector('.cb-rule-table').value,
+                field: child.querySelector('.cb-rule-field').value,
+                operator: child.querySelector('.cb-rule-operator').value,
+                value: child.querySelector('.cb-rule-value').value,
+            });
+        } else if (child.classList.contains('qb-rule-group')) {
+            const nestedContainer = child.querySelector('.qb-nested-rules');
+            rules.push({ type: 'group', ...readRuleState(nestedContainer) });
+        }
+    });
+    return { logic, rules };
+}
+/**
+ * Membaca keseluruhan keadaan Calculation Builder dan menukarnya kepada string JSON.
+ * @returns {string} String JSON yang mewakili keadaan builder.
+ */
+function getBuilderStateAsJson() {
+    const isAdvanced = document.getElementById('cb-advanced-mode-toggle').checked;
+    let state = {
+        isAdvanced: isAdvanced,
+        filters: readRuleState(document.getElementById('cb-rules-container'))
+    };
+    if (isAdvanced) {
+        state.advancedFunction = document.getElementById('cb-advanced-function').value;
+        state.isDistinct = document.getElementById('cb-distinct-toggle').checked;
+        state.expr1 = document.getElementById('cb-expr-field1').value;
+        state.operator = document.getElementById('cb-expr-operator').value;
+        state.expr2 = document.getElementById('cb-expr-field2').value;
+        state.groupBy = Array.from(document.querySelectorAll('#cb-groupby-selected-fields li')).map(li => li.dataset.value);
+    } else {
+        state.basicFunction = document.getElementById('cb-function').value;
+        state.field = document.getElementById('cb-field').value;
+    }
+    return JSON.stringify(state);
+}
+
+function populateBuilderFromState() {
+    const [tableName, fieldName] = document.querySelector('#field-settings-page .field-name')?.textContent.split('.') || [];
+    if (!tableName || !fieldName) return;
+    const fieldData = jsonData.database.table[tableName].fields[fieldName];
+    if (!fieldData) return;
+
+    const jsonState = fieldData.calculation_builder_state;
+    document.getElementById('cb-rules-container').innerHTML = '';
+
+    if (jsonState) {
+        try {
+            const state = JSON.parse(jsonState);
+            const advancedToggle = document.getElementById('cb-advanced-mode-toggle');
+            advancedToggle.checked = state.isAdvanced;
+            advancedToggle.dispatchEvent(new Event('change'));
+
+            if (state.isAdvanced) {
+                document.getElementById('cb-advanced-function').value = state.advancedFunction;
+                document.getElementById('cb-distinct-toggle').checked = state.isDistinct;
+                document.getElementById('cb-expr-field1').value = state.expr1;
+                document.getElementById('cb-expr-operator').value = state.operator;
+                document.getElementById('cb-expr-field2').value = state.expr2;
+                
+                const groupBySelected = document.getElementById('cb-groupby-selected-fields');
+                const groupByAvailable = document.getElementById('cb-groupby-available-fields');
+                const allFieldsInList = Array.from(groupByAvailable.children);
+                state.groupBy.forEach(fieldName => {
+                    const li = allFieldsInList.find(item => item.dataset.value === fieldName);
+                    if (li) groupBySelected.appendChild(li);
+                });
+            } else {
+                document.getElementById('cb-function').value = state.basicFunction;
+                document.getElementById('cb-field').value = state.field;
+                document.getElementById('cb-function').dispatchEvent(new Event('change'));
+            }
+            
+            const buildRulesUI = (container, filterGroup) => {
+                const logicRadio = container.parentElement.querySelector(`:scope > .qb-logic-toggle input[value="${filterGroup.logic}"]`);
+                if (logicRadio) logicRadio.checked = true;
+                filterGroup.rules.forEach(rule => {
+                    if (rule.type === 'rule') {
+                        container.appendChild(createRuleElement(rule));
+                    } else if (rule.type === 'group') {
+                        const groupEl = createRuleGroupElement();
+                        container.appendChild(groupEl);
+                        const nestedContainer = groupEl.querySelector('.qb-nested-rules');
+                        buildRulesUI(nestedContainer, rule);
+                    }
+                });
+            };
+            buildRulesUI(document.getElementById('cb-rules-container'), state.filters);
+        } catch (e) {
+            console.error("Failed to populate builder from saved JSON state:", e);
+        }
+    }
 }

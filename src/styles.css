@@ -1676,3 +1676,23 @@ fieldset.fieldset-disabled {
     border-radius: 6px;
     border: 1px solid var(--border-color);
 }
+
+/* ADD THIS AT THE END OF styles.css */
+
+/* Styles for Nested Rule Groups */
+.qb-rule-group {
+    border: 1px solid #D1D5DB;
+    border-left: 3px solid var(--primary-color);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-top: 1rem;
+    background-color: #F9FAFB;
+}
+.qb-rule-group .qb-logic-toggle {
+    margin-bottom: 1rem;
+    font-weight: 500;
+}
+.qb-rule-group .qb-nested-rules {
+    padding-left: 1rem;
+    border-left: 2px dashed #D1D5DB;
+}

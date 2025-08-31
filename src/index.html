@@ -988,7 +988,7 @@
 
 <div id="field-settings-page" class="hidden">
     <h1>Settings for field: <span class="field-name">....</span></h1>
-
+    <input type="hidden" id="fld-calculation-builder-state">
     <div class="form-group" style="max-width: 500px; margin-top: 1rem;">
         <label for="fld-field-name">Field name (in database)</label>
         <input type="text" id="fld-field-name" name="fld-field-name">
@@ -1917,6 +1917,7 @@
                     <div id="qb-rules-container">
                         </div>
                     <button id="qb-add-rule" class="btn btn-secondary mt-1"><i class="fas fa-plus"></i> Add Rule</button>
+					<button id="qb-add-group" class="btn btn-secondary mt-1"><i class="fas fa-layer-group"></i> Add Group</button>
                 </div>
 
                 <div class="qb-section">
@@ -1943,13 +1944,13 @@
         <div class="modal-body">
             <div id="calculation-builder-container">
                 
-                <div class="cb-mandatory-rule-display" style="margin-bottom: 1.5rem;">
-                    <p>
-                        <i class="fas fa-info-circle"></i>
-                        This calculation is automatically filtered where: 
-                        <strong id="cb-mandatory-rule-text"></strong>
-                    </p>
-                </div>
+<div class="cb-mandatory-rule-display" style="margin-bottom: 1.5rem;">
+    <p>
+        <i class="fas fa-info-circle"></i>
+        This calculation is automatically filtered where: 
+        <strong id="cb-mandatory-rule-text"></strong>
+    </p>
+</div>
                 
                 <div class="cb-advanced-toggle">
                     <label class="checkbox-label">
@@ -2016,6 +2017,7 @@
                     </div>
                     <div id="cb-rules-container"></div>
                     <button id="cb-add-rule" class="btn btn-secondary mt-1"><i class="fas fa-plus"></i> Add Rule</button>
+					<button id="cb-add-group" class="btn btn-secondary mt-1"><i class="fas fa-layer-group"></i> Add Group</button>
                 </div>
 
                 <div id="cb-groupby-section" class="cb-section hidden">
