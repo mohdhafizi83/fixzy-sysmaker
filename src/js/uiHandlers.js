@@ -363,8 +363,8 @@ export async function saveFieldSettings() {
 
 }
 
+// KOD PENUH: Gantikan keseluruhan fungsi initializeAlgorithmBuilder dengan versi baharu ini.
 export function initializeAlgorithmBuilder() {
-    // 1. Kenal pasti semua elemen UI
     const modal = document.getElementById('algorithm-builder-modal');
     const openBtn = document.getElementById('open-algorithm-builder-btn');
     const closeBtn = document.getElementById('algorithm-builder-close');
@@ -377,10 +377,8 @@ export function initializeAlgorithmBuilder() {
 
     if (!modal || !openBtn || !palette || !canvas) return;
 
-    // Pembolehubah untuk menyimpan keadaan sementara semasa modal dibuka
     let modalCanvasState = '[]';
 
-    // 2. Fungsi untuk menyimpan data ke DB (tidak berubah)
     const saveAlgorithmData = async () => {
         const saveStatus = document.getElementById('save-status');
         saveStatus.textContent = 'Saving...';
@@ -408,7 +406,6 @@ export function initializeAlgorithmBuilder() {
         setTimeout(() => saveStatus.textContent = '', 3000);
     };
 
-    // 3. Fungsi baharu untuk mengemas kini keadaan SEMENTARA di dalam modal
     const updateModalCanvasState = () => {
         const items = Array.from(canvas.querySelectorAll('.dropped-item'));
         const logicArray = items.map(item => {
@@ -422,9 +419,12 @@ export function initializeAlgorithmBuilder() {
             } else if (type === 'string' || type === 'number') {
                 itemData.value = item.querySelector('input')?.value;
             }
-            // ▼▼▼ MULA BLOK BAHARU ▼▼▼
             else if (type === 'sql_query') {
                 itemData.value = item.querySelector('textarea')?.value;
+            }
+            // ▼▼▼ MULA BLOK BAHARU ▼▼▼
+            else if (type === 'api_endpoint') {
+                itemData.value = item.querySelector('input')?.value;
             }
             // ▲▲▲ TAMAT BLOK BAHARU ▲▲▲
             else {
@@ -432,7 +432,6 @@ export function initializeAlgorithmBuilder() {
             }
             return itemData;
         });
-        // Data hanya disimpan di dalam pembolehubah ini, BUKAN di hiddenInput
         modalCanvasState = JSON.stringify(logicArray, null, 2);
 
         if (placeholder) {
@@ -440,16 +439,13 @@ export function initializeAlgorithmBuilder() {
         }
     };
     
-    // Fungsi mencipta elemen interaktif (tidak berubah)
     const createInteractiveElement = (type) => {
         const itemContainer = document.createElement('div');
         itemContainer.className = 'dropped-item';
         itemContainer.dataset.itemType = type;
-        const itemLabel = document.createElement('span');
-        itemLabel.textContent = `[${type.toUpperCase()}]`;
-        itemContainer.appendChild(itemLabel);
+        
         switch (type) {
-			case 'sql_query':
+            case 'sql_query':
                 itemContainer.innerHTML = `
                     <div class="sql-query-header">
                         <span>[SQL QUERY]</span>
@@ -462,10 +458,19 @@ export function initializeAlgorithmBuilder() {
                 itemContainer.querySelector('textarea').addEventListener('input', updateModalCanvasState);
                 itemContainer.querySelector('.open-qb-btn').addEventListener('click', (e) => {
                     const thisTextarea = e.target.closest('.dropped-item').querySelector('textarea');
-                    queryBuilderTargetTextarea = thisTextarea; // Tetapkan sasaran
-                    document.getElementById('open-query-builder-btn').click(); // Buka modal utama
+                    queryBuilderTargetTextarea = thisTextarea;
+                    document.getElementById('open-query-builder-btn').click();
                 });
                 break;
+            // ▼▼▼ MULA BLOK BAHARU ▼▼▼
+            case 'api_endpoint':
+                itemContainer.innerHTML = `
+                    <span class="api-endpoint-label">[API ENDPOINT]</span>
+                    <input type="text" placeholder="https://api.example.com/data">
+                `;
+                itemContainer.querySelector('input').addEventListener('input', updateModalCanvasState);
+                break;
+            // ▲▲▲ TAMAT BLOK BAHARU ▲▲▲
             case 'field':
                 const tableSelect = document.createElement('select');
                 tableSelect.className = 'table-select';
@@ -531,20 +536,22 @@ export function initializeAlgorithmBuilder() {
                 numberInput.addEventListener('input', updateModalCanvasState);
                 itemContainer.appendChild(numberInput);
                 break;
+            default:
+                 const itemLabel = document.createElement('span');
+                 itemLabel.textContent = `[${type.toUpperCase()}]`;
+                 itemContainer.appendChild(itemLabel);
         }
-        // Logik ini mencipta butang padam dan meletakkannya di tempat yang betul.
+        
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-algo-item';
         deleteBtn.innerHTML = '&times;';
         deleteBtn.title = 'Padam komponen ini';
-
-        // Cari sasaran yang betul: header komponen SQL atau bekas komponen utama.
         const targetForDeleteBtn = itemContainer.querySelector('.sql-query-header') || itemContainer;
         targetForDeleteBtn.appendChild(deleteBtn);
+
         return itemContainer;
     };
     
-    // Fungsi untuk memaparkan logik sedia ada dari hiddenInput ke dalam canvas
     const populateCanvasFromHiddenInput = () => {
         canvas.innerHTML = '';
         const currentLogicValue = hiddenInput.value || '[]';
@@ -566,9 +573,12 @@ export function initializeAlgorithmBuilder() {
                      } else if (itemData.type === 'string' || itemData.type === 'number') {
                          newItem.querySelector('input').value = itemData.value;
                      } 
-                     // ▼▼▼ MULA BLOK BAHARU ▼▼▼
                      else if (itemData.type === 'sql_query') {
                          newItem.querySelector('textarea').value = itemData.value;
+                     }
+                     // ▼▼▼ MULA BLOK BAHARU ▼▼▼
+                     else if (itemData.type === 'api_endpoint') {
+                         newItem.querySelector('input').value = itemData.value;
                      }
                      // ▲▲▲ TAMAT BLOK BAHARU ▲▲▲
                      canvas.appendChild(newItem);
@@ -580,9 +590,8 @@ export function initializeAlgorithmBuilder() {
         }
     };
     
-    // 4. Pasang Event Listener untuk butang modal dan fungsi builder
     openBtn.addEventListener('click', () => {
-        populateCanvasFromHiddenInput(); // Paparkan data dari hiddenInput
+        populateCanvasFromHiddenInput();
         modal.classList.remove('hidden');
     });
 
@@ -590,13 +599,11 @@ export function initializeAlgorithmBuilder() {
     cancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
 
     doneBtn.addEventListener('click', async () => {
-        // Hanya di sini data dari modal disalin ke hiddenInput
         hiddenInput.value = modalCanvasState;
-        await saveAlgorithmData(); // Hantar ke DB
+        await saveAlgorithmData();
         modal.classList.add('hidden');
     });
 
-    // Event listener untuk seret, lepas, dan padam (kini mengemas kini state sementara)
     palette.addEventListener('dragstart', (e) => {
         if (e.target.classList.contains('algo-component')) {
             e.dataTransfer.setData('text/plain', e.target.dataset.type);
@@ -611,14 +618,14 @@ export function initializeAlgorithmBuilder() {
         const componentType = e.dataTransfer.getData('text/plain');
         const newItem = createInteractiveElement(componentType);
         canvas.appendChild(newItem);
-        const newInpt = newItem.querySelector('input');
+        const newInpt = newItem.querySelector('input, textarea');
         if(newInpt) newInpt.focus();
-        updateModalCanvasState(); // Kemas kini state sementara
+        updateModalCanvasState();
     });
     canvas.addEventListener('click', (e) => {
         if (e.target.classList.contains('delete-algo-item')) {
             e.target.closest('.dropped-item')?.remove();
-            updateModalCanvasState(); // Kemas kini state sementara
+            updateModalCanvasState();
         }
     });
 }

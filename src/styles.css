@@ -1770,3 +1770,27 @@ fieldset.fieldset-disabled {
 .dropped-item .delete-algo-item:hover {
     opacity: 1;
 }
+
+/* TAMBAH BLOK INI DI PENGHUJUNG FAIL styles.css */
+
+/* Gaya untuk komponen API Endpoint baharu */
+.dropped-item[data-item-type="api_endpoint"] {
+    background-color: #D1FAE5; /* Hijau pucat */
+    border-color: #10B981;
+}
+
+.dropped-item[data-item-type="api_endpoint"] .api-endpoint-label {
+    font-weight: 600;
+    color: #047857; /* Hijau gelap */
+    margin-right: 0.5rem;
+    white-space: nowrap; /* Elak teks turun baris */
+}
+
+.dropped-item[data-item-type="api_endpoint"] input[type="text"] {
+    flex-grow: 1; /* Penuhkan baki ruang */
+    border: 1px solid #6EE7B7;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9em;
+}
