@@ -1360,14 +1360,15 @@ fieldset.fieldset-disabled {
 }
 
 .dropped-item {
-    display: flex; /* Membolehkan penjajaran kandungan di dalamnya */
-    justify-content: space-between; /* Letak teks di kiri, butang di kanan */
-    align-items: center; /* Jajarkan secara menegak di tengah */
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     background-color: #E9D5FF;
     border: 1px solid #A855F7;
     padding: 0.5rem 1rem;
     margin-bottom: 0.5rem;
     border-radius: 4px;
+    position: relative; /* INI ADALAH PEMBETULAN UTAMA */
 }
 
 .delete-algo-item {
@@ -1385,13 +1386,6 @@ fieldset.fieldset-disabled {
 
 .delete-algo-item:hover {
     opacity: 1;
-}
-
-/* styles.css */
-
-/* Gaya untuk komponen yang dijatuhkan agar lebih fleksibel */
-.dropped-item {
-    gap: 0.5rem; /* Tambah jarak antara elemen di dalamnya */
 }
 
 /* Gaya khusus untuk dropdown di dalam kanvas */
@@ -1695,4 +1689,81 @@ fieldset.fieldset-disabled {
 .qb-rule-group .qb-nested-rules {
     padding-left: 1rem;
     border-left: 2px dashed #D1D5DB;
+}
+
+/* TAMBAH BLOK INI DI PENGHUJUNG FAIL styles.css */
+
+/* Gaya untuk komponen SQL Query baharu di dalam Algorithm Builder */
+.dropped-item[data-item-type="sql_query"] {
+    flex-direction: column;
+    align-items: stretch;
+    background-color: #E0F2FE; /* Biru muda */
+    border-color: #0EA5E9;
+    padding: 0.75rem;
+}
+
+.dropped-item[data-item-type="sql_query"] .sql-query-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+.dropped-item[data-item-type="sql_query"] .sql-query-header span {
+    font-weight: 600;
+    color: #0369A1; /* Biru gelap */
+}
+
+.dropped-item[data-item-type="sql_query"] textarea {
+    width: 100%;
+    min-height: 80px;
+    border: 1px solid #7DD3FC;
+    border-radius: 4px;
+    padding: 0.5rem;
+    font-family: monospace;
+    font-size: 0.9em;
+    resize: vertical;
+}
+
+.dropped-item[data-item-type="sql_query"] .open-qb-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8em;
+    background-color: white;
+    border: 1px solid #0EA5E9;
+    color: #0EA5E9;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.dropped-item[data-item-type="sql_query"] .open-qb-btn:hover {
+    background-color: #F0F9FF;
+}
+
+/* Letakkan butang padam di penjuru kanan atas */
+.dropped-item[data-item-type="sql_query"] .delete-algo-item {
+    position: static; /* Batalkan posisi absolute */
+    margin-left: auto; /* Tolak ia ke sebelah kanan header */
+}
+
+/* Letakkan butang padam di penjuru kanan atas */
+.dropped-item .delete-algo-item {
+    position: absolute;
+    top: 2px;
+    right: 5px;
+    background: none;
+    border: none;
+    color: #581c87;
+    font-size: 1.5rem;
+    font-weight: bold;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.25rem;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.dropped-item .delete-algo-item:hover {
+    opacity: 1;
 }
