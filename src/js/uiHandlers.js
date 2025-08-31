@@ -3089,8 +3089,6 @@ export function setupCalculationBuilder(tableName) {
 /**
  * Memasang semua event listener untuk Calculation Builder Modal.
  */
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
-
 export function initializeCalculationBuilderModal() {
     const modal = document.getElementById('calculation-builder-modal');
     const openBtn = document.getElementById('open-calculation-builder-btn');
@@ -3105,6 +3103,16 @@ export function initializeCalculationBuilderModal() {
         const [tableName] = document.querySelector('#field-settings-page .field-name')?.textContent.split('.') || [];
         if (tableName) {
             setupCalculationBuilder(tableName);
+			
+            const mandatoryRuleTextElement = document.getElementById('cb-mandatory-rule-text');
+            if (mandatoryRuleTextElement) {
+                const tableData = jsonData.database.table[tableName];
+                const pkField = Object.keys(tableData.fields).find(f => tableData.fields[f].primary_key);
+                
+                // Bina ayat dalam bahasa biasa
+                mandatoryRuleTextElement.textContent = `the calculation is linked to the current '${tableName}' record via its key ('${pkField}').`;
+            }
+			
             modal.classList.remove('hidden');
             functionDropdown.dispatchEvent(new Event('change'));
         } else {
@@ -3210,12 +3218,12 @@ export function initializeCalculationBuilderModal() {
  * Membaca keadaan semasa Calculation Builder dan menjana string SQL Agregat.
  * @returns {string} String SQL yang telah dijana.
  */
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
-
 function generateCalculationQuery() {
     const [tableName] = document.querySelector('#field-settings-page .field-name')?.textContent.split('.') || [];
     if (!tableName) return '';
 
+    // ▼▼▼ MULA BAHAGIAN YANG DIPERBAIKI ▼▼▼
+    // 1. Bina klausa SELECT AGREGAT (logik penuh)
     const func = document.getElementById('cb-function').value;
     let selectClause = 'SELECT ';
     
@@ -3229,28 +3237,39 @@ function generateCalculationQuery() {
         }
         selectClause += `${func}(\`${field}\`)`;
     }
+    // ▲▲▲ TAMAT BAHAGIAN YANG DIPERBAIKI ▲▲▲
 
+    // 2. Bina klausa FROM
     const fromClause = `\nFROM \`${tableName}\``;
 
-    let whereClause = '';
-    // Cari elemen dengan nama kelas yang betul
+    // 3. Bina klausa WHERE (dengan peraturan mandatori)
+    const tableData = jsonData.database.table[tableName];
+    const primaryKeyField = Object.keys(tableData.fields).find(f => tableData.fields[f].primary_key);
+    if (!primaryKeyField) {
+        showCustomDialog({title: "Error", message: `Could not find a primary key for table '${tableName}'.`});
+        return '';
+    }
+    const mandatoryCondition = `\`${tableName}\`.\`${primaryKeyField}\` = ##ID##`;
+
+    let optionalConditions = '';
     const rules = Array.from(document.querySelectorAll('#cb-rules-container .cb-rule'));
     if (rules.length > 0) {
         const logic = document.querySelector('input[name="cb-logic"]:checked').value;
-        const conditions = rules.map(rule => {
-            // Guna nama kelas yang betul untuk membaca nilai
+        optionalConditions = rules.map(rule => {
             const table = rule.querySelector('.cb-rule-table').value;
             const field = rule.querySelector('.cb-rule-field').value;
             const operator = rule.querySelector('.cb-rule-operator').value;
             let value = rule.querySelector('.cb-rule-value').value;
-
             if (isNaN(value) || value === '') {
                  value = `'${value.replace(/'/g, "''")}'`;
             }
             return `\`${table}\`.\`${field}\` ${operator} ${value}`;
         }).join(` ${logic} `);
-        
-        whereClause = `\nWHERE ${conditions}`;
+    }
+    
+    let whereClause = `\nWHERE ${mandatoryCondition}`;
+    if (optionalConditions) {
+        whereClause += `\n    AND (${optionalConditions})`;
     }
 
     return `${selectClause}${fromClause}${whereClause};`;

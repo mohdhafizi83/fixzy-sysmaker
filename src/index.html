@@ -1465,11 +1465,9 @@
         <div class="card-body">
             <label class="checkbox-label"><input type="checkbox" id="fld-calculated-enable" name="fld-calculated-enable"> Automatically calculate the value of this field using the following SQL query</label>
             <div class="form-grid mt-2">
-                <div class="form-group">
-                    <textarea rows="8" placeholder="SELECT ..." id="fld-calculated-query" name="fld-calculated-query"></textarea>
-                </div>
+
                 <div class="helper-box">
-                    <h4>Variables</h4>
+ <!--                   <h4>Variables</h4>
                     <ul>
                         <li>Record ID</li>
                         <li>Table name</li>
@@ -1477,13 +1475,16 @@
                         <li>Primary key field name</li>
                         <li>Group ID</li>
                         <li>Group name</li>
-                    </ul>   
+                    </ul> -->   
     <h4 style="margin-top: 1rem;">Calculation Builder</h4>
     <p>Use the calculation builder to generate an aggregate query (e.g., SUM, COUNT).</p>
     <button class="btn btn-secondary mt-1" id="open-calculation-builder-btn">
         <i class="fas fa-calculator"></i> Open Calculation Builder
     </button>
     </div>
+                <div class="form-group">
+                    <textarea rows="8" placeholder="SELECT ..." id="fld-calculated-query" name="fld-calculated-query"></textarea>
+                </div>
             </div>
         </div>
     </div>
@@ -1939,44 +1940,51 @@
             <h3>Calculation Builder</h3>
             <button id="calculation-builder-close" class="modal-close">&times;</button>
         </div>
-        <div class="modal-body">
-            <div id="calculation-builder-container">
-                
-                <div class="cb-section">
-                    <h4>1. Main Calculation</h4>
-                    <div class="cb-calculation-rule">
-                        <label for="cb-function">Calculate the</label>
-                        <select id="cb-function">
-                            <option value="COUNT">Total number of records</option>
-                            <option value="SUM">Sum (total value) of</option>
-                            <option value="AVG">Average of</option>
-                            <option value="MIN">Minimum (smallest) value of</option>
-                            <option value="MAX">Maximum (largest) value of</option>
+<div class="modal-body">
+    <div id="calculation-builder-container">
+        
+        <div class="cb-mandatory-rule-display" style="margin-bottom: 1.5rem;">
+            <p>
+                <i class="fas fa-info-circle"></i>
+                This calculation is automatically filtered where: 
+                <strong id="cb-mandatory-rule-text"></strong>
+            </p>
+        </div>
+        <div class="cb-section">
+            <h4>1. Main Calculation</h4>
+            <div class="cb-calculation-rule">
+                <label for="cb-function">Calculate the</label>
+                <select id="cb-function">
+                    <option value="COUNT">Total number of records</option>
+                    <option value="SUM">Sum (total value) of</option>
+                    <option value="AVG">Average of</option>
+                    <option value="MIN">Minimum (smallest) value of</option>
+                    <option value="MAX">Maximum (largest) value of</option>
+                </select>
+                <div id="cb-field-container">
+                    <label for="cb-field">for field</label>
+                    <select id="cb-field">
                         </select>
-                        <div id="cb-field-container">
-                            <label for="cb-field">for field</label>
-                            <select id="cb-field">
-                                </select>
-                        </div>
-                    </div>
                 </div>
-
-                <div class="cb-section">
-                    <h4>2. Filter Rules (Optional)</h4>
-                    <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 1rem;">
-                        Only include records in the calculation where...
-                    </p>
-                    <div class="qb-logic-toggle">
-                        <label><input type="radio" name="cb-logic" value="AND" checked> Match ALL of the following (AND)</label>
-                        <label><input type="radio" name="cb-logic" value="OR"> Match ANY of the following (OR)</label>
-                    </div>
-                    <div id="cb-rules-container">
-                        </div>
-                    <button id="cb-add-rule" class="btn btn-secondary mt-1"><i class="fas fa-plus"></i> Add Rule</button>
-                </div>
-
             </div>
         </div>
+
+        <div class="cb-section">
+            <h4>2. Filter Rules (Optional)</h4>
+            <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 1rem;">
+                You can add more optional filters below:
+            </p>
+            <div class="qb-logic-toggle">
+                <label><input type="radio" name="cb-logic" value="AND" checked> Match ALL of the following (AND)</label>
+                <label><input type="radio" name="cb-logic" value="OR"> Match ANY of the following (OR)</label>
+            </div>
+            <div id="cb-rules-container">
+                </div>
+            <button id="cb-add-rule" class="btn btn-secondary mt-1"><i class="fas fa-plus"></i> Add Rule</button>
+        </div>
+
+    </div>
+</div>
         <div class="modal-footer">
             <button class="btn btn-secondary" id="calculation-builder-cancel-btn">Cancel</button>
             <button class="btn btn-primary" id="calculation-builder-generate-btn">Generate & Use Query</button>

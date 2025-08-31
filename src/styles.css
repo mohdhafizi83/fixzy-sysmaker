@@ -1559,14 +1559,16 @@ fieldset.fieldset-disabled {
 
 /* Fix for large modal content to be scrollable */
 #query-builder-modal .modal-content,
-#algorithm-builder-modal .modal-content {
+#algorithm-builder-modal .modal-content,
+#calculation-builder-modal .modal-content {
     display: flex;
     flex-direction: column;
     max-height: 85vh; /* Hadkan ketinggian maksimum modal kepada 85% ketinggian skrin */
 }
 
 #query-builder-modal .modal-body,
-#algorithm-builder-modal .modal-body {
+#algorithm-builder-modal .modal-body,
+#calculation-builder-modal .modal-body {
     flex-grow: 1; /* Benarkan bahagian body untuk mengisi ruang yang ada */
     overflow-y: auto; /* Tambah bar skrol menegak HANYA apabila kandungan melimpah */
     padding-right: 1rem; /* Beri sedikit ruang untuk bar skrol */
@@ -1600,4 +1602,24 @@ fieldset.fieldset-disabled {
     border-radius: 6px;
     border: 1px solid var(--border-color);
     background-color: white;
+}
+
+/* ADD THIS AT THE END OF styles.css */
+
+/* Styling for the mandatory rule display box in Calculation Builder */
+.cb-mandatory-rule-display {
+    background-color: #F3F4F6; /* Warna latar kelabu lembut */
+    border: 1px solid #E5E7EB;
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+}
+.cb-mandatory-rule-display p {
+    margin: 0;
+    color: #4B5563; /* Warna teks sedikit gelap */
+    font-size: 0.9em;
+}
+.cb-mandatory-rule-display p i {
+    color: #6B7280;
+    margin-right: 0.5rem;
 }
