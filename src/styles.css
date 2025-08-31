@@ -1312,6 +1312,9 @@ fieldset.fieldset-disabled {
     border-radius: 6px;
     padding: 1rem;
     background-color: #F9FAFB;
+    position: sticky;
+    top: 0;
+    align-self: start; /* Memastikan palet tidak meregang mengikut ketinggian kanvas */
 }
 
 .algorithm-palette h4 {
