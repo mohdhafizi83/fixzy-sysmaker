@@ -1,36 +1,20 @@
 /**
  * Fungsi Teras Boleh Guna Semula untuk mencipta Logic Builder.
  * Ia menerima satu objek konfigurasi untuk menentukan kelakuannya.
- * @param {object} config - Objek konfigurasi untuk builder.
- * @param {string} config.triggerButtonId - ID butang untuk membuka modal.
- * @param {string} config.modalId - ID elemen modal.
- * @param {string} config.canvasId - ID kanvas tempat komponen akan diletakkan.
- * @param {string} config.paletteId - ID palet yang mengandungi komponen.
- * @param {string} config.targetInputId - ID input tersembunyi untuk menyimpan output JSON.
- * @param {Array<object>} config.validationRules - Tatabahasa (grammar) untuk pengesahan susunan.
+ * @param {object} config - Objek konfigurasi.
+ * @param {HTMLElement} config.palette - Elemen palet.
+ * @param {HTMLElement} config.canvas - Elemen kanvas.
+ * @param {HTMLInputElement} config.hiddenInput - Elemen input tersembunyi.
+ * @param {object} config.validationRules - Tatabahasa (grammar) untuk pengesahan susunan.
  * @param {object} [config.context] - Objek pilihan untuk membekalkan data konteks (cth: { tableName: 'users' }).
- * @param {string} config.closeButtonId - ID butang untuk menutup modal (ikon X).
- * @param {string} config.cancelButtonId - ID butang untuk membatalkan dan menutup modal.
- * @param {string} config.doneButtonId - ID butang untuk menyimpan dan menutup modal.
+ * @param {string} [config.updateMode='live'] - Mod kemas kini ('live' atau 'manual').
+ * @returns {object} Objek dengan kaedah untuk berinteraksi dengan builder.
  */
-function createLogicBuilder(config) {
-    const openBtn = document.getElementById(config.triggerButtonId);
-    const modal = document.getElementById(config.modalId);
-    const closeBtn = document.getElementById(config.closeButtonId);
-    const cancelBtn = document.getElementById(config.cancelButtonId);
-    const doneBtn = document.getElementById(config.doneButtonId);
-
-    if (!openBtn || !modal) {
-        console.error(`Elemen pencetus atau modal untuk builder tidak ditemui:`, { trigger: config.triggerButtonId, modal: config.modalId });
-        return;
-    }
-
-    const palette = modal.querySelector(config.paletteId);
-    const canvas = modal.querySelector(config.canvasId);
-    const hiddenInput = document.getElementById(config.targetInputId);
+function setupLogicBuilderCore(config) {
+    const { palette, canvas, hiddenInput, validationRules, context, updateMode = 'live' } = config;
     const placeholder = canvas ? canvas.querySelector('.canvas-placeholder') : null;
 
-    if (!closeBtn || !cancelBtn || !doneBtn || !palette || !canvas || !hiddenInput) {
+    if (!palette || !canvas || !hiddenInput) {
         console.error("Satu atau lebih elemen untuk Logic Builder tidak ditemui.", {
             ...config,
             found: {
@@ -123,6 +107,12 @@ function createLogicBuilder(config) {
         const logicArray = mapItems(canvas);
         modalCanvasState = JSON.stringify(logicArray, null, 2);
         if (placeholder) placeholder.style.display = logicArray.length === 0 ? 'block' : 'none';
+
+        // Kemas kini input tersembunyi hanya jika dalam mod 'live'
+        if (updateMode === 'live') {
+            hiddenInput.value = modalCanvasState;
+            hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
     };
 
     /**
@@ -269,8 +259,8 @@ function createLogicBuilder(config) {
             }
             case 'this_table_field': {
                 let activeTable = '';
-                if (config.context && config.context.tableName) {
-                    activeTable = config.context.tableName;
+                if (context && context.tableName) {
+                    activeTable = context.tableName;
                 } else {
                     console.warn("Konteks jadual tidak ditemui untuk komponen 'This Table.Field'");
                 }
@@ -321,8 +311,8 @@ function createLogicBuilder(config) {
 
                 // ▼▼▼ MULA PEMBETULAN: Gunakan konteks dari config, bukan querySelector yang rapuh. ▼▼▼
                 let activeTable = '';
-                if (config.context && config.context.tableName) {
-                    activeTable = config.context.tableName;
+                if (context && context.tableName) {
+                    activeTable = context.tableName;
                 } else {
                     // Sandaran (fallback) kepada kaedah lama jika konteks tidak dibekalkan,
                     // dengan pemeriksaan keselamatan untuk mengelakkan ralat.
@@ -582,7 +572,7 @@ function createLogicBuilder(config) {
             lastComponentType = 'value';
         }
 
-        const allowedNext = config.validationRules[lastComponentType];
+        const allowedNext = validationRules[lastComponentType];
 
         if (!allowedNext) {
             showCustomDialog({ title: "Peraturan Dilanggar", message: `Tidak ada peraturan yang ditetapkan selepas komponen '${lastComponentType}'.` });
@@ -611,26 +601,6 @@ function createLogicBuilder(config) {
         }
     };
 
-
-    // Pasang Event Listeners
-    openBtn.addEventListener('click', () => {
-        // Update the context dynamically every time the modal is opened.
-        // This ensures we have the latest information from the page.
-        if (config.getContext) {
-            config.context = config.getContext();
-        }
-        populateCanvasFromHiddenInput();
-        modal.classList.remove('hidden');
-    });
-    closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
-    cancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
-    doneBtn.addEventListener('click', () => {
-        hiddenInput.value = modalCanvasState;
-        // Cetuskan event 'input' untuk memaklumkan SaveManager (melalui initializeFieldSaveHandlers)
-        hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
-        modal.classList.add('hidden');
-    });
-
     palette.addEventListener('dragstart', (e) => {
         if (e.target.classList.contains('algo-component')) {
             const data = {
@@ -640,9 +610,15 @@ function createLogicBuilder(config) {
             e.dataTransfer.setData('text/plain', JSON.stringify(data));
         }
     });
-    canvas.addEventListener('dragover', (e) => { e.preventDefault(); canvas.classList.add('dragging-over'); });
-    canvas.addEventListener('dragleave', () => canvas.classList.remove('dragging-over'));
-    
+
+    canvas.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        canvas.classList.add('dragging-over');
+    });
+    canvas.addEventListener('dragleave', () => {
+        canvas.classList.remove('dragging-over');
+    });
+
     canvas.addEventListener('drop', (e) => {
         e.preventDefault();
         canvas.classList.remove('dragging-over');
@@ -680,6 +656,94 @@ function createLogicBuilder(config) {
                 showCustomDialog({ title: "Peraturan", message: "Anda hanya boleh memadam komponen logik dari bawah ke atas (komponen terakhir). Komen boleh dipadam pada bila-bila masa." });
             }
         }
+    });
+
+    populateCanvasFromHiddenInput();
+
+    // Kembalikan API untuk berinteraksi dengan instance builder ini
+    return {
+        getState: () => modalCanvasState,
+    };
+}
+
+/**
+ * Mencipta Logic Builder yang berfungsi di dalam modal.
+ * @param {object} config - Objek konfigurasi untuk builder.
+ * @param {string} config.triggerButtonId - ID butang untuk membuka modal.
+ * @param {string} config.modalId - ID elemen modal.
+ * @param {string} config.targetInputId - ID input tersembunyi untuk menyimpan output JSON.
+ * @param {object} config.validationRules - Tatabahasa (grammar) untuk pengesahan susunan.
+ * @param {function} config.getContext - Fungsi untuk mendapatkan data konteks semasa.
+ * @param {string} config.closeButtonId - ID butang untuk menutup modal (ikon X).
+ * @param {string} config.cancelButtonId - ID butang untuk membatalkan dan menutup modal.
+ * @param {string} config.doneButtonId - ID butang untuk menyimpan dan menutup modal.
+ */
+function createModalLogicBuilder(config) {
+    const openBtn = document.getElementById(config.triggerButtonId);
+    const modal = document.getElementById(config.modalId);
+    const modalBody = modal.querySelector('.modal-body');
+    const closeBtn = document.getElementById(config.closeButtonId);
+    const cancelBtn = document.getElementById(config.cancelButtonId);
+    const doneBtn = document.getElementById(config.doneButtonId);
+    const hiddenInput = document.getElementById(config.targetInputId);
+
+    if (!openBtn || !modal || !modalBody || !closeBtn || !cancelBtn || !doneBtn || !hiddenInput) {
+        console.error(`Satu atau lebih elemen untuk modal builder tidak ditemui:`, config);
+        return;
+    }
+
+    const injectBuilderUI = (targetContainer) => {
+        const template = document.getElementById('logic-builder-template');
+        if (!template) return null;
+
+        const clone = template.content.cloneNode(true);
+        targetContainer.innerHTML = ''; // Kosongkan dahulu
+        targetContainer.appendChild(clone);
+
+        return {
+            palette: targetContainer.querySelector('.algorithm-palette'),
+            canvas: targetContainer.querySelector('.algorithm-canvas')
+        };
+    };
+
+    openBtn.addEventListener('click', () => {
+        const ui = injectBuilderUI(modalBody);
+        if (!ui) {
+            console.error("Gagal menyuntik UI builder ke dalam modal.");
+            return;
+        }
+
+        const builderInstance = setupLogicBuilderCore({
+            ...ui,
+            hiddenInput: hiddenInput,
+            validationRules: config.validationRules,
+            context: config.getContext(),
+            updateMode: 'manual' // Penting: Jangan kemas kini secara live
+        });
+
+        // Guna klon untuk membuang listener lama dan pasang yang baharu
+        const newDoneBtn = doneBtn.cloneNode(true);
+        doneBtn.parentNode.replaceChild(newDoneBtn, doneBtn);
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        const newCloseBtn = closeBtn.cloneNode(true);
+        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+
+        const closeModal = () => {
+            modal.classList.add('hidden');
+            modalBody.innerHTML = ''; // Bersihkan UI builder apabila ditutup
+        };
+
+        newDoneBtn.addEventListener('click', () => {
+            hiddenInput.value = builderInstance.getState();
+            hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
+            closeModal();
+        });
+
+        newCancelBtn.addEventListener('click', closeModal);
+        newCloseBtn.addEventListener('click', closeModal);
+
+        modal.classList.remove('hidden');
     });
 }
 
@@ -915,26 +979,49 @@ export function initializeAlgorithmBuilder() {
         'close_paren':         ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then', 'else', 'else_if', 'close_paren'],
     };
 
+    const enableCheckbox = document.getElementById('fld-algorithm-enable');
+    const builderContainer = document.getElementById('algorithm-builder-container');
+    const hiddenInput = document.getElementById('fld-algorithm-logic');
 
-    
-    // Konfigurasi ini kini spesifik untuk 'Algorithm' pada tetapan medan.
-    const config = {
-        triggerButtonId: 'open-algorithm-builder-btn',
-        modalId: 'algorithm-builder-modal',
-        // Tukar dari objek statik kepada fungsi untuk mendapatkan konteks secara dinamik
-        getContext: () => ({
-            tableName: document.querySelector('#field-settings-page .field-name')?.textContent.split('.')[0]
-        }),
-        closeButtonId: 'algorithm-builder-close',
-        cancelButtonId: 'algorithm-builder-cancel-btn',
-        doneButtonId: 'algorithm-builder-done-btn',
-        canvasId: '#algorithm-canvas',
-        paletteId: '.algorithm-palette',
-        targetInputId: 'fld-algorithm-logic',
-        validationRules: COMPLEX_ALGORITHM_GRAMMAR
+    if (!enableCheckbox || !builderContainer || !hiddenInput) {
+        console.error("Elemen untuk Algorithm Builder tidak ditemui.");
+        return;
+    }
+
+    // Fungsi untuk menyuntik UI builder dari template
+    const injectBuilderUI = (targetContainer) => {
+        const template = document.getElementById('logic-builder-template');
+        if (!template) return null;
+
+        const clone = template.content.cloneNode(true);
+        targetContainer.innerHTML = ''; // Kosongkan dahulu
+        targetContainer.appendChild(clone);
+
+        return {
+            palette: targetContainer.querySelector('.algorithm-palette'),
+            canvas: targetContainer.querySelector('.algorithm-canvas')
+        };
     };
 
-    createLogicBuilder(config);
+    enableCheckbox.addEventListener('change', () => {
+        if (enableCheckbox.checked) {
+            builderContainer.classList.remove('hidden');
+            const ui = injectBuilderUI(builderContainer);
+            if (ui) {
+                setupLogicBuilderCore({
+                    ...ui,
+                    hiddenInput: hiddenInput,
+                    validationRules: COMPLEX_ALGORITHM_GRAMMAR,
+                    context: {
+                        tableName: document.querySelector('#field-settings-page .field-name')?.textContent.split('.')[0]
+                    },
+                    updateMode: 'live'
+                });
+            }
+        } else {
+            builderContainer.classList.add('hidden');
+        }
+    });
 }
 
 /**
@@ -942,12 +1029,17 @@ export function initializeAlgorithmBuilder() {
  * Ia akan mempunyai butang, peraturan, dan sasaran simpanan yang berbeza.
  */
 export function initializeTableHookBuilder() {
-    // Peraturan yang berbeza untuk 'Table Hook'
-    const TABLE_HOOK_GRAMMAR = [
-        { step: 1, allowed: ['on_update', 'before_insert', 'after_delete'] },
-        { step: 2, allowed: ['execute_sql', 'call_api', 'send_email'] },
-        // ... dan seterusnya
-    ];
+    // Guna semula tatabahasa yang kompleks sebagai placeholder.
+    // Anda boleh cipta tatabahasa baharu yang spesifik untuk hook pada masa hadapan.
+    const TABLE_HOOK_GRAMMAR = {
+        'start':               ['if', 'open_paren', 'value'],
+        'if':                  ['value', 'open_paren'],
+        'value':               ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then'],
+        'comparison_operator': ['value', 'open_paren'],
+        'arithmetic_operator': ['value', 'open_paren'],
+        'logical_operator':    ['value', 'open_paren', 'if'],
+        'open_paren':          ['value', 'if', 'open_paren'],
+    };
 
     // Dapatkan elemen butang pencetus. Jika tiada, jangan teruskan.
     const triggerButton = document.getElementById('open-table-hook-builder-btn');
@@ -962,24 +1054,26 @@ export function initializeTableHookBuilder() {
         closeButtonId: 'algorithm-builder-close',
         cancelButtonId: 'algorithm-builder-cancel-btn',
         doneButtonId: 'algorithm-builder-done-btn',
-        canvasId: '#algorithm-canvas',
-        paletteId: '.algorithm-palette', // Mungkin perlukan palet berbeza pada masa hadapan
         targetInputId: 'tbl-hook-logic', // Input tersembunyi baharu pada borang tetapan jadual
         validationRules: TABLE_HOOK_GRAMMAR,
-        // Kita juga boleh menambah palet yang berbeza di sini pada masa hadapan
     };
 
-    createLogicBuilder(config);
+    createModalLogicBuilder(config);
 }
 
 /**
  * Fungsi Pengasas untuk Algorithm Builder bagi 'Project Hook'.
  */
 export function initializeProjectHookBuilder() {
-    const PROJECT_HOOK_GRAMMAR = [
-        { step: 1, allowed: ['on_startup', 'before_shutdown'] },
-        { step: 2, allowed: ['run_backup', 'validate_license'] },
-    ];
+    // Guna semula tatabahasa yang kompleks sebagai placeholder.
+    const PROJECT_HOOK_GRAMMAR = {
+        'start':               ['if', 'open_paren', 'value'],
+        'if':                  ['value', 'open_paren'],
+        'value':               ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then'],
+        'comparison_operator': ['value', 'open_paren'],
+        'arithmetic_operator': ['value', 'open_paren'],
+        'logical_operator':    ['value', 'open_paren', 'if'],
+    };
 
     const triggerButton = document.getElementById('open-project-hook-builder-btn');
     if (!triggerButton) return;
@@ -990,15 +1084,12 @@ export function initializeProjectHookBuilder() {
         getContext: () => ({ tableName: null }), // Tiada konteks jadual di peringkat projek
         targetInputId: 'prj-hook-logic',
         validationRules: PROJECT_HOOK_GRAMMAR,
-        // Salin ID butang lain dari atas
         closeButtonId: 'algorithm-builder-close',
         cancelButtonId: 'algorithm-builder-cancel-btn',
         doneButtonId: 'algorithm-builder-done-btn',
-        canvasId: '#algorithm-canvas',
-        paletteId: '.algorithm-palette',
     };
 
-    createLogicBuilder(config);
+    createModalLogicBuilder(config);
 }
 
 // KOD PENUH: Gantikan keseluruhan fungsi ini.
@@ -2665,7 +2756,14 @@ export function populateFieldSettings(tableName, fieldName) {
 	// Tab: Algorithm field
 	setElementValue('fld-algorithm-enable', fieldData.algorithm_enable);
 	setElementValue('fld-algorithm-logic', fieldData.algorithm_logic);
-	setElementValue('fld-hook-functions', fieldData.hook_functions);
+	
+	// ▼▼▼ KOD PEMBETULAN: Cetuskan event 'change' secara manual ▼▼▼
+	// Ini memastikan UI builder dipaparkan jika 'algorithm_enable' adalah benar.
+	const algorithmEnableCheckbox = document.getElementById('fld-algorithm-enable');
+	if (algorithmEnableCheckbox) {
+		algorithmEnableCheckbox.dispatchEvent(new Event('change'));
+	}
+	// ▲▲▲ TAMAT PEMBETULAN ▲▲▲
 	
 	applyDataTypeRules();
 	

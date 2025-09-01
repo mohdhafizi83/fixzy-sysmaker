@@ -1306,11 +1306,16 @@ fieldset.fieldset-disabled {
     opacity: 0.4;
 }
 
-.algorithm-builder-grid {
+/* ▼▼▼ UBAH SUAI BLOK INI ▼▼▼ */
+.algorithm-builder-grid { 
     display: grid;
     grid-template-columns: 200px 1fr;
     gap: 1.5rem;
-    min-height: 400px;
+    /* Buang min-height untuk membenarkan ia mengikut saiz kandungan */
+    border: 1px solid var(--border-color);
+    padding: 1rem;
+    border-radius: 6px;
+    margin-top: 1rem;
 }
 
 /* KOD PENUH: Cari dan gantikan keseluruhan blok CSS untuk .algorithm-palette dengan yang ini. */
@@ -1324,8 +1329,8 @@ fieldset.fieldset-disabled {
     position: sticky;
     top: 0;
     align-self: start; 
-
-    /* ▼▼▼ MULA TAMBAHAN BAHARU ▼▼▼ */
+ 
+    /* ▼▼▼ MULA UBAH SUAI ▼▼▼ */
     /* Menetapkan ketinggian maksimum dan menambah skrol dalaman */
     max-height: calc(85vh - 10rem); 
     overflow-y: auto;              
@@ -1431,11 +1436,11 @@ fieldset.fieldset-disabled {
     padding: 1rem; /* Padding sedia ada dikekalkan */
     position: relative;
     transition: background-color 0.2s, border-color 0.2s;
-    /* ▼▼▼ MULA KEMAS KINI ▼▼▼ */
-    max-height: calc(85vh - 10rem); /* Hadkan ketinggian & selaraskan dengan palet */
+    /* ▼▼▼ MULA UBAH SUAI ▼▼▼ */
+    min-height: 300px; /* Tetapkan ketinggian minimum */
+    max-height: 600px; /* Hadkan ketinggian maksimum */
     overflow-y: auto; /* Tambah bar skrol menegak apabila kandungan melimpah */
-    padding-bottom: 10rem; /* Kekalkan ruang di bawah untuk drop item terakhir */
-    /* ▲▲▲ TAMAT KEMAS KINI ▲▲▲ */
+    /* ▲▲▲ TAMAT UBAH SUAI ▲▲▲ */
 }
 
 .algorithm-canvas.dragging-over {

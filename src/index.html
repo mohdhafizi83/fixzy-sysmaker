@@ -100,6 +100,7 @@
             <div class="tabs-nav">
                 <button class="tab-link active" data-tab="tab-localization" id="app-tab_localization" name="app-tab_localization">Localization</button>
                 <button class="tab-link" data-tab="tab-theme" id="app-tab_theme" name="app-tab_theme">Theme</button>
+                <button class="tab-link" data-tab="tab-hooks">Hooks</button>
                 <button class="tab-link" data-tab="tab-menu-appearance" id="app-tab_menu_appearance" name="app-tab_menu_appearance">Menu management</button>
                 <button class="tab-link" data-tab="tab-security" id="app-tab_security" name="app-tab_security">Security & technical</button>
             </div>
@@ -727,6 +728,21 @@
                     </div>
                 </div>
 
+                <div id="tab-hooks" class="tab-pane">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4>Project-Level Hooks</h4>
+                            <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 1.5rem;">
+                                Define actions that run on global project events, like application startup or shutdown.
+                            </p>
+                            <button class="btn btn-secondary mt-1" id="open-project-hook-builder-btn">
+                                <i class="fas fa-cogs"></i> Open Project Hook Builder
+                            </button>
+                            <input type="hidden" id="prj-hook-logic" name="prj-hook-logic">
+                        </div>
+                    </div>
+                </div>
+
                 <div id="tab-security" class="tab-pane">
                     <div class="card">
                         <div class="card-body">
@@ -899,6 +915,7 @@
                     <div class="tabs-nav">
                         <button class="tab-link active" data-tab="tab-detail-general" id="tbl-dv-tab-general" name="tbl-dv-tab-general">General</button>
                         <button class="tab-link" data-tab="tab-detail-permissions" id="tbl-dv-tab-permissions" name="tbl-dv-tab-permissions">Permissions</button>
+                        <button class="tab-link" data-tab="tab-detail-hooks">Hooks</button>
                         <button class="tab-link" data-tab="tab-detail-parent-child" id="tbl-dv-tab-parent-child" name="tbl-dv-tab-parent-child">Parent/Child settings</button>
                     </div>
 
@@ -944,6 +961,21 @@
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-dv-sticky-buttons" name="tbl-dv-sticky-buttons" checked> Keep action buttons visible while scrolling</label>
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-dv-allow-add-from-homepage" name="tbl-dv-allow-add-from-homepage"> Allow adding new records from homepage</label>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="tab-detail-hooks" class="tab-pane">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h4>Table-Level Hooks</h4>
+                                    <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 1.5rem;">
+                                        Define actions that run on table-specific events, like before an insert or after a delete.
+                                    </p>
+                                    <button class="btn btn-secondary mt-1" id="open-table-hook-builder-btn">
+                                        <i class="fas fa-anchor"></i> Open Table Hook Builder
+                                    </button>
+                                    <input type="hidden" id="tbl-hook-logic" name="tbl-hook-logic">
                                 </div>
                             </div>
                         </div>
@@ -1494,31 +1526,16 @@
 <div id="tab-field-algorithm" class="tab-pane">
     <div class="card">
         <div class="card-body">
-            <div class="form-group">
-                <label class="checkbox-label">
-                    <input type="checkbox" id="fld-algorithm-enable" name="fld-algorithm-enable">
-                    Automatically put the value of this field using the following algorithm
-                </label>
-            </div>
-
-    <h4 style="margin-top: 1rem;">Query Builder</h4>
-    <p>Use the query builder to generate a SELECT statement visually.</p>
-    <button class="btn btn-secondary mt-1" id="open-query-builder-btn">
-        <i class="fas fa-magic-wand-sparkles"></i> Open Query Builder
-    </button>
-    <p class="helper-text" style="color: var(--secondary-color); margin-top: 1.5rem;">
-        Build complex logic for this field by opening the Algorithm Builder.
-    </p>
-    <button class="btn btn-secondary mt-1" id="open-algorithm-builder-btn">
-        <i class="fas fa-drafting-compass"></i> Open Algorithm Builder
-    </button>
-            
+            <!-- ▼▼▼ KAWASAN INI DIUBAH SUAI ▼▼▼ -->
+            <label class="checkbox-label" style="margin-bottom: 1.5rem;">
+                <input type="checkbox" id="fld-algorithm-enable" name="fld-algorithm-enable">
+                Automatically calculate the value of this field using the following algorithm
+            </label>
+            <!-- Bekas untuk Algorithm Builder akan diletakkan di sini oleh JavaScript -->
+            <div id="algorithm-builder-container" class="hidden"></div>
+            <!-- ▲▲▲ TAMAT UBAH SUAI ▲▲▲ -->
             <input type="hidden" id="fld-algorithm-logic" name="fld-algorithm-logic">
 
-            <div class="form-group mt-2">
-                <label for="fld-hook-functions">Hook Functions</label>
-                <textarea id="fld-hook-functions" name="fld-hook-functions" rows="8" placeholder="Example: dv_after_insert(&#10;    'send_email_notification'&#10;);"></textarea>
-            </div>
         </div>
     </div>
 </div>
@@ -1854,55 +1871,7 @@
             <button id="algorithm-builder-close" class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
-             <div class="algorithm-builder-grid">
-                <div class="algorithm-palette">
-                    <div class="palette-group">
-                        <h5 class="palette-group-title">Control Flow</h5>
-                        <div class="algo-component" draggable="true" data-type="if">IF</div>
-                        <div class="algo-component" draggable="true" data-type="else_if">ELSE IF</div>
-                        <div class="algo-component" draggable="true" data-type="then">THEN</div>
-                        <div class="algo-component" draggable="true" data-type="else">ELSE</div>
-                    </div>
-<!-- Dalam fail index.html, di dalam #algorithm-builder-modal > .algorithm-palette -->
-<div class="palette-group">
-    <div class="palette-group-title">Utility</div>
-    <div class="algo-component" data-type="comment" draggable="true">
-        <i class="fas fa-comment-dots"></i> Comment
-    </div>
-</div>
-
-                    <div class="palette-group">
-                        <h5 class="palette-group-title">Operators</h5>
-                        <div class="algo-component" draggable="true" data-type="comparison_operator">Comparison</div>
-                        <div class="algo-component" draggable="true" data-type="logical_operator">Logical</div>
-                        <div class="algo-component" draggable="true" data-type="arithmetic_operator">Arithmetic</div>
-                    </div>
-                    <div class="palette-group">
-                        <h5 class="palette-group-title">Data Sources</h5>
-                        <div class="algo-component" draggable="true" data-type="this_table_field">This Table.Field</div>
-                        <div class="algo-component" draggable="true" data-type="external_table_field">External Table.Field</div>
-                        <div class="algo-component" draggable="true" data-type="sql_query">SQL Query</div>
-                        <div class="algo-component" draggable="true" data-type="api_endpoint">API Endpoint</div>
-                    </div>
-                    <div class="palette-group">
-                        <h5 class="palette-group-title">System Variables</h5>
-                        <div class="algo-component" draggable="true" data-type="current_user">CurrentUser</div>
-                        <div class="algo-component" draggable="true" data-type="current_datetime">CurrentDateTime</div>
-                    </div>
-                    <div class="palette-group">
-                        <h5 class="palette-group-title">Values & Grouping</h5>
-                        <div class="algo-component" draggable="true" data-type="string">String Value</div>
-                        <div class="algo-component" draggable="true" data-type="number">Number Value</div>
-                        <div class="algo-component" draggable="true" data-type="boolean">Boolean (True/False)</div>
-                        <div class="algo-component" draggable="true" data-type="null">Null</div>
-                        <div class="algo-component" draggable="true" data-type="open_paren">(</div>
-                        <div class="algo-component" draggable="true" data-type="close_paren">)</div>
-                    </div>
-                </div>
-                <div id="algorithm-canvas" class="algorithm-canvas">
-                    <span class="canvas-placeholder">Drop components here</span>
-                </div>
-            </div>
+            <!-- Kandungan modal kini kosong, akan diisi oleh JavaScript jika perlu -->
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" id="algorithm-builder-cancel-btn">Close</button>
@@ -1914,6 +1883,58 @@
 <div id="loading-overlay" class="loading-overlay-hidden">
         <div class="loader"></div>
     </div>
+
+<!-- ▼▼▼ TEMPLATE UNTUK LOGIC BUILDER (Diletakkan di hujung body) ▼▼▼ -->
+<template id="logic-builder-template">
+    <div class="algorithm-builder-grid">
+        <div class="algorithm-palette">
+            <div class="palette-group">
+                <h5 class="palette-group-title">Control Flow</h5>
+                <div class="algo-component" draggable="true" data-type="if">IF</div>
+                <div class="algo-component" draggable="true" data-type="else_if">ELSE IF</div>
+                <div class="algo-component" draggable="true" data-type="then">THEN</div>
+                <div class="algo-component" draggable="true" data-type="else">ELSE</div>
+            </div>
+            <div class="palette-group">
+                <div class="palette-group-title">Utility</div>
+                <div class="algo-component" data-type="comment" draggable="true">
+                    <i class="fas fa-comment-dots"></i> Comment
+                </div>
+            </div>
+            <div class="palette-group">
+                <h5 class="palette-group-title">Operators</h5>
+                <div class="algo-component" draggable="true" data-type="comparison_operator">Comparison</div>
+                <div class="algo-component" draggable="true" data-type="logical_operator">Logical</div>
+                <div class="algo-component" draggable="true" data-type="arithmetic_operator">Arithmetic</div>
+            </div>
+            <div class="palette-group">
+                <h5 class="palette-group-title">Data Sources</h5>
+                <div class="algo-component" draggable="true" data-type="this_table_field">This Table.Field</div>
+                <div class="algo-component" draggable="true" data-type="external_table_field">External Table.Field</div>
+                <div class="algo-component" draggable="true" data-type="sql_query">SQL Query</div>
+                <div class="algo-component" draggable="true" data-type="api_endpoint">API Endpoint</div>
+            </div>
+            <div class="palette-group">
+                <h5 class="palette-group-title">System Variables</h5>
+                <div class="algo-component" draggable="true" data-type="current_user">CurrentUser</div>
+                <div class="algo-component" draggable="true" data-type="current_datetime">CurrentDateTime</div>
+            </div>
+            <div class="palette-group">
+                <h5 class="palette-group-title">Values & Grouping</h5>
+                <div class="algo-component" draggable="true" data-type="string">String Value</div>
+                <div class="algo-component" draggable="true" data-type="number">Number Value</div>
+                <div class="algo-component" draggable="true" data-type="boolean">Boolean (True/False)</div>
+                <div class="algo-component" draggable="true" data-type="null">Null</div>
+                <div class="algo-component" draggable="true" data-type="open_paren">(</div>
+                <div class="algo-component" draggable="true" data-type="close_paren">)</div>
+            </div>
+        </div>
+        <div class="algorithm-canvas">
+            <span class="canvas-placeholder">Drop components here</span>
+        </div>
+    </div>
+</template>
+<!-- ▲▲▲ TAMAT TEMPLATE ▲▲▲ -->
 
 <div id="configurable-query-builder-modal" class="modal-overlay hidden">
     <div class="modal-content extra-large">
