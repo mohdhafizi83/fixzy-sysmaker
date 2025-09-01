@@ -98,6 +98,8 @@ function createLogicBuilder(config) {
                     itemData.name = item.dataset.functionName;
                     const argContainer = item.querySelector('.function-argument-droppable');
                     itemData.arguments = mapItems(argContainer); // Panggilan Rekursif
+                } else if (type === 'comment') {
+                    itemData.value = item.querySelector('textarea')?.value;
                 } else if (type === 'field' || type === 'external_table_field') {
                     itemData.table = item.querySelector('.table-select')?.value;
                     itemData.field = item.querySelector('.field-select')?.value;
@@ -147,6 +149,13 @@ function createLogicBuilder(config) {
         // ▲▲▲ TAMAT KOD TAMBAHAN ▲▲▲
 
         switch (type) {
+            case 'comment': {
+                itemContainer.innerHTML = `<textarea placeholder="Type your comment here..."></textarea>`;
+                itemContainer.querySelector('textarea').addEventListener('input', updateModalCanvasState);
+                // Tambah kelas khas untuk penggayaan
+                itemContainer.classList.add('comment-item');
+                break;
+            }
             // ▼▼▼ KOD BAHARU: Kes untuk komponen 'function' ▼▼▼
             case 'function': {
                 itemContainer.dataset.functionName = data.name || 'CONCAT'; // Fungsi lalai
@@ -502,6 +511,8 @@ function createLogicBuilder(config) {
                     newItem.querySelector('.table-select').value = itemData.table;
                     newItem.querySelector('.table-select').dispatchEvent(new Event('change'));
                     newItem.querySelector('.field-select').value = itemData.field;
+                } else if (itemData.type === 'comment') {
+                    newItem.querySelector('textarea').value = itemData.value;
                 } else if (itemData.type === 'this_table_field') {
                     newItem.querySelector('.field-select').value = itemData.field;
                 } else if (itemData.type === 'boolean' || ['comparison_operator', 'logical_operator', 'arithmetic_operator', 'current_user', 'current_datetime'].includes(itemData.type)) {
@@ -533,10 +544,23 @@ function createLogicBuilder(config) {
     const VALUE_TYPES = ['field', 'this_table_field', 'external_table_field', 'string', 'number', 'sql_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'function'];
 
     const isValidDrop = (componentType) => {
-        const existingComponents = Array.from(canvas.querySelectorAll('.dropped-item'));
-        const lastComponent = existingComponents.length > 0 ? existingComponents[existingComponents.length - 1] : null;
+        // TAMBAHAN: Benarkan komen diletakkan di mana-mana sahaja.
+        if (componentType === 'comment') {
+            return true;
+        }
 
-        let lastComponentType = lastComponent ? lastComponent.dataset.itemType : 'start';
+        const existingComponents = Array.from(canvas.querySelectorAll('.dropped-item'));
+        
+        // PEMBETULAN: Cari komponen logik terakhir, abaikan komen.
+        let lastLogicalComponent = null;
+        for (let i = existingComponents.length - 1; i >= 0; i--) {
+            if (existingComponents[i].dataset.itemType !== 'comment') {
+                lastLogicalComponent = existingComponents[i];
+                break;
+            }
+        }
+
+        let lastComponentType = lastLogicalComponent ? lastLogicalComponent.dataset.itemType : 'start';
 
         // Kumpulkan jenis nilai di bawah satu kategori 'value' untuk memudahkan peraturan
         if (VALUE_TYPES.includes(lastComponentType)) {
@@ -624,7 +648,12 @@ function createLogicBuilder(config) {
     canvas.addEventListener('click', (e) => {
         if (e.target.classList.contains('delete-algo-item')) {
             const itemToRemove = e.target.closest('.dropped-item');
-            if (itemToRemove && !itemToRemove.nextElementSibling) {
+            if (!itemToRemove) return;
+
+            // PEMBETULAN: Benarkan komen dipadam pada bila-bila masa.
+            const isComment = itemToRemove.dataset.itemType === 'comment';
+
+            if (isComment || !itemToRemove.nextElementSibling) {
                 // Jika item yang dipadam berada di dalam zon argumen fungsi,
                 // dan ia adalah satu-satunya item, paparkan semula placeholder.
                 if (itemToRemove.parentElement.classList.contains('function-argument-droppable') && itemToRemove.parentElement.childElementCount === 1) {
@@ -633,7 +662,7 @@ function createLogicBuilder(config) {
                 itemToRemove.remove();
                 updateModalCanvasState();
             } else {
-                showCustomDialog({ title: "Peraturan", message: "Anda hanya boleh memadam komponen dari bawah ke atas (komponen terakhir)." });
+                showCustomDialog({ title: "Peraturan", message: "Anda hanya boleh memadam komponen logik dari bawah ke atas (komponen terakhir). Komen boleh dipadam pada bila-bila masa." });
             }
         }
     });

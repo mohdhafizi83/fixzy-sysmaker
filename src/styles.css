@@ -2173,21 +2173,43 @@ fieldset.fieldset-disabled {
 }
 /* TAMBAH BLOK INI DI PENGHUJUNG FAIL styles.css */
 
+/* Gaya untuk komponen Comment */
+.dropped-item.comment-item {
+    background-color: #FEFCE8; /* Kuning Pucat */
+    border-color: #F6E05E; /* Kuning Sempadan */
+    border-style: dashed;
+    align-items: stretch; /* Penuhkan ketinggian */
+}
+
+.dropped-item.comment-item textarea {
+    width: 100%;
+    min-height: 50px;
+    border: none;
+    background-color: transparent;
+    resize: vertical;
+    font-family: 'Inter', sans-serif;
+    font-style: italic;
+    color: #71717A; /* Teks Gelap */
+}
+
+/* Sembunyikan butang 'fx' untuk komen */
+.dropped-item.comment-item .wrap-function-btn {
+    display: none;
+}
+
+/* TAMBAH BLOK INI DI PENGHUJUNG FAIL styles.css */
+
 /* Gaya untuk komponen Aliran Kawalan (Control Flow) */
-.dropped-item[data-item-type="if"],
-.dropped-item[data-item-type="then"],
-.dropped-item[data-item-type="else"],
 .dropped-item[data-item-type="else_if"] {
     background-color: #FEF2F2; /* Merah sangat pucat */
     border-color: #FCA5A5;
     justify-content: center; /* Pusatkan teks */
 }
 
-.dropped-item[data-item-type="if"] span,
-.dropped-item[data-item-type="then"] span,
-.dropped-item[data-item-type="else"] span,
 .dropped-item[data-item-type="else_if"] span {
     font-weight: 600;
     font-family: monospace;
     color: #B91C1C; /* Merah gelap */
 }
+
+
