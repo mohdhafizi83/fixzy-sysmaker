@@ -1784,6 +1784,139 @@ fieldset.fieldset-disabled {
     opacity: 1;
 }
 
+/* ADD THIS AT THE END OF styles.css */
+
+/* Configurable Query/Calculation Builder Modal Styles */
+#configurable-query-builder-modal .qb-section {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1.5rem;
+}
+#configurable-query-builder-modal .qb-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+#configurable-query-builder-modal .qb-section h4 {
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+/* Field selection boxes (for General and GroupBy) */
+#configurable-query-builder-modal .qb-fields-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+#configurable-query-builder-modal .qb-field-list-box {
+    flex: 1;
+}
+#configurable-query-builder-modal .qb-field-list-box label {
+    font-weight: 500;
+    font-size: 0.9em;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+#configurable-query-builder-modal .qb-field-list {
+    list-style: none;
+    padding: 0.5rem;
+    margin: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    height: 150px;
+    overflow-y: auto;
+    background-color: #F9FAFB;
+}
+#configurable-query-builder-modal .qb-field-list li {
+    padding: 0.5rem;
+    cursor: pointer;
+    border-radius: 4px;
+    user-select: none; /* Prevent text selection when clicking */
+    transition: background-color 0.2s;
+}
+#configurable-query-builder-modal .qb-field-list li:hover {
+    background-color: #e9ecef;
+}
+/* This is the highlight style you requested */
+#configurable-query-builder-modal .qb-field-list li.selected {
+    background-color: var(--primary-color);
+    color: white;
+}
+#configurable-query-builder-modal .qb-field-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Filter Rules & Sorting Rules */
+#configurable-query-builder-modal .cqb-rule, 
+#configurable-query-builder-modal .cqb-sort-rule {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    align-items: center;
+}
+#configurable-query-builder-modal .cqb-rule select, 
+#configurable-query-builder-modal .cqb-sort-rule select {
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background-color: white;
+}
+#configurable-query-builder-modal .cqb-rule input[type="text"] {
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+#configurable-query-builder-modal .cqb-delete-btn {
+    background: none;
+    border: none;
+    color: var(--secondary-color);
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0 0.5rem;
+    line-height: 1;
+}
+#configurable-query-builder-modal .cqb-delete-btn:hover {
+    color: #dc3545;
+}
+
+/* Nested Rule Groups */
+#configurable-query-builder-modal .cqb-rule-group {
+    border: 1px solid #D1D5DB;
+    border-left: 3px solid var(--primary-color);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-top: 1rem;
+    background-color: #F9FAFB;
+}
+#configurable-query-builder-modal .cqb-rule-group .qb-logic-toggle {
+    margin-bottom: 1rem;
+    font-weight: 500;
+}
+#configurable-query-builder-modal .cqb-rule-group .qb-nested-rules {
+    padding-left: 1rem;
+    border-left: 2px dashed #D1D5DB;
+}
+#configurable-query-builder-modal .cqb-rule-group .group-actions button {
+    font-size: 0.8em;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Fix for large modal content to be scrollable */
+#configurable-query-builder-modal .modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: 85vh; /* Limit max height */
+}
+#configurable-query-builder-modal .modal-body {
+    flex-grow: 1; /* Allow body to fill available space */
+    overflow-y: auto; /* Add scrollbar ONLY when needed */
+    padding-right: 1rem; /* Space for scrollbar */
+}
+
 /* TAMBAH BLOK INI DI PENGHUJUNG FAIL styles.css */
 
 /* Gaya untuk komponen API Endpoint baharu */

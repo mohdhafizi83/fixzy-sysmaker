@@ -42,9 +42,8 @@ import {
     saveFieldSettings,
 	configureNewProjectModal,
     showNewProjectModal,
-	initializeQueryBuilderModal,
-	initializeAdvancedCalculationBuilder,
-	initializeCalculationBuilderModal,
+initializeCalculationBuilder,
+initializeQueryBuilder,
     saveRelationshipSettings   	
 } from './uiHandlers.js';
 
@@ -372,9 +371,8 @@ window.addEventListener('beforeunload', (event) => {
 	initializeOptionsListRules();
 	initializeCalculatedFieldRules();
 	initializeTemplatePreviewHandlers();
-	initializeQueryBuilderModal();
-	initializeCalculationBuilderModal();
-	initializeAdvancedCalculationBuilder();
+initializeQueryBuilder();
+    initializeCalculationBuilder();
 	initializeAlgorithmBuilder();
 	
 	initializeProjectSaveHandlers();

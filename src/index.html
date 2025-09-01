@@ -1882,170 +1882,127 @@
 <div id="loading-overlay" class="loading-overlay-hidden">
         <div class="loader"></div>
     </div>
-	
-<div id="query-builder-modal" class="modal-overlay hidden">
+
+<div id="configurable-query-builder-modal" class="modal-overlay hidden">
     <div class="modal-content extra-large">
         <div class="modal-header">
-            <h3>Query Builder</h3>
-            <button id="query-builder-close" class="modal-close">&times;</button>
+            <h3 id="cqb-modal-title">Query Builder</h3>
+            <button id="cqb-modal-close" class="modal-close">&times;</button>
         </div>
-        <div class="modal-body">
-            <div id="query-builder-container">
-                
-                <div class="qb-section">
-                    <h4>1. Fields to Display</h4>
-                    <div class="qb-fields-container">
-                        <div class="qb-field-list-box">
-                            <label>Available Fields</label>
-                            <ul id="qb-available-fields" class="qb-field-list"></ul>
-                        </div>
-                        <div class="qb-field-controls">
-                            <button id="qb-add-field" class="btn">&gt;</button>
-                            <button id="qb-remove-field" class="btn">&lt;</button>
-                        </div>
-                        <div class="qb-field-list-box">
-                            <label>Fields in Report</label>
-                            <ul id="qb-selected-fields" class="qb-field-list"></ul>
-                        </div>
-                    </div>
+        <div class="modal-body" id="cqb-modal-body">
+            <!-- This part is for Calculation Builder mode -->
+            <div class="qb-mode-calculation hidden">
+                <div class="cb-mandatory-rule-display" style="margin-bottom: 1.5rem;">
+                    <p><i class="fas fa-info-circle"></i> This calculation is automatically filtered where: <strong id="cqb-mandatory-rule-text"></strong></p>
                 </div>
-
-                <div class="qb-section">
-                    <h4>2. Filter Rules</h4>
-                    <div class="qb-logic-toggle">
-                        <label><input type="radio" name="qb-logic" value="AND" checked> Match ALL of the following (AND)</label>
-                        <label><input type="radio" name="qb-logic" value="OR"> Match ANY of the following (OR)</label>
-                    </div>
-                    <div id="qb-rules-container">
-                        </div>
-                    <button id="qb-add-rule" class="btn btn-secondary mt-1"><i class="fas fa-plus"></i> Add Rule</button>
-					<button id="qb-add-group" class="btn btn-secondary mt-1"><i class="fas fa-layer-group"></i> Add Group</button>
-                </div>
-
-                <div class="qb-section">
-                    <h4>3. Sorting</h4>
-                     <div id="qb-sort-container">
-                        </div>
-                    <button id="qb-add-sort-level" class="btn btn-secondary mt-1"><i class="fas fa-plus"></i> Add Sort Level</button>
-                </div>
-
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" id="query-builder-cancel-btn">Cancel</button>
-            <button class="btn btn-primary" id="query-builder-generate-btn">Generate & Use Query</button>
-        </div>
-    </div>
-</div>
-<div id="calculation-builder-modal" class="modal-overlay hidden">
-    <div class="modal-content extra-large">
-        <div class="modal-header">
-            <h3>Calculation Builder</h3>
-            <button id="calculation-builder-close" class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-            <div id="calculation-builder-container">
-                
-<div class="cb-mandatory-rule-display" style="margin-bottom: 1.5rem;">
-    <p>
-        <i class="fas fa-info-circle"></i>
-        This calculation is automatically filtered where: 
-        <strong id="cb-mandatory-rule-text"></strong>
-    </p>
-</div>
-                
                 <div class="cb-advanced-toggle">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="cb-advanced-mode-toggle"> Use Advanced Mode
-                    </label>
+                    <label class="checkbox-label"><input type="checkbox" id="cqb-advanced-mode-toggle"> Use Advanced Mode</label>
                 </div>
-
                 <div class="cb-section">
                     <h4>1. Main Calculation</h4>
-
-                    <div id="cb-basic-calculation">
+                    <div id="cqb-calculation-basic">
                         <div class="cb-calculation-rule">
-                            <label for="cb-function">Calculate the</label>
-                            <select id="cb-function">
+                            <label for="cqb-calc-function">Calculate the</label>
+                            <select id="cqb-calc-function">
                                 <option value="COUNT">Total number of records</option>
                                 <option value="SUM">Sum (total value) of</option>
                                 <option value="AVG">Average of</option>
                                 <option value="MIN">Minimum (smallest) value of</option>
                                 <option value="MAX">Maximum (largest) value of</option>
                             </select>
-                            <div id="cb-field-container">
-                                <label for="cb-field">for field</label>
-                                <select id="cb-field"></select>
+                            <div id="cqb-calc-field-container" style="display: inline-block;">
+                                <label for="cqb-calc-field">for field</label>
+                                <select id="cqb-calc-field"></select>
                             </div>
                         </div>
                     </div>
-
-                    <div id="cb-advanced-calculation" class="hidden">
+                    <div id="cqb-calculation-advanced" class="hidden">
                         <div class="cb-advanced-rule">
-                            <select id="cb-advanced-function" style="max-width: 150px;">
+                            <select id="cqb-adv-function" style="max-width: 150px;">
                                 <option value="SUM">SUM</option>
                                 <option value="AVG">AVG</option>
                                 <option value="MIN">MIN</option>
                                 <option value="MAX">MAX</option>
                                 <option value="COUNT">COUNT</option>
                             </select>
-                            <label class="checkbox-label" style="margin-left: 1rem;">
-                                <input type="checkbox" id="cb-distinct-toggle"> DISTINCT
-                            </label>
+                            <label class="checkbox-label" style="margin-left: 1rem;"><input type="checkbox" id="cqb-distinct-toggle"> DISTINCT</label>
                         </div>
                         <div class="cb-expression-builder">
                             <label>Of Expression:</label>
-                            <select id="cb-expr-field1"></select>
-                            <select id="cb-expr-operator" style="max-width: 50px;">
-							    <option value="" selected>(none)</option>
+                            <select id="cqb-expr-field1"></select>
+                            <select id="cqb-expr-operator" style="max-width: 50px;">
+                                <option value="" selected>(none)</option>
                                 <option value="+">+</option>
                                 <option value="-">-</option>
                                 <option value="*">*</option>
                                 <option value="/">/</option>
                             </select>
-                            <select id="cb-expr-field2"></select>
+                            <select id="cqb-expr-field2"></select>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="cb-section">
-                    <h4>2. Filter Rules (Optional)</h4>
-                    <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 1rem;">
-                        You can add more optional filters below:
-                    </p>
+            <!-- This part is for General Query Builder mode -->
+            <div class="qb-mode-general qb-section hidden">
+                <h4>1. Fields to Display</h4>
+                <div class="qb-fields-container">
+                    <div class="qb-field-list-box">
+                        <label>Available Fields</label>
+                        <ul id="cqb-gen-available-fields" class="qb-field-list"></ul>
+                    </div>
+                    <div class="qb-field-controls">
+                        <button id="cqb-gen-add-field" class="btn">&gt;</button>
+                        <button id="cqb-gen-remove-field" class="btn">&lt;</button>
+                    </div>
+                    <div class="qb-field-list-box">
+                        <label>Fields in Report</label>
+                        <ul id="cqb-gen-selected-fields" class="qb-field-list"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Common sections for both modes -->
+            <div class="qb-section">
+                <h4>2. Filter Rules</h4>
+                <div id="cqb-container"> <!-- Wrapper for main logic toggle and rules -->
                     <div class="qb-logic-toggle">
-                        <label><input type="radio" name="cb-logic" value="AND" checked> Match ALL of the following (AND)</label>
-                        <label><input type="radio" name="cb-logic" value="OR"> Match ANY of the following (OR)</label>
+                        <label><input type="radio" name="cqb-logic" value="AND" checked> Match ALL of the following (AND)</label>
+                        <label><input type="radio" name="cqb-logic" value="OR"> Match ANY of the following (OR)</label>
                     </div>
-                    <div id="cb-rules-container"></div>
-                    <button id="cb-add-rule" class="btn btn-secondary mt-1"><i class="fas fa-plus"></i> Add Rule</button>
-					<button id="cb-add-group" class="btn btn-secondary mt-1"><i class="fas fa-layer-group"></i> Add Group</button>
+                    <div id="cqb-rules-container"></div>
+                    <button id="cqb-add-rule" class="btn btn-secondary mt-1"><i class="fas fa-plus"></i> Add Rule</button>
+                    <button id="cqb-add-group" class="btn btn-secondary mt-1"><i class="fas fa-layer-group"></i> Add Group</button>
                 </div>
+            </div>
+            
+            <div id="cqb-groupby-section" class="cb-section hidden">
+                <h4>3. Group Results By</h4>
+                <div class="qb-fields-container">
+                    <div class="qb-field-list-box">
+                        <label>Available Fields for Grouping</label>
+                        <ul id="cqb-groupby-available-fields" class="qb-field-list"></ul>
+                    </div>
+                    <div class="qb-field-controls">
+                        <button id="cqb-groupby-add-field" class="btn">&gt;</button>
+                        <button id="cqb-groupby-remove-field" class="btn">&lt;</button>
+                    </div>
+                    <div class="qb-field-list-box">
+                        <label>Group By These Fields</label>
+                        <ul id="cqb-groupby-selected-fields" class="qb-field-list"></ul>
+                    </div>
+                </div>
+            </div>
 
-                <div id="cb-groupby-section" class="cb-section hidden">
-                    <h4>3. Group Results By</h4>
-                    <div class="qb-fields-container">
-                        <div class="qb-field-list-box">
-                            <label>Available Fields for Grouping</label>
-                            <ul id="cb-groupby-available-fields" class="qb-field-list"></ul>
-                        </div>
-                        <div class="qb-field-controls">
-                            <button id="cb-groupby-add-field" class="btn">&gt;</button>
-                            <button id="cb-groupby-remove-field" class="btn">&lt;</button>
-                        </div>
-<div class="qb-field-list-box">
-    <label>Group By These Fields</label>
-    <ul id="cb-groupby-selected-fields" class="qb-field-list"></ul>
-    <div id="debug-group-by-output" style="padding: 1rem; color: #ff0000; font-weight: bold;"></div>
-</div>
-                    </div>
-                </div>
-                
+            <div id="cqb-sorting-section" class="qb-section qb-mode-general hidden">
+                <h4>3. Sorting</h4>
+                <div id="cqb-sort-container"></div>
+                <button id="cqb-add-sort-level" class="btn btn-secondary mt-1"><i class="fas fa-plus"></i> Add Sort Level</button>
             </div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-secondary" id="calculation-builder-cancel-btn">Cancel</button>
-            <button class="btn btn-primary" id="calculation-builder-generate-btn">Generate & Use Query</button>
+            <button class="btn btn-secondary" id="cqb-modal-cancel-btn">Cancel</button>
+            <button class="btn btn-primary" id="cqb-modal-generate-btn">Generate & Use Query</button>
         </div>
     </div>
 </div>
