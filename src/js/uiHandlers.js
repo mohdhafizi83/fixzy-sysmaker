@@ -150,10 +150,24 @@ function createLogicBuilder(config) {
 
         switch (type) {
             case 'comment': {
-                itemContainer.innerHTML = `<textarea placeholder="Type your comment here..."></textarea>`;
-                itemContainer.querySelector('textarea').addEventListener('input', updateModalCanvasState);
+                // ▼▼▼ MULA PERUBAHAN ▼▼▼
+                // Cipta header untuk nota
+                const commentHeader = document.createElement('div');
+                commentHeader.className = 'comment-header';
+                commentHeader.innerHTML = `<i class="fas fa-info-circle"></i> <span>For notes only. Not included in logic.</span>`;
+
+                // Cipta textarea
+                const textarea = document.createElement('textarea');
+                textarea.placeholder = "Type your comment here...";
+                textarea.addEventListener('input', updateModalCanvasState);
+
+                // Masukkan header dan textarea ke dalam bekas utama
+                itemContainer.appendChild(commentHeader);
+                itemContainer.appendChild(textarea);
+
                 // Tambah kelas khas untuk penggayaan
                 itemContainer.classList.add('comment-item');
+                // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
                 break;
             }
             // ▼▼▼ KOD BAHARU: Kes untuk komponen 'function' ▼▼▼
@@ -485,7 +499,8 @@ function createLogicBuilder(config) {
         deleteBtn.className = 'delete-algo-item';
         deleteBtn.innerHTML = '&times;';
         deleteBtn.title = 'Padam komponen ini';
-        const targetForDeleteBtn = itemContainer.querySelector('.sql-query-header') || itemContainer;
+        // ▼▼▼ KEMAS KINI: Tambah '.comment-header' sebagai sasaran untuk butang padam ▼▼▼
+        const targetForDeleteBtn = itemContainer.querySelector('.sql-query-header, .comment-header') || itemContainer;
         targetForDeleteBtn.appendChild(deleteBtn);
         return itemContainer;
     };

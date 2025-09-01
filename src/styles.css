@@ -1909,3 +1909,45 @@ fieldset.fieldset-disabled {
 .function-argument-droppable .dropped-item .wrap-function-btn {
     display: none;
 }
+
+/* ================================================================== */
+/* == ALGORITHM BUILDER - COMMENT COMPONENT STYLES == */
+/* ================================================================== */
+
+.dropped-item.comment-item {
+    background-color: #FEFCE8; /* Kuning Pucat */
+    border-color: #FDE68A; /* Kuning Sempadan */
+    border-left-color: #FBBF24; /* Kuning lebih pekat untuk aksen */
+    border-style: dashed;
+    flex-direction: column; /* Susun header dan textarea secara menegak */
+    align-items: stretch; /* Penuhkan lebar */
+    padding: 0; /* Buang padding asal untuk kawalan penuh */
+}
+
+.comment-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background-color: rgba(251, 191, 36, 0.1);
+    font-size: 0.8em;
+    font-style: italic;
+    color: #92400E; /* Warna teks coklat gelap */
+    border-bottom: 1px dashed #FDE6A;
+}
+
+.comment-header .delete-algo-item {
+    position: static; /* Batalkan posisi absolute sedia ada */
+    margin-left: auto; /* Tolak butang ke hujung kanan */
+    padding: 0;
+    font-size: 1.2rem;
+}
+
+.dropped-item.comment-item textarea {
+    border: none;
+    background-color: transparent;
+    resize: vertical;
+    padding: 0.75rem;
+    font-style: italic;
+    color: #71717A;
+}
