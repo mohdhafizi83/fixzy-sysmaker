@@ -2,7 +2,7 @@
  * Membuka Query Builder dalam mod 'general'.
  * Fungsi ini boleh dieksport dan dipanggil dari mana-mana, terutamanya dari Algorithm Builder.
  */
-export function openGeneralQueryBuilder() {
+export function openGeneralQueryBuilder(targetTextarea) {
     let tableName;
     const fieldPage = document.getElementById('field-settings-page');
     const tablePage = document.getElementById('table-settings-page');
@@ -19,14 +19,24 @@ export function openGeneralQueryBuilder() {
         return;
     }
 
+    let initialState = null;
+    if (targetTextarea) {
+        const stateInput = targetTextarea.parentElement.querySelector('.query-builder-state');
+        if (stateInput) {
+            initialState = stateInput.value || null;
+        }
+    }
+
     showConfigurableQueryBuilder({
         mode: 'general',
         tableName: tableName,
+        initialState: initialState,
         onComplete: (sql, state) => {
-            if (queryBuilderTargetTextarea) {
-                queryBuilderTargetTextarea.value = sql;
-                queryBuilderTargetTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-                queryBuilderTargetTextarea = null; // Reset selepas digunakan
+            if (targetTextarea) {
+                targetTextarea.value = sql;
+                const stateInput = targetTextarea.parentElement.querySelector('.query-builder-state');
+                if (stateInput) stateInput.value = state;
+                targetTextarea.dispatchEvent(new Event('input', { bubbles: true }));
             }
         }
     });
@@ -125,9 +135,15 @@ function setupLogicBuilderCore(config) {
                 } else if (['string', 'number', 'api_endpoint'].includes(type)) {
                     itemData.value = item.querySelector('input')?.value;
                 } else if (type === 'sql_query') {
-                    itemData.value = item.querySelector('textarea')?.value;
+                    itemData.value = item.querySelector('textarea')?.value || '';
+                    const stateInput = item.querySelector('.query-builder-state');
+                    // Hanya simpan state jika ia mempunyai nilai untuk mengelakkan data yang tidak perlu
+                    if (stateInput && stateInput.value) {
+                        itemData.builder_state = stateInput.value;
+                    }
                 } else {
-                    itemData.value = type;
+                    const valueSpan = item.querySelector('span:not(.paren)');
+                    itemData.value = valueSpan ? valueSpan.textContent : type;
                 }
                 return itemData;
             });
@@ -230,11 +246,10 @@ function setupLogicBuilderCore(config) {
             }
             // ▲▲▲ TAMAT KOD BAHARU ▲▲▲
             case 'sql_query':
-                itemContainer.innerHTML = `<div class="sql-query-header"><span>[SQL QUERY]</span><button class="open-qb-btn" title="Open Query Builder"><i class="fas fa-magic-wand-sparkles"></i></button></div><textarea placeholder="SELECT * FROM ..."></textarea>`;
+                itemContainer.innerHTML = `<div class="sql-query-header"><span>[SQL QUERY]</span><button class="open-qb-btn" title="Open Query Builder"><i class="fas fa-magic-wand-sparkles"></i></button></div><textarea placeholder="SELECT * FROM ..."></textarea><input type="hidden" class="query-builder-state">`;
                 itemContainer.querySelector('textarea').addEventListener('input', updateModalCanvasState);
                 itemContainer.querySelector('.open-qb-btn').addEventListener('click', (e) => {
-                    queryBuilderTargetTextarea = e.target.closest('.dropped-item').querySelector('textarea');
-                    openGeneralQueryBuilder();
+                    openGeneralQueryBuilder(e.target.closest('.dropped-item').querySelector('textarea'));
                 });
                 break;
             case 'api_endpoint':
@@ -553,7 +568,11 @@ function setupLogicBuilderCore(config) {
                 } else if (['string', 'number', 'api_endpoint'].includes(itemData.type)) {
                     newItem.querySelector('input').value = itemData.value;
                 } else if (itemData.type === 'sql_query') {
-                    newItem.querySelector('textarea').value = itemData.value;
+                    newItem.querySelector('textarea').value = itemData.value || '';
+                    const stateInput = newItem.querySelector('.query-builder-state');
+                    if (stateInput && itemData.builder_state) {
+                        stateInput.value = itemData.builder_state;
+                    }
                 }
 
                 // Panggilan rekursif untuk fungsi
@@ -3314,9 +3333,6 @@ export function initializeDatabasePropertiesHandlers() {
 }
 
 // KOD PENUH: Padam semua fungsi builder lama dan gantikan dengan keseluruhan blok ini.
-
-// Dikekalkan di skop global untuk kegunaan Logic Builder
-let queryBuilderTargetTextarea = null;
 
 // =================================================================
 // ▼▼▼ SISTEM QUERY BUILDER BOLEH LARAS YANG BAHARU ▼▼▼
