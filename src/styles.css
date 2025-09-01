@@ -1932,6 +1932,22 @@ fieldset.fieldset-disabled {
     white-space: nowrap; /* Elak teks turun baris */
 }
 
+/* Gaya untuk komponen 'This Table.Field' */
+.dropped-item[data-item-type="this_table_field"] {
+    background-color: #FEF3C7; /* Kuning pucat */
+    border-color: #FBBF24;
+}
+
+.dropped-item[data-item-type="this_table_field"] input[type="text"] {
+    border: none;
+    background: transparent;
+    font-weight: 600;
+    color: #92400E; /* Coklat gelap */
+    padding: 0;
+    width: auto; /* Biar ia mengecut/mengembang */
+    flex-shrink: 0; /* Elak ia dari penyek */
+}
+
 .dropped-item[data-item-type="api_endpoint"] input[type="text"] {
     flex-grow: 1; /* Penuhkan baki ruang */
     border: 1px solid #6EE7B7;

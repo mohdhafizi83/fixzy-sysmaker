@@ -54,6 +54,8 @@ function createLogicBuilder(config) {
             if (type === 'field') {
                 itemData.table = item.querySelector('.table-select')?.value;
                 itemData.field = item.querySelector('.field-select')?.value;
+            } else if (type === 'this_table_field') {
+                itemData.field = item.querySelector('.field-select')?.value;
             } else if (type === 'operator') {
                 itemData.value = item.querySelector('.operator-select')?.value;
             } else if (type === 'string' || type === 'number' || type === 'api_endpoint') {
@@ -93,6 +95,54 @@ function createLogicBuilder(config) {
                 itemContainer.innerHTML = `<span class="api-endpoint-label">[API ENDPOINT]</span><input type="text" placeholder="https://api.example.com/data">`;
                 itemContainer.querySelector('input').addEventListener('input', updateModalCanvasState);
                 break;
+            case 'this_table_field': {
+                let activeTable = '';
+                if (config.context && config.context.tableName) {
+                    activeTable = config.context.tableName;
+                } else {
+                    console.warn("Konteks jadual tidak ditemui untuk komponen 'This Table.Field'");
+                }
+
+                const tableInput = document.createElement('input');
+                tableInput.type = 'text';
+                tableInput.value = `${activeTable}.`;
+                tableInput.readOnly = true;
+                itemContainer.appendChild(tableInput);
+
+                const fieldSelect = document.createElement('select');
+                fieldSelect.className = 'field-select';
+                
+                let pkFieldName = '';
+                if (activeTable && jsonData.database.table[activeTable]) {
+                    const fields = jsonData.database.table[activeTable].fields;
+                    const fieldNames = Object.keys(fields);
+                    
+                    pkFieldName = fieldNames.find(f => fields[f].primary_key === 1) || 'field_id';
+
+                    fieldNames
+                        .filter(f => f !== pkFieldName) // Kecualikan primary key
+                        .forEach(fieldName => {
+                            const option = document.createElement('option');
+                            option.value = fieldName;
+                            option.textContent = fieldName;
+                            fieldSelect.appendChild(option);
+                        });
+                }
+                itemContainer.appendChild(fieldSelect);
+                fieldSelect.addEventListener('change', updateModalCanvasState);
+
+                const idLabel = document.createElement('span');
+                idLabel.textContent = `WHERE ${pkFieldName} = ##ID##`;
+                idLabel.style.marginLeft = '0.75rem';
+                idLabel.style.fontFamily = 'monospace';
+                idLabel.style.fontSize = '0.9em';
+                idLabel.style.color = 'var(--secondary-color)';
+                itemContainer.appendChild(idLabel);
+                
+                // Laraskan gaya bekas untuk komponen ini
+                itemContainer.style.justifyContent = 'flex-start';
+                break;
+            }
             case 'field':
                 const tableSelect = document.createElement('select');
                 tableSelect.className = 'table-select';
@@ -211,6 +261,8 @@ function createLogicBuilder(config) {
                         newItem.querySelector('.table-select').value = itemData.table;
                         newItem.querySelector('.table-select').dispatchEvent(new Event('change'));
                         newItem.querySelector('.field-select').value = itemData.field;
+                    } else if (itemData.type === 'this_table_field') {
+                        newItem.querySelector('.field-select').value = itemData.field;
                     } else if (itemData.type === 'operator') {
                         newItem.querySelector('.operator-select').value = itemData.value;
                     } else if (itemData.type === 'string' || itemData.type === 'number') {
@@ -256,6 +308,11 @@ function createLogicBuilder(config) {
 
     // Pasang Event Listeners
     openBtn.addEventListener('click', () => {
+        // Update the context dynamically every time the modal is opened.
+        // This ensures we have the latest information from the page.
+        if (config.getContext) {
+            config.context = config.getContext();
+        }
         populateCanvasFromHiddenInput();
         modal.classList.remove('hidden');
     });
@@ -519,24 +576,24 @@ export async function saveFieldSettings() {
  */
 export function initializeAlgorithmBuilder() {
     const ALGORITHM_GRAMMAR = [
-        { step: 1, allowed: ['if'] },
-        { step: 2, allowed: ['field', 'string', 'number', 'sql_query', 'api_endpoint'], name: "Nilai Pertama" },
+        { step: 1, allowed: ['if'], name: "Start" },
+        { step: 2, allowed: ['field', 'this_table_field', 'string', 'number', 'sql_query', 'api_endpoint'], name: "Nilai Pertama" },
         { step: 3, allowed: ['operator'], name: "Operator" },
-        { step: 4, allowed: ['field', 'string', 'number', 'sql_query', 'api_endpoint'], name: "Nilai Kedua" },
-        { step: 5, allowed: ['then'] },
-        { step: 6, allowed: ['field', 'string', 'number', 'sql_query', 'api_endpoint'], name: "Hasil Jika Benar" },
-        { step: 7, allowed: ['else'] },
-        { step: 8, allowed: ['field', 'string', 'number', 'sql_query', 'api_endpoint'], name: "Hasil Jika Palsu" }
+        { step: 4, allowed: ['field', 'this_table_field', 'string', 'number', 'sql_query', 'api_endpoint'], name: "Nilai Kedua" },
+        { step: 5, allowed: ['then'], name: "Action" },
+        { step: 6, allowed: ['field', 'this_table_field', 'string', 'number', 'sql_query', 'api_endpoint'], name: "Hasil Jika Benar" },
+        { step: 7, allowed: ['else'], name: "Alternative" },
+        { step: 8, allowed: ['field', 'this_table_field', 'string', 'number', 'sql_query', 'api_endpoint'], name: "Hasil Jika Palsu" }
     ];
     
     // Konfigurasi ini kini spesifik untuk 'Algorithm' pada tetapan medan.
     const config = {
         triggerButtonId: 'open-algorithm-builder-btn',
         modalId: 'algorithm-builder-modal',
-        // ▼▼▼ KEMAS KINI: Tambah 'context' untuk menghantar nama jadual semasa ▼▼▼
-        context: { 
-            tableName: document.querySelector('#field-settings-page .field-name')?.textContent.split('.')[0] 
-        },
+        // Tukar dari objek statik kepada fungsi untuk mendapatkan konteks secara dinamik
+        getContext: () => ({
+            tableName: document.querySelector('#field-settings-page .field-name')?.textContent.split('.')[0]
+        }),
         closeButtonId: 'algorithm-builder-close',
         cancelButtonId: 'algorithm-builder-cancel-btn',
         doneButtonId: 'algorithm-builder-done-btn',
@@ -544,7 +601,6 @@ export function initializeAlgorithmBuilder() {
         paletteId: '.algorithm-palette',
         targetInputId: 'fld-algorithm-logic',
         validationRules: ALGORITHM_GRAMMAR
-        // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
     };
 
     createLogicBuilder(config);
@@ -569,7 +625,9 @@ export function initializeTableHookBuilder() {
     const config = {
         triggerButtonId: 'open-table-hook-builder-btn', // Butang baharu pada halaman tetapan jadual
         modalId: 'algorithm-builder-modal', // Kita boleh guna semula modal yang sama
-        context: { tableName: document.querySelector('#table-settings-page .table-name')?.textContent || '' },
+        getContext: () => ({
+            tableName: document.querySelector('#table-settings-page .table-name')?.textContent || ''
+        }),
         closeButtonId: 'algorithm-builder-close',
         cancelButtonId: 'algorithm-builder-cancel-btn',
         doneButtonId: 'algorithm-builder-done-btn',
@@ -598,7 +656,7 @@ export function initializeProjectHookBuilder() {
     const config = {
         triggerButtonId: 'open-project-hook-builder-btn',
         modalId: 'algorithm-builder-modal',
-        context: { tableName: null }, // Tiada konteks jadual di peringkat projek
+        getContext: () => ({ tableName: null }), // Tiada konteks jadual di peringkat projek
         targetInputId: 'prj-hook-logic',
         validationRules: PROJECT_HOOK_GRAMMAR,
         // Salin ID butang lain dari atas
