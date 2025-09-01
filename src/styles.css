@@ -1547,112 +1547,6 @@ fieldset.fieldset-disabled {
     100% { transform: rotate(360deg); }
 }
 
-/* ADD THIS AT THE END OF styles.css */
-
-/* Query Builder Modal Styles */
-#query-builder-modal .qb-section {
-    margin-bottom: 2rem;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 1.5rem;
-}
-#query-builder-modal .qb-section:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
-}
-#query-builder-modal .qb-section h4 {
-    margin-bottom: 1rem;
-    font-weight: 600;
-}
-#query-builder-modal .qb-fields-container,
-#calculation-builder-modal .qb-fields-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-}
-#query-builder-modal .qb-field-list-box,
-#calculation-builder-modal .qb-field-list-box {
-    flex: 1;
-}
-#query-builder-modal .qb-field-list-box,
-#calculation-builder-modal .qb-field-list-box label {
-    font-weight: 500;
-    font-size: 0.9em;
-    margin-bottom: 0.5rem;
-    display: block;
-}
-#query-builder-modal .qb-field-list,
-#calculation-builder-modal .qb-field-list {
-    list-style: none;
-    padding: 0.5rem;
-    margin: 0;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    height: 150px;
-    overflow-y: auto;
-    background-color: #F9FAFB;
-}
-#query-builder-modal .qb-field-list,
-#calculation-builder-modal .qb-field-list li {
-    padding: 0.5rem;
-    cursor: pointer;
-    border-radius: 4px;
-    user-select: none;
-}
-#query-builder-modal .qb-field-list,
-#calculation-builder-modal .qb-field-list li:hover {
-    background-color: #e9ecef;
-}
-#query-builder-modal .qb-field-list,
-#calculation-builder-modal .qb-field-list li.selected {
-    background-color: var(--primary-color);
-    color: white;
-}
-#query-builder-modal .qb-field-controls,
-#calculation-builder-modal .qb-field-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-#query-builder-modal .qb-logic-toggle {
-    margin-bottom: 1rem;
-}
-#query-builder-modal .qb-rule, 
-#query-builder-modal .qb-sort-rule,
-#calculation-builder-modal .cb-rule {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-    align-items: center;
-}
-#query-builder-modal .qb-rule select, 
-#query-builder-modal .qb-sort-rule select,
-#calculation-builder-modal .cb-rule select {
-    padding: 0.5rem;
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
-    background-color: white;
-}
-#query-builder-modal .qb-rule input[type="text"],
-#calculation-builder-modal .cb-rule input[type="text"] {
-    flex: 1;
-    padding: 0.5rem;
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
-}
-#query-builder-modal .qb-delete-btn {
-    background: none;
-    border: none;
-    color: var(--secondary-color);
-    cursor: pointer;
-    font-size: 1.2rem;
-    padding: 0 0.5rem;
-}
-#query-builder-modal .qb-delete-btn:hover {
-    color: #dc3545;
-}
-
 /* Letakkan butang padam di penjuru kanan atas */
 .dropped-item .delete-algo-item {
     position: absolute;
@@ -1950,4 +1844,221 @@ fieldset.fieldset-disabled {
     padding: 0.75rem;
     font-style: italic;
     color: #71717A;
+}
+
+/* ================================================================== */
+/* == CONFIGURABLE QUERY BUILDER (CQB) STYLES                      == */
+/* ================================================================== */
+
+/* Main Modal Adjustments */
+#configurable-query-builder-modal .modal-content {
+    max-width: 950px; /* Wider modal for better layout */
+    width: 90%;
+}
+
+/* Jadikan badan modal boleh skrol */
+#configurable-query-builder-modal .modal-body {
+    max-height: 75vh; /* Hadkan ketinggian kepada 75% dari ketinggian tetingkap */
+    overflow-y: auto; /* Tambah bar skrol menegak apabila kandungan melimpah */
+    padding-right: 1rem; /* Tambah sedikit ruang untuk bar skrol */
+}
+
+/* Section Styling */
+#configurable-query-builder-modal .cqb-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+#configurable-query-builder-modal .cqb-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+#configurable-query-builder-modal .cqb-section h4 {
+    margin-bottom: 1rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--text-color);
+}
+
+/* Field Selection (Dual Listbox for SELECT and GROUP BY) */
+.qb-fields-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+.qb-field-list-box {
+    flex: 1;
+}
+.qb-field-list-box label {
+    font-weight: 500;
+    font-size: 0.9em;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+.qb-field-list {
+    list-style: none;
+    padding: 0.5rem;
+    margin: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    height: 180px;
+    overflow-y: auto;
+    background-color: #F9FAFB;
+}
+.qb-field-list li {
+    padding: 0.5rem;
+    cursor: pointer;
+    border-radius: 4px;
+    user-select: none;
+    font-size: 0.9em;
+}
+.qb-field-list li:hover {
+    background-color: #e9ecef;
+}
+.qb-field-list li.selected {
+    background-color: var(--primary-color);
+    color: white;
+}
+.qb-field-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.qb-field-controls button {
+    padding: 0.5rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    background-color: white;
+    cursor: pointer;
+}
+.qb-field-controls button:hover {
+    background-color: #f3f4f6;
+}
+
+/* Rule & Group Styling */
+.qb-logic-toggle {
+    margin-bottom: 1rem;
+    background-color: #f3f4f6;
+    padding: 0.5rem;
+    border-radius: 6px;
+    display: inline-flex;
+    border: 1px solid var(--border-color);
+}
+.qb-logic-toggle label {
+    padding: 0.25rem 1rem;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9em;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+.qb-logic-toggle input[type="radio"] {
+    display: none;
+}
+/* Guna :has() untuk memilih label induk apabila radio di dalamnya ditanda */
+.qb-logic-toggle label:has(input[type="radio"]:checked) {
+    background-color: white;
+    color: var(--primary-color);
+    box-shadow: var(--shadow);
+}
+
+.cqb-rule, .cqb-sort-rule {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    align-items: center;
+    background-color: #f9fafb;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+.cqb-rule select, .cqb-sort-rule select {
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background-color: white;
+    font-size: 0.9em;
+}
+.cqb-rule input[type="text"] {
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    font-size: 0.9em;
+}
+
+/* Rule Group (Nested) */
+.cqb-rule-group {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-left: 3px solid var(--primary-color);
+    border-radius: 6px;
+    padding: 1rem 1rem 1rem 1.5rem;
+    margin-bottom: 1rem;
+    position: relative;
+}
+.qb-nested-rules {
+    margin-top: 1rem;
+}
+.cqb-rule-group .group-actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+}
+.cqb-rule-group .group-actions .cqb-delete-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+}
+
+/* Sembunyikan butang 'Add Group' dalam mod 'Calculation' Asas */
+#configurable-query-builder-modal:has(.qb-mode-calculation:not(.hidden)):not(:has(#cqb-advanced-mode-toggle:checked)) #cqb-add-group,
+#configurable-query-builder-modal:has(.qb-mode-calculation:not(.hidden)):not(:has(#cqb-advanced-mode-toggle:checked)) .cqb-add-nested-group {
+    display: none;
+}
+
+/* Delete Buttons */
+.cqb-delete-btn {
+    background: none;
+    border: none;
+    color: var(--secondary-color);
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0 0.5rem;
+    line-height: 1;
+    margin-left: auto; /* Push to the right */
+}
+.cqb-delete-btn:hover {
+    color: #dc3545;
+}
+
+/* Calculation Builder Specifics */
+#cqb-calculation-basic, #cqb-calculation-advanced {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background-color: #f9fafb;
+    padding: 1rem;
+    border-radius: 6px;
+}
+#cqb-calculation-basic select, #cqb-calculation-advanced select {
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+.cb-mandatory-rule-display {
+    background-color: #FEFCE8;
+    border: 1px solid #FDE047;
+    color: #78350F;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9em;
+    margin-top: 1rem;
+}
+.cb-mandatory-rule-display i {
+    margin-right: 0.5rem;
 }
