@@ -176,7 +176,7 @@ if (fieldsToUpdate.text_area === 1) {
 ipcMain.handle('sql:parse-calculation-query', (event, sql) => {
     // ▼▼▼ TAMBAH DUA BARIS INI UNTUK DIAGNOSIS ▼▼▼
     console.log("--- SQL received by backend parser ---");
-    console.log(sql);
+    //console.log(sql);
     // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
 
     if (!sql) {
