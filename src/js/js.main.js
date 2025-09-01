@@ -168,36 +168,6 @@ export const SaveManager = {
     }
 };
 
-export function setActiveSidebarItem(tableName, fieldName = null) {
-    // Beri sedikit masa untuk DOM "tenang" selepas dijana semula
-    setTimeout(() => {
-        const tableLinks = document.querySelectorAll('.sidebar .nav-list .has-submenu > a');
-        const parentLink = Array.from(tableLinks).find(
-            link => link.querySelector('span').textContent.trim() === tableName
-        );
-
-        if (!parentLink) {
-            console.error(`Jadual '${tableName}' tidak ditemui di sidebar.`);
-            return;
-        }
-
-        // Jika sasarannya adalah medan, buka menu induknya dahulu
-        if (fieldName) {
-            // Buka submenu secara terus (lebih stabil daripada .click())
-            if (!parentLink.classList.contains('open')) {
-                parentLink.classList.add('open');
-                const submenu = parentLink.nextElementSibling;
-                if (submenu) submenu.style.display = 'block';
-            }
-            // Gunakan fungsi sedia ada untuk fokus pada medan
-            focusOnSidebarField(tableName, fieldName);
-        } else {
-            // Jika sasarannya adalah jadual, gunakan fungsi sedia ada
-            setActiveSidebarLink(tableName);
-        }
-    }, 100); // Kelewatan minimum untuk memastikan DOM sedia
-}
-
 function showConfirmationDialog(title, message) {
     return new Promise((resolve) => {
         showCustomDialog({

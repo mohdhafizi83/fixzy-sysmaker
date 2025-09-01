@@ -15,13 +15,8 @@ function setupLogicBuilderCore(config) {
     const placeholder = canvas ? canvas.querySelector('.canvas-placeholder') : null;
 
     if (!palette || !canvas || !hiddenInput) {
-        console.error("Satu atau lebih elemen untuk Logic Builder tidak ditemui.", {
-            ...config,
-            found: {
-                closeBtn: !!closeBtn, cancelBtn: !!cancelBtn, doneBtn: !!doneBtn,
-                palette: !!palette, canvas: !!canvas, hiddenInput: !!hiddenInput
-            }
-        });
+        // Memperbaiki log ralat untuk hanya merujuk kepada pembolehubah yang ada dalam skop ini.
+        console.error("Satu atau lebih elemen untuk Logic Builder tidak ditemui.", { palette: !!palette, canvas: !!canvas, hiddenInput: !!hiddenInput });
         return;
     }
 
@@ -792,7 +787,7 @@ export function applyFontSize(size) {
     document.documentElement.style.fontSize = fontSizeValue;
 }
 
-import { allTableNames, jsonData, loadProjectData, activeProject, SaveManager, setActiveSidebarItem, isAutoSaveEnabled, isPopulatingData, lastActiveChildTable, setLastActiveChildTable, setAwaitingMenuGroupSave } from './js.main.js';
+import { allTableNames, jsonData, loadProjectData, activeProject, SaveManager, isAutoSaveEnabled, isPopulatingData, lastActiveChildTable, setLastActiveChildTable, setAwaitingMenuGroupSave } from './js.main.js';
 
 // TAMBAH DUA FUNGSI BAHARU INI DALAM uiHandlers.js
 
@@ -3131,9 +3126,8 @@ export function initializeOptionsListRules() {
 
 export function initializeCalculatedFieldRules() {
     const enableCheckbox = document.getElementById('fld-calculated-enable');
-    const queryTextarea = document.getElementById('fld-calculated-query');
 
-    if (!enableCheckbox || !queryTextarea) return;
+    if (!enableCheckbox) return;
 
     const validateConditions = () => {
         const getEl = (id) => document.getElementById(id);
