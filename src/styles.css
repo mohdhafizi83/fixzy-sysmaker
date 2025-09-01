@@ -1325,12 +1325,27 @@ fieldset.fieldset-disabled {
     overflow-y: auto;              
     /* ▲▲▲ TAMAT TAMBAHAN BAHARU ▲▲▲ */
 }
-
-.algorithm-palette h4 {
-    margin-top: 0;
-    margin-bottom: 1rem;
-    font-weight: 600;
+.palette-group {
+    margin-bottom: 1.25rem;
 }
+
+.palette-group:last-child {
+    margin-bottom: 0;
+}
+
+.palette-group-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--secondary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Buang gaya lama untuk h4 */
+.algorithm-palette h4 { display: none; }
 
 .algo-component {
     padding: 0.75rem;
@@ -1975,6 +1990,74 @@ fieldset.fieldset-disabled {
 .dropped-item[data-item-type="close_paren"] span {
     font-weight: bold;
     font-size: 1.5em;
+}
+
+/* Gaya untuk komponen Boolean dan Null */
+.dropped-item[data-item-type="boolean"] {
+    background-color: #E0F2F1; /* Teal pucat */
+    border-color: #26A69A;
+}
+
+.dropped-item[data-item-type="boolean"] select {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #26A69A;
+    background-color: white;
+    font-weight: 500;
+}
+
+.dropped-item[data-item-type="null"] {
+    background-color: #ECEFF1; /* Kelabu pucat */
+    border-color: #90A4AE;
+    justify-content: center;
+}
+
+/* Gaya untuk komponen Pembolehubah Sistem */
+.dropped-item[data-item-type="current_user"],
+.dropped-item[data-item-type="current_datetime"] {
+    background-color: #FEE2E2; /* Merah pucat */
+    border-color: #F87171;
+}
+
+.dropped-item[data-item-type="current_user"] span,
+.dropped-item[data-item-type="current_datetime"] span {
+    font-weight: 600;
+    font-family: monospace;
+    color: #991B1B; /* Merah gelap */
+}
+
+.dropped-item[data-item-type="current_user"] select,
+.dropped-item[data-item-type="current_datetime"] select {
+    border: 1px solid #FCA5A5;
+    /* Guna semula gaya dari komponen lain jika ada, atau tambah gaya baharu */
+    /* Contoh: padding, border-radius, dll. */
+}
+
+/* Gaya untuk komponen Fungsi */
+.dropped-item[data-item-type="function"] {
+    background-color: #F3E8FF; /* Ungu sangat pucat */
+    border-color: #C084FC;
+    align-items: center;
+}
+
+.dropped-item[data-item-type="function"] > span {
+    font-weight: 600;
+    font-family: monospace;
+    color: #7E22CE; /* Ungu gelap */
+}
+
+.function-argument-droppable {
+    flex-grow: 1;
+    min-height: 40px;
+    border: 1px dashed #D8B4FE;
+    border-radius: 4px;
+    margin: 0 0.25rem;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255,255,255,0.5);
+    transition: background-color 0.2s;
 }
 
 .dropped-item[data-item-type="api_endpoint"] input[type="text"] {

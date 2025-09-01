@@ -47,26 +47,37 @@ function createLogicBuilder(config) {
      * Mengemas kini 'modalCanvasState' dengan menukar keadaan semasa kanvas kepada string JSON.
      */
     const updateModalCanvasState = () => {
-        const items = Array.from(canvas.querySelectorAll('.dropped-item'));
-        const logicArray = items.map(item => {
-            const type = item.dataset.itemType;
-            let itemData = { type };
-            if (type === 'field') {
-                itemData.table = item.querySelector('.table-select')?.value;
-                itemData.field = item.querySelector('.field-select')?.value;
-            } else if (type === 'this_table_field') {
-                itemData.field = item.querySelector('.field-select')?.value;
-            } else if (type === 'comparison_operator' || type === 'logical_operator' || type === 'arithmetic_operator') {
-                itemData.value = item.querySelector('.operator-select')?.value;
-            } else if (type === 'string' || type === 'number' || type === 'api_endpoint') {
-                itemData.value = item.querySelector('input')?.value;
-            } else if (type === 'sql_query') {
-                itemData.value = item.querySelector('textarea')?.value;
-            } else {
-                itemData.value = type;
-            }
-            return itemData;
-        });
+        const mapItems = (container) => {
+            const children = Array.from(container.children).filter(el => el.classList.contains('dropped-item'));
+            return children.map(item => {
+                const type = item.dataset.itemType;
+                let itemData = { type };
+
+                if (type === 'function') {
+                    itemData.name = item.dataset.functionName;
+                    const argContainer = item.querySelector('.function-argument-droppable');
+                    itemData.arguments = mapItems(argContainer); // Panggilan Rekursif
+                } else if (type === 'field' || type === 'external_table_field') {
+                    itemData.table = item.querySelector('.table-select')?.value;
+                    itemData.field = item.querySelector('.field-select')?.value;
+                } else if (type === 'this_table_field') {
+                    itemData.field = item.querySelector('.field-select')?.value;
+                } else if (type === 'boolean') {
+                    itemData.value = item.querySelector('select')?.value;
+                } else if (['comparison_operator', 'logical_operator', 'arithmetic_operator', 'current_user', 'current_datetime'].includes(type)) {
+                    itemData.value = item.querySelector('.operator-select')?.value;
+                } else if (['string', 'number', 'api_endpoint'].includes(type)) {
+                    itemData.value = item.querySelector('input')?.value;
+                } else if (type === 'sql_query') {
+                    itemData.value = item.querySelector('textarea')?.value;
+                } else {
+                    itemData.value = type;
+                }
+                return itemData;
+            });
+        };
+
+        const logicArray = mapItems(canvas);
         modalCanvasState = JSON.stringify(logicArray, null, 2);
         if (placeholder) placeholder.style.display = items.length === 0 ? 'block' : 'none';
     };
@@ -76,7 +87,8 @@ function createLogicBuilder(config) {
      * @param {string} type - Jenis komponen (cth: 'field', 'operator').
      * @returns {HTMLElement} Elemen div yang telah dibina.
      */
-    const createInteractiveElement = (type) => {
+    const createInteractiveElement = (data) => {
+        const type = data.type;
         const itemContainer = document.createElement('div');
         itemContainer.className = 'dropped-item';
         itemContainer.dataset.itemType = type;
@@ -95,6 +107,50 @@ function createLogicBuilder(config) {
                 itemContainer.innerHTML = `<span class="api-endpoint-label">[API ENDPOINT]</span><input type="text" placeholder="https://api.example.com/data">`;
                 itemContainer.querySelector('input').addEventListener('input', updateModalCanvasState);
                 break;
+            case 'external_table_field': {
+                const activeTable = config.context?.tableName || '';
+                
+                const tableSelect = document.createElement('select');
+                tableSelect.className = 'table-select';
+                
+                const allOtherTables = Object.keys(jsonData.database.table).filter(t => t !== activeTable);
+                allOtherTables.forEach(tableName => {
+                    const option = document.createElement('option');
+                    option.value = tableName;
+                    option.textContent = tableName;
+                    tableSelect.appendChild(option);
+                });
+                itemContainer.appendChild(tableSelect);
+
+                const fieldSelect = document.createElement('select');
+                fieldSelect.className = 'field-select';
+
+                const populateFields = (tableName) => {
+                    fieldSelect.innerHTML = '';
+                    if (jsonData.database.table[tableName]) {
+                        const fields = Object.keys(jsonData.database.table[tableName].fields);
+                        fields.forEach(fieldName => {
+                            const option = document.createElement('option');
+                            option.value = fieldName;
+                            option.textContent = fieldName;
+                            fieldSelect.appendChild(option);
+                        });
+                    }
+                };
+
+                tableSelect.addEventListener('change', () => {
+                    populateFields(tableSelect.value);
+                    updateModalCanvasState();
+                });
+                fieldSelect.addEventListener('change', updateModalCanvasState);
+
+                itemContainer.appendChild(fieldSelect);
+
+                // Populate fields for the initially selected table
+                if (allOtherTables.length > 0) populateFields(allOtherTables[0]);
+                
+                break;
+            }
             case 'this_table_field': {
                 let activeTable = '';
                 if (config.context && config.context.tableName) {
@@ -244,6 +300,53 @@ function createLogicBuilder(config) {
                 operatorSelect.addEventListener('change', updateModalCanvasState);
                 break;
             }
+            case 'boolean': {
+                const booleanSelect = document.createElement('select');
+                booleanSelect.innerHTML = `<option value="true">True</option><option value="false">False</option>`;
+                itemContainer.appendChild(booleanSelect);
+                booleanSelect.addEventListener('change', updateModalCanvasState);
+                break;
+            }
+            case 'current_user': {
+                const label = document.createElement('span');
+                label.textContent = '[CurrentUser].';
+                itemContainer.appendChild(label);
+                const propertySelect = document.createElement('select');
+                propertySelect.className = 'operator-select'; // Guna semula gaya
+                const properties = [{value: 'username', text: 'Username'}, {value: 'group', text: 'Group'}, {value: 'groupID', text: 'GroupID'}];
+                properties.forEach(prop => {
+                    const option = document.createElement('option');
+                    option.value = prop.value; option.textContent = prop.text;
+                    propertySelect.appendChild(option);
+                });
+                itemContainer.appendChild(propertySelect);
+                propertySelect.addEventListener('change', updateModalCanvasState);
+                break;
+            }
+            case 'current_datetime': {
+                const label = document.createElement('span');
+                label.textContent = '[Current].';
+                itemContainer.appendChild(label);
+                const propertySelect = document.createElement('select');
+                propertySelect.className = 'operator-select'; // Guna semula gaya
+                const properties = [{value: 'datetime', text: 'DateTime'}, {value: 'date', text: 'Date'}, {value: 'time', text: 'Time'}, {value: 'timestamp', text: 'Timestamp'}];
+                properties.forEach(prop => {
+                    const option = document.createElement('option');
+                    option.value = prop.value; option.textContent = prop.text;
+                    propertySelect.appendChild(option);
+                });
+                itemContainer.appendChild(propertySelect);
+                propertySelect.addEventListener('change', updateModalCanvasState);
+                break;
+            }
+            case 'null': {
+                const itemLabel = document.createElement('span');
+                itemLabel.textContent = '[NULL]';
+                itemLabel.style.fontFamily = 'monospace';
+                itemLabel.style.fontWeight = '600';
+                itemContainer.appendChild(itemLabel);
+                break;
+            }
             case 'open_paren': {
                 const itemLabel = document.createElement('span');
                 itemLabel.textContent = '(';
@@ -289,39 +392,44 @@ function createLogicBuilder(config) {
      * Membina semula kanvas dari data JSON yang disimpan dalam input tersembunyi.
      */
     const populateCanvasFromHiddenInput = () => {
-        canvas.innerHTML = '';
-        const currentLogicValue = hiddenInput.value || '[]';
-        try {
-            const logic = JSON.parse(currentLogicValue);
-            if (logic.length === 0 && placeholder) {
-                canvas.appendChild(placeholder);
-                placeholder.style.display = 'block';
-            } else {
-                if (placeholder) placeholder.style.display = 'none';
-                logic.forEach(itemData => {
-                    const newItem = createInteractiveElement(itemData.type);
-                    if (itemData.type === 'field') {
-                        newItem.querySelector('.table-select').value = itemData.table;
-                        newItem.querySelector('.table-select').dispatchEvent(new Event('change'));
-                        newItem.querySelector('.field-select').value = itemData.field;
-                    } else if (itemData.type === 'this_table_field') {
-                        newItem.querySelector('.field-select').value = itemData.field;
-                    } else if (itemData.type === 'comparison_operator' || itemData.type === 'logical_operator' || itemData.type === 'arithmetic_operator') {
-                        newItem.querySelector('.operator-select').value = itemData.value;
-                    } else if (itemData.type === 'string' || itemData.type === 'number') {
-                        newItem.querySelector('input').value = itemData.value;
-                    } else if (itemData.type === 'sql_query') {
-                        newItem.querySelector('textarea').value = itemData.value;
-                    } else if (itemData.type === 'api_endpoint') {
-                        newItem.querySelector('input').value = itemData.value;
-                    }
-                    canvas.appendChild(newItem);
-                });
+        const buildFromLogic = (container, logicArray) => {
+            container.innerHTML = ''; // Kosongkan bekas
+            if (logicArray.length === 0 && container.classList.contains('algorithm-canvas')) {
+                 if (placeholder) container.appendChild(placeholder);
+            } else if (logicArray.length === 0 && container.classList.contains('function-argument-droppable')) {
+                container.innerHTML = '<span class="canvas-placeholder">Drop value here</span>';
             }
-        } catch (e) {
-            console.error("Gagal memproses logik sedia ada:", e);
-            if (placeholder) canvas.appendChild(placeholder);
-        }
+
+            logicArray.forEach(itemData => {
+                const newItem = createInteractiveElement(itemData);
+                container.appendChild(newItem);
+
+                // Isi nilai untuk jenis komponen yang ringkas
+                if (['field', 'external_table_field'].includes(itemData.type)) {
+                    newItem.querySelector('.table-select').value = itemData.table;
+                    newItem.querySelector('.table-select').dispatchEvent(new Event('change'));
+                    newItem.querySelector('.field-select').value = itemData.field;
+                } else if (itemData.type === 'this_table_field') {
+                    newItem.querySelector('.field-select').value = itemData.field;
+                } else if (itemData.type === 'boolean' || ['comparison_operator', 'logical_operator', 'arithmetic_operator', 'current_user', 'current_datetime'].includes(itemData.type)) {
+                    newItem.querySelector('select').value = itemData.value;
+                } else if (['string', 'number', 'api_endpoint'].includes(itemData.type)) {
+                    newItem.querySelector('input').value = itemData.value;
+                } else if (itemData.type === 'sql_query') {
+                    newItem.querySelector('textarea').value = itemData.value;
+                }
+
+                // Panggilan rekursif untuk fungsi
+                if (itemData.type === 'function' && itemData.arguments) {
+                    const argContainer = newItem.querySelector('.function-argument-droppable');
+                    buildFromLogic(argContainer, itemData.arguments);
+                }
+            });
+        };
+
+        const currentLogicValue = hiddenInput.value || '[]';
+        const logic = JSON.parse(currentLogicValue);
+        buildFromLogic(canvas, logic);
     };
 
     /**
@@ -329,7 +437,7 @@ function createLogicBuilder(config) {
      * @param {string} componentType - Jenis komponen yang cuba diletakkan.
      * @returns {boolean} - True jika sah, false jika tidak.
      */
-    const VALUE_TYPES = ['field', 'this_table_field', 'string', 'number', 'sql_query', 'api_endpoint'];
+    const VALUE_TYPES = ['field', 'this_table_field', 'external_table_field', 'string', 'number', 'sql_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'function'];
 
     const isValidDrop = (componentType) => {
         const existingComponents = Array.from(canvas.querySelectorAll('.dropped-item'));
@@ -391,21 +499,29 @@ function createLogicBuilder(config) {
         modal.classList.add('hidden');
     });
 
-    palette.addEventListener('dragstart', (e) => { if (e.target.classList.contains('algo-component')) { e.dataTransfer.setData('text/plain', e.target.dataset.type); } });
+    palette.addEventListener('dragstart', (e) => {
+        if (e.target.classList.contains('algo-component')) {
+            const data = {
+                type: e.target.dataset.type,
+                name: e.target.dataset.functionName // Akan 'undefined' untuk komponen bukan fungsi
+            };
+            e.dataTransfer.setData('text/plain', JSON.stringify(data));
+        }
+    });
     canvas.addEventListener('dragover', (e) => { e.preventDefault(); canvas.classList.add('dragging-over'); });
     canvas.addEventListener('dragleave', () => canvas.classList.remove('dragging-over'));
     
     canvas.addEventListener('drop', (e) => {
         e.preventDefault();
         canvas.classList.remove('dragging-over');
-        
-        const componentType = e.dataTransfer.getData('text/plain');
-        if (!isValidDrop(componentType)) {
+
+        const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+        if (!isValidDrop(data.type)) {
             return;
         }
 
         if (placeholder) placeholder.style.display = 'none';
-        const newItem = createInteractiveElement(componentType);
+        const newItem = createInteractiveElement(data);
         canvas.appendChild(newItem);
         const newInput = newItem.querySelector('input, textarea');
         if (newInput) newInput.focus();
