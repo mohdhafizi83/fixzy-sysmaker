@@ -3455,7 +3455,6 @@ export function initializeQueryBuilder() {
         const isAdvanced = e.target.checked;
         modal.querySelector('#cqb-calculation-basic').classList.toggle('hidden', isAdvanced);
         modal.querySelector('#cqb-calculation-advanced').classList.toggle('hidden', !isAdvanced);
-        modal.querySelector('#cqb-groupby-section').classList.toggle('hidden', !isAdvanced);
     });
 
     // Pasang listener untuk operator dalam mod lanjutan
@@ -3511,6 +3510,60 @@ export function initializeQueryBuilder() {
 }
 
 // --- FUNGSI-FUNGSI BANTUAN UNTUK BUILDER ---
+
+/**
+ * Mengimbas keadaan penapis (filter state) dan mengembalikan satu Set
+ * yang mengandungi semua nama jadual unik yang digunakan dalam peraturan.
+ * @param {object} filterState - Objek keadaan penapis dari builder.
+ * @returns {Set<string>} Satu Set nama jadual.
+ */
+function getTablesFromFilters(filterState) {
+    const tables = new Set();
+    if (!filterState || !filterState.rules) return tables;
+
+    function traverse(rules) {
+        rules.forEach(rule => {
+            if (rule.type === 'rule') {
+                tables.add(rule.table);
+            } else if (rule.type === 'group') {
+                traverse(rule.rules);
+            }
+        });
+    }
+
+    traverse(filterState.rules);
+    return tables;
+}
+
+/**
+ * Membina klausa LEFT JOIN berdasarkan hubungan Parent/Child yang telah ditetapkan.
+ * @param {string} mainTable - Nama jadual utama dalam klausa FROM.
+ * @param {Set<string>} tablesInFilters - Satu Set jadual yang digunakan dalam penapis.
+ * @returns {string} String klausa JOIN yang lengkap, cth: "\nLEFT JOIN `customers` ON ..."
+ */
+function buildJoinClause(mainTable, tablesInFilters) {
+    const allRelationships = jsonData.database.relationships;
+    let joinClauses = '';
+
+    tablesInFilters.forEach(tableToJoin => {
+        if (tableToJoin === mainTable) return; // Langkau jadual utama
+
+        const foundRelationship = allRelationships.find(rel =>
+            (rel.parent_table_name === mainTable && rel.child_table_name === tableToJoin) ||
+            (rel.parent_table_name === tableToJoin && rel.child_table_name === mainTable)
+        );
+
+        if (foundRelationship) {
+            const onClause = `\`${foundRelationship.parent_table_name}\`.\`${foundRelationship.parent_field}\` = \`${foundRelationship.child_table_name}\`.\`${foundRelationship.fk_child_field}\``;
+            joinClauses += `\nLEFT JOIN \`${tableToJoin}\` ON ${onClause}`;
+        } else {
+            console.warn(`Tiada hubungan terus ditemui antara '${mainTable}' dan '${tableToJoin}'. Ia akan dilangkau.`);
+        }
+    });
+
+    return joinClauses;
+}
+
 // =================================================================
 // ▼▼▼ SISTEM QUERY BUILDER BOLEH LARAS YANG BAHARU ▼▼▼
 // =================================================================
@@ -3626,21 +3679,37 @@ function populateBuilderFromState(jsonState, tableName, mode) {
 }
 
 function generateCalculationQuery(tableName, state) {
-    const pkField = Object.keys(jsonData.database.table[tableName].fields).find(f => jsonData.database.table[tableName].fields[f].primary_key);
+    const pkField = Object.keys(jsonData.database.table[tableName].fields).find(f => jsonData.database.table[tableName].fields[f].primary_key === 1);
     if (!pkField) {
         showCustomDialog({title: "Error", message: `Could not find a primary key for table '${tableName}'.`});
         return '';
     }
     
+    const tablesInFilters = getTablesFromFilters(state.filters);
+    const joinClause = buildJoinClause(tableName, tablesInFilters);
+
     let selectClause = 'SELECT ';
+    let aggregation;
+    let functionName;
+
     if (state.isAdvanced) {
+        functionName = state.advancedFunction;
         const expression = (state.operator && state.expr2) ? `\`${state.expr1}\` ${state.operator} \`${state.expr2}\`` : `\`${state.expr1}\``;
-        selectClause += `${state.advancedFunction}(${state.isDistinct ? 'DISTINCT ' : ''}${expression})`;
+        aggregation = `${functionName}(${state.isDistinct ? 'DISTINCT ' : ''}${expression})`;
     } else {
-        selectClause += state.basicFunction === 'COUNT' ? 'COUNT(*)' : `${state.basicFunction}(\`${state.field}\`)`;
+        functionName = state.basicFunction;
+        aggregation = functionName === 'COUNT' ? 'COUNT(*)' : `${functionName}(\`${state.field}\`)`;
     }
 
-    let query = `${selectClause}\nFROM \`${tableName}\``;
+    // Balut dengan COALESCE untuk memastikan nombor sentiasa dikembalikan (0 bukannya NULL)
+    // KECUALI untuk fungsi COUNT, kerana ia sentiasa mengembalikan nombor.
+    if (functionName === 'COUNT') {
+        selectClause += aggregation;
+    } else {
+        selectClause += `COALESCE(${aggregation}, 0)`;
+    }
+
+    let query = `${selectClause}\nFROM \`${tableName}\`${joinClause}`;
     const mandatoryCondition = `\`${tableName}\`.\`${pkField}\` = ##ID##`;
     const optionalConditions = buildNestedWhereClause(state.filters);
     
@@ -3653,10 +3722,16 @@ function generateCalculationQuery(tableName, state) {
 }
 
 function generateGeneralQuery(tableName, state) {
-    const selectClause = 'SELECT\n    ' + (state.selectedFields.length === 0 ? '*' : state.selectedFields.map(f => `\`${f}\``).join(',\n    '));
-    const fromClause = `\nFROM\n    \`${tableName}\``;
+    // Tambah awalan nama jadual untuk mengelakkan ralat kekaburan (ambiguity)
+    const selectClause = 'SELECT\n    ' + (state.selectedFields.length === 0 ? '*' : state.selectedFields.map(f => `\`${tableName}\`.\`${f}\``).join(',\n    '));
+    
+    const tablesInFilters = getTablesFromFilters(state.filters);
+    const joinClause = buildJoinClause(tableName, tablesInFilters);
+
+    const fromClause = `\nFROM\n    \`${tableName}\`${joinClause}`;
     const whereClause = buildNestedWhereClause(state.filters) ? `\nWHERE\n    ${buildNestedWhereClause(state.filters)}` : '';
-    const orderByClause = state.sorting.length > 0 ? '\nORDER BY\n    ' + state.sorting.map(s => `\`${s.field}\` ${s.direction}`).join(', ') : '';
+    // Tambah awalan nama jadual untuk mengelakkan ralat kekaburan (ambiguity)
+    const orderByClause = state.sorting.length > 0 ? '\nORDER BY\n    ' + state.sorting.map(s => `\`${tableName}\`.\`${s.field}\` ${s.direction}`).join(', ') : '';
     return `${selectClause}${fromClause}${whereClause}${orderByClause};`;
 }
 
@@ -3673,12 +3748,41 @@ function createRuleElement(tableName, data = null) {
     const initialTable = data ? data.table : tableName;
     const fields = jsonData.database.table[initialTable]?.fields || {};
     const fieldOptions = Object.keys(fields).map(f => `<option value="${f}">${f}</option>`).join('');
-    newRule.innerHTML = `<select class="cqb-rule-table">${tableOptions}</select><select class="cqb-rule-field">${fieldOptions}</select><select class="cqb-rule-operator"><option value="=">is equal to</option><option value="!=">is not equal to</option><option value=">">is greater than</option><option value="<">is less than</option><option value="LIKE">contains</option></select><input type="text" class="cqb-rule-value" placeholder="Value..."><button class="cqb-delete-btn">&times;</button>`;
+
+    const operators = [
+        { value: '=', text: 'is equal to' },
+        { value: '!=', text: 'is not equal to' },
+        { value: '>', text: 'is greater than' },
+        { value: '<', text: 'is less than' },
+        { value: '>=', text: 'is greater than or equal to' },
+        { value: '<=', text: 'is less than or equal to' },
+        { value: 'LIKE', text: 'contains' },
+        { value: 'NOT LIKE', text: 'does not contain' },
+        { value: 'IN', text: 'is one of (a,b,c)' },
+        { value: 'NOT IN', text: 'is not one of (a,b,c)' },
+        { value: 'IS NULL', text: 'is empty (NULL)' },
+        { value: 'IS NOT NULL', text: 'is not empty (not NULL)' }
+    ];
+    const operatorOptions = operators.map(op => `<option value="${op.value}">${op.text}</option>`).join('');
+
+    newRule.innerHTML = `<select class="cqb-rule-table">${tableOptions}</select><select class="cqb-rule-field">${fieldOptions}</select><select class="cqb-rule-operator">${operatorOptions}</select><input type="text" class="cqb-rule-value" placeholder="Value..."><button class="cqb-delete-btn">&times;</button>`;
+    
+    const operatorSelect = newRule.querySelector('.cqb-rule-operator');
+    const valueInput = newRule.querySelector('.cqb-rule-value');
+
+    // Sembunyikan input nilai jika operator adalah IS NULL atau IS NOT NULL
+    operatorSelect.addEventListener('change', (e) => {
+        const operator = e.target.value;
+        valueInput.classList.toggle('hidden', operator === 'IS NULL' || operator === 'IS NOT NULL');
+    });
+
     if (data) {
         newRule.querySelector('.cqb-rule-table').value = data.table;
         newRule.querySelector('.cqb-rule-field').value = data.field;
-        newRule.querySelector('.cqb-rule-operator').value = data.operator;
+        operatorSelect.value = data.operator;
         newRule.querySelector('.cqb-rule-value').value = data.value;
+        // Cetuskan 'change' untuk menetapkan keadaan awal UI yang betul
+        operatorSelect.dispatchEvent(new Event('change'));
     }
     return newRule;
 }
@@ -3705,17 +3809,51 @@ function createSortElement(tableName, data = null) {
 }
 
 function buildNestedWhereClause(filterState) {
-    if (!filterState || filterState.rules.length === 0) return '';
+    if (!filterState || !filterState.rules || filterState.rules.length === 0) return '';
     const logic = filterState.logic || 'AND';
     const conditions = filterState.rules.map(rule => {
         if (rule.type === 'rule') {
-            let value = rule.value;
-            if (isNaN(value) || value === '') value = `'${value.replace(/'/g, "''")}'`;
-            return `\`${rule.table}\`.\`${rule.field}\` ${rule.operator} ${value}`;
+            const { table, field, operator, value } = rule;
+            const fieldData = jsonData.database.table[table]?.fields[field];
+            if (!fieldData) return null; // Langkau jika maklumat medan tiada
+
+            // Kendalikan operator yang tidak memerlukan nilai
+            if (operator === 'IS NULL' || operator === 'IS NOT NULL') {
+                return `\`${table}\`.\`${field}\` ${operator}`;
+            }
+
+            // Kendalikan IN dan NOT IN
+            if (operator === 'IN' || operator === 'NOT IN') {
+                const list = value.split(',').map(item => {
+                    const trimmed = item.trim();
+                    // Letak petikan jika bukan nombor, jika tidak guna seadanya
+                    return isNaN(trimmed) || trimmed === '' ? `'${trimmed.replace(/'/g, "''")}'` : trimmed;
+                }).join(', ');
+                return `\`${table}\`.\`${field}\` ${operator} (${list})`;
+            }
+
+            // Kendalikan operator lain yang mempunyai nilai
+            const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
+            const isNumeric = numericTypes.includes(fieldData.data_type.toUpperCase());
+            
+            let formattedValue;
+            if (operator === 'LIKE' || operator === 'NOT LIKE') {
+                 formattedValue = `'%${String(value || '').replace(/'/g, "''")}%'`;
+            } else if (isNumeric) {
+                formattedValue = parseFloat(value);
+                if (isNaN(formattedValue)) formattedValue = 0; // Lalai kepada 0 jika tidak sah
+            } else {
+                // Untuk rentetan, tarikh, dll., balut dengan petikan dan escape
+                formattedValue = `'${String(value || '').replace(/'/g, "''")}'`;
+            }
+
+            return `\`${table}\`.\`${field}\` ${operator} ${formattedValue}`;
         }
-        if (rule.type === 'group') return buildNestedWhereClause(rule);
-        return '';
-    }).filter(c => c);
+        if (rule.type === 'group') {
+            return buildNestedWhereClause(rule);
+        }
+        return null;
+    }).filter(c => c); // Tapis keluar keadaan yang null/kosong
     return conditions.length > 0 ? `(${conditions.join(` ${logic} `)})` : '';
 }
 
