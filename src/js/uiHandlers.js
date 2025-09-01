@@ -860,14 +860,15 @@ export function initializeAlgorithmBuilder() {
         // Key: jenis komponen SEBELUMNYA. Value: array jenis komponen BERIKUTNYA yang dibenarkan.
         'start':               ['if', 'open_paren', 'value'],
         'if':                  ['value', 'open_paren'],
+        'else_if':             ['value', 'open_paren'],
         'then':                ['value', 'open_paren'],
         'else':                ['value', 'open_paren'],
-        'value':               ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then', 'else', 'close_paren'],
+        'value':               ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then', 'else', 'else_if', 'close_paren'],
         'comparison_operator': ['value', 'open_paren'],
         'arithmetic_operator': ['value', 'open_paren'],
         'logical_operator':    ['value', 'open_paren', 'if'],
         'open_paren':          ['value', 'if', 'open_paren'],
-        'close_paren':         ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then', 'else', 'close_paren'],
+        'close_paren':         ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then', 'else', 'else_if', 'close_paren'],
     };
 
 
