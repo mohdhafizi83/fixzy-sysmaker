@@ -56,7 +56,7 @@ function createLogicBuilder(config) {
                 itemData.field = item.querySelector('.field-select')?.value;
             } else if (type === 'this_table_field') {
                 itemData.field = item.querySelector('.field-select')?.value;
-            } else if (type === 'operator') {
+            } else if (type === 'comparison_operator' || type === 'logical_operator' || type === 'arithmetic_operator') {
                 itemData.value = item.querySelector('.operator-select')?.value;
             } else if (type === 'string' || type === 'number' || type === 'api_endpoint') {
                 itemData.value = item.querySelector('input')?.value;
@@ -193,26 +193,69 @@ function createLogicBuilder(config) {
                 itemContainer.appendChild(fieldSelect);
                 fieldSelect.addEventListener('change', updateModalCanvasState);
                 break;
-            case 'operator':
+            case 'comparison_operator': {
                 const operatorSelect = document.createElement('select');
                 operatorSelect.className = 'operator-select';
-                const operators = [{ value: '==', text: 'Equal' }, { value: '!=', text: 'Not Equal' }, { value: '>', text: 'Greater Than' }, { value: '<', text: 'Less Than' }, { value: '>=', text: 'Greater Than or Equal' }, { value: '<=', text: 'Less Than or Equal' }, { type: 'separator' }, { value: '&&', text: 'AND' }, { value: '||', text: 'OR' }, { type: 'separator' }, { value: '+', text: 'Plus' }, { value: '-', text: 'Minus' }, { value: '*', text: 'Times' }, { value: '/', text: 'Divide' }];
+                const operators = [
+                    { value: '==', text: 'Equal' }, { value: '!=', text: 'Not Equal' }, 
+                    { value: '>', text: 'Greater Than' }, { value: '<', text: 'Less Than' }, 
+                    { value: '>=', text: 'Greater or Equal' }, { value: '<=', text: 'Less or Equal' }
+                ];
                 operators.forEach(op => {
-                    if (op.type === 'separator') {
-                        const option = document.createElement('option');
-                        option.disabled = true;
-                        option.textContent = '──────────';
-                        operatorSelect.appendChild(option);
-                    } else {
-                        const option = document.createElement('option');
-                        option.value = op.value;
-                        option.textContent = op.text;
-                        operatorSelect.appendChild(option);
-                    }
+                    const option = document.createElement('option');
+                    option.value = op.value;
+                    option.textContent = op.text;
+                    operatorSelect.appendChild(option);
                 });
                 itemContainer.appendChild(operatorSelect);
                 operatorSelect.addEventListener('change', updateModalCanvasState);
                 break;
+            }
+            case 'logical_operator': {
+                const operatorSelect = document.createElement('select');
+                operatorSelect.className = 'operator-select';
+                const operators = [
+                    { value: '&&', text: 'AND' }, { value: '||', text: 'OR' }
+                ];
+                operators.forEach(op => {
+                    const option = document.createElement('option');
+                    option.value = op.value;
+                    option.textContent = op.text;
+                    operatorSelect.appendChild(option);
+                });
+                itemContainer.appendChild(operatorSelect);
+                operatorSelect.addEventListener('change', updateModalCanvasState);
+                break;
+            }
+            case 'arithmetic_operator': {
+                const operatorSelect = document.createElement('select');
+                operatorSelect.className = 'operator-select';
+                const operators = [
+                    { value: '+', text: 'Plus (+)' }, { value: '-', text: 'Minus (-)' }, 
+                    { value: '*', text: 'Times (*)' }, { value: '/', text: 'Divide (/)' }
+                ];
+                operators.forEach(op => {
+                    const option = document.createElement('option');
+                    option.value = op.value;
+                    option.textContent = op.text;
+                    operatorSelect.appendChild(option);
+                });
+                itemContainer.appendChild(operatorSelect);
+                operatorSelect.addEventListener('change', updateModalCanvasState);
+                break;
+            }
+            case 'open_paren': {
+                const itemLabel = document.createElement('span');
+                itemLabel.textContent = '(';
+                itemContainer.appendChild(itemLabel);
+                break;
+            }
+            case 'close_paren': {
+                const itemLabel = document.createElement('span');
+                itemLabel.textContent = ')';
+                itemContainer.appendChild(itemLabel);
+                break;
+            }
             case 'string':
                 const stringInput = document.createElement('input');
                 stringInput.type = 'text';
@@ -263,7 +306,7 @@ function createLogicBuilder(config) {
                         newItem.querySelector('.field-select').value = itemData.field;
                     } else if (itemData.type === 'this_table_field') {
                         newItem.querySelector('.field-select').value = itemData.field;
-                    } else if (itemData.type === 'operator') {
+                    } else if (itemData.type === 'comparison_operator' || itemData.type === 'logical_operator' || itemData.type === 'arithmetic_operator') {
                         newItem.querySelector('.operator-select').value = itemData.value;
                     } else if (itemData.type === 'string' || itemData.type === 'number') {
                         newItem.querySelector('input').value = itemData.value;
@@ -286,25 +329,48 @@ function createLogicBuilder(config) {
      * @param {string} componentType - Jenis komponen yang cuba diletakkan.
      * @returns {boolean} - True jika sah, false jika tidak.
      */
-    const isValidDrop = (componentType) => {
-        const existingComponents = canvas.querySelectorAll('.dropped-item');
-        const nextStepIndex = existingComponents.length;
+    const VALUE_TYPES = ['field', 'this_table_field', 'string', 'number', 'sql_query', 'api_endpoint'];
 
-        if (nextStepIndex >= config.validationRules.length) {
-            showCustomDialog({ title: "Peraturan Dilanggar", message: "Struktur logik telah lengkap. Tiada komponen lain boleh ditambah." });
+    const isValidDrop = (componentType) => {
+        const existingComponents = Array.from(canvas.querySelectorAll('.dropped-item'));
+        const lastComponent = existingComponents.length > 0 ? existingComponents[existingComponents.length - 1] : null;
+
+        let lastComponentType = lastComponent ? lastComponent.dataset.itemType : 'start';
+
+        // Kumpulkan jenis nilai di bawah satu kategori 'value' untuk memudahkan peraturan
+        if (VALUE_TYPES.includes(lastComponentType)) {
+            lastComponentType = 'value';
+        }
+
+        const allowedNext = config.validationRules[lastComponentType];
+
+        if (!allowedNext) {
+            showCustomDialog({ title: "Peraturan Dilanggar", message: `Tidak ada peraturan yang ditetapkan selepas komponen '${lastComponentType}'.` });
             return false;
         }
 
-        const ruleForNextStep = config.validationRules[nextStepIndex];
-        if (ruleForNextStep.allowed.includes(componentType)) {
+        // Semak jika komponen yang cuba diletakkan adalah sejenis nilai
+        const isValueDrop = VALUE_TYPES.includes(componentType);
+
+        // Benarkan jika jenis komponen sepadan secara terus, ATAU jika ia adalah 'value' dan 'value' dibenarkan
+        if (allowedNext.includes(componentType) || (isValueDrop && allowedNext.includes('value'))) {
             return true;
         } else {
-            const friendlyNames = ruleForNextStep.allowed.map(type => `'${type.replace(/_/g, ' ')}'`).join(' atau ');
-            const message = `Langkah ${ruleForNextStep.step} tidak sah.\n\nAnda sepatutnya meletakkan komponen: ${friendlyNames}.`;
+            // Cipta mesej ralat yang lebih membantu
+            const friendlyNames = allowedNext.map(type => {
+                if (type === 'value') return 'sebarang nilai (field, string, nombor, dll.)';
+                if (type === 'open_paren') return "'('";
+                if (type === 'close_paren') return "')'";
+                return `'${type.replace(/_/g, ' ')}'`;
+            }).join(' atau ');
+
+            const lastFriendlyName = lastComponentType.replace(/_/g, ' ');
+            const message = `Selepas komponen '${lastFriendlyName}', anda hanya boleh meletakkan: ${friendlyNames}.`;
             showCustomDialog({ title: "Peraturan Dilanggar", message: message });
             return false;
         }
     };
+
 
     // Pasang Event Listeners
     openBtn.addEventListener('click', () => {
@@ -575,16 +641,22 @@ export async function saveFieldSettings() {
  * Ia mentakrifkan konfigurasi dan memanggil fungsi teras.
  */
 export function initializeAlgorithmBuilder() {
-    const ALGORITHM_GRAMMAR = [
-        { step: 1, allowed: ['if'], name: "Start" },
-        { step: 2, allowed: ['field', 'this_table_field', 'string', 'number', 'sql_query', 'api_endpoint'], name: "Nilai Pertama" },
-        { step: 3, allowed: ['operator'], name: "Operator" },
-        { step: 4, allowed: ['field', 'this_table_field', 'string', 'number', 'sql_query', 'api_endpoint'], name: "Nilai Kedua" },
-        { step: 5, allowed: ['then'], name: "Action" },
-        { step: 6, allowed: ['field', 'this_table_field', 'string', 'number', 'sql_query', 'api_endpoint'], name: "Hasil Jika Benar" },
-        { step: 7, allowed: ['else'], name: "Alternative" },
-        { step: 8, allowed: ['field', 'this_table_field', 'string', 'number', 'sql_query', 'api_endpoint'], name: "Hasil Jika Palsu" }
-    ];
+    // Grammar baharu berasaskan keadaan (state-based)
+    const COMPLEX_ALGORITHM_GRAMMAR = {
+        // Key: jenis komponen SEBELUMNYA. Value: array jenis komponen BERIKUTNYA yang dibenarkan.
+        'start':               ['if', 'open_paren', 'value'],
+        'if':                  ['value', 'open_paren'],
+        'then':                ['value', 'open_paren'],
+        'else':                ['value', 'open_paren'],
+        'value':               ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then', 'else', 'close_paren'],
+        'comparison_operator': ['value', 'open_paren'],
+        'arithmetic_operator': ['value', 'open_paren'],
+        'logical_operator':    ['value', 'open_paren', 'if'],
+        'open_paren':          ['value', 'if', 'open_paren'],
+        'close_paren':         ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then', 'else', 'close_paren'],
+    };
+
+
     
     // Konfigurasi ini kini spesifik untuk 'Algorithm' pada tetapan medan.
     const config = {
@@ -600,7 +672,7 @@ export function initializeAlgorithmBuilder() {
         canvasId: '#algorithm-canvas',
         paletteId: '.algorithm-palette',
         targetInputId: 'fld-algorithm-logic',
-        validationRules: ALGORITHM_GRAMMAR
+        validationRules: COMPLEX_ALGORITHM_GRAMMAR
     };
 
     createLogicBuilder(config);

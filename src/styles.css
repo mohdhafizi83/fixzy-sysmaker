@@ -1948,6 +1948,35 @@ fieldset.fieldset-disabled {
     flex-shrink: 0; /* Elak ia dari penyek */
 }
 
+/* Gaya untuk komponen Operator yang dipecahkan */
+.dropped-item[data-item-type="comparison_operator"] {
+    background-color: #E0F2FE; /* Biru muda */
+    border-color: #38BDF8;
+}
+
+.dropped-item[data-item-type="logical_operator"] {
+    background-color: #D1FAE5; /* Hijau pucat */
+    border-color: #34D399;
+}
+
+.dropped-item[data-item-type="arithmetic_operator"] {
+    background-color: #FFE4E1; /* Merah jambu pucat */
+    border-color: #F472B6;
+}
+
+/* Gaya untuk komponen kurungan (parentheses) */
+.dropped-item[data-item-type="open_paren"],
+.dropped-item[data-item-type="close_paren"] {
+    background-color: #F5F5F5; /* Kelabu sangat cerah */
+    border-color: #A1A1AA;
+}
+
+.dropped-item[data-item-type="open_paren"] span,
+.dropped-item[data-item-type="close_paren"] span {
+    font-weight: bold;
+    font-size: 1.5em;
+}
+
 .dropped-item[data-item-type="api_endpoint"] input[type="text"] {
     flex-grow: 1; /* Penuhkan baki ruang */
     border: 1px solid #6EE7B7;
