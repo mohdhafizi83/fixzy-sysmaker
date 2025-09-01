@@ -794,50 +794,6 @@ export function applyFontSize(size) {
 
 import { allTableNames, jsonData, loadProjectData, activeProject, SaveManager, setActiveSidebarItem, isAutoSaveEnabled, isPopulatingData, lastActiveChildTable, setLastActiveChildTable, setAwaitingMenuGroupSave } from './js.main.js';
 
-// TAMBAH FUNGSI BAHARU INI DALAM uiHandlers.js
-
-export async function saveRelationshipSettings() {
-    const form = document.getElementById('tab-detail-parent-child');
-    // Pastikan tab ini sedang dilihat sebelum cuba menyimpan
-    if (!form || !form.classList.contains('active')) return;
-
-    const gatherData = () => {
-        const data = {};
-        const inputs = form.querySelectorAll('input, select');
-        inputs.forEach(input => {
-            if (!input.id) return;
-            const id = input.id.replace('parentchild-', '').replace(/-/g, '_');
-            if (input.type === 'checkbox') {
-                data[id] = input.checked ? 1 : 0;
-            } else if (input.id) {
-                data[id] = input.value;
-            }
-        });
-        return data;
-    };
-
-    const dataToSave = gatherData();
-    const parentTable = document.querySelector('#table-settings-page .table-name').textContent;
-    const childTable = document.querySelector('#selected-child-table-name').textContent;
-
-    if (!parentTable || !childTable || childTable === '...') {
-        console.warn("Parent or child table not selected, skipping relationship save.");
-        return;
-    }
-
-    const relationship = jsonData.database.relationships.find(
-        r => r.parent_table_name === parentTable && r.child_table_name === childTable
-    );
-
-    if (!relationship) {
-        console.error("Active relationship not found in jsonData.");
-        return { success: false, message: 'Active relationship not found' };
-    }
-
-    dataToSave.relationship_id = relationship.relationship_id;
-    return await window.electronAPI.updateRelationship(dataToSave);
-}
-
 // TAMBAH DUA FUNGSI BAHARU INI DALAM uiHandlers.js
 
 /**
@@ -872,90 +828,6 @@ export function initializeTemplatePreviewHandlers() {
     if (templateSelect) {
         templateSelect.addEventListener('change', updateTableViewTemplatePreview);
     }
-}
-
-export async function saveProjectSettings() {
-    const form = document.getElementById('main-dashboard-page');
-    if (!form || !activeProject) return;
-
-    const dataToSave = {};
-    const inputs = form.querySelectorAll('input, select');
-    inputs.forEach(input => {
-        const id = input.id.replace('app-', '').replace(/-/g, '_');
-        if (input.type === 'checkbox') dataToSave[id] = input.checked ? 1 : 0;
-        else if (input.type === 'radio') { if (input.checked) dataToSave[input.name.replace('app-', '').replace(/-/g, '_')] = input.value; }
-        else if (input.id) dataToSave[id] = input.value;
-    });
-    dataToSave.app_title = document.getElementById('app-title').value;
-    dataToSave.project_id = activeProject.project_id;
-    
-    const result = await window.electronAPI.updateProject(dataToSave);
-
-    // ▼▼▼ PEMBAIKAN: Muat semula data selepas simpanan berjaya ▼▼▼
-    if (result.success) {
-        await loadProjectData(activeProject);
-    }
-    return result;
-    // ▲▲▲ TAMAT PEMBAIKAN ▲▲▲
-}
-
-export async function saveTableSettings() {
-    const form = document.getElementById('table-settings-page');
-    if (form.classList.contains('hidden')) return;
-
-    const oldTableName = document.querySelector('#table-settings-page .table-name').textContent;
-    const tableData = Object.values(jsonData.database.table).find(t => t.table_name === oldTableName);
-    if (!tableData) return;
-
-    const dataToSave = {};
-    const inputs = form.querySelectorAll('input, select, textarea');
-    inputs.forEach(input => {
-        const id = input.id.replace('tbl-', '').replace(/-/g, '_');
-        if (input.type === 'checkbox') dataToSave[id] = input.checked ? 1 : 0;
-        else if (input.id) dataToSave[id] = input.value;
-    });
-    dataToSave.table_id = tableData.table_id;
-
-    const result = await window.electronAPI.updateTable(dataToSave);
-    
-    // ▼▼▼ PEMBAIKAN: Muat semula data selepas simpanan berjaya ▼▼▼
-    if (result.success) {
-        // Hantar nama jadual (mungkin baharu) untuk dipilih semula
-        await loadProjectData(activeProject, dataToSave.table_name);
-    }
-    return result;
-    // ▲▲▲ TAMAT PEMBAIKAN ▲▲▲
-}
-
-export async function saveFieldSettings() {
-    const form = document.getElementById('field-settings-page');
-    if (form.classList.contains('hidden')) return;
-
-    const [tableName, oldFieldName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
-    const fieldData = jsonData.database.table[tableName]?.fields[oldFieldName];
-    if (!fieldData) return;
-
-    const dataToSave = {};
-    const inputs = form.querySelectorAll('input, select, textarea');
-    inputs.forEach(input => {
-        if (!input.id) return;
-        const id = input.id.replace('fld-', '').replace(/-/g, '_');
-        if (input.type === 'checkbox') dataToSave[id] = input.checked ? 1 : 0;
-        else if (input.type === 'radio') { if (input.checked) dataToSave[input.name.replace('fld-', '').replace(/-/g, '_')] = input.value; }
-        else if (input.id) dataToSave[id] = input.value;
-    });
-    dataToSave.field_id = fieldData.field_id;
-
-    const result = await window.electronAPI.updateField(dataToSave);
-
-
-    if (result.success) {
-        // Hantar objek selector untuk memilih semula medan yang betul
-        const itemToSelect = { table: tableName, field: dataToSave.field_name };
-        await loadProjectData(activeProject, null, itemToSelect);
-    }
-    return result;
-
 }
 
 /**
@@ -1151,59 +1023,6 @@ export function initializeRelationshipSaveHandlers() {
             input.addEventListener('input', handleInputChange);
         }
     });
-}
-
-// Fungsi untuk mengumpul data menu semasa dari UI
-function gatherMenuData() {
-    const menuGroupList = document.querySelector('.menu-group-list');
-    const groupElements = menuGroupList.querySelectorAll('.menu-group-item');
-    
-    const menuData = Array.from(groupElements).map(groupEl => {
-        const groupName = groupEl.querySelector('.group-name-input').value;
-        const itemElements = groupEl.querySelectorAll('.menu-selector .tag');
-        const items = Array.from(itemElements).map(itemEl => ({
-            // Ambil nama jadual dari teks tag
-            table_name: itemEl.childNodes[0].textContent.trim()
-        }));
-
-        return { group_name: groupName, items: items };
-    });
-
-    return menuData;
-}
-
-// Fungsi untuk mencetuskan proses simpanan
-// js/uiHandlers.js
-
-async function saveMenuStructure() {
-    const saveStatus = document.getElementById('save-status');
-    if (saveStatus) {
-        saveStatus.textContent = 'Saving...';
-        saveStatus.className = 'saving';
-    }
-
-    const menuData = gatherMenuData();
-    const result = await window.electronAPI.saveMenuStructure({
-        projectId: activeProject.project_id,
-        menuData: menuData
-    });
-
-    if (saveStatus) {
-        if (result.success) {
-            saveStatus.textContent = 'All changes saved ✔';
-            saveStatus.className = 'saved';
-        } else {
-            saveStatus.textContent = 'Save failed!';
-            saveStatus.className = 'error';
-            // Paparkan mesej ralat yang lebih terperinci juga
-            showCustomDialog({ title: "Error", message: `Failed to save menu structure: ${result.message}` });
-        }
-        
-        // Sembunyikan mesej status selepas 3 saat
-        setTimeout(() => {
-            saveStatus.textContent = '';
-        }, 3000);
-    }
 }
 
 // GANTIKAN FUNGSI SEDIA ADA INI DALAM: uiHandlers.js
@@ -1766,7 +1585,7 @@ export function initializeTabSystems() {
 }
 
 // ▼▼▼ FUNGSI-FUNGSI YANG HILANG SEBELUM INI KINI TELAH DIKEMBALIKAN ▼▼▼
-export function populateSortByDropdown(tableName, elementId = 'tbl-default-sort-by') {
+function populateSortByDropdown(tableName, elementId = 'tbl-default-sort-by') {
     const sortByDropdown = document.getElementById(elementId);
     if (!sortByDropdown || !jsonData) return;
     
@@ -1786,7 +1605,7 @@ export function populateSortByDropdown(tableName, elementId = 'tbl-default-sort-
 
 // js/uiHandlers.js
 
-export function populateFocusFieldDropdown(tableName) {
+function populateFocusFieldDropdown(tableName) {
     const defaultFocusDropdown = document.getElementById('tbl-default-focus');
     if (!defaultFocusDropdown || !jsonData) return;
 
@@ -2003,7 +1822,7 @@ export function initializeLocalizationHandlers() {
     updateDateTimePreview();
 }
 
-export function updatePreviewImage() {
+function updatePreviewImage() {
     const themeSelect = document.getElementById('app-theme-select');
     const previewImage = document.getElementById('theme-preview-image');
     const selectedViewRadio = document.querySelector('input[name="view_mode"]:checked');
@@ -3466,81 +3285,6 @@ export function initializeDatabasePropertiesHandlers() {
         }
     });
 }
-
-async function populateBuilderFromQuery() {
-    const stateInput = document.getElementById('fld-calculation-builder-state');
-    const jsonState = stateInput.value;
-
-    document.getElementById('cb-rules-container').innerHTML = ''; // Sentiasa kosongkan dahulu
-
-    if (jsonState) {
-        try {
-            const state = JSON.parse(jsonState);
-            
-            // 1. Tetapkan Mod (Asas/Lanjutan)
-            const advancedToggle = document.getElementById('cb-advanced-mode-toggle');
-            advancedToggle.checked = state.isAdvanced;
-            advancedToggle.dispatchEvent(new Event('change'));
-
-            // 2. Isi Borang Berdasarkan Keadaan
-            if (state.isAdvanced) {
-                document.getElementById('cb-advanced-function').value = state.advancedFunction;
-                document.getElementById('cb-distinct-toggle').checked = state.isDistinct;
-                document.getElementById('cb-expr-field1').value = state.expr1;
-                document.getElementById('cb-expr-operator').value = state.operator;
-                document.getElementById('cb-expr-field2').value = state.expr2;
-                
-                // Isi semula GROUP BY
-                const groupBySelected = document.getElementById('cb-groupby-selected-fields');
-                const groupByAvailable = document.getElementById('cb-groupby-available-fields');
-                const allFields = Array.from(groupByAvailable.children);
-                state.groupBy.forEach(fieldName => {
-                    const li = allFields.find(item => item.dataset.value === fieldName);
-                    if (li) groupBySelected.appendChild(li);
-                });
-
-            } else {
-                document.getElementById('cb-function').value = state.basicFunction;
-                document.getElementById('cb-field').value = state.field;
-                document.getElementById('cb-function').dispatchEvent(new Event('change'));
-            }
-
-            // 3. Bina semula peraturan tapis secara rekursif
-            const buildRulesUI = (container, filterGroup) => {
-                const logicRadio = container.parentElement.querySelector(`:scope > .qb-logic-toggle input[value="${filterGroup.logic}"]`);
-                if (logicRadio) logicRadio.checked = true;
-
-                filterGroup.rules.forEach(rule => {
-                    if (rule.type === 'rule') {
-                        const ruleEl = createRuleElement(rule);
-                        container.appendChild(ruleEl);
-                    } else if (rule.type === 'group') {
-                        const groupEl = createRuleGroupElement();
-                        container.appendChild(groupEl);
-                        const nestedContainer = groupEl.querySelector('.qb-nested-rules');
-                        buildRulesUI(nestedContainer, rule); // Panggilan Rekursif
-                    }
-                });
-            };
-            buildRulesUI(document.getElementById('cb-rules-container'), state.filters);
-
-            return; // Berjaya dimuatkan dari JSON, jadi berhenti di sini.
-        } catch (e) {
-            console.warn("Could not parse builder state from JSON. Falling back to SQL parser.", e);
-        }
-    }
-
-    // Jika tiada JSON, cuba terjemah dari SQL (sebagai sandaran)
-    const queryTextarea = document.getElementById('fld-calculated-query');
-    const sql = queryTextarea.value;
-    if (!sql.trim()) return;
-
-    const result = await window.electronAPI.parseCalculationQuery(sql);
-    if (result.success && result.data && result.data.length > 0) {
-        populateBuilderFromAST(result.data[0], sql);
-    }
-}
-
 
 // KOD PENUH: Padam semua fungsi builder lama dan gantikan dengan keseluruhan blok ini.
 

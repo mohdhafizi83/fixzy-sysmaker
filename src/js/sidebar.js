@@ -3,10 +3,8 @@ import { showPage } from './pageManager.js';
 import { 
 populateFieldSettings, 
 populateTableSettings, 
-populateMainDashboard, 
-updateActionButtonsState, 
-populateSortByDropdown, 
-populateFocusFieldDropdown, 
+populateMainDashboard,
+updateActionButtonsState,
 setupMediaTab, 
 populateParentChildTab,
 showCustomDialog

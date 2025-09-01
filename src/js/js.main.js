@@ -39,14 +39,10 @@ import {
     initializeProjectHookBuilder,
     initializeLookupFieldSaveHandler,
 	initializeAlgorithmBuilder,
-    saveProjectSettings,
-    saveTableSettings, 
-    saveFieldSettings,
 	configureNewProjectModal,
     showNewProjectModal,
 initializeCalculationBuilder,
 initializeQueryBuilder,
-    saveRelationshipSettings   	
 } from './uiHandlers.js';
 
 // KOD PENUH: Gantikan keseluruhan objek SaveManager sedia ada dengan yang ini.
