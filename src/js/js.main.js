@@ -35,6 +35,8 @@ import {
     initializeTableSaveHandlers,
     initializeFieldSaveHandlers,
     initializeRelationshipSaveHandlers,
+    initializeTableHookBuilder,
+    initializeProjectHookBuilder,
     initializeLookupFieldSaveHandler,
 	initializeAlgorithmBuilder,
     saveProjectSettings,
@@ -372,6 +374,8 @@ window.addEventListener('beforeunload', (event) => {
 	initializeCalculatedFieldRules();
 	initializeTemplatePreviewHandlers();
 initializeQueryBuilder();
+    initializeTableHookBuilder();
+    initializeProjectHookBuilder();
     initializeCalculationBuilder();
 	initializeAlgorithmBuilder();
 	

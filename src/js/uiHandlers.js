@@ -8,45 +8,232 @@
  * @param {string} config.paletteId - ID palet yang mengandungi komponen.
  * @param {string} config.targetInputId - ID input tersembunyi untuk menyimpan output JSON.
  * @param {Array<object>} config.validationRules - Tatabahasa (grammar) untuk pengesahan susunan.
+ * @param {object} [config.context] - Objek pilihan untuk membekalkan data konteks (cth: { tableName: 'users' }).
+ * @param {string} config.closeButtonId - ID butang untuk menutup modal (ikon X).
+ * @param {string} config.cancelButtonId - ID butang untuk membatalkan dan menutup modal.
+ * @param {string} config.doneButtonId - ID butang untuk menyimpan dan menutup modal.
  */
-
 function createLogicBuilder(config) {
     const openBtn = document.getElementById(config.triggerButtonId);
     const modal = document.getElementById(config.modalId);
-    // ▼▼▼ MULA PEMBETULAN ▼▼▼
-    // Menggunakan ID spesifik dari config untuk mencari butang
     const closeBtn = document.getElementById(config.closeButtonId);
     const cancelBtn = document.getElementById(config.cancelButtonId);
     const doneBtn = document.getElementById(config.doneButtonId);
-    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
-    
-    if (!modal || !openBtn) return;
+
+    if (!openBtn || !modal) {
+        console.error(`Elemen pencetus atau modal untuk builder tidak ditemui:`, { trigger: config.triggerButtonId, modal: config.modalId });
+        return;
+    }
 
     const palette = modal.querySelector(config.paletteId);
     const canvas = modal.querySelector(config.canvasId);
     const hiddenInput = document.getElementById(config.targetInputId);
     const placeholder = canvas ? canvas.querySelector('.canvas-placeholder') : null;
 
-    // ▼▼▼ MULA PEMBETULAN ▼▼▼
-    // Pemeriksaan elemen yang lebih mantap
     if (!closeBtn || !cancelBtn || !doneBtn || !palette || !canvas || !hiddenInput) {
         console.error("Satu atau lebih elemen untuk Logic Builder tidak ditemui.", {
-            triggerButtonId: config.triggerButtonId,
-            modalId: config.modalId,
-            canvasId: config.canvasId,
-            paletteId: config.paletteId,
-            targetInputId: config.targetInputId,
-            // Tambah ID butang untuk diagnosis lebih mudah
-            closeButtonId: config.closeButtonId,
-            cancelButtonId: config.cancelButtonId,
-            doneButtonId: config.doneButtonId
+            ...config,
+            found: {
+                closeBtn: !!closeBtn, cancelBtn: !!cancelBtn, doneBtn: !!doneBtn,
+                palette: !!palette, canvas: !!canvas, hiddenInput: !!hiddenInput
+            }
         });
         return;
     }
-    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
 
     let modalCanvasState = '[]';
 
+    /**
+     * Mengemas kini 'modalCanvasState' dengan menukar keadaan semasa kanvas kepada string JSON.
+     */
+    const updateModalCanvasState = () => {
+        const items = Array.from(canvas.querySelectorAll('.dropped-item'));
+        const logicArray = items.map(item => {
+            const type = item.dataset.itemType;
+            let itemData = { type };
+            if (type === 'field') {
+                itemData.table = item.querySelector('.table-select')?.value;
+                itemData.field = item.querySelector('.field-select')?.value;
+            } else if (type === 'operator') {
+                itemData.value = item.querySelector('.operator-select')?.value;
+            } else if (type === 'string' || type === 'number' || type === 'api_endpoint') {
+                itemData.value = item.querySelector('input')?.value;
+            } else if (type === 'sql_query') {
+                itemData.value = item.querySelector('textarea')?.value;
+            } else {
+                itemData.value = type;
+            }
+            return itemData;
+        });
+        modalCanvasState = JSON.stringify(logicArray, null, 2);
+        if (placeholder) placeholder.style.display = items.length === 0 ? 'block' : 'none';
+    };
+
+    /**
+     * Mencipta elemen interaktif untuk diletakkan di atas kanvas.
+     * @param {string} type - Jenis komponen (cth: 'field', 'operator').
+     * @returns {HTMLElement} Elemen div yang telah dibina.
+     */
+    const createInteractiveElement = (type) => {
+        const itemContainer = document.createElement('div');
+        itemContainer.className = 'dropped-item';
+        itemContainer.dataset.itemType = type;
+
+        switch (type) {
+            case 'sql_query':
+                itemContainer.innerHTML = `<div class="sql-query-header"><span>[SQL QUERY]</span><button class="open-qb-btn" title="Open Query Builder"><i class="fas fa-magic-wand-sparkles"></i></button></div><textarea placeholder="SELECT * FROM ..."></textarea>`;
+                itemContainer.querySelector('textarea').addEventListener('input', updateModalCanvasState);
+                itemContainer.querySelector('.open-qb-btn').addEventListener('click', (e) => {
+                    const thisTextarea = e.target.closest('.dropped-item').querySelector('textarea');
+                    queryBuilderTargetTextarea = thisTextarea;
+                    document.getElementById('open-query-builder-btn').click();
+                });
+                break;
+            case 'api_endpoint':
+                itemContainer.innerHTML = `<span class="api-endpoint-label">[API ENDPOINT]</span><input type="text" placeholder="https://api.example.com/data">`;
+                itemContainer.querySelector('input').addEventListener('input', updateModalCanvasState);
+                break;
+            case 'field':
+                const tableSelect = document.createElement('select');
+                tableSelect.className = 'table-select';
+
+                // ▼▼▼ MULA PEMBETULAN: Gunakan konteks dari config, bukan querySelector yang rapuh. ▼▼▼
+                let activeTable = '';
+                if (config.context && config.context.tableName) {
+                    activeTable = config.context.tableName;
+                } else {
+                    // Sandaran (fallback) kepada kaedah lama jika konteks tidak dibekalkan,
+                    // dengan pemeriksaan keselamatan untuk mengelakkan ralat.
+                    const fieldNameElement = document.querySelector('#field-settings-page .field-name');
+                    if (fieldNameElement) {
+                        [activeTable] = fieldNameElement.textContent.split('.');
+                    }
+                }
+                // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
+
+                const allTables = Object.keys(jsonData.database.table);
+                allTables.forEach(tableName => {
+                    const option = document.createElement('option');
+                    option.value = tableName;
+                    option.textContent = tableName;
+                    if (tableName === activeTable) option.selected = true;
+                    tableSelect.appendChild(option);
+                });
+                itemContainer.appendChild(tableSelect);
+
+                const fieldSelect = document.createElement('select');
+                fieldSelect.className = 'field-select';
+                const populateFields = (tableName) => {
+                    fieldSelect.innerHTML = '';
+                    if (jsonData.database.table[tableName]) {
+                        const fields = Object.keys(jsonData.database.table[tableName].fields);
+                        fields.forEach(fieldName => {
+                            const option = document.createElement('option');
+                            option.value = fieldName;
+                            option.textContent = fieldName;
+                            fieldSelect.appendChild(option);
+                        });
+                    }
+                };
+                tableSelect.addEventListener('change', () => {
+                    populateFields(tableSelect.value);
+                    updateModalCanvasState();
+                });
+                populateFields(activeTable);
+                itemContainer.appendChild(fieldSelect);
+                fieldSelect.addEventListener('change', updateModalCanvasState);
+                break;
+            case 'operator':
+                const operatorSelect = document.createElement('select');
+                operatorSelect.className = 'operator-select';
+                const operators = [{ value: '==', text: 'Equal' }, { value: '!=', text: 'Not Equal' }, { value: '>', text: 'Greater Than' }, { value: '<', text: 'Less Than' }, { value: '>=', text: 'Greater Than or Equal' }, { value: '<=', text: 'Less Than or Equal' }, { type: 'separator' }, { value: '&&', text: 'AND' }, { value: '||', text: 'OR' }, { type: 'separator' }, { value: '+', text: 'Plus' }, { value: '-', text: 'Minus' }, { value: '*', text: 'Times' }, { value: '/', text: 'Divide' }];
+                operators.forEach(op => {
+                    if (op.type === 'separator') {
+                        const option = document.createElement('option');
+                        option.disabled = true;
+                        option.textContent = '──────────';
+                        operatorSelect.appendChild(option);
+                    } else {
+                        const option = document.createElement('option');
+                        option.value = op.value;
+                        option.textContent = op.text;
+                        operatorSelect.appendChild(option);
+                    }
+                });
+                itemContainer.appendChild(operatorSelect);
+                operatorSelect.addEventListener('change', updateModalCanvasState);
+                break;
+            case 'string':
+                const stringInput = document.createElement('input');
+                stringInput.type = 'text';
+                stringInput.placeholder = 'Enter value...';
+                stringInput.addEventListener('input', updateModalCanvasState);
+                itemContainer.appendChild(stringInput);
+                break;
+            case 'number':
+                const numberInput = document.createElement('input');
+                numberInput.type = 'number';
+                numberInput.placeholder = '0';
+                numberInput.addEventListener('input', updateModalCanvasState);
+                itemContainer.appendChild(numberInput);
+                break;
+            default:
+                const itemLabel = document.createElement('span');
+                itemLabel.textContent = `[${type.toUpperCase()}]`;
+                itemContainer.appendChild(itemLabel);
+        }
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-algo-item';
+        deleteBtn.innerHTML = '&times;';
+        deleteBtn.title = 'Padam komponen ini';
+        const targetForDeleteBtn = itemContainer.querySelector('.sql-query-header') || itemContainer;
+        targetForDeleteBtn.appendChild(deleteBtn);
+        return itemContainer;
+    };
+
+    /**
+     * Membina semula kanvas dari data JSON yang disimpan dalam input tersembunyi.
+     */
+    const populateCanvasFromHiddenInput = () => {
+        canvas.innerHTML = '';
+        const currentLogicValue = hiddenInput.value || '[]';
+        try {
+            const logic = JSON.parse(currentLogicValue);
+            if (logic.length === 0 && placeholder) {
+                canvas.appendChild(placeholder);
+                placeholder.style.display = 'block';
+            } else {
+                if (placeholder) placeholder.style.display = 'none';
+                logic.forEach(itemData => {
+                    const newItem = createInteractiveElement(itemData.type);
+                    if (itemData.type === 'field') {
+                        newItem.querySelector('.table-select').value = itemData.table;
+                        newItem.querySelector('.table-select').dispatchEvent(new Event('change'));
+                        newItem.querySelector('.field-select').value = itemData.field;
+                    } else if (itemData.type === 'operator') {
+                        newItem.querySelector('.operator-select').value = itemData.value;
+                    } else if (itemData.type === 'string' || itemData.type === 'number') {
+                        newItem.querySelector('input').value = itemData.value;
+                    } else if (itemData.type === 'sql_query') {
+                        newItem.querySelector('textarea').value = itemData.value;
+                    } else if (itemData.type === 'api_endpoint') {
+                        newItem.querySelector('input').value = itemData.value;
+                    }
+                    canvas.appendChild(newItem);
+                });
+            }
+        } catch (e) {
+            console.error("Gagal memproses logik sedia ada:", e);
+            if (placeholder) canvas.appendChild(placeholder);
+        }
+    };
+
+    /**
+     * Mengesahkan sama ada komponen boleh diletakkan di atas kanvas berdasarkan peraturan.
+     * @param {string} componentType - Jenis komponen yang cuba diletakkan.
+     * @returns {boolean} - True jika sah, false jika tidak.
+     */
     const isValidDrop = (componentType) => {
         const existingComponents = canvas.querySelectorAll('.dropped-item');
         const nextStepIndex = existingComponents.length;
@@ -67,82 +254,19 @@ function createLogicBuilder(config) {
         }
     };
 
-    const saveLogicData = async () => { /* ... (Fungsi ini tidak berubah) ... */ };
-    const updateModalCanvasState = () => { /* ... (Fungsi ini tidak berubah) ... */ };
-    const createInteractiveElement = (type) => { /* ... (Fungsi ini tidak berubah) ... */ };
-    const populateCanvasFromHiddenInput = () => { /* ... (Fungsi ini tidak berubah) ... */ };
-    
-    // (Salin semula fungsi-fungsi bantuan yang tidak berubah dari kod sebelumnya jika perlu)
-    // Untuk ringkasan, saya letakkan versi penuh di bawah
-    
-    // ( ... Kod penuh fungsi bantuan ... )
-    const updateModalCanvasState_full = () => {
-        const items = Array.from(canvas.querySelectorAll('.dropped-item'));
-        const logicArray = items.map(item => {
-            const type = item.dataset.itemType;
-            let itemData = { type };
-            if (type === 'field') { itemData.table = item.querySelector('.table-select')?.value; itemData.field = item.querySelector('.field-select')?.value; } 
-            else if (type === 'operator') { itemData.value = item.querySelector('.operator-select')?.value; } 
-            else if (type === 'string' || type === 'number' || type === 'api_endpoint') { itemData.value = item.querySelector('input')?.value; } 
-            else if (type === 'sql_query') { itemData.value = item.querySelector('textarea')?.value; } 
-            else { itemData.value = type; }
-            return itemData;
-        });
-        modalCanvasState = JSON.stringify(logicArray, null, 2);
-        if (placeholder) placeholder.style.display = items.length === 0 ? 'block' : 'none';
-    };
-
-    const createInteractiveElement_full = (type) => {
-        const itemContainer = document.createElement('div');
-        itemContainer.className = 'dropped-item';
-        itemContainer.dataset.itemType = type;
-        
-        switch (type) {
-            case 'sql_query':
-                itemContainer.innerHTML = `<div class="sql-query-header"><span>[SQL QUERY]</span><button class="open-qb-btn" title="Open Query Builder"><i class="fas fa-magic-wand-sparkles"></i></button></div><textarea placeholder="SELECT * FROM ..."></textarea>`;
-                itemContainer.querySelector('textarea').addEventListener('input', updateModalCanvasState_full);
-                itemContainer.querySelector('.open-qb-btn').addEventListener('click', (e) => {
-                    const thisTextarea = e.target.closest('.dropped-item').querySelector('textarea');
-                    queryBuilderTargetTextarea = thisTextarea;
-                    document.getElementById('open-query-builder-btn').click();
-                });
-                break;
-            case 'api_endpoint':
-                itemContainer.innerHTML = `<span class="api-endpoint-label">[API ENDPOINT]</span><input type="text" placeholder="https://api.example.com/data">`;
-                itemContainer.querySelector('input').addEventListener('input', updateModalCanvasState_full);
-                break;
-            case 'field':
-                 const tableSelect = document.createElement('select'); tableSelect.className = 'table-select'; const [activeTable] = document.querySelector('#field-settings-page .field-name').textContent.split('.'); const allTables = Object.keys(jsonData.database.table); allTables.forEach(tableName => { const option = document.createElement('option'); option.value = tableName; option.textContent = tableName; if (tableName === activeTable) option.selected = true; tableSelect.appendChild(option); }); itemContainer.appendChild(tableSelect); const fieldSelect = document.createElement('select'); fieldSelect.className = 'field-select'; const populateFields = (tableName) => { fieldSelect.innerHTML = ''; if (jsonData.database.table[tableName]) { const fields = Object.keys(jsonData.database.table[tableName].fields); fields.forEach(fieldName => { const option = document.createElement('option'); option.value = fieldName; option.textContent = fieldName; fieldSelect.appendChild(option); }); } }; tableSelect.addEventListener('change', () => { populateFields(tableSelect.value); updateModalCanvasState_full(); }); populateFields(activeTable); itemContainer.appendChild(fieldSelect); fieldSelect.addEventListener('change', updateModalCanvasState_full);
-                break;
-            case 'operator':
-                const operatorSelect = document.createElement('select'); operatorSelect.className = 'operator-select'; const operators = [ { value: '==', text: 'Equal' }, { value: '!=', text: 'Not Equal' }, { value: '>', text: 'Greater Than' }, { value: '<', text: 'Less Than' }, { value: '>=', text: 'Greater Than or Equal' }, { value: '<=', text: 'Less Than or Equal' }, { type: 'separator' }, { value: '&&', text: 'AND' }, { value: '||', text: 'OR' }, { type: 'separator' }, { value: '+', text: 'Plus' }, { value: '-', text: 'Minus' }, { value: '*', text: 'Times' }, { value: '/', text: 'Divide' } ]; operators.forEach(op => { if(op.type === 'separator'){ const option = document.createElement('option'); option.disabled = true; option.textContent = '──────────'; operatorSelect.appendChild(option); } else { const option = document.createElement('option'); option.value = op.value; option.textContent = op.text; operatorSelect.appendChild(option); } }); itemContainer.appendChild(operatorSelect); operatorSelect.addEventListener('change', updateModalCanvasState_full);
-                break;
-            case 'string':
-                const stringInput = document.createElement('input'); stringInput.type = 'text'; stringInput.placeholder = 'Enter value...'; stringInput.addEventListener('input', updateModalCanvasState_full); itemContainer.appendChild(stringInput);
-                break;
-            case 'number':
-                const numberInput = document.createElement('input'); numberInput.type = 'number'; numberInput.placeholder = '0'; numberInput.addEventListener('input', updateModalCanvasState_full); itemContainer.appendChild(numberInput);
-                break;
-            default:
-                 const itemLabel = document.createElement('span'); itemLabel.textContent = `[${type.toUpperCase()}]`; itemContainer.appendChild(itemLabel);
-        }
-
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'delete-algo-item';
-        deleteBtn.innerHTML = '&times;';
-        deleteBtn.title = 'Padam komponen ini';
-        const targetForDeleteBtn = itemContainer.querySelector('.sql-query-header') || itemContainer;
-        targetForDeleteBtn.appendChild(deleteBtn);
-        return itemContainer;
-    };
-
-    const populateCanvasFromHiddenInput_full = () => { canvas.innerHTML = ''; const currentLogicValue = hiddenInput.value || '[]'; try { const logic = JSON.parse(currentLogicValue); if (logic.length === 0 && placeholder) { canvas.appendChild(placeholder); placeholder.style.display = 'block'; } else { if(placeholder) placeholder.style.display = 'none'; logic.forEach(itemData => { const newItem = createInteractiveElement_full(itemData.type); if (itemData.type === 'field') { newItem.querySelector('.table-select').value = itemData.table; newItem.querySelector('.table-select').dispatchEvent(new Event('change')); newItem.querySelector('.field-select').value = itemData.field; } else if (itemData.type === 'operator') { newItem.querySelector('.operator-select').value = itemData.value; } else if (itemData.type === 'string' || itemData.type === 'number') { newItem.querySelector('input').value = itemData.value; } else if (itemData.type === 'sql_query') { newItem.querySelector('textarea').value = itemData.value; } else if (itemData.type === 'api_endpoint') { newItem.querySelector('input').value = itemData.value; } canvas.appendChild(newItem); }); } } catch (e) { console.error("Gagal memproses logik sedia ada:", e); if(placeholder) canvas.appendChild(placeholder); } };
-    
     // Pasang Event Listeners
-    openBtn.addEventListener('click', () => { populateCanvasFromHiddenInput_full(); modal.classList.remove('hidden'); });
+    openBtn.addEventListener('click', () => {
+        populateCanvasFromHiddenInput();
+        modal.classList.remove('hidden');
+    });
     closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
     cancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
-    doneBtn.addEventListener('click', async () => { hiddenInput.value = modalCanvasState; await saveLogicData(); modal.classList.add('hidden'); });
+    doneBtn.addEventListener('click', () => {
+        hiddenInput.value = modalCanvasState;
+        // Cetuskan event 'input' untuk memaklumkan SaveManager (melalui initializeFieldSaveHandlers)
+        hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
+        modal.classList.add('hidden');
+    });
 
     palette.addEventListener('dragstart', (e) => { if (e.target.classList.contains('algo-component')) { e.dataTransfer.setData('text/plain', e.target.dataset.type); } });
     canvas.addEventListener('dragover', (e) => { e.preventDefault(); canvas.classList.add('dragging-over'); });
@@ -158,11 +282,11 @@ function createLogicBuilder(config) {
         }
 
         if (placeholder) placeholder.style.display = 'none';
-        const newItem = createInteractiveElement_full(componentType);
+        const newItem = createInteractiveElement(componentType);
         canvas.appendChild(newItem);
-        const newInpt = newItem.querySelector('input, textarea');
-        if(newInpt) newInpt.focus();
-        updateModalCanvasState_full();
+        const newInput = newItem.querySelector('input, textarea');
+        if (newInput) newInput.focus();
+        updateModalCanvasState();
     });
 
     canvas.addEventListener('click', (e) => {
@@ -170,7 +294,7 @@ function createLogicBuilder(config) {
             const itemToRemove = e.target.closest('.dropped-item');
             if (itemToRemove && !itemToRemove.nextElementSibling) {
                 itemToRemove.remove();
-                updateModalCanvasState_full();
+                updateModalCanvasState();
             } else {
                 showCustomDialog({ title: "Peraturan", message: "Anda hanya boleh memadam komponen dari bawah ke atas (komponen terakhir)." });
             }
@@ -404,12 +528,15 @@ export function initializeAlgorithmBuilder() {
         { step: 7, allowed: ['else'] },
         { step: 8, allowed: ['field', 'string', 'number', 'sql_query', 'api_endpoint'], name: "Hasil Jika Palsu" }
     ];
-
-    // ▼▼▼ MULA PEMBETULAN ▼▼▼
-    // Tambah ID spesifik untuk butang-butang
+    
+    // Konfigurasi ini kini spesifik untuk 'Algorithm' pada tetapan medan.
     const config = {
         triggerButtonId: 'open-algorithm-builder-btn',
         modalId: 'algorithm-builder-modal',
+        // ▼▼▼ KEMAS KINI: Tambah 'context' untuk menghantar nama jadual semasa ▼▼▼
+        context: { 
+            tableName: document.querySelector('#field-settings-page .field-name')?.textContent.split('.')[0] 
+        },
         closeButtonId: 'algorithm-builder-close',
         cancelButtonId: 'algorithm-builder-cancel-btn',
         doneButtonId: 'algorithm-builder-done-btn',
@@ -417,8 +544,70 @@ export function initializeAlgorithmBuilder() {
         paletteId: '.algorithm-palette',
         targetInputId: 'fld-algorithm-logic',
         validationRules: ALGORITHM_GRAMMAR
+        // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
     };
-    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
+
+    createLogicBuilder(config);
+}
+
+/**
+ * Fungsi Pengasas untuk Algorithm Builder bagi 'Table Hook'.
+ * Ia akan mempunyai butang, peraturan, dan sasaran simpanan yang berbeza.
+ */
+export function initializeTableHookBuilder() {
+    // Peraturan yang berbeza untuk 'Table Hook'
+    const TABLE_HOOK_GRAMMAR = [
+        { step: 1, allowed: ['on_update', 'before_insert', 'after_delete'] },
+        { step: 2, allowed: ['execute_sql', 'call_api', 'send_email'] },
+        // ... dan seterusnya
+    ];
+
+    // Dapatkan elemen butang pencetus. Jika tiada, jangan teruskan.
+    const triggerButton = document.getElementById('open-table-hook-builder-btn');
+    if (!triggerButton) return;
+
+    const config = {
+        triggerButtonId: 'open-table-hook-builder-btn', // Butang baharu pada halaman tetapan jadual
+        modalId: 'algorithm-builder-modal', // Kita boleh guna semula modal yang sama
+        context: { tableName: document.querySelector('#table-settings-page .table-name')?.textContent || '' },
+        closeButtonId: 'algorithm-builder-close',
+        cancelButtonId: 'algorithm-builder-cancel-btn',
+        doneButtonId: 'algorithm-builder-done-btn',
+        canvasId: '#algorithm-canvas',
+        paletteId: '.algorithm-palette', // Mungkin perlukan palet berbeza pada masa hadapan
+        targetInputId: 'tbl-hook-logic', // Input tersembunyi baharu pada borang tetapan jadual
+        validationRules: TABLE_HOOK_GRAMMAR,
+        // Kita juga boleh menambah palet yang berbeza di sini pada masa hadapan
+    };
+
+    createLogicBuilder(config);
+}
+
+/**
+ * Fungsi Pengasas untuk Algorithm Builder bagi 'Project Hook'.
+ */
+export function initializeProjectHookBuilder() {
+    const PROJECT_HOOK_GRAMMAR = [
+        { step: 1, allowed: ['on_startup', 'before_shutdown'] },
+        { step: 2, allowed: ['run_backup', 'validate_license'] },
+    ];
+
+    const triggerButton = document.getElementById('open-project-hook-builder-btn');
+    if (!triggerButton) return;
+
+    const config = {
+        triggerButtonId: 'open-project-hook-builder-btn',
+        modalId: 'algorithm-builder-modal',
+        context: { tableName: null }, // Tiada konteks jadual di peringkat projek
+        targetInputId: 'prj-hook-logic',
+        validationRules: PROJECT_HOOK_GRAMMAR,
+        // Salin ID butang lain dari atas
+        closeButtonId: 'algorithm-builder-close',
+        cancelButtonId: 'algorithm-builder-cancel-btn',
+        doneButtonId: 'algorithm-builder-done-btn',
+        canvasId: '#algorithm-canvas',
+        paletteId: '.algorithm-palette',
+    };
 
     createLogicBuilder(config);
 }
