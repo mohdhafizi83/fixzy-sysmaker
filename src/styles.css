@@ -766,6 +766,12 @@ html, body {
     z-index: 1000;
 }
 
+/* Pastikan modal amaran/pengesahan sentiasa di lapisan paling atas */
+#custom-alert-modal {
+    /* Nilai ini lebih tinggi daripada #loading-overlay (9999) untuk memastikan ia sentiasa kelihatan */
+    z-index: 10000; 
+}
+
 .modal-overlay.hidden {
     display: none;
 }
@@ -2067,4 +2073,101 @@ fieldset.fieldset-disabled {
     padding: 0.25rem 0.5rem;
     font-family: 'Inter', sans-serif;
     font-size: 0.9em;
+}
+
+/* TAMBAH BLOK INI DI PENGHUJUNG FAIL styles.css */
+
+/* Gaya untuk butang 'fx' yang terapung di atas komponen */
+.wrap-function-btn {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #A855F7; /* Ungu */
+    color: white;
+    border: 2px solid white;
+    box-shadow: var(--shadow);
+    font-family: 'Inter', sans-serif;
+    font-weight: bold;
+    font-size: 0.8em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    opacity: 0; /* Sembunyi secara lalai */
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+/* Paparkan butang apabila komponen dihover */
+.dropped-item:hover .wrap-function-btn {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-2px);
+}
+
+/* Gaya untuk komponen Fungsi yang baharu */
+.dropped-item[data-item-type="function"] {
+    background-color: #F3E8FF; /* Ungu sangat pucat */
+    border-color: #C084FC;
+    align-items: center; /* Jajarkan fungsi, kurungan, dan argumen */
+    flex-wrap: nowrap; /* Elak item turun baris */
+}
+
+.dropped-item[data-item-type="function"] .function-select {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #C084FC;
+    background-color: white;
+    font-weight: 600;
+    font-family: monospace;
+    color: #7E22CE; /* Ungu gelap */
+    margin-right: 0.25rem;
+}
+
+.dropped-item[data-item-type="function"] .paren {
+    font-weight: bold;
+    font-size: 1.5em;
+    color: #7E22CE;
+}
+
+/* Bekas untuk argumen fungsi */
+.function-argument-droppable {
+    flex-grow: 1;
+    min-height: 40px; /* Tinggi minimum untuk memudahkan drop */
+    border: 1px dashed #D8B4FE;
+    border-radius: 4px;
+    margin: 0 0.25rem;
+    padding: 0.25rem;
+    display: flex; /* Gunakan flexbox untuk menyusun argumen */
+    align-items: center;
+    justify-content: center; /* Pusatkan placeholder atau argumen pertama */
+    gap: 0.5rem; /* Jarak antara argumen */
+    background-color: rgba(255,255,255,0.5);
+    transition: background-color 0.2s;
+}
+
+.function-argument-droppable.dragging-over {
+    background-color: #E9D5FF; /* Warna ungu lebih pekat semasa hover */
+    border-style: solid;
+}
+
+/* Pastikan placeholder di dalam zon drop kelihatan elok */
+.function-argument-droppable .canvas-placeholder {
+    position: static;
+    transform: none;
+    font-size: 0.8em;
+}
+
+/* Pastikan item yang didrop ke dalam fungsi tidak terlalu besar */
+.function-argument-droppable .dropped-item {
+    transform: scale(0.95); /* Kecilkan sedikit */
+    margin-bottom: 0; /* Buang margin bawah */
+}
+
+/* Buang butang 'fx' dari item yang sudah berada di dalam fungsi */
+.function-argument-droppable .dropped-item .wrap-function-btn {
+    display: none;
 }

@@ -43,6 +43,47 @@ function createLogicBuilder(config) {
 
     let modalCanvasState = '[]';
 
+    // ▼▼▼ FUNGSI BAHARU UNTUK MENGURUSKAN PEMBUNGKUSAN FUNGSI ▼▼▼
+    const handleWrapWithFunction = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const originalItem = e.target.closest('.dropped-item');
+        if (!originalItem) return;
+
+        showCustomDialog({
+            title: "Wrap with Function",
+            message: "Do you want to wrap this component with a built-in function?",
+            showCancelButton: true,
+            onOk: () => {
+                // 1. Simpan rujukan kepada parent asal
+                const originalParent = originalItem.parentElement;
+
+                // 2. Cipta pembalut fungsi (function wrapper) yang baharu
+                const functionData = { type: 'function' };
+                const functionWrapper = createInteractiveElement(functionData);
+
+                // 3. Cari zon untuk meletakkan argumen di dalam pembalut
+                const argZone = functionWrapper.querySelector('.function-argument-droppable');
+                if (!argZone) {
+                    console.error("Argument drop zone not found in function wrapper.");
+                    return;
+                }
+
+                // 4. Gantikan item asal dengan pembalut fungsi di dalam DOM
+                originalParent.replaceChild(functionWrapper, originalItem);
+
+                // 5. Alihkan item asal ke dalam zon argumen pembalut
+                argZone.innerHTML = ''; // Kosongkan placeholder
+                argZone.appendChild(originalItem);
+
+                // 6. Kemas kini keadaan (state) keseluruhan kanvas
+                updateModalCanvasState();
+            }
+        });
+    };
+    // ▲▲▲ TAMAT FUNGSI BAHARU ▲▲▲
+
     /**
      * Mengemas kini 'modalCanvasState' dengan menukar keadaan semasa kanvas kepada string JSON.
      */
@@ -79,7 +120,7 @@ function createLogicBuilder(config) {
 
         const logicArray = mapItems(canvas);
         modalCanvasState = JSON.stringify(logicArray, null, 2);
-        if (placeholder) placeholder.style.display = items.length === 0 ? 'block' : 'none';
+        if (placeholder) placeholder.style.display = logicArray.length === 0 ? 'block' : 'none';
     };
 
     /**
@@ -93,7 +134,59 @@ function createLogicBuilder(config) {
         itemContainer.className = 'dropped-item';
         itemContainer.dataset.itemType = type;
 
+        // ▼▼▼ KOD TAMBAHAN: Letakkan butang 'fx' pada komponen nilai ▼▼▼
+        const VALUE_TYPES_FOR_WRAPPING = ['field', 'this_table_field', 'external_table_field', 'string', 'number', 'sql_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime'];
+        if (VALUE_TYPES_FOR_WRAPPING.includes(type)) {
+            const fxButton = document.createElement('button');
+            fxButton.className = 'wrap-function-btn';
+            fxButton.innerHTML = 'fx';
+            fxButton.title = 'Wrap with a function';
+            fxButton.addEventListener('click', handleWrapWithFunction);
+            itemContainer.appendChild(fxButton);
+        }
+        // ▲▲▲ TAMAT KOD TAMBAHAN ▲▲▲
+
         switch (type) {
+            // ▼▼▼ KOD BAHARU: Kes untuk komponen 'function' ▼▼▼
+            case 'function': {
+                itemContainer.dataset.functionName = data.name || 'CONCAT'; // Fungsi lalai
+
+                const functionSelect = document.createElement('select');
+                functionSelect.className = 'function-select';
+                // TAMBAH: LENGTH dan ROUND telah ditambah ke dalam senarai
+                const functions = ['CONCAT', 'SUM', 'AVG', 'COUNT', 'MIN', 'MAX', 'UPPER', 'LOWER', 'LENGTH', 'ROUND', 'DATE_FORMAT'];
+                functions.forEach(func => {
+                    const option = document.createElement('option');
+                    option.value = func;
+                    option.textContent = func;
+                    if (func === (data.name || 'CONCAT')) option.selected = true;
+                    functionSelect.appendChild(option);
+                });
+                functionSelect.addEventListener('change', (e) => {
+                    itemContainer.dataset.functionName = e.target.value;
+                    updateModalCanvasState();
+                });
+
+                const openParen = document.createElement('span');
+                openParen.textContent = '(';
+                openParen.className = 'paren';
+
+                const argContainer = document.createElement('div');
+                argContainer.className = 'function-argument-droppable';
+                argContainer.innerHTML = '<span class="canvas-placeholder">Drop arguments here</span>';
+
+                const closeParen = document.createElement('span');
+                closeParen.textContent = ')';
+                closeParen.className = 'paren';
+
+                itemContainer.appendChild(functionSelect);
+                itemContainer.appendChild(openParen);
+                itemContainer.appendChild(argContainer);
+                itemContainer.appendChild(closeParen);
+
+                break;
+            }
+            // ▲▲▲ TAMAT KOD BAHARU ▲▲▲
             case 'sql_query':
                 itemContainer.innerHTML = `<div class="sql-query-header"><span>[SQL QUERY]</span><button class="open-qb-btn" title="Open Query Builder"><i class="fas fa-magic-wand-sparkles"></i></button></div><textarea placeholder="SELECT * FROM ..."></textarea>`;
                 itemContainer.querySelector('textarea').addEventListener('input', updateModalCanvasState);
@@ -532,6 +625,11 @@ function createLogicBuilder(config) {
         if (e.target.classList.contains('delete-algo-item')) {
             const itemToRemove = e.target.closest('.dropped-item');
             if (itemToRemove && !itemToRemove.nextElementSibling) {
+                // Jika item yang dipadam berada di dalam zon argumen fungsi,
+                // dan ia adalah satu-satunya item, paparkan semula placeholder.
+                if (itemToRemove.parentElement.classList.contains('function-argument-droppable') && itemToRemove.parentElement.childElementCount === 1) {
+                    itemToRemove.parentElement.innerHTML = '<span class="canvas-placeholder">Drop arguments here</span>';
+                }
                 itemToRemove.remove();
                 updateModalCanvasState();
             } else {
