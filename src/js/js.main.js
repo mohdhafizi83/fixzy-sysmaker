@@ -146,7 +146,17 @@ export const SaveManager = {
         } finally {
             this.isProcessing = false;
             setLastActiveChildTable(null); 
-            setTimeout(() => saveStatus.textContent = '', 3000);
+            setTimeout(() => {
+                // Hanya kosongkan status jika ia bukan mesej 'Saving...' dari proses seterusnya.
+                if (saveStatus.textContent === 'All changes saved ✔' || saveStatus.textContent === 'Save failed!') {
+                    saveStatus.textContent = '';
+                }
+            }, 3000);
+
+            // Jika ada item baharu dalam queue, prosesnya selepas jeda singkat.
+            if (!this.isQueueEmpty()) {
+                setTimeout(() => this.processQueue(), 50);
+            }
         }
     },
 

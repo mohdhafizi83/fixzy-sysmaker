@@ -402,9 +402,18 @@ function setupLogicBuilderCore(config) {
                 const operatorSelect = document.createElement('select');
                 operatorSelect.className = 'operator-select';
                 const operators = [
-                    { value: '==', text: 'Equal' }, { value: '!=', text: 'Not Equal' }, 
-                    { value: '>', text: 'Greater Than' }, { value: '<', text: 'Less Than' }, 
-                    { value: '>=', text: 'Greater or Equal' }, { value: '<=', text: 'Less or Equal' }
+                    { value: '=', text: 'is equal to' },
+                    { value: '!=', text: 'is not equal to' },
+                    { value: '>', text: 'is greater than' },
+                    { value: '<', text: 'is less than' },
+                    { value: '>=', text: 'is greater than or equal to' },
+                    { value: '<=', text: 'is less than or equal to' },
+                    { value: 'LIKE', text: 'contains' },
+                    { value: 'NOT LIKE', text: 'does not contain' },
+                    { value: 'IN', text: 'is one of (a,b,c)' },
+                    { value: 'NOT IN', text: 'is not one of (a,b,c)' },
+                    { value: 'IS NULL', text: 'is empty (NULL)' },
+                    { value: 'IS NOT NULL', text: 'is not empty (not NULL)' }
                 ];
                 operators.forEach(op => {
                     const option = document.createElement('option');

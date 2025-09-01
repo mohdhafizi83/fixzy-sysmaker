@@ -12,6 +12,10 @@ const dbPath = path.join(app.getPath("userData"), "FiziSysMaker.db");
 const dbExists = fs.existsSync(dbPath);
 const db = new Database(dbPath);
 
+// OPTIMASI: Tetapkan mod WAL dan busy_timeout untuk mengurangkan ralat 'database is locked'
+db.pragma('journal_mode = WAL');
+db.pragma('busy_timeout = 5000'); // Tunggu sehingga 5 saat
+
 // Logik First-Run
 if (!dbExists) {
   //console.log("Pangkalan data tidak ditemui, mencipta skema baharu...");
