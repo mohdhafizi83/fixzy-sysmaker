@@ -1364,22 +1364,78 @@ fieldset.fieldset-disabled {
     text-align: center;
     box-shadow: var(--shadow);
     transition: background-color 0.2s;
+    /* ▼▼▼ TAMBAHAN BAHARU ▼▼▼ */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    /* ▲▲▲ TAMAT TAMBAHAN ▲▲▲ */
 }
 
 .algo-component:hover {
     background-color: #f3f4f6;
 }
 
+/* Color-code palette items for better UX */
+.algo-component[data-type="if"],
+.algo-component[data-type="else_if"],
+.algo-component[data-type="then"],
+.algo-component[data-type="else"] {
+    background-color: #FEF2F2;
+    border-color: #FCA5A5;
+    color: #B91C1C;
+}
+
+.algo-component[data-type="comparison_operator"],
+.algo-component[data-type="logical_operator"],
+.algo-component[data-type="arithmetic_operator"] {
+    background-color: #E0F2FE;
+    border-color: #7DD3FC;
+    color: #0369A1;
+}
+
+.algo-component[data-type="this_table_field"],
+.algo-component[data-type="external_table_field"],
+.algo-component[data-type="sql_query"],
+.algo-component[data-type="api_endpoint"] {
+    background-color: #FFFBEB;
+    border-color: #FDE68A;
+    color: #92400E;
+}
+
+.algo-component[data-type="string"],
+.algo-component[data-type="number"],
+.algo-component[data-type="boolean"],
+.algo-component[data-type="null"] {
+    background-color: #F0FDF4;
+    border-color: #A7F3D0;
+    color: #065F46;
+}
+
+.algo-component[data-type="open_paren"],
+.algo-component[data-type="close_paren"] {
+    background-color: #F1F5F9;
+    border-color: #CBD5E1;
+    color: #475569;
+    font-weight: bold;
+}
+
+.algo-component[data-type="comment"] .fa-comment-dots {
+    margin-right: 0.5rem;
+}
+
 /* KOD PENUH: Cari dan gantikan keseluruhan blok CSS untuk .algorithm-canvas dengan yang ini. */
 .algorithm-canvas {
     border: 2px dashed var(--border-color);
     border-radius: 6px;
-    padding: 1rem;
+    padding: 1rem; /* Padding sedia ada dikekalkan */
     position: relative;
     transition: background-color 0.2s, border-color 0.2s;
-    /* ▼▼▼ TAMBAHAN BAHARU ▼▼▼ */
-    padding-bottom: 10rem; /* Mewujudkan 4+ ruang kosong di bawah */
-    /* ▲▲▲ TAMAT TAMBAHAN ▲▲▲ */
+    /* ▼▼▼ MULA KEMAS KINI ▼▼▼ */
+    max-height: calc(85vh - 10rem); /* Hadkan ketinggian & selaraskan dengan palet */
+    overflow-y: auto; /* Tambah bar skrol menegak apabila kandungan melimpah */
+    padding-bottom: 10rem; /* Kekalkan ruang di bawah untuk drop item terakhir */
+    /* ▲▲▲ TAMAT KEMAS KINI ▲▲▲ */
 }
 
 .algorithm-canvas.dragging-over {
@@ -1399,12 +1455,13 @@ fieldset.fieldset-disabled {
 .dropped-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    background-color: #E9D5FF;
-    border: 1px solid #A855F7;
+    gap: 0.75rem; /* Tambah ruang antara elemen */
+    background-color: #F1F5F9; /* Warna kelabu neutral sebagai lalai */
+    border: 1px solid #CBD5E1;
+    border-left: 4px solid #64748B; /* Aksen di sebelah kiri */
     padding: 0.5rem 1rem;
     margin-bottom: 0.5rem;
-    border-radius: 4px;
+    border-radius: 6px; /* Bulatan sudut yang lebih konsisten */
     position: relative; /* INI ADALAH PEMBETULAN UTAMA */
 }
 
@@ -1596,194 +1653,6 @@ fieldset.fieldset-disabled {
     color: #dc3545;
 }
 
-/* Fix for large modal content to be scrollable */
-#query-builder-modal .modal-content,
-#algorithm-builder-modal .modal-content,
-#calculation-builder-modal .modal-content {
-    display: flex;
-    flex-direction: column;
-    max-height: 85vh; /* Hadkan ketinggian maksimum modal kepada 85% ketinggian skrin */
-}
-
-#query-builder-modal .modal-body,
-#algorithm-builder-modal .modal-body,
-#calculation-builder-modal .modal-body {
-    flex-grow: 1; /* Benarkan bahagian body untuk mengisi ruang yang ada */
-    overflow-y: auto; /* Tambah bar skrol menegak HANYA apabila kandungan melimpah */
-    padding-right: 1rem; /* Beri sedikit ruang untuk bar skrol */
-}
-
-/* ADD THIS AT THE END OF styles.css */
-
-/* Calculation Builder Modal Styles */
-#calculation-builder-modal .cb-section {
-    margin-bottom: 2rem;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 1.5rem;
-}
-#calculation-builder-modal .cb-section:last-child {
-    border-bottom: none;
-}
-#calculation-builder-modal .cb-section h4 {
-    margin-bottom: 1rem;
-    font-weight: 600;
-}
-#calculation-builder-modal .cb-calculation-rule {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-#calculation-builder-modal .cb-calculation-rule label {
-    font-weight: 500;
-}
-#calculation-builder-modal .cb-calculation-rule select {
-    padding: 0.5rem;
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
-    background-color: white;
-}
-
-/* ADD THIS AT THE END OF styles.css */
-
-/* Styling for the mandatory rule display box in Calculation Builder */
-.cb-mandatory-rule-display {
-    background-color: #F3F4F6; /* Warna latar kelabu lembut */
-    border: 1px solid #E5E7EB;
-    border-radius: 6px;
-    padding: 0.75rem 1rem;
-    margin-bottom: 1.5rem;
-}
-.cb-mandatory-rule-display p {
-    margin: 0;
-    color: #4B5563; /* Warna teks sedikit gelap */
-    font-size: 0.9em;
-}
-.cb-mandatory-rule-display p i {
-    color: #6B7280;
-    margin-right: 0.5rem;
-}
-
-/* ADD THIS AT THE END OF styles.css */
-
-/* Advanced Mode Toggle for Calculation Builder */
-.cb-advanced-toggle {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--border-color);
-}
-.cb-advanced-toggle .checkbox-label {
-    font-weight: 500;
-}
-
-/* Advanced Calculation Rule Styles */
-.cb-advanced-rule {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-.cb-advanced-rule select {
-    padding: 0.5rem;
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
-}
-
-.cb-expression-builder {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background-color: #F9FAFB;
-    padding: 1rem;
-    border-radius: 6px;
-}
-.cb-expression-builder label {
-    font-weight: 500;
-}
-.cb-expression-builder select {
-    flex: 1;
-    padding: 0.5rem;
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
-}
-
-/* ADD THIS AT THE END OF styles.css */
-
-/* Styles for Nested Rule Groups */
-.qb-rule-group {
-    border: 1px solid #D1D5DB;
-    border-left: 3px solid var(--primary-color);
-    border-radius: 6px;
-    padding: 1rem;
-    margin-top: 1rem;
-    background-color: #F9FAFB;
-}
-.qb-rule-group .qb-logic-toggle {
-    margin-bottom: 1rem;
-    font-weight: 500;
-}
-.qb-rule-group .qb-nested-rules {
-    padding-left: 1rem;
-    border-left: 2px dashed #D1D5DB;
-}
-
-/* TAMBAH BLOK INI DI PENGHUJUNG FAIL styles.css */
-
-/* Gaya untuk komponen SQL Query baharu di dalam Algorithm Builder */
-.dropped-item[data-item-type="sql_query"] {
-    flex-direction: column;
-    align-items: stretch;
-    background-color: #E0F2FE; /* Biru muda */
-    border-color: #0EA5E9;
-    padding: 0.75rem;
-}
-
-.dropped-item[data-item-type="sql_query"] .sql-query-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 0.5rem;
-}
-
-.dropped-item[data-item-type="sql_query"] .sql-query-header span {
-    font-weight: 600;
-    color: #0369A1; /* Biru gelap */
-}
-
-.dropped-item[data-item-type="sql_query"] textarea {
-    width: 100%;
-    min-height: 80px;
-    border: 1px solid #7DD3FC;
-    border-radius: 4px;
-    padding: 0.5rem;
-    font-family: monospace;
-    font-size: 0.9em;
-    resize: vertical;
-}
-
-.dropped-item[data-item-type="sql_query"] .open-qb-btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.8em;
-    background-color: white;
-    border: 1px solid #0EA5E9;
-    color: #0EA5E9;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-}
-
-.dropped-item[data-item-type="sql_query"] .open-qb-btn:hover {
-    background-color: #F0F9FF;
-}
-
-/* Letakkan butang padam di penjuru kanan atas */
-.dropped-item[data-item-type="sql_query"] .delete-algo-item {
-    position: static; /* Batalkan posisi absolute */
-    margin-left: auto; /* Tolak ia ke sebelah kanan header */
-}
-
 /* Letakkan butang padam di penjuru kanan atas */
 .dropped-item .delete-algo-item {
     position: absolute;
@@ -1805,152 +1674,102 @@ fieldset.fieldset-disabled {
     opacity: 1;
 }
 
-/* ADD THIS AT THE END OF styles.css */
+/* ================================================================== */
+/* == ALGORITHM BUILDER - DROPPED ITEM STYLES (COLOR CODED) == */
+/* ================================================================== */
 
-/* Configurable Query/Calculation Builder Modal Styles */
-#configurable-query-builder-modal .qb-section {
-    margin-bottom: 2rem;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 1.5rem;
+/* Control Flow (IF, THEN, ELSE) */
+.dropped-item[data-item-type="if"],
+.dropped-item[data-item-type="else_if"],
+.dropped-item[data-item-type="then"],
+.dropped-item[data-item-type="else"] {
+    background-color: #FEF2F2;
+    border-color: #FCA5A5;
+    border-left-color: #EF4444;
+    /* ▼▼▼ TAMBAHAN BAHARU: Pusatkan kandungan untuk komponen aliran kawalan ▼▼▼ */
+    justify-content: center;
 }
-#configurable-query-builder-modal .qb-section:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
-}
-#configurable-query-builder-modal .qb-section h4 {
-    margin-bottom: 1rem;
+.dropped-item[data-item-type="if"] span,
+.dropped-item[data-item-type="else_if"] span,
+.dropped-item[data-item-type="then"] span,
+.dropped-item[data-item-type="else"] span {
     font-weight: 600;
+    font-family: monospace;
+    color: #B91C1C;
 }
 
-/* Field selection boxes (for General and GroupBy) */
-#configurable-query-builder-modal .qb-fields-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
+/* Operators (Comparison, Logical, Arithmetic) */
+.dropped-item[data-item-type="comparison_operator"],
+.dropped-item[data-item-type="logical_operator"],
+.dropped-item[data-item-type="arithmetic_operator"] {
+    background-color: #EFF6FF;
+    border-color: #BFDBFE;
+    border-left-color: #3B82F6;
 }
-#configurable-query-builder-modal .qb-field-list-box {
-    flex: 1;
+
+/* Data Sources (Fields, SQL, API) */
+.dropped-item[data-item-type="this_table_field"],
+.dropped-item[data-item-type="external_table_field"],
+.dropped-item[data-item-type="field"] {
+    background-color: #FFFBEB;
+    border-color: #FDE68A;
+    border-left-color: #F59E0B;
 }
-#configurable-query-builder-modal .qb-field-list-box label {
-    font-weight: 500;
-    font-size: 0.9em;
-    margin-bottom: 0.5rem;
-    display: block;
-}
-#configurable-query-builder-modal .qb-field-list {
-    list-style: none;
-    padding: 0.5rem;
-    margin: 0;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    height: 150px;
-    overflow-y: auto;
-    background-color: #F9FAFB;
-}
-#configurable-query-builder-modal .qb-field-list li {
-    padding: 0.5rem;
-    cursor: pointer;
-    border-radius: 4px;
-    user-select: none; /* Prevent text selection when clicking */
-    transition: background-color 0.2s;
-}
-#configurable-query-builder-modal .qb-field-list li:hover {
-    background-color: #e9ecef;
-}
-/* This is the highlight style you requested */
-#configurable-query-builder-modal .qb-field-list li.selected {
-    background-color: var(--primary-color);
-    color: white;
-}
-#configurable-query-builder-modal .qb-field-controls {
-    display: flex;
+.dropped-item[data-item-type="sql_query"] {
     flex-direction: column;
-    gap: 0.5rem;
+    align-items: stretch;
+    background-color: #FFFBEB;
+    border-color: #FDE68A;
+    border-left-color: #F59E0B;
+    padding: 0.75rem;
+}
+.dropped-item[data-item-type="api_endpoint"] {
+    background-color: #FFFBEB;
+    border-color: #FDE68A;
+    border-left-color: #F59E0B;
+}
+.dropped-item[data-item-type="api_endpoint"] .api-endpoint-label {
+    font-weight: 600;
+    color: #92400E;
 }
 
-/* Filter Rules & Sorting Rules */
-#configurable-query-builder-modal .cqb-rule, 
-#configurable-query-builder-modal .cqb-sort-rule {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-    align-items: center;
+/* Values (String, Number, Boolean, Null) */
+.dropped-item[data-item-type="string"],
+.dropped-item[data-item-type="number"] {
+    background-color: #F0FDF4;
+    border-color: #A7F3D0;
+    border-left-color: #10B981;
 }
-#configurable-query-builder-modal .cqb-rule select, 
-#configurable-query-builder-modal .cqb-sort-rule select {
-    padding: 0.5rem;
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
-    background-color: white;
+.dropped-item[data-item-type="boolean"] {
+    background-color: #F0FDF4;
+    border-color: #A7F3D0;
+    border-left-color: #10B981;
 }
-#configurable-query-builder-modal .cqb-rule input[type="text"] {
-    flex: 1;
-    padding: 0.5rem;
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
-}
-#configurable-query-builder-modal .cqb-delete-btn {
-    background: none;
-    border: none;
-    color: var(--secondary-color);
-    cursor: pointer;
-    font-size: 1.2rem;
-    padding: 0 0.5rem;
-    line-height: 1;
-}
-#configurable-query-builder-modal .cqb-delete-btn:hover {
-    color: #dc3545;
+.dropped-item[data-item-type="null"] {
+    background-color: #F0FDF4;
+    border-color: #A7F3D0;
+    border-left-color: #10B981;
+    justify-content: center;
 }
 
-/* Nested Rule Groups */
-#configurable-query-builder-modal .cqb-rule-group {
-    border: 1px solid #D1D5DB;
-    border-left: 3px solid var(--primary-color);
-    border-radius: 6px;
-    padding: 1rem;
-    margin-top: 1rem;
-    background-color: #F9FAFB;
+/* System Variables */
+.dropped-item[data-item-type="current_user"],
+.dropped-item[data-item-type="current_datetime"] {
+    background-color: #FEF2F2;
+    border-color: #FCA5A5;
+    border-left-color: #EF4444;
 }
-#configurable-query-builder-modal .cqb-rule-group .qb-logic-toggle {
-    margin-bottom: 1rem;
-    font-weight: 500;
+.dropped-item[data-item-type="current_user"] span,
+.dropped-item[data-item-type="current_datetime"] span {
+    font-weight: 600;
+    font-family: monospace;
+    color: #991B1B;
 }
-#configurable-query-builder-modal .cqb-rule-group .qb-nested-rules {
-    padding-left: 1rem;
-    border-left: 2px dashed #D1D5DB;
-}
-#configurable-query-builder-modal .cqb-rule-group .group-actions button {
-    font-size: 0.8em;
-    padding: 0.25rem 0.5rem;
-}
-
-/* Fix for large modal content to be scrollable */
-#configurable-query-builder-modal .modal-content {
-    display: flex;
-    flex-direction: column;
-    max-height: 85vh; /* Limit max height */
-}
-#configurable-query-builder-modal .modal-body {
-    flex-grow: 1; /* Allow body to fill available space */
-    overflow-y: auto; /* Add scrollbar ONLY when needed */
-    padding-right: 1rem; /* Space for scrollbar */
-}
-
-/* TAMBAH BLOK INI DI PENGHUJUNG FAIL styles.css */
 
 /* Gaya untuk komponen API Endpoint baharu */
 .dropped-item[data-item-type="api_endpoint"] {
     background-color: #D1FAE5; /* Hijau pucat */
     border-color: #10B981;
-}
-
-.dropped-item[data-item-type="api_endpoint"] .api-endpoint-label {
-    font-weight: 600;
-    color: #047857; /* Hijau gelap */
-    margin-right: 0.5rem;
-    white-space: nowrap; /* Elak teks turun baris */
 }
 
 /* Gaya untuk komponen 'This Table.Field' */
@@ -1969,74 +1788,11 @@ fieldset.fieldset-disabled {
     flex-shrink: 0; /* Elak ia dari penyek */
 }
 
-/* Gaya untuk komponen Operator yang dipecahkan */
-.dropped-item[data-item-type="comparison_operator"] {
-    background-color: #E0F2FE; /* Biru muda */
-    border-color: #38BDF8;
-}
-
-.dropped-item[data-item-type="logical_operator"] {
-    background-color: #D1FAE5; /* Hijau pucat */
-    border-color: #34D399;
-}
-
-.dropped-item[data-item-type="arithmetic_operator"] {
-    background-color: #FFE4E1; /* Merah jambu pucat */
-    border-color: #F472B6;
-}
-
 /* Gaya untuk komponen kurungan (parentheses) */
 .dropped-item[data-item-type="open_paren"],
 .dropped-item[data-item-type="close_paren"] {
-    background-color: #F5F5F5; /* Kelabu sangat cerah */
-    border-color: #A1A1AA;
-}
-
-.dropped-item[data-item-type="open_paren"] span,
-.dropped-item[data-item-type="close_paren"] span {
     font-weight: bold;
     font-size: 1.5em;
-}
-
-/* Gaya untuk komponen Boolean dan Null */
-.dropped-item[data-item-type="boolean"] {
-    background-color: #E0F2F1; /* Teal pucat */
-    border-color: #26A69A;
-}
-
-.dropped-item[data-item-type="boolean"] select {
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    border: 1px solid #26A69A;
-    background-color: white;
-    font-weight: 500;
-}
-
-.dropped-item[data-item-type="null"] {
-    background-color: #ECEFF1; /* Kelabu pucat */
-    border-color: #90A4AE;
-    justify-content: center;
-}
-
-/* Gaya untuk komponen Pembolehubah Sistem */
-.dropped-item[data-item-type="current_user"],
-.dropped-item[data-item-type="current_datetime"] {
-    background-color: #FEE2E2; /* Merah pucat */
-    border-color: #F87171;
-}
-
-.dropped-item[data-item-type="current_user"] span,
-.dropped-item[data-item-type="current_datetime"] span {
-    font-weight: 600;
-    font-family: monospace;
-    color: #991B1B; /* Merah gelap */
-}
-
-.dropped-item[data-item-type="current_user"] select,
-.dropped-item[data-item-type="current_datetime"] select {
-    border: 1px solid #FCA5A5;
-    /* Guna semula gaya dari komponen lain jika ada, atau tambah gaya baharu */
-    /* Contoh: padding, border-radius, dll. */
 }
 
 /* Gaya untuk komponen Fungsi */
@@ -2045,13 +1801,6 @@ fieldset.fieldset-disabled {
     border-color: #C084FC;
     align-items: center;
 }
-
-.dropped-item[data-item-type="function"] > span {
-    font-weight: 600;
-    font-family: monospace;
-    color: #7E22CE; /* Ungu gelap */
-}
-
 .function-argument-droppable {
     flex-grow: 1;
     min-height: 40px;
@@ -2065,17 +1814,6 @@ fieldset.fieldset-disabled {
     background-color: rgba(255,255,255,0.5);
     transition: background-color 0.2s;
 }
-
-.dropped-item[data-item-type="api_endpoint"] input[type="text"] {
-    flex-grow: 1; /* Penuhkan baki ruang */
-    border: 1px solid #6EE7B7;
-    border-radius: 4px;
-    padding: 0.25rem 0.5rem;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.9em;
-}
-
-/* TAMBAH BLOK INI DI PENGHUJUNG FAIL styles.css */
 
 /* Gaya untuk butang 'fx' yang terapung di atas komponen */
 .wrap-function-btn {
@@ -2171,45 +1909,3 @@ fieldset.fieldset-disabled {
 .function-argument-droppable .dropped-item .wrap-function-btn {
     display: none;
 }
-/* TAMBAH BLOK INI DI PENGHUJUNG FAIL styles.css */
-
-/* Gaya untuk komponen Comment */
-.dropped-item.comment-item {
-    background-color: #FEFCE8; /* Kuning Pucat */
-    border-color: #F6E05E; /* Kuning Sempadan */
-    border-style: dashed;
-    align-items: stretch; /* Penuhkan ketinggian */
-}
-
-.dropped-item.comment-item textarea {
-    width: 100%;
-    min-height: 50px;
-    border: none;
-    background-color: transparent;
-    resize: vertical;
-    font-family: 'Inter', sans-serif;
-    font-style: italic;
-    color: #71717A; /* Teks Gelap */
-}
-
-/* Sembunyikan butang 'fx' untuk komen */
-.dropped-item.comment-item .wrap-function-btn {
-    display: none;
-}
-
-/* TAMBAH BLOK INI DI PENGHUJUNG FAIL styles.css */
-
-/* Gaya untuk komponen Aliran Kawalan (Control Flow) */
-.dropped-item[data-item-type="else_if"] {
-    background-color: #FEF2F2; /* Merah sangat pucat */
-    border-color: #FCA5A5;
-    justify-content: center; /* Pusatkan teks */
-}
-
-.dropped-item[data-item-type="else_if"] span {
-    font-weight: 600;
-    font-family: monospace;
-    color: #B91C1C; /* Merah gelap */
-}
-
-

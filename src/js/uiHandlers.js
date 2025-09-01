@@ -477,7 +477,7 @@ function createLogicBuilder(config) {
                 break;
             default:
                 const itemLabel = document.createElement('span');
-                itemLabel.textContent = `[${type.toUpperCase()}]`;
+                itemLabel.textContent = (type === 'else_if') ? 'ELSE IF' : type.toUpperCase();
                 itemContainer.appendChild(itemLabel);
         }
 
