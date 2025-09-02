@@ -224,7 +224,6 @@ function setupBuilderInstance(config) {
             return;
         }
         
-        // Seterusnya adalah logik sedia ada untuk blok Condition/Action
         const blockData = state.blocks[blockId];
         if (!blockData) return;
         let tempInput = document.getElementById('workflow-temp-input');
@@ -388,15 +387,20 @@ function setupBuilderInstance(config) {
         }
     });
 
+    // ▼▼▼ MULA BLOK KOD YANG DIPERBAIKI ▼▼▼
+
     // --- Muatkan Data Awal ---
     const hiddenInput = document.getElementById(config.hiddenInputId);
     try {
         const workflowData = JSON.parse(hiddenInput.value || '{}');
         if (workflowData.blocks) {
             state.blocks = workflowData.blocks;
+            
+            // Lukis semula semua blok yang disimpan ke atas kanvas
             for (const blockId in state.blocks) {
                 const blockInfo = state.blocks[blockId];
                 const newBlock = createWorkflowBlock(blockInfo.type, blockInfo.x, blockInfo.y, blockId);
+
                 if (blockInfo.configData && blockInfo.configData !== '[]') {
                     const btn = newBlock.querySelector('.configure-btn');
                     if(btn) {
@@ -408,8 +412,28 @@ function setupBuilderInstance(config) {
             }
         }
         state.connections = workflowData.connections || [];
-        redrawConnections();
-    } catch (e) { console.warn("Could not load workflow state:", e); }
+    } catch (e) { 
+        console.warn(`Could not load workflow state for ${config.containerId}:`, e);
+        state.blocks = {};
+        state.connections = [];
+    }
+
+    // Gunakan ResizeObserver untuk memastikan kanvas mempunyai saiz fizikal sebelum melukis garisan.
+    // Ini adalah solusi paling stabil untuk isu pemasaan lukisan (rendering timing issue).
+    const observer = new ResizeObserver(() => {
+        // Semak jika lebar kanvas lebih besar dari 0.
+        if (state.canvas.offsetWidth > 0 && state.canvas.offsetHeight > 0) {
+            // Jika ya, kanvas sudah sedia. Lukis garisan.
+            redrawConnections();
+            
+            // Hentikan pemerhatian selepas berjaya dilukis untuk menjimatkan sumber.
+            observer.disconnect();
+        }
+    });
+
+    // Mula memerhatikan perubahan saiz pada elemen kanvas.
+    observer.observe(state.canvas);
+    // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
 }
 
 /**

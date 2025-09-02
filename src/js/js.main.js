@@ -367,7 +367,7 @@ initializeQueryBuilder();
     initializeProjectHookBuilder();
     initializeCalculationBuilder();
 	initializeAlgorithmBuilder();
-	initializeWorkflowBuilder();
+	
 	
 	initializeProjectSaveHandlers();
 	initializeTableSaveHandlers();
@@ -461,6 +461,7 @@ initializeQueryBuilder();
     // Mulakan aplikasi dengan cuba mendapatkan projek aktif dari DB
     const project = await window.electronAPI.getActiveProject();
     await loadProjectData(project);
+	initializeWorkflowBuilder();
 
     // Pasang pendengar untuk mesej 'show-overlay' dari proses utama
     if (window.electronAPI && typeof window.electronAPI.onShowOverlay === 'function') {
