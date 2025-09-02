@@ -738,7 +738,7 @@
                             <button class="btn btn-secondary mt-1" id="open-project-hook-builder-btn">
                                 <i class="fas fa-cogs"></i> Open Project Hook Builder
                             </button>
-                            <input type="hidden" id="prj-hook-logic" name="prj-hook-logic">
+                            <input type="hidden" id="app-hook-logic" name="app-hook-logic">
                         </div>
                     </div>
                 </div>
@@ -1883,6 +1883,49 @@
 <div id="loading-overlay" class="loading-overlay-hidden">
         <div class="loader"></div>
     </div>
+
+<!-- ▼▼▼ MODAL UNTUK HOOK WORKFLOW BUILDER ▼▼▼ -->
+<div id="hook-workflow-builder-modal" class="modal-overlay hidden">
+    <div class="modal-content extra-large">
+        <div class="modal-header">
+            <h3 id="hook-workflow-modal-title">Hook Workflow Builder</h3>
+            <button id="hook-workflow-modal-close" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="workflow-container">
+                <div class="workflow-palette">
+                    <h4>Blocks</h4>
+                    <div class="workflow-block-palette-item" draggable="true" data-block-type="action">
+                        <i class="fas fa-bolt"></i>
+                        <span>Action</span>
+                    </div>
+                     <div class="workflow-block-palette-item" draggable="true" data-block-type="condition">
+                        <i class="fas fa-code-branch"></i>
+                        <span>Condition</span>
+                    </div>
+                </div>
+                <div class="workflow-canvas-wrapper">
+                    <svg id="connector-svg" class="connector-svg"></svg>
+                    <div id="workflow-canvas" class="workflow-canvas">
+                         <div class="workflow-block" data-block-type="start" data-block-id="start" style="top: 20px; left: 20px;">
+                            <div class="workflow-block-title">
+                                <i class="fas fa-flag-checkered"></i> START
+                            </div>
+                            <div class="connection-point-container">
+                                <div class="connection-point output" data-point-id="out"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="hook-workflow-modal-cancel">Cancel</button>
+            <button class="btn btn-primary" id="hook-workflow-modal-done">Done</button>
+        </div>
+    </div>
+</div>
+<!-- ▲▲▲ TAMAT MODAL WORKFLOW BUILDER ▲▲▲ -->
 
 <!-- ▼▼▼ TEMPLATE UNTUK LOGIC BUILDER (Diletakkan di hujung body) ▼▼▼ -->
 <template id="logic-builder-template">

@@ -195,6 +195,15 @@ html, body {
     background-color: #F9FAFB;
     border-color: var(--border-color);
 }
+.btn-success {
+    background-color: #10B981; /* Hijau */
+    color: white;
+    border-color: #059669;
+}
+.btn-success:hover {
+    background-color: #059669;
+}
+
 .mt-1 { margin-top: 0.5rem; }
 
 
@@ -1998,72 +2007,291 @@ fieldset.fieldset-disabled {
 
 /* Rule Group (Nested) */
 .cqb-rule-group {
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-left: 3px solid var(--primary-color);
-    border-radius: 6px;
-    padding: 1rem 1rem 1rem 1.5rem;
+    padding: 1rem;
+    margin-left: 1rem;
+    border-left: 2px solid var(--border-color);
     margin-bottom: 1rem;
-    position: relative;
 }
 .qb-nested-rules {
-    margin-top: 1rem;
-}
-.cqb-rule-group .group-actions {
-    margin-top: 1rem;
-    display: flex;
-    gap: 0.5rem;
-}
-.cqb-rule-group .group-actions .cqb-delete-btn {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
+    padding-top: 1rem;
 }
 
-/* Sembunyikan butang 'Add Group' dalam mod 'Calculation' Asas */
-#configurable-query-builder-modal:has(.qb-mode-calculation:not(.hidden)):not(:has(#cqb-advanced-mode-toggle:checked)) #cqb-add-group,
-#configurable-query-builder-modal:has(.qb-mode-calculation:not(.hidden)):not(:has(#cqb-advanced-mode-toggle:checked)) .cqb-add-nested-group {
-    display: none;
-}
-
-/* Delete Buttons */
 .cqb-delete-btn {
     background: none;
     border: none;
     color: var(--secondary-color);
-    cursor: pointer;
     font-size: 1.2rem;
-    padding: 0 0.5rem;
-    line-height: 1;
-    margin-left: auto; /* Push to the right */
+    cursor: pointer;
+    margin-left: auto;
 }
 .cqb-delete-btn:hover {
-    color: #dc3545;
+    color: #dc2626; /* Merah */
 }
 
 /* Calculation Builder Specifics */
-#cqb-calculation-basic, #cqb-calculation-advanced {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    background-color: #f9fafb;
-    padding: 1rem;
-    border-radius: 6px;
-}
-#cqb-calculation-basic select, #cqb-calculation-advanced select {
-    padding: 0.5rem;
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
-}
 .cb-mandatory-rule-display {
-    background-color: #FEFCE8;
-    border: 1px solid #FDE047;
-    color: #78350F;
+    background-color: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    color: #1E40AF;
     padding: 0.75rem 1rem;
     border-radius: 6px;
     font-size: 0.9em;
-    margin-top: 1rem;
 }
-.cb-mandatory-rule-display i {
-    margin-right: 0.5rem;
+.cb-advanced-toggle {
+    margin: 1rem 0;
+}
+.cb-calculation-rule, .cb-advanced-rule, .cb-expression-builder {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+
+/* ================================================================== */
+/* == HOOK WORKFLOW BUILDER STYLES                                 == */
+/* ================================================================== */
+
+.workflow-container {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 1.5rem;
+    height: 70vh; /* Give it a fixed height */
+    border: 1px solid var(--border-color);
+    padding: 1rem;
+    border-radius: 6px;
+    background-color: var(--background-color);
+}
+
+.workflow-palette {
+    border-right: 1px solid var(--border-color);
+    padding-right: 1.5rem;
+    overflow-y: auto;
+}
+
+.workflow-palette h4 {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+.workflow-block-palette-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: grab;
+    font-weight: 500;
+    box-shadow: var(--shadow);
+    transition: background-color 0.2s;
+}
+
+.workflow-block-palette-item:hover {
+    background-color: #f3f4f6;
+    border-color: var(--primary-color);
+}
+
+.workflow-block-palette-item i {
+    color: var(--primary-color);
+}
+
+.workflow-canvas-wrapper {
+    position: relative;
+    overflow: auto; /* Allow panning/scrolling */
+    background-color: white;
+    background-image: 
+        linear-gradient(rgba(0, 0, 0, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    border-radius: 6px;
+}
+
+.workflow-canvas {
+    position: relative;
+    width: 2000px; /* Large canvas for positioning */
+    height: 2000px;
+    transform-origin: 0 0;
+}
+
+.connector-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Allow clicks to go through to the canvas */
+    z-index: 1;
+}
+
+.connector-svg .connector-path {
+    stroke: #9CA3AF;
+    stroke-width: 3;
+    fill: none;
+}
+
+.connector-svg .connector-path-selected {
+    stroke: var(--primary-color);
+}
+
+.workflow-block {
+    position: absolute;
+    background-color: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    width: 200px;
+    z-index: 10;
+    cursor: move;
+    transition: box-shadow 0.2s;
+}
+
+.workflow-block:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.workflow-block.dragging {
+    opacity: 0.7;
+    z-index: 100;
+}
+
+.workflow-block-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.workflow-block[data-block-type="start"] .workflow-block-title {
+    background-color: #10B981;
+    color: white;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.workflow-block[data-block-type="action"] .workflow-block-title {
+    background-color: #3B82F6;
+    color: white;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.workflow-block[data-block-type="condition"] .workflow-block-title {
+    background-color: #F97316;
+    color: white;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.workflow-block-content {
+    padding: 1rem;
+    font-size: 0.9em;
+}
+
+.workflow-block-content .btn {
+    width: 100%;
+    padding: 0.5rem;
+}
+
+.connection-point-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Make the container transparent to clicks */
+}
+
+.connection-point {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background-color: white;
+    border: 2px solid #9CA3AF;
+    border-radius: 50%;
+    cursor: crosshair;
+    transition: background-color 0.2s, border-color 0.2s;
+    pointer-events: auto; /* Make the points clickable again */
+}
+
+.connection-point:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.connection-point.input {
+    left: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.connection-point.output {
+    right: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.connection-point.output.true {
+    top: 33%;
+}
+.connection-point.output.false {
+    top: 66%;
+}
+
+.temp-connector {
+    stroke: var(--primary-color);
+    stroke-width: 3;
+    stroke-dasharray: 5,5;
+    fill: none;
+}
+
+.delete-block-btn {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 22px;
+    height: 22px;
+    background-color: #EF4444; /* Red */
+    color: white;
+    border: 2px solid white;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    line-height: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: var(--shadow);
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 15; /* Ensure it's above the block title */
+}
+
+.workflow-block:hover .delete-block-btn {
+    opacity: 1; /* Show on hover */
+}
+
+.delete-block-btn:hover {
+    transform: scale(1.1);
+    background-color: #DC2626; /* Darker Red */
+}
+
+.connector-path.selected {
+    stroke: #EF4444; /* Red */
+    stroke-width: 4;
+}
+
+#hook-workflow-builder-modal {
+    z-index: 1000;
+}
+
+#algorithm-builder-modal {
+    z-index: 1010; /* Higher z-index to appear on top */
 }

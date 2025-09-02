@@ -734,73 +734,106 @@ function setupLogicBuilderCore(config) {
  * @param {string} config.cancelButtonId - ID butang untuk membatalkan dan menutup modal.
  * @param {string} config.doneButtonId - ID butang untuk menyimpan dan menutup modal.
  */
-function createModalLogicBuilder(config) {
-    const openBtn = document.getElementById(config.triggerButtonId);
+/**
+ * Opens the Logic Builder modal with a given configuration.
+ * This is the core, reusable function for showing the builder.
+ * @param {object} config - Configuration object.
+ * @param {string} config.modalId - The ID of the modal element.
+ * @param {string} config.targetInputId - The ID of the hidden input to store the final state.
+ * @param {object} config.validationRules - The grammar rules for the builder.
+ * @param {function} config.getContext - Function to get the current context (e.g., table name).
+ * @param {string} config.closeButtonId - ID of the close button.
+ * @param {string} config.cancelButtonId - ID of the cancel button.
+ * @param {string} config.doneButtonId - ID of the done button.
+ * @param {function} [config.onComplete] - Optional callback when 'Done' is clicked, receives the logic JSON.
+ */
+export function openModalLogicBuilder(config) {
     const modal = document.getElementById(config.modalId);
     const modalBody = modal.querySelector('.modal-body');
-    const closeBtn = document.getElementById(config.closeButtonId);
-    const cancelBtn = document.getElementById(config.cancelButtonId);
-    const doneBtn = document.getElementById(config.doneButtonId);
     const hiddenInput = document.getElementById(config.targetInputId);
 
-    if (!openBtn || !modal || !modalBody || !closeBtn || !cancelBtn || !doneBtn || !hiddenInput) {
-        console.error(`Satu atau lebih elemen untuk modal builder tidak ditemui:`, config);
+    if (!modal || !modalBody || !hiddenInput) {
+        console.error("Core elements for modal logic builder are missing.");
         return;
     }
 
     const injectBuilderUI = (targetContainer) => {
         const template = document.getElementById('logic-builder-template');
         if (!template) return null;
-
         const clone = template.content.cloneNode(true);
-        targetContainer.innerHTML = ''; // Kosongkan dahulu
+        targetContainer.innerHTML = '';
         targetContainer.appendChild(clone);
-
         return {
             palette: targetContainer.querySelector('.algorithm-palette'),
             canvas: targetContainer.querySelector('.algorithm-canvas')
         };
     };
 
-    openBtn.addEventListener('click', () => {
-        const ui = injectBuilderUI(modalBody);
-        if (!ui) {
-            console.error("Gagal menyuntik UI builder ke dalam modal.");
-            return;
-        }
+    const closeBtn = document.getElementById(config.closeButtonId);
+    const cancelBtn = document.getElementById(config.cancelButtonId);
+    const doneBtn = document.getElementById(config.doneButtonId);
 
-        const builderInstance = setupLogicBuilderCore({
-            ...ui,
-            hiddenInput: hiddenInput,
-            validationRules: config.validationRules,
-            context: config.getContext(),
-            updateMode: 'manual' // Penting: Jangan kemas kini secara live
-        });
+    if (!closeBtn || !cancelBtn || !doneBtn) {
+        console.error("Modal control buttons not found.");
+        return;
+    }
 
-        // Guna klon untuk membuang listener lama dan pasang yang baharu
-        const newDoneBtn = doneBtn.cloneNode(true);
-        doneBtn.parentNode.replaceChild(newDoneBtn, doneBtn);
-        const newCancelBtn = cancelBtn.cloneNode(true);
-        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-        const newCloseBtn = closeBtn.cloneNode(true);
-        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+    const ui = injectBuilderUI(modalBody);
+    if (!ui) {
+        console.error("Failed to inject builder UI into modal.");
+        return;
+    }
 
-        const closeModal = () => {
-            modal.classList.add('hidden');
-            modalBody.innerHTML = ''; // Bersihkan UI builder apabila ditutup
-        };
-
-        newDoneBtn.addEventListener('click', () => {
-            hiddenInput.value = builderInstance.getState();
-            hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
-            closeModal();
-        });
-
-        newCancelBtn.addEventListener('click', closeModal);
-        newCloseBtn.addEventListener('click', closeModal);
-
-        modal.classList.remove('hidden');
+    const builderInstance = setupLogicBuilderCore({
+        ...ui,
+        hiddenInput: hiddenInput,
+        validationRules: config.validationRules,
+        context: config.getContext(),
+        updateMode: 'manual'
     });
+
+    const newDoneBtn = doneBtn.cloneNode(true);
+    doneBtn.parentNode.replaceChild(newDoneBtn, doneBtn);
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+    const newCloseBtn = closeBtn.cloneNode(true);
+    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+
+    const closeModal = () => {
+        modal.classList.add('hidden');
+        modalBody.innerHTML = '';
+    };
+
+    newDoneBtn.addEventListener('click', () => {
+        const logicJson = builderInstance.getState();
+        if (config.onComplete) {
+            config.onComplete(logicJson);
+        } else {
+            hiddenInput.value = logicJson;
+            hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        closeModal();
+    });
+
+    newCancelBtn.addEventListener('click', closeModal);
+    newCloseBtn.addEventListener('click', closeModal);
+
+    modal.classList.remove('hidden');
+}
+
+
+/**
+ * Binds a trigger button to open the Logic Builder modal.
+ * This is for the original use case where a button on the page opens the builder.
+ * @param {object} config - Same configuration as openModalLogicBuilder, plus triggerButtonId.
+ */
+function initializeModalLogicBuilderBinder(config) {
+    const openBtn = document.getElementById(config.triggerButtonId);
+    if (!openBtn) {
+        // This is not a critical error, as the button might not exist on all pages.
+        return;
+    }
+    openBtn.addEventListener('click', () => openModalLogicBuilder(config));
 }
 
 export function showNewProjectModal() {
@@ -954,70 +987,18 @@ export function initializeAlgorithmBuilder() {
 
 /**
  * Fungsi Pengasas untuk Algorithm Builder bagi 'Table Hook'.
- * Ia akan mempunyai butang, peraturan, dan sasaran simpanan yang berbeza.
+ * @deprecated This functionality is now handled by the Workflow Builder in workflowBuilder.js
  */
 export function initializeTableHookBuilder() {
-    // Guna semula tatabahasa yang kompleks sebagai placeholder.
-    // Anda boleh cipta tatabahasa baharu yang spesifik untuk hook pada masa hadapan.
-    const TABLE_HOOK_GRAMMAR = {
-        'start':               ['if', 'open_paren', 'value'],
-        'if':                  ['value', 'open_paren'],
-        'value':               ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then'],
-        'comparison_operator': ['value', 'open_paren'],
-        'arithmetic_operator': ['value', 'open_paren'],
-        'logical_operator':    ['value', 'open_paren', 'if'],
-        'open_paren':          ['value', 'if', 'open_paren'],
-    };
-
-    // Dapatkan elemen butang pencetus. Jika tiada, jangan teruskan.
-    const triggerButton = document.getElementById('open-table-hook-builder-btn');
-    if (!triggerButton) return;
-
-    const config = {
-        triggerButtonId: 'open-table-hook-builder-btn', // Butang baharu pada halaman tetapan jadual
-        modalId: 'algorithm-builder-modal', // Kita boleh guna semula modal yang sama
-        getContext: () => ({
-            tableName: document.querySelector('#table-settings-page .table-name')?.textContent || ''
-        }),
-        closeButtonId: 'algorithm-builder-close',
-        cancelButtonId: 'algorithm-builder-cancel-btn',
-        doneButtonId: 'algorithm-builder-done-btn',
-        targetInputId: 'tbl-hook-logic', // Input tersembunyi baharu pada borang tetapan jadual
-        validationRules: TABLE_HOOK_GRAMMAR,
-    };
-
-    createModalLogicBuilder(config);
+    // This functionality is now handled by the Workflow Builder in workflowBuilder.js
 }
 
 /**
  * Fungsi Pengasas untuk Algorithm Builder bagi 'Project Hook'.
+ * @deprecated This functionality is now handled by the Workflow Builder in workflowBuilder.js
  */
 export function initializeProjectHookBuilder() {
-    // Guna semula tatabahasa yang kompleks sebagai placeholder.
-    const PROJECT_HOOK_GRAMMAR = {
-        'start':               ['if', 'open_paren', 'value'],
-        'if':                  ['value', 'open_paren'],
-        'value':               ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then'],
-        'comparison_operator': ['value', 'open_paren'],
-        'arithmetic_operator': ['value', 'open_paren'],
-        'logical_operator':    ['value', 'open_paren', 'if'],
-    };
-
-    const triggerButton = document.getElementById('open-project-hook-builder-btn');
-    if (!triggerButton) return;
-
-    const config = {
-        triggerButtonId: 'open-project-hook-builder-btn',
-        modalId: 'algorithm-builder-modal',
-        getContext: () => ({ tableName: null }), // Tiada konteks jadual di peringkat projek
-        targetInputId: 'prj-hook-logic',
-        validationRules: PROJECT_HOOK_GRAMMAR,
-        closeButtonId: 'algorithm-builder-close',
-        cancelButtonId: 'algorithm-builder-cancel-btn',
-        doneButtonId: 'algorithm-builder-done-btn',
-    };
-
-    createModalLogicBuilder(config);
+    // This functionality is now handled by the Workflow Builder in workflowBuilder.js
 }
 
 // KOD PENUH: Gantikan keseluruhan fungsi ini.
@@ -1098,10 +1079,11 @@ export function initializeProjectSaveHandlers() {
             ? input.name.replace('app-', '').replace(/-/g, '_')
             : input.id.replace('app-', '').replace(/-/g, '_');
         
-        // ▼▼▼ PENAMBAHBAIKAN: KES KHAS UNTUK 'app-title' ▼▼▼
-        // Betulkan nama kunci supaya sepadan dengan lajur pangkalan data 'app_title'
+        // ▼▼▼ PENAMBAHBAIKAN: KES KHAS UNTUK 'app-title' DAN HOOKS ▼▼▼
         if (key === 'title') {
             key = 'app_title';
+        } else if (input.id === 'app-hook-logic') {
+            key = 'project_hook_workflow';
         }
         // ▲▲▲ TAMAT PENAMBAHBAIKAN ▲▲▲
         
@@ -1133,6 +1115,12 @@ export function initializeProjectSaveHandlers() {
     form.querySelectorAll('input, select').forEach(input => {
         input.addEventListener('change', handleInputChange);
     });
+
+    // Specifically listen for the 'input' event on the hook logic field
+    const projectHookInput = document.getElementById('app-hook-logic');
+    if (projectHookInput) {
+        projectHookInput.addEventListener('input', handleInputChange);
+    }
 }
 
 // GANTIKAN FUNGSI SEDIA ADA INI DALAM: uiHandlers.js
@@ -1159,7 +1147,10 @@ export function initializeTableSaveHandlers() {
         if (!tableData) return;
         const tableId = tableData.table_id;
         
-        const key = input.id.replace('tbl-', '').replace(/-/g, '_');
+        let key = input.id.replace('tbl-', '').replace(/-/g, '_');
+        if (input.id === 'tbl-hook-logic') {
+            key = 'table_hook_workflow';
+        }
         const value = (input.type === 'checkbox') ? (input.checked ? 1 : 0) : input.value;
         const dataToSave = { [key]: value };
 
@@ -1168,7 +1159,7 @@ export function initializeTableSaveHandlers() {
 
     form.querySelectorAll('input, select, textarea').forEach(input => {
         input.addEventListener('change', handleInputChange);
-        if (input.type === 'text' || input.type === 'number' || input.tagName.toLowerCase() === 'textarea') {
+        if (input.type === 'text' || input.type === 'number' || input.tagName.toLowerCase() === 'textarea' || input.type === 'hidden') {
             input.addEventListener('input', handleInputChange);
         }
     });
@@ -2370,6 +2361,7 @@ export function populateMainDashboard(projectData) {
     setElementValue('app-copy_children_async', projectData.copy_children_async);
     setElementValue('app-allow_pwa_install', projectData.allow_pwa_install);
     setElementValue('app-url', projectData.url);
+    setElementValue('app-hook-logic', projectData.project_hook_workflow); // Populate workflow data
     
     // Cetuskan event untuk kemas kini pratonton yang bergantung pada nilai ini
     document.getElementById('app-date-order')?.dispatchEvent(new Event('change'));
@@ -2437,6 +2429,7 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-dv-hide-save-as-copy', tableData.dv_hide_save_as_copy);
     setElementValue('tbl-dv-sticky-buttons', tableData.dv_sticky_buttons);
     setElementValue('tbl-dv-allow-add-from-homepage', tableData.dv_allow_add_from_homepage);
+    setElementValue('tbl-hook-logic', tableData.table_hook_workflow); // Populate workflow data
 	
     const tvClassesInput = document.getElementById('tbl-table-view-classes-input');
     const tvClassesSelect = document.getElementById('table-view-classes-select');
@@ -3371,7 +3364,7 @@ function handleAdvancedCalcDependencies() {
  * Fungsi teras untuk memaparkan dan menguruskan Query Builder yang boleh dikonfigurasi.
  * @param {object} config - Objek konfigurasi.
  */
-function showConfigurableQueryBuilder(config) {
+export function showConfigurableQueryBuilder(config) {
     const modal = document.getElementById('configurable-query-builder-modal');
     if (!modal) return;
 

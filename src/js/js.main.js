@@ -44,6 +44,7 @@ import {
 initializeCalculationBuilder,
 initializeQueryBuilder,
 } from './uiHandlers.js';
+import { initializeWorkflowBuilder } from './workflowBuilder.js';
 
 // KOD PENUH: Gantikan keseluruhan objek SaveManager sedia ada dengan yang ini.
 // FIND AND REPLACE THIS ENTIRE OBJECT IN: js.main.js
@@ -354,6 +355,7 @@ initializeQueryBuilder();
     initializeProjectHookBuilder();
     initializeCalculationBuilder();
 	initializeAlgorithmBuilder();
+	initializeWorkflowBuilder();
 	
 	initializeProjectSaveHandlers();
 	initializeTableSaveHandlers();

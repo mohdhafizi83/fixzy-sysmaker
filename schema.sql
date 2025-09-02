@@ -32,6 +32,7 @@ CREATE TABLE projects (
     copy_children_async          INTEGER DEFAULT 1,
     allow_pwa_install            INTEGER DEFAULT 1,
     url                          TEXT,
+    project_hook_workflow        TEXT,
 	is_active                    INTEGER DEFAULT 0
 );
 
@@ -73,6 +74,7 @@ CREATE TABLE tables (
     dv_hide_save_as_copy         INTEGER DEFAULT 0,
     dv_sticky_buttons            INTEGER DEFAULT 1,
     dv_allow_add_from_homepage   INTEGER DEFAULT 0,
+    table_hook_workflow          TEXT,
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
 
