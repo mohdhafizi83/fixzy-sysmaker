@@ -42,20 +42,29 @@ if (!dbExists) {
 // =================================================================
 // main.js
 
-// ▼▼▼ TAMBAH KESELURUHAN PENGENDALI IPC BAHARU INI ▼▼▼
+// FIND AND REPLACE THIS ENTIRE HANDLER IN: src/main.js
+
 ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, label, url }) => {
     try {
-        if (!project_id || !label) {
-            throw new Error("Project ID and Label are required.");
+        if (!project_id) {
+            throw new Error("Project ID is required.");
         }
 
-        if (item_id) {
+        // ▼▼▼ LOGIK PADAM YANG DIPERBAIKI DAN DISAHKAN ▼▼▼
+        if (item_id && label === 'DELETE' && url === 'DELETE') {
+            db.prepare(
+                `DELETE FROM menu_items WHERE item_id = ? AND project_id = ?`
+            ).run(item_id, project_id);
+        } else if (item_id) {
             // Mod Kemas Kini (Update)
             db.prepare(
                 `UPDATE menu_items SET item_label = ?, item_url = ? WHERE item_id = ? AND project_id = ?`
             ).run(label, url, item_id, project_id);
         } else {
             // Mod Tambah Baharu (Insert)
+            if (!label) {
+                 throw new Error("Label is required for a new custom menu.");
+            }
             const maxOrderResult = db.prepare(
                 'SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL'
             ).get(project_id);
@@ -71,6 +80,27 @@ ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, lab
         return { success: false, message: error.message };
     }
 });
+
+// ▼▼▼ TAMBAH KESELURUHAN HANDLER BAHARU INI SELEPAS BLOK DI ATAS ▼▼▼
+ipcMain.handle('menu:update-individual-order', async (event, orderedItems) => {
+    if (!Array.isArray(orderedItems)) {
+        return { success: false, message: 'Invalid data format.' };
+    }
+    try {
+        const updateStmt = db.prepare('UPDATE menu_items SET item_order = ? WHERE item_id = ?');
+        const transaction = db.transaction(() => {
+            for (const item of orderedItems) {
+                updateStmt.run(item.order, item.item_id);
+            }
+        });
+        transaction();
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal mengemas kini susunan menu individu:", error);
+        return { success: false, message: error.message };
+    }
+});
+
 ipcMain.handle('database:batch-update', async (event, queue) => {
     try {
         const transaction = db.transaction(() => {
@@ -507,11 +537,7 @@ ipcMain.handle('table:create', async (event, projectId) => {
 });
 
 // Handler untuk mendapatkan skema penuh
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: main.js
-
-// CARI DAN GANTIKAN KESELURUHAN FUNGSI INI DALAM main.js
-
-// CARI DAN GANTIKAN KESELURUHAN FUNGSI INI DALAM main.js
+// FIND AND REPLACE THIS ENTIRE HANDLER IN: main.js
 
 ipcMain.handle("project:get-full-schema", async (event, projectId) => {
   try {
@@ -530,12 +556,6 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
     if (tableIds.length > 0) {
         const placeholder = tableIds.map(() => "?").join(",");
         fields = db.prepare(`SELECT * FROM fields WHERE table_id IN (${placeholder}) ORDER BY field_order, field_id`).all(...tableIds);
-        
-        // ▼▼▼ CHECKPOINT #1 (DIUBAH SUAI): DATA MENTAH DITAPIS UNTUK field_id = 4 ▼▼▼
-        //console.log("--- CHECKPOINT 1 (main.js): Data Mentah Dari SQLite (Ditapis untuk field_id = 4) ---");
-        // Menggunakan .filter() untuk hanya memaparkan data yang sepadan
-        //console.log(JSON.stringify(fields.filter(f => f.field_id === 4), null, 2));
-        // ▲▲▲ TAMAT CHECKPOINT #1 ▲▲▲
     }
     
     const structuredTables = {};
@@ -570,56 +590,42 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
       .prepare("SELECT * FROM menu_groups WHERE project_id = ? ORDER BY group_order, group_name")
       .all(projectId);
       
-    const groupIds = groups.map(g => g.menu_group_id);
-    let items = [];
-    if (groupIds.length > 0) {
-        const placeholder = groupIds.map(() => '?').join(',');
-        items = db
-            .prepare(`
-                SELECT mgi.*, t.table_name 
-                FROM menu_items mgi
-                JOIN tables t ON mgi.table_id = t.table_id
-                WHERE mgi.menu_group_id IN (${placeholder})
-                ORDER BY mgi.item_order
-            `)
-            .all(...groupIds);
-    }
+    const groupedItems = db.prepare(`
+        SELECT mi.*, t.table_name 
+        FROM menu_items mi
+        JOIN tables t ON mi.table_id = t.table_id
+        WHERE mi.project_id = ? AND mi.menu_group_id IS NOT NULL
+        ORDER BY mi.item_order
+    `).all(projectId);
+    
+    // ▼▼▼ PEMBETULAN UTAMA ADA DI SINI: Gunakan LEFT JOIN ▼▼▼
+    // Ini memastikan item menu custom (di mana table_id adalah NULL) juga disertakan.
+    const individualItems = db.prepare(`
+        SELECT mi.*, t.table_name
+        FROM menu_items mi
+        LEFT JOIN tables t ON mi.table_id = t.table_id
+        WHERE mi.project_id = ? AND mi.menu_group_id IS NULL
+        ORDER BY mi.item_order
+    `).all(projectId);
+    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
 
     const structuredMenuGroups = groups.map(group => {
         return {
             ...group,
-            items: items.filter(item => item.menu_group_id === group.menu_group_id)
+            items: groupedItems.filter(item => item.menu_group_id === group.menu_group_id)
         };
     });
 
-    const fullDataObject = {
+    return {
       project: project,
       database: {
         name: project.app_title,
         table: structuredTables,
         relationships: relationships,
-        menu_groups: structuredMenuGroups
+        menu_groups: structuredMenuGroups,
+        individual_menus: individualItems // Hantar data yang telah dibetulkan
       },
     };
-
-    // ▼▼▼ CHECKPOINT #2 (DIUBAH SUAI): CARI DAN PAPARKAN DATA TERSUSUN UNTUK field_id = 4 ▼▼▼
-    //console.log("\n--- CHECKPOINT 2 (main.js): Data Tersusun (Ditapis untuk field_id = 4) ---");
-    let targetFieldData = null;
-    for (const tableName in fullDataObject.database.table) {
-        for (const fieldName in fullDataObject.database.table[tableName].fields) {
-            const field = fullDataObject.database.table[tableName].fields[fieldName];
-            if (field.field_id === 4) {
-                targetFieldData = field;
-                break;
-            }
-        }
-        if (targetFieldData) break;
-    }
-    //console.log(JSON.stringify(targetFieldData, null, 2));
-    // ▲▲▲ TAMAT CHECKPOINT #2 ▲▲▲
-
-    return fullDataObject;
-	
   } catch (error) {
     console.error("Gagal mengambil skema penuh:", error);
     return null;
