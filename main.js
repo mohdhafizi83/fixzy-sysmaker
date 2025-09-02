@@ -125,21 +125,34 @@ if (fieldsToUpdate.text_area === 1) {
                 }
             }
             // 5. Proses Kemas Kini Menu
+// INSIDE 'database:batch-update', FIND AND REPLACE THIS 'if' BLOCK
+
+            // 5. Proses Kemas Kini Menu
             if (queue.menus) {
                 const menuData = queue.menus;
                 const projectId = activeProject.project_id;
-                db.prepare('DELETE FROM menu_group_items WHERE menu_group_id IN (SELECT menu_group_id FROM menu_groups WHERE project_id = ?)')
+
+                // ▼▼▼ MULA PERUBAHAN ▼▼▼
+                // Padam data menu berkumpulan yang lama
+                db.prepare('DELETE FROM menu_items WHERE project_id = ? AND menu_group_id IS NOT NULL')
                   .run(projectId);
                 db.prepare('DELETE FROM menu_groups WHERE project_id = ?').run(projectId);
+                
+                // Masukkan semula data ke jadual baharu
                 const insertGroupStmt = db.prepare('INSERT INTO menu_groups (project_id, group_name, group_order) VALUES (?, ?, ?)');
-                const insertItemStmt = db.prepare('INSERT INTO menu_group_items (menu_group_id, table_id, item_order) VALUES (?, (SELECT table_id FROM tables WHERE table_name = ? AND project_id = ?), ?)');
+                const insertItemStmt = db.prepare(`
+                    INSERT INTO menu_items (project_id, menu_group_id, table_id, item_order) 
+                    VALUES (?, ?, (SELECT table_id FROM tables WHERE table_name = ? AND project_id = ?), ?)
+                `);
+                
                 menuData.forEach((group) => {
                     const info = insertGroupStmt.run(projectId, group.group_name, group.group_order);
                     const newGroupId = info.lastInsertRowid;
                     group.items.forEach((item) => {
-                        insertItemStmt.run(newGroupId, item.table_name, projectId, item.item_order);
+                        insertItemStmt.run(projectId, newGroupId, item.table_name, projectId, item.item_order);
                     });
                 });
+                // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
             }
 			
             if (queue.upserts && queue.upserts.length > 0) {
@@ -197,7 +210,8 @@ ipcMain.handle('sql:parse-calculation-query', (event, sql) => {
     }
 });
 
-// KOD PENUH: Pastikan fungsi bantuan ini wujud di main.js
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: main.js
+
 async function getFullProjectSchema(projectId) {
   try {
     const project = db.prepare("SELECT * FROM projects WHERE project_id = ?").get(projectId);
@@ -235,23 +249,24 @@ async function getFullProjectSchema(projectId) {
         ).all(...tableIds, ...tableIds);
     }
 
+    // ▼▼▼ MULA BLOK LOGIK YANG DIPERBAIKI SEPENUHNYA ▼▼▼
     const groups = db.prepare("SELECT * FROM menu_groups WHERE project_id = ? ORDER BY group_order, group_name").all(projectId);
-    const groupIds = groups.map(g => g.menu_group_id);
-    let items = [];
-    if (groupIds.length > 0) {
-        const placeholder = groupIds.map(() => '?').join(',');
-        items = db.prepare(`
-                SELECT mgi.*, t.table_name 
-                FROM menu_group_items mgi
-                JOIN tables t ON mgi.table_id = t.table_id
-                WHERE mgi.menu_group_id IN (${placeholder})
-                ORDER BY mgi.item_order
-            `).all(...groupIds);
-    }
-    const structuredMenuGroups = groups.map(group => ({
-        ...group,
-        items: items.filter(item => item.menu_group_id === group.menu_group_id)
-    }));
+    
+    const items = db.prepare(`
+            SELECT mi.*, t.table_name 
+            FROM menu_items mi
+            JOIN tables t ON mi.table_id = t.table_id
+            WHERE mi.project_id = ? AND mi.menu_group_id IS NOT NULL
+            ORDER BY mi.item_order
+        `).all(projectId);
+
+    const structuredMenuGroups = groups.map(group => {
+        return {
+            ...group,
+            items: items.filter(item => item.menu_group_id === group.menu_group_id)
+        };
+    });
+    // ▲▲▲ TAMAT BLOK LOGIK YANG DIPERBAIKI SEPENUHNYA ▲▲▲
 
     return {
       project: project,
@@ -508,7 +523,7 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
         items = db
             .prepare(`
                 SELECT mgi.*, t.table_name 
-                FROM menu_group_items mgi
+                FROM menu_items mgi
                 JOIN tables t ON mgi.table_id = t.table_id
                 WHERE mgi.menu_group_id IN (${placeholder})
                 ORDER BY mgi.item_order
@@ -1144,10 +1159,10 @@ ipcMain.handle('menu:save-structure', async (event, { projectId, menuData }) => 
         return { success: false, message: 'Project ID tidak dibekalkan.' };
     }
     try {
-        const deleteItemsStmt = db.prepare('DELETE FROM menu_group_items WHERE menu_group_id IN (SELECT menu_group_id FROM menu_groups WHERE project_id = ?)');
+        const deleteItemsStmt = db.prepare('DELETE FROM menu_items WHERE menu_group_id IN (SELECT menu_group_id FROM menu_groups WHERE project_id = ?)');
         const deleteGroupsStmt = db.prepare('DELETE FROM menu_groups WHERE project_id = ?');
         const insertGroupStmt = db.prepare('INSERT INTO menu_groups (project_id, group_name, group_order) VALUES (?, ?, ?)');
-        const insertItemStmt = db.prepare('INSERT INTO menu_group_items (menu_group_id, table_id, item_order) VALUES (?, (SELECT table_id FROM tables WHERE table_name = ? AND project_id = ?), ?)');
+        const insertItemStmt = db.prepare('INSERT INTO menu_items (menu_group_id, table_id, item_order) VALUES (?, (SELECT table_id FROM tables WHERE table_name = ? AND project_id = ?), ?)');
 
         const transaction = db.transaction(() => {
             // Padam semua data menu lama untuk projek ini
@@ -1178,7 +1193,7 @@ ipcMain.handle('menu:save-structure', async (event, { projectId, menuData }) => 
 ipcMain.handle('menu:update-order', async (event, { projectId, orderData }) => {
     try {
         const updateGroup = db.prepare('UPDATE menu_groups SET group_order = ? WHERE menu_group_id = ? AND project_id = ?');
-        const updateItem = db.prepare('UPDATE menu_group_items SET item_order = ?, menu_group_id = ? WHERE item_id = ?');
+        const updateItem = db.prepare('UPDATE menu_items SET item_order = ?, menu_group_id = ? WHERE item_id = ?');
 
         const transaction = db.transaction(() => {
             orderData.forEach((group, groupIndex) => {

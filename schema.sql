@@ -191,12 +191,14 @@ CREATE TABLE menu_groups (
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
 
--- 7. Jadual penghubung antara Kumpulan Menu dan Jadual (Tables)
-CREATE TABLE menu_group_items (
+-- 7. Jadual untuk SEMUA Item Menu (Akan datang termasuk individu)
+CREATE TABLE menu_items (
     item_id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    menu_group_id   INTEGER NOT NULL,
+    project_id      INTEGER NOT NULL,
+    menu_group_id   INTEGER, -- Akan NULL untuk menu individu pada masa hadapan
     table_id        INTEGER NOT NULL,
     item_order      INTEGER,
+    FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
     FOREIGN KEY (menu_group_id) REFERENCES menu_groups(menu_group_id) ON DELETE CASCADE,
     FOREIGN KEY (table_id) REFERENCES tables(table_id) ON DELETE CASCADE
 );
