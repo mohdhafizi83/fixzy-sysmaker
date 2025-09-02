@@ -1431,7 +1431,6 @@ export function initializeMenuManagementHandlers() {
     const menuManagementTab = document.getElementById('tab-menu-appearance');
     if (!menuManagementTab) return;
 
-    // Rujukan kepada elemen-elemen utama
     const addGroupBtn = document.getElementById('app-add_menu_group');
     const addCustomMenuBtn = document.getElementById('app-add_custom_menu');
     const menuGroupList = document.querySelector('.menu-group-list');
@@ -1444,7 +1443,7 @@ export function initializeMenuManagementHandlers() {
 
     let currentTargetMenuSelector = null;
 
-    // Fungsi untuk mengumpul data dari UI untuk disimpan
+    // --- FUNGSI-FUNGSI BANTUAN (TIADA PERUBAHAN) ---
     const gatherMenuData = () => {
         const groupElements = menuGroupList.querySelectorAll('.menu-group-item');
         const groups = Array.from(groupElements).map((groupEl, groupIndex) => {
@@ -1463,15 +1462,14 @@ export function initializeMenuManagementHandlers() {
         return { groups: groups, individual_items: individualTableMenus };
     };
 
-    // Fungsi untuk mencetuskan penyimpanan
     const triggerSave = () => {
         const menuData = gatherMenuData();
         SaveManager.addToQueue('menus', null, menuData);
     };
-
-    // (Fungsi openCustomMenuModal dikekalkan tanpa perubahan)
+    
     const openCustomMenuModal = (itemEl = null) => {
         const modal = document.getElementById('custom-menu-modal');
+        // ... (Fungsi ini dikekalkan sepenuhnya tanpa perubahan)
         if (!modal) return;
         const title = modal.querySelector('#custom-menu-modal-title');
         const labelInput = modal.querySelector('#custom-menu-label-input');
@@ -1522,13 +1520,11 @@ export function initializeMenuManagementHandlers() {
         labelInput.focus();
     };
 
-    // --- Pengendali Acara (Event Handlers) Sedia Ada ---
+    // --- PENGENDALI ACARA (EVENT HANDLERS) LAIN (TIADA PERUBAHAN) ---
     addCustomMenuBtn.addEventListener('click', () => openCustomMenuModal());
     document.getElementById('custom-menu-url-table-select').addEventListener('change', (e) => {
         const urlInput = document.getElementById('custom-menu-url-input');
-        if (e.target.value) {
-            urlInput.value = `${e.target.value}_view.php?SelectedID=`;
-        }
+        if (e.target.value) urlInput.value = `${e.target.value}_view.php?SelectedID=`;
     });
     if (groupModalCloseBtn) groupModalCloseBtn.addEventListener('click', () => addMenuModal.classList.add('hidden'));
     if (availableMenusList) {
@@ -1549,14 +1545,10 @@ export function initializeMenuManagementHandlers() {
             }
         });
     }
-    menuManagementTab.addEventListener('change', (e) => {
-        if (e.target.matches('#individual-table-menus input[type="checkbox"]')) triggerSave();
-    });
-    menuManagementTab.addEventListener('input', (e) => {
-        if (e.target.matches('.group-name-input')) triggerSave();
-    });
+    menuManagementTab.addEventListener('change', (e) => { if (e.target.matches('#individual-table-menus input[type="checkbox"]')) triggerSave(); });
+    menuManagementTab.addEventListener('input', (e) => { if (e.target.matches('.group-name-input')) triggerSave(); });
     
-    // Pengendali Klik Utama (Delegated) - FUNGSI PADAM TIDAK DIUBAH
+    // PENGENDALI KLIK UTAMA (TERMASUK FUNGSI PADAM YANG STABIL - TIDAK DIUBAH)
     menuManagementTab.addEventListener('click', (e) => {
         const target = e.target;
         const customItem = target.closest('.custom-menu-item');
@@ -1590,103 +1582,121 @@ export function initializeMenuManagementHandlers() {
             });
         }
     });
-    
-    // Pengendali untuk butang Tambah Kumpulan
+
     addGroupBtn.addEventListener('click', () => {
         if (menuGroupList.querySelector('.empty-state-label')) menuGroupList.innerHTML = '';
         const newGroup = document.createElement('div');
         newGroup.className = 'menu-group-item';
-        newGroup.setAttribute('draggable', 'true'); // <-- PEMBETULAN: Pastikan item baru boleh diseret
-        newGroup.innerHTML = `
-            <i class="fas fa-grip-vertical drag-handle"></i>
-            <input type="text" class="group-name-input" value="New Group">
-            <div class="menu-selector"><button class="add-menu-btn" title="Add menu to this group">+</button></div>
-            <div class="group-actions"><button class="btn-sidebar-icon" title="Delete group"><i class="fas fa-trash-alt"></i></button></div>`;
+        newGroup.setAttribute('draggable', 'true');
+        newGroup.innerHTML = `<i class="fas fa-grip-vertical drag-handle"></i><input type="text" class="group-name-input" value="New Group"><div class="menu-selector"><button class="add-menu-btn" title="Add menu to this group">+</button></div><div class="group-actions"><button class="btn-sidebar-icon" title="Delete group"><i class="fas fa-trash-alt"></i></button></div>`;
         menuGroupList.appendChild(newGroup);
         setAwaitingMenuGroupSave(true);
         triggerSave();
     });
 
-    // ▼▼▼ SISTEM DRAG & DROP BAHARU YANG DIPERBAIKI ▼▼▼
-    let dragged = { item: null, type: null };
+    // ▼▼▼ SISTEM DRAG & DROP BERSEPADU YANG BAHARU DAN STABIL ▼▼▼
+    let draggedItem = null;
+
+    // Fungsi bantuan untuk mencari kedudukan item
+    const getDragAfterElement = (container, coordinate, selector, isVertical) => {
+        const draggableElements = [...container.querySelectorAll(`${selector}:not(.dragging)`)];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = (isVertical ? coordinate - box.top : coordinate - box.left) - (isVertical ? box.height : box.width) / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            }
+            return closest;
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    };
 
     menuManagementTab.addEventListener('dragstart', (e) => {
-        const target = e.target;
-        dragged = { item: null, type: null }; // Reset dahulu
-
-        // Tentukan jenis item yang diseret berdasarkan kelasnya
-        if (target.classList.contains('menu-group-item')) {
-            dragged = { item: target, type: 'group' };
-        } else if (target.classList.contains('custom-menu-item')) {
-            dragged = { item: target, type: 'custom' };
-        } else if (target.classList.contains('tag')) {
-            dragged = { item: target, type: 'tag' };
-        } else {
-            return; // Bukan item yang boleh diseret
+        // Hanya mulakan seretan jika target ialah salah satu item yang sah
+        if (e.target.matches('.menu-group-item, .custom-menu-item, .tag')) {
+            draggedItem = e.target;
+            setTimeout(() => draggedItem.classList.add('dragging'), 0);
         }
-        
-        // Guna setTimeout untuk elak kelipan visual
-        setTimeout(() => {
-            if (dragged.item) dragged.item.classList.add('dragging');
-        }, 0);
     });
 
     menuManagementTab.addEventListener('dragend', async () => {
-        if (!dragged.item) return;
-        dragged.item.classList.remove('dragging');
-
-        // Simpan susunan baharu selepas operasi D&D selesai
-        if (dragged.type === 'group' || dragged.type === 'tag') {
+        if (!draggedItem) return;
+        draggedItem.classList.remove('dragging');
+        
+        // Simpan susunan berdasarkan jenis item yang baru sahaja digerakkan
+        if (draggedItem.matches('.menu-group-item, .tag')) {
             triggerSave();
-        } else if (dragged.type === 'custom') {
+        } else if (draggedItem.matches('.custom-menu-item')) {
             const orderedItems = Array.from(customMenuList.querySelectorAll('.custom-menu-item'))
-                .map((item, index) => ({
-                    item_id: item.dataset.itemId,
-                    order: index
-                }));
-            // Panggil API khusus untuk kemas kini susunan menu custom
+                .map((item, index) => ({ item_id: item.dataset.itemId, order: index }));
             await window.electronAPI.updateIndividualMenuOrder(orderedItems);
         }
-        dragged = { item: null, type: null };
+        draggedItem = null;
     });
 
     menuManagementTab.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        if (!dragged.item) return;
+        if (!draggedItem) return;
 
-        const getAfterElement = (container, coordinate, selector, isVertical) => {
-            const otherItems = [...container.querySelectorAll(`${selector}:not(.dragging)`)];
-            return otherItems.reduce((closest, child) => {
-                const box = child.getBoundingClientRect();
-                const pos = isVertical ? box.top : box.left;
-                const dimension = isVertical ? box.height : box.width;
-                const offset = coordinate - pos - dimension / 2;
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
-                }
-                return closest;
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
-        };
+        let dropZone = null;
+        let isVertical = false;
+        let selector = '';
 
-        // Logik penyusunan berdasarkan jenis item yang diseret
-        if (dragged.type === 'group') {
-            const afterElement = getAfterElement(menuGroupList, e.clientY, '.menu-group-item', true);
-            if (afterElement) menuGroupList.insertBefore(dragged.item, afterElement);
-            else menuGroupList.appendChild(dragged.item);
-        } else if (dragged.type === 'custom') {
-            const afterElement = getAfterElement(customMenuList, e.clientY, '.custom-menu-item', true);
-            if (afterElement) customMenuList.insertBefore(dragged.item, afterElement);
-            else customMenuList.appendChild(dragged.item);
-        } else if (dragged.type === 'tag') {
-            const targetSelector = e.target.closest('.menu-selector');
-            if (targetSelector) {
-                const afterElement = getAfterElement(targetSelector, e.clientX, '.tag', false);
-                if (afterElement) targetSelector.insertBefore(dragged.item, afterElement);
-                else targetSelector.insertBefore(dragged.item, targetSelector.querySelector('.add-menu-btn'));
-            }
+        // Tentukan zon jatuhan (drop zone) yang sah berdasarkan jenis item yang diseret
+        if (draggedItem.matches('.menu-group-item')) {
+            dropZone = menuGroupList;
+            selector = '.menu-group-item';
+            isVertical = true;
+        } else if (draggedItem.matches('.custom-menu-item')) {
+            dropZone = customMenuList;
+            selector = '.custom-menu-item';
+            isVertical = true;
+        } else if (draggedItem.matches('.tag')) {
+            dropZone = e.target.closest('.menu-selector');
+            selector = '.tag';
+            isVertical = false;
+        }
+
+        // Jika kita berada di atas zon yang sah, benarkan operasi 'drop'
+        if (dropZone && (dropZone === e.target.closest(dropZone.tagName === 'DIV' ? `.${dropZone.className.split(' ')[0]}` : dropZone.tagName))) {
+            e.preventDefault();
+            // Lakukan perubahan DOM hanya di dalam acara 'drop' untuk kestabilan
         }
     });
-    // ▲▲▲ TAMAT SISTEM DRAG & DROP BAHARU ▲▲▲
+
+    menuManagementTab.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (!draggedItem) return;
+
+        let dropZone = null;
+        let isVertical = false;
+        let selector = '';
+        let coordinate = 0;
+        let referenceElement = null;
+
+        // Tentukan parameter untuk memasukkan item berdasarkan jenisnya
+        if (draggedItem.matches('.menu-group-item') && e.target.closest('.menu-group-list')) {
+            dropZone = e.target.closest('.menu-group-list');
+            selector = '.menu-group-item';
+            isVertical = true;
+            coordinate = e.clientY;
+        } else if (draggedItem.matches('.custom-menu-item') && e.target.closest('.custom-menu-list')) {
+            dropZone = e.target.closest('.custom-menu-list');
+            selector = '.custom-menu-item';
+            isVertical = true;
+            coordinate = e.clientY;
+        } else if (draggedItem.matches('.tag') && e.target.closest('.menu-selector')) {
+            dropZone = e.target.closest('.menu-selector');
+            selector = '.tag';
+            isVertical = false;
+            coordinate = e.clientX;
+            referenceElement = dropZone.querySelector('.add-menu-btn'); // Untuk 'insertBefore'
+        }
+
+        // Jika zon jatuhan sah, lakukan perubahan DOM
+        if (dropZone) {
+            const afterElement = getDragAfterElement(dropZone, coordinate, selector, isVertical);
+            dropZone.insertBefore(draggedItem, afterElement || referenceElement);
+        }
+    });
 }
 
 // =================================================================
