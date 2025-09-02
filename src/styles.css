@@ -2051,6 +2051,14 @@ fieldset.fieldset-disabled {
 /* ================================================================== */
 /* == HOOK WORKFLOW BUILDER STYLES                                 == */
 /* ================================================================== */
+#tab-hooks .workflow-container,
+#tab-detail-hooks .workflow-container {
+    height: 600px; /* Tetapkan ketinggian yang sesuai */
+    border: 1px solid var(--border-color);
+    padding: 1rem;
+    border-radius: 6px;
+    margin-top: 1.5rem; /* Tambah jarak dari teks di atas */
+}
 
 .workflow-container {
     display: grid;
@@ -2294,6 +2302,12 @@ fieldset.fieldset-disabled {
 
 #algorithm-builder-modal {
     z-index: 1010; /* Higher z-index to appear on top */
+}
+
+/* ADD THIS CSS RULE IN: styles.css */
+
+#lookup-condition-modal {
+    z-index: 1020; /* Lebih tinggi daripada z-index Algorithm Builder (1010) */
 }
 
 /* ADD THIS CSS AT THE END OF styles.css */
