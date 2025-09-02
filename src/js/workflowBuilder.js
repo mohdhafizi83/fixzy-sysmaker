@@ -82,7 +82,7 @@ function setupBuilderInstance(config) {
             }
         });
     };
-
+    
     const updateBlockConnections = (blockId) => {
         state.connections.forEach(conn => {
             if (conn.fromBlock === blockId || conn.toBlock === blockId) {
@@ -100,9 +100,6 @@ function setupBuilderInstance(config) {
             }
         });
     };
-    
-    // ... (Fungsi-fungsi lain seperti createWorkflowBlock, startDragBlock, dll. dipindahkan ke sini dan diubah suai untuk menggunakan state tempatan) ...
-    // Disebabkan oleh perubahan struktur yang besar, keseluruhan fungsi dipaparkan di bawah
 
     function deleteBlock(blockId) {
         container.querySelector(`[data-block-id='${blockId}']`)?.remove();
@@ -122,8 +119,8 @@ function setupBuilderInstance(config) {
             saveState();
         }
     }
-
-    function createWorkflowBlock(type, x, y, existingId = null) {
+    
+    function createWorkflowBlock(type, x, y, existingId = null, existingData = null) {
         const blockId = existingId || `block_${new Date().getTime()}`;
         const block = document.createElement('div');
         block.className = 'workflow-block';
@@ -133,22 +130,31 @@ function setupBuilderInstance(config) {
         block.style.top = `${y}px`;
 
         if (!existingId) {
-            state.blocks[blockId] = { type, x, y, configData: null };
+            state.blocks[blockId] = { type, x, y, ...existingData };
         }
-
+        
+        const blockState = state.blocks[blockId];
         let title = '';
         let content = '';
-        let connectionPoints = '<div class="connection-point input" data-point-id="in"></div>';
+        let connectionPoints = '';
 
         switch (type) {
+            case 'hook_trigger':
+                const hookName = blockState.hook_type ? `<strong>${blockState.hook_type}</strong>` : '<em>Not Configured</em>';
+                title = `<i class="fas fa-play-circle"></i> Trigger`;
+                content = `<p style="margin:0; font-size: 0.9em;">${hookName}</p><button class="btn btn-secondary btn-sm configure-btn mt-1">Configure</button>`;
+                connectionPoints += '<div class="connection-point output" data-point-id="out"></div>';
+                break;
             case 'action':
                 title = '<i class="fas fa-bolt"></i> Action';
                 content = '<button class="btn btn-secondary btn-sm configure-btn">Configure</button>';
+                connectionPoints += '<div class="connection-point input" data-point-id="in"></div>';
                 connectionPoints += '<div class="connection-point output" data-point-id="out"></div>';
                 break;
             case 'condition':
                 title = '<i class="fas fa-code-branch"></i> Condition';
                 content = '<button class="btn btn-secondary btn-sm configure-btn">Configure</button>';
+                connectionPoints += '<div class="connection-point input" data-point-id="in"></div>';
                 connectionPoints += '<div class="connection-point output true" data-point-id="out-true" title="True"></div>';
                 connectionPoints += '<div class="connection-point output false" data-point-id="out-false" title="False"></div>';
                 break;
@@ -167,16 +173,106 @@ function setupBuilderInstance(config) {
         return block;
     }
 
+    function openHookTypeModal(blockId) {
+        const modal = document.getElementById('hook-type-modal');
+        const blockData = state.blocks[blockId];
+        if (!modal || !blockData) return;
+
+        const elements = {
+            projectOptions: document.getElementById('project-hook-options'),
+            tableOptions: document.getElementById('table-hook-options'),
+            okBtn: document.getElementById('hook-type-modal-ok'),
+            cancelBtn: document.getElementById('hook-type-modal-cancel'),
+            closeBtn: document.getElementById('hook-type-modal-close'),
+        };
+        
+        elements.projectOptions.classList.toggle('hidden', config.hookType !== 'project');
+        elements.tableOptions.classList.toggle('hidden', config.hookType !== 'table');
+
+        const currentSelection = modal.querySelector(`input[name="hook_selection"][value="${blockData.hook_type}"]`);
+        if (currentSelection) currentSelection.checked = true;
+
+        const closeModal = () => modal.classList.add('hidden');
+        
+        const okHandler = () => {
+            const selected = modal.querySelector('input[name="hook_selection"]:checked');
+            if (selected) {
+                blockData.hook_type = selected.value;
+                const blockEl = container.querySelector(`[data-block-id='${blockId}'] .workflow-block-content`);
+                if (blockEl) {
+                    blockEl.querySelector('p').innerHTML = `<strong>${selected.value}</strong>`;
+                }
+                saveState();
+            }
+            closeModal();
+        };
+
+        const newOkBtn = elements.okBtn.cloneNode(true);
+        elements.okBtn.parentNode.replaceChild(newOkBtn, elements.okBtn);
+        newOkBtn.addEventListener('click', okHandler);
+
+        elements.cancelBtn.addEventListener('click', closeModal, { once: true });
+        elements.closeBtn.addEventListener('click', closeModal, { once: true });
+        
+        modal.classList.remove('hidden');
+    }
+    
+    function openBlockConfiguration(blockId) {
+        const blockType = state.blocks[blockId]?.type;
+        if (blockType === 'hook_trigger') {
+            openHookTypeModal(blockId);
+            return;
+        }
+        
+        // Seterusnya adalah logik sedia ada untuk blok Condition/Action
+        const blockData = state.blocks[blockId];
+        if (!blockData) return;
+        let tempInput = document.getElementById('workflow-temp-input');
+        if (!tempInput) {
+            tempInput = document.createElement('input');
+            tempInput.type = 'hidden'; tempInput.id = 'workflow-temp-input';
+            document.body.appendChild(tempInput);
+        }
+        tempInput.value = blockData.configData || '[]';
+        const CONDITION_BLOCK_GRAMMAR = {
+            'start': ['value', 'open_paren'],
+            'value': ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'close_paren'],
+            'comparison_operator': ['value', 'open_paren'],
+            'arithmetic_operator': ['value', 'open_paren'],
+            'logical_operator': ['value', 'open_paren'],
+            'open_paren': ['value', 'open_paren'],
+            'close_paren': ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'close_paren'],
+        };
+        openModalLogicBuilder({
+            modalId: 'algorithm-builder-modal',
+            getContext: () => ({ tableName: config.hookType === 'table' ? document.querySelector('#table-settings-page .table-name')?.textContent : null }),
+            closeButtonId: 'algorithm-builder-close',
+            cancelButtonId: 'algorithm-builder-cancel-btn',
+            doneButtonId: 'algorithm-builder-done-btn',
+            targetInputId: 'workflow-temp-input',
+            validationRules: CONDITION_BLOCK_GRAMMAR,
+            hiddenComponents: ['if', 'else_if', 'then', 'else'],
+            onComplete: (logicJson) => {
+                state.blocks[blockId].configData = logicJson;
+                const blockEl = container.querySelector(`[data-block-id='${blockId}']`);
+                if (blockEl) {
+                    const btn = blockEl.querySelector('.configure-btn');
+                    btn.textContent = 'Configured';
+                    btn.classList.replace('btn-secondary', 'btn-success');
+                }
+                saveState();
+            }
+        });
+    }
+
     function startDragBlock(e) {
         if (e.target.classList.contains('connection-point') || e.target.classList.contains('delete-block-btn')) return;
         e.preventDefault();
         e.stopPropagation();
-
         state.draggedBlock = e.target.closest('.workflow-block');
         const rect = state.draggedBlock.getBoundingClientRect();
         state.offsetX = e.clientX - rect.left;
         state.offsetY = e.clientY - rect.top;
-
         document.addEventListener('mousemove', dragBlock);
         document.addEventListener('mouseup', stopDragBlock, { once: true });
     }
@@ -188,7 +284,6 @@ function setupBuilderInstance(config) {
         let newY = e.clientY - canvasRect.top - state.offsetY;
         newX = Math.max(0, Math.round(newX / 10) * 10);
         newY = Math.max(0, Math.round(newY / 10) * 10);
-        
         state.draggedBlock.style.left = `${newX}px`;
         state.draggedBlock.style.top = `${newY}px`;
         const blockId = state.draggedBlock.dataset.blockId;
@@ -250,50 +345,6 @@ function setupBuilderInstance(config) {
         document.removeEventListener('mousemove', drawTempConnector);
     }
 
-    function openBlockConfiguration(blockId) {
-        const blockData = state.blocks[blockId];
-        if (!blockData) return;
-
-        let tempInput = document.getElementById('workflow-temp-input');
-        if (!tempInput) {
-            tempInput = document.createElement('input');
-            tempInput.type = 'hidden'; tempInput.id = 'workflow-temp-input';
-            document.body.appendChild(tempInput);
-        }
-        tempInput.value = blockData.configData || '[]';
-
-        const CONDITION_BLOCK_GRAMMAR = {
-            'start': ['value', 'open_paren'],
-            'value': ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'close_paren'],
-            'comparison_operator': ['value', 'open_paren'],
-            'arithmetic_operator': ['value', 'open_paren'],
-            'logical_operator': ['value', 'open_paren'],
-            'open_paren': ['value', 'open_paren'],
-            'close_paren': ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'close_paren'],
-        };
-
-        openModalLogicBuilder({
-            modalId: 'algorithm-builder-modal',
-            getContext: () => ({ tableName: config.hookType === 'table' ? document.querySelector('#table-settings-page .table-name')?.textContent : null }),
-            closeButtonId: 'algorithm-builder-close',
-            cancelButtonId: 'algorithm-builder-cancel-btn',
-            doneButtonId: 'algorithm-builder-done-btn',
-            targetInputId: 'workflow-temp-input',
-            validationRules: CONDITION_BLOCK_GRAMMAR,
-            hiddenComponents: ['if', 'else_if', 'then', 'else'],
-            onComplete: (logicJson) => {
-                state.blocks[blockId].configData = logicJson;
-                const blockEl = container.querySelector(`[data-block-id='${blockId}']`);
-                if (blockEl) {
-                    const btn = blockEl.querySelector('.configure-btn');
-                    btn.textContent = 'Configured';
-                    btn.classList.replace('btn-secondary', 'btn-success');
-                }
-                saveState();
-            }
-        });
-    }
-
     // --- Inisialisasi Event Listeners untuk Instans Ini ---
     container.querySelectorAll('.workflow-block-palette-item').forEach(item => {
         item.addEventListener('dragstart', (e) => e.dataTransfer.setData('text/plain', e.target.dataset.blockType));
@@ -313,13 +364,20 @@ function setupBuilderInstance(config) {
     });
 
     state.canvas.addEventListener('click', (e) => {
-        if (e.target.classList.contains('configure-btn')) openBlockConfiguration(e.target.closest('.workflow-block').dataset.blockId);
-        else if (e.target.classList.contains('delete-block-btn')) deleteBlock(e.target.closest('.workflow-block').dataset.blockId);
+        const configureBtn = e.target.closest('.configure-btn');
+        const deleteBtn = e.target.closest('.delete-block-btn');
+        if (configureBtn) {
+            openBlockConfiguration(configureBtn.closest('.workflow-block').dataset.blockId);
+        } else if (deleteBtn) {
+            deleteBlock(deleteBtn.closest('.workflow-block').dataset.blockId);
+        }
     });
     
     document.addEventListener('keydown', (e) => {
-        if (container.closest('.tab-pane')?.classList.contains('active')) {
-             if (e.key === 'Delete' || e.key === 'Backspace') deleteSelectedConnection();
+        const isTabActive = container.closest('.tab-pane')?.classList.contains('active');
+        const isPageActive = !container.closest('#table-settings-page')?.classList.contains('hidden');
+        if ((isTabActive || isPageActive) && (e.key === 'Delete' || e.key === 'Backspace')) {
+             deleteSelectedConnection();
         }
     });
 
@@ -338,19 +396,20 @@ function setupBuilderInstance(config) {
             state.blocks = workflowData.blocks;
             for (const blockId in state.blocks) {
                 const blockInfo = state.blocks[blockId];
-                if (blockInfo.type === 'start') continue;
                 const newBlock = createWorkflowBlock(blockInfo.type, blockInfo.x, blockInfo.y, blockId);
                 if (blockInfo.configData && blockInfo.configData !== '[]') {
                     const btn = newBlock.querySelector('.configure-btn');
-                    btn.textContent = 'Configured';
-                    btn.classList.replace('btn-secondary', 'btn-success');
+                    if(btn) {
+                        btn.textContent = 'Configured';
+                        btn.classList.replace('btn-secondary', 'btn-success');
+                    }
                 }
                 state.canvas.appendChild(newBlock);
             }
         }
         state.connections = workflowData.connections || [];
         redrawConnections();
-    } catch (e) { /* Abaikan jika JSON tidak sah, mula dengan kanvas kosong */ }
+    } catch (e) { console.warn("Could not load workflow state:", e); }
 }
 
 /**
@@ -363,14 +422,11 @@ export function initializeWorkflowBuilder() {
         hookType: 'project'
     });
 
-    // Gunakan MutationObserver untuk mengesan apabila tab jadual menjadi aktif
-    // kerana elemennya tidak wujud semasa DOMContentLoaded.
     const observer = new MutationObserver((mutations) => {
         for (const mutation of mutations) {
             if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
                 const tablePage = mutation.target;
                 if (!tablePage.classList.contains('hidden')) {
-                    // Hanya pasang sekali sahaja
                     if (!tablePage.dataset.workflowInitialized) {
                         setupBuilderInstance({
                             containerId: 'table-workflow-container',

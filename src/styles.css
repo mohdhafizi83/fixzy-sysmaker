@@ -2338,3 +2338,15 @@ fieldset.fieldset-disabled {
     border-color: var(--primary-color);
     color: white;
 }
+
+/* ADD THIS CSS AT THE END OF styles.css */
+
+/* Style for the new palette item */
+.workflow-block-palette-item[data-block-type="hook_trigger"] i {
+    color: #10B981; /* Green */
+}
+
+/* Ensure the new modal is on top */
+#hook-type-modal {
+    z-index: 1050; 
+}

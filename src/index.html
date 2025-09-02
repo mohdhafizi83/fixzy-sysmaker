@@ -737,20 +737,19 @@
             </p>
             <input type="hidden" id="app-hook-logic" name="app-hook-logic">
             <div id="project-workflow-container" class="workflow-container">
-                <div class="workflow-palette">
-                    <h4>Blocks</h4>
-                    <div class="workflow-block-palette-item" draggable="true" data-block-type="action"><i class="fas fa-bolt"></i><span>Action</span></div>
-                    <div class="workflow-block-palette-item" draggable="true" data-block-type="condition"><i class="fas fa-code-branch"></i><span>Condition</span></div>
-                </div>
-                <div class="workflow-canvas-wrapper">
-                    <svg id="project-connector-svg" class="connector-svg"></svg>
-                    <div id="project-workflow-canvas" class="workflow-canvas">
-                        <div class="workflow-block" data-block-type="start" data-block-id="start" style="top: 20px; left: 20px;">
-                            <div class="workflow-block-title"><i class="fas fa-flag-checkered"></i> START</div>
-                            <div class="connection-point-container"><div class="connection-point output" data-point-id="out"></div></div>
-                        </div>
-                    </div>
-                </div>
+ <div class="workflow-palette">
+    <h4>Blocks</h4>
+    <div class="workflow-block-palette-item" draggable="true" data-block-type="hook_trigger">
+        <i class="fas fa-play-circle"></i><span>Hook Trigger</span>
+    </div>
+    <div class="workflow-block-palette-item" draggable="true" data-block-type="action"><i class="fas fa-bolt"></i><span>Action</span></div>
+    <div class="workflow-block-palette-item" draggable="true" data-block-type="condition"><i class="fas fa-code-branch"></i><span>Condition</span></div>
+</div>
+<div class="workflow-canvas-wrapper">
+    <svg id="project-connector-svg" class="connector-svg"></svg>
+    <div id="project-workflow-canvas" class="workflow-canvas">
+    </div>
+    </div>
             </div>
         </div>
     </div>
@@ -987,20 +986,19 @@
             </p>
             <input type="hidden" id="tbl-hook-logic" name="tbl-hook-logic">
             <div id="table-workflow-container" class="workflow-container">
-                <div class="workflow-palette">
-                    <h4>Blocks</h4>
-                    <div class="workflow-block-palette-item" draggable="true" data-block-type="action"><i class="fas fa-bolt"></i><span>Action</span></div>
-                    <div class="workflow-block-palette-item" draggable="true" data-block-type="condition"><i class="fas fa-code-branch"></i><span>Condition</span></div>
-                </div>
-                <div class="workflow-canvas-wrapper">
-                    <svg id="table-connector-svg" class="connector-svg"></svg>
-                    <div id="table-workflow-canvas" class="workflow-canvas">
-                        <div class="workflow-block" data-block-type="start" data-block-id="start" style="top: 20px; left: 20px;">
-                            <div class="workflow-block-title"><i class="fas fa-flag-checkered"></i> START</div>
-                            <div class="connection-point-container"><div class="connection-point output" data-point-id="out"></div></div>
-                        </div>
-                    </div>
-                </div>
+ <div class="workflow-palette">
+    <h4>Blocks</h4>
+    <div class="workflow-block-palette-item" draggable="true" data-block-type="hook_trigger">
+        <i class="fas fa-play-circle"></i><span>Hook Trigger</span>
+    </div>
+    <div class="workflow-block-palette-item" draggable="true" data-block-type="action"><i class="fas fa-bolt"></i><span>Action</span></div>
+    <div class="workflow-block-palette-item" draggable="true" data-block-type="condition"><i class="fas fa-code-branch"></i><span>Condition</span></div>
+</div>
+<div class="workflow-canvas-wrapper">
+    <svg id="table-connector-svg" class="connector-svg"></svg>
+    <div id="table-workflow-canvas" class="workflow-canvas">
+    </div>
+    </div>
             </div>
         </div>
     </div>
@@ -2127,6 +2125,45 @@
         <div class="modal-footer">
             <button class="btn btn-secondary" id="lookup-condition-cancel">Cancel</button>
             <button class="btn btn-primary" id="lookup-condition-ok">OK</button>
+        </div>
+    </div>
+</div>
+<div id="hook-type-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Configure Hook Trigger</h3>
+            <button id="hook-type-modal-close" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Select the event that will start this workflow.</p>
+            
+            <div id="project-hook-options" class="form-group hidden">
+                <div class="radio-group" style="flex-direction: column; gap: 0.75rem; align-items: flex-start;">
+                    <label><input type="radio" name="hook_selection" value="on_startup"> On Application Startup</label>
+                    <label><input type="radio" name="hook_selection" value="after_login"> After a User Logs In</label>
+                    <label><input type="radio" name="hook_selection" value="before_logout"> Before a User Logs Out</label>
+                    <label><input type="radio" name="hook_selection" value="on_login_failure"> On Login Failure</label>
+                    <label><input type="radio" name="hook_selection" value="after_user_created"> After a New User is Created</label>
+                    <label><input type="radio" name="hook_selection" value="before_user_deleted"> Before a User is Deleted</label>
+                    <label><input type="radio" name="hook_selection" value="on_scheduled_task"> On a Scheduled Task (Cron Job)</label>
+                </div>
+            </div>
+
+            <div id="table-hook-options" class="form-group hidden">
+                 <div class="radio-group" style="flex-direction: column; gap: 0.75rem; align-items: flex-start;">
+                    <label><input type="radio" name="hook_selection" value="before_insert"> Before a New Record is Inserted</label>
+                    <label><input type="radio" name="hook_selection" value="after_insert"> After a New Record is Inserted</label>
+                    <label><input type="radio" name="hook_selection" value="before_update"> Before a Record is Updated</label>
+                    <label><input type="radio" name="hook_selection" value="after_update"> After a Record is Updated</label>
+                    <label><input type="radio" name="hook_selection" value="before_delete"> Before a Record is Deleted</label>
+                    <label><input type="radio" name="hook_selection" value="after_delete"> After a Record is Deleted</label>
+                </div>
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="hook-type-modal-cancel">Cancel</button>
+            <button class="btn btn-primary" id="hook-type-modal-ok">OK</button>
         </div>
     </div>
 </div>
