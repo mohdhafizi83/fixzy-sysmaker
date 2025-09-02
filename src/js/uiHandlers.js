@@ -1427,6 +1427,8 @@ function createCustomMenuItem(item) {
 
 // FIND AND REPLACE THIS ENTIRE FUNCTION IN: src/uiHandlers.js
 
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: src/uiHandlers.js
+
 export function initializeMenuManagementHandlers() {
     const menuManagementTab = document.getElementById('tab-menu-appearance');
     if (!menuManagementTab) return;
@@ -1594,10 +1596,9 @@ export function initializeMenuManagementHandlers() {
         triggerSave();
     });
 
-    // ▼▼▼ SISTEM DRAG & DROP BERSEPADU YANG BAHARU DAN STABIL ▼▼▼
+    // ▼▼▼ SISTEM DRAG & DROP BERSEPADU YANG DIPERBAIKI ▼▼▼
     let draggedItem = null;
 
-    // Fungsi bantuan untuk mencari kedudukan item
     const getDragAfterElement = (container, coordinate, selector, isVertical) => {
         const draggableElements = [...container.querySelectorAll(`${selector}:not(.dragging)`)];
         return draggableElements.reduce((closest, child) => {
@@ -1611,10 +1612,9 @@ export function initializeMenuManagementHandlers() {
     };
 
     menuManagementTab.addEventListener('dragstart', (e) => {
-        // Hanya mulakan seretan jika target ialah salah satu item yang sah
         if (e.target.matches('.menu-group-item, .custom-menu-item, .tag')) {
             draggedItem = e.target;
-            setTimeout(() => draggedItem.classList.add('dragging'), 0);
+            setTimeout(() => { if (draggedItem) draggedItem.classList.add('dragging'); }, 0);
         }
     });
 
@@ -1622,7 +1622,6 @@ export function initializeMenuManagementHandlers() {
         if (!draggedItem) return;
         draggedItem.classList.remove('dragging');
         
-        // Simpan susunan berdasarkan jenis item yang baru sahaja digerakkan
         if (draggedItem.matches('.menu-group-item, .tag')) {
             triggerSave();
         } else if (draggedItem.matches('.custom-menu-item')) {
@@ -1633,53 +1632,40 @@ export function initializeMenuManagementHandlers() {
         draggedItem = null;
     });
 
+    // ▼▼▼ PEMBETULAN UTAMA PADA 'dragover' DAN 'drop' ▼▼▼
     menuManagementTab.addEventListener('dragover', (e) => {
         if (!draggedItem) return;
 
-        let dropZone = null;
-        let isVertical = false;
-        let selector = '';
-
-        // Tentukan zon jatuhan (drop zone) yang sah berdasarkan jenis item yang diseret
-        if (draggedItem.matches('.menu-group-item')) {
-            dropZone = menuGroupList;
-            selector = '.menu-group-item';
-            isVertical = true;
-        } else if (draggedItem.matches('.custom-menu-item')) {
-            dropZone = customMenuList;
-            selector = '.custom-menu-item';
-            isVertical = true;
-        } else if (draggedItem.matches('.tag')) {
-            dropZone = e.target.closest('.menu-selector');
-            selector = '.tag';
-            isVertical = false;
+        let isValidDropTarget = false;
+        
+        // Tentukan sama ada target adalah zon jatuhan yang sah
+        if (draggedItem.matches('.menu-group-item') && e.target.closest('.menu-group-list')) {
+            isValidDropTarget = true;
+        } else if (draggedItem.matches('.custom-menu-item') && e.target.closest('#custom-menu-list')) {
+            isValidDropTarget = true;
+        } else if (draggedItem.matches('.tag') && e.target.closest('.menu-selector')) {
+            isValidDropTarget = true;
         }
 
-        // Jika kita berada di atas zon yang sah, benarkan operasi 'drop'
-        if (dropZone && (dropZone === e.target.closest(dropZone.tagName === 'DIV' ? `.${dropZone.className.split(' ')[0]}` : dropZone.tagName))) {
-            e.preventDefault();
-            // Lakukan perubahan DOM hanya di dalam acara 'drop' untuk kestabilan
+        if (isValidDropTarget) {
+            e.preventDefault(); // Benarkan 'drop' hanya pada target yang sah
         }
     });
 
     menuManagementTab.addEventListener('drop', (e) => {
-        e.preventDefault();
         if (!draggedItem) return;
+        e.preventDefault();
 
-        let dropZone = null;
-        let isVertical = false;
-        let selector = '';
-        let coordinate = 0;
-        let referenceElement = null;
+        let dropZone, isVertical, selector, coordinate, referenceElement;
 
-        // Tentukan parameter untuk memasukkan item berdasarkan jenisnya
+        // Tentukan parameter untuk memasukkan item berdasarkan jenis dan zon jatuhan
         if (draggedItem.matches('.menu-group-item') && e.target.closest('.menu-group-list')) {
             dropZone = e.target.closest('.menu-group-list');
             selector = '.menu-group-item';
             isVertical = true;
             coordinate = e.clientY;
-        } else if (draggedItem.matches('.custom-menu-item') && e.target.closest('.custom-menu-list')) {
-            dropZone = e.target.closest('.custom-menu-list');
+        } else if (draggedItem.matches('.custom-menu-item') && e.target.closest('#custom-menu-list')) {
+            dropZone = e.target.closest('#custom-menu-list');
             selector = '.custom-menu-item';
             isVertical = true;
             coordinate = e.clientY;
@@ -1688,15 +1674,15 @@ export function initializeMenuManagementHandlers() {
             selector = '.tag';
             isVertical = false;
             coordinate = e.clientX;
-            referenceElement = dropZone.querySelector('.add-menu-btn'); // Untuk 'insertBefore'
+            referenceElement = dropZone.querySelector('.add-menu-btn');
         }
 
-        // Jika zon jatuhan sah, lakukan perubahan DOM
         if (dropZone) {
             const afterElement = getDragAfterElement(dropZone, coordinate, selector, isVertical);
             dropZone.insertBefore(draggedItem, afterElement || referenceElement);
         }
     });
+    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
 }
 
 // =================================================================
