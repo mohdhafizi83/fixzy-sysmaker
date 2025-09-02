@@ -73,6 +73,7 @@ export const SaveManager = {
         this.debounceTimer = setTimeout(() => this.processQueue(), 2500);
     },
 
+
     async processQueue() {
         if (this.isProcessing || this.isQueueEmpty()) {
             return;
@@ -146,6 +147,17 @@ export const SaveManager = {
             saveStatus.className = 'error';
         } finally {
             this.isProcessing = false;
+            
+            // Semak jika flag khas untuk penambahan kumpulan menu aktif.
+            if (isAwaitingMenuGroupSave) {
+                const overlay = document.getElementById('loading-overlay');
+                if (overlay) {
+                    overlay.classList.add('loading-overlay-hidden');
+                }
+                // Tetapkan semula flag selepas digunakan.
+                setAwaitingMenuGroupSave(false);
+            }
+
             setLastActiveChildTable(null); 
             setTimeout(() => {
                 // Hanya kosongkan status jika ia bukan mesej 'Saving...' dari proses seterusnya.
