@@ -54,62 +54,133 @@ export function openGeneralQueryBuilder(targetTextarea) {
  * @param {string} [config.updateMode='live'] - Mod kemas kini ('live' atau 'manual').
  * @returns {object} Objek dengan kaedah untuk berinteraksi dengan builder.
  */
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
+
 function setupLogicBuilderCore(config) {
     const { palette, canvas, hiddenInput, validationRules, context, updateMode = 'live' } = config;
     const placeholder = canvas ? canvas.querySelector('.canvas-placeholder') : null;
 
     if (!palette || !canvas || !hiddenInput) {
-        // Memperbaiki log ralat untuk hanya merujuk kepada pembolehubah yang ada dalam skop ini.
         console.error("Satu atau lebih elemen untuk Logic Builder tidak ditemui.", { palette: !!palette, canvas: !!canvas, hiddenInput: !!hiddenInput });
         return;
     }
 
     let modalCanvasState = '[]';
 
-    // ▼▼▼ FUNGSI BAHARU UNTUK MENGURUSKAN PEMBUNGKUSAN FUNGSI ▼▼▼
+    // ▼▼▼ MULA FUNGSI BAHARU: UNTUK MODAL LOOKUP CONDITION ▼▼▼
+    const openLookupConditionModal = (componentEl) => {
+        const modal = document.getElementById('lookup-condition-modal');
+        if (!modal) return;
+
+        const elements = {
+            externalFieldSelect: document.getElementById('lookup-cond-external-field'),
+            operatorSelect: document.getElementById('lookup-cond-operator'),
+            valueTypeSelect: document.getElementById('lookup-cond-value-type'),
+            staticValueGroup: document.getElementById('lookup-cond-static-value-group'),
+            staticValueInput: document.getElementById('lookup-cond-static-value'),
+            dynamicValueGroup: document.getElementById('lookup-cond-dynamic-value-group'),
+            dynamicValueSelect: document.getElementById('lookup-cond-dynamic-value'),
+            okBtn: document.getElementById('lookup-condition-ok'),
+            cancelBtn: document.getElementById('lookup-condition-cancel'),
+            closeBtn: document.getElementById('lookup-condition-close')
+        };
+
+        // 1. Dapatkan konteks
+        const externalTableName = componentEl.querySelector('.table-select').value;
+        const currentTableName = context.tableName;
+
+        // 2. Isi dropdown
+        elements.externalFieldSelect.innerHTML = '';
+        Object.keys(jsonData.database.table[externalTableName].fields).forEach(f => {
+            const option = document.createElement('option');
+            option.value = f;
+            option.textContent = f;
+            elements.externalFieldSelect.appendChild(option);
+        });
+
+        elements.dynamicValueSelect.innerHTML = '';
+        Object.keys(jsonData.database.table[currentTableName].fields).forEach(f => {
+            const option = document.createElement('option');
+            option.value = `##current_record.${f}##`;
+            option.textContent = f;
+            elements.dynamicValueSelect.appendChild(option);
+        });
+
+        // 3. Muatkan keadaan sedia ada dari dataset komponen
+        const cond = componentEl.dataset;
+        elements.externalFieldSelect.value = cond.condField || '';
+        elements.operatorSelect.value = cond.condOperator || '=';
+        elements.valueTypeSelect.value = cond.condValueType || 'dynamic';
+        if (cond.condValueType === 'static') {
+            elements.staticValueInput.value = cond.condValue || '';
+        } else {
+            elements.dynamicValueSelect.value = cond.condValue || '';
+        }
+
+        // 4. Uruskan kebolehlihatan input nilai
+        const toggleValueInputs = () => {
+            const isStatic = elements.valueTypeSelect.value === 'static';
+            elements.staticValueGroup.classList.toggle('hidden', !isStatic);
+            elements.dynamicValueGroup.classList.toggle('hidden', isStatic);
+        };
+        elements.valueTypeSelect.addEventListener('change', toggleValueInputs);
+        toggleValueInputs();
+
+        // 5. Pasang event listener butang
+        const closeModal = () => modal.classList.add('hidden');
+        
+        const newOkBtn = elements.okBtn.cloneNode(true);
+        elements.okBtn.parentNode.replaceChild(newOkBtn, elements.okBtn);
+        
+        newOkBtn.addEventListener('click', () => {
+            const isStatic = elements.valueTypeSelect.value === 'static';
+            componentEl.dataset.condField = elements.externalFieldSelect.value;
+            componentEl.dataset.condOperator = elements.operatorSelect.value;
+            componentEl.dataset.condValueType = elements.valueTypeSelect.value;
+            componentEl.dataset.condValue = isStatic ? elements.staticValueInput.value : elements.dynamicValueSelect.value;
+            
+            // Tandakan butang sebagai "dikonfigurasi"
+            const configBtn = componentEl.querySelector('.config-lookup-btn');
+            if(configBtn) configBtn.classList.add('configured');
+
+            updateModalCanvasState(); // Simpan keadaan baharu
+            closeModal();
+        });
+
+        elements.cancelBtn.addEventListener('click', closeModal);
+        elements.closeBtn.addEventListener('click', closeModal);
+
+        // 6. Paparkan modal
+        modal.classList.remove('hidden');
+    };
+    // ▲▲▲ TAMAT FUNGSI BAHARU ▲▲▲
+
     const handleWrapWithFunction = (e) => {
         e.preventDefault();
         e.stopPropagation();
-
         const originalItem = e.target.closest('.dropped-item');
         if (!originalItem) return;
-
         showCustomDialog({
             title: "Wrap with Function",
             message: "Do you want to wrap this component with a built-in function?",
             showCancelButton: true,
             onOk: () => {
-                // 1. Simpan rujukan kepada parent asal
                 const originalParent = originalItem.parentElement;
-
-                // 2. Cipta pembalut fungsi (function wrapper) yang baharu
                 const functionData = { type: 'function' };
                 const functionWrapper = createInteractiveElement(functionData);
-
-                // 3. Cari zon untuk meletakkan argumen di dalam pembalut
                 const argZone = functionWrapper.querySelector('.function-argument-droppable');
                 if (!argZone) {
                     console.error("Argument drop zone not found in function wrapper.");
                     return;
                 }
-
-                // 4. Gantikan item asal dengan pembalut fungsi di dalam DOM
                 originalParent.replaceChild(functionWrapper, originalItem);
-
-                // 5. Alihkan item asal ke dalam zon argumen pembalut
-                argZone.innerHTML = ''; // Kosongkan placeholder
+                argZone.innerHTML = '';
                 argZone.appendChild(originalItem);
-
-                // 6. Kemas kini keadaan (state) keseluruhan kanvas
                 updateModalCanvasState();
             }
         });
     };
-    // ▲▲▲ TAMAT FUNGSI BAHARU ▲▲▲
 
-    /**
-     * Mengemas kini 'modalCanvasState' dengan menukar keadaan semasa kanvas kepada string JSON.
-     */
     const updateModalCanvasState = () => {
         const mapItems = (container) => {
             const children = Array.from(container.children).filter(el => el.classList.contains('dropped-item'));
@@ -120,12 +191,24 @@ function setupLogicBuilderCore(config) {
                 if (type === 'function') {
                     itemData.name = item.dataset.functionName;
                     const argContainer = item.querySelector('.function-argument-droppable');
-                    itemData.arguments = mapItems(argContainer); // Panggilan Rekursif
+                    itemData.arguments = mapItems(argContainer);
                 } else if (type === 'comment') {
                     itemData.value = item.querySelector('textarea')?.value;
                 } else if (type === 'field' || type === 'external_table_field') {
                     itemData.table = item.querySelector('.table-select')?.value;
                     itemData.field = item.querySelector('.field-select')?.value;
+                    
+                    // ▼▼▼ BACA DATA SYARAT DARI DATASET ▼▼▼
+                    if (type === 'external_table_field' && item.dataset.condField) {
+                        itemData.condition = {
+                            field: item.dataset.condField,
+                            operator: item.dataset.condOperator,
+                            valueType: item.dataset.condValueType,
+                            value: item.dataset.condValue
+                        };
+                    }
+                    // ▲▲▲ TAMAT BACAAN DATA ▲▲▲
+
                 } else if (type === 'this_table_field') {
                     itemData.field = item.querySelector('.field-select')?.value;
                 } else if (type === 'boolean') {
@@ -137,7 +220,6 @@ function setupLogicBuilderCore(config) {
                 } else if (type === 'sql_query') {
                     itemData.value = item.querySelector('textarea')?.value || '';
                     const stateInput = item.querySelector('.query-builder-state');
-                    // Hanya simpan state jika ia mempunyai nilai untuk mengelakkan data yang tidak perlu
                     if (stateInput && stateInput.value) {
                         itemData.builder_state = stateInput.value;
                     }
@@ -153,25 +235,78 @@ function setupLogicBuilderCore(config) {
         modalCanvasState = JSON.stringify(logicArray, null, 2);
         if (placeholder) placeholder.style.display = logicArray.length === 0 ? 'block' : 'none';
 
-        // Kemas kini input tersembunyi hanya jika dalam mod 'live'
         if (updateMode === 'live') {
             hiddenInput.value = modalCanvasState;
             hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
         }
     };
+    
+    const populateCanvasFromHiddenInput = () => {
+        const buildFromLogic = (container, logicArray) => {
+            container.innerHTML = '';
+            if (logicArray.length === 0 && container.classList.contains('algorithm-canvas')) {
+                 if (placeholder) container.appendChild(placeholder);
+            } else if (logicArray.length === 0 && container.classList.contains('function-argument-droppable')) {
+                container.innerHTML = '<span class="canvas-placeholder">Drop value here</span>';
+            }
 
-    /**
-     * Mencipta elemen interaktif untuk diletakkan di atas kanvas.
-     * @param {string} type - Jenis komponen (cth: 'field', 'operator').
-     * @returns {HTMLElement} Elemen div yang telah dibina.
-     */
+            logicArray.forEach(itemData => {
+                const newItem = createInteractiveElement(itemData);
+                container.appendChild(newItem);
+
+                if (['field', 'external_table_field'].includes(itemData.type)) {
+                    newItem.querySelector('.table-select').value = itemData.table;
+                    newItem.querySelector('.table-select').dispatchEvent(new Event('change'));
+                    newItem.querySelector('.field-select').value = itemData.field;
+
+                    // ▼▼▼ SIMPAN SYARAT KE DATASET & GAYAKAN BUTANG ▼▼▼
+                    if (itemData.type === 'external_table_field' && itemData.condition) {
+                        newItem.dataset.condField = itemData.condition.field;
+                        newItem.dataset.condOperator = itemData.condition.operator;
+                        newItem.dataset.condValueType = itemData.condition.valueType;
+                        newItem.dataset.condValue = itemData.condition.value;
+                        const configBtn = newItem.querySelector('.config-lookup-btn');
+                        if (configBtn) configBtn.classList.add('configured');
+                    }
+                    // ▲▲▲ TAMAT SIMPANAN DATA ▲▲▲
+
+                } else if (itemData.type === 'comment') {
+                    newItem.querySelector('textarea').value = itemData.value;
+                } else if (itemData.type === 'this_table_field') {
+                    newItem.querySelector('.field-select').value = itemData.field;
+                } else if (itemData.type === 'boolean' || ['comparison_operator', 'logical_operator', 'arithmetic_operator', 'current_user', 'current_datetime'].includes(itemData.type)) {
+                    newItem.querySelector('select').value = itemData.value;
+                } else if (['string', 'number', 'api_endpoint'].includes(itemData.type)) {
+                    newItem.querySelector('input').value = itemData.value;
+                } else if (itemData.type === 'sql_query') {
+                    newItem.querySelector('textarea').value = itemData.value || '';
+                    const stateInput = newItem.querySelector('.query-builder-state');
+                    if (stateInput && itemData.builder_state) {
+                        stateInput.value = itemData.builder_state;
+                    }
+                }
+
+                if (itemData.type === 'function' && itemData.arguments) {
+                    const argContainer = newItem.querySelector('.function-argument-droppable');
+                    buildFromLogic(argContainer, itemData.arguments);
+                }
+            });
+        };
+
+        const currentLogicValue = hiddenInput.value || '[]';
+        const logic = JSON.parse(currentLogicValue);
+        buildFromLogic(canvas, logic);
+    };
+
+    // ... (rest of the functions like isValidDrop, etc. remain the same) ...
+    // The following code is truncated for brevity but should be the same as your original file
+    
+    // (Ensure the rest of the original function from createInteractiveElement to the return statement is here)
     const createInteractiveElement = (data) => {
         const type = data.type;
         const itemContainer = document.createElement('div');
         itemContainer.className = 'dropped-item';
         itemContainer.dataset.itemType = type;
-
-        // ▼▼▼ KOD TAMBAHAN: Letakkan butang 'fx' pada komponen nilai ▼▼▼
         const VALUE_TYPES_FOR_WRAPPING = ['field', 'this_table_field', 'external_table_field', 'string', 'number', 'sql_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime'];
         if (VALUE_TYPES_FOR_WRAPPING.includes(type)) {
             const fxButton = document.createElement('button');
@@ -181,37 +316,23 @@ function setupLogicBuilderCore(config) {
             fxButton.addEventListener('click', handleWrapWithFunction);
             itemContainer.appendChild(fxButton);
         }
-        // ▲▲▲ TAMAT KOD TAMBAHAN ▲▲▲
-
         switch (type) {
             case 'comment': {
-                // ▼▼▼ MULA PERUBAHAN ▼▼▼
-                // Cipta header untuk nota
                 const commentHeader = document.createElement('div');
                 commentHeader.className = 'comment-header';
                 commentHeader.innerHTML = `<i class="fas fa-info-circle"></i> <span>For notes only. Not included in logic.</span>`;
-
-                // Cipta textarea
                 const textarea = document.createElement('textarea');
                 textarea.placeholder = "Type your comment here...";
                 textarea.addEventListener('input', updateModalCanvasState);
-
-                // Masukkan header dan textarea ke dalam bekas utama
                 itemContainer.appendChild(commentHeader);
                 itemContainer.appendChild(textarea);
-
-                // Tambah kelas khas untuk penggayaan
                 itemContainer.classList.add('comment-item');
-                // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
                 break;
             }
-            // ▼▼▼ KOD BAHARU: Kes untuk komponen 'function' ▼▼▼
             case 'function': {
-                itemContainer.dataset.functionName = data.name || 'CONCAT'; // Fungsi lalai
-
+                itemContainer.dataset.functionName = data.name || 'CONCAT';
                 const functionSelect = document.createElement('select');
                 functionSelect.className = 'function-select';
-                // TAMBAH: LENGTH dan ROUND telah ditambah ke dalam senarai
                 const functions = ['CONCAT', 'SUM', 'AVG', 'COUNT', 'MIN', 'MAX', 'UPPER', 'LOWER', 'LENGTH', 'ROUND', 'DATE_FORMAT'];
                 functions.forEach(func => {
                     const option = document.createElement('option');
@@ -224,27 +345,22 @@ function setupLogicBuilderCore(config) {
                     itemContainer.dataset.functionName = e.target.value;
                     updateModalCanvasState();
                 });
-
                 const openParen = document.createElement('span');
                 openParen.textContent = '(';
                 openParen.className = 'paren';
-
                 const argContainer = document.createElement('div');
                 argContainer.className = 'function-argument-droppable';
                 argContainer.innerHTML = '<span class="canvas-placeholder">Drop arguments here</span>';
-
                 const closeParen = document.createElement('span');
                 closeParen.textContent = ')';
                 closeParen.className = 'paren';
-
                 itemContainer.appendChild(functionSelect);
                 itemContainer.appendChild(openParen);
                 itemContainer.appendChild(argContainer);
                 itemContainer.appendChild(closeParen);
-
                 break;
             }
-            // ▲▲▲ TAMAT KOD BAHARU ▲▲▲
+            // (The rest of the swit            
             case 'sql_query':
                 itemContainer.innerHTML = `<div class="sql-query-header"><span>[SQL QUERY]</span><button class="open-qb-btn" title="Open Query Builder"><i class="fas fa-magic-wand-sparkles"></i></button></div><textarea placeholder="SELECT * FROM ..."></textarea><input type="hidden" class="query-builder-state">`;
                 itemContainer.querySelector('textarea').addEventListener('input', updateModalCanvasState);
@@ -255,13 +371,11 @@ function setupLogicBuilderCore(config) {
             case 'api_endpoint':
                 itemContainer.innerHTML = `<span class="api-endpoint-label">[API ENDPOINT]</span><input type="text" placeholder="https://api.example.com/data">`;
                 itemContainer.querySelector('input').addEventListener('input', updateModalCanvasState);
-                break;
-            case 'external_table_field': {
+                break;            
+                case 'external_table_field': {
                 const activeTable = config.context?.tableName || '';
-                
                 const tableSelect = document.createElement('select');
                 tableSelect.className = 'table-select';
-                
                 const allOtherTables = Object.keys(jsonData.database.table).filter(t => t !== activeTable);
                 allOtherTables.forEach(tableName => {
                     const option = document.createElement('option');
@@ -270,10 +384,8 @@ function setupLogicBuilderCore(config) {
                     tableSelect.appendChild(option);
                 });
                 itemContainer.appendChild(tableSelect);
-
                 const fieldSelect = document.createElement('select');
                 fieldSelect.className = 'field-select';
-
                 const populateFields = (tableName) => {
                     fieldSelect.innerHTML = '';
                     if (jsonData.database.table[tableName]) {
@@ -286,17 +398,21 @@ function setupLogicBuilderCore(config) {
                         });
                     }
                 };
-
                 tableSelect.addEventListener('change', () => {
                     populateFields(tableSelect.value);
                     updateModalCanvasState();
                 });
                 fieldSelect.addEventListener('change', updateModalCanvasState);
-
                 itemContainer.appendChild(fieldSelect);
-
-                // Populate fields for the initially selected table
-                if (allOtherTables.length > 0) populateFields(allOtherTables[0]);
+                if (allOtherTables.length > 0) {
+                     populateFields(allOtherTables[0]);
+                }
+                const configBtn = document.createElement('button');
+                configBtn.className = 'btn-sidebar-icon config-lookup-btn';
+                configBtn.title = 'Set Lookup Condition';
+                configBtn.innerHTML = '<i class="fas fa-cog"></i>';
+                itemContainer.appendChild(configBtn);
+                // ▲▲▲ TAMAT KOD BAHARU ▲▲▲
                 
                 break;
             }
@@ -530,71 +646,19 @@ function setupLogicBuilderCore(config) {
                 numberInput.placeholder = '0';
                 numberInput.addEventListener('input', updateModalCanvasState);
                 itemContainer.appendChild(numberInput);
-                break;
-            default:
+                break;            
+                default:
                 const itemLabel = document.createElement('span');
                 itemLabel.textContent = (type === 'else_if') ? 'ELSE IF' : type.toUpperCase();
                 itemContainer.appendChild(itemLabel);
         }
-
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-algo-item';
         deleteBtn.innerHTML = '&times;';
         deleteBtn.title = 'Padam komponen ini';
-        // ▼▼▼ KEMAS KINI: Tambah '.comment-header' sebagai sasaran untuk butang padam ▼▼▼
         const targetForDeleteBtn = itemContainer.querySelector('.sql-query-header, .comment-header') || itemContainer;
         targetForDeleteBtn.appendChild(deleteBtn);
         return itemContainer;
-    };
-
-    /**
-     * Membina semula kanvas dari data JSON yang disimpan dalam input tersembunyi.
-     */
-    const populateCanvasFromHiddenInput = () => {
-        const buildFromLogic = (container, logicArray) => {
-            container.innerHTML = ''; // Kosongkan bekas
-            if (logicArray.length === 0 && container.classList.contains('algorithm-canvas')) {
-                 if (placeholder) container.appendChild(placeholder);
-            } else if (logicArray.length === 0 && container.classList.contains('function-argument-droppable')) {
-                container.innerHTML = '<span class="canvas-placeholder">Drop value here</span>';
-            }
-
-            logicArray.forEach(itemData => {
-                const newItem = createInteractiveElement(itemData);
-                container.appendChild(newItem);
-
-                // Isi nilai untuk jenis komponen yang ringkas
-                if (['field', 'external_table_field'].includes(itemData.type)) {
-                    newItem.querySelector('.table-select').value = itemData.table;
-                    newItem.querySelector('.table-select').dispatchEvent(new Event('change'));
-                    newItem.querySelector('.field-select').value = itemData.field;
-                } else if (itemData.type === 'comment') {
-                    newItem.querySelector('textarea').value = itemData.value;
-                } else if (itemData.type === 'this_table_field') {
-                    newItem.querySelector('.field-select').value = itemData.field;
-                } else if (itemData.type === 'boolean' || ['comparison_operator', 'logical_operator', 'arithmetic_operator', 'current_user', 'current_datetime'].includes(itemData.type)) {
-                    newItem.querySelector('select').value = itemData.value;
-                } else if (['string', 'number', 'api_endpoint'].includes(itemData.type)) {
-                    newItem.querySelector('input').value = itemData.value;
-                } else if (itemData.type === 'sql_query') {
-                    newItem.querySelector('textarea').value = itemData.value || '';
-                    const stateInput = newItem.querySelector('.query-builder-state');
-                    if (stateInput && itemData.builder_state) {
-                        stateInput.value = itemData.builder_state;
-                    }
-                }
-
-                // Panggilan rekursif untuk fungsi
-                if (itemData.type === 'function' && itemData.arguments) {
-                    const argContainer = newItem.querySelector('.function-argument-droppable');
-                    buildFromLogic(argContainer, itemData.arguments);
-                }
-            });
-        };
-
-        const currentLogicValue = hiddenInput.value || '[]';
-        const logic = JSON.parse(currentLogicValue);
-        buildFromLogic(canvas, logic);
     };
 
     /**
@@ -603,16 +667,11 @@ function setupLogicBuilderCore(config) {
      * @returns {boolean} - True jika sah, false jika tidak.
      */
     const VALUE_TYPES = ['field', 'this_table_field', 'external_table_field', 'string', 'number', 'sql_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'function'];
-
     const isValidDrop = (componentType) => {
-        // TAMBAHAN: Benarkan komen diletakkan di mana-mana sahaja.
         if (componentType === 'comment') {
             return true;
         }
-
         const existingComponents = Array.from(canvas.querySelectorAll('.dropped-item'));
-        
-        // PEMBETULAN: Cari komponen logik terakhir, abaikan komen.
         let lastLogicalComponent = null;
         for (let i = existingComponents.length - 1; i >= 0; i--) {
             if (existingComponents[i].dataset.itemType !== 'comment') {
@@ -620,36 +679,25 @@ function setupLogicBuilderCore(config) {
                 break;
             }
         }
-
         let lastComponentType = lastLogicalComponent ? lastLogicalComponent.dataset.itemType : 'start';
-
-        // Kumpulkan jenis nilai di bawah satu kategori 'value' untuk memudahkan peraturan
         if (VALUE_TYPES.includes(lastComponentType)) {
             lastComponentType = 'value';
         }
-
         const allowedNext = validationRules[lastComponentType];
-
         if (!allowedNext) {
             showCustomDialog({ title: "Peraturan Dilanggar", message: `Tidak ada peraturan yang ditetapkan selepas komponen '${lastComponentType}'.` });
             return false;
         }
-
-        // Semak jika komponen yang cuba diletakkan adalah sejenis nilai
         const isValueDrop = VALUE_TYPES.includes(componentType);
-
-        // Benarkan jika jenis komponen sepadan secara terus, ATAU jika ia adalah 'value' dan 'value' dibenarkan
         if (allowedNext.includes(componentType) || (isValueDrop && allowedNext.includes('value'))) {
             return true;
         } else {
-            // Cipta mesej ralat yang lebih membantu
             const friendlyNames = allowedNext.map(type => {
                 if (type === 'value') return 'sebarang nilai (field, string, nombor, dll.)';
                 if (type === 'open_paren') return "'('";
                 if (type === 'close_paren') return "')'";
                 return `'${type.replace(/_/g, ' ')}'`;
             }).join(' atau ');
-
             const lastFriendlyName = lastComponentType.replace(/_/g, ' ');
             const message = `Selepas komponen '${lastFriendlyName}', anda hanya boleh meletakkan: ${friendlyNames}.`;
             showCustomDialog({ title: "Peraturan Dilanggar", message: message });
@@ -661,12 +709,11 @@ function setupLogicBuilderCore(config) {
         if (e.target.classList.contains('algo-component')) {
             const data = {
                 type: e.target.dataset.type,
-                name: e.target.dataset.functionName // Akan 'undefined' untuk komponen bukan fungsi
+                name: e.target.dataset.functionName
             };
             e.dataTransfer.setData('text/plain', JSON.stringify(data));
         }
     });
-
     canvas.addEventListener('dragover', (e) => {
         e.preventDefault();
         canvas.classList.add('dragging-over');
@@ -674,16 +721,13 @@ function setupLogicBuilderCore(config) {
     canvas.addEventListener('dragleave', () => {
         canvas.classList.remove('dragging-over');
     });
-
     canvas.addEventListener('drop', (e) => {
         e.preventDefault();
         canvas.classList.remove('dragging-over');
-
         const data = JSON.parse(e.dataTransfer.getData('text/plain'));
         if (!isValidDrop(data.type)) {
             return;
         }
-
         if (placeholder) placeholder.style.display = 'none';
         const newItem = createInteractiveElement(data);
         canvas.appendChild(newItem);
@@ -693,16 +737,20 @@ function setupLogicBuilderCore(config) {
     });
 
     canvas.addEventListener('click', (e) => {
+        // ▼▼▼ TAMBAH LOGIK KLIK BAHARU DI SINI ▼▼▼
+        const configBtn = e.target.closest('.config-lookup-btn');
+        if (configBtn) {
+            const componentEl = configBtn.closest('.dropped-item');
+            openLookupConditionModal(componentEl);
+            return; // Hentikan proses selanjutnya
+        }
+        // ▲▲▲ TAMAT LOGIK KLIK ▲▲▲
+
         if (e.target.classList.contains('delete-algo-item')) {
             const itemToRemove = e.target.closest('.dropped-item');
             if (!itemToRemove) return;
-
-            // PEMBETULAN: Benarkan komen dipadam pada bila-bila masa.
             const isComment = itemToRemove.dataset.itemType === 'comment';
-
             if (isComment || !itemToRemove.nextElementSibling) {
-                // Jika item yang dipadam berada di dalam zon argumen fungsi,
-                // dan ia adalah satu-satunya item, paparkan semula placeholder.
                 if (itemToRemove.parentElement.classList.contains('function-argument-droppable') && itemToRemove.parentElement.childElementCount === 1) {
                     itemToRemove.parentElement.innerHTML = '<span class="canvas-placeholder">Drop arguments here</span>';
                 }
@@ -716,7 +764,6 @@ function setupLogicBuilderCore(config) {
 
     populateCanvasFromHiddenInput();
 
-    // Kembalikan API untuk berinteraksi dengan instance builder ini
     return {
         getState: () => modalCanvasState,
     };

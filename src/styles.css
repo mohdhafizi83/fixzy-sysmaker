@@ -2295,3 +2295,32 @@ fieldset.fieldset-disabled {
 #algorithm-builder-modal {
     z-index: 1010; /* Higher z-index to appear on top */
 }
+
+/* ADD THIS CSS AT THE END OF styles.css */
+
+.lookup-condition-rule {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.lookup-condition-rule .form-group {
+    flex: 1;
+    min-width: 150px;
+}
+
+.dropped-item .config-lookup-btn {
+    margin-left: auto; /* Push button to the right */
+    padding: 0;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+/* Style for the gear icon when a condition is set */
+.dropped-item .config-lookup-btn.configured {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
