@@ -783,6 +783,26 @@ export function openModalLogicBuilder(config) {
         console.error("Failed to inject builder UI into modal.");
         return;
     }
+    // Logik untuk menyembunyikan komponen palet yang tidak diperlukan
+    if (config.hiddenComponents && Array.isArray(config.hiddenComponents)) {
+        // Sembunyikan juga kumpulan "Control Flow" jika semua komponennya disembunyikan
+        const controlFlowComponents = ['if', 'else_if', 'then', 'else'];
+        const allControlFlowHidden = controlFlowComponents.every(c => config.hiddenComponents.includes(c));
+
+        config.hiddenComponents.forEach(type => {
+            const componentEl = ui.palette.querySelector(`.algo-component[data-type="${type}"]`);
+            if (componentEl) {
+                componentEl.style.display = 'none';
+            }
+        });
+
+        if (allControlFlowHidden) {
+            const controlFlowGroup = ui.palette.querySelector('.algo-component[data-type="if"]')?.parentElement;
+            if (controlFlowGroup) {
+                controlFlowGroup.style.display = 'none';
+            }
+        }
+    }
 
     const builderInstance = setupLogicBuilderCore({
         ...ui,

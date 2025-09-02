@@ -127,14 +127,15 @@ function openBlockConfiguration(blockId) {
     }
     tempInput.value = blockData.configData || '[]';
 
-    const validationRules = {
-        'start': ['if', 'open_paren', 'value'],
-        'if': ['value', 'open_paren'],
-        'value': ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then'],
+    // 1. Takrifkan 'grammar' baharu yang lebih ringkas untuk blok Condition
+    const CONDITION_BLOCK_GRAMMAR = {
+        'start':               ['value', 'open_paren'],
+        'value':               ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'close_paren'],
         'comparison_operator': ['value', 'open_paren'],
         'arithmetic_operator': ['value', 'open_paren'],
-        'logical_operator': ['value', 'open_paren', 'if'],
-        'open_paren': ['value', 'if', 'open_paren'],
+        'logical_operator':    ['value', 'open_paren'],
+        'open_paren':          ['value', 'open_paren'],
+        'close_paren':         ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'close_paren'],
     };
 
     const config = {
@@ -146,7 +147,10 @@ function openBlockConfiguration(blockId) {
         cancelButtonId: 'algorithm-builder-cancel-btn',
         doneButtonId: 'algorithm-builder-done-btn',
         targetInputId: 'workflow-temp-input',
-        validationRules: validationRules,
+        // 2. Gunakan 'grammar' yang baharu
+        validationRules: CONDITION_BLOCK_GRAMMAR, 
+        // 3. Senaraikan komponen yang perlu disembunyikan dari palet
+        hiddenComponents: ['if', 'else_if', 'then', 'else'],
         onComplete: (logicJson) => {
             state.blocks[blockId].configData = logicJson;
             const blockEl = document.querySelector(`[data-block-id='${blockId}']`);
