@@ -1592,6 +1592,7 @@ export function initializeMenuManagementHandlers() {
         newGroup.setAttribute('draggable', 'true');
         newGroup.innerHTML = `<i class="fas fa-grip-vertical drag-handle"></i><input type="text" class="group-name-input" value="New Group"><div class="menu-selector"><button class="add-menu-btn" title="Add menu to this group">+</button></div><div class="group-actions"><button class="btn-sidebar-icon" title="Delete group"><i class="fas fa-trash-alt"></i></button></div>`;
         menuGroupList.appendChild(newGroup);
+		document.getElementById('loading-overlay')?.classList.remove('loading-overlay-hidden');
         setAwaitingMenuGroupSave(true);
         triggerSave();
     });
