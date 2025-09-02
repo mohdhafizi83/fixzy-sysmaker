@@ -647,7 +647,22 @@
                 <div id="tab-menu-appearance" class="tab-pane">
                     <div class="card">
                         <div class="card-body">
-
+<div class="form-group individual-menu-manager">
+                                <div class="menu-group-header">
+                                    <label>Individual Menus</label>
+                                    <button class="btn btn-secondary" id="app-add_custom_menu">
+                                        <i class="fas fa-plus"></i> Add Custom Menu
+                                    </button>
+                                </div>
+                                <p class="helper-text" style="margin-bottom: 1rem; font-size: 0.9em; color: var(--secondary-color);">
+                                    Menus listed here will appear individually. Check any unassigned table below to add it to the menu, or create a fully custom link.
+                                </p>
+                                <div id="individual-table-menus" class="checkbox-grid">
+                                    </div>
+                                <div id="custom-menu-list">
+                                    </div>
+                            </div>
+                            <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
                             <div class="form-group menu-group-manager">
                                 <div class="menu-group-header">
                                     <label>Menu Groups</label>
@@ -2164,6 +2179,35 @@
         <div class="modal-footer">
             <button class="btn btn-secondary" id="hook-type-modal-cancel">Cancel</button>
             <button class="btn btn-primary" id="hook-type-modal-ok">OK</button>
+        </div>
+    </div>
+</div>
+<div id="custom-menu-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="custom-menu-modal-title">Add Custom Menu</h3>
+            <button id="custom-menu-modal-close" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="custom-menu-item-id">
+            <div class="form-group">
+                <label for="custom-menu-label-input">Menu Label</label>
+                <input type="text" id="custom-menu-label-input" placeholder="e.g., Laporan Bulanan">
+            </div>
+            <div class="form-group">
+                <label for="custom-menu-url-input">URL</label>
+                <input type="text" id="custom-menu-url-input" placeholder="https://... atau pilih jadual di bawah">
+            </div>
+            <div class="form-group">
+                <label for="custom-menu-url-table-select">Atau, jana pautan ke Detail View jadual:</label>
+                <select id="custom-menu-url-table-select">
+                    <option value="">-- Pilih Jadual --</option>
+                    </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="custom-menu-modal-cancel">Cancel</button>
+            <button class="btn btn-primary" id="custom-menu-modal-ok">OK</button>
         </div>
     </div>
 </div>

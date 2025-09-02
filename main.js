@@ -40,7 +40,37 @@ if (!dbExists) {
 // =================================================================
 // ▼▼▼ SEMUA IPC HANDLER DIKUMPULKAN DI SINI UNTUK KONSISTENSI ▼▼▼
 // =================================================================
+// main.js
 
+// ▼▼▼ TAMBAH KESELURUHAN PENGENDALI IPC BAHARU INI ▼▼▼
+ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, label, url }) => {
+    try {
+        if (!project_id || !label) {
+            throw new Error("Project ID and Label are required.");
+        }
+
+        if (item_id) {
+            // Mod Kemas Kini (Update)
+            db.prepare(
+                `UPDATE menu_items SET item_label = ?, item_url = ? WHERE item_id = ? AND project_id = ?`
+            ).run(label, url, item_id, project_id);
+        } else {
+            // Mod Tambah Baharu (Insert)
+            const maxOrderResult = db.prepare(
+                'SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL'
+            ).get(project_id);
+            const nextOrder = (maxOrderResult && maxOrderResult.max_order !== null ? maxOrderResult.max_order : -1) + 1;
+
+            db.prepare(
+                `INSERT INTO menu_items (project_id, item_label, item_url, item_order, menu_group_id) VALUES (?, ?, ?, ?, NULL)`
+            ).run(project_id, label, url, nextOrder);
+        }
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal menyimpan item menu custom:", error);
+        return { success: false, message: error.message };
+    }
+});
 ipcMain.handle('database:batch-update', async (event, queue) => {
     try {
         const transaction = db.transaction(() => {
@@ -132,27 +162,45 @@ if (fieldsToUpdate.text_area === 1) {
                 const menuData = queue.menus;
                 const projectId = activeProject.project_id;
 
-                // ▼▼▼ MULA PERUBAHAN ▼▼▼
-                // Padam data menu berkumpulan yang lama
-                db.prepare('DELETE FROM menu_items WHERE project_id = ? AND menu_group_id IS NOT NULL')
-                  .run(projectId);
+                // --- Simpan Menu Kumpulan ---
+                db.prepare('DELETE FROM menu_items WHERE project_id = ? AND menu_group_id IS NOT NULL').run(projectId);
                 db.prepare('DELETE FROM menu_groups WHERE project_id = ?').run(projectId);
                 
-                // Masukkan semula data ke jadual baharu
                 const insertGroupStmt = db.prepare('INSERT INTO menu_groups (project_id, group_name, group_order) VALUES (?, ?, ?)');
-                const insertItemStmt = db.prepare(`
+                const insertGroupItemStmt = db.prepare(`
                     INSERT INTO menu_items (project_id, menu_group_id, table_id, item_order) 
                     VALUES (?, ?, (SELECT table_id FROM tables WHERE table_name = ? AND project_id = ?), ?)
                 `);
                 
-                menuData.forEach((group) => {
-                    const info = insertGroupStmt.run(projectId, group.group_name, group.group_order);
-                    const newGroupId = info.lastInsertRowid;
-                    group.items.forEach((item) => {
-                        insertItemStmt.run(projectId, newGroupId, item.table_name, projectId, item.item_order);
+                if (menuData.groups) {
+                    menuData.groups.forEach((group) => {
+                        const info = insertGroupStmt.run(projectId, group.group_name, group.group_order);
+                        const newGroupId = info.lastInsertRowid;
+                        group.items.forEach((item) => {
+                            insertGroupItemStmt.run(projectId, newGroupId, item.table_name, projectId, item.item_order);
+                        });
                     });
-                });
-                // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+                }
+
+                // --- Simpan Menu Individu (Hanya untuk checkbox jadual) ---
+                if (menuData.individual_items) {
+                    // Padam hanya item menu individu yang berasaskan JADUAL. Biarkan item custom.
+                    db.prepare(`
+                        DELETE FROM menu_items 
+                        WHERE project_id = ? AND menu_group_id IS NULL AND table_id IS NOT NULL
+                    `).run(projectId);
+
+                    const insertIndividualTableStmt = db.prepare(`
+                        INSERT INTO menu_items (project_id, menu_group_id, table_id, item_order)
+                        VALUES (?, NULL, (SELECT table_id FROM tables WHERE table_name = ? AND project_id = ?), ?)
+                    `);
+                    
+                    // Kitar semula hanya item yang mempunyai table_name (checkboxes)
+                    const tableItems = menuData.individual_items.filter(item => item.table_name);
+                    tableItems.forEach(item => {
+                        insertIndividualTableStmt.run(projectId, item.table_name, projectId, item.order);
+                    });
+                }
             }
 			
             if (queue.upserts && queue.upserts.length > 0) {
@@ -210,7 +258,7 @@ ipcMain.handle('sql:parse-calculation-query', (event, sql) => {
     }
 });
 
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: main.js
+// main.js
 
 async function getFullProjectSchema(projectId) {
   try {
@@ -249,24 +297,29 @@ async function getFullProjectSchema(projectId) {
         ).all(...tableIds, ...tableIds);
     }
 
-    // ▼▼▼ MULA BLOK LOGIK YANG DIPERBAIKI SEPENUHNYA ▼▼▼
     const groups = db.prepare("SELECT * FROM menu_groups WHERE project_id = ? ORDER BY group_order, group_name").all(projectId);
+    const groupedItems = db.prepare(`
+        SELECT mi.*, t.table_name 
+        FROM menu_items mi
+        JOIN tables t ON mi.table_id = t.table_id
+        WHERE mi.project_id = ? AND mi.menu_group_id IS NOT NULL
+        ORDER BY mi.item_order
+    `).all(projectId);
     
-    const items = db.prepare(`
-            SELECT mi.*, t.table_name 
-            FROM menu_items mi
-            JOIN tables t ON mi.table_id = t.table_id
-            WHERE mi.project_id = ? AND mi.menu_group_id IS NOT NULL
-            ORDER BY mi.item_order
-        `).all(projectId);
+    const individualItems = db.prepare(`
+        SELECT mi.*, t.table_name
+        FROM menu_items mi
+        LEFT JOIN tables t ON mi.table_id = t.table_id
+        WHERE mi.project_id = ? AND mi.menu_group_id IS NULL
+        ORDER BY mi.item_order
+    `).all(projectId);
 
     const structuredMenuGroups = groups.map(group => {
         return {
             ...group,
-            items: items.filter(item => item.menu_group_id === group.menu_group_id)
+            items: groupedItems.filter(item => item.menu_group_id === group.menu_group_id)
         };
     });
-    // ▲▲▲ TAMAT BLOK LOGIK YANG DIPERBAIKI SEPENUHNYA ▲▲▲
 
     return {
       project: project,
@@ -274,7 +327,8 @@ async function getFullProjectSchema(projectId) {
         name: project.app_title,
         table: structuredTables,
         relationships: relationships,
-        menu_groups: structuredMenuGroups
+        menu_groups: structuredMenuGroups,
+        individual_menus: individualItems
       },
     };
   } catch (error) {

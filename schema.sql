@@ -195,8 +195,10 @@ CREATE TABLE menu_groups (
 CREATE TABLE menu_items (
     item_id         INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id      INTEGER NOT NULL,
-    menu_group_id   INTEGER, -- Akan NULL untuk menu individu pada masa hadapan
-    table_id        INTEGER NOT NULL,
+    menu_group_id   INTEGER, -- Akan NULL untuk menu individu
+    table_id        INTEGER, -- NULL untuk menu custom
+    item_label      TEXT,    -- Label untuk menu custom
+    item_url        TEXT,    -- URL untuk menu custom
     item_order      INTEGER,
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
     FOREIGN KEY (menu_group_id) REFERENCES menu_groups(menu_group_id) ON DELETE CASCADE,

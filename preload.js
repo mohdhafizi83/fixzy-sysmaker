@@ -25,7 +25,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveAllSettings: (data) => ipcRenderer.invoke('settings:save-all', data),
   saveMenuStructure: (data) => ipcRenderer.invoke('menu:save-structure', data),
   batchUpdate: (queueData) => ipcRenderer.invoke('database:batch-update', queueData),
-
+saveCustomMenuItem: (data) => ipcRenderer.invoke('menu:save-custom-item', data),
   updateMenuOrder: (data) => ipcRenderer.invoke('menu:update-order', data),
   getAllSettings: () => ipcRenderer.invoke('settings:get-all'),
   getFullSchema: (projectId) => ipcRenderer.invoke('project:get-full-schema', projectId),

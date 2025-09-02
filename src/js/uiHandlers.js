@@ -1387,204 +1387,237 @@ function getUsedMenuNames() {
     return [...usedTags].map(tag => tag.childNodes[0].textContent.trim());
 }
 
-// GANTIKAN KESELURUHAN FUNGSI SEDIA ADA INI DALAM: uiHandlers.js
+// uiHandlers.js
+
+/**
+ * Mencipta elemen HTML untuk satu baris item menu custom.
+ * @param {object} item - Objek data untuk item menu.
+ * @returns {HTMLElement} Elemen div yang mewakili baris tersebut.
+ */
+function createCustomMenuItem(item) {
+    const itemEl = document.createElement('div');
+    itemEl.className = 'custom-menu-item';
+    // Simpan data pada elemen untuk rujukan mudah
+    itemEl.dataset.label = item.item_label || '';
+    itemEl.dataset.url = item.item_url || '';
+    itemEl.dataset.itemId = item.item_id || '';
+
+    itemEl.innerHTML = `
+        <i class="fas fa-grip-vertical drag-handle" style="cursor: ns-resize;"></i>
+        <div class="form-group">
+            <label style="font-size: 0.8em;">Menu Label</label>
+            <input type="text" readonly value="${item.item_label || ''}" placeholder="Not set">
+        </div>
+        <div class="form-group">
+            <label style="font-size: 0.8em;">URL</label>
+            <input type="text" readonly value="${item.item_url || ''}" placeholder="Not set">
+        </div>
+        <button class="btn-sidebar-icon custom-menu-edit-btn" title="Edit custom menu">
+            <i class="fas fa-pencil-alt"></i>
+        </button>
+        <button class="btn-sidebar-icon custom-menu-delete-btn" title="Delete custom menu">
+            <i class="fas fa-trash-alt"></i>
+        </button>
+    `;
+    return itemEl;
+}
+
+// uiHandlers.js
+
+// uiHandlers.js
+
+// uiHandlers.js
 
 export function initializeMenuManagementHandlers() {
+    const menuManagementTab = document.getElementById('tab-menu-appearance');
+    if (!menuManagementTab) return;
+
     const addGroupBtn = document.getElementById('app-add_menu_group');
+    const addCustomMenuBtn = document.getElementById('app-add_custom_menu');
     const menuGroupList = document.querySelector('.menu-group-list');
     const addMenuModal = document.getElementById('add-menu-modal');
     const availableMenusList = document.getElementById('available-menus-list');
-    const modalCloseBtn = addMenuModal.querySelector('.modal-close');
+    const groupModalCloseBtn = addMenuModal?.querySelector('.modal-close');
 
-    if (!addGroupBtn || !menuGroupList || !addMenuModal || !availableMenusList || !modalCloseBtn) {
-        return;
-    }
+    if (!addGroupBtn || !addCustomMenuBtn || !menuGroupList || !addMenuModal) return;
 
-    let draggedItem = null;
     let currentTargetMenuSelector = null;
 
-    // ▼▼▼ KEMAS KINI: triggerSave kini menggunakan SaveManager ▼▼▼
-    const triggerSave = () => {
-        // Hanya hantar isyarat ke queue bahawa susunan menu perlu disimpan.
-        const menuData = gatherMenuData();
-        SaveManager.addToQueue('menus', null, menuData);
-    };
-    // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
-
+    // (Letakkan fungsi 'gatherMenuData' yang telah dikemas kini di sini)
     const gatherMenuData = () => {
         const groupElements = menuGroupList.querySelectorAll('.menu-group-item');
-        const menuData = Array.from(groupElements).map((groupEl, groupIndex) => {
+        const groups = Array.from(groupElements).map((groupEl, groupIndex) => {
             const groupName = groupEl.querySelector('.group-name-input').value;
             const itemElements = groupEl.querySelectorAll('.menu-selector .tag');
             const items = Array.from(itemElements).map((itemEl, itemIndex) => ({
-                table_name: itemEl.childNodes[0].textContent.trim(),
-                item_order: itemIndex
+                table_name: itemEl.childNodes[0].textContent.trim(), item_order: itemIndex
             }));
-            return { 
-                group_name: groupName, 
-                items: items,
-                group_order: groupIndex
-            };
+            return { group_name: groupName, items, group_order: groupIndex };
         });
-        return menuData;
+        let individualOrder = 0;
+        const individualTableMenus = Array.from(menuManagementTab.querySelectorAll('#individual-table-menus input[type="checkbox"]:checked'))
+            .map(checkbox => ({
+                table_name: checkbox.dataset.tableName, order: individualOrder++
+            }));
+        return { groups: groups, individual_items: individualTableMenus };
     };
-	
-    function getUsedMenuNames() {
-        const usedTags = menuGroupList.querySelectorAll('.tag');
-        return Array.from(usedTags).map(tag => tag.childNodes[0].textContent.trim());
+
+    const triggerSave = () => {
+        const menuData = gatherMenuData();
+        SaveManager.addToQueue('menus', null, menuData);
+    };
+
+    const openCustomMenuModal = (itemEl = null) => {
+        const modal = document.getElementById('custom-menu-modal');
+        if (!modal) return;
+
+        const title = modal.querySelector('#custom-menu-modal-title');
+        const labelInput = modal.querySelector('#custom-menu-label-input');
+        const urlInput = modal.querySelector('#custom-menu-url-input');
+        const tableSelect = modal.querySelector('#custom-menu-url-table-select');
+        const itemIdInput = modal.querySelector('#custom-menu-item-id');
+        const okBtn = modal.querySelector('#custom-menu-modal-ok');
+        const cancelBtn = modal.querySelector('#custom-menu-modal-cancel');
+        const closeBtn = modal.querySelector('#custom-menu-modal-close');
+        
+        const newOkBtn = okBtn.cloneNode(true);
+        okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+
+        const closeModal = () => modal.classList.add('hidden');
+        cancelBtn.addEventListener('click', closeModal, { once: true });
+        closeBtn.addEventListener('click', closeModal, { once: true });
+
+        tableSelect.innerHTML = '<option value="">-- Choose a Table --</option>';
+        allTableNames.forEach(name => {
+            tableSelect.innerHTML += `<option value="${name}">${name}</option>`;
+        });
+
+        if (itemEl) { // Mod Sunting
+            title.textContent = 'Edit Custom Menu';
+            labelInput.value = itemEl.dataset.label;
+            urlInput.value = itemEl.dataset.url;
+            itemIdInput.value = itemEl.dataset.itemId;
+        } else { // Mod Tambah
+            title.textContent = 'Add Custom Menu';
+            labelInput.value = '';
+            urlInput.value = '';
+            itemIdInput.value = '';
+        }
+
+        newOkBtn.addEventListener('click', async () => {
+            const dataToSave = {
+                project_id: activeProject.project_id,
+                item_id: itemIdInput.value || null,
+                label: labelInput.value,
+                url: urlInput.value
+            };
+
+            const result = await window.electronAPI.saveCustomMenuItem(dataToSave);
+            if (result.success) {
+                closeModal();
+                const tablePage = document.getElementById('table-settings-page');
+                const tableName = tablePage.classList.contains('hidden') ? null : tablePage.querySelector('.table-name')?.textContent;
+                await loadProjectData(activeProject, tableName);
+            } else {
+                showCustomDialog({ title: "Error", message: `Failed to save custom menu: ${result.message}` });
+            }
+        }, { once: true });
+
+        modal.classList.remove('hidden');
+        labelInput.focus();
+    };
+    
+    // --- Pengendali Acara (Event Handlers) ---
+    addCustomMenuBtn.addEventListener('click', () => openCustomMenuModal());
+    document.getElementById('custom-menu-url-table-select').addEventListener('change', (e) => {
+        const urlInput = document.getElementById('custom-menu-url-input');
+        if (e.target.value) {
+            urlInput.value = `${e.target.value}_view.php?SelectedID=`;
+        }
+    });
+
+    if (groupModalCloseBtn) {
+        groupModalCloseBtn.addEventListener('click', () => addMenuModal.classList.add('hidden'));
+    }
+    if (availableMenusList) {
+        availableMenusList.addEventListener('click', (e) => {
+            if (e.target.tagName === 'LI') {
+                const menuName = e.target.dataset.menuName;
+                if (menuName && currentTargetMenuSelector) {
+                    const newTag = document.createElement('span');
+                    newTag.className = 'tag';
+                    newTag.setAttribute('draggable', 'true');
+                    newTag.innerHTML = `${menuName} <button class="remove-tag">&times;</button>`;
+                    const addBtn = currentTargetMenuSelector.querySelector('.add-menu-btn');
+                    currentTargetMenuSelector.insertBefore(newTag, addBtn);
+                    addMenuModal.classList.add('hidden');
+                    currentTargetMenuSelector = null;
+                    triggerSave();
+                }
+            }
+        });
     }
 
+    menuManagementTab.addEventListener('change', (e) => {
+        if (e.target.matches('#individual-table-menus input[type="checkbox"]')) {
+            triggerSave();
+        }
+    });
+    
+    menuManagementTab.addEventListener('input', (e) => {
+        if (e.target.matches('.group-name-input')) {
+            triggerSave();
+        }
+    });
+
+    menuManagementTab.addEventListener('click', (e) => {
+        const target = e.target;
+        const customItem = target.closest('.custom-menu-item');
+        const groupItem = target.closest('.menu-group-item');
+
+        if (target.closest('.custom-menu-edit-btn') || (customItem && !target.closest('button.custom-menu-delete-btn'))) {
+            openCustomMenuModal(customItem);
+        } else if (target.closest('.custom-menu-delete-btn') && customItem) {
+            showCustomDialog({
+                title: "Confirm Deletion", message: "Are you sure you want to delete this custom menu?", showCancelButton: true,
+                onOk: async () => {
+                    await window.electronAPI.saveCustomMenuItem({ item_id: customItem.dataset.itemId, project_id: activeProject.project_id, label: 'DELETE' });
+                    const tablePage = document.getElementById('table-settings-page');
+                    const tableName = tablePage.classList.contains('hidden') ? null : tablePage.querySelector('.table-name')?.textContent;
+                    await loadProjectData(activeProject, tableName);
+                }
+            });
+        } else if (target.classList.contains('add-menu-btn') && groupItem) {
+            const usedNames = new Set([...menuGroupList.querySelectorAll('.tag')].map(tag => tag.childNodes[0].textContent.trim()));
+            const availableTables = allTableNames.filter(name => !usedNames.has(name));
+            availableMenusList.innerHTML = availableTables.map(name => `<li data-menu-name="${name}">${name}</li>`).join('');
+            currentTargetMenuSelector = target.closest('.menu-selector');
+            addMenuModal.classList.remove('hidden');
+        } else if (target.classList.contains('remove-tag') && groupItem) {
+            target.closest('.tag')?.remove();
+            triggerSave();
+        } else if (target.closest('.group-actions button') && groupItem) {
+            showCustomDialog({
+                title: "Confirm Deletion", message: "Are you sure you want to delete this menu group?", showCancelButton: true,
+                onOk: () => { groupItem.remove(); triggerSave(); }
+            });
+        }
+    });
+    
     addGroupBtn.addEventListener('click', () => {
-        // Logik asal untuk menambah kumpulan baharu
+        if (menuGroupList.querySelector('.empty-state-label')) menuGroupList.innerHTML = '';
         const newGroup = document.createElement('div');
         newGroup.className = 'menu-group-item';
         newGroup.setAttribute('draggable', 'true');
         newGroup.innerHTML = `
             <i class="fas fa-grip-vertical drag-handle"></i>
             <input type="text" class="group-name-input" value="New Group">
-            <div class="menu-selector">
-                <button class="add-menu-btn" title="Add menu to this group">+</button>
-            </div>
-            <div class="group-actions">
-                <button class="btn-sidebar-icon" title="Delete group">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-            </div>
-        `;
+            <div class="menu-selector"><button class="add-menu-btn" title="Add menu to this group">+</button></div>
+            <div class="group-actions"><button class="btn-sidebar-icon" title="Delete group"><i class="fas fa-trash-alt"></i></button></div>`;
         menuGroupList.appendChild(newGroup);
-        newGroup.querySelector('.group-name-input').addEventListener('input', triggerSave);
-
-        // Logik baharu untuk overlay
-        const overlay = document.getElementById('loading-overlay');
-        if (overlay) {
-            overlay.classList.remove('loading-overlay-hidden');
-        }
-        
-        // Tetapkan flag dan cetuskan simpanan
         setAwaitingMenuGroupSave(true);
         triggerSave();
     });
-
-    menuGroupList.addEventListener('click', (e) => {
-        const target = e.target;
-        if (target.classList.contains('add-menu-btn')) {
-            const usedNames = getUsedMenuNames();
-            const availableTables = allTableNames.filter(name => !usedNames.includes(name));
-
-            availableMenusList.innerHTML = '';
-            availableTables.forEach(tableName => {
-                const li = document.createElement('li');
-                li.textContent = tableName;
-                li.dataset.menuName = tableName;
-                availableMenusList.appendChild(li);
-            });
-            
-            currentTargetMenuSelector = target.closest('.menu-selector');
-            addMenuModal.classList.remove('hidden');
-        } 
-        else if (target.classList.contains('remove-tag')) {
-            target.closest('.tag')?.remove();
-            triggerSave();
-        } else if (target.closest('.group-actions button')) {
-            const groupToRemove = target.closest('.menu-group-item');
-            if (groupToRemove) {
-                showCustomDialog({
-                    title: "Confirm Deletion",
-                    message: "Are you sure you want to delete this menu group?",
-                    showCancelButton: true,
-                    onOk: () => {
-                        groupToRemove.remove();
-                        triggerSave();
-                    }
-                });
-            }
-        }
-    });
-
-    // Event listener untuk perubahan pada nama group yang sedia ada
-    menuGroupList.addEventListener('input', (e) => {
-        if (e.target.classList.contains('group-name-input')) {
-            triggerSave();
-        }
-    });
-
-    menuGroupList.addEventListener('dragstart', (e) => {
-        draggedItem = e.target.closest('.menu-group-item, .tag');
-        if (draggedItem) {
-            setTimeout(() => draggedItem.classList.add('dragging'), 0);
-        } else {
-            e.preventDefault();
-        }
-    });
-
-    menuGroupList.addEventListener('dragend', () => {
-        if (draggedItem) {
-            draggedItem.classList.remove('dragging');
-            draggedItem = null;
-            triggerSave(); // Simpan selepas operasi drag-and-drop selesai
-        }
-    });
-
-    menuGroupList.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        if (!draggedItem) return;
-
-        if (draggedItem.classList.contains('tag')) {
-            const container = e.target.closest('.menu-selector');
-            if (container) {
-                const afterElement = getDragAfterElement(container, e.clientX, '.tag');
-                if (afterElement == null) {
-                    container.insertBefore(draggedItem, container.querySelector('.add-menu-btn'));
-                } else {
-                    container.insertBefore(draggedItem, afterElement);
-                }
-            }
-        } else if (draggedItem.classList.contains('menu-group-item')) {
-            const container = e.target.closest('.menu-group-list');
-             if (container) {
-                const afterElement = getDragAfterElement(container, e.clientY, '.menu-group-item');
-                if (afterElement == null) {
-                    container.appendChild(draggedItem);
-                } else {
-                    container.insertBefore(draggedItem, afterElement);
-                }
-            }
-        }
-    });
-
-    function getDragAfterElement(container, y, selector) {
-        const draggableElements = [...container.querySelectorAll(`${selector}:not(.dragging)`)];
-        return draggableElements.reduce((closest, child) => {
-            const box = child.getBoundingClientRect();
-            const offset = (selector === '.tag' ? y - box.left - box.width / 2 : y - box.top - box.height / 2);
-            if (offset < 0 && offset > closest.offset) {
-                return { offset: offset, element: child };
-            } else {
-                return closest;
-            }
-        }, { offset: Number.NEGATIVE_INFINITY }).element;
-    }
-
-    availableMenusList.addEventListener('click', (e) => {
-        if (e.target.tagName === 'LI') {
-            const menuName = e.target.dataset.menuName;
-            if (menuName && currentTargetMenuSelector) {
-                const newTag = document.createElement('span');
-                newTag.className = 'tag';
-                newTag.setAttribute('draggable', 'true');
-                newTag.innerHTML = `${menuName} <button class="remove-tag">&times;</button>`;
-                
-                const addBtn = currentTargetMenuSelector.querySelector('.add-menu-btn');
-                currentTargetMenuSelector.insertBefore(newTag, addBtn);
-                
-                addMenuModal.classList.add('hidden');
-                currentTargetMenuSelector = null;
-                triggerSave();
-            }
-        }
-    });
-    
-    modalCloseBtn.addEventListener('click', () => addMenuModal.classList.add('hidden'));
 }
 
 // =================================================================
@@ -2787,52 +2820,64 @@ export function initializeLookupFieldHandlers() {
     }
 }
 
+// uiHandlers.js
+
 export function populateMenuManagement(menuGroupsData) {
     const menuGroupList = document.querySelector('.menu-group-list');
-    if (!menuGroupList) return;
+    const individualTableMenusContainer = document.getElementById('individual-table-menus');
+    const customMenuListContainer = document.getElementById('custom-menu-list');
 
-    // Kosongkan senarai sedia ada
+    if (!menuGroupList || !individualTableMenusContainer || !customMenuListContainer) return;
+
+    // --- 1. Populate Group Menus (Logic sedia ada, tiada perubahan) ---
     menuGroupList.innerHTML = '';
-
     if (!menuGroupsData || menuGroupsData.length === 0) {
-        // Jika tiada data, paparkan mesej
-        const emptyMessage = `
-            <div class="empty-state-label">
-                <p>Tiada kumpulan menu dicipta.</p>
-                <span>Klik butang 'Add Menu Group' untuk bermula.</span>
-            </div>
-        `;
-        menuGroupList.innerHTML = emptyMessage;
-        return;
+        menuGroupList.innerHTML = `<div class="empty-state-label"><p>No menu groups created.</p><span>Click 'Add Menu Group' to start.</span></div>`;
+    } else {
+        menuGroupsData.forEach(group => {
+            const tagsHtml = group.items.map(item => `
+                <span class="tag" draggable="true" data-item-id="${item.item_id}">
+                    ${item.table_name} <button class="remove-tag">&times;</button>
+                </span>`).join('');
+            const groupElement = document.createElement('div');
+            groupElement.className = 'menu-group-item';
+            groupElement.setAttribute('draggable', 'true');
+            groupElement.dataset.groupId = group.menu_group_id;
+            groupElement.innerHTML = `
+                <i class="fas fa-grip-vertical drag-handle"></i>
+                <input type="text" class="group-name-input" value="${group.group_name}">
+                <div class="menu-selector">${tagsHtml}<button class="add-menu-btn" title="Add menu to this group">+</button></div>
+                <div class="group-actions"><button class="btn-sidebar-icon" title="Delete group"><i class="fas fa-trash-alt"></i></button></div>`;
+            menuGroupList.appendChild(groupElement);
+        });
     }
 
-    // Bina setiap baris kumpulan menu
-    menuGroupsData.forEach(group => {
-        const tagsHtml = group.items.map(item => `
-            <span class="tag" draggable="true" data-item-id="${item.item_id}">
-                ${item.table_name} <button class="remove-tag">&times;</button>
-            </span>
-        `).join('');
+    // --- 2. Populate Individual Menus (Logic dikemas kini) ---
+    individualTableMenusContainer.innerHTML = '';
+    customMenuListContainer.innerHTML = '';
 
-        const groupElement = document.createElement('div');
-        groupElement.className = 'menu-group-item';
-        groupElement.setAttribute('draggable', 'true');
-        groupElement.dataset.groupId = group.menu_group_id;
-        
-        groupElement.innerHTML = `
-            <i class="fas fa-grip-vertical drag-handle"></i>
-            <input type="text" class="group-name-input" value="${group.group_name}">
-            <div class="menu-selector">
-                ${tagsHtml}
-                <button class="add-menu-btn" title="Add menu to this group">+</button>
-            </div>
-            <div class="group-actions">
-                <button class="btn-sidebar-icon" title="Delete group">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-            </div>
-        `;
-        menuGroupList.appendChild(groupElement);
+    const allTables = allTableNames || [];
+    const groupedTables = new Set(menuGroupsData.flatMap(g => g.items.map(i => i.table_name)));
+    const unassignedTables = allTables.filter(t => !groupedTables.has(t));
+    const individualMenusData = jsonData.database.individual_menus || [];
+
+    if (unassignedTables.length > 0) {
+        unassignedTables.forEach(tableName => {
+            const isChecked = individualMenusData.some(item => item.table_name === tableName);
+            const checkboxLabel = document.createElement('label');
+            checkboxLabel.className = 'checkbox-label';
+            checkboxLabel.innerHTML = `<input type="checkbox" data-table-name="${tableName}" ${isChecked ? 'checked' : ''}> ${tableName}`;
+            individualTableMenusContainer.appendChild(checkboxLabel);
+        });
+    } else {
+        individualTableMenusContainer.innerHTML = `<p style="color: var(--secondary-color); font-style: italic; text-align: center;">All tables are in menu groups.</p>`;
+    }
+
+    const customMenus = individualMenusData.filter(item => item.table_id === null);
+    customMenus.forEach(item => {
+        // Gunakan fungsi helper yang baharu
+        const customItemEl = createCustomMenuItem(item);
+        customMenuListContainer.appendChild(customItemEl);
     });
 }
 
