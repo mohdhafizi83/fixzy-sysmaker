@@ -685,10 +685,22 @@ html, body {
     background-color: #F9FAFB;
 }
 
-.menu-group-item {
+.menu-group-header {
     display: flex;
     align-items: center;
     gap: 1rem;
+    width: 100%;
+}
+
+.menu-group-header .group-name-input {
+    flex-grow: 1;
+}
+
+.menu-group-item {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
     padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--border-color);
 }
@@ -2419,10 +2431,12 @@ fieldset.fieldset-disabled {
     flex-direction: column; /* Susun item secara menegak */
     align-items: stretch; /* Penuhkan lebar bekas */
     gap: 0.25rem; /* Jarak kecil antara item */
+    margin-left: 2rem; /* Anjakan ke kanan */
 }
 
 .nested-menu-item {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto 1fr 1fr auto; /* icon, label, url, actions */
     align-items: center;
     gap: 0.75rem;
     padding: 0.5rem;
@@ -2439,11 +2453,9 @@ fieldset.fieldset-disabled {
 
 .nested-item-icon {
     color: var(--secondary-color);
-    flex-shrink: 0;
 }
 
 .nested-item-label {
-    flex-grow: 1;
     font-size: 0.9em;
     font-weight: 500;
     white-space: nowrap;
@@ -2451,15 +2463,28 @@ fieldset.fieldset-disabled {
     text-overflow: ellipsis;
 }
 
+.nested-item-url {
+    background-color: transparent;
+    border: 1px solid transparent;
+    font: inherit;
+    color: var(--secondary-color);
+    font-size: 0.9em;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin: 0;
+    padding: 0;
+    pointer-events: none;
+}
+
 .nested-item-actions {
     display: flex;
     gap: 0.25rem;
-    flex-shrink: 0;
 }
 
 .nested-item-actions .btn-sidebar-icon {
     width: 28px;
     height: 28px;
     font-size: 0.8em;
-}
 }

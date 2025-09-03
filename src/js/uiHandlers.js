@@ -1068,12 +1068,21 @@ export function initializeLookupFieldSaveHandler() {
         const parentTableName = parentTableSelect.value;
         const [childTableName, fk_child_field] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
         
-        // Hantar tugasan "upsert" ke queue
-        SaveManager.addToQueue('upsertRelationship', null, {
-            parentTableName,
-            childTableName,
-            fk_child_field
-        });
+        // Jika jadual induk dipilih, lakukan 'upsert'.
+        // Jika pilihan dikosongkan, ia bermaksud memadam hubungan.
+        if (parentTableName) {
+            SaveManager.addToQueue('upsertRelationship', null, {
+                parentTableName,
+                childTableName,
+                fk_child_field
+            });
+        } else {
+            // Hantar tugasan untuk memadam hubungan.
+            SaveManager.addToQueue('deleteRelationship', null, {
+                childTableName,
+                fk_child_field
+            });
+        }
     });
 }
 
@@ -1208,6 +1217,12 @@ export function initializeTableSaveHandlers() {
         }
         const value = (input.type === 'checkbox') ? (input.checked ? 1 : 0) : input.value;
         const dataToSave = { [key]: value };
+
+        // Untuk perubahan selain nama jadual, backend memerlukan nama jadual semasa
+        // untuk konteks. Ralat "Missing named parameter 'table_name'" menunjukkan perkara ini.
+        if (key !== 'table_name') {
+            dataToSave.table_name = tableName;
+        }
 
         SaveManager.addToQueue('tables', tableId, dataToSave);
     };
@@ -2610,6 +2625,7 @@ export function populateMenuManagement(unifiedMenu) {
                  data-type="${itemType}">
                 <i class="fas ${icon} nested-item-icon"></i>
                 <span class="nested-item-label" title="${item.item_label}">${item.item_label}</span>
+                <span class="nested-item-url" title="URL: ${item.item_url || 'N/A'}">${item.item_url || '(Not a link)'}</span>
                 <div class="nested-item-actions">
                     <button class="btn-sidebar-icon nested-menu-move-up-btn" title="Move Up"><i class="fas fa-arrow-up"></i></button>
                     <button class="btn-sidebar-icon nested-menu-move-down-btn" title="Move Down"><i class="fas fa-arrow-down"></i></button>
@@ -2621,14 +2637,16 @@ export function populateMenuManagement(unifiedMenu) {
         // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
 
         groupEl.innerHTML = `
-            <i class="fas fa-grip-vertical drag-handle"></i>
-            <input type="text" class="group-name-input" value="${group.name}">
-            <div class="menu-selector">${itemsHtml}</div>
-            <div class="group-actions">
-                <button class="btn-sidebar-icon menu-move-up-btn" title="Move Up"><i class="fas fa-arrow-up"></i></button>
-                <button class="btn-sidebar-icon menu-move-down-btn" title="Move Down"><i class="fas fa-arrow-down"></i></button>
-                <button class="btn-sidebar-icon group-delete-btn" title="Delete group"><i class="fas fa-trash-alt"></i></button>
-            </div>`;
+            <div class="menu-group-header">
+                <i class="fas fa-grip-vertical drag-handle"></i>
+                <input type="text" class="group-name-input" value="${group.name}">
+                <div class="group-actions">
+                    <button class="btn-sidebar-icon menu-move-up-btn" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+                    <button class="btn-sidebar-icon menu-move-down-btn" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+                    <button class="btn-sidebar-icon group-delete-btn" title="Delete group"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            </div>
+            <div class="menu-selector">${itemsHtml}</div>`;
         return groupEl;
     };
 
