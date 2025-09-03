@@ -50,7 +50,7 @@ import { initializeWorkflowBuilder } from './workflowBuilder.js';
 
 export const SaveManager = {
     saveQueue: {
-        project: {}, tables: {}, fields: {}, relationships: {}, upserts: []
+        project: {}, tables: {}, fields: {}, relationships: {}, upserts: [], relationshipDeletes: []
     },
     debounceTimer: null,
     isProcessing: false,
@@ -58,6 +58,8 @@ export const SaveManager = {
     addToQueue(type, id, data) {
         if (type === 'upsertRelationship') {
             this.saveQueue.upserts.push(data);
+        } else if (type === 'deleteRelationship') {
+            this.saveQueue.relationshipDeletes.push(data);
         } else if (type === 'project') {
             this.saveQueue.project = { ...this.saveQueue.project, ...data };
         } else {
@@ -165,7 +167,7 @@ export const SaveManager = {
     },
 
     clearQueue() {
-        this.saveQueue = { project: {}, tables: {}, fields: {}, relationships: {}, upserts: [] };
+        this.saveQueue = { project: {}, tables: {}, fields: {}, relationships: {}, upserts: [], relationshipDeletes: [] };
     },
 
     isQueueEmpty() {
@@ -174,7 +176,7 @@ export const SaveManager = {
             Object.keys(this.saveQueue.tables).length === 0 &&
             Object.keys(this.saveQueue.fields).length === 0 &&
             Object.keys(this.saveQueue.relationships).length === 0 &&
-            this.saveQueue.upserts.length === 0
+            this.saveQueue.relationshipDeletes.length === 0
         );
     }
 };

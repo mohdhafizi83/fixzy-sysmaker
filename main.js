@@ -59,11 +59,17 @@ ipcMain.handle('database:batch-update', async (event, queue) => {
             }
         }
 
-        // Kemas kini Jadual
+        // Kemas kini Jadual (DIPERBAIKI)
         if (queue.tables && Object.keys(queue.tables).length > 0) {
-            const stmt = db.prepare('UPDATE tables SET table_name = :table_name WHERE table_id = :table_id');
             for (const id in queue.tables) {
-                stmt.run({ table_id: id, ...queue.tables[id] });
+                const { ...fieldsToUpdate } = queue.tables[id];
+                // Buang 'table_name' jika ia dihantar untuk tujuan konteks sahaja
+                if (Object.keys(fieldsToUpdate).length > 1 && fieldsToUpdate.table_name === db.prepare('SELECT table_name FROM tables WHERE table_id = ?').get(id).table_name) {
+                    delete fieldsToUpdate.table_name;
+                }
+                const setClause = Object.keys(fieldsToUpdate).map(key => `${key} = ?`).join(', ');
+                const values = Object.values(fieldsToUpdate);
+                if (setClause) db.prepare(`UPDATE tables SET ${setClause} WHERE table_id = ?`).run(...values, id);
             }
         }
 
@@ -104,6 +110,19 @@ ipcMain.handle('database:batch-update', async (event, queue) => {
                 } else {
                     insertStmt.run(rel.parentTableName, rel.childTableName, rel.fk_child_field, rel.parentTableName);
                 }
+            }
+        }
+
+        // Padam Hubungan
+        if (queue.relationshipDeletes && queue.relationshipDeletes.length > 0) {
+            const deleteStmt = db.prepare(`
+                DELETE FROM parent_child_relationships 
+                WHERE fk_child_field = :fk_child_field 
+                  AND child_table_id = (SELECT table_id FROM tables WHERE table_name = :childTableName)
+            `);
+            for (const rel of queue.relationshipDeletes) {
+                // 'rel' akan mempunyai { childTableName, fk_child_field }
+                deleteStmt.run(rel);
             }
         }
     });
@@ -262,7 +281,84 @@ ipcMain.handle('sql:parse-calculation-query', (event, sql) => {
     }
 });
 
+// main.js
 
+async function getFullProjectSchema(projectId) {
+  try {
+    const project = db.prepare("SELECT * FROM projects WHERE project_id = ?").get(projectId);
+    if (!project) throw new Error(`Projek dengan ID ${projectId} tidak ditemui.`);
+
+    const tables = db.prepare("SELECT * FROM tables WHERE project_id = ? ORDER BY table_order, table_id").all(projectId);
+    const tableIds = tables.map((t) => t.table_id);
+
+    let fields = [];
+    if (tableIds.length > 0) {
+        const placeholder = tableIds.map(() => "?").join(",");
+        fields = db.prepare(`SELECT * FROM fields WHERE table_id IN (${placeholder}) ORDER BY field_order, field_id`).all(...tableIds);
+    }
+    
+    const structuredTables = {};
+    tables.forEach((table) => {
+      structuredTables[table.table_name] = { ...table, fields: {} };
+    });
+    fields.forEach((field) => {
+      const parentTable = tables.find((t) => t.table_id === field.table_id);
+      if (parentTable) {
+        structuredTables[parentTable.table_name].fields[field.field_name] = field;
+      }
+    });
+
+    let relationships = [];
+    if (tableIds.length > 0) {
+      const placeholder = tableIds.map(() => "?").join(",");
+      relationships = db.prepare(
+          `SELECT r.*, p.table_name as parent_table_name, c.table_name as child_table_name
+           FROM parent_child_relationships r
+           JOIN tables p ON r.parent_table_id = p.table_id
+           JOIN tables c ON r.child_table_id = c.table_id
+           WHERE r.parent_table_id IN (${placeholder}) OR r.child_table_id IN (${placeholder})`
+        ).all(...tableIds, ...tableIds);
+    }
+
+    const groups = db.prepare("SELECT * FROM menu_groups WHERE project_id = ? ORDER BY group_order, group_name").all(projectId);
+    const groupedItems = db.prepare(`
+        SELECT mi.*, t.table_name 
+        FROM menu_items mi
+        JOIN tables t ON mi.table_id = t.table_id
+        WHERE mi.project_id = ? AND mi.menu_group_id IS NOT NULL
+        ORDER BY mi.item_order
+    `).all(projectId);
+    
+    const individualItems = db.prepare(`
+        SELECT mi.*, t.table_name
+        FROM menu_items mi
+        LEFT JOIN tables t ON mi.table_id = t.table_id
+        WHERE mi.project_id = ? AND mi.menu_group_id IS NULL
+        ORDER BY mi.item_order
+    `).all(projectId);
+
+    const structuredMenuGroups = groups.map(group => {
+        return {
+            ...group,
+            items: groupedItems.filter(item => item.menu_group_id === group.menu_group_id)
+        };
+    });
+
+    return {
+      project: project,
+      database: {
+        name: project.app_title,
+        table: structuredTables,
+        relationships: relationships,
+        menu_groups: structuredMenuGroups,
+        individual_menus: individualItems
+      },
+    };
+  } catch (error) {
+    console.error("Gagal mengambil skema penuh (fungsi bantuan):", error);
+    return null;
+  }
+}
 
 ipcMain.handle('table:update-order', async (event, orderData) => {
     try {
@@ -823,13 +919,43 @@ function importSchema(sql, projectId) {
         for (const fk of foreignKeysToProcess) {
             const childTableId = tableMap[fk.childTableName];
             const parentTableId = tableMap[fk.parentTableName];
+
             if (childTableId && parentTableId) {
+                // 1. Cipta hubungan parent-child dalam pangkalan data
                 db.prepare(
                     `INSERT INTO parent_child_relationships 
                      (parent_table_id, child_table_id, fk_child_field, parent_field, tab_title) 
                      VALUES (?, ?, ?, ?, ?)`
                 ).run(parentTableId, childTableId, fk.fkChildField, fk.parentField, fk.tabTitle);
                 relationshipsCreated++;
+
+                // 2. Logik baharu: Cari medan kapsyen secara automatik
+                let captionField = '';
+                const parentFields = db.prepare('SELECT field_name, primary_key, data_type FROM fields WHERE table_id = ? ORDER BY field_order').all(parentTableId);
+                
+                // Keutamaan 1: Cari medan bukan numerik yang pertama.
+                const nonNumericTypes = ['VARCHAR', 'CHAR', 'TEXT', 'MEDIUMTEXT', 'LONGTEXT', 'DATE', 'DATETIME', 'TIMESTAMP'];
+                const nonNumericField = parentFields.find(f => nonNumericTypes.includes(f.data_type.toUpperCase()));
+
+                if (nonNumericField) {
+                    captionField = nonNumericField.field_name;
+                }
+                // Keutamaan 2: Jika gagal, cari medan pertama selepas primary key.
+                else {
+                    const pkIndex = parentFields.findIndex(f => f.primary_key === 1);
+                    if (pkIndex > -1 && pkIndex + 1 < parentFields.length) {
+                        captionField = parentFields[pkIndex + 1].field_name;
+                    }
+                }
+
+                // 3. Jika medan kapsyen ditemui, kemas kini medan foreign key
+                if (captionField) {
+                    db.prepare(
+                        `UPDATE fields 
+                         SET lookup_parent_table = ?, lookup_caption_1 = ? 
+                         WHERE table_id = ? AND field_name = ?`
+                    ).run(fk.parentTableName, captionField, childTableId, fk.fkChildField);
+                }
             }
         }
     });
