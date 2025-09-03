@@ -889,19 +889,7 @@ export function openModalLogicBuilder(config) {
 }
 
 
-/**
- * Binds a trigger button to open the Logic Builder modal.
- * This is for the original use case where a button on the page opens the builder.
- * @param {object} config - Same configuration as openModalLogicBuilder, plus triggerButtonId.
- */
-function initializeModalLogicBuilderBinder(config) {
-    const openBtn = document.getElementById(config.triggerButtonId);
-    if (!openBtn) {
-        // This is not a critical error, as the button might not exist on all pages.
-        return;
-    }
-    openBtn.addEventListener('click', () => openModalLogicBuilder(config));
-}
+
 
 export function showNewProjectModal() {
     configureNewProjectModal('user-initiated'); // <-- TAMBAH BARIS INI
@@ -1387,56 +1375,11 @@ const setRadioValue = (name, value) => {
     if (element) element.checked = true;
 };
 
-// Pembolehubah untuk menjejaki kumpulan mana yang sedang diubah suai
-let currentTargetMenuSelector = null;
 
-/**
- * Mendapatkan senarai nama menu (jadual) yang telah digunakan dalam semua kumpulan.
- * @returns {string[]} Senarai nama menu yang telah digunakan.
- */
-function getUsedMenuNames() {
-    const usedTags = document.querySelectorAll('.menu-group-item .tag');
-    // Ambil teks dari setiap tag dan buang butang 'x'
-    return [...usedTags].map(tag => tag.childNodes[0].textContent.trim());
-}
 
-// uiHandlers.js
 
-/**
- * Mencipta elemen HTML untuk satu baris item menu custom.
- * @param {object} item - Objek data untuk item menu.
- * @returns {HTMLElement} Elemen div yang mewakili baris tersebut.
- */
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
 
-function createCustomMenuItem(item) {
-    const itemEl = document.createElement('div');
-    itemEl.className = 'custom-menu-item';
-    itemEl.setAttribute('draggable', 'true'); // <-- TAMBAH BARIS INI
-    // Simpan data pada elemen untuk rujukan mudah
-    itemEl.dataset.label = item.item_label || '';
-    itemEl.dataset.url = item.item_url || '';
-    itemEl.dataset.itemId = item.item_id || '';
 
-    itemEl.innerHTML = `
-        <i class="fas fa-grip-vertical drag-handle" style="cursor: ns-resize;"></i>
-        <div class="form-group">
-            <label style="font-size: 0.8em;">Menu Label</label>
-            <input type="text" readonly value="${item.item_label || ''}" placeholder="Not set">
-        </div>
-        <div class="form-group">
-            <label style="font-size: 0.8em;">URL</label>
-            <input type="text" readonly value="${item.item_url || ''}" placeholder="Not set">
-        </div>
-        <button class="btn-sidebar-icon custom-menu-edit-btn" title="Edit custom menu">
-            <i class="fas fa-pencil-alt"></i>
-        </button>
-        <button class="btn-sidebar-icon custom-menu-delete-btn" title="Delete custom menu">
-            <i class="fas fa-trash-alt"></i>
-        </button>
-    `;
-    return itemEl;
-}
 
 // =================================================================
 // ▼▼▼ FUNGSI UNTUK MENGISI MODAL TETAPAN ▼▼▼
