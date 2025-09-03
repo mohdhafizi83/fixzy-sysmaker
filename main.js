@@ -242,6 +242,17 @@ ipcMain.handle('menu:create-group', async (event, { projectId, groupName }) => {
         return { success: false, message: "Project ID is required." };
     }
     try {
+        // ▼▼▼ MULA PERUBAHAN: Pastikan nama kumpulan unik dan tidak null ▼▼▼
+        const baseName = groupName || 'New Group';
+        let finalName = baseName;
+        let counter = 1;
+        const checkNameStmt = db.prepare('SELECT 1 FROM menu_groups WHERE project_id = ? AND group_name = ?');
+        while (checkNameStmt.get(projectId, finalName)) {
+            counter++;
+            finalName = `${baseName} ${counter}`;
+        }
+        // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+
         const maxOrderResult = db.prepare(
             'SELECT MAX(COALESCE(group_order, 0)) as max_order FROM menu_groups WHERE project_id = ?'
         ).get(projectId);
@@ -250,7 +261,7 @@ ipcMain.handle('menu:create-group', async (event, { projectId, groupName }) => {
 
         const info = db.prepare(
             'INSERT INTO menu_groups (project_id, group_name, group_order) VALUES (?, ?, ?)'
-        ).run(projectId, groupName, nextOrder);
+        ).run(projectId, finalName, nextOrder); // Guna 'finalName' yang unik
         
         const newGroup = db.prepare('SELECT * FROM menu_groups WHERE menu_group_id = ?').get(info.lastInsertRowid);
         

@@ -176,6 +176,7 @@ export const SaveManager = {
             Object.keys(this.saveQueue.tables).length === 0 &&
             Object.keys(this.saveQueue.fields).length === 0 &&
             Object.keys(this.saveQueue.relationships).length === 0 &&
+            this.saveQueue.upserts.length === 0 &&
             this.saveQueue.relationshipDeletes.length === 0
         );
     }
