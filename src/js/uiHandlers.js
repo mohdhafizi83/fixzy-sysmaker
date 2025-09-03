@@ -1390,10 +1390,285 @@ const setRadioValue = (name, value) => {
     if (element) element.checked = true;
 };
 
+    itemEl.innerHTML = `
+        <i class="fas fa-grip-vertical drag-handle" style="cursor: ns-resize;"></i>
+        <div class="form-group">
+            <label style="font-size: 0.8em;">Menu Label</label>
+            <input type="text" readonly value="${item.item_label || ''}" placeholder="Not set">
+        </div>
+        <div class="form-group">
+            <label style="font-size: 0.8em;">URL</label>
+            <input type="text" readonly value="${item.item_url || ''}" placeholder="Not set">
+        </div>
+        <button class="btn-sidebar-icon custom-menu-edit-btn" title="Edit custom menu">
+            <i class="fas fa-pencil-alt"></i>
+        </button>
+        <button class="btn-sidebar-icon custom-menu-delete-btn" title="Delete custom menu">
+            <i class="fas fa-trash-alt"></i>
+        </button>
+    `;
+    return itemEl;
+}
 
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: src/uiHandlers.js
 
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: src/uiHandlers.js
 
+export function initializeMenuManagementHandlers() {
+    const menuManagementTab = document.getElementById('tab-menu-appearance');
+    if (!menuManagementTab) return;
 
+    const addGroupBtn = document.getElementById('app-add_menu_group');
+    const addCustomMenuBtn = document.getElementById('app-add_custom_menu');
+    const menuGroupList = document.querySelector('.menu-group-list');
+    const customMenuList = document.getElementById('custom-menu-list');
+    const addMenuModal = document.getElementById('add-menu-modal');
+    const availableMenusList = document.getElementById('available-menus-list');
+    const groupModalCloseBtn = addMenuModal?.querySelector('.modal-close');
+
+    if (!addGroupBtn || !addCustomMenuBtn || !menuGroupList || !customMenuList || !addMenuModal) return;
+
+    let currentTargetMenuSelector = null;
+
+    // --- FUNGSI-FUNGSI BANTUAN (TIADA PERUBAHAN) ---
+    const gatherMenuData = () => {
+        const groupElements = menuGroupList.querySelectorAll('.menu-group-item');
+        const groups = Array.from(groupElements).map((groupEl, groupIndex) => {
+            const groupName = groupEl.querySelector('.group-name-input').value;
+            const itemElements = groupEl.querySelectorAll('.menu-selector .tag');
+            const items = Array.from(itemElements).map((itemEl, itemIndex) => ({
+                table_name: itemEl.childNodes[0].textContent.trim(), item_order: itemIndex
+            }));
+            return { group_name: groupName, items, group_order: groupIndex };
+        });
+        let individualOrder = 0;
+        const individualTableMenus = Array.from(menuManagementTab.querySelectorAll('#individual-table-menus input[type="checkbox"]:checked'))
+            .map(checkbox => ({
+                table_name: checkbox.dataset.tableName, order: individualOrder++
+            }));
+        return { groups: groups, individual_items: individualTableMenus };
+    };
+
+    const triggerSave = () => {
+        const menuData = gatherMenuData();
+        SaveManager.addToQueue('menus', null, menuData);
+    };
+    
+    const openCustomMenuModal = (itemEl = null) => {
+        const modal = document.getElementById('custom-menu-modal');
+        // ... (Fungsi ini dikekalkan sepenuhnya tanpa perubahan)
+        if (!modal) return;
+        const title = modal.querySelector('#custom-menu-modal-title');
+        const labelInput = modal.querySelector('#custom-menu-label-input');
+        const urlInput = modal.querySelector('#custom-menu-url-input');
+        const tableSelect = modal.querySelector('#custom-menu-url-table-select');
+        const itemIdInput = modal.querySelector('#custom-menu-item-id');
+        const okBtn = modal.querySelector('#custom-menu-modal-ok');
+        const cancelBtn = modal.querySelector('#custom-menu-modal-cancel');
+        const closeBtn = modal.querySelector('#custom-menu-modal-close');
+        const newOkBtn = okBtn.cloneNode(true);
+        okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+        const closeModal = () => modal.classList.add('hidden');
+        cancelBtn.addEventListener('click', closeModal, { once: true });
+        closeBtn.addEventListener('click', closeModal, { once: true });
+        tableSelect.innerHTML = '<option value="">-- Choose a Table --</option>';
+        allTableNames.forEach(name => {
+            tableSelect.innerHTML += `<option value="${name}">${name}</option>`;
+        });
+        if (itemEl) {
+            title.textContent = 'Edit Custom Menu';
+            labelInput.value = itemEl.dataset.label;
+            urlInput.value = itemEl.dataset.url;
+            itemIdInput.value = itemEl.dataset.itemId;
+        } else {
+            title.textContent = 'Add Custom Menu';
+            labelInput.value = '';
+            urlInput.value = '';
+            itemIdInput.value = '';
+        }
+        newOkBtn.addEventListener('click', async () => {
+            const dataToSave = {
+                project_id: activeProject.project_id,
+                item_id: itemIdInput.value || null,
+                label: labelInput.value,
+                url: urlInput.value
+            };
+            const result = await window.electronAPI.saveCustomMenuItem(dataToSave);
+            if (result.success) {
+                closeModal();
+                const tablePage = document.getElementById('table-settings-page');
+                const tableName = tablePage.classList.contains('hidden') ? null : tablePage.querySelector('.table-name')?.textContent;
+                await loadProjectData(activeProject, tableName);
+            } else {
+                showCustomDialog({ title: "Error", message: `Failed to save custom menu: ${result.message}` });
+            }
+        }, { once: true });
+        modal.classList.remove('hidden');
+        labelInput.focus();
+    };
+
+    // --- PENGENDALI ACARA (EVENT HANDLERS) LAIN (TIADA PERUBAHAN) ---
+    addCustomMenuBtn.addEventListener('click', () => openCustomMenuModal());
+    document.getElementById('custom-menu-url-table-select').addEventListener('change', (e) => {
+        const urlInput = document.getElementById('custom-menu-url-input');
+        if (e.target.value) urlInput.value = `${e.target.value}_view.php?SelectedID=`;
+    });
+    if (groupModalCloseBtn) groupModalCloseBtn.addEventListener('click', () => addMenuModal.classList.add('hidden'));
+    if (availableMenusList) {
+        availableMenusList.addEventListener('click', (e) => {
+            if (e.target.tagName === 'LI') {
+                const menuName = e.target.dataset.menuName;
+                if (menuName && currentTargetMenuSelector) {
+                    const newTag = document.createElement('span');
+                    newTag.className = 'tag';
+                    newTag.setAttribute('draggable', 'true');
+                    newTag.innerHTML = `${menuName} <button class="remove-tag">&times;</button>`;
+                    const addBtn = currentTargetMenuSelector.querySelector('.add-menu-btn');
+                    currentTargetMenuSelector.insertBefore(newTag, addBtn);
+                    addMenuModal.classList.add('hidden');
+                    currentTargetMenuSelector = null;
+                    triggerSave();
+                }
+            }
+        });
+    }
+    menuManagementTab.addEventListener('change', (e) => { if (e.target.matches('#individual-table-menus input[type="checkbox"]')) triggerSave(); });
+    menuManagementTab.addEventListener('input', (e) => { if (e.target.matches('.group-name-input')) triggerSave(); });
+    
+    // PENGENDALI KLIK UTAMA (TERMASUK FUNGSI PADAM YANG STABIL - TIDAK DIUBAH)
+    menuManagementTab.addEventListener('click', (e) => {
+        const target = e.target;
+        const customItem = target.closest('.custom-menu-item');
+        const groupItem = target.closest('.menu-group-item');
+
+        if (target.closest('.custom-menu-delete-btn') && customItem) {
+            showCustomDialog({
+                title: "Confirm Deletion", message: "Are you sure you want to delete this custom menu?", showCancelButton: true,
+                onOk: async () => {
+                    await window.electronAPI.saveCustomMenuItem({ item_id: customItem.dataset.itemId, project_id: activeProject.project_id, label: 'DELETE', url: 'DELETE' });
+                    const tablePage = document.getElementById('table-settings-page');
+                    const tableName = tablePage.classList.contains('hidden') ? null : tablePage.querySelector('.table-name')?.textContent;
+                    await loadProjectData(activeProject, tableName);
+                }
+            });
+        } else if (target.closest('.custom-menu-edit-btn') && customItem) {
+            openCustomMenuModal(customItem);
+        } else if (target.classList.contains('add-menu-btn') && groupItem) {
+            const usedNames = new Set([...menuGroupList.querySelectorAll('.tag')].map(tag => tag.childNodes[0].textContent.trim()));
+            const availableTables = allTableNames.filter(name => !usedNames.has(name));
+            availableMenusList.innerHTML = availableTables.map(name => `<li data-menu-name="${name}">${name}</li>`).join('');
+            currentTargetMenuSelector = target.closest('.menu-selector');
+            addMenuModal.classList.remove('hidden');
+        } else if (target.classList.contains('remove-tag') && groupItem) {
+            target.closest('.tag')?.remove();
+            triggerSave();
+        } else if (target.closest('.group-actions button') && groupItem) {
+            showCustomDialog({
+                title: "Confirm Deletion", message: "Are you sure you want to delete this menu group?", showCancelButton: true,
+                onOk: () => { groupItem.remove(); triggerSave(); }
+            });
+        }
+    });
+
+    addGroupBtn.addEventListener('click', () => {
+        if (menuGroupList.querySelector('.empty-state-label')) menuGroupList.innerHTML = '';
+        const newGroup = document.createElement('div');
+        newGroup.className = 'menu-group-item';
+        newGroup.setAttribute('draggable', 'true');
+        newGroup.innerHTML = `<i class="fas fa-grip-vertical drag-handle"></i><input type="text" class="group-name-input" value="New Group"><div class="menu-selector"><button class="add-menu-btn" title="Add menu to this group">+</button></div><div class="group-actions"><button class="btn-sidebar-icon" title="Delete group"><i class="fas fa-trash-alt"></i></button></div>`;
+        menuGroupList.appendChild(newGroup);
+        setAwaitingMenuGroupSave(true);
+        triggerSave();
+    });
+
+    // ▼▼▼ SISTEM DRAG & DROP BERSEPADU YANG DIPERBAIKI ▼▼▼
+    let draggedItem = null;
+
+    const getDragAfterElement = (container, coordinate, selector, isVertical) => {
+        const draggableElements = [...container.querySelectorAll(`${selector}:not(.dragging)`)];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = (isVertical ? coordinate - box.top : coordinate - box.left) - (isVertical ? box.height : box.width) / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            }
+            return closest;
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    };
+
+    menuManagementTab.addEventListener('dragstart', (e) => {
+        if (e.target.matches('.menu-group-item, .custom-menu-item, .tag')) {
+            draggedItem = e.target;
+            setTimeout(() => { if (draggedItem) draggedItem.classList.add('dragging'); }, 0);
+        }
+    });
+
+    menuManagementTab.addEventListener('dragend', async () => {
+        if (!draggedItem) return;
+        draggedItem.classList.remove('dragging');
+        
+        if (draggedItem.matches('.menu-group-item, .tag')) {
+            triggerSave();
+        } else if (draggedItem.matches('.custom-menu-item')) {
+            const orderedItems = Array.from(customMenuList.querySelectorAll('.custom-menu-item'))
+                .map((item, index) => ({ item_id: item.dataset.itemId, order: index }));
+            await window.electronAPI.updateIndividualMenuOrder(orderedItems);
+        }
+        draggedItem = null;
+    });
+
+    // ▼▼▼ PEMBETULAN UTAMA PADA 'dragover' DAN 'drop' ▼▼▼
+    menuManagementTab.addEventListener('dragover', (e) => {
+        if (!draggedItem) return;
+
+        let isValidDropTarget = false;
+        
+        // Tentukan sama ada target adalah zon jatuhan yang sah
+        if (draggedItem.matches('.menu-group-item') && e.target.closest('.menu-group-list')) {
+            isValidDropTarget = true;
+        } else if (draggedItem.matches('.custom-menu-item') && e.target.closest('#custom-menu-list')) {
+            isValidDropTarget = true;
+        } else if (draggedItem.matches('.tag') && e.target.closest('.menu-selector')) {
+            isValidDropTarget = true;
+        }
+
+        if (isValidDropTarget) {
+            e.preventDefault(); // Benarkan 'drop' hanya pada target yang sah
+        }
+    });
+
+    menuManagementTab.addEventListener('drop', (e) => {
+        if (!draggedItem) return;
+        e.preventDefault();
+
+        let dropZone, isVertical, selector, coordinate, referenceElement;
+
+        // Tentukan parameter untuk memasukkan item berdasarkan jenis dan zon jatuhan
+        if (draggedItem.matches('.menu-group-item') && e.target.closest('.menu-group-list')) {
+            dropZone = e.target.closest('.menu-group-list');
+            selector = '.menu-group-item';
+            isVertical = true;
+            coordinate = e.clientY;
+        } else if (draggedItem.matches('.custom-menu-item') && e.target.closest('#custom-menu-list')) {
+            dropZone = e.target.closest('#custom-menu-list');
+            selector = '.custom-menu-item';
+            isVertical = true;
+            coordinate = e.clientY;
+        } else if (draggedItem.matches('.tag') && e.target.closest('.menu-selector')) {
+            dropZone = e.target.closest('.menu-selector');
+            selector = '.tag';
+            isVertical = false;
+            coordinate = e.clientX;
+            referenceElement = dropZone.querySelector('.add-menu-btn');
+        }
+
+        if (dropZone) {
+            const afterElement = getDragAfterElement(dropZone, coordinate, selector, isVertical);
+            dropZone.insertBefore(draggedItem, afterElement || referenceElement);
+        }
+    });
+    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
+}
 
 
 // =================================================================
