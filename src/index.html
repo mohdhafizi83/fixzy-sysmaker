@@ -647,58 +647,24 @@
                 <div id="tab-menu-appearance" class="tab-pane">
                     <div class="card">
                         <div class="card-body">
-<div class="form-group individual-menu-manager">
-                                <div class="menu-group-header">
-                                    <label>Individual Menus</label>
-                                    <button class="btn btn-secondary" id="app-add_custom_menu">
-                                        <i class="fas fa-plus"></i> Add Custom Menu
-                                    </button>
-                                </div>
-                                <p class="helper-text" style="margin-bottom: 1rem; font-size: 0.9em; color: var(--secondary-color);">
-                                    Menus listed here will appear individually. Check any unassigned table below to add it to the menu, or create a fully custom link.
-                                </p>
-                                <div id="individual-table-menus" class="checkbox-grid">
-                                    </div>
-                                <div id="custom-menu-list">
-                                    </div>
-                            </div>
-                            <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
-                            <div class="form-group menu-group-manager">
-                                <div class="menu-group-header">
-                                    <label>Menu Groups</label>
-                                    <button class="btn btn-secondary" id="app-add_menu_group" name="app-add_menu_group">
-                                        <i class="fas fa-plus"></i> Add Menu Group
-                                    </button>
-                                </div>
-                                <div class="menu-group-list">
-                                    <div class="menu-group-item">
-                                        <input type="text" class="group-name-input" id="app-group_name_1" name="app-group_name_1" value="Penginapan">
-                                        <div class="menu-selector">
-                                            <span class="tag">bilik <button class="remove-tag" id="app-remove_tag_1" name="app-remove_tag_1">&times;</button></span>
-                                            <span class="tag">jenis_bilik <button class="remove-tag" id="app-remove_tag_2" name="app-remove_tag_2">&times;</button></span>
-                                            <button class="add-menu-btn" title="Add menu to this group" id="app-add_menu_1" name="app-add_menu_1">+</button>
-                                        </div>
-                                        <div class="group-actions">
-                                            <button class="btn-sidebar-icon" title="Delete group" id="app-delete_group_1" name="app-delete_group_1">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="menu-group-item">
-                                        <input type="text" class="group-name-input" id="app-group_name_2" name="app-group_name_2" value="Pelajar">
-                                        <div class="menu-selector">
-                                            <span class="tag">pendaftaran_kursus <button class="remove-tag" id="app-remove_tag_3" name="app-remove_tag_3">&times;</button></span>
-                                            <span class="tag">pelajar <button class="remove-tag" id="app-remove_tag_4" name="app-remove_tag_4">&times;</button></span>
-                                            <button class="add-menu-btn" title="Add menu to this group" id="app-add_menu_2" name="app-add_menu_2">+</button>
-                                        </div>
-                                        <div class="group-actions">
-                                            <button class="btn-sidebar-icon" title="Delete group" id="app-delete_group_2" name="app-delete_group_2">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+<div class="form-group unified-menu-manager">
+    <div class="menu-group-header">
+        <label>Menu Structure</label>
+        <div class="action-group" style="gap: 0.5rem;">
+            <button class="btn btn-secondary" id="app-add_custom_menu">
+                <i class="fas fa-plus"></i> Add Menu Item
+            </button>
+            <button class="btn btn-secondary" id="app-add_menu_group" name="app-add_menu_group">
+                <i class="fas fa-plus"></i> Add Menu Group
+            </button>
+        </div>
+    </div>
+    <p class="helper-text" style="margin-bottom: 1rem; font-size: 0.9em; color: var(--secondary-color);">
+        Drag and drop to reorder any menu item or group. Items inside a group can also be reordered.
+    </p>
+    <div id="unified-menu-list" class="menu-group-list">
+        </div>
+</div>
                             <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
                             <div class="form-group">
                                 <label for="app-tables-per-row">Default navigation menu orientation</label>

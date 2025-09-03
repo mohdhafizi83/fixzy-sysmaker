@@ -46,23 +46,18 @@ initializeQueryBuilder,
 } from './uiHandlers.js';
 import { initializeWorkflowBuilder } from './workflowBuilder.js';
 
-// KOD PENUH: Gantikan keseluruhan objek SaveManager sedia ada dengan yang ini.
 // FIND AND REPLACE THIS ENTIRE OBJECT IN: js.main.js
 
 export const SaveManager = {
-    // 1. Tambah 'upserts: []' pada barisan simpanan
     saveQueue: {
-        project: {}, tables: {}, fields: {}, relationships: {}, menus: null, upserts: []
+        project: {}, tables: {}, fields: {}, relationships: {}, upserts: []
     },
     debounceTimer: null,
     isProcessing: false,
 
-    // 2. Kemas kini addToQueue untuk mengendalikan jenis 'upsertRelationship'
     addToQueue(type, id, data) {
         if (type === 'upsertRelationship') {
             this.saveQueue.upserts.push(data);
-        } else if (type === 'menus') {
-            this.saveQueue.menus = data;
         } else if (type === 'project') {
             this.saveQueue.project = { ...this.saveQueue.project, ...data };
         } else {
@@ -72,7 +67,6 @@ export const SaveManager = {
         clearTimeout(this.debounceTimer);
         this.debounceTimer = setTimeout(() => this.processQueue(), 2500);
     },
-
 
     async processQueue() {
         if (this.isProcessing || this.isQueueEmpty()) {
@@ -86,6 +80,7 @@ export const SaveManager = {
 
         try {
             const activeElementId = document.activeElement ? document.activeElement.id : null;
+            // Panggil fungsi batchUpdate yang telah kita cipta semula
             const result = await window.electronAPI.batchUpdate(this.saveQueue);
 
             if (result.success) {
@@ -148,44 +143,37 @@ export const SaveManager = {
         } finally {
             this.isProcessing = false;
             
-            // Semak jika flag khas untuk penambahan kumpulan menu aktif.
             if (isAwaitingMenuGroupSave) {
                 const overlay = document.getElementById('loading-overlay');
                 if (overlay) {
                     overlay.classList.add('loading-overlay-hidden');
                 }
-                // Tetapkan semula flag selepas digunakan.
                 setAwaitingMenuGroupSave(false);
             }
 
             setLastActiveChildTable(null); 
             setTimeout(() => {
-                // Hanya kosongkan status jika ia bukan mesej 'Saving...' dari proses seterusnya.
                 if (saveStatus.textContent === 'All changes saved ✔' || saveStatus.textContent === 'Save failed!') {
                     saveStatus.textContent = '';
                 }
             }, 3000);
 
-            // Jika ada item baharu dalam queue, prosesnya selepas jeda singkat.
             if (!this.isQueueEmpty()) {
                 setTimeout(() => this.processQueue(), 50);
             }
         }
     },
 
-    // 3. Kemas kini clearQueue untuk reset 'upserts'
     clearQueue() {
-        this.saveQueue = { project: {}, tables: {}, fields: {}, relationships: {}, menus: null, upserts: [] };
+        this.saveQueue = { project: {}, tables: {}, fields: {}, relationships: {}, upserts: [] };
     },
 
-    // 4. Kemas kini isQueueEmpty untuk memeriksa 'upserts'
     isQueueEmpty() {
         return (
             Object.keys(this.saveQueue.project).length === 0 &&
             Object.keys(this.saveQueue.tables).length === 0 &&
             Object.keys(this.saveQueue.fields).length === 0 &&
             Object.keys(this.saveQueue.relationships).length === 0 &&
-            !this.saveQueue.menus &&
             this.saveQueue.upserts.length === 0
         );
     }
@@ -247,7 +235,7 @@ export async function loadProjectData(project, tableToSelect = null, itemToSelec
         allTableNames = Object.keys(jsonData.database.table || {});
         
         populateMainDashboard(activeProject);  
-        populateMenuManagement(jsonData.database.menu_groups);
+        populateMenuManagement(jsonData.database.unified_menu);
         document.getElementById('app-title').value = activeProject.app_title || 'Project Name';
         
         await generateSidebarMenu();

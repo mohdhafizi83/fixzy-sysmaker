@@ -40,43 +40,139 @@ if (!dbExists) {
 // =================================================================
 // ▼▼▼ SEMUA IPC HANDLER DIKUMPULKAN DI SINI UNTUK KONSISTENSI ▼▼▼
 // =================================================================
-// main.js
+// Tambah keseluruhan fungsi ini di dalam src/main.js
+ipcMain.handle('database:batch-update', async (event, queue) => {
+    if (!queue) return { success: false, message: 'Queue is empty.' };
+
+    const transaction = db.transaction(() => {
+        // Kemas kini Projek
+        if (queue.project && Object.keys(queue.project).length > 0) {
+            // Asumsikan hanya ada satu projek aktif, jadi ID tidak diperlukan dari queue
+            const activeProject = db.prepare("SELECT project_id FROM projects WHERE is_active = 1").get();
+            if (activeProject) {
+                const { ...fieldsToUpdate } = queue.project;
+                const setClause = Object.keys(fieldsToUpdate).map(key => `${key} = ?`).join(', ');
+                const values = Object.values(fieldsToUpdate);
+                if (setClause) {
+                    db.prepare(`UPDATE projects SET ${setClause} WHERE project_id = ?`).run(...values, activeProject.project_id);
+                }
+            }
+        }
+
+        // Kemas kini Jadual
+        if (queue.tables && Object.keys(queue.tables).length > 0) {
+            const stmt = db.prepare('UPDATE tables SET table_name = :table_name WHERE table_id = :table_id');
+            for (const id in queue.tables) {
+                stmt.run({ table_id: id, ...queue.tables[id] });
+            }
+        }
+
+        // Kemas kini Medan
+        if (queue.fields && Object.keys(queue.fields).length > 0) {
+            for (const id in queue.fields) {
+                const { ...fieldsToUpdate } = queue.fields[id];
+                const setClause = Object.keys(fieldsToUpdate).map(key => `"${key}" = ?`).join(', ');
+                const values = Object.values(fieldsToUpdate);
+                 if (setClause) {
+                    db.prepare(`UPDATE fields SET ${setClause} WHERE field_id = ?`).run(...values, id);
+                }
+            }
+        }
+        
+        // Kemas kini Hubungan Parent/Child
+        if (queue.relationships && Object.keys(queue.relationships).length > 0) {
+             for (const id in queue.relationships) {
+                const { ...fieldsToUpdate } = queue.relationships[id];
+                const setClause = Object.keys(fieldsToUpdate).map(key => `${key} = ?`).join(', ');
+                const values = Object.values(fieldsToUpdate);
+                 if (setClause) {
+                    db.prepare(`UPDATE parent_child_relationships SET ${setClause} WHERE relationship_id = ?`).run(...values, id);
+                }
+            }
+        }
+        
+        // Cipta/Kemas kini Hubungan (Upsert)
+        if (queue.upserts && queue.upserts.length > 0) {
+            const findStmt = db.prepare('SELECT relationship_id FROM parent_child_relationships WHERE fk_child_field = ? AND child_table_id = (SELECT table_id FROM tables WHERE table_name = ?)');
+            const updateStmt = db.prepare('UPDATE parent_child_relationships SET parent_table_id = (SELECT table_id FROM tables WHERE table_name = ?) WHERE relationship_id = ?');
+            const insertStmt = db.prepare('INSERT INTO parent_child_relationships (parent_table_id, child_table_id, fk_child_field, parent_field) VALUES ((SELECT table_id FROM tables WHERE table_name = ?), (SELECT table_id FROM tables WHERE table_name = ?), ?, (SELECT field_name FROM fields WHERE primary_key = 1 AND table_id = (SELECT table_id FROM tables WHERE table_name = ?)))');
+            
+            for(const rel of queue.upserts) {
+                const existing = findStmt.get(rel.fk_child_field, rel.childTableName);
+                if (existing) {
+                    updateStmt.run(rel.parentTableName, existing.relationship_id);
+                } else {
+                    insertStmt.run(rel.parentTableName, rel.childTableName, rel.fk_child_field, rel.parentTableName);
+                }
+            }
+        }
+    });
+
+    try {
+        transaction();
+        return { success: true };
+    } catch (error) {
+        console.error("Ralat semasa kemas kini berkelompok:", error);
+        return { success: false, message: error.message };
+    }
+});
 
 // FIND AND REPLACE THIS ENTIRE HANDLER IN: src/main.js
 
-ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, label, url }) => {
+ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, label, url, menu_group_id }) => {
     try {
         if (!project_id) {
             throw new Error("Project ID is required.");
         }
 
-        // ▼▼▼ LOGIK PADAM YANG DIPERBAIKI DAN DISAHKAN ▼▼▼
         if (item_id && label === 'DELETE' && url === 'DELETE') {
+            // Logic to delete an item
             db.prepare(
                 `DELETE FROM menu_items WHERE item_id = ? AND project_id = ?`
             ).run(item_id, project_id);
         } else if (item_id) {
-            // Mod Kemas Kini (Update)
-            db.prepare(
-                `UPDATE menu_items SET item_label = ?, item_url = ? WHERE item_id = ? AND project_id = ?`
-            ).run(label, url, item_id, project_id);
+            // Logic to update an existing item
+            db.prepare( // KEMAS KINI: Tambah menu_group_id
+                `UPDATE menu_items SET item_label = ?, item_url = ?, menu_group_id = ? WHERE item_id = ? AND project_id = ?`
+            ).run(label, url, menu_group_id || null, item_id, project_id);
         } else {
-            // Mod Tambah Baharu (Insert)
+            // Logic to insert a new item
             if (!label) {
-                 throw new Error("Label is required for a new custom menu.");
+                 throw new Error("Label is required for a new menu item.");
             }
-            const maxOrderResult = db.prepare(
-                'SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL'
-            ).get(project_id);
-            const nextOrder = (maxOrderResult && maxOrderResult.max_order !== null ? maxOrderResult.max_order : -1) + 1;
+            
+            // ▼▼▼ START OF FIX ▼▼▼
+            // Check if the label corresponds to an existing table to get its ID
+            const table = db.prepare(
+                'SELECT table_id FROM tables WHERE table_name = ? AND project_id = ?'
+            ).get(label, project_id);
+            const tableId = table ? table.table_id : null;
+            // ▲▲▲ END OF FIX ▲▲▲
+            
+            // ▼▼▼ MULA PERUBAHAN: Kira 'order' berdasarkan kumpulan ▼▼▼
+            let nextOrder;
+            if (menu_group_id) {
+                const maxOrderResult = db.prepare(
+                    'SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id = ?'
+                ).get(project_id, menu_group_id);
+                nextOrder = (maxOrderResult && maxOrderResult.max_order !== null ? maxOrderResult.max_order : -1) + 1;
+            } else {
+                const maxOrderResult = db.prepare(
+                    'SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL'
+                ).get(project_id);
+                nextOrder = (maxOrderResult && maxOrderResult.max_order !== null ? maxOrderResult.max_order : -1) + 1;
+            }
+            // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
 
+            // ▼▼▼ MODIFIED INSERT STATEMENT ▼▼▼
             db.prepare(
-                `INSERT INTO menu_items (project_id, item_label, item_url, item_order, menu_group_id) VALUES (?, ?, ?, ?, NULL)`
-            ).run(project_id, label, url, nextOrder);
+                `INSERT INTO menu_items (project_id, table_id, item_label, item_url, item_order, menu_group_id) VALUES (?, ?, ?, ?, ?, ?)`
+            ).run(project_id, tableId, label, url, nextOrder, menu_group_id || null);
+            // ▲▲▲ END OF MODIFICATION ▲▲▲
         }
         return { success: true };
     } catch (error) {
-        console.error("Gagal menyimpan item menu custom:", error);
+        console.error("Gagal menyimpan item menu:", error);
         return { success: false, message: error.message };
     }
 });
@@ -101,172 +197,50 @@ ipcMain.handle('menu:update-individual-order', async (event, orderedItems) => {
     }
 });
 
-ipcMain.handle('database:batch-update', async (event, queue) => {
+// ADD THIS ENTIRE NEW HANDLER ANYWHERE IN: src/main.js
+
+ipcMain.handle('menu:delete-group', async (event, { groupId }) => {
+    if (!groupId) {
+        return { success: false, message: "Group ID is required." };
+    }
     try {
         const transaction = db.transaction(() => {
-            const activeProject = db.prepare("SELECT * FROM projects WHERE is_active = 1").get();
-            if (!activeProject) throw new Error("Tiada projek aktif ditemui untuk kemas kini berkelompok.");
-
-            // 1. Proses Kemas Kini Projek
-            if (Object.keys(queue.project).length > 0) {
-                const fieldsToUpdate = queue.project;
-                const allowedColumns = ['app_title', 'date_order', 'separator', 'char_encoding', 'language_select', 'timezone_select', 'use_24hr_format', 'enforce_mysql_encoding', 'theme_select', 'use_3d_effects', 'rtl', 'compact', 'menu_orientation', 'menu_at_homepage', 'tables_per_row', 'extra_wide', 'panel_height', 'hide_login', 'allow_sql_tool', 'allow_server_status', 'admins_group_access', 'allow_table_view_sql', 'copy_children_async', 'allow_pwa_install', 'url', 'project_hook_workflow'];
-                const setClause = Object.keys(fieldsToUpdate).filter(key => allowedColumns.includes(key)).map(key => `${key} = ?`).join(', ');
-                if (setClause) {
-                    const values = Object.keys(fieldsToUpdate).filter(key => allowedColumns.includes(key)).map(key => fieldsToUpdate[key]);
-                    db.prepare(`UPDATE projects SET ${setClause} WHERE project_id = ?`).run(...values, activeProject.project_id);
-                }
-            }
-            // 2. Proses Kemas Kini Jadual
-            for (const tableId in queue.tables) {
-                const fieldsToUpdate = queue.tables[tableId];
-                const allowedColumns = ['table_name', 'table_view_title', 'table_description', 'show_quick_search', 'records_per_page', 'default_sort_by', 'sort_descending', 'allow_sorting', 'allow_filters', 'allow_csv_export', 'allow_print_view', 'allow_user_save_filters', 'hide_homepage_link', 'allow_mass_delete', 'filter_before_view', 'hide_nav_menu_link', 'show_record_count', 'tv_template', 'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input', 'detail_view_classes_input', 'detail_view_title', 'record_owner', 'default_focus', 'redirect_after_insert', 'enable_detail_view', 'delete_with_children', 'dv_allow_print_view', 'dv_separate_page', 'dv_hide_save_as_copy', 'dv_sticky_buttons', 'dv_allow_add_from_homepage', 'table_hook_workflow'];
-                const setClause = Object.keys(fieldsToUpdate).filter(key => allowedColumns.includes(key)).map(key => `${key} = ?`).join(', ');
-                if (setClause) {
-                    const values = Object.keys(fieldsToUpdate).filter(key => allowedColumns.includes(key)).map(key => fieldsToUpdate[key]);
-                    db.prepare(`UPDATE tables SET ${setClause} WHERE table_id = ?`).run(...values, tableId);
-                }
-            }
-            // 3. Proses Kemas Kini Medan
-            for (const fieldId in queue.fields) {
-                const fieldsToUpdate = queue.fields[fieldId];
-				
-// REPLACE THE PREVIOUS VALIDATION BLOCK WITH THIS NEW ONE IN: main.js
-
-// ▼▼▼ MULA BLOK VALIDASI BACKEND (DIPERBAIKI) ▼▼▼
-const currentFieldState = db.prepare('SELECT * FROM fields WHERE field_id = ?').get(fieldId);
-if (!currentFieldState) {
-    console.warn(`Field dengan ID ${fieldId} tidak ditemui, kemas kini dilangkau.`);
-    continue;
-}
-const newFieldState = { ...currentFieldState, ...fieldsToUpdate };
-
-// --- Validasi untuk Sifat Pangkalan Data ---
-if (newFieldState.auto_increment === 1 && newFieldState.primary_key === 0) {
-    if ('auto_increment' in fieldsToUpdate) delete fieldsToUpdate.auto_increment;
-}
-if (newFieldState.auto_increment === 1 && newFieldState.required === 1) {
-    if ('required' in fieldsToUpdate) delete fieldsToUpdate.required;
-}
-if (newFieldState.auto_increment === 1 && newFieldState.read_only === 0) {
-    fieldsToUpdate.read_only = 1;
-}
-
-// --- Validasi untuk Checkbox Eksklusif (LOGIK DIPERBAIKI) ---
-// Logik ini kini menyemak perubahan yang masuk dan secara aktif menetapkan
-// opsyen lain kepada 0 di dalam 'fieldsToUpdate' untuk memastikan ia dikemas kini di DB.
-if (fieldsToUpdate.text_area === 1) {
-    fieldsToUpdate.rich_html = 0;
-    fieldsToUpdate.check_box = 0;
-} else if (fieldsToUpdate.rich_html === 1) {
-    fieldsToUpdate.text_area = 0;
-    fieldsToUpdate.check_box = 0;
-} else if (fieldsToUpdate.check_box === 1) {
-    fieldsToUpdate.text_area = 0;
-    fieldsToUpdate.rich_html = 0;
-}
-// ▲▲▲ TAMAT BLOK VALIDASI BACKEND (DIPERBAIKI) ▲▲▲
-
-                const allowedColumns = ['field_name', 'caption', 'description', 'data_type', 'length', 'precision', 'max_chars_in_tv', 'alignment', 'default_value', 'read_only', 'primary_key', 'zero_fill', 'required', 'rich_html', 'auto_increment', 'unique', 'show_sum', 'text_area', 'unsigned', 'no_filter', 'binary', 'check_box', 'hide_in_tv', 'hide_in_dv', 'enable_column_width', 'column_width', 'media_type', 'media_link_behavior', 'media_link_display_as', 'media_link_other_field', 'allow_image_uploads', 'max_file_size', 'delete_image_server', 'dont_rename_image', 'tv_thumb_width', 'tv_thumb_height', 'tv_enable_zooming', 'tv_show_full_size', 'dv_thumb_width', 'dv_thumb_height', 'dv_enable_zooming', 'dv_show_full_size', 'allow_file_uploads', 'file_types', 'file_max_size', 'delete_file_server', 'dont_rename_file', 'file_behavior', 'file_display_as', 'file_other_field', 'display_gmap', 'gmap_type', 'gmap_tv_width', 'gmap_tv_height', 'gmap_dv_height', 'accept_video_url', 'youtube_tv_width', 'youtube_tv_height', 'youtube_dv_width', 'youtube_dv_height', 'lookup_parent_table', 'lookup_caption_1', 'lookup_separator', 'lookup_caption_2', 'lookup_display_as', 'lookup_inherit_permissions', 'lookup_link_behavior', 'options_list_values', 'options_display', 'format_as', 'calculated_enable', 'calculated_query', 'lookup_custom_query', 'algorithm_enable','algorithm_logic', 'calculation_builder_state'];
-                const setClause = Object.keys(fieldsToUpdate).filter(key => allowedColumns.includes(key)).map(key => `"${key}" = ?`).join(', ');
-                if (setClause) {
-                    const values = Object.keys(fieldsToUpdate).filter(key => allowedColumns.includes(key)).map(key => fieldsToUpdate[key]);
-                    db.prepare(`UPDATE fields SET ${setClause} WHERE field_id = ?`).run(...values, fieldId);
-                }
-            }
-            // 4. Proses Kemas Kini Hubungan
-            for (const relationshipId in queue.relationships) {
-                const fieldsToUpdate = queue.relationships[relationshipId];
-                const allowedColumns = ['show_tab', 'show_icon', 'autoclose_modal', 'tab_title', 'copy_records', 'show_link_above', 'show_count_in_tv', 'allow_add_from_tv'];
-                const setClause = Object.keys(fieldsToUpdate).filter(key => allowedColumns.includes(key)).map(key => `${key} = ?`).join(', ');
-                if (setClause) {
-                    const values = Object.keys(fieldsToUpdate).filter(key => allowedColumns.includes(key)).map(key => fieldsToUpdate[key]);
-                    db.prepare(`UPDATE parent_child_relationships SET ${setClause} WHERE relationship_id = ?`).run(...values, relationshipId);
-                }
-            }
-            // 5. Proses Kemas Kini Menu
-// INSIDE 'database:batch-update', FIND AND REPLACE THIS 'if' BLOCK
-
-            // 5. Proses Kemas Kini Menu
-            if (queue.menus) {
-                const menuData = queue.menus;
-                const projectId = activeProject.project_id;
-
-                // --- Simpan Menu Kumpulan ---
-                db.prepare('DELETE FROM menu_items WHERE project_id = ? AND menu_group_id IS NOT NULL').run(projectId);
-                db.prepare('DELETE FROM menu_groups WHERE project_id = ?').run(projectId);
-                
-                const insertGroupStmt = db.prepare('INSERT INTO menu_groups (project_id, group_name, group_order) VALUES (?, ?, ?)');
-                const insertGroupItemStmt = db.prepare(`
-                    INSERT INTO menu_items (project_id, menu_group_id, table_id, item_order) 
-                    VALUES (?, ?, (SELECT table_id FROM tables WHERE table_name = ? AND project_id = ?), ?)
-                `);
-                
-                if (menuData.groups) {
-                    menuData.groups.forEach((group) => {
-                        const info = insertGroupStmt.run(projectId, group.group_name, group.group_order);
-                        const newGroupId = info.lastInsertRowid;
-                        group.items.forEach((item) => {
-                            insertGroupItemStmt.run(projectId, newGroupId, item.table_name, projectId, item.item_order);
-                        });
-                    });
-                }
-
-                // --- Simpan Menu Individu (Hanya untuk checkbox jadual) ---
-                if (menuData.individual_items) {
-                    // Padam hanya item menu individu yang berasaskan JADUAL. Biarkan item custom.
-                    db.prepare(`
-                        DELETE FROM menu_items 
-                        WHERE project_id = ? AND menu_group_id IS NULL AND table_id IS NOT NULL
-                    `).run(projectId);
-
-                    const insertIndividualTableStmt = db.prepare(`
-                        INSERT INTO menu_items (project_id, menu_group_id, table_id, item_order)
-                        VALUES (?, NULL, (SELECT table_id FROM tables WHERE table_name = ? AND project_id = ?), ?)
-                    `);
-                    
-                    // Kitar semula hanya item yang mempunyai table_name (checkboxes)
-                    const tableItems = menuData.individual_items.filter(item => item.table_name);
-                    tableItems.forEach(item => {
-                        insertIndividualTableStmt.run(projectId, item.table_name, projectId, item.order);
-                    });
-                }
-            }
-			
-            if (queue.upserts && queue.upserts.length > 0) {
-                for (const upsertData of queue.upserts) {
-                    const { parentTableName, childTableName, fk_child_field } = upsertData;
-                    const childTable = db.prepare('SELECT table_id FROM tables WHERE table_name = ? AND project_id = ?').get(childTableName, activeProject.project_id);
-                    if (!childTable) throw new Error(`Jadual anak tidak ditemui: ${childTableName}`);
-                    
-                    db.prepare('DELETE FROM parent_child_relationships WHERE child_table_id = ? AND fk_child_field = ?').run(childTable.table_id, fk_child_field);
-
-                    if (parentTableName) {
-                        const parentTable = db.prepare('SELECT table_id FROM tables WHERE table_name = ? AND project_id = ?').get(parentTableName, activeProject.project_id);
-                        if (!parentTable) throw new Error(`Jadual induk tidak ditemui: ${parentTableName}`);
-                        
-                        const parentPkField = db.prepare(`SELECT f.field_name FROM fields f JOIN tables t ON f.table_id = t.table_id WHERE t.table_name = ? AND f.primary_key = 1`).get(parentTableName);
-                        if (!parentPkField) throw new Error(`Primary key tidak ditemui untuk jadual: ${parentTableName}`);
-                        
-                        db.prepare(`INSERT INTO parent_child_relationships (parent_table_id, child_table_id, fk_child_field, parent_field, tab_title) VALUES (?, ?, ?, ?, ?)`).run(parentTable.table_id, childTable.table_id, fk_child_field, parentPkField.field_name, childTableName);
-                    }
-                }
-            }
+            // Padam semua item yang tergolong dalam kumpulan ini
+            db.prepare('DELETE FROM menu_items WHERE menu_group_id = ?').run(groupId);
+            // Padam kumpulan itu sendiri
+            db.prepare('DELETE FROM menu_groups WHERE menu_group_id = ?').run(groupId);
         });
-
         transaction();
-        
-        const activeProject = db.prepare("SELECT * FROM projects WHERE is_active = 1").get();
-        const freshData = await getFullProjectSchema(activeProject.project_id);
-        return { success: true, data: freshData };
-
+        return { success: true };
     } catch (error) {
-        console.error('Batch update transaction failed:', error);
+        console.error("Gagal memadam kumpulan menu:", error);
         return { success: false, message: error.message };
     }
 });
 
-// FIND THIS HANDLER IN main.js AND ADD THE TWO CONSOLE.LOG LINES
+ipcMain.handle('menu:create-group', async (event, { projectId, groupName }) => {
+    if (!projectId) {
+        return { success: false, message: "Project ID is required." };
+    }
+    try {
+        const maxOrderResult = db.prepare(
+            'SELECT MAX(COALESCE(group_order, 0)) as max_order FROM menu_groups WHERE project_id = ?'
+        ).get(projectId);
+        
+        const nextOrder = (maxOrderResult?.max_order ?? -1) + 1;
+
+        const info = db.prepare(
+            'INSERT INTO menu_groups (project_id, group_name, group_order) VALUES (?, ?, ?)'
+        ).run(projectId, groupName, nextOrder);
+        
+        const newGroup = db.prepare('SELECT * FROM menu_groups WHERE menu_group_id = ?').get(info.lastInsertRowid);
+        
+        return { success: true, group: newGroup };
+    } catch (error) {
+        console.error("Gagal mencipta kumpulan menu:", error);
+        return { success: false, message: error.message };
+    }
+});
 
 ipcMain.handle('sql:parse-calculation-query', (event, sql) => {
     // ▼▼▼ TAMBAH DUA BARIS INI UNTUK DIAGNOSIS ▼▼▼
@@ -537,7 +511,7 @@ ipcMain.handle('table:create', async (event, projectId) => {
 });
 
 // Handler untuk mendapatkan skema penuh
-// FIND AND REPLACE THIS ENTIRE HANDLER IN: main.js
+// FIND AND REPLACE THIS ENTIRE HANDLER IN: src/main.js
 
 ipcMain.handle("project:get-full-schema", async (event, projectId) => {
   try {
@@ -586,35 +560,54 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
         .all(...tableIds, ...tableIds);
     }
 
-    const groups = db
-      .prepare("SELECT * FROM menu_groups WHERE project_id = ? ORDER BY group_order, group_name")
-      .all(projectId);
+    // ▼▼▼ MULA LOGIK MENU BERSEPADU ▼▼▼
+    const groups = db.prepare(
+        "SELECT * FROM menu_groups WHERE project_id = ? ORDER BY group_order"
+    ).all(projectId);
       
     const groupedItems = db.prepare(`
         SELECT mi.*, t.table_name 
         FROM menu_items mi
-        JOIN tables t ON mi.table_id = t.table_id
+        LEFT JOIN tables t ON mi.table_id = t.table_id
         WHERE mi.project_id = ? AND mi.menu_group_id IS NOT NULL
         ORDER BY mi.item_order
     `).all(projectId);
     
-    // ▼▼▼ PEMBETULAN UTAMA ADA DI SINI: Gunakan LEFT JOIN ▼▼▼
-    // Ini memastikan item menu custom (di mana table_id adalah NULL) juga disertakan.
-    const individualItems = db.prepare(`
+    const topLevelItems = db.prepare(`
         SELECT mi.*, t.table_name
         FROM menu_items mi
         LEFT JOIN tables t ON mi.table_id = t.table_id
-        WHERE mi.project_id = ? AND mi.menu_group_id IS NULL
-        ORDER BY mi.item_order
+        WHERE mi.project_id = ? AND mi.menu_group_id IS NULL ORDER BY item_order
     `).all(projectId);
-    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
 
-    const structuredMenuGroups = groups.map(group => {
-        return {
-            ...group,
+    // Gabungkan kumpulan dan item peringkat atasan ke dalam satu senarai
+    const unifiedMenu = [];
+
+    groups.forEach(group => {
+        unifiedMenu.push({
+            type: 'group',
+            id: group.menu_group_id,
+            order: group.group_order,
+            name: group.group_name,
+            // Lampirkan item-item yang tergolong dalam kumpulan ini
             items: groupedItems.filter(item => item.menu_group_id === group.menu_group_id)
-        };
+        });
     });
+
+    topLevelItems.forEach(item => {
+        unifiedMenu.push({
+            type: item.table_id ? 'table_item' : 'custom_item',
+            id: item.item_id,
+            order: item.item_order,
+            label: item.item_label || item.table_name,
+            url: item.item_url,
+            table_name: item.table_name,
+        });
+    });
+    
+    // Susun senarai bersepadu berdasarkan 'order'
+    unifiedMenu.sort((a, b) => (a.order || 0) - (b.order || 0));
+    // ▲▲▲ TAMAT LOGIK MENU BERSEPADU ▲▲▲
 
     return {
       project: project,
@@ -622,14 +615,52 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
         name: project.app_title,
         table: structuredTables,
         relationships: relationships,
-        menu_groups: structuredMenuGroups,
-        individual_menus: individualItems // Hantar data yang telah dibetulkan
+        unified_menu: unifiedMenu, // Hantar data yang telah disatukan
       },
     };
   } catch (error) {
     console.error("Gagal mengambil skema penuh:", error);
     return null;
   }
+});
+
+
+// ADD THIS NEW HANDLER in: src/main.js
+ipcMain.handle('menu:save-unified-structure', async (event, { projectId, menuStructure }) => {
+    if (!projectId || !Array.isArray(menuStructure)) {
+        return { success: false, message: "Data tidak sah." };
+    }
+    
+    const transaction = db.transaction(() => {
+        const updateGroupStmt = db.prepare('UPDATE menu_groups SET group_name = ?, group_order = ? WHERE menu_group_id = ?');
+        const updateItemStmt = db.prepare('UPDATE menu_items SET item_order = ?, menu_group_id = ? WHERE item_id = ?');
+
+        // 1. Set all items to be top-level first to handle items being moved out of groups.
+        db.prepare('UPDATE menu_items SET menu_group_id = NULL WHERE project_id = ?').run(projectId);
+        
+        // 2. Iterate through the new structure and apply changes.
+        menuStructure.forEach((topLevelItem, topIndex) => {
+            if (topLevelItem.type === 'group') {
+                // Update the group's name and its order among top-level items.
+                updateGroupStmt.run(topLevelItem.name, topIndex, topLevelItem.id);
+                // Update each child item to belong to this group with its new order.
+                topLevelItem.items.forEach((childItem, childIndex) => {
+                    updateItemStmt.run(childIndex, topLevelItem.id, childItem.id);
+                });
+            } else { // type 'table_item' or 'custom_item'
+                // Update the top-level item's order. Its group_id is already NULL.
+                updateItemStmt.run(topIndex, null, topLevelItem.id);
+            }
+        });
+    });
+
+    try {
+        transaction();
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal menyimpan struktur menu bersepadu:", error);
+        return { success: false, message: error.message };
+    }
 });
 
 // Handler untuk pengurusan projek

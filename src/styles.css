@@ -2412,3 +2412,54 @@ fieldset.fieldset-disabled {
     font: inherit;
     color: inherit;
 }
+
+/* ADD THIS CSS AT THE END OF styles.css */
+
+.menu-selector {
+    flex-direction: column; /* Susun item secara menegak */
+    align-items: stretch; /* Penuhkan lebar bekas */
+    gap: 0.25rem; /* Jarak kecil antara item */
+}
+
+.nested-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    background-color: #F9FAFB;
+    border: 1px solid transparent;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.nested-menu-item:hover {
+    background-color: #F3F4F6;
+    border-color: var(--border-color);
+}
+
+.nested-item-icon {
+    color: var(--secondary-color);
+    flex-shrink: 0;
+}
+
+.nested-item-label {
+    flex-grow: 1;
+    font-size: 0.9em;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nested-item-actions {
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+.nested-item-actions .btn-sidebar-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 0.8em;
+}
+}
