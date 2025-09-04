@@ -56,6 +56,8 @@ export function openGeneralQueryBuilder(targetTextarea) {
  */
 // FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
 
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
+
 function setupLogicBuilderCore(config) {
     const { palette, canvas, hiddenInput, validationRules, context, updateMode = 'live' } = config;
     const placeholder = canvas ? canvas.querySelector('.canvas-placeholder') : null;
@@ -198,7 +200,6 @@ function setupLogicBuilderCore(config) {
                     itemData.table = item.querySelector('.table-select')?.value;
                     itemData.field = item.querySelector('.field-select')?.value;
                     
-                    // ▼▼▼ BACA DATA SYARAT DARI DATASET ▼▼▼
                     if (type === 'external_table_field' && item.dataset.condField) {
                         itemData.condition = {
                             field: item.dataset.condField,
@@ -207,10 +208,18 @@ function setupLogicBuilderCore(config) {
                             value: item.dataset.condValue
                         };
                     }
-                    // ▲▲▲ TAMAT BACAAN DATA ▲▲▲
 
                 } else if (type === 'this_table_field') {
-                    itemData.field = item.querySelector('.field-select')?.value;
+                    // ▼▼▼ MULA PERUBAHAN: Simpan query penuh ▼▼▼
+                    const activeTable = context.tableName;
+                    const fields = jsonData.database.table[activeTable].fields;
+                    const selectedField = item.querySelector('.field-select')?.value;
+                    const pkName = Object.keys(fields).find(f => fields[f].primary_key === 1) || 'id';
+
+                    itemData.field = selectedField;
+                    itemData.query = `SELECT \`${selectedField}\` FROM \`${activeTable}\` WHERE \`${pkName}\` = ##ID##`;
+                    // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+
                 } else if (type === 'boolean') {
                     itemData.value = item.querySelector('select')?.value;
                 } else if (['comparison_operator', 'logical_operator', 'arithmetic_operator', 'current_user', 'current_datetime'].includes(type)) {
@@ -259,7 +268,6 @@ function setupLogicBuilderCore(config) {
                     newItem.querySelector('.table-select').dispatchEvent(new Event('change'));
                     newItem.querySelector('.field-select').value = itemData.field;
 
-                    // ▼▼▼ SIMPAN SYARAT KE DATASET & GAYAKAN BUTANG ▼▼▼
                     if (itemData.type === 'external_table_field' && itemData.condition) {
                         newItem.dataset.condField = itemData.condition.field;
                         newItem.dataset.condOperator = itemData.condition.operator;
@@ -268,7 +276,6 @@ function setupLogicBuilderCore(config) {
                         const configBtn = newItem.querySelector('.config-lookup-btn');
                         if (configBtn) configBtn.classList.add('configured');
                     }
-                    // ▲▲▲ TAMAT SIMPANAN DATA ▲▲▲
 
                 } else if (itemData.type === 'comment') {
                     newItem.querySelector('textarea').value = itemData.value;
@@ -297,11 +304,7 @@ function setupLogicBuilderCore(config) {
         const logic = JSON.parse(currentLogicValue);
         buildFromLogic(canvas, logic);
     };
-
-    // ... (rest of the functions like isValidDrop, etc. remain the same) ...
-    // The following code is truncated for brevity but should be the same as your original file
     
-    // (Ensure the rest of the original function from createInteractiveElement to the return statement is here)
     const createInteractiveElement = (data) => {
         const type = data.type;
         const itemContainer = document.createElement('div');
@@ -360,7 +363,6 @@ function setupLogicBuilderCore(config) {
                 itemContainer.appendChild(closeParen);
                 break;
             }
-            // (The rest of the swit            
             case 'sql_query':
                 itemContainer.innerHTML = `<div class="sql-query-header"><span>[SQL QUERY]</span><button class="open-qb-btn" title="Open Query Builder"><i class="fas fa-magic-wand-sparkles"></i></button></div><textarea placeholder="SELECT * FROM ..."></textarea><input type="hidden" class="query-builder-state">`;
                 itemContainer.querySelector('textarea').addEventListener('input', updateModalCanvasState);
@@ -412,76 +414,54 @@ function setupLogicBuilderCore(config) {
                 configBtn.title = 'Set Lookup Condition';
                 configBtn.innerHTML = '<i class="fas fa-cog"></i>';
                 itemContainer.appendChild(configBtn);
-                // ▲▲▲ TAMAT KOD BAHARU ▲▲▲
-                
                 break;
             }
             case 'this_table_field': {
-                let activeTable = '';
-                if (context && context.tableName) {
-                    activeTable = context.tableName;
-                } else {
-                    console.warn("Konteks jadual tidak ditemui untuk komponen 'This Table.Field'");
-                }
+                // ▼▼▼ MULA PERUBAHAN: Ubah suai UI komponen ▼▼▼
+                const activeTable = context?.tableName || '';
+                const fields = jsonData.database.table[activeTable]?.fields || {};
+                const fieldNames = Object.keys(fields);
+                const pkFieldName = fieldNames.find(f => fields[f].primary_key === 1) || 'id';
 
-                const tableInput = document.createElement('input');
-                tableInput.type = 'text';
-                tableInput.value = `${activeTable}.`;
-                tableInput.readOnly = true;
-                itemContainer.appendChild(tableInput);
+                const selectLabel = document.createElement('span');
+                selectLabel.textContent = 'SELECT';
+                selectLabel.className = 'sql-keyword';
+                itemContainer.appendChild(selectLabel);
 
                 const fieldSelect = document.createElement('select');
                 fieldSelect.className = 'field-select';
                 
-                let pkFieldName = '';
-                if (activeTable && jsonData.database.table[activeTable]) {
-                    const fields = jsonData.database.table[activeTable].fields;
-                    const fieldNames = Object.keys(fields);
-                    
-                    pkFieldName = fieldNames.find(f => fields[f].primary_key === 1) || 'field_id';
-
-                    fieldNames
-                        .filter(f => f !== pkFieldName) // Kecualikan primary key
-                        .forEach(fieldName => {
-                            const option = document.createElement('option');
-                            option.value = fieldName;
-                            option.textContent = fieldName;
-                            fieldSelect.appendChild(option);
-                        });
-                }
+                // Masukkan semua medan ke dalam dropdown
+                fieldNames.forEach(fieldName => {
+                    const option = document.createElement('option');
+                    option.value = fieldName;
+                    option.textContent = fieldName;
+                    fieldSelect.appendChild(option);
+                });
                 itemContainer.appendChild(fieldSelect);
                 fieldSelect.addEventListener('change', updateModalCanvasState);
 
-                const idLabel = document.createElement('span');
-                idLabel.textContent = `WHERE ${pkFieldName} = ##ID##`;
-                idLabel.style.marginLeft = '0.75rem';
-                idLabel.style.fontFamily = 'monospace';
-                idLabel.style.fontSize = '0.9em';
-                idLabel.style.color = 'var(--secondary-color)';
-                itemContainer.appendChild(idLabel);
+                const fromClause = document.createElement('span');
+                fromClause.innerHTML = `FROM <strong class="sql-table-name">${activeTable}</strong> WHERE <strong class="sql-condition">${pkFieldName} = ##ID##</strong>`;
+                fromClause.className = 'sql-prose';
+                itemContainer.appendChild(fromClause);
                 
-                // Laraskan gaya bekas untuk komponen ini
                 itemContainer.style.justifyContent = 'flex-start';
+                // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
                 break;
             }
             case 'field':
                 const tableSelect = document.createElement('select');
                 tableSelect.className = 'table-select';
-
-                // ▼▼▼ MULA PEMBETULAN: Gunakan konteks dari config, bukan querySelector yang rapuh. ▼▼▼
                 let activeTable = '';
                 if (context && context.tableName) {
                     activeTable = context.tableName;
                 } else {
-                    // Sandaran (fallback) kepada kaedah lama jika konteks tidak dibekalkan,
-                    // dengan pemeriksaan keselamatan untuk mengelakkan ralat.
                     const fieldNameElement = document.querySelector('#field-settings-page .field-name');
                     if (fieldNameElement) {
                         [activeTable] = fieldNameElement.textContent.split('.');
                     }
                 }
-                // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
-
                 const allTables = Object.keys(jsonData.database.table);
                 allTables.forEach(tableName => {
                     const option = document.createElement('option');
@@ -586,7 +566,7 @@ function setupLogicBuilderCore(config) {
                 label.textContent = '[CurrentUser].';
                 itemContainer.appendChild(label);
                 const propertySelect = document.createElement('select');
-                propertySelect.className = 'operator-select'; // Guna semula gaya
+                propertySelect.className = 'operator-select';
                 const properties = [{value: 'username', text: 'Username'}, {value: 'group', text: 'Group'}, {value: 'groupID', text: 'GroupID'}];
                 properties.forEach(prop => {
                     const option = document.createElement('option');
@@ -602,7 +582,7 @@ function setupLogicBuilderCore(config) {
                 label.textContent = '[Current].';
                 itemContainer.appendChild(label);
                 const propertySelect = document.createElement('select');
-                propertySelect.className = 'operator-select'; // Guna semula gaya
+                propertySelect.className = 'operator-select';
                 const properties = [{value: 'datetime', text: 'DateTime'}, {value: 'date', text: 'Date'}, {value: 'time', text: 'Time'}, {value: 'timestamp', text: 'Timestamp'}];
                 properties.forEach(prop => {
                     const option = document.createElement('option');
@@ -661,11 +641,6 @@ function setupLogicBuilderCore(config) {
         return itemContainer;
     };
 
-    /**
-     * Mengesahkan sama ada komponen boleh diletakkan di atas kanvas berdasarkan peraturan.
-     * @param {string} componentType - Jenis komponen yang cuba diletakkan.
-     * @returns {boolean} - True jika sah, false jika tidak.
-     */
     const VALUE_TYPES = ['field', 'this_table_field', 'external_table_field', 'string', 'number', 'sql_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'function'];
     const isValidDrop = (componentType) => {
         if (componentType === 'comment') {
@@ -737,14 +712,12 @@ function setupLogicBuilderCore(config) {
     });
 
     canvas.addEventListener('click', (e) => {
-        // ▼▼▼ TAMBAH LOGIK KLIK BAHARU DI SINI ▼▼▼
         const configBtn = e.target.closest('.config-lookup-btn');
         if (configBtn) {
             const componentEl = configBtn.closest('.dropped-item');
             openLookupConditionModal(componentEl);
-            return; // Hentikan proses selanjutnya
+            return;
         }
-        // ▲▲▲ TAMAT LOGIK KLIK ▲▲▲
 
         if (e.target.classList.contains('delete-algo-item')) {
             const itemToRemove = e.target.closest('.dropped-item');

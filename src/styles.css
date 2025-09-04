@@ -2488,3 +2488,36 @@ fieldset.fieldset-disabled {
     height: 28px;
     font-size: 0.8em;
 }
+
+/* ADD THESE STYLES AT THE END OF: styles.css */
+
+.dropped-item[data-item-type="this_table_field"] {
+    font-family: monospace;
+    font-size: 1.1em;
+}
+
+.sql-keyword {
+    color: #7E22CE; /* Ungu */
+    font-weight: 600;
+}
+
+.sql-prose {
+    color: #64748B; /* Kelabu */
+    font-weight: 500;
+}
+
+.sql-table-name {
+    color: #166534; /* Hijau gelap */
+    font-weight: 600;
+}
+
+.sql-condition {
+    color: #991B1B; /* Merah gelap */
+    font-weight: 600;
+}
+
+.dropped-item[data-item-type="this_table_field"] .field-select {
+    font-family: monospace;
+    font-size: 1em;
+    padding: 0.1rem 0.4rem;
+}
