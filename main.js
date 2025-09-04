@@ -137,8 +137,7 @@ ipcMain.handle('database:batch-update', async (event, queue) => {
 });
 
 // FIND AND REPLACE THIS ENTIRE HANDLER IN: src/main.js
-
-ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, label, url, menu_group_id }) => {
+ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, label, url, menu_group_id, table_id }) => {
     try {
         if (!project_id) {
             throw new Error("Project ID is required.");
@@ -151,24 +150,16 @@ ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, lab
             ).run(item_id, project_id);
         } else if (item_id) {
             // Logic to update an existing item
-            db.prepare( // KEMAS KINI: Tambah menu_group_id
-                `UPDATE menu_items SET item_label = ?, item_url = ?, menu_group_id = ? WHERE item_id = ? AND project_id = ?`
-            ).run(label, url, menu_group_id || null, item_id, project_id);
+            db.prepare(
+                `UPDATE menu_items SET item_label = ?, item_url = ?, menu_group_id = ?, table_id = ? WHERE item_id = ? AND project_id = ?`
+            ).run(label, url || null, menu_group_id || null, table_id || null, item_id, project_id);
         } else {
             // Logic to insert a new item
             if (!label) {
                  throw new Error("Label is required for a new menu item.");
             }
             
-            // ▼▼▼ START OF FIX ▼▼▼
-            // Check if the label corresponds to an existing table to get its ID
-            const table = db.prepare(
-                'SELECT table_id FROM tables WHERE table_name = ? AND project_id = ?'
-            ).get(label, project_id);
-            const tableId = table ? table.table_id : null;
-            // ▲▲▲ END OF FIX ▲▲▲
-            
-            // ▼▼▼ MULA PERUBAHAN: Kira 'order' berdasarkan kumpulan ▼▼▼
+            // Kira 'order' berdasarkan kumpulan
             let nextOrder;
             if (menu_group_id) {
                 const maxOrderResult = db.prepare(
@@ -181,13 +172,11 @@ ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, lab
                 ).get(project_id);
                 nextOrder = (maxOrderResult && maxOrderResult.max_order !== null ? maxOrderResult.max_order : -1) + 1;
             }
-            // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
 
-            // ▼▼▼ MODIFIED INSERT STATEMENT ▼▼▼
+            // Guna 'table_id' yang dihantar terus dari frontend. Tiada lagi tekaan.
             db.prepare(
                 `INSERT INTO menu_items (project_id, table_id, item_label, item_url, item_order, menu_group_id) VALUES (?, ?, ?, ?, ?, ?)`
-            ).run(project_id, tableId, label, url, nextOrder, menu_group_id || null);
-            // ▲▲▲ END OF MODIFICATION ▲▲▲
+            ).run(project_id, table_id || null, label, url || null, nextOrder, menu_group_id || null);
         }
         return { success: true };
     } catch (error) {
@@ -196,7 +185,6 @@ ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, lab
     }
 });
 
-// ▼▼▼ TAMBAH KESELURUHAN HANDLER BAHARU INI SELEPAS BLOK DI ATAS ▼▼▼
 ipcMain.handle('menu:update-individual-order', async (event, orderedItems) => {
     if (!Array.isArray(orderedItems)) {
         return { success: false, message: 'Invalid data format.' };
@@ -242,17 +230,6 @@ ipcMain.handle('menu:create-group', async (event, { projectId, groupName }) => {
         return { success: false, message: "Project ID is required." };
     }
     try {
-        // ▼▼▼ MULA PERUBAHAN: Pastikan nama kumpulan unik dan tidak null ▼▼▼
-        const baseName = groupName || 'New Group';
-        let finalName = baseName;
-        let counter = 1;
-        const checkNameStmt = db.prepare('SELECT 1 FROM menu_groups WHERE project_id = ? AND group_name = ?');
-        while (checkNameStmt.get(projectId, finalName)) {
-            counter++;
-            finalName = `${baseName} ${counter}`;
-        }
-        // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
-
         const maxOrderResult = db.prepare(
             'SELECT MAX(COALESCE(group_order, 0)) as max_order FROM menu_groups WHERE project_id = ?'
         ).get(projectId);
@@ -261,7 +238,7 @@ ipcMain.handle('menu:create-group', async (event, { projectId, groupName }) => {
 
         const info = db.prepare(
             'INSERT INTO menu_groups (project_id, group_name, group_order) VALUES (?, ?, ?)'
-        ).run(projectId, finalName, nextOrder); // Guna 'finalName' yang unik
+        ).run(projectId, groupName, nextOrder);
         
         const newGroup = db.prepare('SELECT * FROM menu_groups WHERE menu_group_id = ?').get(info.lastInsertRowid);
         
@@ -930,9 +907,7 @@ function importSchema(sql, projectId) {
         for (const fk of foreignKeysToProcess) {
             const childTableId = tableMap[fk.childTableName];
             const parentTableId = tableMap[fk.parentTableName];
-
             if (childTableId && parentTableId) {
-                // 1. Cipta hubungan parent-child dalam pangkalan data
                 db.prepare(
                     `INSERT INTO parent_child_relationships 
                      (parent_table_id, child_table_id, fk_child_field, parent_field, tab_title) 

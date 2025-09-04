@@ -152,6 +152,7 @@ CREATE TABLE fields (
     lookup_link_behavior         TEXT DEFAULT 'modal',
     options_list_values          TEXT,
     options_display              TEXT DEFAULT 'dropdown',
+    options_quick_list           TEXT,
     format_as                    TEXT DEFAULT 'default',
     calculated_enable            INTEGER DEFAULT 0,
     calculated_query             TEXT,
