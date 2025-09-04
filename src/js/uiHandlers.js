@@ -56,6 +56,8 @@ export function openGeneralQueryBuilder(targetTextarea) {
  */
 // FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
 
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
+
 function setupLogicBuilderCore(config) {
     const { palette, canvas, hiddenInput, validationRules, context, updateMode = 'live' } = config;
     const placeholder = canvas ? canvas.querySelector('.canvas-placeholder') : null;
@@ -172,6 +174,39 @@ function setupLogicBuilderCore(config) {
         });
     };
 
+    // ▼▼▼ MULA FUNGSI BANTUAN BAHARU (UNTUK Child Table - Math) ▼▼▼
+    const buildChildWhereClause = (filterState, childTable) => {
+        if (!filterState || !filterState.rules || filterState.rules.length === 0) return '';
+        const logic = filterState.logic || 'AND';
+        const conditions = filterState.rules.map(rule => {
+            const { field, operator, value } = rule;
+            const fieldData = jsonData.database.table[childTable]?.fields[field];
+            if (!fieldData) return null;
+
+            if (operator === 'IS NULL' || operator === 'IS NOT NULL') {
+                return `\`${childTable}\`.\`${field}\` ${operator}`;
+            }
+
+            const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
+            const isNumeric = numericTypes.includes(fieldData.data_type.toUpperCase());
+            
+            let formattedValue;
+            if (operator === 'LIKE' || operator === 'NOT LIKE') {
+                 formattedValue = `'%${String(value || '').replace(/'/g, "''")}%'`;
+            } else if (isNumeric) {
+                formattedValue = parseFloat(value);
+                if (isNaN(formattedValue)) formattedValue = 0;
+            } else {
+                formattedValue = `'${String(value || '').replace(/'/g, "''")}'`;
+            }
+
+            return `\`${childTable}\`.\`${field}\` ${operator} ${formattedValue}`;
+        }).filter(c => c);
+
+        return conditions.length > 0 ? `AND (${conditions.join(` ${logic} `)})` : '';
+    };
+    // ▲▲▲ TAMAT FUNGSI BANTUAN BAHARU ▲▲▲
+
     const updateModalCanvasState = () => {
         const mapItems = (container) => {
             const children = Array.from(container.children).filter(el => el.classList.contains('dropped-item'));
@@ -206,7 +241,6 @@ function setupLogicBuilderCore(config) {
                     itemData.field = selectedField;
                     itemData.query = `SELECT \`${selectedField}\` FROM \`${activeTable}\` WHERE \`${pkName}\` = ##ID##`;
                 } else if (type === 'child_table_math') {
-                    // ▼▼▼ MULA LOGIK SIMPANAN BAHARU ▼▼▼
                     const parentTable = context.tableName;
                     const childTable = item.querySelector('.table-select')?.value;
                     const aggregate = item.querySelector('.aggregate-select')?.value;
@@ -221,14 +255,30 @@ function setupLogicBuilderCore(config) {
                     );
                     const fkField = relationship ? relationship.fk_child_field : 'unknown_fk';
 
+                    // ▼▼▼ MULA LOGIK SIMPANAN BAHARU ▼▼▼
+                    const filterContainer = item.querySelector('.child-math-filter-container');
+                    if (filterContainer) {
+                        const logicRadio = filterContainer.querySelector(':scope > .qb-logic-toggle input:checked');
+                        itemData.filter = {
+                            logic: logicRadio ? logicRadio.value : 'AND',
+                            rules: Array.from(filterContainer.querySelectorAll('.cqb-rule')).map(ruleEl => ({
+                                field: ruleEl.querySelector('.cqb-rule-field').value,
+                                operator: ruleEl.querySelector('.cqb-rule-operator').value,
+                                value: ruleEl.querySelector('.cqb-rule-value').value
+                            }))
+                        };
+                    }
+
+                    const whereClause = buildChildWhereClause(itemData.filter, childTable);
                     let query;
                     if (aggregate === 'COUNT') {
-                        query = `SELECT COUNT(*) FROM \`${childTable}\` WHERE \`${fkField}\` = ##ID##`;
+                        query = `SELECT COUNT(*) FROM \`${childTable}\` WHERE \`${fkField}\` = ##ID## ${whereClause}`;
                     } else {
-                        query = `SELECT COALESCE(${aggregate}(\`${field}\`), 0) FROM \`${childTable}\` WHERE \`${fkField}\` = ##ID##`;
+                        query = `SELECT COALESCE(${aggregate}(\`${field}\`), 0) FROM \`${childTable}\` WHERE \`${fkField}\` = ##ID## ${whereClause}`;
                     }
                     itemData.query = query;
                     // ▲▲▲ TAMAT LOGIK SIMPANAN BAHARU ▲▲▲
+
                 } else if (type === 'boolean') {
                     itemData.value = item.querySelector('select')?.value;
                 } else if (['comparison_operator', 'logical_operator', 'arithmetic_operator', 'current_user', 'current_datetime'].includes(type)) {
@@ -260,6 +310,17 @@ function setupLogicBuilderCore(config) {
     };
     
     const populateCanvasFromHiddenInput = () => {
+        const updateChildMathUI = (componentEl) => {
+            const aggregateSelect = componentEl.querySelector('.aggregate-select');
+            const fieldSelect = componentEl.querySelector('.field-select');
+            const countStar = componentEl.querySelector('.count-star');
+            if (!aggregateSelect || !fieldSelect || !countStar) return;
+
+            const isCount = aggregateSelect.value === 'COUNT';
+            fieldSelect.classList.toggle('hidden', isCount);
+            countStar.classList.toggle('hidden', !isCount);
+        };
+
         const buildFromLogic = (container, logicArray) => {
             container.innerHTML = '';
             if (logicArray.length === 0 && container.classList.contains('algorithm-canvas')) {
@@ -294,19 +355,52 @@ function setupLogicBuilderCore(config) {
                     // ▼▼▼ MULA LOGIK MEMUAT SEMULA BAHARU ▼▼▼
                     const tableSelect = newItem.querySelector('.table-select');
                     const aggregateSelect = newItem.querySelector('.aggregate-select');
+                    const fieldSelect = newItem.querySelector('.field-select');
                     
                     tableSelect.value = itemData.table;
-                    tableSelect.dispatchEvent(new Event('change')); // Ini akan mengisi senarai medan
-                    
                     aggregateSelect.value = itemData.aggregate;
-                    // Tunggu seketika untuk senarai medan diisi sebelum menetapkan nilainya
-                    setTimeout(() => {
-                        if (itemData.aggregate !== 'COUNT') {
-                            newItem.querySelector('.field-select').value = itemData.field;
+                    
+                    tableSelect.dispatchEvent(new Event('change')); // Isi dropdown medan & klausa WHERE
+                    
+                    if (itemData.aggregate !== 'COUNT') {
+                        fieldSelect.value = itemData.field;
+                    }
+                    
+                    updateChildMathUI(newItem); // Urus kebolehlihatan
+
+                    // Bina semula UI penapisan jika ada
+                    if (itemData.filter && itemData.filter.rules) {
+                        const showWhereBtn = newItem.querySelector('.show-where-btn');
+                        showWhereBtn.click(); // Cetuskan klik untuk memaparkan bekas
+                        const filterContainer = newItem.querySelector('.child-math-filter-container');
+                        if(filterContainer) {
+                            const logicRadio = filterContainer.querySelector(`.qb-logic-toggle input[value="${itemData.filter.logic}"]`);
+                            if(logicRadio) logicRadio.checked = true;
+
+                            const rulesList = filterContainer.querySelector('.child-math-rules-list');
+                            const ruleTemplate = document.getElementById('child-math-rule-template');
+                            const childFields = jsonData.database.table[itemData.table]?.fields || {};
+
+                            itemData.filter.rules.forEach(ruleData => {
+                                const ruleClone = ruleTemplate.content.cloneNode(true);
+                                const ruleEl = ruleClone.querySelector('.cqb-rule');
+                                const fieldDropdown = ruleEl.querySelector('.cqb-rule-field');
+
+                                // Isi dropdown medan
+                                Object.keys(childFields).forEach(fName => {
+                                    fieldDropdown.innerHTML += `<option value="${fName}">${fName}</option>`;
+                                });
+
+                                // Tetapkan nilai
+                                fieldDropdown.value = ruleData.field;
+                                ruleEl.querySelector('.cqb-rule-operator').value = ruleData.operator;
+                                ruleEl.querySelector('.cqb-rule-value').value = ruleData.value;
+
+                                rulesList.appendChild(ruleEl);
+                            });
                         }
-                        aggregateSelect.dispatchEvent(new Event('change')); // Ini akan menguruskan kebolehlihatan
-                    }, 50);
-                    // ▲▲▲ TAMAT LOGIK MEMUAT SEMULA BAHARU ▲▲▲
+                    }
+                     // ▲▲▲ TAMAT LOGIK MEMUAT SEMULA BAHARU ▲▲▲
                 } else if (itemData.type === 'boolean' || ['comparison_operator', 'logical_operator', 'arithmetic_operator', 'current_user', 'current_datetime'].includes(itemData.type)) {
                     newItem.querySelector('select').value = itemData.value;
                 } else if (['string', 'number', 'api_endpoint'].includes(itemData.type)) {
@@ -336,7 +430,7 @@ function setupLogicBuilderCore(config) {
         const itemContainer = document.createElement('div');
         itemContainer.className = 'dropped-item';
         itemContainer.dataset.itemType = type;
-        const VALUE_TYPES_FOR_WRAPPING = ['field', 'this_table_field', 'external_table_field', 'string', 'number', 'sql_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'child_table_math'];
+        const VALUE_TYPES_FOR_WRAPPING = ['field', 'this_table_field', 'child_table_math', 'external_table_field', 'string', 'number', 'sql_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'function'];
         if (VALUE_TYPES_FOR_WRAPPING.includes(type)) {
             const fxButton = document.createElement('button');
             fxButton.className = 'wrap-function-btn';
@@ -474,13 +568,13 @@ function setupLogicBuilderCore(config) {
                 break;
             }
             case 'child_table_math': {
-                // ▼▼▼ MULA KOD UNTUK KOMPONEN BAHARU ▼▼▼
                 const parentTable = context?.tableName || '';
                 const childRelationships = jsonData.database.relationships.filter(r => r.parent_table_name === parentTable);
                 const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
-
-                // 1. Cipta elemen UI
-                itemContainer.innerHTML = `
+                
+                const mainQueryContainer = document.createElement('div');
+                mainQueryContainer.className = 'child-math-main-query';
+                mainQueryContainer.innerHTML = `
                     <span class="sql-keyword">SELECT</span>
                     <select class="aggregate-select">
                         <option>SUM</option><option>AVG</option><option>COUNT</option><option>MIN</option><option>MAX</option>
@@ -491,37 +585,29 @@ function setupLogicBuilderCore(config) {
                     <select class="table-select"></select>
                     <span class="sql-prose where-clause"></span>
                 `;
+                itemContainer.appendChild(mainQueryContainer);
+                
+                const showWhereBtn = document.createElement('button');
+                showWhereBtn.className = 'btn btn-secondary btn-sm show-where-btn';
+                showWhereBtn.innerHTML = '<i class="fas fa-plus"></i> WHERE';
+                itemContainer.appendChild(showWhereBtn);
 
-                // 2. Dapatkan rujukan kepada elemen yang baru dicipta
                 const aggregateSelect = itemContainer.querySelector('.aggregate-select');
                 const fieldSelect = itemContainer.querySelector('.field-select');
                 const tableSelect = itemContainer.querySelector('.table-select');
                 const countStar = itemContainer.querySelector('.count-star');
                 const whereClause = itemContainer.querySelector('.where-clause');
 
-                // 3. Isi dropdown jadual anak
-                if (childRelationships.length > 0) {
-                    childRelationships.forEach(rel => {
-                        const option = document.createElement('option');
-                        option.value = rel.child_table_name;
-                        option.textContent = rel.child_table_name;
-                        tableSelect.appendChild(option);
-                    });
-                } else {
-                    tableSelect.innerHTML = `<option value="">No child tables</option>`;
-                    tableSelect.disabled = true;
-                    aggregateSelect.disabled = true;
-                }
-                
-                // 4. Pasang event listener
-                tableSelect.addEventListener('change', () => {
-                    const selectedChildTable = tableSelect.value;
+                const updateChildMathUI = () => {
+                    const isCount = aggregateSelect.value === 'COUNT';
+                    fieldSelect.classList.toggle('hidden', isCount);
+                    countStar.classList.toggle('hidden', !isCount);
+                };
+
+                const populateChildFields = (selectedChildTable) => {
                     const childFields = jsonData.database.table[selectedChildTable]?.fields || {};
-                    const rel = childRelationships.find(r => r.child_table_name === selectedChildTable);
-                    
                     fieldSelect.innerHTML = '';
                     for (const fieldName in childFields) {
-                        // Hanya tambah medan numerik untuk fungsi matematik
                         if (numericTypes.includes(childFields[fieldName].data_type.toUpperCase())) {
                             const option = document.createElement('option');
                             option.value = fieldName;
@@ -529,24 +615,56 @@ function setupLogicBuilderCore(config) {
                             fieldSelect.appendChild(option);
                         }
                     }
+                };
+
+                if (childRelationships.length > 0) {
+                    childRelationships.forEach(rel => {
+                        tableSelect.innerHTML += `<option value="${rel.child_table_name}">${rel.child_table_name}</option>`;
+                    });
+                } else {
+                    tableSelect.innerHTML = `<option value="">No child tables</option>`;
+                    tableSelect.disabled = true;
+                    aggregateSelect.disabled = true;
+                }
+                
+                tableSelect.addEventListener('change', () => {
+                    const selectedChildTable = tableSelect.value;
+                    const rel = childRelationships.find(r => r.child_table_name === selectedChildTable);
+                    
+                    populateChildFields(selectedChildTable);
                     whereClause.innerHTML = `WHERE <strong class="sql-condition">${rel ? rel.fk_child_field : '...'} = ##ID##</strong>`;
+                    
+                    // Reset filter if table changes
+                    const existingFilter = itemContainer.querySelector('.child-math-filter-container');
+                    if(existingFilter) existingFilter.remove();
+                    showWhereBtn.classList.remove('hidden');
+
                     updateModalCanvasState();
                 });
 
                 aggregateSelect.addEventListener('change', () => {
-                    const isCount = aggregateSelect.value === 'COUNT';
-                    fieldSelect.classList.toggle('hidden', isCount);
-                    countStar.classList.toggle('hidden', !isCount);
+                    updateChildMathUI();
                     updateModalCanvasState();
                 });
                 
                 fieldSelect.addEventListener('change', updateModalCanvasState);
 
-                // 5. Cetuskan event awal untuk mengisi data
+                showWhereBtn.addEventListener('click', () => {
+                    showWhereBtn.classList.add('hidden');
+                    const template = document.getElementById('child-math-where-clause-template');
+                    const clone = template.content.cloneNode(true);
+                    const filterContainer = clone.querySelector('.child-math-filter-container');
+                    
+                    // Beri ID unik untuk kumpulan radio button
+                    const uniqueId = `logic_${Date.now()}`;
+                    filterContainer.querySelectorAll('input[type="radio"]').forEach(radio => radio.name = `cqb-logic-${uniqueId}`);
+                    
+                    itemContainer.appendChild(filterContainer);
+                });
+
                 if (childRelationships.length > 0) {
                     tableSelect.dispatchEvent(new Event('change'));
                 }
-                // ▲▲▲ TAMAT KOD UNTUK KOMPONEN BAHARU ▲▲▲
                 break;
             }
             case 'field':
@@ -597,18 +715,18 @@ function setupLogicBuilderCore(config) {
                 const operatorSelect = document.createElement('select');
                 operatorSelect.className = 'operator-select';
                 const operators = [
-                    { value: '=', text: 'is equal to' },
-                    { value: '!=', text: 'is not equal to' },
-                    { value: '>', text: 'is greater than' },
-                    { value: '<', text: 'is less than' },
-                    { value: '>=', text: 'is greater than or equal to' },
-                    { value: '<=', text: 'is less than or equal to' },
+                    { value: '=', text: 'matched' },
+                    { value: '!=', text: 'unmatched' },
+                    { value: '>', text: 'above' },
+                    { value: '<', text: 'below' },
+                    { value: '>=', text: 'at least' },
+                    { value: '<=', text: 'at most' },
                     { value: 'LIKE', text: 'contains' },
-                    { value: 'NOT LIKE', text: 'does not contain' },
-                    { value: 'IN', text: 'is one of (a,b,c)' },
-                    { value: 'NOT IN', text: 'is not one of (a,b,c)' },
-                    { value: 'IS NULL', text: 'is empty (NULL)' },
-                    { value: 'IS NOT NULL', text: 'is not empty (not NULL)' }
+                    { value: 'NOT LIKE', text: 'without' },
+                    { value: 'IN', text: 'among(a,b,c)' },
+                    { value: 'NOT IN', text: 'outside(a,b,c)' },
+                    { value: 'IS NULL', text: 'is empty' },
+                    { value: 'IS NOT NULL', text: 'has content' }
                 ];
                 operators.forEach(op => {
                     const option = document.createElement('option');
@@ -833,6 +951,54 @@ function setupLogicBuilderCore(config) {
             }
         }
     });
+    
+    // ▼▼▼ MULA EVENT DELEGATION BAHARU ▼▼▼
+    canvas.addEventListener('click', e => {
+        const itemContainer = e.target.closest('.dropped-item[data-item-type="child_table_math"]');
+        if (!itemContainer) return;
+
+        // Tambah Rule
+        if (e.target.matches('.add-child-rule-btn, .add-child-rule-btn *')) {
+            const rulesList = itemContainer.querySelector('.child-math-rules-list');
+            const ruleTemplate = document.getElementById('child-math-rule-template');
+            const clone = ruleTemplate.content.cloneNode(true);
+            
+            // Isi dropdown medan
+            const childTable = itemContainer.querySelector('.table-select').value;
+            const childFields = jsonData.database.table[childTable]?.fields || {};
+            const fieldDropdown = clone.querySelector('.cqb-rule-field');
+            Object.keys(childFields).forEach(fName => {
+                fieldDropdown.innerHTML += `<option value="${fName}">${fName}</option>`;
+            });
+
+            rulesList.appendChild(clone);
+            updateModalCanvasState();
+        }
+
+        // Padam Filter
+        if (e.target.matches('.remove-where-btn, .remove-where-btn *')) {
+            itemContainer.querySelector('.child-math-filter-container')?.remove();
+            itemContainer.querySelector('.show-where-btn')?.classList.remove('hidden');
+            updateModalCanvasState();
+        }
+
+        // Padam Rule individu
+        if (e.target.matches('.cqb-delete-btn, .cqb-delete-btn *')) {
+            const ruleEl = e.target.closest('.cqb-rule');
+            if (ruleEl) {
+                ruleEl.remove();
+                updateModalCanvasState();
+            }
+        }
+    });
+
+    canvas.addEventListener('change', e => {
+        // Simpan apabila mana-mana input dalam filter diubah
+        if(e.target.closest('.child-math-filter-container')) {
+            updateModalCanvasState();
+        }
+    });
+     // ▲▲▲ TAMAT EVENT DELEGATION BAHARU ▲▲▲
 
     populateCanvasFromHiddenInput();
 
@@ -4175,18 +4341,18 @@ function createRuleElement(tableName, data = null) {
     const fieldOptions = Object.keys(fields).map(f => `<option value="${f}">${f}</option>`).join('');
 
     const operators = [
-        { value: '=', text: 'is equal to' },
-        { value: '!=', text: 'is not equal to' },
-        { value: '>', text: 'is greater than' },
-        { value: '<', text: 'is less than' },
-        { value: '>=', text: 'is greater than or equal to' },
-        { value: '<=', text: 'is less than or equal to' },
+        { value: '=', text: 'matched' },
+        { value: '!=', text: 'unmatched' },
+        { value: '>', text: 'above' },
+        { value: '<', text: 'below' },
+        { value: '>=', text: 'at least' },
+        { value: '<=', text: 'at most' },
         { value: 'LIKE', text: 'contains' },
-        { value: 'NOT LIKE', text: 'does not contain' },
-        { value: 'IN', text: 'is one of (a,b,c)' },
-        { value: 'NOT IN', text: 'is not one of (a,b,c)' },
-        { value: 'IS NULL', text: 'is empty (NULL)' },
-        { value: 'IS NOT NULL', text: 'is not empty (not NULL)' }
+        { value: 'NOT LIKE', text: 'without' },
+        { value: 'IN', text: 'among(a,b,c)' },
+        { value: 'NOT IN', text: 'outside(a,b,c)' },
+        { value: 'IS NULL', text: 'is empty' },
+        { value: 'IS NOT NULL', text: 'has content' }
     ];
     const operatorOptions = operators.map(op => `<option value="${op.value}">${op.text}</option>`).join('');
 

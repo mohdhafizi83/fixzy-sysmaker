@@ -2178,5 +2178,38 @@
         </div>
     </div>
 </div>
+<template id="child-math-where-clause-template">
+    <div class="child-math-filter-container">
+        <div class="qb-logic-toggle">
+            <label><input type="radio" name="cqb-logic-##UNIQUE_ID##" value="AND" checked> Match ALL (AND)</label>
+            <label><input type="radio" name="cqb-logic-##UNIQUE_ID##" value="OR"> Match ANY (OR)</label>
+        </div>
+        <div class="child-math-rules-list"></div>
+        <div class="child-math-actions">
+            <button class="btn btn-secondary btn-sm add-child-rule-btn"><i class="fas fa-plus"></i> Add Rule</button>
+            <button class="btn btn-secondary btn-sm remove-where-btn"><i class="fas fa-trash-alt"></i> Remove Filter</button>
+        </div>
+    </div>
+</template>
+
+<template id="child-math-rule-template">
+    <div class="cqb-rule">
+        <select class="cqb-rule-field"></select>
+        <select class="cqb-rule-operator">
+            <option value="=">matched</option>
+            <option value="!=">unmatched</option>
+            <option value=">">above</option>
+            <option value="<">below</option>
+            <option value=">=">at least</option>
+            <option value="<=">at most</option>
+            <option value="LIKE">contains</option>
+            <option value="NOT LIKE">without</option>
+            <option value="IS NULL">is empty</option>
+            <option value="IS NOT NULL">has content</option>
+        </select>
+        <input type="text" class="cqb-rule-value" placeholder="Value...">
+        <button class="cqb-delete-btn">&times;</button>
+    </div>
+</template>
 </body>
 </html>
