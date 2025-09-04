@@ -244,7 +244,7 @@ function setupLogicBuilderCore(config) {
     };
     // ▲▲▲ TAMAT FUNGSI BANTUAN BAHARU UNTUK JOIN ▲▲▲
 
-    const updateModalCanvasState = () => {
+const updateModalCanvasState = () => {
         const mapItems = (container) => {
             const children = Array.from(container.children).filter(el => el.classList.contains('dropped-item'));
             return children.map(item => {
@@ -257,11 +257,11 @@ function setupLogicBuilderCore(config) {
                     itemData.arguments = mapItems(argContainer);
                 } else if (type === 'comment') {
                     itemData.value = item.querySelector('textarea')?.value;
-                } else if (type === 'field' || type === 'external_table_field') {
+                } else if (type === 'field' || type === 'lookup_value') {
                     itemData.table = item.querySelector('.table-select')?.value;
                     itemData.field = item.querySelector('.field-select')?.value;
                     
-                    if (type === 'external_table_field' && item.dataset.condField) {
+                    if (type === 'lookup_value' && item.dataset.condField) {
                         itemData.condition = {
                             field: item.dataset.condField,
                             operator: item.dataset.condOperator,
@@ -380,17 +380,16 @@ function setupLogicBuilderCore(config) {
             } else if (logicArray.length === 0 && container.classList.contains('function-argument-droppable')) {
                 container.innerHTML = '<span class="canvas-placeholder">Drop value here</span>';
             }
-
             logicArray.forEach(itemData => {
                 const newItem = createInteractiveElement(itemData);
                 container.appendChild(newItem);
 
-                if (['field', 'external_table_field'].includes(itemData.type)) {
+                if (['field', 'lookup_value'].includes(itemData.type)) {
                     newItem.querySelector('.table-select').value = itemData.table;
                     newItem.querySelector('.table-select').dispatchEvent(new Event('change'));
                     newItem.querySelector('.field-select').value = itemData.field;
 
-                    if (itemData.type === 'external_table_field' && itemData.condition) {
+                    if (itemData.type === 'lookup_value' && itemData.condition) {
                         newItem.dataset.condField = itemData.condition.field;
                         newItem.dataset.condOperator = itemData.condition.operator;
                         newItem.dataset.condValueType = itemData.condition.valueType;
@@ -496,12 +495,12 @@ function setupLogicBuilderCore(config) {
         buildFromLogic(canvas, logic);
     };
     
-    const createInteractiveElement = (data) => {
+const createInteractiveElement = (data) => {
         const type = data.type;
         const itemContainer = document.createElement('div');
         itemContainer.className = 'dropped-item';
         itemContainer.dataset.itemType = type;
-        const VALUE_TYPES_FOR_WRAPPING = ['field', 'this_table_field', 'child_table_math', 'external_table_field', 'string', 'number', 'sql_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'function'];
+        const VALUE_TYPES_FOR_WRAPPING = ['field', 'this_table_field', 'child_table_math', 'lookup_value', 'string', 'number', 'sql_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'function'];
         if (VALUE_TYPES_FOR_WRAPPING.includes(type)) {
             const fxButton = document.createElement('button');
             fxButton.className = 'wrap-function-btn';
@@ -565,7 +564,7 @@ function setupLogicBuilderCore(config) {
                 itemContainer.innerHTML = `<span class="api-endpoint-label">[API ENDPOINT]</span><input type="text" placeholder="https://api.example.com/data">`;
                 itemContainer.querySelector('input').addEventListener('input', updateModalCanvasState);
                 break;            
-            case 'external_table_field': {
+            case 'lookup_value': {
                 const activeTable = config.context?.tableName || '';
                 const tableSelect = document.createElement('select');
                 tableSelect.className = 'table-select';
@@ -935,7 +934,7 @@ function setupLogicBuilderCore(config) {
         return itemContainer;
     };
 
-    const VALUE_TYPES = ['field', 'this_table_field', 'child_table_math', 'external_table_field', 'string', 'number', 'sql_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'function'];
+    const VALUE_TYPES = ['field', 'this_table_field', 'child_table_math', 'lookup_value', 'string', 'number', 'sql_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'function'];
     const isValidDrop = (componentType) => {
         if (componentType === 'comment') {
             return true;
