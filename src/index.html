@@ -2192,8 +2192,30 @@
     </div>
 </template>
 
-<template id="child-math-rule-template">
-    <div class="cqb-rule">
+<<template id="child-math-rule-template">
+    <div class="cqb-rule" data-rule-type="standard">
+        <select class="cqb-rule-field"></select>
+        <select class="cqb-rule-operator">
+            <option value="=">matched</option>
+            <option value="!=">unmatched</option>
+            <option value=">">above</option>
+            <option value="<">below</option>
+            <option value=">=">at least</option>
+            <option value="<=">at most</option>
+            <option value="LIKE">contains</option>
+            <option value="NOT LIKE">without</option>
+            <option value="IS NULL">is empty</option>
+            <option value="IS NOT NULL">has content</option>
+        </select>
+        <input type="text" class="cqb-rule-value" placeholder="Value...">
+        <button class="cqb-delete-btn">&times;</button>
+    </div>
+</template>
+
+<template id="child-math-join-rule-template">
+    <div class="cqb-rule cqb-join-rule" data-rule-type="join">
+        <select class="cqb-rule-table"></select>
+        <span class="join-rule-separator">.</span>
         <select class="cqb-rule-field"></select>
         <select class="cqb-rule-operator">
             <option value="=">matched</option>

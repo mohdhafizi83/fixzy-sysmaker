@@ -54,9 +54,6 @@ export function openGeneralQueryBuilder(targetTextarea) {
  * @param {string} [config.updateMode='live'] - Mod kemas kini ('live' atau 'manual').
  * @returns {object} Objek dengan kaedah untuk berinteraksi dengan builder.
  */
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
-
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
 
 function setupLogicBuilderCore(config) {
     const { palette, canvas, hiddenInput, validationRules, context, updateMode = 'live' } = config;
@@ -174,17 +171,57 @@ function setupLogicBuilderCore(config) {
         });
     };
 
-    // ▼▼▼ MULA FUNGSI BANTUAN BAHARU (UNTUK Child Table - Math) ▼▼▼
+    // ▼▼▼ MULA FUNGSI BANTUAN BAHARU UNTUK JOIN ▼▼▼
+    const buildChildMathJoinClause = (childTable, filterState) => {
+        if (!filterState || !filterState.rules) return '';
+        const allRelationships = jsonData.database.relationships;
+        let joinClauses = '';
+
+        const tablesToJoin = new Set();
+        filterState.rules.forEach(rule => {
+            if (rule.type === 'join_rule') {
+                tablesToJoin.add(rule.table);
+            }
+        });
+
+        tablesToJoin.forEach(tableToJoin => {
+            if (tableToJoin === childTable) return;
+
+            const foundRelationship = allRelationships.find(rel =>
+                (rel.parent_table_name === childTable && rel.child_table_name === tableToJoin) ||
+                (rel.parent_table_name === tableToJoin && rel.child_table_name === childTable)
+            );
+
+            if (foundRelationship) {
+                const onClause = `\`${foundRelationship.parent_table_name}\`.\`${foundRelationship.parent_field}\` = \`${foundRelationship.child_table_name}\`.\`${foundRelationship.fk_child_field}\``;
+                joinClauses += `\nLEFT JOIN \`${tableToJoin}\` ON ${onClause}`;
+            }
+        });
+
+        return joinClauses;
+    };
+
     const buildChildWhereClause = (filterState, childTable) => {
         if (!filterState || !filterState.rules || filterState.rules.length === 0) return '';
         const logic = filterState.logic || 'AND';
         const conditions = filterState.rules.map(rule => {
-            const { field, operator, value } = rule;
-            const fieldData = jsonData.database.table[childTable]?.fields[field];
+            const { operator, value } = rule;
+            
+            let tableName, fieldName, fieldData;
+            if (rule.type === 'join_rule') {
+                tableName = rule.table;
+                fieldName = rule.field;
+                fieldData = jsonData.database.table[tableName]?.fields[fieldName];
+            } else { // 'standard' rule
+                tableName = childTable;
+                fieldName = rule.field;
+                fieldData = jsonData.database.table[tableName]?.fields[fieldName];
+            }
+
             if (!fieldData) return null;
 
             if (operator === 'IS NULL' || operator === 'IS NOT NULL') {
-                return `\`${childTable}\`.\`${field}\` ${operator}`;
+                return `\`${tableName}\`.\`${fieldName}\` ${operator}`;
             }
 
             const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
@@ -200,12 +237,12 @@ function setupLogicBuilderCore(config) {
                 formattedValue = `'${String(value || '').replace(/'/g, "''")}'`;
             }
 
-            return `\`${childTable}\`.\`${field}\` ${operator} ${formattedValue}`;
+            return `\`${tableName}\`.\`${fieldName}\` ${operator} ${formattedValue}`;
         }).filter(c => c);
 
         return conditions.length > 0 ? `AND (${conditions.join(` ${logic} `)})` : '';
     };
-    // ▲▲▲ TAMAT FUNGSI BANTUAN BAHARU ▲▲▲
+    // ▲▲▲ TAMAT FUNGSI BANTUAN BAHARU UNTUK JOIN ▲▲▲
 
     const updateModalCanvasState = () => {
         const mapItems = (container) => {
@@ -255,29 +292,44 @@ function setupLogicBuilderCore(config) {
                     );
                     const fkField = relationship ? relationship.fk_child_field : 'unknown_fk';
 
-                    // ▼▼▼ MULA LOGIK SIMPANAN BAHARU ▼▼▼
                     const filterContainer = item.querySelector('.child-math-filter-container');
                     if (filterContainer) {
                         const logicRadio = filterContainer.querySelector(':scope > .qb-logic-toggle input:checked');
                         itemData.filter = {
                             logic: logicRadio ? logicRadio.value : 'AND',
-                            rules: Array.from(filterContainer.querySelectorAll('.cqb-rule')).map(ruleEl => ({
-                                field: ruleEl.querySelector('.cqb-rule-field').value,
-                                operator: ruleEl.querySelector('.cqb-rule-operator').value,
-                                value: ruleEl.querySelector('.cqb-rule-value').value
-                            }))
+                            rules: Array.from(filterContainer.querySelectorAll('.cqb-rule')).map(ruleEl => {
+                                const ruleType = ruleEl.dataset.ruleType;
+                                if (ruleType === 'join') {
+                                    return {
+                                        type: 'join_rule',
+                                        table: ruleEl.querySelector('.cqb-rule-table').value,
+                                        field: ruleEl.querySelector('.cqb-rule-field').value,
+                                        operator: ruleEl.querySelector('.cqb-rule-operator').value,
+                                        value: ruleEl.querySelector('.cqb-rule-value').value
+                                    };
+                                } else { // standard
+                                    return {
+                                        type: 'standard_rule',
+                                        field: ruleEl.querySelector('.cqb-rule-field').value,
+                                        operator: ruleEl.querySelector('.cqb-rule-operator').value,
+                                        value: ruleEl.querySelector('.cqb-rule-value').value
+                                    };
+                                }
+                            })
                         };
                     }
 
+                    // ▼▼▼ MULA PENGUBAHSUAIAN PENJANAAN KUIRI ▼▼▼
+                    const joinClause = buildChildMathJoinClause(childTable, itemData.filter);
                     const whereClause = buildChildWhereClause(itemData.filter, childTable);
                     let query;
                     if (aggregate === 'COUNT') {
-                        query = `SELECT COUNT(*) FROM \`${childTable}\` WHERE \`${fkField}\` = ##ID## ${whereClause}`;
+                        query = `SELECT COUNT(*) FROM \`${childTable}\` ${joinClause} WHERE \`${childTable}\`.\`${fkField}\` = ##ID## ${whereClause}`;
                     } else {
-                        query = `SELECT COALESCE(${aggregate}(\`${field}\`), 0) FROM \`${childTable}\` WHERE \`${fkField}\` = ##ID## ${whereClause}`;
+                        query = `SELECT COALESCE(${aggregate}(\`${childTable}\`.\`${field}\`), 0) FROM \`${childTable}\` ${joinClause} WHERE \`${childTable}\`.\`${fkField}\` = ##ID## ${whereClause}`;
                     }
-                    itemData.query = query;
-                    // ▲▲▲ TAMAT LOGIK SIMPANAN BAHARU ▲▲▲
+                    itemData.query = query.replace(/\s+/g, ' ').trim(); // Bersihkan kuiri
+                    // ▲▲▲ TAMAT PENGUBAHSUAIAN PENJANAAN KUIRI ▲▲▲
 
                 } else if (type === 'boolean') {
                     itemData.value = item.querySelector('select')?.value;
@@ -352,7 +404,6 @@ function setupLogicBuilderCore(config) {
                 } else if (itemData.type === 'this_table_field') {
                     newItem.querySelector('.field-select').value = itemData.field;
                 } else if (itemData.type === 'child_table_math') {
-                    // ▼▼▼ MULA LOGIK MEMUAT SEMULA BAHARU ▼▼▼
                     const tableSelect = newItem.querySelector('.table-select');
                     const aggregateSelect = newItem.querySelector('.aggregate-select');
                     const fieldSelect = newItem.querySelector('.field-select');
@@ -360,18 +411,17 @@ function setupLogicBuilderCore(config) {
                     tableSelect.value = itemData.table;
                     aggregateSelect.value = itemData.aggregate;
                     
-                    tableSelect.dispatchEvent(new Event('change')); // Isi dropdown medan & klausa WHERE
+                    tableSelect.dispatchEvent(new Event('change'));
                     
                     if (itemData.aggregate !== 'COUNT') {
                         fieldSelect.value = itemData.field;
                     }
                     
-                    updateChildMathUI(newItem); // Urus kebolehlihatan
+                    updateChildMathUI(newItem);
 
-                    // Bina semula UI penapisan jika ada
                     if (itemData.filter && itemData.filter.rules) {
                         const showWhereBtn = newItem.querySelector('.show-where-btn');
-                        showWhereBtn.click(); // Cetuskan klik untuk memaparkan bekas
+                        showWhereBtn.click();
                         const filterContainer = newItem.querySelector('.child-math-filter-container');
                         if(filterContainer) {
                             const logicRadio = filterContainer.querySelector(`.qb-logic-toggle input[value="${itemData.filter.logic}"]`);
@@ -379,28 +429,49 @@ function setupLogicBuilderCore(config) {
 
                             const rulesList = filterContainer.querySelector('.child-math-rules-list');
                             const ruleTemplate = document.getElementById('child-math-rule-template');
-                            const childFields = jsonData.database.table[itemData.table]?.fields || {};
+                            const joinRuleTemplate = document.getElementById('child-math-join-rule-template');
 
                             itemData.filter.rules.forEach(ruleData => {
-                                const ruleClone = ruleTemplate.content.cloneNode(true);
-                                const ruleEl = ruleClone.querySelector('.cqb-rule');
-                                const fieldDropdown = ruleEl.querySelector('.cqb-rule-field');
+                                if (ruleData.type === 'join_rule') {
+                                    const clone = joinRuleTemplate.content.cloneNode(true);
+                                    const ruleEl = clone.querySelector('.cqb-join-rule');
+                                    rulesList.appendChild(ruleEl); // Tambah ke DOM dahulu
+                                    
+                                    // Isi dropdown jadual berkaitan
+                                    const childTable = itemData.table;
+                                    const relatedTables = new Set();
+                                    jsonData.database.relationships.forEach(rel => {
+                                        if (rel.parent_table_name === childTable) relatedTables.add(rel.child_table_name);
+                                        if (rel.child_table_name === childTable) relatedTables.add(rel.parent_table_name);
+                                    });
+                                    const tableDropdown = ruleEl.querySelector('.cqb-rule-table');
+                                    relatedTables.forEach(t => {
+                                        tableDropdown.innerHTML += `<option value="${t}">${t}</option>`;
+                                    });
+                                    
+                                    tableDropdown.value = ruleData.table;
+                                    tableDropdown.dispatchEvent(new Event('change')); // Cetus untuk isi medan
 
-                                // Isi dropdown medan
-                                Object.keys(childFields).forEach(fName => {
-                                    fieldDropdown.innerHTML += `<option value="${fName}">${fName}</option>`;
-                                });
+                                    ruleEl.querySelector('.cqb-rule-field').value = ruleData.field;
+                                    ruleEl.querySelector('.cqb-rule-operator').value = ruleData.operator;
+                                    ruleEl.querySelector('.cqb-rule-value').value = ruleData.value;
 
-                                // Tetapkan nilai
-                                fieldDropdown.value = ruleData.field;
-                                ruleEl.querySelector('.cqb-rule-operator').value = ruleData.operator;
-                                ruleEl.querySelector('.cqb-rule-value').value = ruleData.value;
-
-                                rulesList.appendChild(ruleEl);
+                                } else { // standard_rule
+                                    const clone = ruleTemplate.content.cloneNode(true);
+                                    const ruleEl = clone.querySelector('.cqb-rule');
+                                    const fieldDropdown = ruleEl.querySelector('.cqb-rule-field');
+                                    const childFields = jsonData.database.table[itemData.table]?.fields || {};
+                                    Object.keys(childFields).forEach(fName => {
+                                        fieldDropdown.innerHTML += `<option value="${fName}">${fName}</option>`;
+                                    });
+                                    fieldDropdown.value = ruleData.field;
+                                    ruleEl.querySelector('.cqb-rule-operator').value = ruleData.operator;
+                                    ruleEl.querySelector('.cqb-rule-value').value = ruleData.value;
+                                    rulesList.appendChild(ruleEl);
+                                }
                             });
                         }
                     }
-                     // ▲▲▲ TAMAT LOGIK MEMUAT SEMULA BAHARU ▲▲▲
                 } else if (itemData.type === 'boolean' || ['comparison_operator', 'logical_operator', 'arithmetic_operator', 'current_user', 'current_datetime'].includes(itemData.type)) {
                     newItem.querySelector('select').value = itemData.value;
                 } else if (['string', 'number', 'api_endpoint'].includes(itemData.type)) {
@@ -632,9 +703,8 @@ function setupLogicBuilderCore(config) {
                     const rel = childRelationships.find(r => r.child_table_name === selectedChildTable);
                     
                     populateChildFields(selectedChildTable);
-                    whereClause.innerHTML = `WHERE <strong class="sql-condition">${rel ? rel.fk_child_field : '...'} = ##ID##</strong>`;
+                    whereClause.innerHTML = `WHERE \`${selectedChildTable}\`.\`${rel ? rel.fk_child_field : '...'}\` = ##ID##`;
                     
-                    // Reset filter if table changes
                     const existingFilter = itemContainer.querySelector('.child-math-filter-container');
                     if(existingFilter) existingFilter.remove();
                     showWhereBtn.classList.remove('hidden');
@@ -655,9 +725,16 @@ function setupLogicBuilderCore(config) {
                     const clone = template.content.cloneNode(true);
                     const filterContainer = clone.querySelector('.child-math-filter-container');
                     
-                    // Beri ID unik untuk kumpulan radio button
                     const uniqueId = `logic_${Date.now()}`;
                     filterContainer.querySelectorAll('input[type="radio"]').forEach(radio => radio.name = `cqb-logic-${uniqueId}`);
+                    
+                    // ▼▼▼ MULA PENGUBAHSUAIAN: TAMBAH BUTANG +JOIN Rule ▼▼▼
+                    const actionsDiv = filterContainer.querySelector('.child-math-actions');
+                    const joinBtn = document.createElement('button');
+                    joinBtn.className = 'btn btn-secondary btn-sm add-child-join-rule-btn';
+                    joinBtn.innerHTML = '<i class="fas fa-link"></i> +JOIN Rule';
+                    actionsDiv.insertBefore(joinBtn, actionsDiv.querySelector('.remove-where-btn'));
+                    // ▲▲▲ TAMAT PENGUBAHSUAIAN ▲▲▲
                     
                     itemContainer.appendChild(filterContainer);
                 });
@@ -952,18 +1029,15 @@ function setupLogicBuilderCore(config) {
         }
     });
     
-    // ▼▼▼ MULA EVENT DELEGATION BAHARU ▼▼▼
     canvas.addEventListener('click', e => {
         const itemContainer = e.target.closest('.dropped-item[data-item-type="child_table_math"]');
         if (!itemContainer) return;
 
-        // Tambah Rule
         if (e.target.matches('.add-child-rule-btn, .add-child-rule-btn *')) {
             const rulesList = itemContainer.querySelector('.child-math-rules-list');
             const ruleTemplate = document.getElementById('child-math-rule-template');
             const clone = ruleTemplate.content.cloneNode(true);
             
-            // Isi dropdown medan
             const childTable = itemContainer.querySelector('.table-select').value;
             const childFields = jsonData.database.table[childTable]?.fields || {};
             const fieldDropdown = clone.querySelector('.cqb-rule-field');
@@ -975,14 +1049,53 @@ function setupLogicBuilderCore(config) {
             updateModalCanvasState();
         }
 
-        // Padam Filter
+        // ▼▼▼ MULA LOGIK BAHARU UNTUK +JOIN Rule ▼▼▼
+        if (e.target.matches('.add-child-join-rule-btn, .add-child-join-rule-btn *')) {
+            const rulesList = itemContainer.querySelector('.child-math-rules-list');
+            const ruleTemplate = document.getElementById('child-math-join-rule-template');
+            const clone = ruleTemplate.content.cloneNode(true);
+            const ruleEl = clone.querySelector('.cqb-join-rule');
+
+            const childTable = itemContainer.querySelector('.table-select').value;
+            const relatedTables = new Set();
+            jsonData.database.relationships.forEach(rel => {
+                if (rel.parent_table_name === childTable) relatedTables.add(rel.child_table_name);
+                if (rel.child_table_name === childTable) relatedTables.add(rel.parent_table_name);
+            });
+
+            const tableDropdown = ruleEl.querySelector('.cqb-rule-table');
+            const fieldDropdown = ruleEl.querySelector('.cqb-rule-field');
+
+            relatedTables.forEach(t => tableDropdown.innerHTML += `<option value="${t}">${t}</option>`);
+
+            const populateJoinFields = (selectedTable) => {
+                fieldDropdown.innerHTML = '';
+                const fields = jsonData.database.table[selectedTable]?.fields || {};
+                Object.keys(fields).forEach(fName => {
+                    fieldDropdown.innerHTML += `<option value="${fName}">${fName}</option>`;
+                });
+            };
+            
+            tableDropdown.addEventListener('change', () => {
+                populateJoinFields(tableDropdown.value);
+                updateModalCanvasState();
+            });
+
+            if (relatedTables.size > 0) {
+                populateJoinFields(tableDropdown.value);
+            }
+            
+            rulesList.appendChild(clone);
+            updateModalCanvasState();
+        }
+        // ▲▲▲ TAMAT LOGIK BAHARU UNTUK +JOIN Rule ▲▲▲
+
         if (e.target.matches('.remove-where-btn, .remove-where-btn *')) {
             itemContainer.querySelector('.child-math-filter-container')?.remove();
             itemContainer.querySelector('.show-where-btn')?.classList.remove('hidden');
             updateModalCanvasState();
         }
 
-        // Padam Rule individu
         if (e.target.matches('.cqb-delete-btn, .cqb-delete-btn *')) {
             const ruleEl = e.target.closest('.cqb-rule');
             if (ruleEl) {
@@ -993,12 +1106,10 @@ function setupLogicBuilderCore(config) {
     });
 
     canvas.addEventListener('change', e => {
-        // Simpan apabila mana-mana input dalam filter diubah
         if(e.target.closest('.child-math-filter-container')) {
             updateModalCanvasState();
         }
     });
-     // ▲▲▲ TAMAT EVENT DELEGATION BAHARU ▲▲▲
 
     populateCanvasFromHiddenInput();
 

@@ -2586,3 +2586,28 @@ fieldset.fieldset-disabled {
     display: flex;
     gap: 0.5rem;
 }
+
+/* Styling for JOIN Rule */
+.child-math-actions {
+    margin-top: 0.75rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.cqb-join-rule .cqb-rule-table, .cqb-join-rule .cqb-rule-field {
+    flex: 1;
+}
+
+.cqb-join-rule .cqb-rule-operator {
+    flex-basis: 120px;
+}
+
+.cqb-join-rule .cqb-rule-value {
+    flex: 2;
+}
+
+.join-rule-separator {
+    font-weight: bold;
+    font-size: 1.2em;
+    color: var(--secondary-color);
+}
