@@ -41,13 +41,13 @@ if (!dbExists) {
 // ▼▼▼ SEMUA IPC HANDLER DIKUMPULKAN DI SINI UNTUK KONSISTENSI ▼▼▼
 // =================================================================
 // Tambah keseluruhan fungsi ini di dalam src/main.js
+// FIND AND REPLACE THIS ENTIRE HANDLER IN: src/main.js
 ipcMain.handle('database:batch-update', async (event, queue) => {
     if (!queue) return { success: false, message: 'Queue is empty.' };
 
     const transaction = db.transaction(() => {
         // Kemas kini Projek
         if (queue.project && Object.keys(queue.project).length > 0) {
-            // Asumsikan hanya ada satu projek aktif, jadi ID tidak diperlukan dari queue
             const activeProject = db.prepare("SELECT project_id FROM projects WHERE is_active = 1").get();
             if (activeProject) {
                 const { ...fieldsToUpdate } = queue.project;
@@ -59,17 +59,43 @@ ipcMain.handle('database:batch-update', async (event, queue) => {
             }
         }
 
-        // Kemas kini Jadual (DIPERBAIKI)
+        // Kemas kini Jadual (DIPERBAIKI DENGAN LOGIK KEMAS KINI MENU)
         if (queue.tables && Object.keys(queue.tables).length > 0) {
             for (const id in queue.tables) {
-                const { ...fieldsToUpdate } = queue.tables[id];
-                // Buang 'table_name' jika ia dihantar untuk tujuan konteks sahaja
-                if (Object.keys(fieldsToUpdate).length > 1 && fieldsToUpdate.table_name === db.prepare('SELECT table_name FROM tables WHERE table_id = ?').get(id).table_name) {
-                    delete fieldsToUpdate.table_name;
+                const fieldsToUpdate = queue.tables[id];
+                const newTableName = fieldsToUpdate.table_name;
+                let oldTableName = null;
+
+                // Semak jika nama jadual sedang dikemas kini
+                if (newTableName) {
+                    const tableInfo = db.prepare('SELECT table_name FROM tables WHERE table_id = ?').get(id);
+                    if (tableInfo) {
+                        oldTableName = tableInfo.table_name;
+                    }
                 }
+
+                // Bina dan laksanakan kemas kini untuk jadual 'tables'
                 const setClause = Object.keys(fieldsToUpdate).map(key => `${key} = ?`).join(', ');
                 const values = Object.values(fieldsToUpdate);
-                if (setClause) db.prepare(`UPDATE tables SET ${setClause} WHERE table_id = ?`).run(...values, id);
+                if (setClause) {
+                    db.prepare(`UPDATE tables SET ${setClause} WHERE table_id = ?`).run(...values, id);
+                }
+
+                // Jika nama jadual telah ditukar, kemas kini juga 'menu_items'
+                if (oldTableName && newTableName && oldTableName !== newTableName) {
+                    const newUrl = `${newTableName} Model`;
+                    const oldUrl = `${oldTableName} Model`;
+
+                    // Kemas kini label HANYA jika ia sepadan dengan nama jadual lama
+                    db.prepare(
+                        'UPDATE menu_items SET item_label = ? WHERE table_id = ? AND item_label = ?'
+                    ).run(newTableName, id, oldTableName);
+                    
+                    // Kemas kini URL HANYA jika ia sepadan dengan format 'Model' yang lama
+                    db.prepare(
+                        'UPDATE menu_items SET item_url = ? WHERE table_id = ? AND item_url = ?'
+                    ).run(newUrl, id, oldUrl);
+                }
             }
         }
 
@@ -121,7 +147,6 @@ ipcMain.handle('database:batch-update', async (event, queue) => {
                   AND child_table_id = (SELECT table_id FROM tables WHERE table_name = :childTableName)
             `);
             for (const rel of queue.relationshipDeletes) {
-                // 'rel' akan mempunyai { childTableName, fk_child_field }
                 deleteStmt.run(rel);
             }
         }
@@ -464,12 +489,22 @@ ipcMain.handle('table:delete', async (event, { projectId, tableNamesToDelete }) 
 
         const transaction = db.transaction(() => {
             const getTableId = db.prepare('SELECT table_id FROM tables WHERE project_id = ? AND table_name = ?');
+            
+            // ▼▼▼ MULA PERUBAHAN ▼▼▼
+            const deleteMenuItem = db.prepare('DELETE FROM menu_items WHERE table_id = ?');
+            // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+            
             const deleteTable = db.prepare('DELETE FROM tables WHERE table_id = ?');
 
             for (const tableName of tableNamesToDelete) {
                 const table = getTableId.get(projectId, tableName);
                 if (table) {
+                    // ▼▼▼ MULA LOGIK BAHARU ▼▼▼
+                    // 1. Padam item menu terlebih dahulu
+                    deleteMenuItem.run(table.table_id);
+                    // 2. Kemudian, padam jadual (akan mengaktifkan ON DELETE CASCADE untuk medan, dll.)
                     deleteTable.run(table.table_id);
+                    // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
                 }
             }
         });
@@ -484,8 +519,6 @@ ipcMain.handle('table:delete', async (event, { projectId, tableNamesToDelete }) 
 });
 
 // Handler untuk mencipta jadual baharu
-// main.js
-
 ipcMain.handle('table:create', async (event, projectId) => {
     try {
         let newName;
@@ -493,7 +526,6 @@ ipcMain.handle('table:create', async (event, projectId) => {
         const checkStmt = db.prepare('SELECT table_id FROM tables WHERE project_id = ? AND table_name = ?');
 
         while (!isUnique) {
-            // ▼▼▼ BARIS INI DIUBAH UNTUK MENJANA HURUF SAHAJA ▼▼▼
             const randomChars = Array.from({ length: 6 }, () => 'abcdefghijklmnopqrstuvwxyz'.charAt(Math.floor(Math.random() * 26))).join('');
             newName = `table_${randomChars}`;
             const existingTable = checkStmt.get(projectId, newName);
@@ -505,11 +537,31 @@ ipcMain.handle('table:create', async (event, projectId) => {
         const maxOrderResult = db.prepare('SELECT MAX(table_order) as max_order FROM tables WHERE project_id = ?').get(projectId);
         const nextOrder = (maxOrderResult ? (maxOrderResult.max_order || 0) : 0) + 1;
 
-        const info = db.prepare(
-            'INSERT INTO tables (project_id, table_name, table_view_title, table_order) VALUES (?, ?, ?, ?)'
-        ).run(projectId, newName, newName, nextOrder);
+        const transaction = db.transaction(() => {
+            // 1. Cipta jadual
+            const info = db.prepare(
+                'INSERT INTO tables (project_id, table_name, table_view_title, table_order) VALUES (?, ?, ?, ?)'
+            ).run(projectId, newName, newName, nextOrder);
+            const tableId = info.lastInsertRowid;
 
-        return db.prepare('SELECT * FROM tables WHERE table_id = ?').get(info.lastInsertRowid);
+            // 2. Cipta item menu yang sepadan
+            const maxMenuOrderResult = db.prepare(
+                'SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL'
+            ).get(projectId);
+            const nextMenuOrder = (maxMenuOrderResult && maxMenuOrderResult.max_order !== null ? maxMenuOrderResult.max_order : -1) + 1;
+            
+            // ▼▼▼ MULA PERUBAHAN ▼▼▼
+            const itemUrl = `${newName} Model`;
+            db.prepare(
+                'INSERT INTO menu_items (project_id, table_id, item_label, item_url, item_order, menu_group_id) VALUES (?, ?, ?, ?, ?, NULL)'
+            ).run(projectId, tableId, newName, itemUrl, nextMenuOrder);
+            // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+            
+            return tableId;
+        });
+
+        const newTableId = transaction();
+        return db.prepare('SELECT * FROM tables WHERE table_id = ?').get(newTableId);
 
     } catch (error) {
         console.error("Gagal mencipta jadual baharu:", error);
@@ -724,7 +776,6 @@ ipcMain.handle("tables:check-exists", async (event, projectId) => {
     .get(projectId);
 });
 
-// Handler untuk import SQL
 // main.js
 
 function importSchema(sql, projectId) {
@@ -765,20 +816,36 @@ function importSchema(sql, projectId) {
     let tableOrder = 0;
 	
     const transaction = db.transaction((ast) => {
+        const getMaxMenuOrderStmt = db.prepare(
+            'SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL'
+        );
+        // ▼▼▼ MULA PERUBAHAN ▼▼▼
+        const insertMenuItemStmt = db.prepare(
+            'INSERT INTO menu_items (project_id, table_id, item_label, item_url, item_order, menu_group_id) VALUES (?, ?, ?, ?, ?, NULL)'
+        );
+        // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+
         for (const statement of ast) {
             if (statement.type === "create" && statement.keyword === "table") {
                 const tableName = statement.table[0].table;
                 const tableInfo = db
                     .prepare(
-                        // UBAH PENYATAAN INSERT DI BAWAH
                         "INSERT INTO tables (project_id, table_name, table_view_title, table_order) VALUES (?, ?, ?, ?)"
                     )
-                    .run(projectId, tableName, tableName, tableOrder); // TAMBAH 'tableOrder'
+                    .run(projectId, tableName, tableName, tableOrder); 
                 
                 tableOrder++;
                 const tableId = tableInfo.lastInsertRowid;
                 tablesCreated++;
                 tableMap[tableName] = tableId;
+
+                const maxOrderResult = getMaxMenuOrderStmt.get(projectId);
+                const nextMenuOrder = (maxOrderResult && maxOrderResult.max_order !== null ? maxOrderResult.max_order : -1) + 1;
+                
+                // ▼▼▼ MULA PERUBAHAN ▼▼▼
+                const itemUrl = `${tableName} Model`;
+                insertMenuItemStmt.run(projectId, tableId, tableName, itemUrl, nextMenuOrder);
+                // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
 
 				let fieldOrder = 0;
                 const tableLevelConstraints = [];
@@ -796,8 +863,8 @@ function importSchema(sql, projectId) {
                             zero_fill: 0,
                             primary_key: 0,
                             unique: 0,
-                            text_area: 0, // Tambah nilai lalai
-                            rich_html: 0, // Tambah nilai lalai
+                            text_area: 0, 
+                            rich_html: 0,
 							read_only: 0,
                             default_value: null,
                         };
@@ -810,7 +877,6 @@ function importSchema(sql, projectId) {
                         }
                         if (col.auto_increment) fieldData.auto_increment = 1;
 
-                        // Medan hanya 'required' jika ia NOT NULL dan BUKAN auto-increment
                         if ((col.nullable && col.nullable.type === "not null") && !col.auto_increment) {
                             fieldData.required = 1;
                         }
@@ -826,7 +892,7 @@ function importSchema(sql, projectId) {
                                 switch (definition.constraint_type.toLowerCase()) {
                                     case "primary key":
                                         fieldData.primary_key = 1;
-                                        fieldData.read_only = 1; // Set read_only jika primary key
+                                        fieldData.read_only = 1; 
                                         break;
                                     case "unique key":
                                         fieldData.unique = 1;
@@ -849,7 +915,7 @@ function importSchema(sql, projectId) {
                             `INSERT INTO fields (table_id, field_name, data_type, length, required, auto_increment, unsigned, zero_fill, primary_key, "unique", text_area, rich_html, read_only, default_value, caption, field_order) VALUES (@table_id, @field_name, @data_type, @length, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @text_area, @rich_html, @read_only, @default_value, @field_name, @field_order)`
                         ).run(fieldData);
                         
-                        fieldOrder++; // TAMBAH PADA PENGHITUNG
+                        fieldOrder++;
                     } else if (col.resource === "constraint") {
                         tableLevelConstraints.push(col);
                     }
@@ -881,12 +947,10 @@ function importSchema(sql, projectId) {
                             constraintType === "foreign key" &&
                             constraint.reference_definition &&
                             constraint.definition && constraint.definition.length > 0 &&
-                            // Gunakan 'definition' bukannya 'columns'
                             constraint.reference_definition.definition && constraint.reference_definition.definition.length > 0
                         ) {
                             const parentTableName = constraint.reference_definition.table[0].table;
                             const fkChildField = constraint.definition[0].column;
-                            // Ekstrak dari 'definition' bukannya 'columns'
                             const parentField = constraint.reference_definition.definition[0].column;
 
                             foreignKeysToProcess.push({
@@ -915,18 +979,15 @@ function importSchema(sql, projectId) {
                 ).run(parentTableId, childTableId, fk.fkChildField, fk.parentField, fk.tabTitle);
                 relationshipsCreated++;
 
-                // 2. Logik baharu: Cari medan kapsyen secara automatik
                 let captionField = '';
                 const parentFields = db.prepare('SELECT field_name, primary_key, data_type FROM fields WHERE table_id = ? ORDER BY field_order').all(parentTableId);
                 
-                // Keutamaan 1: Cari medan bukan numerik yang pertama.
                 const nonNumericTypes = ['VARCHAR', 'CHAR', 'TEXT', 'MEDIUMTEXT', 'LONGTEXT', 'DATE', 'DATETIME', 'TIMESTAMP'];
                 const nonNumericField = parentFields.find(f => nonNumericTypes.includes(f.data_type.toUpperCase()));
 
                 if (nonNumericField) {
                     captionField = nonNumericField.field_name;
                 }
-                // Keutamaan 2: Jika gagal, cari medan pertama selepas primary key.
                 else {
                     const pkIndex = parentFields.findIndex(f => f.primary_key === 1);
                     if (pkIndex > -1 && pkIndex + 1 < parentFields.length) {
@@ -934,7 +995,6 @@ function importSchema(sql, projectId) {
                     }
                 }
 
-                // 3. Jika medan kapsyen ditemui, kemas kini medan foreign key
                 if (captionField) {
                     db.prepare(
                         `UPDATE fields 
@@ -1114,65 +1174,82 @@ ipcMain.handle('table:update', async (event, data) => {
             throw new Error("Table ID tidak dibekalkan.");
         }
 
-        if (fieldsToUpdate.hasOwnProperty('table_name')) {
-            const newTableName = fieldsToUpdate.table_name;
-            let isNameValid = true;
+        // ▼▼▼ MULA PERUBAHAN ▼▼▼
+        const transaction = db.transaction(() => {
+            let oldTableName = null;
 
-            // 1. Semak jika null atau kosong
-            if (!newTableName || newTableName.trim() === '') {
-                isNameValid = false;
-            }
-            // 2. Semak jika mengandungi aksara tidak sah
-            else if (!/^[a-zA-Z_]+$/.test(newTableName)) {
-                isNameValid = false;
-            }
-            // 3. Semak jika nama sudah wujud (untuk jadual lain dalam projek yang sama)
-            else {
-                const projectInfo = db.prepare('SELECT project_id FROM tables WHERE table_id = ?').get(table_id);
-                const existingTable = db.prepare(
-                    'SELECT table_id FROM tables WHERE project_id = ? AND table_name = ? AND table_id != ?'
-                ).get(projectInfo.project_id, newTableName, table_id);
-                if (existingTable) {
-                    isNameValid = false;
+            // Jika nama jadual hendak ditukar, lakukan validasi dan sediakan untuk kemas kini menu
+            if (fieldsToUpdate.hasOwnProperty('table_name')) {
+                const newTableName = fieldsToUpdate.table_name;
+                
+                // Dapatkan nama jadual lama SEBELUM ia dikemas kini
+                const tableInfo = db.prepare('SELECT table_name, project_id FROM tables WHERE table_id = ?').get(table_id);
+                if (!tableInfo) {
+                    throw new Error(`Jadual dengan ID ${table_id} tidak ditemui.`);
+                }
+                oldTableName = tableInfo.table_name;
+
+                let isNameValid = true;
+                if (!newTableName || newTableName.trim() === '') isNameValid = false;
+                else if (!/^[a-zA-Z_]+$/.test(newTableName)) isNameValid = false;
+                else {
+                    const existingTable = db.prepare(
+                        'SELECT table_id FROM tables WHERE project_id = ? AND table_name = ? AND table_id != ?'
+                    ).get(tableInfo.project_id, newTableName, table_id);
+                    if (existingTable) isNameValid = false;
+                }
+
+                if (!isNameValid) {
+                    delete fieldsToUpdate.table_name;
                 }
             }
 
-            // Jika tidak sah, buang 'table_name' dari senarai kemas kini
-            if (!isNameValid) {
-                delete fieldsToUpdate.table_name;
+            // Bina klausa SET untuk jadual 'tables'
+            const allowedColumns = [
+                'table_name', 'table_view_title', 'table_description', 'show_quick_search', 'records_per_page',
+                'default_sort_by', 'sort_descending', 'allow_sorting', 'allow_filters', 'allow_csv_export',
+                'allow_print_view', 'allow_user_save_filters', 'hide_homepage_link', 'allow_mass_delete',
+                'filter_before_view', 'hide_nav_menu_link', 'show_record_count', 'tv_template',
+                'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input',
+                'detail_view_classes_input', 'detail_view_title', 'record_owner', 'default_focus',
+                'redirect_after_insert', 'enable_detail_view', 'delete_with_children', 'dv_allow_print_view',
+                'dv_separate_page', 'dv_hide_save_as_copy', 'dv_sticky_buttons', 'dv_allow_add_from_homepage'
+            ];
+            const setClause = Object.keys(fieldsToUpdate) 
+                .filter(key => allowedColumns.includes(key))
+                .map(key => `${key} = ?`)
+                .join(', ');
+
+            if (setClause) {
+                const values = Object.keys(fieldsToUpdate)
+                    .filter(key => allowedColumns.includes(key))
+                    .map(key => fieldsToUpdate[key]);
+                // 1. Kemas kini jadual 'tables'
+                db.prepare(`UPDATE tables SET ${setClause} WHERE table_id = ?`).run(...values, table_id);
             }
-        }
-		
-        // Senarai lajur yang dibenarkan untuk dikemas kini dalam jadual 'tables'
-        const allowedColumns = [
-		    'table_name',
-            'table_view_title', 'table_description', 'show_quick_search', 'records_per_page',
-            'default_sort_by', 'sort_descending', 'allow_sorting', 'allow_filters', 'allow_csv_export',
-            'allow_print_view', 'allow_user_save_filters', 'hide_homepage_link', 'allow_mass_delete',
-            'filter_before_view', 'hide_nav_menu_link', 'show_record_count', 'tv_template',
-            'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input',
-            'detail_view_classes_input', 'detail_view_title', 'record_owner', 'default_focus',
-            'redirect_after_insert', 'enable_detail_view', 'delete_with_children', 'dv_allow_print_view',
-            'dv_separate_page', 'dv_hide_save_as_copy', 'dv_sticky_buttons', 'dv_allow_add_from_homepage'
-        ];
 
-        const setClause = Object.keys(fieldsToUpdate) 
-            .filter(key => allowedColumns.includes(key))
-            .map(key => `${key} = ?`)
-            .join(', ');
+            // 2. Jika nama jadual ditukar, kemas kini juga 'menu_items'
+            if (oldTableName && fieldsToUpdate.table_name) {
+                const newTableName = fieldsToUpdate.table_name;
+                const newUrl = `${newTableName} Model`;
+                const oldUrl = `${oldTableName} Model`;
 
-        if (!setClause) {
-            return { success: true, message: 'Tiada medan yang sah untuk dikemas kini.' };
-        }
+                // Kemas kini label HANYA jika ia sepadan dengan nama jadual lama
+                db.prepare(
+                    'UPDATE menu_items SET item_label = ? WHERE table_id = ? AND item_label = ?'
+                ).run(newTableName, table_id, oldTableName);
+                
+                // Kemas kini URL HANYA jika ia sepadan dengan format 'Model' yang lama
+                db.prepare(
+                    'UPDATE menu_items SET item_url = ? WHERE table_id = ? AND item_url = ?'
+                ).run(newUrl, table_id, oldUrl);
+            }
+        });
 
-        const values = Object.keys(fieldsToUpdate)
-            .filter(key => allowedColumns.includes(key))
-            .map(key => fieldsToUpdate[key]);
-
-        const stmt = db.prepare(`UPDATE tables SET ${setClause} WHERE table_id = ?`);
-        stmt.run(...values, table_id);
-
+        transaction();
         return { success: true };
+        // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+
     } catch (error) {
         console.error("Gagal mengemas kini jadual:", error);
         return { success: false, message: error.message };
