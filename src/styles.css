@@ -2521,3 +2521,32 @@ fieldset.fieldset-disabled {
     font-size: 1em;
     padding: 0.1rem 0.4rem;
 }
+
+/* ADD THESE STYLES AT THE END OF: styles.css */
+
+/* Gaya khusus untuk komponen Child Table Math */
+.dropped-item[data-item-type="child_table_math"] {
+    background-color: #F0F9FF; /* Biru sangat pucat */
+    border-color: #BAE6FD;
+    border-left-color: #38BDF8;
+    font-family: monospace;
+    font-size: 1.1em;
+    flex-wrap: wrap; /* Benarkan item turun baris jika ruang sempit */
+}
+
+.dropped-item[data-item-type="child_table_math"] .count-star {
+    font-weight: 600;
+    color: #0369A1; /* Biru gelap */
+    padding: 0 0.5rem;
+}
+
+.dropped-item[data-item-type="child_table_math"] .where-clause strong {
+    color: #991B1B; /* Merah gelap */
+}
+
+.dropped-item[data-item-type="child_table_math"] select {
+    font-family: monospace;
+    font-size: 1em;
+    padding: 0.1rem 0.4rem;
+    margin: 0 0.25rem;
+}

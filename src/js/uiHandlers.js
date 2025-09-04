@@ -56,8 +56,6 @@ export function openGeneralQueryBuilder(targetTextarea) {
  */
 // FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
 
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
-
 function setupLogicBuilderCore(config) {
     const { palette, canvas, hiddenInput, validationRules, context, updateMode = 'live' } = config;
     const placeholder = canvas ? canvas.querySelector('.canvas-placeholder') : null;
@@ -69,7 +67,6 @@ function setupLogicBuilderCore(config) {
 
     let modalCanvasState = '[]';
 
-    // ▼▼▼ MULA FUNGSI BAHARU: UNTUK MODAL LOOKUP CONDITION ▼▼▼
     const openLookupConditionModal = (componentEl) => {
         const modal = document.getElementById('lookup-condition-modal');
         if (!modal) return;
@@ -87,11 +84,9 @@ function setupLogicBuilderCore(config) {
             closeBtn: document.getElementById('lookup-condition-close')
         };
 
-        // 1. Dapatkan konteks
         const externalTableName = componentEl.querySelector('.table-select').value;
         const currentTableName = context.tableName;
 
-        // 2. Isi dropdown
         elements.externalFieldSelect.innerHTML = '';
         Object.keys(jsonData.database.table[externalTableName].fields).forEach(f => {
             const option = document.createElement('option');
@@ -108,7 +103,6 @@ function setupLogicBuilderCore(config) {
             elements.dynamicValueSelect.appendChild(option);
         });
 
-        // 3. Muatkan keadaan sedia ada dari dataset komponen
         const cond = componentEl.dataset;
         elements.externalFieldSelect.value = cond.condField || '';
         elements.operatorSelect.value = cond.condOperator || '=';
@@ -119,7 +113,6 @@ function setupLogicBuilderCore(config) {
             elements.dynamicValueSelect.value = cond.condValue || '';
         }
 
-        // 4. Uruskan kebolehlihatan input nilai
         const toggleValueInputs = () => {
             const isStatic = elements.valueTypeSelect.value === 'static';
             elements.staticValueGroup.classList.toggle('hidden', !isStatic);
@@ -128,7 +121,6 @@ function setupLogicBuilderCore(config) {
         elements.valueTypeSelect.addEventListener('change', toggleValueInputs);
         toggleValueInputs();
 
-        // 5. Pasang event listener butang
         const closeModal = () => modal.classList.add('hidden');
         
         const newOkBtn = elements.okBtn.cloneNode(true);
@@ -141,21 +133,18 @@ function setupLogicBuilderCore(config) {
             componentEl.dataset.condValueType = elements.valueTypeSelect.value;
             componentEl.dataset.condValue = isStatic ? elements.staticValueInput.value : elements.dynamicValueSelect.value;
             
-            // Tandakan butang sebagai "dikonfigurasi"
             const configBtn = componentEl.querySelector('.config-lookup-btn');
             if(configBtn) configBtn.classList.add('configured');
 
-            updateModalCanvasState(); // Simpan keadaan baharu
+            updateModalCanvasState();
             closeModal();
         });
 
         elements.cancelBtn.addEventListener('click', closeModal);
         elements.closeBtn.addEventListener('click', closeModal);
 
-        // 6. Paparkan modal
         modal.classList.remove('hidden');
     };
-    // ▲▲▲ TAMAT FUNGSI BAHARU ▲▲▲
 
     const handleWrapWithFunction = (e) => {
         e.preventDefault();
@@ -208,9 +197,7 @@ function setupLogicBuilderCore(config) {
                             value: item.dataset.condValue
                         };
                     }
-
                 } else if (type === 'this_table_field') {
-                    // ▼▼▼ MULA PERUBAHAN: Simpan query penuh ▼▼▼
                     const activeTable = context.tableName;
                     const fields = jsonData.database.table[activeTable].fields;
                     const selectedField = item.querySelector('.field-select')?.value;
@@ -218,8 +205,30 @@ function setupLogicBuilderCore(config) {
 
                     itemData.field = selectedField;
                     itemData.query = `SELECT \`${selectedField}\` FROM \`${activeTable}\` WHERE \`${pkName}\` = ##ID##`;
-                    // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+                } else if (type === 'child_table_math') {
+                    // ▼▼▼ MULA LOGIK SIMPANAN BAHARU ▼▼▼
+                    const parentTable = context.tableName;
+                    const childTable = item.querySelector('.table-select')?.value;
+                    const aggregate = item.querySelector('.aggregate-select')?.value;
+                    const field = item.querySelector('.field-select')?.value;
 
+                    itemData.table = childTable;
+                    itemData.aggregate = aggregate;
+                    itemData.field = (aggregate === 'COUNT') ? '*' : field;
+
+                    const relationship = jsonData.database.relationships.find(
+                        r => r.parent_table_name === parentTable && r.child_table_name === childTable
+                    );
+                    const fkField = relationship ? relationship.fk_child_field : 'unknown_fk';
+
+                    let query;
+                    if (aggregate === 'COUNT') {
+                        query = `SELECT COUNT(*) FROM \`${childTable}\` WHERE \`${fkField}\` = ##ID##`;
+                    } else {
+                        query = `SELECT COALESCE(${aggregate}(\`${field}\`), 0) FROM \`${childTable}\` WHERE \`${fkField}\` = ##ID##`;
+                    }
+                    itemData.query = query;
+                    // ▲▲▲ TAMAT LOGIK SIMPANAN BAHARU ▲▲▲
                 } else if (type === 'boolean') {
                     itemData.value = item.querySelector('select')?.value;
                 } else if (['comparison_operator', 'logical_operator', 'arithmetic_operator', 'current_user', 'current_datetime'].includes(type)) {
@@ -281,6 +290,23 @@ function setupLogicBuilderCore(config) {
                     newItem.querySelector('textarea').value = itemData.value;
                 } else if (itemData.type === 'this_table_field') {
                     newItem.querySelector('.field-select').value = itemData.field;
+                } else if (itemData.type === 'child_table_math') {
+                    // ▼▼▼ MULA LOGIK MEMUAT SEMULA BAHARU ▼▼▼
+                    const tableSelect = newItem.querySelector('.table-select');
+                    const aggregateSelect = newItem.querySelector('.aggregate-select');
+                    
+                    tableSelect.value = itemData.table;
+                    tableSelect.dispatchEvent(new Event('change')); // Ini akan mengisi senarai medan
+                    
+                    aggregateSelect.value = itemData.aggregate;
+                    // Tunggu seketika untuk senarai medan diisi sebelum menetapkan nilainya
+                    setTimeout(() => {
+                        if (itemData.aggregate !== 'COUNT') {
+                            newItem.querySelector('.field-select').value = itemData.field;
+                        }
+                        aggregateSelect.dispatchEvent(new Event('change')); // Ini akan menguruskan kebolehlihatan
+                    }, 50);
+                    // ▲▲▲ TAMAT LOGIK MEMUAT SEMULA BAHARU ▲▲▲
                 } else if (itemData.type === 'boolean' || ['comparison_operator', 'logical_operator', 'arithmetic_operator', 'current_user', 'current_datetime'].includes(itemData.type)) {
                     newItem.querySelector('select').value = itemData.value;
                 } else if (['string', 'number', 'api_endpoint'].includes(itemData.type)) {
@@ -310,7 +336,7 @@ function setupLogicBuilderCore(config) {
         const itemContainer = document.createElement('div');
         itemContainer.className = 'dropped-item';
         itemContainer.dataset.itemType = type;
-        const VALUE_TYPES_FOR_WRAPPING = ['field', 'this_table_field', 'external_table_field', 'string', 'number', 'sql_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime'];
+        const VALUE_TYPES_FOR_WRAPPING = ['field', 'this_table_field', 'external_table_field', 'string', 'number', 'sql_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'child_table_math'];
         if (VALUE_TYPES_FOR_WRAPPING.includes(type)) {
             const fxButton = document.createElement('button');
             fxButton.className = 'wrap-function-btn';
@@ -374,7 +400,7 @@ function setupLogicBuilderCore(config) {
                 itemContainer.innerHTML = `<span class="api-endpoint-label">[API ENDPOINT]</span><input type="text" placeholder="https://api.example.com/data">`;
                 itemContainer.querySelector('input').addEventListener('input', updateModalCanvasState);
                 break;            
-                case 'external_table_field': {
+            case 'external_table_field': {
                 const activeTable = config.context?.tableName || '';
                 const tableSelect = document.createElement('select');
                 tableSelect.className = 'table-select';
@@ -417,7 +443,6 @@ function setupLogicBuilderCore(config) {
                 break;
             }
             case 'this_table_field': {
-                // ▼▼▼ MULA PERUBAHAN: Ubah suai UI komponen ▼▼▼
                 const activeTable = context?.tableName || '';
                 const fields = jsonData.database.table[activeTable]?.fields || {};
                 const fieldNames = Object.keys(fields);
@@ -431,7 +456,6 @@ function setupLogicBuilderCore(config) {
                 const fieldSelect = document.createElement('select');
                 fieldSelect.className = 'field-select';
                 
-                // Masukkan semua medan ke dalam dropdown
                 fieldNames.forEach(fieldName => {
                     const option = document.createElement('option');
                     option.value = fieldName;
@@ -447,7 +471,82 @@ function setupLogicBuilderCore(config) {
                 itemContainer.appendChild(fromClause);
                 
                 itemContainer.style.justifyContent = 'flex-start';
-                // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+                break;
+            }
+            case 'child_table_math': {
+                // ▼▼▼ MULA KOD UNTUK KOMPONEN BAHARU ▼▼▼
+                const parentTable = context?.tableName || '';
+                const childRelationships = jsonData.database.relationships.filter(r => r.parent_table_name === parentTable);
+                const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
+
+                // 1. Cipta elemen UI
+                itemContainer.innerHTML = `
+                    <span class="sql-keyword">SELECT</span>
+                    <select class="aggregate-select">
+                        <option>SUM</option><option>AVG</option><option>COUNT</option><option>MIN</option><option>MAX</option>
+                    </select>
+                    <select class="field-select"></select>
+                    <span class="count-star hidden">*</span>
+                    <span class="sql-prose">FROM</span>
+                    <select class="table-select"></select>
+                    <span class="sql-prose where-clause"></span>
+                `;
+
+                // 2. Dapatkan rujukan kepada elemen yang baru dicipta
+                const aggregateSelect = itemContainer.querySelector('.aggregate-select');
+                const fieldSelect = itemContainer.querySelector('.field-select');
+                const tableSelect = itemContainer.querySelector('.table-select');
+                const countStar = itemContainer.querySelector('.count-star');
+                const whereClause = itemContainer.querySelector('.where-clause');
+
+                // 3. Isi dropdown jadual anak
+                if (childRelationships.length > 0) {
+                    childRelationships.forEach(rel => {
+                        const option = document.createElement('option');
+                        option.value = rel.child_table_name;
+                        option.textContent = rel.child_table_name;
+                        tableSelect.appendChild(option);
+                    });
+                } else {
+                    tableSelect.innerHTML = `<option value="">No child tables</option>`;
+                    tableSelect.disabled = true;
+                    aggregateSelect.disabled = true;
+                }
+                
+                // 4. Pasang event listener
+                tableSelect.addEventListener('change', () => {
+                    const selectedChildTable = tableSelect.value;
+                    const childFields = jsonData.database.table[selectedChildTable]?.fields || {};
+                    const rel = childRelationships.find(r => r.child_table_name === selectedChildTable);
+                    
+                    fieldSelect.innerHTML = '';
+                    for (const fieldName in childFields) {
+                        // Hanya tambah medan numerik untuk fungsi matematik
+                        if (numericTypes.includes(childFields[fieldName].data_type.toUpperCase())) {
+                            const option = document.createElement('option');
+                            option.value = fieldName;
+                            option.textContent = fieldName;
+                            fieldSelect.appendChild(option);
+                        }
+                    }
+                    whereClause.innerHTML = `WHERE <strong class="sql-condition">${rel ? rel.fk_child_field : '...'} = ##ID##</strong>`;
+                    updateModalCanvasState();
+                });
+
+                aggregateSelect.addEventListener('change', () => {
+                    const isCount = aggregateSelect.value === 'COUNT';
+                    fieldSelect.classList.toggle('hidden', isCount);
+                    countStar.classList.toggle('hidden', !isCount);
+                    updateModalCanvasState();
+                });
+                
+                fieldSelect.addEventListener('change', updateModalCanvasState);
+
+                // 5. Cetuskan event awal untuk mengisi data
+                if (childRelationships.length > 0) {
+                    tableSelect.dispatchEvent(new Event('change'));
+                }
+                // ▲▲▲ TAMAT KOD UNTUK KOMPONEN BAHARU ▲▲▲
                 break;
             }
             case 'field':
@@ -641,7 +740,7 @@ function setupLogicBuilderCore(config) {
         return itemContainer;
     };
 
-    const VALUE_TYPES = ['field', 'this_table_field', 'external_table_field', 'string', 'number', 'sql_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'function'];
+    const VALUE_TYPES = ['field', 'this_table_field', 'child_table_math', 'external_table_field', 'string', 'number', 'sql_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'function'];
     const isValidDrop = (componentType) => {
         if (componentType === 'comment') {
             return true;
