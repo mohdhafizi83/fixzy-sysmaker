@@ -1916,6 +1916,7 @@
                 <h5 class="palette-group-title">Data Sources</h5>
                 <div class="algo-component" draggable="true" data-type="this_record_data">This Record Data</div>
                 <div class="algo-component" draggable="true" data-type="calculate_related_record">Calculate Related Record</div>
+				<div class="algo-component" draggable="true" data-type="related_record_data">Related Record Data</div>
                 <div class="algo-component" draggable="true" data-type="lookup_value">Lookup Value</div>
                 <div class="algo-component" draggable="true" data-type="custom_query">Custom Query</div>
                 <div class="algo-component" draggable="true" data-type="api_endpoint">API Endpoint</div>
@@ -2224,6 +2225,20 @@
          <div class="lookup-actions">
             <button class="btn btn-secondary btn-sm remove-lookup-where-btn"><i class="fas fa-trash-alt"></i> Remove Filter</button>
         </div>
+    </div>
+</template>
+<template id="related-record-data-template">
+    <div class="dropped-item child-math-style" data-item-type="related_record_data">
+        <div class="child-math-main-query">
+            <span class="sql-keyword">SELECT</span>
+            <select class="field-multiselect" multiple></select>
+            <span class="sql-prose">FROM</span>
+            <select class="table-select"></select>
+            <span class="sql-prose where-clause"></span>
+        </div>
+        <button class="btn btn-secondary btn-sm show-where-btn">
+            <i class="fas fa-plus"></i> WHERE
+        </button>
     </div>
 </template>
 </body>

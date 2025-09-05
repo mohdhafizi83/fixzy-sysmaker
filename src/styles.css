@@ -2611,3 +2611,41 @@ fieldset.fieldset-disabled {
     font-size: 1.2em;
     color: var(--secondary-color);
 }
+
+/* ▼▼▼ TAMBAH KESELURUHAN BLOK INI ▼▼▼ */
+
+/* Gaya untuk komponen 'Related Record Data' di palet */
+.algo-component[data-item-type="related_record_data"] {
+    background-color: #F0FDFA; /* Teal Pucat */
+    border-color: #99F6E4;
+    color: #134E4A; /* Teal Gelap */
+}
+
+/* Gaya untuk komponen apabila digugurkan ke kanvas */
+.dropped-item[data-item-type="related_record_data"] {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    background-color: #F0FDFA; /* Teal Pucat */
+    border-color: #99F6E4;
+    border-left-color: #2DD4BF; /* Teal lebih pekat untuk aksen */
+    font-family: monospace;
+    font-size: 1.1em;
+}
+
+/* Gaya untuk kotak multiselect */
+.dropped-item .field-multiselect {
+    min-height: 80px;
+    width: 300px; /* Lebar yang sesuai */
+    padding: 0.25rem;
+    border-radius: 4px;
+    border: 1px solid #5EEAD4;
+    font-family: monospace;
+    font-size: 1em;
+}
+
+.dropped-item .field-multiselect option {
+    padding: 0.25rem 0.5rem;
+}
+
+/* ▲▲▲ TAMAT TAMBAHAN ▲▲▲ */
