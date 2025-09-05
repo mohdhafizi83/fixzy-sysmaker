@@ -1420,7 +1420,7 @@ fieldset.fieldset-disabled {
     color: #0369A1;
 }
 
-.algo-component[data-type="this_record_value"],
+.algo-component[data-type="this_record_data"],
 .algo-component[data-type="external_table_field"],
 .algo-component[data-type="custom_query"],
 .algo-component[data-type="api_endpoint"] {
@@ -1628,7 +1628,7 @@ fieldset.fieldset-disabled {
 }
 
 /* Data Sources (Fields, SQL, API) */
-.dropped-item[data-item-type="this_record_value"],
+.dropped-item[data-item-type="this_record_data"],
 .dropped-item[data-item-type="lookup_value"],
 .dropped-item[data-item-type="field"] {
     background-color: #FFFBEB;
@@ -1693,12 +1693,12 @@ fieldset.fieldset-disabled {
 }
 
 /* Gaya untuk komponen 'This Table.Field' */
-.dropped-item[data-item-type="this_record_value"] {
+.dropped-item[data-item-type="this_record_data"] {
     background-color: #FEF3C7; /* Kuning pucat */
     border-color: #FBBF24;
 }
 
-.dropped-item[data-item-type="this_record_value"] input[type="text"] {
+.dropped-item[data-item-type="this_record_data"] input[type="text"] {
     border: none;
     background: transparent;
     font-weight: 600;
@@ -2491,7 +2491,7 @@ fieldset.fieldset-disabled {
 
 /* ADD THESE STYLES AT THE END OF: styles.css */
 
-.dropped-item[data-item-type="this_record_value"] {
+.dropped-item[data-item-type="this_record_data"] {
     font-family: monospace;
     font-size: 1.1em;
 }
@@ -2516,7 +2516,7 @@ fieldset.fieldset-disabled {
     font-weight: 600;
 }
 
-.dropped-item[data-item-type="this_record_value"] .field-select {
+.dropped-item[data-item-type="this_record_data"] .field-select {
     font-family: monospace;
     font-size: 1em;
     padding: 0.1rem 0.4rem;

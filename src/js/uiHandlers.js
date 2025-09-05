@@ -207,7 +207,7 @@ const updateModalCanvasState = () => {
                             value: value
                         };
                     }
-                } else if (type === 'this_record_value') {
+                } else if (type === 'this_record_data') {
                     const activeTable = context.tableName;
                     const fields = jsonData.database.table[activeTable].fields;
                     const selectedField = item.querySelector('.field-select')?.value;
@@ -388,7 +388,7 @@ const updateModalCanvasState = () => {
                         }
                     } else if (itemData.type === 'comment') {
                         newItem.querySelector('textarea').value = itemData.value;
-                    } else if (itemData.type === 'this_record_value') {
+                    } else if (itemData.type === 'this_record_data') {
                         newItem.querySelector('.field-select').value = itemData.field;
                     } else if (itemData.type === 'calculate_related_record') {
                         const tableSelect = newItem.querySelector('.table-select');
@@ -516,7 +516,7 @@ const createInteractiveElement = (data) => {
         const itemContainer = document.createElement('div');
         itemContainer.className = 'dropped-item';
         itemContainer.dataset.itemType = type;
-        const VALUE_TYPES_FOR_WRAPPING = ['field', 'this_record_value', 'calculate_related_record', 'lookup_value', 'string', 'number', 'custom_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'function'];
+        const VALUE_TYPES_FOR_WRAPPING = ['field', 'this_record_data', 'calculate_related_record', 'lookup_value', 'string', 'number', 'custom_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'function'];
         if (VALUE_TYPES_FOR_WRAPPING.includes(type)) {
             const fxButton = document.createElement('button');
             fxButton.className = 'wrap-function-btn';
@@ -637,7 +637,7 @@ const createInteractiveElement = (data) => {
 
                 break;
             }
-            case 'this_record_value': {
+            case 'this_record_data': {
                 const activeTable = context?.tableName || '';
                 const fields = jsonData.database.table[activeTable]?.fields || {};
                 const fieldNames = Object.keys(fields);
@@ -950,7 +950,7 @@ const createInteractiveElement = (data) => {
         return itemContainer;
     };
 
-    const VALUE_TYPES = ['field', 'this_record_value', 'calculate_related_record', 'lookup_value', 'string', 'number', 'custom_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'function'];
+    const VALUE_TYPES = ['field', 'this_record_data', 'calculate_related_record', 'lookup_value', 'string', 'number', 'custom_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'function'];
     const isValidDrop = (componentType) => {
         if (componentType === 'comment') {
             return true;
