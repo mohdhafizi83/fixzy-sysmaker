@@ -439,10 +439,15 @@ const updateModalCanvasState = () => {
                                         });
 
                                         fieldDropdown.value = ruleData.field;
-                                        const operatorDropdown = ruleEl.querySelector('.cqb-rule-operator');
-                                        operatorDropdown.value = ruleData.operator;
-                                        operatorDropdown.dispatchEvent(new Event('change'));
-                                        ruleEl.querySelector('.cqb-rule-value').value = ruleData.value;
+										const operatorDropdown = ruleEl.querySelector('.cqb-rule-operator');
+										const valueInput = ruleEl.querySelector('.cqb-rule-value');
+										operatorDropdown.value = ruleData.operator;
+										valueInput.value = ruleData.value;
+
+										// Logik terus untuk sembunyikan textbox
+										if (valueInput) {
+											valueInput.classList.toggle('hidden', ruleData.operator === 'IS NULL' || ruleData.operator === 'IS NOT NULL');
+										}
 
                                     } else { // standard_rule
                                         const clone = ruleTemplate.content.cloneNode(true);
@@ -453,11 +458,16 @@ const updateModalCanvasState = () => {
                                             fieldDropdown.innerHTML += `<option value="${fName}">${fName}</option>`;
                                         });
                                         fieldDropdown.value = ruleData.field;
-                                        const operatorDropdown = ruleEl.querySelector('.cqb-rule-operator');
-                                        operatorDropdown.value = ruleData.operator;
-                                        operatorDropdown.dispatchEvent(new Event('change'));
-                                        ruleEl.querySelector('.cqb-rule-value').value = ruleData.value;
-                                        rulesList.appendChild(ruleEl);
+										const operatorDropdown = ruleEl.querySelector('.cqb-rule-operator');
+										const valueInput = ruleEl.querySelector('.cqb-rule-value');
+										operatorDropdown.value = ruleData.operator;
+										valueInput.value = ruleData.value;
+
+										// Logik terus untuk sembunyikan textbox
+										if (valueInput) {
+											valueInput.classList.toggle('hidden', ruleData.operator === 'IS NULL' || ruleData.operator === 'IS NOT NULL');
+										}
+										rulesList.appendChild(ruleEl);
                                     }
                                 });
                             }
