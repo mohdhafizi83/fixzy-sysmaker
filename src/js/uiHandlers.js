@@ -207,7 +207,7 @@ const updateModalCanvasState = () => {
                             value: value
                         };
                     }
-                } else if (type === 'this_table_field') {
+                } else if (type === 'this_record_value') {
                     const activeTable = context.tableName;
                     const fields = jsonData.database.table[activeTable].fields;
                     const selectedField = item.querySelector('.field-select')?.value;
@@ -215,7 +215,7 @@ const updateModalCanvasState = () => {
 
                     itemData.field = selectedField;
                     itemData.query = `SELECT \`${selectedField}\` FROM \`${activeTable}\` WHERE \`${pkName}\` = ##ID##`;
-                } else if (type === 'child_table_math') {
+                } else if (type === 'calculate_related_record') {
                     const parentTable = context.tableName;
                     const childTable = item.querySelector('.table-select')?.value;
                     const aggregate = item.querySelector('.aggregate-select')?.value;
@@ -274,7 +274,7 @@ const updateModalCanvasState = () => {
                     itemData.value = item.querySelector('.operator-select')?.value;
                 } else if (['string', 'number', 'api_endpoint'].includes(type)) {
                     itemData.value = item.querySelector('input')?.value;
-                } else if (type === 'sql_query') {
+                } else if (type === 'custom_query') {
                     itemData.value = item.querySelector('textarea')?.value || '';
                     const stateInput = item.querySelector('.query-builder-state');
                     if (stateInput && stateInput.value) {
@@ -388,9 +388,9 @@ const updateModalCanvasState = () => {
                         }
                     } else if (itemData.type === 'comment') {
                         newItem.querySelector('textarea').value = itemData.value;
-                    } else if (itemData.type === 'this_table_field') {
+                    } else if (itemData.type === 'this_record_value') {
                         newItem.querySelector('.field-select').value = itemData.field;
-                    } else if (itemData.type === 'child_table_math') {
+                    } else if (itemData.type === 'calculate_related_record') {
                         const tableSelect = newItem.querySelector('.table-select');
                         const aggregateSelect = newItem.querySelector('.aggregate-select');
                         const fieldSelect = newItem.querySelector('.field-select');
@@ -485,7 +485,7 @@ const updateModalCanvasState = () => {
                         newItem.querySelector('select').value = itemData.value;
                     } else if (['string', 'number', 'api_endpoint'].includes(itemData.type)) {
                         newItem.querySelector('input').value = itemData.value;
-                    } else if (itemData.type === 'sql_query') {
+                    } else if (itemData.type === 'custom_query') {
                         newItem.querySelector('textarea').value = itemData.value || '';
                         const stateInput = newItem.querySelector('.query-builder-state');
                         if (stateInput && itemData.builder_state) {
@@ -516,7 +516,7 @@ const createInteractiveElement = (data) => {
         const itemContainer = document.createElement('div');
         itemContainer.className = 'dropped-item';
         itemContainer.dataset.itemType = type;
-        const VALUE_TYPES_FOR_WRAPPING = ['field', 'this_table_field', 'child_table_math', 'lookup_value', 'string', 'number', 'sql_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'function'];
+        const VALUE_TYPES_FOR_WRAPPING = ['field', 'this_record_value', 'calculate_related_record', 'lookup_value', 'string', 'number', 'custom_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'function'];
         if (VALUE_TYPES_FOR_WRAPPING.includes(type)) {
             const fxButton = document.createElement('button');
             fxButton.className = 'wrap-function-btn';
@@ -569,7 +569,7 @@ const createInteractiveElement = (data) => {
                 itemContainer.appendChild(closeParen);
                 break;
             }
-            case 'sql_query':
+            case 'custom_query':
                 itemContainer.innerHTML = `<div class="sql-query-header"><span>[SQL QUERY]</span><button class="open-qb-btn" title="Open Query Builder"><i class="fas fa-magic-wand-sparkles"></i></button></div><textarea placeholder="SELECT * FROM ..."></textarea><input type="hidden" class="query-builder-state">`;
                 itemContainer.querySelector('textarea').addEventListener('input', updateModalCanvasState);
                 itemContainer.querySelector('.open-qb-btn').addEventListener('click', (e) => {
@@ -637,7 +637,7 @@ const createInteractiveElement = (data) => {
 
                 break;
             }
-            case 'this_table_field': {
+            case 'this_record_value': {
                 const activeTable = context?.tableName || '';
                 const fields = jsonData.database.table[activeTable]?.fields || {};
                 const fieldNames = Object.keys(fields);
@@ -668,7 +668,7 @@ const createInteractiveElement = (data) => {
                 itemContainer.style.justifyContent = 'flex-start';
                 break;
             }
-            case 'child_table_math': {
+            case 'calculate_related_record': {
                 const parentTable = context?.tableName || '';
                 const childRelationships = jsonData.database.relationships.filter(r => r.parent_table_name === parentTable);
                 
@@ -950,7 +950,7 @@ const createInteractiveElement = (data) => {
         return itemContainer;
     };
 
-    const VALUE_TYPES = ['field', 'this_table_field', 'child_table_math', 'lookup_value', 'string', 'number', 'sql_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'function'];
+    const VALUE_TYPES = ['field', 'this_record_value', 'calculate_related_record', 'lookup_value', 'string', 'number', 'custom_query', 'api_endpoint', 'boolean', 'null', 'current_user', 'current_datetime', 'function'];
     const isValidDrop = (componentType) => {
         if (componentType === 'comment') {
             return true;
@@ -1038,7 +1038,7 @@ const createInteractiveElement = (data) => {
     });
     
     canvas.addEventListener('click', e => {
-        const childMathItem = e.target.closest('.dropped-item[data-item-type="child_table_math"]');
+        const childMathItem = e.target.closest('.dropped-item[data-item-type="calculate_related_record"]');
         if (childMathItem) {
             if (e.target.matches('.add-child-rule-btn, .add-child-rule-btn *')) {
                 const rulesList = childMathItem.querySelector('.child-math-rules-list');
@@ -1161,7 +1161,7 @@ const createInteractiveElement = (data) => {
         }
         
         if (e.target.matches('.cqb-join-rule .cqb-rule-table')) {
-            const childMathItem = e.target.closest('.dropped-item[data-item-type="child_table_math"]');
+            const childMathItem = e.target.closest('.dropped-item[data-item-type="calculate_related_record"]');
             if(childMathItem) {
                 populateFieldsForChildMath(childMathItem);
                 updateModalCanvasState();

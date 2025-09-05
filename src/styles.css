@@ -1420,9 +1420,9 @@ fieldset.fieldset-disabled {
     color: #0369A1;
 }
 
-.algo-component[data-type="this_table_field"],
+.algo-component[data-type="this_record_value"],
 .algo-component[data-type="external_table_field"],
-.algo-component[data-type="sql_query"],
+.algo-component[data-type="custom_query"],
 .algo-component[data-type="api_endpoint"] {
     background-color: #FFFBEB;
     border-color: #FDE68A;
@@ -1628,14 +1628,14 @@ fieldset.fieldset-disabled {
 }
 
 /* Data Sources (Fields, SQL, API) */
-.dropped-item[data-item-type="this_table_field"],
+.dropped-item[data-item-type="this_record_value"],
 .dropped-item[data-item-type="lookup_value"],
 .dropped-item[data-item-type="field"] {
     background-color: #FFFBEB;
     border-color: #FDE68A;
     border-left-color: #F59E0B;
 }
-.dropped-item[data-item-type="sql_query"] {
+.dropped-item[data-item-type="custom_query"] {
     flex-direction: column;
     align-items: stretch;
     background-color: #FFFBEB;
@@ -1693,12 +1693,12 @@ fieldset.fieldset-disabled {
 }
 
 /* Gaya untuk komponen 'This Table.Field' */
-.dropped-item[data-item-type="this_table_field"] {
+.dropped-item[data-item-type="this_record_value"] {
     background-color: #FEF3C7; /* Kuning pucat */
     border-color: #FBBF24;
 }
 
-.dropped-item[data-item-type="this_table_field"] input[type="text"] {
+.dropped-item[data-item-type="this_record_value"] input[type="text"] {
     border: none;
     background: transparent;
     font-weight: 600;
@@ -2491,7 +2491,7 @@ fieldset.fieldset-disabled {
 
 /* ADD THESE STYLES AT THE END OF: styles.css */
 
-.dropped-item[data-item-type="this_table_field"] {
+.dropped-item[data-item-type="this_record_value"] {
     font-family: monospace;
     font-size: 1.1em;
 }
@@ -2516,7 +2516,7 @@ fieldset.fieldset-disabled {
     font-weight: 600;
 }
 
-.dropped-item[data-item-type="this_table_field"] .field-select {
+.dropped-item[data-item-type="this_record_value"] .field-select {
     font-family: monospace;
     font-size: 1em;
     padding: 0.1rem 0.4rem;
@@ -2525,7 +2525,7 @@ fieldset.fieldset-disabled {
 /* ADD THESE STYLES AT THE END OF: styles.css */
 
 /* Gaya khusus untuk komponen Child Table Math */
-.dropped-item[data-item-type="child_table_math"] {
+.dropped-item[data-item-type="calculate_related_record"] {
     background-color: #F0F9FF; /* Biru sangat pucat */
     border-color: #BAE6FD;
     border-left-color: #38BDF8;
@@ -2534,17 +2534,17 @@ fieldset.fieldset-disabled {
     flex-wrap: wrap; /* Benarkan item turun baris jika ruang sempit */
 }
 
-.dropped-item[data-item-type="child_table_math"] .count-star {
+.dropped-item[data-item-type="calculate_related_record"] .count-star {
     font-weight: 600;
     color: #0369A1; /* Biru gelap */
     padding: 0 0.5rem;
 }
 
-.dropped-item[data-item-type="child_table_math"] .where-clause strong {
+.dropped-item[data-item-type="calculate_related_record"] .where-clause strong {
     color: #991B1B; /* Merah gelap */
 }
 
-.dropped-item[data-item-type="child_table_math"] select {
+.dropped-item[data-item-type="calculate_related_record"] select {
     font-family: monospace;
     font-size: 1em;
     padding: 0.1rem 0.4rem;
@@ -2554,7 +2554,7 @@ fieldset.fieldset-disabled {
 /* ADD THESE STYLES AT THE END OF: styles.css */
 
 /* Gaya untuk komponen Child Table Math */
-.dropped-item[data-item-type="child_table_math"] {
+.dropped-item[data-item-type="calculate_related_record"] {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.75rem;
