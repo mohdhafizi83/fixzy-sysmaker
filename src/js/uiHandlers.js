@@ -66,8 +66,6 @@ function setupLogicBuilderCore(config) {
 
     let modalCanvasState = '[]';
 
-    // ▼▼▼ FUNGSI openLookupConditionModal TELAH DIBUANG ▼▼▼
-
     const handleWrapWithFunction = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -94,7 +92,6 @@ function setupLogicBuilderCore(config) {
         });
     };
 
-    // ▼▼▼ MULA FUNGSI BANTUAN BAHARU UNTUK JOIN ▼▼▼
     const buildChildMathJoinClause = (childTable, filterState) => {
         if (!filterState || !filterState.rules) return '';
         const allRelationships = jsonData.database.relationships;
@@ -165,7 +162,6 @@ function setupLogicBuilderCore(config) {
 
         return conditions.length > 0 ? `AND (${conditions.join(` ${logic} `)})` : '';
     };
-    // ▲▲▲ TAMAT FUNGSI BANTUAN BAHARU UNTUK JOIN ▲▲▲
 
 const updateModalCanvasState = () => {
         const mapItems = (container) => {
@@ -183,7 +179,6 @@ const updateModalCanvasState = () => {
                 } else if (type === 'field') {
                     itemData.table = item.querySelector('.table-select')?.value;
                     itemData.field = item.querySelector('.field-select')?.value;
-                // ▼▼▼ MULA PENGUBAHSUAIAN LOGIK UNTUK 'LOOKUP_VALUE' ▼▼▼
                 } else if (type === 'lookup_value') {
                     itemData.table = item.querySelector('.table-select')?.value;
                     itemData.field = item.querySelector('.field-select')?.value;
@@ -202,7 +197,6 @@ const updateModalCanvasState = () => {
                             value: value
                         };
                     }
-                // ▲▲▲ TAMAT PENGUBAHSUAIAN LOGIK UNTUK 'LOOKUP_VALUE' ▲▲▲
                 } else if (type === 'this_table_field') {
                     const activeTable = context.tableName;
                     const fields = jsonData.database.table[activeTable].fields;
@@ -231,9 +225,8 @@ const updateModalCanvasState = () => {
                         const logicRadio = filterContainer.querySelector(':scope > .qb-logic-toggle input:checked');
                         itemData.filter = {
                             logic: logicRadio ? logicRadio.value : 'AND',
-                            rules: Array.from(filterContainer.querySelectorAll('.cqb-rule')).map(ruleEl => {
-                                const ruleType = ruleEl.dataset.ruleType;
-                                if (ruleType === 'join') {
+                            rules: Array.from(filterContainer.querySelectorAll('.cqb-rule, .cqb-join-rule')).map(ruleEl => {
+                                if (ruleEl.classList.contains('cqb-join-rule')) {
                                     return {
                                         type: 'join_rule',
                                         table: ruleEl.querySelector('.cqb-rule-table').value,
@@ -255,11 +248,15 @@ const updateModalCanvasState = () => {
 
                     const joinClause = buildChildMathJoinClause(childTable, itemData.filter);
                     const whereClause = buildChildWhereClause(itemData.filter, childTable);
+                    
                     let query;
                     if (aggregate === 'COUNT') {
                         query = `SELECT COUNT(*) FROM \`${childTable}\` ${joinClause} WHERE \`${childTable}\`.\`${fkField}\` = ##ID## ${whereClause}`;
                     } else {
-                        query = `SELECT COALESCE(${aggregate}(\`${childTable}\`.\`${field}\`), 0) FROM \`${childTable}\` ${joinClause} WHERE \`${childTable}\`.\`${fkField}\` = ##ID## ${whereClause}`;
+                        // ▼▼▼ MULA UBAH SUAI LOGIK KUIRI ▼▼▼
+                        const [fieldTable, fieldName] = field.split('.');
+                        query = `SELECT COALESCE(${aggregate}(\`${fieldTable}\`.\`${fieldName}\`), 0) FROM \`${childTable}\` ${joinClause} WHERE \`${childTable}\`.\`${fkField}\` = ##ID## ${whereClause}`;
+                        // ▲▲▲ TAMAT UBAH SUAI LOGIK KUIRI ▲▲▲
                     }
                     itemData.query = query.replace(/\s+/g, ' ').trim();
 
@@ -293,6 +290,43 @@ const updateModalCanvasState = () => {
         }
     };
     
+    // ▼▼▼ MULA FUNGSI BAHARU UNTUK MENGISI MEDAN SECARA DINAMIK ▼▼▼
+    const populateFieldsForChildMath = (componentEl) => {
+        const fieldSelect = componentEl.querySelector('.field-select');
+        if (!fieldSelect) return;
+
+        const mainChildTable = componentEl.querySelector('.table-select').value;
+        const joinRuleElements = componentEl.querySelectorAll('.cqb-join-rule .cqb-rule-table');
+        const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
+        
+        const tablesInvolved = new Set([mainChildTable]);
+        joinRuleElements.forEach(select => tablesInvolved.add(select.value));
+        
+        const currentFieldValue = fieldSelect.value;
+        fieldSelect.innerHTML = '';
+        
+        tablesInvolved.forEach(tableName => {
+            const tableData = jsonData.database.table[tableName];
+            if (tableData && tableData.fields) {
+                for (const fieldName in tableData.fields) {
+                    if (numericTypes.includes(tableData.fields[fieldName].data_type.toUpperCase())) {
+                        const option = document.createElement('option');
+                        const qualifiedName = `${tableName}.${fieldName}`;
+                        option.value = qualifiedName;
+                        option.textContent = qualifiedName;
+                        fieldSelect.appendChild(option);
+                    }
+                }
+            }
+        });
+        
+        // Cuba kekalkan pilihan asal jika masih wujud
+        if (Array.from(fieldSelect.options).some(opt => opt.value === currentFieldValue)) {
+            fieldSelect.value = currentFieldValue;
+        }
+    };
+    // ▲▲▲ TAMAT FUNGSI BAHARU ▲▲▲
+    
     const populateCanvasFromHiddenInput = () => {
         const updateChildMathUI = (componentEl) => {
             const aggregateSelect = componentEl.querySelector('.aggregate-select');
@@ -310,7 +344,7 @@ const updateModalCanvasState = () => {
             if (logicArray.length === 0 && container.classList.contains('algorithm-canvas')) {
                  if (placeholder) container.appendChild(placeholder);
             } else if (logicArray.length === 0 && container.classList.contains('function-argument-droppable')) {
-                container.innerHTML = '<span class="canvas-placeholder">Drop value here</span>';
+                container.innerHTML = '<span class="canvas-placeholder">Drop arguments here</span>';
             }
             logicArray.forEach(itemData => {
                 const newItem = createInteractiveElement(itemData);
@@ -320,7 +354,6 @@ const updateModalCanvasState = () => {
                     newItem.querySelector('.table-select').value = itemData.table;
                     newItem.querySelector('.table-select').dispatchEvent(new Event('change'));
                     newItem.querySelector('.field-select').value = itemData.field;
-                // ▼▼▼ MULA PENGUBAHSUAIAN LOGIK UNTUK 'LOOKUP_VALUE' ▼▼▼
                 } else if (itemData.type === 'lookup_value') {
                     newItem.querySelector('.table-select').value = itemData.table;
                     newItem.querySelector('.table-select').dispatchEvent(new Event('change'));
@@ -345,7 +378,6 @@ const updateModalCanvasState = () => {
                              }
                         }
                     }
-                // ▲▲▲ TAMAT PENGUBAHSUAIAN LOGIK UNTUK 'LOOKUP_VALUE' ▲▲▲
                 } else if (itemData.type === 'comment') {
                     newItem.querySelector('textarea').value = itemData.value;
                 } else if (itemData.type === 'this_table_field') {
@@ -359,16 +391,12 @@ const updateModalCanvasState = () => {
                     aggregateSelect.value = itemData.aggregate;
                     
                     tableSelect.dispatchEvent(new Event('change'));
-                    
-                    if (itemData.aggregate !== 'COUNT') {
-                        fieldSelect.value = itemData.field;
-                    }
-                    
-                    updateChildMathUI(newItem);
 
+                    // Bahagian ini kini lebih rumit kerana perlu membina UI dahulu,
+                    // kemudian mengisi medan, kemudian menetapkan nilai.
                     if (itemData.filter && itemData.filter.rules) {
                         const showWhereBtn = newItem.querySelector('.show-where-btn');
-                        showWhereBtn.click();
+                        if(showWhereBtn) showWhereBtn.click();
                         const filterContainer = newItem.querySelector('.child-math-filter-container');
                         if(filterContainer) {
                             const logicRadio = filterContainer.querySelector(`.qb-logic-toggle input[value="${itemData.filter.logic}"]`);
@@ -418,6 +446,18 @@ const updateModalCanvasState = () => {
                             });
                         }
                     }
+
+                    // ▼▼▼ MULA LOGIK PEMULIHAN BAHARU ▼▼▼
+                    // Selepas semua UI (termasuk JOIN) dibina, panggil fungsi populasi
+                    populateFieldsForChildMath(newItem);
+                    
+                    if (itemData.aggregate !== 'COUNT') {
+                        fieldSelect.value = itemData.field; // Sekarang tetapkan nilainya
+                    }
+                    
+                    updateChildMathUI(newItem);
+                    // ▲▲▲ TAMAT LOGIK PEMULIHAN BAHARU ▲▲▲
+
                 } else if (itemData.type === 'boolean' || ['comparison_operator', 'logical_operator', 'arithmetic_operator', 'current_user', 'current_datetime'].includes(itemData.type)) {
                     newItem.querySelector('select').value = itemData.value;
                 } else if (['string', 'number', 'api_endpoint'].includes(itemData.type)) {
@@ -511,8 +551,8 @@ const createInteractiveElement = (data) => {
                 itemContainer.innerHTML = `<span class="api-endpoint-label">[API ENDPOINT]</span><input type="text" placeholder="https://api.example.com/data">`;
                 itemContainer.querySelector('input').addEventListener('input', updateModalCanvasState);
                 break;            
-            // ▼▼▼ MULA PENGUBAHSUAIAN UI UNTUK 'LOOKUP_VALUE' ▼▼▼
             case 'lookup_value': {
+                itemContainer.classList.add('child-math-style');
                 const mainQueryContainer = document.createElement('div');
                 mainQueryContainer.className = 'child-math-main-query'; // Guna semula gaya sedia ada
                 mainQueryContainer.innerHTML = `
@@ -568,7 +608,6 @@ const createInteractiveElement = (data) => {
 
                 break;
             }
-            // ▲▲▲ TAMAT PENGUBAHSUAIAN UI UNTUK 'LOOKUP_VALUE' ▲▲▲
             case 'this_table_field': {
                 const activeTable = context?.tableName || '';
                 const fields = jsonData.database.table[activeTable]?.fields || {};
@@ -603,8 +642,8 @@ const createInteractiveElement = (data) => {
             case 'child_table_math': {
                 const parentTable = context?.tableName || '';
                 const childRelationships = jsonData.database.relationships.filter(r => r.parent_table_name === parentTable);
-                const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
                 
+                itemContainer.classList.add('child-math-style');
                 const mainQueryContainer = document.createElement('div');
                 mainQueryContainer.className = 'child-math-main-query';
                 mainQueryContainer.innerHTML = `
@@ -637,19 +676,6 @@ const createInteractiveElement = (data) => {
                     countStar.classList.toggle('hidden', !isCount);
                 };
 
-                const populateChildFields = (selectedChildTable) => {
-                    const childFields = jsonData.database.table[selectedChildTable]?.fields || {};
-                    fieldSelect.innerHTML = '';
-                    for (const fieldName in childFields) {
-                        if (numericTypes.includes(childFields[fieldName].data_type.toUpperCase())) {
-                            const option = document.createElement('option');
-                            option.value = fieldName;
-                            option.textContent = fieldName;
-                            fieldSelect.appendChild(option);
-                        }
-                    }
-                };
-
                 if (childRelationships.length > 0) {
                     childRelationships.forEach(rel => {
                         tableSelect.innerHTML += `<option value="${rel.child_table_name}">${rel.child_table_name}</option>`;
@@ -664,7 +690,7 @@ const createInteractiveElement = (data) => {
                     const selectedChildTable = tableSelect.value;
                     const rel = childRelationships.find(r => r.child_table_name === selectedChildTable);
                     
-                    populateChildFields(selectedChildTable);
+                    populateFieldsForChildMath(itemContainer);
                     whereClause.innerHTML = `WHERE \`${selectedChildTable}\`.\`${rel ? rel.fk_child_field : '...'}\` = ##ID##`;
                     
                     const existingFilter = itemContainer.querySelector('.child-math-filter-container');
@@ -982,9 +1008,7 @@ const createInteractiveElement = (data) => {
         }
     });
     
-    // ▼▼▼ MULA PENGUBAHSUAIAN EVENT LISTENER UTAMA ▼▼▼
     canvas.addEventListener('click', e => {
-        // Bahagian untuk Child Table Math
         const childMathItem = e.target.closest('.dropped-item[data-item-type="child_table_math"]');
         if (childMathItem) {
             if (e.target.matches('.add-child-rule-btn, .add-child-rule-btn *')) {
@@ -1031,6 +1055,7 @@ const createInteractiveElement = (data) => {
                 
                 tableDropdown.addEventListener('change', () => {
                     populateJoinFields(tableDropdown.value);
+                    populateFieldsForChildMath(childMathItem);
                     updateModalCanvasState();
                 });
 
@@ -1039,6 +1064,7 @@ const createInteractiveElement = (data) => {
                 }
                 
                 rulesList.appendChild(clone);
+                populateFieldsForChildMath(childMathItem);
                 updateModalCanvasState();
             }
 
@@ -1051,13 +1077,14 @@ const createInteractiveElement = (data) => {
             if (e.target.matches('.cqb-delete-btn, .cqb-delete-btn *')) {
                 const ruleEl = e.target.closest('.cqb-rule, .cqb-join-rule');
                 if (ruleEl) {
+                    const wasJoinRule = ruleEl.classList.contains('cqb-join-rule');
                     ruleEl.remove();
+                    if(wasJoinRule) populateFieldsForChildMath(childMathItem);
                     updateModalCanvasState();
                 }
             }
         }
 
-        // Bahagian untuk Lookup Value
         const lookupItem = e.target.closest('.dropped-item[data-item-type="lookup_value"]');
         if (lookupItem) {
             if (e.target.matches('.show-lookup-where-btn, .show-lookup-where-btn *')) {
@@ -1066,7 +1093,6 @@ const createInteractiveElement = (data) => {
                 const clone = template.content.cloneNode(true);
                 const filterContainer = clone.querySelector('.lookup-value-filter-container');
 
-                // Populate dropdowns
                 const externalFieldSelect = filterContainer.querySelector('.lookup-cond-external-field');
                 const dynamicValueSelect = filterContainer.querySelector('.lookup-cond-dynamic-value');
                 
@@ -1104,8 +1130,17 @@ const createInteractiveElement = (data) => {
         if(e.target.closest('.child-math-filter-container, .lookup-value-filter-container')) {
             updateModalCanvasState();
         }
+        
+        // ▼▼▼ TAMBAH PENCETUS BAHARU ▼▼▼
+        if (e.target.matches('.cqb-join-rule .cqb-rule-table')) {
+            const childMathItem = e.target.closest('.dropped-item[data-item-type="child_table_math"]');
+            if(childMathItem) {
+                populateFieldsForChildMath(childMathItem);
+                updateModalCanvasState();
+            }
+        }
+        // ▲▲▲ TAMAT PENCETUS BAHARU ▲▲▲
     });
-    // ▲▲▲ TAMAT PENGUBAHSUAIAN EVENT LISTENER UTAMA ▲▲▲
 
     populateCanvasFromHiddenInput();
 
@@ -1113,6 +1148,7 @@ const createInteractiveElement = (data) => {
         getState: () => modalCanvasState,
     };
 }
+
 /**
  * Mencipta Logic Builder yang berfungsi di dalam modal.
  * @param {object} config - Objek konfigurasi untuk builder.
