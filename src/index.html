@@ -2065,51 +2065,7 @@
         </div>
     </div>
 </div>
-<div id="lookup-condition-modal" class="modal-overlay hidden">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Set Lookup Condition</h3>
-            <button id="lookup-condition-close" class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-            <p class="helper-text" style="font-size: 0.9em; color: var(--secondary-color); margin-bottom: 1.5rem;">
-                Specify the condition (WHERE clause) to find the correct record from the external table.
-            </p>
-            <div class="lookup-condition-rule">
-                <div class="form-group">
-                    <label>WHERE external field...</label>
-                    <select id="lookup-cond-external-field"></select>
-                </div>
-                <div class="form-group" style="max-width: 120px;">
-                    <label>is...</label>
-                    <select id="lookup-cond-operator">
-                        <option value="=" selected>equal to</option>
-                        <option value="!=">not equal to</option>
-                        <option value=">">greater than</option>
-                        <option value="<">less than</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>this value...</label>
-                    <select id="lookup-cond-value-type">
-                        <option value="dynamic">Value from Current Record</option>
-                        <option value="static">Static Value</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-group" id="lookup-cond-dynamic-value-group">
-                <select id="lookup-cond-dynamic-value"></select>
-            </div>
-            <div class="form-group hidden" id="lookup-cond-static-value-group">
-                <input type="text" id="lookup-cond-static-value" placeholder="Enter a static value">
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" id="lookup-condition-cancel">Cancel</button>
-            <button class="btn btn-primary" id="lookup-condition-ok">OK</button>
-        </div>
-    </div>
-</div>
+
 <div id="hook-type-modal" class="modal-overlay hidden">
     <div class="modal-content">
         <div class="modal-header">
@@ -2231,6 +2187,43 @@
         </select>
         <input type="text" class="cqb-rule-value" placeholder="Value...">
         <button class="cqb-delete-btn">&times;</button>
+    </div>
+</template>
+<template id="lookup-value-where-clause-template">
+    <div class="lookup-value-filter-container">
+        <div class="lookup-condition-rule">
+            <div class="form-group">
+                <label>WHERE external field...</label>
+                <select class="lookup-cond-external-field"></select>
+            </div>
+            <div class="form-group" style="max-width: 120px;">
+                <label>is...</label>
+                <select class="lookup-cond-operator">
+                    <option value="=" selected>equal to</option>
+                    <option value="!=">not equal to</option>
+                    <option value=">">greater than</option>
+                    <option value="<">less than</option>
+                    <option value=">=">at least</option>
+                    <option value="<=">at most</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>this value...</label>
+                <select class="lookup-cond-value-type">
+                    <option value="dynamic">Value from Current Record</option>
+                    <option value="static">Static Value</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group" id="lookup-cond-dynamic-value-group">
+            <select class="lookup-cond-dynamic-value"></select>
+        </div>
+        <div class="form-group hidden" id="lookup-cond-static-value-group">
+            <input type="text" class="lookup-cond-static-value" placeholder="Enter a static value">
+        </div>
+         <div class="lookup-actions">
+            <button class="btn btn-secondary btn-sm remove-lookup-where-btn"><i class="fas fa-trash-alt"></i> Remove Filter</button>
+        </div>
     </div>
 </template>
 </body>

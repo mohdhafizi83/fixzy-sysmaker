@@ -66,84 +66,7 @@ function setupLogicBuilderCore(config) {
 
     let modalCanvasState = '[]';
 
-    const openLookupConditionModal = (componentEl) => {
-        const modal = document.getElementById('lookup-condition-modal');
-        if (!modal) return;
-
-        const elements = {
-            externalFieldSelect: document.getElementById('lookup-cond-external-field'),
-            operatorSelect: document.getElementById('lookup-cond-operator'),
-            valueTypeSelect: document.getElementById('lookup-cond-value-type'),
-            staticValueGroup: document.getElementById('lookup-cond-static-value-group'),
-            staticValueInput: document.getElementById('lookup-cond-static-value'),
-            dynamicValueGroup: document.getElementById('lookup-cond-dynamic-value-group'),
-            dynamicValueSelect: document.getElementById('lookup-cond-dynamic-value'),
-            okBtn: document.getElementById('lookup-condition-ok'),
-            cancelBtn: document.getElementById('lookup-condition-cancel'),
-            closeBtn: document.getElementById('lookup-condition-close')
-        };
-
-        const externalTableName = componentEl.querySelector('.table-select').value;
-        const currentTableName = context.tableName;
-
-        elements.externalFieldSelect.innerHTML = '';
-        Object.keys(jsonData.database.table[externalTableName].fields).forEach(f => {
-            const option = document.createElement('option');
-            option.value = f;
-            option.textContent = f;
-            elements.externalFieldSelect.appendChild(option);
-        });
-
-        elements.dynamicValueSelect.innerHTML = '';
-        Object.keys(jsonData.database.table[currentTableName].fields).forEach(f => {
-            const option = document.createElement('option');
-            option.value = `##current_record.${f}##`;
-            option.textContent = f;
-            elements.dynamicValueSelect.appendChild(option);
-        });
-
-        const cond = componentEl.dataset;
-        elements.externalFieldSelect.value = cond.condField || '';
-        elements.operatorSelect.value = cond.condOperator || '=';
-        elements.valueTypeSelect.value = cond.condValueType || 'dynamic';
-        if (cond.condValueType === 'static') {
-            elements.staticValueInput.value = cond.condValue || '';
-        } else {
-            elements.dynamicValueSelect.value = cond.condValue || '';
-        }
-
-        const toggleValueInputs = () => {
-            const isStatic = elements.valueTypeSelect.value === 'static';
-            elements.staticValueGroup.classList.toggle('hidden', !isStatic);
-            elements.dynamicValueGroup.classList.toggle('hidden', isStatic);
-        };
-        elements.valueTypeSelect.addEventListener('change', toggleValueInputs);
-        toggleValueInputs();
-
-        const closeModal = () => modal.classList.add('hidden');
-        
-        const newOkBtn = elements.okBtn.cloneNode(true);
-        elements.okBtn.parentNode.replaceChild(newOkBtn, elements.okBtn);
-        
-        newOkBtn.addEventListener('click', () => {
-            const isStatic = elements.valueTypeSelect.value === 'static';
-            componentEl.dataset.condField = elements.externalFieldSelect.value;
-            componentEl.dataset.condOperator = elements.operatorSelect.value;
-            componentEl.dataset.condValueType = elements.valueTypeSelect.value;
-            componentEl.dataset.condValue = isStatic ? elements.staticValueInput.value : elements.dynamicValueSelect.value;
-            
-            const configBtn = componentEl.querySelector('.config-lookup-btn');
-            if(configBtn) configBtn.classList.add('configured');
-
-            updateModalCanvasState();
-            closeModal();
-        });
-
-        elements.cancelBtn.addEventListener('click', closeModal);
-        elements.closeBtn.addEventListener('click', closeModal);
-
-        modal.classList.remove('hidden');
-    };
+    // ▼▼▼ FUNGSI openLookupConditionModal TELAH DIBUANG ▼▼▼
 
     const handleWrapWithFunction = (e) => {
         e.preventDefault();
@@ -257,18 +180,29 @@ const updateModalCanvasState = () => {
                     itemData.arguments = mapItems(argContainer);
                 } else if (type === 'comment') {
                     itemData.value = item.querySelector('textarea')?.value;
-                } else if (type === 'field' || type === 'lookup_value') {
+                } else if (type === 'field') {
+                    itemData.table = item.querySelector('.table-select')?.value;
+                    itemData.field = item.querySelector('.field-select')?.value;
+                // ▼▼▼ MULA PENGUBAHSUAIAN LOGIK UNTUK 'LOOKUP_VALUE' ▼▼▼
+                } else if (type === 'lookup_value') {
                     itemData.table = item.querySelector('.table-select')?.value;
                     itemData.field = item.querySelector('.field-select')?.value;
                     
-                    if (type === 'lookup_value' && item.dataset.condField) {
+                    const filterContainer = item.querySelector('.lookup-value-filter-container');
+                    if (filterContainer) {
+                        const valueType = filterContainer.querySelector('.lookup-cond-value-type').value;
+                        const value = (valueType === 'static') 
+                            ? filterContainer.querySelector('.lookup-cond-static-value').value
+                            : filterContainer.querySelector('.lookup-cond-dynamic-value').value;
+                            
                         itemData.condition = {
-                            field: item.dataset.condField,
-                            operator: item.dataset.condOperator,
-                            valueType: item.dataset.condValueType,
-                            value: item.dataset.condValue
+                            field: filterContainer.querySelector('.lookup-cond-external-field').value,
+                            operator: filterContainer.querySelector('.lookup-cond-operator').value,
+                            valueType: valueType,
+                            value: value
                         };
                     }
+                // ▲▲▲ TAMAT PENGUBAHSUAIAN LOGIK UNTUK 'LOOKUP_VALUE' ▲▲▲
                 } else if (type === 'this_table_field') {
                     const activeTable = context.tableName;
                     const fields = jsonData.database.table[activeTable].fields;
@@ -319,7 +253,6 @@ const updateModalCanvasState = () => {
                         };
                     }
 
-                    // ▼▼▼ MULA PENGUBAHSUAIAN PENJANAAN KUIRI ▼▼▼
                     const joinClause = buildChildMathJoinClause(childTable, itemData.filter);
                     const whereClause = buildChildWhereClause(itemData.filter, childTable);
                     let query;
@@ -328,8 +261,7 @@ const updateModalCanvasState = () => {
                     } else {
                         query = `SELECT COALESCE(${aggregate}(\`${childTable}\`.\`${field}\`), 0) FROM \`${childTable}\` ${joinClause} WHERE \`${childTable}\`.\`${fkField}\` = ##ID## ${whereClause}`;
                     }
-                    itemData.query = query.replace(/\s+/g, ' ').trim(); // Bersihkan kuiri
-                    // ▲▲▲ TAMAT PENGUBAHSUAIAN PENJANAAN KUIRI ▲▲▲
+                    itemData.query = query.replace(/\s+/g, ' ').trim();
 
                 } else if (type === 'boolean') {
                     itemData.value = item.querySelector('select')?.value;
@@ -384,20 +316,36 @@ const updateModalCanvasState = () => {
                 const newItem = createInteractiveElement(itemData);
                 container.appendChild(newItem);
 
-                if (['field', 'lookup_value'].includes(itemData.type)) {
+                if (itemData.type === 'field') {
+                    newItem.querySelector('.table-select').value = itemData.table;
+                    newItem.querySelector('.table-select').dispatchEvent(new Event('change'));
+                    newItem.querySelector('.field-select').value = itemData.field;
+                // ▼▼▼ MULA PENGUBAHSUAIAN LOGIK UNTUK 'LOOKUP_VALUE' ▼▼▼
+                } else if (itemData.type === 'lookup_value') {
                     newItem.querySelector('.table-select').value = itemData.table;
                     newItem.querySelector('.table-select').dispatchEvent(new Event('change'));
                     newItem.querySelector('.field-select').value = itemData.field;
 
-                    if (itemData.type === 'lookup_value' && itemData.condition) {
-                        newItem.dataset.condField = itemData.condition.field;
-                        newItem.dataset.condOperator = itemData.condition.operator;
-                        newItem.dataset.condValueType = itemData.condition.valueType;
-                        newItem.dataset.condValue = itemData.condition.value;
-                        const configBtn = newItem.querySelector('.config-lookup-btn');
-                        if (configBtn) configBtn.classList.add('configured');
-                    }
+                    if (itemData.condition) {
+                        const showWhereBtn = newItem.querySelector('.show-lookup-where-btn');
+                        if (showWhereBtn) showWhereBtn.click();
+                        
+                        const filterContainer = newItem.querySelector('.lookup-value-filter-container');
+                        if (filterContainer) {
+                             const cond = itemData.condition;
+                             filterContainer.querySelector('.lookup-cond-external-field').value = cond.field;
+                             filterContainer.querySelector('.lookup-cond-operator').value = cond.operator;
+                             filterContainer.querySelector('.lookup-cond-value-type').value = cond.valueType;
+                             filterContainer.querySelector('.lookup-cond-value-type').dispatchEvent(new Event('change'));
 
+                             if (cond.valueType === 'static') {
+                                filterContainer.querySelector('.lookup-cond-static-value').value = cond.value;
+                             } else {
+                                filterContainer.querySelector('.lookup-cond-dynamic-value').value = cond.value;
+                             }
+                        }
+                    }
+                // ▲▲▲ TAMAT PENGUBAHSUAIAN LOGIK UNTUK 'LOOKUP_VALUE' ▲▲▲
                 } else if (itemData.type === 'comment') {
                     newItem.querySelector('textarea').value = itemData.value;
                 } else if (itemData.type === 'this_table_field') {
@@ -434,9 +382,8 @@ const updateModalCanvasState = () => {
                                 if (ruleData.type === 'join_rule') {
                                     const clone = joinRuleTemplate.content.cloneNode(true);
                                     const ruleEl = clone.querySelector('.cqb-join-rule');
-                                    rulesList.appendChild(ruleEl); // Tambah ke DOM dahulu
+                                    rulesList.appendChild(ruleEl);
                                     
-                                    // Isi dropdown jadual berkaitan
                                     const childTable = itemData.table;
                                     const relatedTables = new Set();
                                     jsonData.database.relationships.forEach(rel => {
@@ -449,7 +396,7 @@ const updateModalCanvasState = () => {
                                     });
                                     
                                     tableDropdown.value = ruleData.table;
-                                    tableDropdown.dispatchEvent(new Event('change')); // Cetus untuk isi medan
+                                    tableDropdown.dispatchEvent(new Event('change'));
 
                                     ruleEl.querySelector('.cqb-rule-field').value = ruleData.field;
                                     ruleEl.querySelector('.cqb-rule-operator').value = ruleData.operator;
@@ -564,10 +511,22 @@ const createInteractiveElement = (data) => {
                 itemContainer.innerHTML = `<span class="api-endpoint-label">[API ENDPOINT]</span><input type="text" placeholder="https://api.example.com/data">`;
                 itemContainer.querySelector('input').addEventListener('input', updateModalCanvasState);
                 break;            
+            // ▼▼▼ MULA PENGUBAHSUAIAN UI UNTUK 'LOOKUP_VALUE' ▼▼▼
             case 'lookup_value': {
+                const mainQueryContainer = document.createElement('div');
+                mainQueryContainer.className = 'child-math-main-query'; // Guna semula gaya sedia ada
+                mainQueryContainer.innerHTML = `
+                    <span class="sql-keyword">SELECT</span>
+                    <select class="field-select"></select>
+                    <span class="sql-prose">FROM</span>
+                    <select class="table-select"></select>
+                `;
+                itemContainer.appendChild(mainQueryContainer);
+                
+                const tableSelect = mainQueryContainer.querySelector('.table-select');
+                const fieldSelect = mainQueryContainer.querySelector('.field-select');
+                
                 const activeTable = config.context?.tableName || '';
-                const tableSelect = document.createElement('select');
-                tableSelect.className = 'table-select';
                 const allOtherTables = Object.keys(jsonData.database.table).filter(t => t !== activeTable);
                 allOtherTables.forEach(tableName => {
                     const option = document.createElement('option');
@@ -575,9 +534,7 @@ const createInteractiveElement = (data) => {
                     option.textContent = tableName;
                     tableSelect.appendChild(option);
                 });
-                itemContainer.appendChild(tableSelect);
-                const fieldSelect = document.createElement('select');
-                fieldSelect.className = 'field-select';
+
                 const populateFields = (tableName) => {
                     fieldSelect.innerHTML = '';
                     if (jsonData.database.table[tableName]) {
@@ -590,22 +547,28 @@ const createInteractiveElement = (data) => {
                         });
                     }
                 };
+                
                 tableSelect.addEventListener('change', () => {
                     populateFields(tableSelect.value);
+                    const existingFilter = itemContainer.querySelector('.lookup-value-filter-container');
+                    if(existingFilter) existingFilter.remove();
+                    itemContainer.querySelector('.show-lookup-where-btn').classList.remove('hidden');
                     updateModalCanvasState();
                 });
                 fieldSelect.addEventListener('change', updateModalCanvasState);
-                itemContainer.appendChild(fieldSelect);
+                
                 if (allOtherTables.length > 0) {
                      populateFields(allOtherTables[0]);
                 }
-                const configBtn = document.createElement('button');
-                configBtn.className = 'btn-sidebar-icon config-lookup-btn';
-                configBtn.title = 'Set Lookup Condition';
-                configBtn.innerHTML = '<i class="fas fa-cog"></i>';
-                itemContainer.appendChild(configBtn);
+
+                const showWhereBtn = document.createElement('button');
+                showWhereBtn.className = 'btn btn-secondary btn-sm show-lookup-where-btn';
+                showWhereBtn.innerHTML = '<i class="fas fa-plus"></i> WHERE';
+                itemContainer.appendChild(showWhereBtn);
+
                 break;
             }
+            // ▲▲▲ TAMAT PENGUBAHSUAIAN UI UNTUK 'LOOKUP_VALUE' ▲▲▲
             case 'this_table_field': {
                 const activeTable = context?.tableName || '';
                 const fields = jsonData.database.table[activeTable]?.fields || {};
@@ -727,13 +690,11 @@ const createInteractiveElement = (data) => {
                     const uniqueId = `logic_${Date.now()}`;
                     filterContainer.querySelectorAll('input[type="radio"]').forEach(radio => radio.name = `cqb-logic-${uniqueId}`);
                     
-                    // ▼▼▼ MULA PENGUBAHSUAIAN: TAMBAH BUTANG +JOIN Rule ▼▼▼
                     const actionsDiv = filterContainer.querySelector('.child-math-actions');
                     const joinBtn = document.createElement('button');
                     joinBtn.className = 'btn btn-secondary btn-sm add-child-join-rule-btn';
                     joinBtn.innerHTML = '<i class="fas fa-link"></i> +JOIN Rule';
                     actionsDiv.insertBefore(joinBtn, actionsDiv.querySelector('.remove-where-btn'));
-                    // ▲▲▲ TAMAT PENGUBAHSUAIAN ▲▲▲
                     
                     itemContainer.appendChild(filterContainer);
                 });
@@ -1005,13 +966,6 @@ const createInteractiveElement = (data) => {
     });
 
     canvas.addEventListener('click', (e) => {
-        const configBtn = e.target.closest('.config-lookup-btn');
-        if (configBtn) {
-            const componentEl = configBtn.closest('.dropped-item');
-            openLookupConditionModal(componentEl);
-            return;
-        }
-
         if (e.target.classList.contains('delete-algo-item')) {
             const itemToRemove = e.target.closest('.dropped-item');
             if (!itemToRemove) return;
@@ -1028,87 +982,130 @@ const createInteractiveElement = (data) => {
         }
     });
     
+    // ▼▼▼ MULA PENGUBAHSUAIAN EVENT LISTENER UTAMA ▼▼▼
     canvas.addEventListener('click', e => {
-        const itemContainer = e.target.closest('.dropped-item[data-item-type="child_table_math"]');
-        if (!itemContainer) return;
-
-        if (e.target.matches('.add-child-rule-btn, .add-child-rule-btn *')) {
-            const rulesList = itemContainer.querySelector('.child-math-rules-list');
-            const ruleTemplate = document.getElementById('child-math-rule-template');
-            const clone = ruleTemplate.content.cloneNode(true);
-            
-            const childTable = itemContainer.querySelector('.table-select').value;
-            const childFields = jsonData.database.table[childTable]?.fields || {};
-            const fieldDropdown = clone.querySelector('.cqb-rule-field');
-            Object.keys(childFields).forEach(fName => {
-                fieldDropdown.innerHTML += `<option value="${fName}">${fName}</option>`;
-            });
-
-            rulesList.appendChild(clone);
-            updateModalCanvasState();
-        }
-
-        // ▼▼▼ MULA LOGIK BAHARU UNTUK +JOIN Rule ▼▼▼
-        if (e.target.matches('.add-child-join-rule-btn, .add-child-join-rule-btn *')) {
-            const rulesList = itemContainer.querySelector('.child-math-rules-list');
-            const ruleTemplate = document.getElementById('child-math-join-rule-template');
-            const clone = ruleTemplate.content.cloneNode(true);
-            const ruleEl = clone.querySelector('.cqb-join-rule');
-
-            const childTable = itemContainer.querySelector('.table-select').value;
-            const relatedTables = new Set();
-            jsonData.database.relationships.forEach(rel => {
-                if (rel.parent_table_name === childTable) relatedTables.add(rel.child_table_name);
-                if (rel.child_table_name === childTable) relatedTables.add(rel.parent_table_name);
-            });
-
-            const tableDropdown = ruleEl.querySelector('.cqb-rule-table');
-            const fieldDropdown = ruleEl.querySelector('.cqb-rule-field');
-
-            relatedTables.forEach(t => tableDropdown.innerHTML += `<option value="${t}">${t}</option>`);
-
-            const populateJoinFields = (selectedTable) => {
-                fieldDropdown.innerHTML = '';
-                const fields = jsonData.database.table[selectedTable]?.fields || {};
-                Object.keys(fields).forEach(fName => {
+        // Bahagian untuk Child Table Math
+        const childMathItem = e.target.closest('.dropped-item[data-item-type="child_table_math"]');
+        if (childMathItem) {
+            if (e.target.matches('.add-child-rule-btn, .add-child-rule-btn *')) {
+                const rulesList = childMathItem.querySelector('.child-math-rules-list');
+                const ruleTemplate = document.getElementById('child-math-rule-template');
+                const clone = ruleTemplate.content.cloneNode(true);
+                
+                const childTable = childMathItem.querySelector('.table-select').value;
+                const childFields = jsonData.database.table[childTable]?.fields || {};
+                const fieldDropdown = clone.querySelector('.cqb-rule-field');
+                Object.keys(childFields).forEach(fName => {
                     fieldDropdown.innerHTML += `<option value="${fName}">${fName}</option>`;
                 });
-            };
-            
-            tableDropdown.addEventListener('change', () => {
-                populateJoinFields(tableDropdown.value);
+
+                rulesList.appendChild(clone);
                 updateModalCanvasState();
-            });
-
-            if (relatedTables.size > 0) {
-                populateJoinFields(tableDropdown.value);
             }
-            
-            rulesList.appendChild(clone);
-            updateModalCanvasState();
-        }
-        // ▲▲▲ TAMAT LOGIK BAHARU UNTUK +JOIN Rule ▲▲▲
 
-        if (e.target.matches('.remove-where-btn, .remove-where-btn *')) {
-            itemContainer.querySelector('.child-math-filter-container')?.remove();
-            itemContainer.querySelector('.show-where-btn')?.classList.remove('hidden');
-            updateModalCanvasState();
+            if (e.target.matches('.add-child-join-rule-btn, .add-child-join-rule-btn *')) {
+                const rulesList = childMathItem.querySelector('.child-math-rules-list');
+                const ruleTemplate = document.getElementById('child-math-join-rule-template');
+                const clone = ruleTemplate.content.cloneNode(true);
+                const ruleEl = clone.querySelector('.cqb-join-rule');
+
+                const childTable = childMathItem.querySelector('.table-select').value;
+                const relatedTables = new Set();
+                jsonData.database.relationships.forEach(rel => {
+                    if (rel.parent_table_name === childTable) relatedTables.add(rel.child_table_name);
+                    if (rel.child_table_name === childTable) relatedTables.add(rel.parent_table_name);
+                });
+
+                const tableDropdown = ruleEl.querySelector('.cqb-rule-table');
+                const fieldDropdown = ruleEl.querySelector('.cqb-rule-field');
+
+                relatedTables.forEach(t => tableDropdown.innerHTML += `<option value="${t}">${t}</option>`);
+
+                const populateJoinFields = (selectedTable) => {
+                    fieldDropdown.innerHTML = '';
+                    const fields = jsonData.database.table[selectedTable]?.fields || {};
+                    Object.keys(fields).forEach(fName => {
+                        fieldDropdown.innerHTML += `<option value="${fName}">${fName}</option>`;
+                    });
+                };
+                
+                tableDropdown.addEventListener('change', () => {
+                    populateJoinFields(tableDropdown.value);
+                    updateModalCanvasState();
+                });
+
+                if (relatedTables.size > 0) {
+                    populateJoinFields(tableDropdown.value);
+                }
+                
+                rulesList.appendChild(clone);
+                updateModalCanvasState();
+            }
+
+            if (e.target.matches('.remove-where-btn, .remove-where-btn *')) {
+                childMathItem.querySelector('.child-math-filter-container')?.remove();
+                childMathItem.querySelector('.show-where-btn')?.classList.remove('hidden');
+                updateModalCanvasState();
+            }
+
+            if (e.target.matches('.cqb-delete-btn, .cqb-delete-btn *')) {
+                const ruleEl = e.target.closest('.cqb-rule, .cqb-join-rule');
+                if (ruleEl) {
+                    ruleEl.remove();
+                    updateModalCanvasState();
+                }
+            }
         }
 
-        if (e.target.matches('.cqb-delete-btn, .cqb-delete-btn *')) {
-            const ruleEl = e.target.closest('.cqb-rule');
-            if (ruleEl) {
-                ruleEl.remove();
+        // Bahagian untuk Lookup Value
+        const lookupItem = e.target.closest('.dropped-item[data-item-type="lookup_value"]');
+        if (lookupItem) {
+            if (e.target.matches('.show-lookup-where-btn, .show-lookup-where-btn *')) {
+                e.target.closest('.show-lookup-where-btn').classList.add('hidden');
+                const template = document.getElementById('lookup-value-where-clause-template');
+                const clone = template.content.cloneNode(true);
+                const filterContainer = clone.querySelector('.lookup-value-filter-container');
+
+                // Populate dropdowns
+                const externalFieldSelect = filterContainer.querySelector('.lookup-cond-external-field');
+                const dynamicValueSelect = filterContainer.querySelector('.lookup-cond-dynamic-value');
+                
+                const externalTableName = lookupItem.querySelector('.table-select').value;
+                const currentTableName = context.tableName;
+
+                Object.keys(jsonData.database.table[externalTableName].fields).forEach(f => {
+                    externalFieldSelect.innerHTML += `<option value="${f}">${f}</option>`;
+                });
+
+                Object.keys(jsonData.database.table[currentTableName].fields).forEach(f => {
+                    dynamicValueSelect.innerHTML += `<option value="##current_record.${f}##">${f}</option>`;
+                });
+
+                filterContainer.querySelector('.lookup-cond-value-type').addEventListener('change', (ev) => {
+                    const isStatic = ev.target.value === 'static';
+                    filterContainer.querySelector('#lookup-cond-static-value-group').classList.toggle('hidden', !isStatic);
+                    filterContainer.querySelector('#lookup-cond-dynamic-value-group').classList.toggle('hidden', isStatic);
+                    updateModalCanvasState();
+                });
+                
+                lookupItem.appendChild(filterContainer);
+                updateModalCanvasState();
+            }
+
+            if (e.target.matches('.remove-lookup-where-btn, .remove-lookup-where-btn *')) {
+                lookupItem.querySelector('.lookup-value-filter-container')?.remove();
+                lookupItem.querySelector('.show-lookup-where-btn')?.classList.remove('hidden');
                 updateModalCanvasState();
             }
         }
     });
 
     canvas.addEventListener('change', e => {
-        if(e.target.closest('.child-math-filter-container')) {
+        if(e.target.closest('.child-math-filter-container, .lookup-value-filter-container')) {
             updateModalCanvasState();
         }
     });
+    // ▲▲▲ TAMAT PENGUBAHSUAIAN EVENT LISTENER UTAMA ▲▲▲
 
     populateCanvasFromHiddenInput();
 
@@ -1116,7 +1113,6 @@ const createInteractiveElement = (data) => {
         getState: () => modalCanvasState,
     };
 }
-
 /**
  * Mencipta Logic Builder yang berfungsi di dalam modal.
  * @param {object} config - Objek konfigurasi untuk builder.
