@@ -1918,7 +1918,7 @@
                 <div class="algo-component" draggable="true" data-type="calculate_related_record">Calculate Related Record</div>
 				<div class="algo-component" draggable="true" data-type="related_record_data">Related Record Data</div>
                 <div class="algo-component" draggable="true" data-type="lookup_value">Lookup Value</div>
-                <div class="algo-component" draggable="true" data-type="custom_query">Custom Query</div>
+                <!--<div class="algo-component" draggable="true" data-type="custom_query">Custom Query</div>-->
                 <div class="algo-component" draggable="true" data-type="api_endpoint">API Endpoint</div>
             </div>
             <div class="palette-group">
@@ -2241,5 +2241,48 @@
         </button>
     </div>
 </template>
+
+<template id="query-helper-template">
+    <div class="qh-grid">
+        <div class="qh-controls">
+            <div class="form-group">
+                <label for="qh-table-select">Table Context</label>
+                <select id="qh-table-select"></select>
+            </div>
+            <div class="form-group">
+                <label for="qh-field-list">Fields</label>
+                <ul id="qh-field-list" class="qh-list"></ul>
+            </div>
+            <div class="form-group">
+                <label for="qh-relation-list">Relationships</label>
+                <ul id="qh-relation-list" class="qh-list"></ul>
+            </div>
+        </div>
+        <div class="qh-preview">
+            <div class="tabs-nav qh-tabs-nav">
+                <button class="tab-link active" data-template="select">SELECT</button>
+                <button class="tab-link" data-template="insert">INSERT</button>
+                <button class="tab-link" data-template="update">UPDATE</button>
+                <button class="tab-link" data-template="delete">DELETE</button>
+            </div>
+            <textarea id="qh-preview-area" readonly placeholder="Select a template or build your query..."></textarea>
+        </div>
+    </div>
+</template>
+
+<div id="query-helper-modal" class="modal-overlay hidden">
+    <div class="modal-content extra-large">
+        <div class="modal-header">
+            <h3>Query Snippet Helper</h3>
+            <button id="qh-modal-close" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body" id="qh-modal-body">
+            </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="qh-modal-cancel">Close</button>
+            <button class="btn btn-primary" id="qh-insert-snippet">Insert Snippet</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>

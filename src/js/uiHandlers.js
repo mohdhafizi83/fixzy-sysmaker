@@ -705,13 +705,30 @@ function setupLogicBuilderCore(config) {
                 itemContainer.appendChild(closeParen);
                 break;
             }
-            case 'custom_query':
-                itemContainer.innerHTML = `<div class="sql-query-header"><span>[SQL QUERY]</span><button class="open-qb-btn" title="Open Query Builder"><i class="fas fa-magic-wand-sparkles"></i></button></div><textarea placeholder="SELECT * FROM ..."></textarea><input type="hidden" class="query-builder-state">`;
-                itemContainer.querySelector('textarea').addEventListener('input', updateModalCanvasState);
-                itemContainer.querySelector('.open-qb-btn').addEventListener('click', (e) => {
-                    openGeneralQueryBuilder(e.target.closest('.dropped-item').querySelector('textarea'));
-                });
-                break;
+case 'custom_query': {
+    itemContainer.innerHTML = `<div class="sql-query-header">
+        <span>[SQL QUERY]</span>
+        <div class="header-buttons">
+            <button class="btn btn-secondary btn-sm open-qh-btn" title="Open Query Helper">
+                <i class="fas fa-magic"></i> Query Helper
+            </button>
+        </div>
+    </div>
+    <textarea placeholder="SELECT ..."></textarea>
+    <input type="hidden" class="query-builder-state">`;
+
+    const textarea = itemContainer.querySelector('textarea');
+    textarea.addEventListener('input', updateModalCanvasState);
+
+    // Event listener untuk Query Helper
+    itemContainer.querySelector('.open-qh-btn').addEventListener('click', () => {
+        openQueryHelperModal({
+            targetTextarea: textarea,
+            context: context // 'context' diwarisi dari skop fungsi setupLogicBuilderCore
+        });
+    });
+    break;
+}
             case 'api_endpoint':
                 itemContainer.innerHTML = `<span class="api-endpoint-label">[API ENDPOINT]</span><input type="text" placeholder="https://api.example.com/data">`;
                 itemContainer.querySelector('input').addEventListener('input', updateModalCanvasState);
@@ -4909,4 +4926,205 @@ function buildRulesUI(container, filterGroup, tableName) {
             buildRulesUI(groupEl.querySelector('.qb-nested-rules'), rule, tableName);
         }
     });
+}
+
+// ▼▼▼ TAMBAH KESELURUHAN BLOK KOD INI DI uiHandlers.js ▼▼▼
+
+/**
+ * Membuka Query Snippet Helper yang berkuasa dan kontekstual.
+ * @param {object} options - Objek konfigurasi.
+ * @param {HTMLTextAreaElement} options.targetTextarea - Textarea sasaran untuk menerima output.
+ * @param {object} options.context - Maklumat tentang di mana helper dibuka.
+ * @param {'field'|'table'|'project'} options.context.page - Halaman semasa.
+ * @param {string} [options.context.tableName] - Nama jadual semasa (jika ada).
+ */
+export function openQueryHelperModal(options) {
+    const modal = document.getElementById('query-helper-modal');
+    const modalBody = document.getElementById('qh-modal-body');
+    const template = document.getElementById('query-helper-template');
+
+    if (!modal || !modalBody || !template) return;
+
+    // 1. Sediakan UI
+    modalBody.innerHTML = '';
+    modalBody.appendChild(template.content.cloneNode(true));
+    modal.classList.remove('hidden');
+
+    // 2. Rujukan kepada elemen UI
+    const elements = {
+        tableSelect: document.getElementById('qh-table-select'),
+        fieldList: document.getElementById('qh-field-list'),
+        relationList: document.getElementById('qh-relation-list'),
+        previewArea: document.getElementById('qh-preview-area'),
+        templateTabs: document.querySelectorAll('.qh-tabs-nav .tab-link'),
+        insertBtn: document.getElementById('qh-insert-snippet'),
+        closeBtn: document.getElementById('qh-modal-close'),
+        cancelBtn: document.getElementById('qh-modal-cancel'),
+    };
+
+    // 3. State Management
+    let state = {
+        selectedTable: options.context.tableName || null,
+        selectedFields: new Set(),
+        activeTemplate: 'select',
+        joins: new Set(),
+    };
+
+    // 4. Fungsi-Fungsi Teras
+    const updatePreview = () => {
+        if (!state.selectedTable) {
+            elements.previewArea.value = 'Select a table context to begin...';
+            return;
+        }
+
+        const fields = state.selectedFields.size > 0 ?
+            Array.from(state.selectedFields).map(f => `\`${f}\``).join(', ') : '*';
+
+        const joinClause = Array.from(state.joins).join('\n');
+
+        let query = '';
+        switch (state.activeTemplate) {
+            case 'select':
+                query = `SELECT\n    ${fields}\nFROM\n    \`${state.selectedTable}\`\n${joinClause}`;
+                break;
+            case 'insert':
+                query = `INSERT INTO \`${state.selectedTable}\` (${fields})\nVALUES\n    (...)`;
+                break;
+            case 'update':
+                const setClause = Array.from(state.selectedFields).map(f => `\`${f}\` = ?`).join(',\n    ');
+                query = `UPDATE \`${state.selectedTable}\`\nSET\n    ${setClause}\nWHERE\n    ...`;
+                break;
+            case 'delete':
+                query = `DELETE FROM \`${state.selectedTable}\`\nWHERE\n    ...`;
+                break;
+        }
+        elements.previewArea.value = query.trim() + ';';
+    };
+
+    const populateFieldsAndRelations = (tableName) => {
+        state.selectedTable = tableName;
+        state.selectedFields.clear();
+        state.joins.clear();
+        elements.fieldList.innerHTML = '';
+        elements.relationList.innerHTML = '';
+
+        if (!tableName) {
+            updatePreview();
+            return;
+        }
+
+        const tableData = jsonData.database.table[tableName];
+        if (tableData && tableData.fields) {
+            Object.keys(tableData.fields).forEach(fieldName => {
+                const li = document.createElement('li');
+                li.className = 'qh-list-item';
+                li.dataset.field = fieldName;
+                li.innerHTML = `<input type="checkbox"><span>${fieldName}</span>`;
+                elements.fieldList.appendChild(li);
+            });
+        }
+
+        jsonData.database.relationships.forEach(rel => {
+            let relatedTable, relText;
+            if (rel.parent_table_name === tableName) {
+                relatedTable = rel.child_table_name;
+                relText = `Has many: ${relatedTable}`;
+            } else if (rel.child_table_name === tableName) {
+                relatedTable = rel.parent_table_name;
+                relText = `Belongs to: ${relatedTable}`;
+            } else {
+                return;
+            }
+            
+            const li = document.createElement('li');
+            li.className = 'qh-list-item';
+            li.dataset.rel = JSON.stringify(rel);
+            li.innerHTML = `<i class="fas fa-link"></i><span>${relText}</span>`;
+            elements.relationList.appendChild(li);
+        });
+        updatePreview();
+    };
+
+    // 5. Pasang Event Listeners
+    elements.tableSelect.addEventListener('change', () => populateFieldsAndRelations(elements.tableSelect.value));
+
+    elements.fieldList.addEventListener('click', (e) => {
+        const li = e.target.closest('.qh-list-item');
+        if (!li) return;
+        const fieldName = li.dataset.field;
+        const checkbox = li.querySelector('input');
+        if (state.selectedFields.has(fieldName)) {
+            state.selectedFields.delete(fieldName);
+            li.classList.remove('selected');
+            checkbox.checked = false;
+        } else {
+            state.selectedFields.add(fieldName);
+            li.classList.add('selected');
+            checkbox.checked = true;
+        }
+        updatePreview();
+    });
+    
+    elements.relationList.addEventListener('click', (e) => {
+        const li = e.target.closest('.qh-list-item');
+        if (!li) return;
+        const rel = JSON.parse(li.dataset.rel);
+        const joinClause = `LEFT JOIN \`${rel.parent_table_name}\` ON \`${rel.child_table_name}\`.\`${rel.fk_child_field}\` = \`${rel.parent_table_name}\`.\`${rel.parent_field}\``;
+        if (state.joins.has(joinClause)) {
+            state.joins.delete(joinClause);
+            li.classList.remove('selected');
+        } else {
+            state.joins.add(joinClause);
+            li.classList.add('selected');
+        }
+        updatePreview();
+    });
+
+    elements.templateTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            elements.templateTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            state.activeTemplate = tab.dataset.template;
+            updatePreview();
+        });
+    });
+
+    const insertSnippet = () => {
+        const snippet = elements.previewArea.value;
+        const start = options.targetTextarea.selectionStart;
+        const end = options.targetTextarea.selectionEnd;
+        const text = options.targetTextarea.value;
+        options.targetTextarea.value = text.substring(0, start) + snippet + text.substring(end);
+        options.targetTextarea.focus();
+        options.targetTextarea.dispatchEvent(new Event('input', { bubbles: true })); // Maklumkan SaveManager
+        modal.classList.add('hidden');
+    };
+    
+    const closeModal = () => modal.classList.add('hidden');
+    elements.insertBtn.addEventListener('click', insertSnippet);
+    elements.closeBtn.addEventListener('click', closeModal);
+    elements.cancelBtn.addEventListener('click', closeModal);
+
+    // 6. Logik Kontekstual
+    const allTables = Object.keys(jsonData.database.table);
+    elements.tableSelect.innerHTML = '<option value="">-- Select a table --</option>' + allTables.map(t => `<option value="${t}">${t}</option>`).join('');
+    
+    switch (options.context.page) {
+        case 'field':
+            elements.tableSelect.value = options.context.tableName;
+            elements.tableSelect.disabled = true;
+            elements.templateTabs.forEach(tab => {
+                if(tab.dataset.template !== 'select') tab.classList.add('hidden');
+            });
+            break;
+        case 'table':
+            elements.tableSelect.value = options.context.tableName;
+            elements.tableSelect.disabled = true;
+            break;
+        case 'project':
+            // No pre-selection needed, user must choose
+            break;
+    }
+    
+    populateFieldsAndRelations(state.selectedTable);
 }
