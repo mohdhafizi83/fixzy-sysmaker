@@ -486,3 +486,42 @@ initializeQueryBuilder();
         });
     }
 });
+
+/**
+ * Mencari dan menggantikan semua placeholder '##variable.nama##' dalam satu rentetan
+ * dengan nilai sebenar daripada objek skop.
+ * @param {string} configString - Rentetan JSON konfigurasi untuk blok Action atau Condition.
+ * @param {object} variableScope - Objek yang menyimpan nilai-nilai pembolehubah, cth: { nama_anda: 'Ali', umur: 30 }.
+ * @returns {string} Rentetan JSON baharu dengan semua pembolehubah telah digantikan.
+ */
+function resolveVariables(configString, variableScope) {
+    if (!configString || !variableScope) {
+        return configString;
+    }
+
+    // Regular Expression untuk mencari corak ##variable.namaPembolehubah##
+    // (\w+) menangkap nama pembolehubah (hanya huruf, nombor, dan garis bawah)
+    const variableRegex = /##variable\.(\w+)##/g;
+
+    return configString.replace(variableRegex, (match, variableName) => {
+        // 'match' adalah keseluruhan rentetan, cth: "##variable.kuota_kursus##"
+        // 'variableName' adalah bahagian yang ditangkap, cth: "kuota_kursus"
+
+        // Semak jika pembolehubah wujud dalam skop kita
+        if (Object.prototype.hasOwnProperty.call(variableScope, variableName)) {
+            // Gantikan dengan nilai sebenar. 
+            // Kita JSON.stringify nilai itu untuk memastikan ia dimasukkan sebagai rentetan JSON yang sah,
+            // ini penting jika nilainya adalah objek atau rentetan yang mengandungi petikan.
+            // Kita buang petikan luar jika ia adalah rentetan mudah.
+            const value = variableScope[variableName];
+            if (typeof value === 'string') {
+                return value.replace(/'/g, "\\'"); // Escape single quotes for SQL safety
+            }
+            return value;
+        }
+
+        // Jika pembolehubah tidak ditemui, kembalikan placeholder asal supaya mudah dinyahtralat.
+        console.warn(`Pembolehubah tidak ditemui dalam skop: ${variableName}`);
+        return match;
+    });
+}

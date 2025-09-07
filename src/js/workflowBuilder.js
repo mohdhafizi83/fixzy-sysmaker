@@ -158,6 +158,20 @@ function setupBuilderInstance(config) {
                 connectionPoints += '<div class="connection-point output true" data-point-id="out-true" title="True"></div>';
                 connectionPoints += '<div class="connection-point output false" data-point-id="out-false" title="False"></div>';
                 break;
+			case 'variable':
+				const varName = blockState.variableName || '';
+				const isConfigured = blockState.configData && blockState.configData !== '[]';
+				const btnText = isConfigured ? 'Re-configure' : 'Configure';
+				const btnClass = isConfigured ? 'btn-success' : 'btn-secondary';
+
+				title = '<i class="fas fa-code"></i> Variable';
+				content = `
+					<input type="text" class="variable-name-input" placeholder="Variable Name..." value="${varName}">
+					<button class="btn ${btnClass} btn-sm configure-btn">${btnText}</button>
+				`;
+				connectionPoints += '<div class="connection-point input" data-point-id="in"></div>';
+				connectionPoints += '<div class="connection-point output" data-point-id="out"></div>';
+				break;
         }
 
         block.innerHTML = `
@@ -217,86 +231,100 @@ function setupBuilderInstance(config) {
         modal.classList.remove('hidden');
     }
     
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: workflowBuilder.js
-
 function openBlockConfiguration(blockId) {
-    const blockType = state.blocks[blockId]?.type;
-    if (blockType === 'hook_trigger') {
-        openHookTypeModal(blockId);
-        return;
-    }
-    
-    const blockData = state.blocks[blockId];
-    if (!blockData) return;
-
-    let tempInput = document.getElementById('workflow-temp-input');
-    if (!tempInput) {
-        tempInput = document.createElement('input');
-        tempInput.type = 'hidden'; tempInput.id = 'workflow-temp-input';
-        document.body.appendChild(tempInput);
-    }
-    tempInput.value = blockData.configData || '[]';
-
-    // ▼▼▼ START OF FIX ▼▼▼
-    // Tentukan jenis builder berdasarkan jenis blok workflow
-    let builderType;
-    let validationRules;
-
-    const CONDITION_GRAMMAR = {
-        'start': ['value', 'open_paren'],
-        'value': ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'close_paren'],
-        'comparison_operator': ['value', 'open_paren'],
-        'arithmetic_operator': ['value', 'open_paren'],
-        'logical_operator': ['value', 'open_paren'],
-        'open_paren': ['value', 'open_paren'],
-        'close_paren': ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'close_paren'],
-    };
-
-    const ACTION_GRAMMAR = {
-        // Untuk blok Action, kita benarkan jujukan tindakan tanpa peraturan logik yang ketat
-        'start': ['insert_record', 'update_record', 'delete_record', 'comment'],
-        'insert_record': ['insert_record', 'update_record', 'delete_record', 'comment'],
-        'update_record': ['insert_record', 'update_record', 'delete_record', 'comment'],
-        'delete_record': ['insert_record', 'update_record', 'delete_record', 'comment'],
-        'comment': ['insert_record', 'update_record', 'delete_record', 'comment'],
-    };
-
-    if (blockType === 'action') {
-        builderType = 'actionBuilder';
-        validationRules = ACTION_GRAMMAR;
-    } else if (blockType === 'condition') {
-        builderType = 'conditionBuilder';
-        validationRules = CONDITION_GRAMMAR;
-    }
-    // ▲▲▲ END OF FIX ▲▲▲
-
-    openModalLogicBuilder({
-        builderType: builderType, // Hantar konteks yang betul
-        modalId: 'algorithm-builder-modal',
-        getContext: () => ({ tableName: config.hookType === 'table' ? document.querySelector('#table-settings-page .table-name')?.textContent : null }),
-        closeButtonId: 'algorithm-builder-close',
-        cancelButtonId: 'algorithm-builder-cancel-btn',
-        doneButtonId: 'algorithm-builder-done-btn',
-        targetInputId: 'workflow-temp-input',
-        validationRules: validationRules, // Guna peraturan yang betul
-        hiddenComponents: (builderType === 'actionBuilder') ? [] : ['if', 'else_if', 'then', 'else'], // Sembunyikan komponen berdasarkan konteks
-        onComplete: (logicJson) => {
-            state.blocks[blockId].configData = logicJson;
-            const blockEl = container.querySelector(`[data-block-id='${blockId}']`);
-            if (blockEl) {
-                const btn = blockEl.querySelector('.configure-btn');
-                if (logicJson && logicJson !== '[]') {
-                    btn.textContent = 'Configured';
-                    btn.classList.replace('btn-secondary', 'btn-success');
-                } else {
-                    btn.textContent = 'Configure';
-                    btn.classList.replace('btn-success', 'btn-secondary');
-                }
-            }
-            saveState();
+        const blockType = state.blocks[blockId]?.type;
+        if (blockType === 'hook_trigger') {
+            openHookTypeModal(blockId);
+            return;
         }
-    });
-}
+        
+        const blockData = state.blocks[blockId];
+        if (!blockData) return;
+
+        let tempInput = document.getElementById('workflow-temp-input');
+        if (!tempInput) {
+            tempInput = document.createElement('input');
+            tempInput.type = 'hidden'; tempInput.id = 'workflow-temp-input';
+            document.body.appendChild(tempInput);
+        }
+        tempInput.value = blockData.configData || '[]';
+
+        // Tentukan jenis builder berdasarkan jenis blok workflow
+        let builderType;
+        let validationRules;
+
+        const CONDITION_GRAMMAR = {
+            'start': ['value', 'open_paren'],
+            'value': ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'close_paren'],
+            'comparison_operator': ['value', 'open_paren'],
+            'arithmetic_operator': ['value', 'open_paren'],
+            'logical_operator': ['value', 'open_paren'],
+            'open_paren': ['value', 'open_paren'],
+            'close_paren': ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'close_paren'],
+        };
+
+        const ACTION_GRAMMAR = {
+            'start': ['insert_record', 'update_record', 'delete_record', 'comment'],
+            'insert_record': ['insert_record', 'update_record', 'delete_record', 'comment'],
+            'update_record': ['insert_record', 'update_record', 'delete_record', 'comment'],
+            'delete_record': ['insert_record', 'update_record', 'delete_record', 'comment'],
+            'comment': ['insert_record', 'update_record', 'delete_record', 'comment'],
+        };
+
+        const VALUE_CALCULATOR_GRAMMAR = {
+            'start':               ['if', 'open_paren', 'value'],
+            'if':                  ['value', 'open_paren'],
+            'else_if':             ['value', 'open_paren'],
+            'then':                ['value', 'open_paren'],
+            'else':                ['value', 'open_paren'],
+            'value':               ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then', 'else', 'else_if', 'close_paren'],
+            'comparison_operator': ['value', 'open_paren'],
+            'arithmetic_operator': ['value', 'open_paren'],
+            'logical_operator':    ['value', 'open_paren', 'if'],
+            'open_paren':          ['value', 'if', 'open_paren'],
+            'close_paren':         ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then', 'else', 'else_if', 'close_paren'],
+        };
+
+        if (blockType === 'action') {
+            builderType = 'actionBuilder';
+            validationRules = ACTION_GRAMMAR;
+        } else if (blockType === 'condition') {
+            builderType = 'conditionBuilder';
+            validationRules = CONDITION_GRAMMAR;
+        // ▼▼▼ PENAMBAHAN BAHARU UNTUK BLOK 'VARIABLE' ▼▼▼
+        } else if (blockType === 'variable') {
+            builderType = 'valueCalculator';
+            validationRules = VALUE_CALCULATOR_GRAMMAR;
+        // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
+        }
+        
+        openModalLogicBuilder({
+            builderType: builderType,
+            modalId: 'algorithm-builder-modal',
+            getContext: () => ({ tableName: config.hookType === 'table' ? document.querySelector('#table-settings-page .table-name')?.textContent : null }),
+            closeButtonId: 'algorithm-builder-close',
+            cancelButtonId: 'algorithm-builder-cancel-btn',
+            doneButtonId: 'algorithm-builder-done-btn',
+            targetInputId: 'workflow-temp-input',
+            validationRules: validationRules,
+            hiddenComponents: (builderType === 'actionBuilder') ? ['if', 'else_if', 'then', 'else'] : (builderType === 'conditionBuilder' ? ['if', 'else_if', 'then', 'else', 'insert_record', 'update_record', 'delete_record'] : ['insert_record', 'update_record', 'delete_record']),
+            onComplete: (logicJson) => {
+                state.blocks[blockId].configData = logicJson;
+                const blockEl = container.querySelector(`[data-block-id='${blockId}']`);
+                if (blockEl) {
+                    const btn = blockEl.querySelector('.configure-btn');
+                    if (logicJson && logicJson !== '[]') {
+                        btn.textContent = 'Re-configure';
+                        btn.classList.replace('btn-secondary', 'btn-success');
+                    } else {
+                        btn.textContent = 'Configure';
+                        btn.classList.replace('btn-success', 'btn-secondary');
+                    }
+                }
+                saveState();
+            }
+        });
+    }
 
     function startDragBlock(e) {
         if (e.target.classList.contains('connection-point') || e.target.classList.contains('delete-block-btn')) return;
@@ -405,6 +433,21 @@ function openBlockConfiguration(blockId) {
             deleteBlock(deleteBtn.closest('.workflow-block').dataset.blockId);
         }
     });
+	
+// ▼▼▼ TAMBAH BLOK KOD INI SELEPAS `state.canvas.addEventListener('click', ...)` ▼▼▼
+
+    // Listener untuk menyimpan nama variable secara langsung
+    state.canvas.addEventListener('input', (e) => {
+        if (e.target.classList.contains('variable-name-input')) {
+            const blockId = e.target.closest('.workflow-block')?.dataset.blockId;
+            if (blockId && state.blocks[blockId]) {
+                state.blocks[blockId].variableName = e.target.value;
+                saveState();
+            }
+        }
+    });
+
+// ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
     
     document.addEventListener('keydown', (e) => {
         const isTabActive = container.closest('.tab-pane')?.classList.contains('active');

@@ -2903,3 +2903,30 @@ fieldset.fieldset-disabled {
     gap: 0.5rem;
     align-items: center;
 }
+
+/* ================================================================== */
+/* == STYLES FOR WORKFLOW VARIABLE BLOCK                           == */
+/* ================================================================== */
+
+/* Warna ungu untuk blok Variable di atas kanvas */
+.workflow-block[data-block-type="variable"] .workflow-block-title {
+    background-color: #8B5CF6; /* Ungu */
+    color: white;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+/* Warna ungu untuk ikon Variable di dalam palet */
+.workflow-block-palette-item[data-block-type="variable"] i {
+    color: #8B5CF6; /* Ungu */
+}
+
+/* Gaya untuk input nama variable di dalam blok */
+.workflow-block-content .variable-name-input {
+    width: 100%;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
