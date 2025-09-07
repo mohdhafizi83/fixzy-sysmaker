@@ -3085,3 +3085,110 @@ fieldset.fieldset-disabled {
     stroke: #EF4444; /* Red */
     stroke-width: 4;
 }
+
+/* ================================================================== */
+/* == STYLES FOR WORKFLOW SEND EMAIL BLOCK                         == */
+/* ================================================================== */
+
+/* Warna untuk blok Send Email di atas kanvas */
+.workflow-block[data-block-type="send_email"] .workflow-block-title {
+    background-color: #3B82F6; /* Biru */
+    color: white;
+}
+
+/* Warna untuk ikon Send Email di dalam palet */
+.workflow-block-palette-item[data-block-type="send_email"] i {
+    color: #3B82F6; /* Biru */
+}
+
+/* Gaya untuk borang di dalam blok emel */
+.email-form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.email-form-container .form-group {
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.email-form-container label {
+    font-size: 0.8em;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.email-form-container input,
+.email-form-container textarea {
+    width: 100%;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.9em;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+/* ================================================================== */
+/* == STYLES FOR WORKFLOW HTTP REQUEST BLOCK                       == */
+/* ================================================================== */
+
+.workflow-block[data-block-type="http_request"] .workflow-block-title {
+    background-color: #475569; /* Slate */
+    color: white;
+}
+
+.workflow-block-palette-item[data-block-type="http_request"] i {
+    color: #475569; /* Slate */
+}
+
+/* Form Styles inside the block */
+.http-form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.http-form-container .form-group { margin-bottom: 0; }
+.http-form-container label { font-size: 0.8em; font-weight: 500; margin-bottom: 0.25rem; }
+.http-form-container input, .http-form-container select, .http-form-container textarea {
+    width: 100%;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.9em;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.http-method-url-group {
+    display: flex;
+    gap: 0.25rem;
+}
+.http-method-url-group select {
+    flex-basis: 100px;
+    flex-grow: 0;
+}
+.http-method-url-group input {
+    flex-grow: 1;
+}
+
+.http-headers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+.http-header-row {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+}
+.http-delete-header-btn {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    border-color: transparent;
+}
+.http-delete-header-btn:hover {
+    background-color: #FEF2F2;
+    border-color: #FCA5A5;
+    color: #DC2626;
+}

@@ -731,6 +731,8 @@
 	<div class="workflow-block-palette-item" draggable="true" data-block-type="terminate_workflow"><i class="fas fa-stop-circle"></i><span>Terminate Workflow</span></div>
 	<div class="workflow-block-palette-item" draggable="true" data-block-type="delay"><i class="fas fa-hourglass-half"></i><span>Delay / Wait</span></div>
 	<div class="workflow-block-palette-item" draggable="true" data-block-type="try_catch"><i class="fas fa-shield-alt"></i><span>Try / Catch</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="send_email"><i class="fas fa-paper-plane"></i><span>Send Email</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="http_request"><i class="fas fa-globe"></i><span>HTTP Request</span></div>
 </div>
 <div class="workflow-canvas-wrapper">
     <svg id="project-connector-svg" class="connector-svg"></svg>
@@ -986,6 +988,8 @@
 	<div class="workflow-block-palette-item" draggable="true" data-block-type="terminate_workflow"><i class="fas fa-stop-circle"></i><span>Terminate Workflow</span></div>
 	<div class="workflow-block-palette-item" draggable="true" data-block-type="delay"><i class="fas fa-hourglass-half"></i><span>Delay / Wait</span></div>
 	<div class="workflow-block-palette-item" draggable="true" data-block-type="try_catch"><i class="fas fa-shield-alt"></i><span>Try / Catch</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="send_email"><i class="fas fa-paper-plane"></i><span>Send Email</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="http_request"><i class="fas fa-globe"></i><span>HTTP Request</span></div>
 </div>
 <div class="workflow-canvas-wrapper">
     <svg id="table-connector-svg" class="connector-svg"></svg>
@@ -2389,6 +2393,46 @@
         </select>
         <input type="text" class="cqb-rule-value" placeholder="Value or ##Variable##">
         <button class="cqb-delete-btn">&times;</button>
+    </div>
+</template>
+<template id="http-request-template">
+    <div class="http-form-container">
+        <div class="form-group http-method-url-group">
+            <select class="http-method-select">
+                <option>GET</option>
+                <option>POST</option>
+                <option>PUT</option>
+                <option>PATCH</option>
+                <option>DELETE</option>
+            </select>
+            <input type="text" class="http-url-input" placeholder="https://api.example.com/data">
+        </div>
+
+        <div class="form-group">
+            <label>Headers</label>
+            <div class="http-headers-list"></div>
+            <button class="btn btn-secondary btn-sm http-add-header-btn"><i class="fas fa-plus"></i> Add Header</button>
+        </div>
+
+        <div class="form-group http-body-group" style="display: none;">
+            <label>Body (JSON)</label>
+            <textarea class="http-body-textarea" rows="5" placeholder='{ "key": "##variable.value##" }'></textarea>
+        </div>
+        
+        <hr style="margin: 0.5rem 0;">
+
+        <div class="form-group">
+            <label>Save Response As Variable</label>
+            <input type="text" class="http-output-name" placeholder="api_response">
+        </div>
+    </div>
+</template>
+
+<template id="http-header-row-template">
+    <div class="http-header-row">
+        <input type="text" class="http-header-key" placeholder="Header Name">
+        <input type="text" class="http-header-value" placeholder="Header Value">
+        <button class="btn-sidebar-icon http-delete-header-btn" title="Delete Header">&times;</button>
     </div>
 </template>
 </body>

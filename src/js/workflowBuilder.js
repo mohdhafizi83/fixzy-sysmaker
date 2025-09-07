@@ -311,6 +311,78 @@ const createConnectorPath = (startPos, endPos, connection) => {
             connectionPoints += '<div class="connection-point output" data-point-id="out-catch" data-label="Catch"></div>';
             break;
         }
+        case 'send_email': {
+            const state = blockState || {};
+            title = '<i class="fas fa-paper-plane"></i> Send Email';
+            content = `
+                <div class="email-form-container">
+                    <div class="form-group">
+                        <label>To</label>
+                        <input type="text" class="email-input" data-field="to" placeholder="##variable.user_email##" value="${state.to || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>CC</label>
+                        <input type="text" class="email-input" data-field="cc" placeholder="##variable.manager_email##" value="${state.cc || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>BCC</label>
+                        <input type="text" class="email-input" data-field="bcc" placeholder="archive@internal.com" value="${state.bcc || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Subject</label>
+                        <input type="text" class="email-input" data-field="subject" placeholder="Order Confirmation ##variable.order_id##" value="${state.subject || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Body (HTML)</label>
+                        <textarea class="email-input" data-field="body" rows="4" placeholder="Hello ##variable.user_name##,">${state.body || ''}</textarea>
+                    </div>
+                </div>
+            `;
+            connectionPoints += '<div class="connection-point input" data-point-id="in" data-label="In"></div>';
+            connectionPoints += '<div class="connection-point output" data-point-id="out" data-label="Out"></div>';
+            break;
+        }
+        case 'http_request': {
+            const state = blockState || {};
+            title = '<i class="fas fa-globe"></i> HTTP Request';
+            
+            // Ambil template utama
+            const template = document.getElementById('http-request-template');
+            const clone = template.content.cloneNode(true);
+            
+            // Isi nilai dari state yang disimpan
+            clone.querySelector('.http-method-select').value = state.method || 'GET';
+            clone.querySelector('.http-url-input').value = state.url || '';
+            clone.querySelector('.http-body-textarea').value = state.body || '';
+            clone.querySelector('.http-output-name').value = state.outputVariableName || '';
+            
+            // Bina semula senarai header
+            const headersList = clone.querySelector('.http-headers-list');
+            if (state.headers && state.headers.length > 0) {
+                const headerTemplate = document.getElementById('http-header-row-template');
+                state.headers.forEach(header => {
+                    const headerClone = headerTemplate.content.cloneNode(true);
+                    headerClone.querySelector('.http-header-key').value = header.key;
+                    headerClone.querySelector('.http-header-value').value = header.value;
+                    headersList.appendChild(headerClone);
+                });
+            }
+
+            // Paparkan body jika perlu
+            const bodyGroup = clone.querySelector('.http-body-group');
+            if (['POST', 'PUT', 'PATCH'].includes(state.method)) {
+                bodyGroup.style.display = 'block';
+            }
+            
+            // Cipta elemen sementara untuk dapatkan innerHTML
+            const tempDiv = document.createElement('div');
+            tempDiv.appendChild(clone);
+            content = tempDiv.innerHTML;
+
+            connectionPoints += '<div class="connection-point input" data-point-id="in" data-label="In"></div>';
+            connectionPoints += '<div class="connection-point output" data-point-id="out" data-label="Out"></div>';
+            break;
+        }
         }
 
         block.innerHTML = `
@@ -563,17 +635,36 @@ function openBlockConfiguration(blockId) {
         saveState();
     });
 
+// ▼▼▼ GANTIKAN KESELURUHAN BLOK 'addEventListener' DENGAN YANG INI ▼▼▼
+
+    // -- Combined Event Listeners for the Canvas --
+
     state.canvas.addEventListener('click', (e) => {
-        const configureBtn = e.target.closest('.configure-btn');
-        const deleteBtn = e.target.closest('.delete-block-btn');
-        if (configureBtn) {
-            openBlockConfiguration(configureBtn.closest('.workflow-block').dataset.blockId);
-        } else if (deleteBtn) {
-            deleteBlock(deleteBtn.closest('.workflow-block').dataset.blockId);
+        const block = e.target.closest('.workflow-block');
+        if (!block) return;
+        const blockId = block.dataset.blockId;
+
+        // Configure button
+        if (e.target.matches('.configure-btn, .configure-btn *')) {
+            openBlockConfiguration(blockId);
+        }
+        // Delete block button
+        else if (e.target.matches('.delete-block-btn, .delete-block-btn *')) {
+            deleteBlock(blockId);
+        }
+        // HTTP Request: Add Header
+        else if (e.target.matches('.http-add-header-btn, .http-add-header-btn *')) {
+            const list = block.querySelector('.http-headers-list');
+            const template = document.getElementById('http-header-row-template');
+            list.appendChild(template.content.cloneNode(true));
+        }
+        // HTTP Request: Delete Header
+        else if (e.target.matches('.http-delete-header-btn, .http-delete-header-btn *')) {
+            e.target.closest('.http-header-row').remove();
+            saveState(); // Perlu panggil saveState secara manual di sini
         }
     });
-	
-// ▼▼▼ KEMAS KINI EVENT LISTENER 'input' INI ▼▼▼
+
     state.canvas.addEventListener('input', (e) => {
         const block = e.target.closest('.workflow-block');
         if (!block) return;
@@ -581,57 +672,74 @@ function openBlockConfiguration(blockId) {
         const blockState = state.blocks[blockId];
         if (!blockState) return;
 
-        if (e.target.classList.contains('variable-name-input')) {
-            blockState.variableName = e.target.value;
-        } else if (e.target.classList.contains('loop-data-source-input')) {
-            blockState.dataSource = e.target.value;
-        } else if (e.target.classList.contains('transformer-input')) {
-            blockState.inputValue = e.target.value;
-        } else if (e.target.classList.contains('transformer-output-name')) {
-            blockState.outputVariableName = e.target.value;
-        } else if (e.target.matches('.transformer-params input, .transformer-params select')) {
-            if (!blockState.parameters) blockState.parameters = {};
-            if(e.target.classList.contains('transformer-param-date-format')) blockState.parameters.dateFormat = e.target.value;
-            if(e.target.classList.contains('transformer-param-text-op')) blockState.parameters.textOperation = e.target.value;
-            if(e.target.classList.contains('transformer-param-math-expr')) blockState.parameters.mathExpression = e.target.value;
+        // Universal handler for simple inputs
+        const fieldMap = {
+            'variable-name-input': 'variableName',
+            'loop-data-source-input': 'dataSource',
+            'delay-duration-input': 'delayDuration',
+            'transformer-input': 'inputValue',
+            'transformer-output-name': 'outputVariableName',
+            'http-url-input': 'url',
+            'http-body-textarea': 'body',
+            'http-output-name': 'outputVariableName'
+        };
+
+        for (const [cssClass, stateKey] of Object.entries(fieldMap)) {
+            if (e.target.classList.contains(cssClass)) {
+                blockState[stateKey] = e.target.value;
+                saveState();
+                return;
+            }
         }
-        // ▼▼▼ TAMBAH BLOK 'ELSE IF' INI ▼▼▼
-        else if (e.target.classList.contains('delay-duration-input')) {
-            blockState.delayDuration = e.target.value;
-        }
-        // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
         
-        saveState();
+        // Handler for dynamic header rows
+        if (e.target.matches('.http-header-key, .http-header-value')) {
+            const headers = Array.from(block.querySelectorAll('.http-header-row')).map(row => ({
+                key: row.querySelector('.http-header-key').value,
+                value: row.querySelector('.http-header-value').value
+            }));
+            blockState.headers = headers;
+            saveState();
+        }
     });
 
-// ▼▼▼ KEMAS KINI EVENT LISTENER 'change' INI ▼▼▼
     state.canvas.addEventListener('change', (e) => {
         const block = e.target.closest('.workflow-block');
         if (!block) return;
         const blockId = block.dataset.blockId;
         const blockState = state.blocks[blockId];
         if (!blockState) return;
+        
+        // Universal handler for simple selects
+        const fieldMap = {
+            'delay-unit-select': 'delayUnit',
+            'transformer-function-select': 'selectedFunction'
+        };
 
-        if (e.target.classList.contains('transformer-function-select')) {
-            const selectedFunction = e.target.value;
-            blockState.selectedFunction = selectedFunction;
-            
-            block.querySelectorAll('.transformer-params').forEach(paramDiv => {
-                paramDiv.style.display = 'none';
-            });
-            
-            const activeParamDiv = block.querySelector(`[data-param-for="${selectedFunction}"]`);
-            if (activeParamDiv) {
-                activeParamDiv.style.display = 'block';
+        for (const [cssClass, stateKey] of Object.entries(fieldMap)) {
+            if (e.target.classList.contains(cssClass)) {
+                blockState[stateKey] = e.target.value;
+                if (cssClass === 'transformer-function-select') {
+                    // Special logic for transformer UI
+                    block.querySelectorAll('.transformer-params').forEach(p => p.style.display = 'none');
+                    block.querySelector(`[data-param-for="${e.target.value}"]`).style.display = 'block';
+                }
+                saveState();
+                return;
             }
         }
-        // ▼▼▼ TAMBAH BLOK 'ELSE IF' INI ▼▼▼
-        else if (e.target.classList.contains('delay-unit-select')) {
-            blockState.delayUnit = e.target.value;
+
+        // Handler for HTTP Method select (shows/hides body)
+        if (e.target.classList.contains('http-method-select')) {
+            blockState.method = e.target.value;
+            const bodyGroup = block.querySelector('.http-body-group');
+            if (['POST', 'PUT', 'PATCH'].includes(e.target.value)) {
+                bodyGroup.style.display = 'block';
+            } else {
+                bodyGroup.style.display = 'none';
+            }
+            saveState();
         }
-        // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
-        
-        saveState();
     });
     
     document.addEventListener('keydown', (e) => {
