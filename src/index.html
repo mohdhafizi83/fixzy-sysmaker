@@ -1935,6 +1935,20 @@
                 <div class="algo-component" draggable="true" data-type="open_paren">(</div>
                 <div class="algo-component" draggable="true" data-type="close_paren">)</div>
             </div>
+<div class="algorithm-palette">
+    <div class="palette-group action-block-only" style="display: none;">
+        <h5 class="palette-group-title">Database Actions</h5>
+        <div class="algo-component" draggable="true" data-type="insert_record">
+            <i class="fas fa-plus-circle"></i> Insert Record
+        </div>
+        <div class="algo-component" draggable="true" data-type="update_record">
+            <i class="fas fa-edit"></i> Update Record(s)
+        </div>
+        <div class="algo-component" draggable="true" data-type="delete_record">
+            <i class="fas fa-trash-alt"></i> Delete Record(s)
+        </div>
+    </div>
+    </div>
         </div>
         <div class="algorithm-canvas">
             <span class="canvas-placeholder">Drop components here</span>
@@ -2284,5 +2298,86 @@
         </div>
     </div>
 </div>
+<template id="db-action-insert-template">
+    <div class="db-action-container">
+        <div class="db-action-header">
+            <span class="sql-keyword">INSERT INTO</span>
+            <select class="table-select"></select>
+        </div>
+        <div class="field-value-list" data-placeholder="No fields added. Click '+' to add."></div>
+        <button class="btn btn-secondary btn-sm add-field-btn"><i class="fas fa-plus"></i> Add Field</button>
+    </div>
+</template>
+
+<template id="db-action-update-template">
+    <div class="db-action-container">
+        <div class="db-action-header">
+            <span class="sql-keyword">UPDATE</span>
+            <select class="table-select"></select>
+        </div>
+        <div class="db-action-subheader">SET</div>
+        <div class="field-value-list" data-placeholder="No fields added. Click '+' to add."></div>
+        <button class="btn btn-secondary btn-sm add-field-btn"><i class="fas fa-plus"></i> Add Field</button>
+        <div class="db-action-subheader">WHERE</div>
+        <div class="where-clause-container">
+            <div class="qb-logic-toggle">
+                <label><input type="radio" name="cqb-logic-##UNIQUE_ID##" value="AND" checked> Match ALL (AND)</label>
+                <label><input type="radio" name="cqb-logic-##UNIQUE_ID##" value="OR"> Match ANY (OR)</label>
+            </div>
+            <div class="child-math-rules-list"></div>
+            <div class="child-math-actions">
+                <button class="btn btn-secondary btn-sm add-child-rule-btn"><i class="fas fa-plus"></i> Add Rule</button>
+            </div>
+        </div>
+        </div>
+</template>
+
+<template id="db-action-delete-template">
+    <div class="db-action-container">
+        <div class="db-action-header">
+            <span class="sql-keyword">DELETE FROM</span>
+            <select class="table-select"></select>
+        </div>
+        <div class="db-action-subheader">WHERE</div>
+        <div class="where-clause-container">
+            <div class="qb-logic-toggle">
+                <label><input type="radio" name="cqb-logic-##UNIQUE_ID##" value="AND" checked> Match ALL (AND)</label>
+                <label><input type="radio" name="cqb-logic-##UNIQUE_ID##" value="OR"> Match ANY (OR)</label>
+            </div>
+            <div class="child-math-rules-list"></div>
+            <div class="child-math-actions">
+                <button class="btn btn-secondary btn-sm add-child-rule-btn"><i class="fas fa-plus"></i> Add Rule</button>
+            </div>
+        </div>
+        </div>
+</template>
+
+<template id="field-value-pair-template">
+    <div class="field-value-pair">
+        <select class="field-select"></select>
+        <span class="operator">=</span>
+        <input type="text" class="value-input" placeholder="Value or ##Variable##">
+        <button class="delete-pair-btn">&times;</button>
+    </div>
+</template>
+
+<template id="where-clause-template">
+     <div class="cqb-rule">
+        <select class="cqb-rule-field"></select>
+        <select class="cqb-rule-operator">
+            <option value="="> = </option>
+            <option value="!="> != </option>
+            <option value=">"> > </option>
+            <option value="<"> < </option>
+            <option value=">="> >= </option>
+            <option value="<="> <= </option>
+            <option value="LIKE">LIKE</option>
+            <option value="IS NULL">is empty</option>
+            <option value="IS NOT NULL">has content</option>
+        </select>
+        <input type="text" class="cqb-rule-value" placeholder="Value or ##Variable##">
+        <button class="cqb-delete-btn">&times;</button>
+    </div>
+</template>
 </body>
 </html>

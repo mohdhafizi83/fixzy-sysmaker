@@ -54,13 +54,6 @@ export function openGeneralQueryBuilder(targetTextarea) {
  * @param {string} [config.updateMode='live'] - Mod kemas kini ('live' atau 'manual').
  * @returns {object} Objek dengan kaedah untuk berinteraksi dengan builder.
  */
-
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
-
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
-
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
-
 function setupLogicBuilderCore(config) {
     const { palette, canvas, hiddenInput, validationRules, context, updateMode = 'live' } = config;
     const placeholder = canvas ? canvas.querySelector('.canvas-placeholder') : null;
@@ -72,7 +65,51 @@ function setupLogicBuilderCore(config) {
 
     let isRebuildingUI = false;
     let modalCanvasState = '[]';
+	
+// ▼▼▼ TAMBAH KESELURUHAN BLOK KOD INI ▼▼▼
 
+    // ▼▼▼ MULA FUNGSI BANTUAN UNTUK JANA QUERY ▼▼▼
+    const buildWhereClauseForQuery = (whereData, tableName) => {
+        if (!whereData || !whereData.rules || whereData.rules.length === 0) return '';
+        
+        const logic = whereData.logic || 'AND';
+        const conditions = whereData.rules.map(rule => {
+            if (!rule.field || !rule.operator) return null;
+            
+            const fieldData = jsonData.database.table[tableName]?.fields[rule.field];
+            if (!fieldData) return null;
+
+            if (rule.operator === 'IS NULL' || rule.operator === 'IS NOT NULL') {
+                return `\`${rule.field}\` ${rule.operator}`;
+            }
+            return `\`${rule.field}\` ${rule.operator} ?`;
+        }).filter(c => c);
+
+        return conditions.length > 0 ? `WHERE (${conditions.join(` ${logic} `)})` : '';
+    };
+
+    const generateInsertQuery = (table, fields) => {
+        if (!table || !fields || fields.length === 0) return '';
+        const fieldNames = fields.map(f => `\`${f.field}\``).join(', ');
+        const placeholders = fields.map(() => '?').join(', ');
+        return `INSERT INTO \`${table}\` (${fieldNames}) VALUES (${placeholders});`;
+    };
+
+    const generateUpdateQuery = (table, setClause, whereClause) => {
+        if (!table || !setClause || setClause.length === 0) return '';
+        const setPairs = setClause.map(s => `\`${s.field}\` = ?`).join(', ');
+        const whereString = buildWhereClauseForQuery(whereClause, table);
+        return `UPDATE \`${table}\` SET ${setPairs} ${whereString};`;
+    };
+    
+    const generateDeleteQuery = (table, whereClause) => {
+        if (!table) return '';
+        const whereString = buildWhereClauseForQuery(whereClause, table);
+        return `DELETE FROM \`${table}\` ${whereString};`;
+    };
+    // ▲▲▲ TAMAT FUNGSI BANTUAN ▲▲▲
+
+    // ▼▼▼ ALL ORIGINAL HELPER FUNCTIONS ARE PRESENT ▼▼▼
     const populateFieldsForRelatedData = (componentEl) => {
         const fieldMultiSelect = componentEl.querySelector('.field-multiselect');
         if (!fieldMultiSelect) return;
@@ -230,8 +267,22 @@ function setupLogicBuilderCore(config) {
         return conditions.length > 0 ? `AND (${conditions.join(` ${logic} `)})` : '';
     };
 
-    const updateModalCanvasState = () => {
+const updateModalCanvasState = () => {
         if (isRebuildingUI) return;
+
+        // Helper function to read the new complex WHERE clause
+        const readWhereClauseState = (container) => {
+            if (!container) return null;
+            const logicRadio = container.querySelector(':scope > .qb-logic-toggle input:checked');
+            return {
+                logic: logicRadio ? logicRadio.value : 'AND',
+                rules: Array.from(container.querySelectorAll('.child-math-rules-list .cqb-rule')).map(ruleEl => ({
+                    field: ruleEl.querySelector('.cqb-rule-field').value,
+                    operator: ruleEl.querySelector('.cqb-rule-operator').value,
+                    value: ruleEl.querySelector('.cqb-rule-value').value
+                }))
+            };
+        };
 
         const mapItems = (container) => {
             const children = Array.from(container.children).filter(el => el.classList.contains('dropped-item'));
@@ -239,6 +290,7 @@ function setupLogicBuilderCore(config) {
                 const type = item.dataset.itemType;
                 let itemData = { type };
 
+                // ▼▼▼ LOGIK ASAL UNTUK KOMPONEN SEDIA ADA (DIKEMBALIKAN) ▼▼▼
                 if (type === 'function') {
                     itemData.name = item.dataset.functionName;
                     const argContainer = item.querySelector('.function-argument-droppable');
@@ -361,6 +413,34 @@ function setupLogicBuilderCore(config) {
                     }
                     
                     itemData.query = buildRelatedDataQuery(itemData, context.tableName);
+                
+                // ▼▼▼ LOGIK BAHARU & PEMBAIKAN JSON (DIGABUNGKAN DI SINI) ▼▼▼
+				} else if (type === 'insert_record') {
+                    const table = item.querySelector('.table-select')?.value;
+                    const fields = Array.from(item.querySelectorAll('.field-value-pair')).map(pair => ({
+                        field: pair.querySelector('.field-select')?.value,
+                        value: pair.querySelector('.value-input')?.value
+                    }));
+                    itemData.table = table;
+                    itemData.query = generateInsertQuery(table, fields);
+                    itemData.details = { values: fields };
+                } else if (type === 'update_record') {
+                    const table = item.querySelector('.table-select')?.value;
+                    const setClause = Array.from(item.querySelectorAll('.field-value-pair')).map(pair => ({
+                        field: pair.querySelector('.field-select')?.value,
+                        value: pair.querySelector('.value-input')?.value
+                    }));
+                    const whereClause = readWhereClauseState(item.querySelector('.where-clause-container'));
+                    itemData.table = table;
+                    itemData.query = generateUpdateQuery(table, setClause, whereClause);
+                    itemData.details = { set: setClause, where: whereClause };
+                } else if (type === 'delete_record') {
+                    const table = item.querySelector('.table-select')?.value;
+                    const whereClause = readWhereClauseState(item.querySelector('.where-clause-container'));
+                    itemData.table = table;
+                    itemData.query = generateDeleteQuery(table, whereClause);
+                    itemData.details = { where: whereClause };
+                // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
 
                 } else if (type === 'boolean') {
                     itemData.value = item.querySelector('select')?.value;
@@ -383,15 +463,14 @@ function setupLogicBuilderCore(config) {
         };
 
         const logicArray = mapItems(canvas);
-        modalCanvasState = JSON.stringify(logicArray, null, 2);
+        modalCanvasState = JSON.stringify(logicArray);
         if (placeholder) placeholder.style.display = logicArray.length === 0 ? 'block' : 'none';
 
         if (updateMode === 'live') {
             hiddenInput.value = modalCanvasState;
             hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
         }
-    };
-    
+    };   
     const populateFieldsForChildMath = (componentEl) => {
         const fieldSelect = componentEl.querySelector('.field-select');
         if (!fieldSelect) return;
@@ -426,28 +505,42 @@ function setupLogicBuilderCore(config) {
         }
     };
     
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
-
     const populateCanvasFromHiddenInput = () => {
         isRebuildingUI = true;
         try {
-            const updateChildMathUI = (componentEl) => {
-                const aggregateSelect = componentEl.querySelector('.aggregate-select');
-                const fieldSelect = componentEl.querySelector('.field-select');
-                const countStar = componentEl.querySelector('.count-star');
-                if (!aggregateSelect || !fieldSelect || !countStar) return;
+            const buildWhereClauseUI = (container, whereData, tableName) => {
+                if (!container || !whereData) return;
+                const logicRadio = container.querySelector(`.qb-logic-toggle input[value="${whereData.logic}"]`);
+                if(logicRadio) logicRadio.checked = true;
 
-                const isCount = aggregateSelect.value === 'COUNT';
-                fieldSelect.classList.toggle('hidden', isCount);
-                countStar.classList.toggle('hidden', !isCount);
+                const rulesList = container.querySelector('.child-math-rules-list');
+                const ruleTemplate = document.getElementById('where-clause-template');
+                const fields = Object.keys(jsonData.database.table[tableName]?.fields || {});
+
+                (whereData.rules || []).forEach(ruleData => {
+                    const clone = ruleTemplate.content.cloneNode(true);
+                    const ruleEl = clone.querySelector('.cqb-rule');
+                    const fieldDropdown = ruleEl.querySelector('.cqb-rule-field');
+                    fields.forEach(f => fieldDropdown.add(new Option(f, f)));
+                    
+                    fieldDropdown.value = ruleData.field;
+                    ruleEl.querySelector('.cqb-rule-operator').value = ruleData.operator;
+                    ruleEl.querySelector('.cqb-rule-value').value = ruleData.value;
+                    
+                    const operatorSelect = ruleEl.querySelector('.cqb-rule-operator');
+                    const valueInput = ruleEl.querySelector('.cqb-rule-value');
+                    if (valueInput) {
+                        valueInput.classList.toggle('hidden', operatorSelect.value === 'IS NULL' || operatorSelect.value === 'IS NOT NULL');
+                    }
+
+                    rulesList.appendChild(ruleEl);
+                });
             };
-
+            
             const buildFromLogic = (container, logicArray) => {
                 container.innerHTML = '';
                 if (logicArray.length === 0 && container.classList.contains('algorithm-canvas')) {
                      if (placeholder) container.appendChild(placeholder);
-                } else if (logicArray.length === 0 && container.classList.contains('function-argument-droppable')) {
-                    container.innerHTML = '<span class="canvas-placeholder">Drop arguments here</span>';
                 }
                 logicArray.forEach(itemData => {
                     const newItem = createInteractiveElement(itemData);
@@ -629,8 +722,32 @@ function setupLogicBuilderCore(config) {
                             stateInput.value = itemData.builder_state;
                         }
                     }
+                    // ▼▼▼ MERGED CASES FOR DATABASE ACTIONS ▼▼▼
+// ▼▼▼ ...DENGAN BLOK `if` YANG BAHARU INI ▼▼▼
+                    if (['insert_record', 'update_record', 'delete_record'].includes(itemData.type)) {
+                        const tableSelect = newItem.querySelector('.table-select');
+                        tableSelect.value = itemData.table;
+                        const fields = Object.keys(jsonData.database.table[itemData.table]?.fields || {});
+                        
+                        if (itemData.type !== 'delete_record' && itemData.details) {
+                            const list = newItem.querySelector('.field-value-list');
+                            const pairTemplate = document.getElementById('field-value-pair-template');
+                            const dataList = itemData.type === 'insert_record' ? itemData.details.values : itemData.details.set;
 
-                    if (itemData.type === 'function' && itemData.arguments) {
+                            (dataList || []).forEach(pairData => {
+                                const pairClone = pairTemplate.content.cloneNode(true);
+                                const fieldSelect = pairClone.querySelector('.field-select');
+                                fields.forEach(f => fieldSelect.add(new Option(f, f)));
+                                fieldSelect.value = pairData.field;
+                                pairClone.querySelector('.value-input').value = pairData.value;
+                                list.appendChild(pairClone);
+                            });
+                        }
+                        
+                        if (itemData.type !== 'insert_record' && itemData.details?.where) {
+                            buildWhereClauseUI(newItem.querySelector('.where-clause-container'), itemData.details.where, itemData.table);
+                        }
+                    } else if (itemData.type === 'function' && itemData.arguments) {
                         const argContainer = newItem.querySelector('.function-argument-droppable');
                         buildFromLogic(argContainer, itemData.arguments);
                     }
@@ -1164,8 +1281,36 @@ case 'custom_query': {
                 numberInput.type = 'number';
                 numberInput.placeholder = '0';
                 numberInput.addEventListener('input', updateModalCanvasState);
-                break;            
-                default:
+                break;
+            // ▼▼▼ MERGED CASES FOR DATABASE ACTIONS ▼▼▼
+            case 'insert_record': {
+                const template = document.getElementById('db-action-insert-template');
+                itemContainer.appendChild(template.content.cloneNode(true));
+                const tableSelect = itemContainer.querySelector('.table-select');
+                Object.keys(jsonData.database.table).forEach(t => tableSelect.add(new Option(t, t)));
+                break;
+            }
+            case 'update_record': {
+                const template = document.getElementById('db-action-update-template');
+                itemContainer.appendChild(template.content.cloneNode(true));
+                const tableSelect = itemContainer.querySelector('.table-select');
+                Object.keys(jsonData.database.table).forEach(t => tableSelect.add(new Option(t, t)));
+                const uniqueId = `logic_${Date.now()}`;
+                itemContainer.querySelectorAll('input[type="radio"]').forEach(radio => radio.name = `cqb-logic-${uniqueId}`);
+                break;
+            }
+            case 'delete_record': {
+                const template = document.getElementById('db-action-delete-template');
+                itemContainer.appendChild(template.content.cloneNode(true));
+                const tableSelect = itemContainer.querySelector('.table-select');
+                Object.keys(jsonData.database.table).forEach(t => tableSelect.add(new Option(t, t)));
+                const uniqueId = `logic_${Date.now()}`;
+                itemContainer.querySelectorAll('input[type="radio"]').forEach(radio => radio.name = `cqb-logic-${uniqueId}`);
+                break;
+            }
+            // ▲▲▲ END OF DB ACTION CASES ▲▲▲
+			
+            default:
                 const itemLabel = document.createElement('span');
                 itemLabel.textContent = (type === 'else_if') ? 'ELSE IF' : type.toUpperCase();
                 itemContainer.appendChild(itemLabel);
@@ -1248,7 +1393,7 @@ case 'custom_query': {
         if (newInput) newInput.focus();
         updateModalCanvasState();
     });
-
+    // ▼▼▼ MERGED & CORRECTED EVENT LISTENERS for canvas ▼▼▼
     canvas.addEventListener('click', (e) => {
         if (e.target.classList.contains('delete-algo-item')) {
             const itemToRemove = e.target.closest('.dropped-item');
@@ -1263,11 +1408,10 @@ case 'custom_query': {
             } else {
                 showCustomDialog({ title: "Peraturan", message: "Anda hanya boleh memadam komponen logik dari bawah ke atas (komponen terakhir). Komen boleh dipadam pada bila-bila masa." });
             }
-        }
-    });
-    
-    canvas.addEventListener('click', e => {
+        }        
+        
         const childMathItem = e.target.closest('.dropped-item[data-item-type="calculate_related_record"], .dropped-item[data-item-type="related_record_data"]');
+
         if (childMathItem) {
             if (e.target.matches('.add-child-rule-btn, .add-child-rule-btn *')) {
                 const rulesList = childMathItem.querySelector('.child-math-rules-list');
@@ -1397,9 +1541,64 @@ case 'custom_query': {
                 lookupItem.querySelector('.show-lookup-where-btn')?.classList.remove('hidden');
                 updateModalCanvasState();
             }
+        }		
+        const item = e.target.closest('.dropped-item[data-item-type$="_record"]');
+        if (!item) return;
+
+        // Add Field button for INSERT/UPDATE
+        if (e.target.matches('.add-field-btn, .add-field-btn *')) {
+            const list = item.querySelector('.field-value-list');
+            const table = item.querySelector('.table-select').value;
+            if (!table || !jsonData.database.table[table]) return;
+
+            // BUG FIX #3: Prevent duplicate fields
+            const usedFields = new Set(Array.from(list.querySelectorAll('.field-select')).map(sel => sel.value));
+            const availableFields = Object.keys(jsonData.database.table[table].fields).filter(f => !usedFields.has(f));
+
+            if (availableFields.length === 0) {
+                showCustomDialog({title: "Info", message: "All fields for this table have been added."});
+                return;
+            }
+
+            const template = document.getElementById('field-value-pair-template');
+            const clone = template.content.cloneNode(true);
+            const fieldSelect = clone.querySelector('.field-select');
+            availableFields.forEach(f => fieldSelect.add(new Option(f, f)));
+            
+            list.appendChild(clone);
+            updateModalCanvasState();
+        }
+
+        // Delete button for a field-value pair
+        if (e.target.matches('.delete-pair-btn')) {
+            e.target.closest('.field-value-pair').remove();
+            updateModalCanvasState();
+        }
+
+        // BUG FIX #1: Add WHERE rule button for UPDATE/DELETE
+        if (e.target.matches('.add-child-rule-btn, .add-child-rule-btn *')) {
+            const rulesList = item.querySelector('.child-math-rules-list');
+            const table = item.querySelector('.table-select').value;
+            if (!rulesList || !table) return;
+
+            const ruleTemplate = document.getElementById('where-clause-template');
+            const clone = ruleTemplate.content.cloneNode(true);
+            const fieldDropdown = clone.querySelector('.cqb-rule-field');
+            const fields = Object.keys(jsonData.database.table[table]?.fields || {});
+            fields.forEach(fName => fieldDropdown.add(new Option(fName, fName)));
+            
+            rulesList.appendChild(clone);
+            updateModalCanvasState();
+        }
+
+        // Delete button for a WHERE rule
+        if (e.target.matches('.cqb-delete-btn')) {
+            e.target.closest('.cqb-rule').remove();
+            updateModalCanvasState();
         }
     });
 
+    
     canvas.addEventListener('change', e => {
         if(e.target.closest('.child-math-filter-container, .lookup-value-filter-container')) {
             updateModalCanvasState();
@@ -1415,8 +1614,7 @@ case 'custom_query': {
                 }
                 updateModalCanvasState();
             }
-        }
-        
+        }        
         if (e.target.matches('.cqb-rule-operator')) {
             const ruleEl = e.target.closest('.cqb-rule, .cqb-join-rule');
             if (ruleEl) {
@@ -1426,6 +1624,26 @@ case 'custom_query': {
                     valueInput.classList.toggle('hidden', operator === 'IS NULL' || operator === 'IS NOT NULL');
                 }
             }
+        }
+		
+        const item = e.target.closest('.dropped-item[data-item-type$="_record"]');
+        if (item && e.target.matches('.table-select')) {
+            const table = e.target.value;
+            if (!table || !jsonData.database.table[table]) return;
+
+            const fields = Object.keys(jsonData.database.table[table].fields);
+
+            if (item.querySelector('.field-value-list')) {
+                item.querySelector('.field-value-list').innerHTML = '';
+            }
+            if (item.querySelector('.child-math-rules-list')) {
+                 item.querySelector('.child-math-rules-list').innerHTML = '';
+            }
+            updateModalCanvasState();
+        }
+
+        if(item) {
+             updateModalCanvasState();
         }
     });
 
@@ -1497,9 +1715,16 @@ export function openModalLogicBuilder(config) {
         console.error("Failed to inject builder UI into modal.");
         return;
     }
+
+    // ▼▼▼ NEW LOGIC: Show/hide palette based on builder type ▼▼▼
+    const actionPalette = ui.palette.querySelector('.action-block-only');
+    if (actionPalette) {
+        actionPalette.style.display = config.builderType === 'actionBuilder' ? 'block' : 'none';
+    }
+    // ▲▲▲ END OF NEW LOGIC ▲▲▲
+
     // Logik untuk menyembunyikan komponen palet yang tidak diperlukan
     if (config.hiddenComponents && Array.isArray(config.hiddenComponents)) {
-        // Sembunyikan juga kumpulan "Control Flow" jika semua komponennya disembunyikan
         const controlFlowComponents = ['if', 'else_if', 'then', 'else'];
         const allControlFlowHidden = controlFlowComponents.every(c => config.hiddenComponents.includes(c));
 
@@ -1554,8 +1779,6 @@ export function openModalLogicBuilder(config) {
 
     modal.classList.remove('hidden');
 }
-
-
 
 
 export function showNewProjectModal() {

@@ -2742,3 +2742,164 @@ fieldset.fieldset-disabled {
     background-color: #F9FAFB;
     color: #374151;
 }
+
+/* ================================================================== */
+/* == STYLES FOR DATABASE ACTION COMPONENTS                        == */
+/* ================================================================== */
+
+/* Palette Item Colors */
+.algo-component[data-type="insert_record"] {
+    background-color: #F0FDF4; border-color: #A7F3D0; color: #065F46;
+}
+.algo-component[data-type="update_record"] {
+    background-color: #FEFCE8; border-color: #FDE047; color: #854D0E;
+}
+.algo-component[data-type="delete_record"] {
+    background-color: #FEF2F2; border-color: #FCA5A5; color: #991B1B;
+}
+
+/* Dropped Item Styles */
+.dropped-item[data-item-type^="insert"],
+.dropped-item[data-item-type^="update"],
+.dropped-item[data-item-type^="delete"] {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+}
+
+.dropped-item[data-item-type="insert_record"] {
+    border-left-color: #22C55E; /* Green */
+}
+.dropped-item[data-item-type="update_record"] {
+    border-left-color: #F59E0B; /* Amber */
+}
+.dropped-item[data-item-type="delete_record"] {
+    border-left-color: #EF4444; /* Red */
+}
+
+.db-action-container {
+    width: 100%;
+}
+
+.db-action-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.db-action-header .table-select {
+    font-weight: 600;
+}
+
+.db-action-subheader {
+    font-family: monospace;
+    font-weight: 600;
+    color: #4B5563;
+    margin: 0.75rem 0 0.5rem 0;
+}
+
+.field-value-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 30px;
+    padding: 0.5rem;
+    border: 1px dashed var(--border-color);
+    border-radius: 4px;
+    position: relative;
+}
+
+.field-value-list:empty::before {
+    content: attr(data-placeholder);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--secondary-color);
+    font-size: 0.85em;
+}
+
+.field-value-pair {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.field-value-pair .field-select {
+    flex: 1;
+}
+
+.field-value-pair .operator {
+    font-weight: 600;
+}
+
+.field-value-pair .value-input {
+    flex: 2;
+}
+
+.delete-pair-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    color: var(--secondary-color);
+    line-height: 1;
+}
+.delete-pair-btn:hover {
+    background-color: #FEF2F2;
+    color: #991B1B;
+    border-color: #FCA5A5;
+}
+
+.where-clause-container .cqb-rule {
+    padding: 0;
+    background-color: transparent;
+    border: none;
+}
+
+/* ================================================================== */
+/* == FIX FOR TALL MODAL CONTENT (ALGORITHM BUILDER)             == */
+/* ================================================================== */
+
+/* 1. Tukar modal kepada bekas Flexbox secara menegak */
+#algorithm-builder-modal .modal-content {
+    display: flex;
+    flex-direction: column;
+    /* Hadkan ketinggian modal kepada 90% ketinggian tetingkap */
+    max-height: 90vh; 
+}
+
+/* 2. Benarkan badan modal untuk mengembang dan skrol */
+#algorithm-builder-modal .modal-body {
+    flex-grow: 1; /* Ambil semua ruang menegak yang tinggal */
+    overflow-y: auto; /* KUNCI UTAMA: Tambah bar skrol jika perlu */
+    padding-right: 1rem; /* Beri sedikit ruang untuk bar skrol */
+}
+
+/* 3. Pastikan header dan footer tidak mengecut */
+#algorithm-builder-modal .modal-header,
+#algorithm-builder-modal .modal-footer {
+    flex-shrink: 0;
+}
+
+.child-math-rules-list {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.child-math-actions {
+    margin-top: 0.75rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.where-clause-container .cqb-rule {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}

@@ -217,52 +217,86 @@ function setupBuilderInstance(config) {
         modal.classList.remove('hidden');
     }
     
-    function openBlockConfiguration(blockId) {
-        const blockType = state.blocks[blockId]?.type;
-        if (blockType === 'hook_trigger') {
-            openHookTypeModal(blockId);
-            return;
-        }
-        
-        const blockData = state.blocks[blockId];
-        if (!blockData) return;
-        let tempInput = document.getElementById('workflow-temp-input');
-        if (!tempInput) {
-            tempInput = document.createElement('input');
-            tempInput.type = 'hidden'; tempInput.id = 'workflow-temp-input';
-            document.body.appendChild(tempInput);
-        }
-        tempInput.value = blockData.configData || '[]';
-        const CONDITION_BLOCK_GRAMMAR = {
-            'start': ['value', 'open_paren'],
-            'value': ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'close_paren'],
-            'comparison_operator': ['value', 'open_paren'],
-            'arithmetic_operator': ['value', 'open_paren'],
-            'logical_operator': ['value', 'open_paren'],
-            'open_paren': ['value', 'open_paren'],
-            'close_paren': ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'close_paren'],
-        };
-        openModalLogicBuilder({
-            modalId: 'algorithm-builder-modal',
-            getContext: () => ({ tableName: config.hookType === 'table' ? document.querySelector('#table-settings-page .table-name')?.textContent : null }),
-            closeButtonId: 'algorithm-builder-close',
-            cancelButtonId: 'algorithm-builder-cancel-btn',
-            doneButtonId: 'algorithm-builder-done-btn',
-            targetInputId: 'workflow-temp-input',
-            validationRules: CONDITION_BLOCK_GRAMMAR,
-            hiddenComponents: ['if', 'else_if', 'then', 'else'],
-            onComplete: (logicJson) => {
-                state.blocks[blockId].configData = logicJson;
-                const blockEl = container.querySelector(`[data-block-id='${blockId}']`);
-                if (blockEl) {
-                    const btn = blockEl.querySelector('.configure-btn');
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: workflowBuilder.js
+
+function openBlockConfiguration(blockId) {
+    const blockType = state.blocks[blockId]?.type;
+    if (blockType === 'hook_trigger') {
+        openHookTypeModal(blockId);
+        return;
+    }
+    
+    const blockData = state.blocks[blockId];
+    if (!blockData) return;
+
+    let tempInput = document.getElementById('workflow-temp-input');
+    if (!tempInput) {
+        tempInput = document.createElement('input');
+        tempInput.type = 'hidden'; tempInput.id = 'workflow-temp-input';
+        document.body.appendChild(tempInput);
+    }
+    tempInput.value = blockData.configData || '[]';
+
+    // ▼▼▼ START OF FIX ▼▼▼
+    // Tentukan jenis builder berdasarkan jenis blok workflow
+    let builderType;
+    let validationRules;
+
+    const CONDITION_GRAMMAR = {
+        'start': ['value', 'open_paren'],
+        'value': ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'close_paren'],
+        'comparison_operator': ['value', 'open_paren'],
+        'arithmetic_operator': ['value', 'open_paren'],
+        'logical_operator': ['value', 'open_paren'],
+        'open_paren': ['value', 'open_paren'],
+        'close_paren': ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'close_paren'],
+    };
+
+    const ACTION_GRAMMAR = {
+        // Untuk blok Action, kita benarkan jujukan tindakan tanpa peraturan logik yang ketat
+        'start': ['insert_record', 'update_record', 'delete_record', 'comment'],
+        'insert_record': ['insert_record', 'update_record', 'delete_record', 'comment'],
+        'update_record': ['insert_record', 'update_record', 'delete_record', 'comment'],
+        'delete_record': ['insert_record', 'update_record', 'delete_record', 'comment'],
+        'comment': ['insert_record', 'update_record', 'delete_record', 'comment'],
+    };
+
+    if (blockType === 'action') {
+        builderType = 'actionBuilder';
+        validationRules = ACTION_GRAMMAR;
+    } else if (blockType === 'condition') {
+        builderType = 'conditionBuilder';
+        validationRules = CONDITION_GRAMMAR;
+    }
+    // ▲▲▲ END OF FIX ▲▲▲
+
+    openModalLogicBuilder({
+        builderType: builderType, // Hantar konteks yang betul
+        modalId: 'algorithm-builder-modal',
+        getContext: () => ({ tableName: config.hookType === 'table' ? document.querySelector('#table-settings-page .table-name')?.textContent : null }),
+        closeButtonId: 'algorithm-builder-close',
+        cancelButtonId: 'algorithm-builder-cancel-btn',
+        doneButtonId: 'algorithm-builder-done-btn',
+        targetInputId: 'workflow-temp-input',
+        validationRules: validationRules, // Guna peraturan yang betul
+        hiddenComponents: (builderType === 'actionBuilder') ? [] : ['if', 'else_if', 'then', 'else'], // Sembunyikan komponen berdasarkan konteks
+        onComplete: (logicJson) => {
+            state.blocks[blockId].configData = logicJson;
+            const blockEl = container.querySelector(`[data-block-id='${blockId}']`);
+            if (blockEl) {
+                const btn = blockEl.querySelector('.configure-btn');
+                if (logicJson && logicJson !== '[]') {
                     btn.textContent = 'Configured';
                     btn.classList.replace('btn-secondary', 'btn-success');
+                } else {
+                    btn.textContent = 'Configure';
+                    btn.classList.replace('btn-success', 'btn-secondary');
                 }
-                saveState();
             }
-        });
-    }
+            saveState();
+        }
+    });
+}
 
     function startDragBlock(e) {
         if (e.target.classList.contains('connection-point') || e.target.classList.contains('delete-block-btn')) return;
