@@ -3192,3 +3192,99 @@ fieldset.fieldset-disabled {
     border-color: #FCA5A5;
     color: #DC2626;
 }
+
+/* ================================================================== */
+/* == STYLES FOR WORKFLOW SWITCH BLOCK                             == */
+/* ================================================================== */
+
+/* Warna untuk blok Switch di atas kanvas */
+.workflow-block[data-block-type="switch"] .workflow-block-title {
+    background-color: #9333EA; /* Ungu */
+    color: white;
+}
+
+/* Warna untuk ikon Switch di dalam palet */
+.workflow-block-palette-item[data-block-type="switch"] i {
+    color: #9333EA; /* Ungu */
+}
+
+/* Gaya untuk UI di dalam blok Switch */
+.switch-input-container {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.switch-input-container label {
+    font-size: 0.8em;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    display: block;
+}
+.switch-input-container input {
+    width: 100%;
+    padding: 0.25rem 0.5rem;
+}
+
+.switch-cases-list {
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.switch-case {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.switch-case input {
+    flex-grow: 1;
+    padding: 0.25rem 0.5rem;
+}
+
+.switch-case-label {
+    position: absolute;
+    right: 20px;
+    font-size: 0.7em;
+    font-weight: 600;
+    color: var(--secondary-color);
+    pointer-events: none;
+    background-color: #f3f4f6;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.switch-actions {
+    padding: 0 0.75rem 0.75rem;
+}
+
+.delete-case-btn {
+    width: 24px;
+    height: 24px;
+}
+
+/* ================================================================== */
+/* == STYLES FOR WORKFLOW WHATSAPP BLOCK                           == */
+/* ================================================================== */
+
+.workflow-block[data-block-type="send_whatsapp"] .workflow-block-title {
+    background-color: #25D366; /* Warna Rasmi WhatsApp */
+    color: white;
+}
+
+.workflow-block-palette-item[data-block-type="send_whatsapp"] i {
+    color: #25D366;
+}
+
+/* ================================================================== */
+/* == STYLES FOR WORKFLOW TELEGRAM BLOCK                           == */
+/* ================================================================== */
+
+.workflow-block[data-block-type="send_telegram"] .workflow-block-title {
+    background-color: #229ED9; /* Warna Rasmi Telegram */
+    color: white;
+}
+
+.workflow-block-palette-item[data-block-type="send_telegram"] i {
+    color: #229ED9;
+}

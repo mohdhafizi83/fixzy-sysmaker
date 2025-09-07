@@ -128,6 +128,31 @@ const createConnectorPath = (startPos, endPos, connection) => {
             saveState();
         }
     }
+	
+// ▼▼▼ TAMBAH FUNGSI BAHARU INI ▼▼▼
+    
+    function rebuildBlock(blockId) {
+        const blockEl = container.querySelector(`[data-block-id='${blockId}']`);
+        const blockState = state.blocks[blockId];
+        if (!blockEl || !blockState) return;
+        
+        // Simpan kedudukan semasa
+        const oldX = blockEl.style.left;
+        const oldY = blockEl.style.top;
+        
+        // Cipta blok baharu dengan state terkini
+        const newBlockEl = createWorkflowBlock(blockState.type, 0, 0, blockId);
+        
+        // Gantikan blok lama dengan yang baharu
+        blockEl.parentNode.replaceChild(newBlockEl, blockEl);
+        
+        // Tetapkan semula kedudukan
+        newBlockEl.style.left = oldX;
+        newBlockEl.style.top = oldY;
+        
+        // Lukis semula semua sambungan
+        redrawConnections();
+    }
     
     function createWorkflowBlock(type, x, y, existingId = null, existingData = null) {
         const blockId = existingId || `block_${new Date().getTime()}`;
@@ -379,6 +404,69 @@ const createConnectorPath = (startPos, endPos, connection) => {
             tempDiv.appendChild(clone);
             content = tempDiv.innerHTML;
 
+            connectionPoints += '<div class="connection-point input" data-point-id="in" data-label="In"></div>';
+            connectionPoints += '<div class="connection-point output" data-point-id="out" data-label="Out"></div>';
+            break;
+        }
+        case 'switch': {
+            const state = blockState || { cases: [{ value: 'Case 1' }] }; // Lalai dengan satu kes
+            title = '<i class="fas fa-sitemap"></i> Switch';
+            
+            let casesHTML = (state.cases || []).map((caseItem, index) => `
+                <div class="switch-case" data-case-index="${index}">
+                    <input type="text" class="switch-case-value" placeholder="Value..." value="${caseItem.value}">
+                    <button class="btn-sidebar-icon delete-case-btn" title="Delete Case">&times;</button>
+                </div>
+            `).join('');
+
+            content = `
+                <div class="switch-input-container">
+                    <label>Switch on this value:</label>
+                    <input type="text" class="switch-on-value" placeholder="##variable.status##" value="${state.switchValue || ''}">
+                </div>
+                <div class="switch-cases-list">${casesHTML}</div>
+                <div class="switch-actions">
+                    <button class="btn btn-secondary btn-sm add-case-btn"><i class="fas fa-plus"></i> Add Case</button>
+                </div>
+            `;
+            
+            connectionPoints += '<div class="connection-point input" data-point-id="in" data-label="In"></div>';
+            // Bina titik output secara dinamik
+            (state.cases || []).forEach((caseItem, index) => {
+                const topPosition = 25 + (index * 20); // Atur kedudukan secara menegak
+                connectionPoints += `<div class="connection-point output" data-point-id="out-case-${index}" style="top: ${topPosition}%;"><span class="switch-case-label">${caseItem.value}</span></div>`;
+            });
+            // Tambah titik output untuk Default
+            const defaultTopPosition = 25 + ((state.cases?.length || 0) * 20);
+            connectionPoints += `<div class="connection-point output" data-point-id="out-default" style="top: ${defaultTopPosition}%;"><span class="switch-case-label">Default</span></div>`;
+            break;
+        }
+        case 'send_whatsapp': {
+            const state = blockState || {};
+            title = '<i class="fab fa-whatsapp"></i> Send WhatsApp';
+            content = `
+                <div class="form-group" style="padding: 0.75rem;">
+                    <label>To Phone Number</label>
+                    <input type="text" class="whatsapp-input" data-field="to" placeholder="##variable.phone_no##" value="${state.to || ''}">
+                    <label style="margin-top: 0.5rem;">Message</label>
+                    <textarea class="whatsapp-input" data-field="message" rows="4" placeholder="Hello ##variable.user_name##... Note: Official APIs may require templates.">${state.message || ''}</textarea>
+                </div>
+            `;
+            connectionPoints += '<div class="connection-point input" data-point-id="in" data-label="In"></div>';
+            connectionPoints += '<div class="connection-point output" data-point-id="out" data-label="Out"></div>';
+            break;
+        }
+        case 'send_telegram': {
+            const state = blockState || {};
+            title = '<i class="fab fa-telegram-plane"></i> Send Telegram';
+            content = `
+                <div class="form-group" style="padding: 0.75rem;">
+                    <label>To Chat ID</label>
+                    <input type="text" class="telegram-input" data-field="chat_id" placeholder="##variable.telegram_chat_id##" value="${state.chat_id || ''}">
+                    <label style="margin-top: 0.5rem;">Message</label>
+                    <textarea class="telegram-input" data-field="message" rows="4" placeholder="Hello ##variable.user_name##...">${state.message || ''}</textarea>
+                </div>
+            `;
             connectionPoints += '<div class="connection-point input" data-point-id="in" data-label="In"></div>';
             connectionPoints += '<div class="connection-point output" data-point-id="out" data-label="Out"></div>';
             break;
@@ -663,7 +751,30 @@ function openBlockConfiguration(blockId) {
             e.target.closest('.http-header-row').remove();
             saveState(); // Perlu panggil saveState secara manual di sini
         }
+// ▼▼▼ DI DALAM state.canvas.addEventListener('click', ...), TAMBAH LOGIK INI ▼▼▼
+
+        // Logik untuk Blok Switch
+        else if (e.target.matches('.add-case-btn, .add-case-btn *')) {
+            const blockId = block.dataset.blockId;
+            if (!state.blocks[blockId].cases) {
+                state.blocks[blockId].cases = [];
+            }
+            state.blocks[blockId].cases.push({ value: `Case ${state.blocks[blockId].cases.length + 1}` });
+            rebuildBlock(blockId);
+            saveState();
+        }
+        else if (e.target.matches('.delete-case-btn, .delete-case-btn *')) {
+            const caseIndex = parseInt(e.target.closest('.switch-case').dataset.caseIndex, 10);
+            const blockId = block.dataset.blockId;
+            if (state.blocks[blockId]?.cases) {
+                state.blocks[blockId].cases.splice(caseIndex, 1);
+                rebuildBlock(blockId);
+                saveState();
+            }
+        }
     });
+
+// ▼▼▼ GANTIKAN KESELURUHAN BLOK 'addEventListener' INI ▼▼▼
 
     state.canvas.addEventListener('input', (e) => {
         const block = e.target.closest('.workflow-block');
@@ -681,7 +792,8 @@ function openBlockConfiguration(blockId) {
             'transformer-output-name': 'outputVariableName',
             'http-url-input': 'url',
             'http-body-textarea': 'body',
-            'http-output-name': 'outputVariableName'
+            'http-output-name': 'outputVariableName',
+            'switch-on-value': 'switchValue'
         };
 
         for (const [cssClass, stateKey] of Object.entries(fieldMap)) {
@@ -692,17 +804,41 @@ function openBlockConfiguration(blockId) {
             }
         }
         
-        // Handler for dynamic header rows
-        if (e.target.matches('.http-header-key, .http-header-value')) {
+        // Handler untuk input dinamik atau yang memerlukan logik khas
+        if (e.target.matches('.transformer-params input, .transformer-params select')) {
+            if (!blockState.parameters) blockState.parameters = {};
+            if(e.target.classList.contains('transformer-param-date-format')) blockState.parameters.dateFormat = e.target.value;
+            if(e.target.classList.contains('transformer-param-text-op')) blockState.parameters.textOperation = e.target.value;
+            if(e.target.classList.contains('transformer-param-math-expr')) blockState.parameters.mathExpression = e.target.value;
+        } else if (e.target.matches('.http-header-key, .http-header-value')) {
             const headers = Array.from(block.querySelectorAll('.http-header-row')).map(row => ({
                 key: row.querySelector('.http-header-key').value,
                 value: row.querySelector('.http-header-value').value
             }));
             blockState.headers = headers;
-            saveState();
+        } else if (e.target.matches('.switch-case-value')) {
+            const caseIndex = parseInt(e.target.closest('.switch-case').dataset.caseIndex, 10);
+            if (blockState.cases && blockState.cases[caseIndex]) {
+                blockState.cases[caseIndex].value = e.target.value;
+                rebuildBlock(blockId); // Bina semula untuk kemas kini label
+            }
+        } 
+        // ▼▼▼ KOD BAHARU UNTUK EMEL, WHATSAPP & TELEGRAM DI SINI ▼▼▼
+        else if (e.target.classList.contains('email-input')) {
+            const field = e.target.dataset.field;
+            if (field) blockState[field] = e.target.value;
+        } else if (e.target.classList.contains('whatsapp-input')) {
+            const field = e.target.dataset.field;
+            if (field) blockState[field] = e.target.value;
+        } else if (e.target.classList.contains('telegram-input')) {
+            const field = e.target.dataset.field;
+            if (field) blockState[field] = e.target.value;
         }
-    });
+        // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
 
+        saveState();
+    });
+	
     state.canvas.addEventListener('change', (e) => {
         const block = e.target.closest('.workflow-block');
         if (!block) return;
