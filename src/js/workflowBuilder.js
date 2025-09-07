@@ -14,10 +14,10 @@ function setupBuilderInstance(config) {
     const container = document.getElementById(config.containerId);
     if (!container) return;
 
-    const state = {
+const state = {
         blocks: {},
         connections: [],
-        selectedConnection: null,
+        selectedConnection: null, // <-- TAMBAH BARIS INI
         draggedBlock: null,
         isConnecting: false,
         startPoint: null,
@@ -51,7 +51,7 @@ function setupBuilderInstance(config) {
         };
     };
 
-    const createConnectorPath = (startPos, endPos, connection) => {
+const createConnectorPath = (startPos, endPos, connection) => {
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         const c1x = startPos.x + Math.abs(endPos.x - startPos.x) * 0.6;
         const c1y = startPos.y;
@@ -59,15 +59,24 @@ function setupBuilderInstance(config) {
         const c2y = endPos.y;
         path.setAttribute('d', `M ${startPos.x} ${startPos.y} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${endPos.x} ${endPos.y}`);
         path.classList.add('connector-path');
+        
+        // ▼▼▼ TAMBAHAN BAHARU UNTUK LOGIK PEMILIHAN ▼▼▼
         path.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (state.selectedConnection?.path) state.selectedConnection.path.classList.remove('selected');
+            e.stopPropagation(); // Hentikan event dari "bubble" ke kanvas
+            // Nyahpilih sambungan lama jika ada
+            if (state.selectedConnection?.path) {
+                state.selectedConnection.path.classList.remove('selected');
+            }
+            // Pilih sambungan baharu
             state.selectedConnection = connection;
             path.classList.add('selected');
         });
+        // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
+
         return path;
     };
 
+// ▼▼▼ GANTIKAN KESELURUHAN FUNGSI INI DENGAN VERSI YANG TELAH DIPERBAIKI ▼▼▼
     const redrawConnections = () => {
         state.svg.innerHTML = '';
         state.connections.forEach(conn => {
@@ -77,7 +86,7 @@ function setupBuilderInstance(config) {
                 const startPos = getPointPosition(startPointEl);
                 const endPos = getPointPosition(endPointEl);
                 const path = createConnectorPath(startPos, endPos, conn);
-                conn.path = path;
+                conn.path = path; // <-- BARIS PENTING YANG MENYIMPAN RUJUKAN
                 state.svg.appendChild(path);
             }
         });
@@ -640,6 +649,39 @@ function openBlockConfiguration(blockId) {
         }
     });
 
+// ▼▼▼ TAMBAH KESELURUHAN BLOK KOD INI ▼▼▼
+
+    function deleteSelectedConnection() {
+        if (!state.selectedConnection) return;
+        
+        const connIndex = state.connections.findIndex(c => c === state.selectedConnection);
+        if (connIndex > -1) {
+            state.connections.splice(connIndex, 1);
+            state.selectedConnection = null;
+            redrawConnections();
+            saveState();
+        }
+    }
+
+    // Listener untuk kekunci Delete/Backspace
+    document.addEventListener('keydown', (e) => {
+        const isTabActive = container.closest('.tab-pane')?.classList.contains('active');
+        const isPageActive = !container.closest('#table-settings-page')?.classList.contains('hidden');
+
+        // Hanya padam jika builder ini sedang aktif
+        if ((isTabActive || isPageActive) && (e.key === 'Delete' || e.key === 'Backspace')) {
+             deleteSelectedConnection();
+        }
+    });
+
+    // Listener untuk menyahpilih apabila kanvas diklik
+    state.canvas.addEventListener('mousedown', (e) => {
+        if (e.target === state.canvas && state.selectedConnection) {
+            state.selectedConnection.path.classList.remove('selected');
+            state.selectedConnection = null;
+        }
+    });
+// ▲▲▲ TAMAT TAMBAHAN ▲▲▲
     // ▼▼▼ MULA BLOK KOD YANG DIPERBAIKI ▼▼▼
 
     // --- Muatkan Data Awal ---

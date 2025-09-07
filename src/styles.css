@@ -2138,20 +2138,28 @@ fieldset.fieldset-disabled {
     transform-origin: 0 0;
 }
 
+/* ▼▼▼ BUANG `pointer-events: none;` DARIPADA BLOK INI ▼▼▼ */
 .connector-svg {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    pointer-events: none; /* Allow clicks to go through to the canvas */
     z-index: 1;
 }
 
+/* ▼▼▼ GANTIKAN BLOK INI DENGAN VERSI BAHARU DI BAWAH ▼▼▼ */
 .connector-svg .connector-path {
     stroke: #9CA3AF;
     stroke-width: 3;
     fill: none;
+    cursor: pointer; /* Tukar kursor tetikus apabila di atas garisan */
+    pointer-events: stroke; /* Jadikan hanya garisan itu sendiri boleh diklik */
+    transition: stroke-width 0.2s;
+}
+
+.connector-svg .connector-path:hover {
+    stroke-width: 5; /* Tebalkan garisan apabila dihover */
 }
 
 .connector-svg .connector-path-selected {
@@ -3071,4 +3079,9 @@ fieldset.fieldset-disabled {
 }
 .connection-point.output[data-point-id="out-catch"] {
     top: 66%;
+}
+
+.connector-path.selected {
+    stroke: #EF4444; /* Red */
+    stroke-width: 4;
 }
