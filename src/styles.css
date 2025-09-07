@@ -2930,3 +2930,145 @@ fieldset.fieldset-disabled {
     font-weight: 600;
     margin-bottom: 0.5rem;
 }
+/* ================================================================== */
+/* == STYLES FOR WORKFLOW LOOP BLOCK                               == */
+/* ================================================================== */
+
+/* Warna untuk blok For Each Loop di atas kanvas */
+.workflow-block[data-block-type="for_each_loop"] .workflow-block-title {
+    background-color: #14B8A6; /* Teal */
+    color: white;
+}
+
+/* Warna untuk ikon For Each Loop di dalam palet */
+.workflow-block-palette-item[data-block-type="for_each_loop"] i {
+    color: #14B8A6; /* Teal */
+}
+
+/* Gaya untuk output points yang dilabelkan */
+.connection-point.output[data-point-id="out-body"] {
+    top: 33%;
+}
+.connection-point.output[data-point-id="out-complete"] {
+    top: 66%;
+}
+.connection-point::after {
+    content: attr(data-label);
+    position: absolute;
+    left: 20px;
+    font-size: 0.7em;
+    font-weight: 600;
+    color: var(--secondary-color);
+    pointer-events: none;
+    white-space: nowrap;
+}
+.connection-point.input::after {
+    left: 20px;
+}
+.connection-point.output::after {
+    right: 20px;
+    left: auto;
+    text-align: right;
+}
+
+/* ================================================================== */
+/* == STYLES FOR WORKFLOW DATA TRANSFORMER BLOCK                   == */
+/* ================================================================== */
+
+/* Warna untuk blok Data Transformer di atas kanvas */
+.workflow-block[data-block-type="data_transformer"] .workflow-block-title {
+    background-color: #F97316; /* Oren */
+    color: white;
+}
+
+/* Warna untuk ikon Data Transformer di dalam palet */
+.workflow-block-palette-item[data-block-type="data_transformer"] i {
+    color: #F97316; /* Oren */
+}
+
+/* Gaya untuk kandungan blok yang lebih kompleks */
+.transformer-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.transformer-content .form-group {
+    margin-bottom: 0;
+}
+.transformer-content label {
+    font-size: 0.8em;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+.transformer-content input,
+.transformer-content select {
+    width: 100%;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.9em;
+}
+
+/* ================================================================== */
+/* == STYLES FOR WORKFLOW TERMINATE BLOCK                          == */
+/* ================================================================== */
+
+/* Warna untuk blok Terminate di atas kanvas */
+.workflow-block[data-block-type="terminate_workflow"] .workflow-block-title {
+    background-color: #DC2626; /* Merah */
+    color: white;
+}
+
+/* Warna untuk ikon Terminate di dalam palet */
+.workflow-block-palette-item[data-block-type="terminate_workflow"] i {
+    color: #DC2626; /* Merah */
+}
+
+/* ================================================================== */
+/* == STYLES FOR WORKFLOW DELAY BLOCK                              == */
+/* ================================================================== */
+
+/* Warna untuk blok Delay di atas kanvas */
+.workflow-block[data-block-type="delay"] .workflow-block-title {
+    background-color: #3B82F6; /* Biru */
+    color: white;
+}
+
+/* Warna untuk ikon Delay di dalam palet */
+.workflow-block-palette-item[data-block-type="delay"] i {
+    color: #3B82F6; /* Biru */
+}
+
+/* Gaya untuk input di dalam blok Delay */
+.delay-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.delay-content input {
+    width: 60px;
+}
+.delay-content select {
+    flex-grow: 1;
+}
+
+/* ================================================================== */
+/* == STYLES FOR WORKFLOW TRY/CATCH BLOCK                        == */
+/* ================================================================== */
+
+/* Warna untuk blok Try/Catch di atas kanvas */
+.workflow-block[data-block-type="try_catch"] .workflow-block-title {
+    background-color: #059669; /* Hijau */
+    color: white;
+}
+
+/* Warna untuk ikon Try/Catch di dalam palet */
+.workflow-block-palette-item[data-block-type="try_catch"] i {
+    color: #059669; /* Hijau */
+}
+
+/* Kedudukan untuk output 'Try' dan 'Catch' */
+.connection-point.output[data-point-id="out-try"] {
+    top: 33%;
+}
+.connection-point.output[data-point-id="out-catch"] {
+    top: 66%;
+}

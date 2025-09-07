@@ -172,6 +172,136 @@ function setupBuilderInstance(config) {
 				connectionPoints += '<div class="connection-point input" data-point-id="in"></div>';
 				connectionPoints += '<div class="connection-point output" data-point-id="out"></div>';
 				break;
+			case 'for_each_loop': {
+				const dataSource = blockState.dataSource || '##variable.my_list##';
+				title = '<i class="fas fa-sync-alt"></i> For Each Loop';
+				content = `
+					<div class="form-group" style="margin-bottom:0;">
+						<label style="font-size:0.8em; margin-bottom:0.25rem;">Loop through this list:</label>
+						<input type="text" class="loop-data-source-input" placeholder="##variable.list_name##" value="${dataSource}">
+					</div>
+				`;
+				connectionPoints += '<div class="connection-point input" data-point-id="in" data-label="In"></div>';
+				// Dua output point dengan label
+				connectionPoints += '<div class="connection-point output" data-point-id="out-body" data-label="Loop Body"></div>';
+				connectionPoints += '<div class="connection-point output" data-point-id="out-complete" data-label="After Loop"></div>';
+				break;
+			}
+        case 'data_transformer': {
+            // Dapatkan nilai yang disimpan, atau guna nilai lalai
+            const state = blockState || {};
+            const inputValue = state.inputValue || '';
+            const selectedFunction = state.selectedFunction || 'format_date';
+            const outputVariableName = state.outputVariableName || '';
+            const dateFormat = state.parameters?.dateFormat || 'DD MMMM YYYY';
+            const textOperation = state.parameters?.textOperation || 'uppercase';
+            const mathExpression = state.parameters?.mathExpression || '##variable.harga## * 1.06';
+
+            title = '<i class="fas fa-exchange-alt"></i> Data Transformer';
+            content = `
+                <div class="transformer-content">
+                    <div class="form-group">
+                        <label>Input Value</label>
+                        <input type="text" class="transformer-input" placeholder="##variable.nama##" value="${inputValue}">
+                    </div>
+                    <div class="form-group">
+                        <label>Transformation</label>
+                        <select class="transformer-function-select">
+                            <option value="format_date" ${selectedFunction === 'format_date' ? 'selected' : ''}>Format Date</option>
+                            <option value="text_operation" ${selectedFunction === 'text_operation' ? 'selected' : ''}>Text Operation</option>
+                            <option value="math_operation" ${selectedFunction === 'math_operation' ? 'selected' : ''}>Math Operation</option>
+                        </select>
+                    </div>
+
+                    <div class="transformer-params" data-param-for="format_date">
+                        <div class="form-group">
+                            <label>Date Format String</label>
+                            <input type="text" class="transformer-param-date-format" placeholder="e.g., DD/MM/YYYY" value="${dateFormat}">
+                        </div>
+                    </div>
+                    <div class="transformer-params" data-param-for="text_operation">
+                        <div class="form-group">
+                            <label>Operation</label>
+                            <select class="transformer-param-text-op">
+                                <option value="uppercase" ${textOperation === 'uppercase' ? 'selected' : ''}>TO UPPERCASE</option>
+                                <option value="lowercase" ${textOperation === 'lowercase' ? 'selected' : ''}>To Lowercase</option>
+                            </select>
+                        </div>
+                    </div>
+                     <div class="transformer-params" data-param-for="math_operation">
+                        <div class="form-group">
+                            <label>Expression (Input Value is used here)</label>
+                            <input type="text" class="transformer-param-math-expr" value="${mathExpression}">
+                        </div>
+                    </div>
+
+                    <hr style="margin: 0.25rem 0;">
+                    <div class="form-group">
+                        <label>Save Result as Variable</label>
+                        <input type="text" class="transformer-output-name" placeholder="myFormattedData" value="${outputVariableName}">
+                    </div>
+                </div>
+            `;
+            connectionPoints += '<div class="connection-point input" data-point-id="in" data-label="In"></div>';
+            connectionPoints += '<div class="connection-point output" data-point-id="out" data-label="Out"></div>';
+            
+            // Logik untuk memaparkan parameter yang betul selepas blok dicipta
+            setTimeout(() => {
+                const blockEl = container.querySelector(`[data-block-id='${blockId}']`);
+                if(blockEl) {
+                    const select = blockEl.querySelector('.transformer-function-select');
+                    const params = blockEl.querySelectorAll('.transformer-params');
+                    params.forEach(p => p.style.display = 'none');
+                    blockEl.querySelector(`[data-param-for="${select.value}"]`).style.display = 'block';
+                }
+            }, 0);
+
+            break;
+        }
+        case 'terminate_workflow': {
+            title = '<i class="fas fa-stop-circle"></i> Terminate Workflow';
+            content = `
+                <p style="font-size: 0.9em; text-align: center; color: var(--secondary-color); margin:0;">
+                    Workflow stops here with a 'Success' status.
+                </p>
+            `;
+            // Perhatikan: Hanya ada titik input, tiada output.
+            connectionPoints += '<div class="connection-point input" data-point-id="in" data-label="In"></div>';
+            break;
+        }
+        case 'delay': {
+            const state = blockState || {};
+            const duration = state.delayDuration || 1;
+            const unit = state.delayUnit || 'hours';
+
+            title = '<i class="fas fa-hourglass-half"></i> Wait';
+            content = `
+                <div class="delay-content">
+                    <input type="number" class="delay-duration-input" min="1" value="${duration}">
+                    <select class="delay-unit-select">
+                        <option value="minutes" ${unit === 'minutes' ? 'selected' : ''}>Minutes</option>
+                        <option value="hours" ${unit === 'hours' ? 'selected' : ''}>Hours</option>
+                        <option value="days" ${unit === 'days' ? 'selected' : ''}>Days</option>
+                    </select>
+                </div>
+            `;
+            connectionPoints += '<div class="connection-point input" data-point-id="in" data-label="In"></div>';
+            connectionPoints += '<div class="connection-point output" data-point-id="out" data-label="Out"></div>';
+            break;
+        }
+        case 'try_catch': {
+            title = '<i class="fas fa-shield-alt"></i> Try / Catch';
+            content = `
+                <p style="font-size: 0.9em; text-align: center; color: var(--secondary-color); margin:0;">
+                    Handles potential errors.
+                </p>
+            `;
+            connectionPoints += '<div class="connection-point input" data-point-id="in" data-label="In"></div>';
+            // Dua output: satu untuk 'Try', satu untuk 'Catch'
+            connectionPoints += '<div class="connection-point output" data-point-id="out-try" data-label="Try"></div>';
+            connectionPoints += '<div class="connection-point output" data-point-id="out-catch" data-label="Catch"></div>';
+            break;
+        }
         }
 
         block.innerHTML = `
@@ -434,20 +564,66 @@ function openBlockConfiguration(blockId) {
         }
     });
 	
-// ▼▼▼ TAMBAH BLOK KOD INI SELEPAS `state.canvas.addEventListener('click', ...)` ▼▼▼
-
-    // Listener untuk menyimpan nama variable secara langsung
+// ▼▼▼ KEMAS KINI EVENT LISTENER 'input' INI ▼▼▼
     state.canvas.addEventListener('input', (e) => {
+        const block = e.target.closest('.workflow-block');
+        if (!block) return;
+        const blockId = block.dataset.blockId;
+        const blockState = state.blocks[blockId];
+        if (!blockState) return;
+
         if (e.target.classList.contains('variable-name-input')) {
-            const blockId = e.target.closest('.workflow-block')?.dataset.blockId;
-            if (blockId && state.blocks[blockId]) {
-                state.blocks[blockId].variableName = e.target.value;
-                saveState();
-            }
+            blockState.variableName = e.target.value;
+        } else if (e.target.classList.contains('loop-data-source-input')) {
+            blockState.dataSource = e.target.value;
+        } else if (e.target.classList.contains('transformer-input')) {
+            blockState.inputValue = e.target.value;
+        } else if (e.target.classList.contains('transformer-output-name')) {
+            blockState.outputVariableName = e.target.value;
+        } else if (e.target.matches('.transformer-params input, .transformer-params select')) {
+            if (!blockState.parameters) blockState.parameters = {};
+            if(e.target.classList.contains('transformer-param-date-format')) blockState.parameters.dateFormat = e.target.value;
+            if(e.target.classList.contains('transformer-param-text-op')) blockState.parameters.textOperation = e.target.value;
+            if(e.target.classList.contains('transformer-param-math-expr')) blockState.parameters.mathExpression = e.target.value;
         }
+        // ▼▼▼ TAMBAH BLOK 'ELSE IF' INI ▼▼▼
+        else if (e.target.classList.contains('delay-duration-input')) {
+            blockState.delayDuration = e.target.value;
+        }
+        // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
+        
+        saveState();
     });
 
-// ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
+// ▼▼▼ KEMAS KINI EVENT LISTENER 'change' INI ▼▼▼
+    state.canvas.addEventListener('change', (e) => {
+        const block = e.target.closest('.workflow-block');
+        if (!block) return;
+        const blockId = block.dataset.blockId;
+        const blockState = state.blocks[blockId];
+        if (!blockState) return;
+
+        if (e.target.classList.contains('transformer-function-select')) {
+            const selectedFunction = e.target.value;
+            blockState.selectedFunction = selectedFunction;
+            
+            block.querySelectorAll('.transformer-params').forEach(paramDiv => {
+                paramDiv.style.display = 'none';
+            });
+            
+            const activeParamDiv = block.querySelector(`[data-param-for="${selectedFunction}"]`);
+            if (activeParamDiv) {
+                activeParamDiv.style.display = 'block';
+            }
+        }
+        // ▼▼▼ TAMBAH BLOK 'ELSE IF' INI ▼▼▼
+        else if (e.target.classList.contains('delay-unit-select')) {
+            blockState.delayUnit = e.target.value;
+        }
+        // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
+        
+        saveState();
+    });
     
     document.addEventListener('keydown', (e) => {
         const isTabActive = container.closest('.tab-pane')?.classList.contains('active');
