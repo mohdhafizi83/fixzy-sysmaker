@@ -2073,10 +2073,11 @@ fieldset.fieldset-disabled {
 }
 
 .workflow-container {
+    position: relative; /* Ini penting untuk posisi butang */
     display: grid;
     grid-template-columns: 220px 1fr;
     gap: 1.5rem;
-    height: 70vh; /* Give it a fixed height */
+    height: 70vh;
     border: 1px solid var(--border-color);
     padding: 1rem;
     border-radius: 6px;
@@ -3287,4 +3288,29 @@ fieldset.fieldset-disabled {
 
 .workflow-block-palette-item[data-block-type="send_telegram"] i {
     color: #229ED9;
+}
+
+/* ================================================================== */
+/* == STYLES FOR WORKFLOW FULLSCREEN BUTTON                        == */
+/* ================================================================== */
+
+.workflow-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: -1rem; /* Adjust to align with card padding */
+}
+
+.fullscreen-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 20; /* Pastikan ia di atas semua elemen lain di dalam kanvas */
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Specific styles for the workflow container when in fullscreen */
+.workflow-container:fullscreen {
+    padding: 2rem;
+    background-color: var(--background-color);
 }

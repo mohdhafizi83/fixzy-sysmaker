@@ -325,6 +325,59 @@ async function handleSqlImport(importFunction) {
     }
 }
 
+// ▼▼▼ GANTIKAN KESELURUHAN FUNGSI DENGAN VERSI DEBUG INI ▼▼▼
+
+function initializeFullscreenHandlers() {
+
+    const setupClickListener = (buttonId, containerId) => {
+        const button = document.getElementById(buttonId);
+        const container = document.getElementById(containerId);
+
+        if (!button || !container) return;
+        
+        button.addEventListener('click', () => {
+
+            if (!document.fullscreenElement) {
+
+                container.requestFullscreen();
+            } else {
+
+                document.exitFullscreen();
+            }
+        });
+    };
+
+    setupClickListener('project-fullscreen-btn', 'project-workflow-container');
+    setupClickListener('table-fullscreen-btn', 'table-workflow-container');
+
+    document.addEventListener('fullscreenchange', () => {
+
+
+        const projectIcon = document.querySelector('#project-fullscreen-btn i');
+        const tableIcon = document.querySelector('#table-fullscreen-btn i');
+        const fullscreenEl = document.fullscreenElement;
+
+        const setIconState = (iconEl, isFullscreen, name) => {
+            if (!iconEl) {
+
+                return;
+            }
+            
+            if (isFullscreen) {
+                iconEl.classList.remove('fa-expand-arrows-alt');
+                iconEl.classList.add('fa-compress-arrows-alt');
+            } else {
+                iconEl.classList.remove('fa-compress-arrows-alt');
+                iconEl.classList.add('fa-expand-arrows-alt');
+            }
+
+        };
+
+        setIconState(projectIcon, fullscreenEl?.id === 'project-workflow-container', 'Projek');
+        setIconState(tableIcon, fullscreenEl?.id === 'table-workflow-container', 'Jadual');
+
+    });
+}
 
 // Inisialisasi Aplikasi
 document.addEventListener('DOMContentLoaded', async () => {
@@ -475,7 +528,7 @@ initializeQueryBuilder();
     const project = await window.electronAPI.getActiveProject();
     await loadProjectData(project);
 	initializeWorkflowBuilder();
-
+    initializeFullscreenHandlers();
     // Pasang pendengar untuk mesej 'show-overlay' dari proses utama
     if (window.electronAPI && typeof window.electronAPI.onShowOverlay === 'function') {
         window.electronAPI.onShowOverlay(() => {

@@ -1088,7 +1088,7 @@ function createWindow() {
   });
   
    // Buka DevTools secara automatik untuk memudahkan penyahpepijatan
-  // win.webContents.openDevTools();
+   win.webContents.openDevTools();
 }
 
 app.whenReady().then(createWindow);

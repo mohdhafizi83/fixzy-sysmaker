@@ -712,12 +712,19 @@
 <div id="tab-hooks" class="tab-pane">
     <div class="card">
         <div class="card-body">
-            <h4>Project-Level Hooks</h4>
-            <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 1.5rem;">
-                Define actions that run on global project events, like application startup or shutdown.
-            </p>
+            <div class="workflow-header">
+                <div>
+                    <h4>Project-Level Hooks</h4>
+                    <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 1.5rem;">
+                        Define actions that run on global project events...
+                    </p>
+                </div>
+            </div>
             <input type="hidden" id="app-hook-logic" name="app-hook-logic">
             <div id="project-workflow-container" class="workflow-container">
+                <button id="project-fullscreen-btn" class="btn-sidebar-icon fullscreen-btn" title="Toggle Fullscreen">
+                    <i class="fas fa-expand-arrows-alt"></i>
+                </button>
  <div class="workflow-palette">
     <h4>Blocks</h4>
     <div class="workflow-block-palette-item" draggable="true" data-block-type="hook_trigger">
@@ -972,12 +979,20 @@
 <div id="tab-detail-hooks" class="tab-pane">
     <div class="card">
         <div class="card-body">
-            <h4>Table-Level Hooks</h4>
-            <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 1.5rem;">
-                Define actions that run on table-specific events, like before an insert or after a delete.
-            </p>
+            <div class="workflow-header">
+                <div>
+                    <h4>Table-Level Hooks</h4>
+                    <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 1.5rem;">
+                        Define actions that run on table-specific events...
+                    </p>
+                </div>
+
+            </div>
             <input type="hidden" id="tbl-hook-logic" name="tbl-hook-logic">
             <div id="table-workflow-container" class="workflow-container">
+                <button id="table-fullscreen-btn" class="btn-sidebar-icon fullscreen-btn" title="Toggle Fullscreen">
+                    <i class="fas fa-expand-arrows-alt"></i>
+                </button>
  <div class="workflow-palette">
     <h4>Blocks</h4>
     <div class="workflow-block-palette-item" draggable="true" data-block-type="hook_trigger">
