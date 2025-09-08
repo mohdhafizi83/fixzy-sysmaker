@@ -3348,3 +3348,77 @@ fieldset.fieldset-disabled {
     white-space: pre-wrap; /* Membenarkan baris baharu dalam komen */
     word-break: break-word;
 }
+
+/* ================================================================== */
+/* == STYLES FOR VARIABLE HELPER                                   == */
+/* ================================================================== */
+
+/* Bekas untuk input dan butang ikon */
+.input-with-helper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-with-helper input,
+.input-with-helper textarea {
+    width: 100%;
+}
+
+/* Butang ikon bantuan */
+.variable-helper-btn {
+    position: absolute;
+    right: 5px;
+    height: 24px;
+    width: 24px;
+    border-radius: 4px;
+    border: none;
+    background-color: #e5e7eb;
+    color: #4b5563;
+    cursor: pointer;
+    font-size: 0.8em;
+}
+.variable-helper-btn:hover {
+    background-color: #d1d5db;
+}
+
+/* Menu pop-up */
+.variable-helper {
+    display: none; /* Sembunyi secara lalai */
+    position: absolute;
+    z-index: 10500; /* Pastikan ia di atas semua modal lain */
+    background-color: white;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    min-width: 200px;
+    padding: 0.5rem;
+}
+
+.variable-helper-group {
+    margin-bottom: 0.5rem;
+}
+.variable-helper-group:last-child {
+    margin-bottom: 0;
+}
+
+.variable-helper-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--secondary-color);
+    text-transform: uppercase;
+    padding: 0.25rem 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 0.25rem;
+}
+
+.variable-helper-item {
+    padding: 0.5rem 0.75rem;
+    font-family: monospace;
+    font-size: 0.9em;
+    cursor: pointer;
+    border-radius: 4px;
+}
+.variable-helper-item:hover {
+    background-color: var(--background-color);
+}

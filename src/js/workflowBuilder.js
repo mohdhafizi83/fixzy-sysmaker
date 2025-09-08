@@ -154,6 +154,33 @@ const createConnectorPath = (startPos, endPos, connection) => {
         redrawConnections();
     }
 	
+// ▼▼▼ TAMBAH FUNGSI BANTUAN BAHARU INI ▼▼▼
+    function injectVariableHelpers(blockEl) {
+        blockEl.querySelectorAll('input[type="text"], textarea').forEach(input => {
+            // Elakkan menambah butang pada input nama variable itu sendiri
+            if (input.classList.contains('variable-name-input')) return;
+
+            // Jika butang sudah ada, jangan tambah lagi
+            if (input.nextElementSibling?.classList.contains('variable-helper-btn')) return;
+
+            // Cipta bekas
+            const wrapper = document.createElement('div');
+            wrapper.className = 'input-with-helper';
+            
+            // Pindahkan input ke dalam bekas
+            input.parentNode.insertBefore(wrapper, input);
+            wrapper.appendChild(input);
+
+            // Cipta dan tambah butang ikon
+            const button = document.createElement('button');
+            button.className = 'variable-helper-btn';
+            button.innerHTML = '<i class="fas fa-at"></i>';
+            button.title = 'Insert variable';
+            button.type = 'button'; // Elakkan dari submit borang
+            wrapper.appendChild(button);
+        });
+    }
+	
 function generateCommentHTML(configData) {
         let comments = [];
         try {
@@ -536,6 +563,7 @@ function generateCommentHTML(configData) {
         block.querySelector('.workflow-block-title').addEventListener('mousedown', startDragBlock);
         block.querySelectorAll('.connection-point').forEach(p => p.addEventListener('mousedown', startConnecting));
 
+		injectVariableHelpers(block);
         return block;
     }
 
@@ -784,54 +812,130 @@ function generateCommentHTML(configData) {
         saveState();
     });
 
-// ▼▼▼ GANTIKAN KESELURUHAN BLOK 'addEventListener' DENGAN YANG INI ▼▼▼
-
-    // -- Combined Event Listeners for the Canvas --
+// ▼▼▼ GANTIKAN SEMUA addEventListener('click',...) LAMA DENGAN BLOK TUNGGAL INI ▼▼▼
 
     state.canvas.addEventListener('click', (e) => {
         const block = e.target.closest('.workflow-block');
+        const button = e.target.closest('button');
+
+        // Logik untuk Butang Variable Helper (tidak memerlukan rujukan 'block')
+        if (button && button.classList.contains('variable-helper-btn')) {
+            e.preventDefault();
+            const targetInput = button.previousElementSibling;
+            const menu = document.getElementById('variable-helper-menu');
+            
+            const defaultVars = ['ID', 'USERNAME', 'GROUPID', 'GROUP', 'NOW'];
+            const userDefinedVars = Object.values(state.blocks)
+                .filter(b => b.type === 'variable' && b.variableName)
+                .map(b => b.variableName);
+
+            const defaultGroup = menu.querySelector('[data-group-type="default"]');
+            const userGroup = menu.querySelector('[data-group-type="user"]');
+            
+            defaultGroup.querySelectorAll('.variable-helper-item').forEach(it => it.remove());
+            userGroup.querySelectorAll('.variable-helper-item').forEach(it => it.remove());
+
+            defaultVars.forEach(v => {
+                const item = document.createElement('div');
+                item.className = 'variable-helper-item';
+                item.textContent = `##${v}##`;
+                item.onclick = () => insertVariable(targetInput, `##${v}##`);
+                defaultGroup.appendChild(item);
+            });
+
+            if (userDefinedVars.length > 0) {
+                userGroup.style.display = 'block';
+                userDefinedVars.forEach(v => {
+                    const item = document.createElement('div');
+                    item.className = 'variable-helper-item';
+                    item.textContent = `##variable.${v}##`;
+                    item.onclick = () => insertVariable(targetInput, `##variable.${v}##`);
+                    userGroup.appendChild(item);
+                });
+            } else {
+                userGroup.style.display = 'none';
+            }
+
+            const btnRect = button.getBoundingClientRect();
+            menu.style.display = 'block';
+            menu.style.top = `${btnRect.bottom + window.scrollY}px`;
+            menu.style.left = `${btnRect.right + window.scrollX - menu.offsetWidth}px`;
+
+            setTimeout(() => {
+                document.addEventListener('click', function closeMenu(event) {
+                    if (!menu.contains(event.target)) {
+                        menu.style.display = 'none';
+                        document.removeEventListener('click', closeMenu);
+                    }
+                }, { once: true });
+            }, 0);
+            return; // Hentikan proses selanjutnya untuk klik ini
+        }
+
+        // Semua logik lain memerlukan rujukan 'block'
         if (!block) return;
         const blockId = block.dataset.blockId;
+        const blockState = state.blocks[blockId];
 
-        // Configure button
-        if (e.target.matches('.configure-btn, .configure-btn *')) {
-            openBlockConfiguration(blockId);
-        }
-        // Delete block button
-        else if (e.target.matches('.delete-block-btn, .delete-block-btn *')) {
+        if (e.target.matches('.delete-block-btn, .delete-block-btn *')) {
             deleteBlock(blockId);
         }
-        // HTTP Request: Add Header
+        else if (e.target.matches('.configure-btn, .configure-btn *')) {
+            openBlockConfiguration(blockId);
+        }
+        // Logik untuk HTTP Request Block
         else if (e.target.matches('.http-add-header-btn, .http-add-header-btn *')) {
             const list = block.querySelector('.http-headers-list');
             const template = document.getElementById('http-header-row-template');
             list.appendChild(template.content.cloneNode(true));
         }
-        // HTTP Request: Delete Header
         else if (e.target.matches('.http-delete-header-btn, .http-delete-header-btn *')) {
             e.target.closest('.http-header-row').remove();
-            saveState(); // Perlu panggil saveState secara manual di sini
+            saveState();
         }
-// ▼▼▼ DI DALAM state.canvas.addEventListener('click', ...), TAMBAH LOGIK INI ▼▼▼
-
-        // Logik untuk Blok Switch
+        // Logik untuk Switch Block
         else if (e.target.matches('.add-case-btn, .add-case-btn *')) {
-            const blockId = block.dataset.blockId;
-            if (!state.blocks[blockId].cases) {
-                state.blocks[blockId].cases = [];
-            }
-            state.blocks[blockId].cases.push({ value: `Case ${state.blocks[blockId].cases.length + 1}` });
+            if (!blockState.cases) blockState.cases = [];
+            blockState.cases.push({ value: `Case ${blockState.cases.length + 1}` });
             rebuildBlock(blockId);
             saveState();
         }
         else if (e.target.matches('.delete-case-btn, .delete-case-btn *')) {
             const caseIndex = parseInt(e.target.closest('.switch-case').dataset.caseIndex, 10);
-            const blockId = block.dataset.blockId;
-            if (state.blocks[blockId]?.cases) {
-                state.blocks[blockId].cases.splice(caseIndex, 1);
+            if (blockState?.cases) {
+                blockState.cases.splice(caseIndex, 1);
                 rebuildBlock(blockId);
                 saveState();
             }
+        }
+        // Logik untuk DB Action Blocks
+        else if (e.target.matches('.add-field-btn, .add-field-btn *')) {
+            if (!blockState.details) blockState.details = { values: [], set: [] };
+            const listType = blockState.type === 'insert_record' ? 'values' : 'set';
+            if (!blockState.details[listType]) blockState.details[listType] = [];
+            blockState.details[listType].push({ field: '', value: '' });
+            rebuildBlock(blockId);
+            saveState();
+        }
+        else if (e.target.matches('.delete-pair-btn, .delete-pair-btn *')) {
+            const listType = blockState.type === 'insert_record' ? 'values' : 'set';
+            const index = e.target.closest('.field-value-pair').dataset.index;
+            blockState.details[listType].splice(index, 1);
+            rebuildBlock(blockId);
+            saveState();
+        }
+        else if (e.target.matches('.add-where-rule-btn, .add-where-rule-btn *')) {
+            if (!blockState.details) blockState.details = {};
+            if (!blockState.details.where) blockState.details.where = { logic: 'AND', rules: [] };
+            blockState.details.where.rules.push({ field: '', operator: '=', value: '' });
+            rebuildBlock(blockId);
+            saveState();
+        }
+        else if (e.target.matches('.delete-where-rule-btn, .delete-where-rule-btn *')) {
+            const index = e.target.closest('.cqb-rule').dataset.index;
+            blockState.details.where.rules.splice(index, 1);
+            rebuildBlock(blockId);
+            saveState();
         }
     });
 
@@ -938,6 +1042,15 @@ function generateCommentHTML(configData) {
             saveState();
         }
     });
+
+    const insertVariable = (input, value) => {
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        input.value = input.value.substring(0, start) + value + input.value.substring(end);
+        input.focus();
+        input.dispatchEvent(new Event('input', { bubbles: true })); // Maklumkan perubahan
+        document.getElementById('variable-helper-menu').style.display = 'none';
+    };
     
     document.addEventListener('keydown', (e) => {
         const isTabActive = container.closest('.tab-pane')?.classList.contains('active');
