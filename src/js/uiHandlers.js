@@ -1269,19 +1269,22 @@ case 'custom_query': {
                 itemContainer.appendChild(itemLabel);
                 break;
             }
-            case 'string':
-                const stringInput = document.createElement('input');
-                stringInput.type = 'text';
-                stringInput.placeholder = 'Enter value...';
-                stringInput.addEventListener('input', updateModalCanvasState);
-                itemContainer.appendChild(stringInput);
-                break;
-            case 'number':
-                const numberInput = document.createElement('input');
-                numberInput.type = 'number';
-                numberInput.placeholder = '0';
-                numberInput.addEventListener('input', updateModalCanvasState);
-                break;
+        case 'string':
+            const stringInput = document.createElement('input');
+            stringInput.type = 'text';
+            stringInput.placeholder = 'Enter value...';
+            stringInput.addEventListener('input', updateModalCanvasState);
+            itemContainer.appendChild(stringInput);
+            break;
+        // ▼▼▼ TAMBAH/GANTIKAN KOD UNTUK 'case number' ▼▼▼
+        case 'number':
+            const numberInput = document.createElement('input');
+            numberInput.type = 'number';
+            numberInput.step = 'any'; // Membenarkan nombor perpuluhan (float)
+            numberInput.placeholder = '0';
+            numberInput.addEventListener('input', updateModalCanvasState);
+            itemContainer.appendChild(numberInput);
+            break;
             // ▼▼▼ MERGED CASES FOR DATABASE ACTIONS ▼▼▼
             case 'insert_record': {
                 const template = document.getElementById('db-action-insert-template');
