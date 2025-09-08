@@ -789,8 +789,7 @@ html, body {
 
 /* Pastikan modal amaran/pengesahan sentiasa di lapisan paling atas */
 #custom-alert-modal {
-    /* Nilai ini lebih tinggi daripada #loading-overlay (9999) untuk memastikan ia sentiasa kelihatan */
-    z-index: 10000; 
+    z-index: 11000; /* Lapisan Amaran Sistem (Paling Atas) */
 }
 
 .modal-overlay.hidden {
@@ -2322,7 +2321,7 @@ fieldset.fieldset-disabled {
 }
 
 #algorithm-builder-modal {
-    z-index: 1010; /* Higher z-index to appear on top */
+    z-index: 10100; /* Modal Peringkat 1 */
 }
 
 /* ADD THIS CSS RULE IN: styles.css */
@@ -3313,4 +3312,24 @@ fieldset.fieldset-disabled {
 .workflow-container:fullscreen {
     padding: 2rem;
     background-color: var(--background-color);
+}
+
+/* ================================================================== */
+/* == STYLES FOR SPECIFIC DB ACTION BLOCKS                         == */
+/* ================================================================== */
+
+/* --- Palette Icons --- */
+.workflow-block-palette-item[data-block-type="insert_record"] i { color: #22C55E; } /* Green */
+.workflow-block-palette-item[data-block-type="update_record"] i { color: #F59E0B; } /* Amber */
+.workflow-block-palette-item[data-block-type="delete_record"] i { color: #EF4444; } /* Red */
+
+/* --- Block Titles on Canvas --- */
+.workflow-block[data-block-type="insert_record"] .workflow-block-title { background-color: #22C55E; color: white; }
+.workflow-block[data-block-type="update_record"] .workflow-block-title { background-color: #F59E0B; color: white; }
+.workflow-block[data-block-type="delete_record"] .workflow-block-title { background-color: #EF4444; color: white; }
+
+/* Pastikan modal peringkat ke-2 sentiasa di atas Algorithm Builder */
+#query-helper-modal,
+#lookup-condition-modal {
+    z-index: 10200; /* Modal Peringkat 2 */
 }

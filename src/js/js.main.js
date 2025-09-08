@@ -325,23 +325,19 @@ async function handleSqlImport(importFunction) {
     }
 }
 
-// ▼▼▼ GANTIKAN KESELURUHAN FUNGSI DENGAN VERSI DEBUG INI ▼▼▼
-
 function initializeFullscreenHandlers() {
-
+    // Fungsi bantuan untuk mengendalikan klik butang, ia kekal sama.
     const setupClickListener = (buttonId, containerId) => {
         const button = document.getElementById(buttonId);
         const container = document.getElementById(containerId);
-
         if (!button || !container) return;
         
         button.addEventListener('click', () => {
-
             if (!document.fullscreenElement) {
-
-                container.requestFullscreen();
+                container.requestFullscreen().catch(err => {
+                    alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                });
             } else {
-
                 document.exitFullscreen();
             }
         });
@@ -350,32 +346,59 @@ function initializeFullscreenHandlers() {
     setupClickListener('project-fullscreen-btn', 'project-workflow-container');
     setupClickListener('table-fullscreen-btn', 'table-workflow-container');
 
+    // SATU listener tunggal yang menguruskan SEMUA logik fullscreen.
     document.addEventListener('fullscreenchange', () => {
-
-
-        const projectIcon = document.querySelector('#project-fullscreen-btn i');
-        const tableIcon = document.querySelector('#table-fullscreen-btn i');
         const fullscreenEl = document.fullscreenElement;
+        
+        // ▼▼▼ MULA LOGIK PEMINDAHAN MODAL (PEMBAIKAN UTAMA) ▼▼▼
+        // Dapatkan rujukan kepada SEMUA modal yang mungkin perlu dipaparkan.
+        const modalsToManage = [
+            document.getElementById('algorithm-builder-modal'),
+            document.getElementById('custom-alert-modal'),
+            document.getElementById('query-helper-modal')
+            // Tambah ID modal lain di sini jika perlu pada masa hadapan
+        ];
 
-        const setIconState = (iconEl, isFullscreen, name) => {
-            if (!iconEl) {
+        if (fullscreenEl) {
+            // Apabila masuk fullscreen, pindahkan semua modal ke dalam elemen fullscreen.
+            modalsToManage.forEach(modal => {
+                if (modal) {
+                    fullscreenEl.appendChild(modal);
+                }
+            });
+        } else {
+            // Apabila keluar fullscreen, kembalikan semua modal ke body.
+            modalsToManage.forEach(modal => {
+                if (modal) {
+                    document.body.appendChild(modal);
+                }
+            });
+        }
+        // ▲▲▲ TAMAT LOGIK PEMINDAHAN MODAL ▲▲▲
 
-                return;
-            }
-            
+        // --- Logik sedia ada untuk menukar ikon (kini akan berfungsi dengan betul) ---
+        const project = {
+            container: document.getElementById('project-workflow-container'),
+            icon: document.querySelector('#project-fullscreen-btn i')
+        };
+        const table = {
+            container: document.getElementById('table-workflow-container'),
+            icon: document.querySelector('#table-fullscreen-btn i')
+        };
+        
+        const setIconState = (iconEl, isFullscreen) => {
+            if (!iconEl) return;
             if (isFullscreen) {
                 iconEl.classList.remove('fa-expand-arrows-alt');
                 iconEl.classList.add('fa-compress-arrows-alt');
             } else {
-                iconEl.classList.remove('fa-compress-arrows-alt');
-                iconEl.classList.add('fa-expand-arrows-alt');
+                iconEl.classList.remove('fa-expand-arrows-alt');
+                iconEl.classList.add('fa-compress-arrows-alt');
             }
-
         };
 
-        setIconState(projectIcon, fullscreenEl?.id === 'project-workflow-container', 'Projek');
-        setIconState(tableIcon, fullscreenEl?.id === 'table-workflow-container', 'Jadual');
-
+        setIconState(project.icon, fullscreenEl === project.container);
+        setIconState(table.icon, fullscreenEl === table.container);
     });
 }
 

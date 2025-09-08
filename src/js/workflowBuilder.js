@@ -185,6 +185,24 @@ const createConnectorPath = (startPos, endPos, connection) => {
                 connectionPoints += '<div class="connection-point input" data-point-id="in"></div>';
                 connectionPoints += '<div class="connection-point output" data-point-id="out"></div>';
                 break;
+            case 'insert_record':
+                title = '<i class="fas fa-plus-circle"></i> Insert Record';
+                content = '<button class="btn btn-secondary btn-sm configure-btn">Configure</button>';
+                connectionPoints += '<div class="connection-point input" data-point-id="in"></div>';
+                connectionPoints += '<div class="connection-point output" data-point-id="out"></div>';
+                break;
+            case 'update_record':
+                title = '<i class="fas fa-edit"></i> Update Record(s)';
+                content = '<button class="btn btn-secondary btn-sm configure-btn">Configure</button>';
+                connectionPoints += '<div class="connection-point input" data-point-id="in"></div>';
+                connectionPoints += '<div class="connection-point output" data-point-id="out"></div>';
+                break;
+            case 'delete_record':
+                title = '<i class="fas fa-trash-alt"></i> Delete Record(s)';
+                content = '<button class="btn btn-secondary btn-sm configure-btn">Configure</button>';
+                connectionPoints += '<div class="connection-point input" data-point-id="in"></div>';
+                connectionPoints += '<div class="connection-point output" data-point-id="out"></div>';
+                break;
             case 'condition':
                 title = '<i class="fas fa-code-branch"></i> Condition';
                 content = '<button class="btn btn-secondary btn-sm configure-btn">Configure</button>';
@@ -584,7 +602,7 @@ function openBlockConfiguration(blockId) {
             'close_paren':         ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then', 'else', 'else_if', 'close_paren'],
         };
 
-        if (blockType === 'action') {
+        if (blockType === 'action' || blockType === 'insert_record' || blockType === 'update_record' || blockType === 'delete_record') {
             builderType = 'actionBuilder';
             validationRules = ACTION_GRAMMAR;
         } else if (blockType === 'condition') {
