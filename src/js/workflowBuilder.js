@@ -583,7 +583,9 @@ function generateCommentHTML(configData) {
         modal.classList.remove('hidden');
     }
     
-function openBlockConfiguration(blockId) {
+// ▼▼▼ GANTIKAN KESELURUHAN FUNGSI DENGAN VERSI BAHARU INI ▼▼▼
+
+    function openBlockConfiguration(blockId) {
         const blockType = state.blocks[blockId]?.type;
         if (blockType === 'hook_trigger') {
             openHookTypeModal(blockId);
@@ -601,84 +603,89 @@ function openBlockConfiguration(blockId) {
         }
         tempInput.value = blockData.configData || '[]';
 
-        // Tentukan jenis builder berdasarkan jenis blok workflow
-        let builderType;
-        let validationRules;
+        // ▼▼▼ MULA PENAMBAHAN PERATURAN VALIDASI ▼▼▼
 
-        const CONDITION_GRAMMAR = {
-            'start': ['value', 'open_paren'],
-            'value': ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'close_paren'],
-            'comparison_operator': ['value', 'open_paren'],
-            'arithmetic_operator': ['value', 'open_paren'],
-            'logical_operator': ['value', 'open_paren'],
-            'open_paren': ['value', 'open_paren'],
-            'close_paren': ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'close_paren'],
-        };
-
-        const ACTION_GRAMMAR = {
-            'start': ['insert_record', 'update_record', 'delete_record', 'comment', 'custom_query'],
-            'insert_record': ['insert_record', 'update_record', 'delete_record', 'comment', 'custom_query'],
-            'update_record': ['insert_record', 'update_record', 'delete_record', 'comment', 'custom_query'],
-            'delete_record': ['insert_record', 'update_record', 'delete_record', 'comment', 'custom_query'],
-            'comment': ['insert_record', 'update_record', 'delete_record', 'comment', 'custom_query'],
-        };
-
+        // Peraturan untuk blok yang membina satu ekspresi (menghasilkan nilai atau boolean)
         const VALUE_CALCULATOR_GRAMMAR = {
-            'start':               ['if', 'open_paren', 'value'],
-            'if':                  ['value', 'open_paren'],
-            'else_if':             ['value', 'open_paren'],
-            'then':                ['value', 'open_paren'],
-            'else':                ['value', 'open_paren'],
-            'value':               ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then', 'else', 'else_if', 'close_paren'],
-            'comparison_operator': ['value', 'open_paren'],
-            'arithmetic_operator': ['value', 'open_paren'],
-            'logical_operator':    ['value', 'open_paren', 'if'],
-            'open_paren':          ['value', 'if', 'open_paren'],
-            'close_paren':         ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then', 'else', 'else_if', 'close_paren'],
+            'start':               ['value', 'open_paren', 'if', 'comment'], // Permulaan boleh jadi nilai, kurungan, atau IF
+            'value':               ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then', 'else', 'else_if', 'close_paren', 'comment'], // Selepas nilai, mesti operator atau penutup
+            'comparison_operator': ['value', 'open_paren', 'comment'],
+            'arithmetic_operator': ['value', 'open_paren', 'comment'],
+            'logical_operator':    ['value', 'open_paren', 'if', 'comment'],
+            'if':                  ['value', 'open_paren', 'comment'],
+            'else_if':             ['value', 'open_paren', 'comment'],
+            'then':                ['value', 'open_paren', 'comment'],
+            'else':                ['value', 'open_paren', 'comment'],
+            'open_paren':          ['value', 'open_paren', 'if', 'comment'],
+            'close_paren':         ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then', 'else', 'else_if', 'close_paren', 'comment'],
         };
 
-        if (blockType === 'action' || blockType === 'insert_record' || blockType === 'update_record' || blockType === 'delete_record') {
-            builderType = 'actionBuilder';
-            validationRules = ACTION_GRAMMAR;
-        } else if (blockType === 'condition') {
-            builderType = 'conditionBuilder';
-            validationRules = CONDITION_GRAMMAR;
-        // ▼▼▼ PENAMBAHAN BAHARU UNTUK BLOK 'VARIABLE' ▼▼▼
-        } else if (blockType === 'variable') {
-            builderType = 'valueCalculator';
-            validationRules = VALUE_CALCULATOR_GRAMMAR;
-        // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
+        // Peraturan untuk blok yang melaksanakan satu siri tindakan
+        const ACTION_SCRIPT_GRAMMAR = {
+            'start':               ['insert_record', 'update_record', 'delete_record', 'custom_query', 'comment'], // Boleh mula dengan mana-mana tindakan
+            // Selepas mana-mana tindakan, boleh diikuti oleh tindakan lain. Ini membenarkan jujukan.
+            'insert_record':       ['insert_record', 'update_record', 'delete_record', 'custom_query', 'comment'],
+            'update_record':       ['insert_record', 'update_record', 'delete_record', 'custom_query', 'comment'],
+            'delete_record':       ['insert_record', 'update_record', 'delete_record', 'custom_query', 'comment'],
+            'custom_query':        ['insert_record', 'update_record', 'delete_record', 'custom_query', 'comment'],
+        };
+        
+        let validationRules = {};
+        let allowedComponents = [];
+        const hookType = config.hookType;
+
+        // Senarai komponen penuh sebagai asas
+        const allValueComponents = ['if', 'else_if', 'then', 'else', 'comparison_operator', 'logical_operator', 'arithmetic_operator', 'this_record_data', 'calculate_related_record', 'related_record_data', 'lookup_value', 'custom_query', 'api_endpoint', 'current_user', 'current_datetime', 'string', 'number', 'boolean', 'null', 'open_paren', 'close_paren', 'comment'];
+        const allActionComponents = ['custom_query', 'insert_record', 'update_record', 'delete_record', 'comment'];
+
+        switch (blockType) {
+            case 'action':
+                allowedComponents = allActionComponents;
+                validationRules = ACTION_SCRIPT_GRAMMAR; // Guna tatabahasa tindakan
+                break;
+            case 'insert_record':
+                allowedComponents = ['insert_record', 'comment'];
+                validationRules = ACTION_SCRIPT_GRAMMAR; // Guna tatabahasa tindakan
+                break;
+            case 'update_record':
+                allowedComponents = ['update_record', 'comment'];
+                validationRules = ACTION_SCRIPT_GRAMMAR; // Guna tatabahasa tindakan
+                break;
+            case 'delete_record':
+                allowedComponents = ['delete_record', 'comment'];
+                validationRules = ACTION_SCRIPT_GRAMMAR; // Guna tatabahasa tindakan
+                break;
+            case 'condition':
+            case 'variable':
+                allowedComponents = allValueComponents;
+                validationRules = VALUE_CALCULATOR_GRAMMAR; // Guna tatabahasa nilai
+                break;
+        }
+
+        if (hookType === 'project' && (blockType === 'condition' || blockType === 'variable')) {
+            const recordSpecificComponents = ['this_record_data', 'calculate_related_record', 'related_record_data'];
+            allowedComponents = allowedComponents.filter(comp => !recordSpecificComponents.includes(comp));
         }
         
+        // ▲▲▲ TAMAT PENAMBAHAN PERATURAN VALIDASI ▲▲▲
+
         openModalLogicBuilder({
-            builderType: builderType,
+            allowedComponents: allowedComponents,
             modalId: 'algorithm-builder-modal',
             getContext: () => ({ tableName: config.hookType === 'table' ? document.querySelector('#table-settings-page .table-name')?.textContent : null }),
             closeButtonId: 'algorithm-builder-close',
             cancelButtonId: 'algorithm-builder-cancel-btn',
             doneButtonId: 'algorithm-builder-done-btn',
             targetInputId: 'workflow-temp-input',
-            validationRules: validationRules,
-            hiddenComponents: (builderType === 'actionBuilder') ? ['if', 'else_if', 'then', 'else'] : (builderType === 'conditionBuilder' ? ['if', 'else_if', 'then', 'else', 'insert_record', 'update_record', 'delete_record'] : ['insert_record', 'update_record', 'delete_record']),
+            validationRules: validationRules, // Hantar peraturan yang betul ke modal
             onComplete: (logicJson) => {
                 state.blocks[blockId].configData = logicJson;
-                const blockEl = container.querySelector(`[data-block-id='${blockId}']`);
-                if (blockEl) {
-                    const btn = blockEl.querySelector('.configure-btn');
-                    if (logicJson && logicJson !== '[]') {
-                        btn.textContent = 'Re-configure';
-                        btn.classList.replace('btn-secondary', 'btn-success');
-                    } else {
-                        btn.textContent = 'Configure';
-                        btn.classList.replace('btn-success', 'btn-secondary');
-                    }
-                }
                 saveState();
-				rebuildBlock(blockId);
+                rebuildBlock(blockId);
             }
         });
     }
-
+	
     function startDragBlock(e) {
         if (e.target.classList.contains('connection-point') || e.target.classList.contains('delete-block-btn')) return;
         e.preventDefault();

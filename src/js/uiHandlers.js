@@ -1720,32 +1720,44 @@ export function openModalLogicBuilder(config) {
         return;
     }
 
-    // ▼▼▼ NEW LOGIC: Show/hide palette based on builder type ▼▼▼
-    const actionPalette = ui.palette.querySelector('.action-block-only');
-    if (actionPalette) {
-        actionPalette.style.display = config.builderType === 'actionBuilder' ? 'block' : 'none';
-    }
-    // ▲▲▲ END OF NEW LOGIC ▲▲▲
+    // ▼▼▼ MULA LOGIK BAHARU UNTUK PALET KONTEKSTUAL ▼▼▼
+    // Sembunyikan semua komponen dan kumpulan secara lalai dahulu.
+    const allComponents = ui.palette.querySelectorAll('.algo-component');
+    const allGroups = ui.palette.querySelectorAll('.palette-group');
+    allComponents.forEach(comp => comp.style.display = 'none');
+    allGroups.forEach(group => group.style.display = 'none');
 
-    // Logik untuk menyembunyikan komponen palet yang tidak diperlukan
-    if (config.hiddenComponents && Array.isArray(config.hiddenComponents)) {
-        const controlFlowComponents = ['if', 'else_if', 'then', 'else'];
-        const allControlFlowHidden = controlFlowComponents.every(c => config.hiddenComponents.includes(c));
-
-        config.hiddenComponents.forEach(type => {
-            const componentEl = ui.palette.querySelector(`.algo-component[data-type="${type}"]`);
-            if (componentEl) {
-                componentEl.style.display = 'none';
+    // Tentukan komponen mana yang perlu dipaparkan
+    let componentsToShow = [];
+    if (config.allowedComponents && Array.isArray(config.allowedComponents)) {
+        componentsToShow = config.allowedComponents;
+    } else {
+        // Fallback kepada logik lama jika allowedComponents tidak disediakan
+        const hiddenComponents = config.hiddenComponents || [];
+        allComponents.forEach(comp => {
+            if (!hiddenComponents.includes(comp.dataset.type)) {
+                componentsToShow.push(comp.dataset.type);
             }
         });
-
-        if (allControlFlowHidden) {
-            const controlFlowGroup = ui.palette.querySelector('.algo-component[data-type="if"]')?.parentElement;
-            if (controlFlowGroup) {
-                controlFlowGroup.style.display = 'none';
-            }
-        }
     }
+
+    // Paparkan hanya komponen yang dibenarkan
+    componentsToShow.forEach(type => {
+        const componentEl = ui.palette.querySelector(`.algo-component[data-type="${type}"]`);
+        if (componentEl) {
+            componentEl.style.display = 'flex';
+        }
+    });
+
+    // Paparkan semula kumpulan jika ia mempunyai sekurang-kurangnya satu komponen yang kelihatan
+    allGroups.forEach(group => {
+        const visibleChild = group.querySelector('.algo-component[style*="display: flex"]');
+        if (visibleChild) {
+            group.style.display = 'block';
+        }
+    });
+    // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
+
 
     const builderInstance = setupLogicBuilderCore({
         ...ui,
@@ -1783,7 +1795,6 @@ export function openModalLogicBuilder(config) {
 
     modal.classList.remove('hidden');
 }
-
 
 export function showNewProjectModal() {
     configureNewProjectModal('user-initiated'); // <-- TAMBAH BARIS INI
