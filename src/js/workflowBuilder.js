@@ -613,6 +613,10 @@ function generateCommentHTML(configData) {
     
 // ▼▼▼ GANTIKAN KESELURUHAN FUNGSI DENGAN VERSI BAHARU INI ▼▼▼
 
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: workflowBuilder.js
+
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: workflowBuilder.js
+
     function openBlockConfiguration(blockId) {
         const blockType = state.blocks[blockId]?.type;
         if (blockType === 'hook_trigger') {
@@ -631,12 +635,9 @@ function generateCommentHTML(configData) {
         }
         tempInput.value = blockData.configData || '[]';
 
-        // ▼▼▼ MULA PENAMBAHAN PERATURAN VALIDASI ▼▼▼
-
-        // Peraturan untuk blok yang membina satu ekspresi (menghasilkan nilai atau boolean)
         const VALUE_CALCULATOR_GRAMMAR = {
-            'start':               ['value', 'open_paren', 'if', 'comment'], // Permulaan boleh jadi nilai, kurungan, atau IF
-            'value':               ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then', 'else', 'else_if', 'close_paren', 'comment'], // Selepas nilai, mesti operator atau penutup
+            'start':               ['value', 'open_paren', 'if', 'comment'],
+            'value':               ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then', 'else', 'else_if', 'close_paren', 'comment'],
             'comparison_operator': ['value', 'open_paren', 'comment'],
             'arithmetic_operator': ['value', 'open_paren', 'comment'],
             'logical_operator':    ['value', 'open_paren', 'if', 'comment'],
@@ -648,10 +649,8 @@ function generateCommentHTML(configData) {
             'close_paren':         ['comparison_operator', 'arithmetic_operator', 'logical_operator', 'then', 'else', 'else_if', 'close_paren', 'comment'],
         };
 
-        // Peraturan untuk blok yang melaksanakan satu siri tindakan
         const ACTION_SCRIPT_GRAMMAR = {
-            'start':               ['insert_record', 'update_record', 'delete_record', 'custom_query', 'comment'], // Boleh mula dengan mana-mana tindakan
-            // Selepas mana-mana tindakan, boleh diikuti oleh tindakan lain. Ini membenarkan jujukan.
+            'start':               ['insert_record', 'update_record', 'delete_record', 'custom_query', 'comment'],
             'insert_record':       ['insert_record', 'update_record', 'delete_record', 'custom_query', 'comment'],
             'update_record':       ['insert_record', 'update_record', 'delete_record', 'custom_query', 'comment'],
             'delete_record':       ['insert_record', 'update_record', 'delete_record', 'custom_query', 'comment'],
@@ -662,31 +661,30 @@ function generateCommentHTML(configData) {
         let allowedComponents = [];
         const hookType = config.hookType;
 
-        // Senarai komponen penuh sebagai asas
         const allValueComponents = ['if', 'else_if', 'then', 'else', 'comparison_operator', 'logical_operator', 'arithmetic_operator', 'this_record_data', 'calculate_related_record', 'related_record_data', 'lookup_value', 'custom_query', 'api_endpoint', 'current_user', 'current_datetime', 'string', 'number', 'boolean', 'null', 'open_paren', 'close_paren', 'comment'];
         const allActionComponents = ['custom_query', 'insert_record', 'update_record', 'delete_record', 'comment'];
 
         switch (blockType) {
             case 'action':
                 allowedComponents = allActionComponents;
-                validationRules = ACTION_SCRIPT_GRAMMAR; // Guna tatabahasa tindakan
+                validationRules = ACTION_SCRIPT_GRAMMAR;
                 break;
             case 'insert_record':
                 allowedComponents = ['insert_record', 'comment'];
-                validationRules = ACTION_SCRIPT_GRAMMAR; // Guna tatabahasa tindakan
+                validationRules = ACTION_SCRIPT_GRAMMAR;
                 break;
             case 'update_record':
                 allowedComponents = ['update_record', 'comment'];
-                validationRules = ACTION_SCRIPT_GRAMMAR; // Guna tatabahasa tindakan
+                validationRules = ACTION_SCRIPT_GRAMMAR;
                 break;
             case 'delete_record':
                 allowedComponents = ['delete_record', 'comment'];
-                validationRules = ACTION_SCRIPT_GRAMMAR; // Guna tatabahasa tindakan
+                validationRules = ACTION_SCRIPT_GRAMMAR;
                 break;
             case 'condition':
             case 'variable':
                 allowedComponents = allValueComponents;
-                validationRules = VALUE_CALCULATOR_GRAMMAR; // Guna tatabahasa nilai
+                validationRules = VALUE_CALCULATOR_GRAMMAR;
                 break;
         }
 
@@ -694,8 +692,16 @@ function generateCommentHTML(configData) {
             const recordSpecificComponents = ['this_record_data', 'calculate_related_record', 'related_record_data'];
             allowedComponents = allowedComponents.filter(comp => !recordSpecificComponents.includes(comp));
         }
-        
-        // ▲▲▲ TAMAT PENAMBAHAN PERATURAN VALIDASI ▲▲▲
+
+        const userDefinedVars = Object.values(state.blocks)
+            .filter(b => b.type === 'variable' && b.variableName)
+            .map(b => b.variableName);
+            
+        // ▼▼▼ MULA PERUBAHAN ▼▼▼
+        // Tentukan sama ada legend patut dipaparkan berdasarkan jenis blok
+        const blocksWithLegend = ['action', 'insert_record', 'update_record', 'delete_record', 'condition', 'variable'];
+        const shouldShowLegend = blocksWithLegend.includes(blockType);
+        // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
 
         openModalLogicBuilder({
             allowedComponents: allowedComponents,
@@ -705,7 +711,9 @@ function generateCommentHTML(configData) {
             cancelButtonId: 'algorithm-builder-cancel-btn',
             doneButtonId: 'algorithm-builder-done-btn',
             targetInputId: 'workflow-temp-input',
-            validationRules: validationRules, // Hantar peraturan yang betul ke modal
+            validationRules: validationRules,
+            availableVariables: userDefinedVars,
+            showVariableLegend: shouldShowLegend, // <-- Hantar bendera (flag) ke modal
             onComplete: (logicJson) => {
                 state.blocks[blockId].configData = logicJson;
                 saveState();

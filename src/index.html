@@ -1990,7 +1990,6 @@
                 <div class="algo-component" draggable="true" data-type="open_paren">(</div>
                 <div class="algo-component" draggable="true" data-type="close_paren">)</div>
             </div>
-<div class="algorithm-palette">
     <div class="palette-group action-block-only" style="display: none;">
         <h5 class="palette-group-title">Database Actions</h5>
         <div class="algo-component" draggable="true" data-type="insert_record">
@@ -2003,7 +2002,19 @@
             <i class="fas fa-trash-alt"></i> Delete Record(s)
         </div>
     </div>
-    </div>
+            <div id="variable-legend-container" class="palette-group">
+                <h5 class="palette-group-title">Available Variables</h5>
+                <div class="variable-legend-section">
+                    <div class="legend-subtitle">System</div>
+                    <ul id="legend-default-vars" class="variable-legend-list">
+                        </ul>
+                </div>
+                <div id="legend-user-vars-section" class="variable-legend-section" style="display: none;margin-bottom: 2rem;">
+                    <div class="legend-subtitle">User-Defined</div>
+                    <ul id="legend-user-vars" class="variable-legend-list">
+                        </ul>
+                </div>
+            </div>
         </div>
         <div class="algorithm-canvas">
             <span class="canvas-placeholder">Drop components here</span>

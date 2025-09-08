@@ -54,6 +54,8 @@ export function openGeneralQueryBuilder(targetTextarea) {
  * @param {string} [config.updateMode='live'] - Mod kemas kini ('live' atau 'manual').
  * @returns {object} Objek dengan kaedah untuk berinteraksi dengan builder.
  */
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
+
 function setupLogicBuilderCore(config) {
     const { palette, canvas, hiddenInput, validationRules, context, updateMode = 'live' } = config;
     const placeholder = canvas ? canvas.querySelector('.canvas-placeholder') : null;
@@ -66,7 +68,19 @@ function setupLogicBuilderCore(config) {
     let isRebuildingUI = false;
     let modalCanvasState = '[]';
 	
-// ▼▼▼ TAMBAH KESELURUHAN BLOK KOD INI ▼▼▼
+    // ▼▼▼ FUNGSI BANTUAN DIPINDAHKAN KE SINI UNTUK SKOP YANG BETUL ▼▼▼
+    const updateChildMathUI = (componentEl) => {
+        if (!componentEl) return;
+        const aggregateSelect = componentEl.querySelector('.aggregate-select');
+        const fieldSelect = componentEl.querySelector('.field-select');
+        const countStar = componentEl.querySelector('.count-star');
+        if (!aggregateSelect || !fieldSelect || !countStar) return;
+
+        const isCount = aggregateSelect.value === 'COUNT';
+        fieldSelect.classList.toggle('hidden', isCount);
+        countStar.classList.toggle('hidden', !isCount);
+    };
+    // ▲▲▲ TAMAT PEMINDAHAN FUNGSI BANTUAN ▲▲▲
 
     // ▼▼▼ MULA FUNGSI BANTUAN UNTUK JANA QUERY ▼▼▼
     const buildWhereClauseForQuery = (whereData, tableName) => {
@@ -969,12 +983,6 @@ case 'custom_query': {
                 const countStar = itemContainer.querySelector('.count-star');
                 const whereClause = itemContainer.querySelector('.where-clause');
 
-                const updateChildMathUI = () => {
-                    const isCount = aggregateSelect.value === 'COUNT';
-                    fieldSelect.classList.toggle('hidden', isCount);
-                    countStar.classList.toggle('hidden', !isCount);
-                };
-
                 if (childRelationships.length > 0) {
                     childRelationships.forEach(rel => {
                         tableSelect.innerHTML += `<option value="${rel.child_table_name}">${rel.child_table_name}</option>`;
@@ -1000,7 +1008,7 @@ case 'custom_query': {
                 });
 
                 aggregateSelect.addEventListener('change', () => {
-                    updateChildMathUI();
+                    updateChildMathUI(itemContainer);
                     updateModalCanvasState();
                 });
                 
@@ -1683,6 +1691,10 @@ case 'custom_query': {
  * @param {string} config.doneButtonId - ID of the done button.
  * @param {function} [config.onComplete] - Optional callback when 'Done' is clicked, receives the logic JSON.
  */
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
+
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
+
 export function openModalLogicBuilder(config) {
     const modal = document.getElementById(config.modalId);
     const modalBody = modal.querySelector('.modal-body');
@@ -1720,8 +1732,7 @@ export function openModalLogicBuilder(config) {
         return;
     }
 
-    // ▼▼▼ MULA LOGIK BAHARU UNTUK PALET KONTEKSTUAL ▼▼▼
-    // Sembunyikan semua komponen dan kumpulan secara lalai dahulu.
+    // Sembunyikan semua komponen dan kumpulan secara lalai dahulu
     const allComponents = ui.palette.querySelectorAll('.algo-component');
     const allGroups = ui.palette.querySelectorAll('.palette-group');
     allComponents.forEach(comp => comp.style.display = 'none');
@@ -1732,7 +1743,6 @@ export function openModalLogicBuilder(config) {
     if (config.allowedComponents && Array.isArray(config.allowedComponents)) {
         componentsToShow = config.allowedComponents;
     } else {
-        // Fallback kepada logik lama jika allowedComponents tidak disediakan
         const hiddenComponents = config.hiddenComponents || [];
         allComponents.forEach(comp => {
             if (!hiddenComponents.includes(comp.dataset.type)) {
@@ -1749,15 +1759,49 @@ export function openModalLogicBuilder(config) {
         }
     });
 
-    // Paparkan semula kumpulan jika ia mempunyai sekurang-kurangnya satu komponen yang kelihatan
+    // ▼▼▼ MULA BLOK LOGIK YANG TELAH DIPERBAIKI ▼▼▼
+    // Paparkan semula kumpulan JIKA ia mempunyai komponen yang kelihatan ATAU jika ia adalah 'legend' yang perlu dipaparkan
     allGroups.forEach(group => {
-        const visibleChild = group.querySelector('.algo-component[style*="display: flex"]');
-        if (visibleChild) {
-            group.style.display = 'block';
+        // KES KHAS: Uruskan paparan dan pengisian 'legend' pembolehubah
+        if (group.id === 'variable-legend-container') {
+            if (config.showVariableLegend) {
+                group.style.display = 'block'; // Tunjukkan bekas utama
+
+                const defaultVarsContainer = ui.palette.querySelector('#legend-default-vars');
+                const userVarsContainer = ui.palette.querySelector('#legend-user-vars');
+                const userVarsSection = ui.palette.querySelector('#legend-user-vars-section');
+
+                if (defaultVarsContainer) defaultVarsContainer.innerHTML = '';
+                if (userVarsContainer) userVarsContainer.innerHTML = '';
+                
+                const defaultVars = ['##ID##', '##USERNAME##', '##GROUPID##', '##GROUP##', '##NOW##'];
+                defaultVars.forEach(v => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<code>${v}</code>`;
+                    defaultVarsContainer.appendChild(li);
+                });
+
+                if (config.availableVariables && config.availableVariables.length > 0) {
+                    userVarsSection.style.display = 'block';
+                    config.availableVariables.forEach(v => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<code>##variable.${v}##</code>`;
+                        userVarsContainer.appendChild(li);
+                    });
+                } else {
+                    userVarsSection.style.display = 'none';
+                }
+            }
+        } 
+        // Logik asal untuk semua kumpulan komponen yang lain
+        else {
+            const visibleChild = group.querySelector('.algo-component[style*="display: flex"]');
+            if (visibleChild) {
+                group.style.display = 'block';
+            }
         }
     });
-    // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
-
+    // ▲▲▲ TAMAT BLOK LOGIK YANG TELAH DIPERBAIKI ▲▲▲
 
     const builderInstance = setupLogicBuilderCore({
         ...ui,
