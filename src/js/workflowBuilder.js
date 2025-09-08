@@ -153,6 +153,25 @@ const createConnectorPath = (startPos, endPos, connection) => {
         // Lukis semula semua sambungan
         redrawConnections();
     }
+	
+function generateCommentHTML(configData) {
+        let comments = [];
+        try {
+            if (configData && configData.length > 2) { // Elak parse string kosong "[]"
+                const config = JSON.parse(configData);
+                comments = config
+                    .filter(item => item.type === 'comment')
+                    .map(item => item.value);
+            }
+        } catch (e) {
+            // Abaikan ralat parse jika JSON tidak sah
+        }
+
+        if (comments.length > 0) {
+            return `<div class="block-comment-display">${comments.join('\n---\n')}</div>`;
+        }
+        return '';
+    }
     
     function createWorkflowBlock(type, x, y, existingId = null, existingData = null) {
         const blockId = existingId || `block_${new Date().getTime()}`;
@@ -180,32 +199,47 @@ const createConnectorPath = (startPos, endPos, connection) => {
                 connectionPoints += '<div class="connection-point output" data-point-id="out"></div>';
                 break;
             case 'action':
-                title = '<i class="fas fa-bolt"></i> Action';
-                content = '<button class="btn btn-secondary btn-sm configure-btn">Configure</button>';
+                title = '<i class="fas fa-bolt"></i> Advanced Action';
+                content = `
+                    <button class="btn btn-secondary btn-sm configure-btn">Configure</button>
+                    ${generateCommentHTML(blockState.configData)}
+                `;
                 connectionPoints += '<div class="connection-point input" data-point-id="in"></div>';
                 connectionPoints += '<div class="connection-point output" data-point-id="out"></div>';
                 break;
             case 'insert_record':
                 title = '<i class="fas fa-plus-circle"></i> Insert Record';
-                content = '<button class="btn btn-secondary btn-sm configure-btn">Configure</button>';
+                content = `
+                    <button class="btn btn-secondary btn-sm configure-btn">Configure</button>
+                    ${generateCommentHTML(blockState.configData)}
+                `;
                 connectionPoints += '<div class="connection-point input" data-point-id="in"></div>';
                 connectionPoints += '<div class="connection-point output" data-point-id="out"></div>';
                 break;
             case 'update_record':
                 title = '<i class="fas fa-edit"></i> Update Record(s)';
-                content = '<button class="btn btn-secondary btn-sm configure-btn">Configure</button>';
+                content = `
+                    <button class="btn btn-secondary btn-sm configure-btn">Configure</button>
+                    ${generateCommentHTML(blockState.configData)}
+                `;
                 connectionPoints += '<div class="connection-point input" data-point-id="in"></div>';
                 connectionPoints += '<div class="connection-point output" data-point-id="out"></div>';
                 break;
             case 'delete_record':
                 title = '<i class="fas fa-trash-alt"></i> Delete Record(s)';
-                content = '<button class="btn btn-secondary btn-sm configure-btn">Configure</button>';
+                content = `
+                    <button class="btn btn-secondary btn-sm configure-btn">Configure</button>
+                    ${generateCommentHTML(blockState.configData)}
+                `;
                 connectionPoints += '<div class="connection-point input" data-point-id="in"></div>';
                 connectionPoints += '<div class="connection-point output" data-point-id="out"></div>';
                 break;
             case 'condition':
                 title = '<i class="fas fa-code-branch"></i> Condition';
-                content = '<button class="btn btn-secondary btn-sm configure-btn">Configure</button>';
+                content = `
+                    <button class="btn btn-secondary btn-sm configure-btn">Configure</button>
+                    ${generateCommentHTML(blockState.configData)}
+                `;
                 connectionPoints += '<div class="connection-point input" data-point-id="in"></div>';
                 connectionPoints += '<div class="connection-point output true" data-point-id="out-true" title="True"></div>';
                 connectionPoints += '<div class="connection-point output false" data-point-id="out-false" title="False"></div>';
@@ -220,6 +254,7 @@ const createConnectorPath = (startPos, endPos, connection) => {
 				content = `
 					<input type="text" class="variable-name-input" placeholder="Variable Name..." value="${varName}">
 					<button class="btn ${btnClass} btn-sm configure-btn">${btnText}</button>
+					${generateCommentHTML(blockState.configData)}
 				`;
 				connectionPoints += '<div class="connection-point input" data-point-id="in"></div>';
 				connectionPoints += '<div class="connection-point output" data-point-id="out"></div>';
@@ -581,11 +616,11 @@ function openBlockConfiguration(blockId) {
         };
 
         const ACTION_GRAMMAR = {
-            'start': ['insert_record', 'update_record', 'delete_record', 'comment'],
-            'insert_record': ['insert_record', 'update_record', 'delete_record', 'comment'],
-            'update_record': ['insert_record', 'update_record', 'delete_record', 'comment'],
-            'delete_record': ['insert_record', 'update_record', 'delete_record', 'comment'],
-            'comment': ['insert_record', 'update_record', 'delete_record', 'comment'],
+            'start': ['insert_record', 'update_record', 'delete_record', 'comment', 'custom_query'],
+            'insert_record': ['insert_record', 'update_record', 'delete_record', 'comment', 'custom_query'],
+            'update_record': ['insert_record', 'update_record', 'delete_record', 'comment', 'custom_query'],
+            'delete_record': ['insert_record', 'update_record', 'delete_record', 'comment', 'custom_query'],
+            'comment': ['insert_record', 'update_record', 'delete_record', 'comment', 'custom_query'],
         };
 
         const VALUE_CALCULATOR_GRAMMAR = {
@@ -639,6 +674,7 @@ function openBlockConfiguration(blockId) {
                     }
                 }
                 saveState();
+				rebuildBlock(blockId);
             }
         });
     }
