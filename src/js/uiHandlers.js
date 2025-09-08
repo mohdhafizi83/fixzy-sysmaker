@@ -1651,6 +1651,7 @@ case 'custom_query': {
     });
 
     populateCanvasFromHiddenInput();
+	updateModalCanvasState();
 
     return {
         getState: () => modalCanvasState,
