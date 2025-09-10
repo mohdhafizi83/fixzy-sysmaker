@@ -98,8 +98,9 @@
     <div id="main-dashboard-page">
         <div class="tabs-container">
             <div class="tabs-nav">
-                <button class="tab-link active" data-tab="tab-localization" id="app-tab_localization" name="app-tab_localization">Localization</button>
-                <button class="tab-link" data-tab="tab-theme" id="app-tab_theme" name="app-tab_theme">Theme</button>
+				<button class="tab-link active" data-tab="tab-stack">Web Development Stack</button>
+                <button class="tab-link" data-tab="tab-localization" id="app-tab_localization" name="app-tab_localization">Localization</button>
+                <!--<button class="tab-link" data-tab="tab-theme" id="app-tab_theme" name="app-tab_theme">Theme</button> -->
                 <button class="tab-link" data-tab="tab-menu-appearance" id="app-tab_menu_appearance" name="app-tab_menu_appearance">Menu management</button>
                 <button class="tab-link" data-tab="tab-security" id="app-tab_security" name="app-tab_security">Security & technical</button>
 				<button class="tab-link" data-tab="tab-hooks">Hooks (Optional - for sophisticated App)</button>
@@ -107,7 +108,139 @@
 
             <div class="tabs-content">
 
-                <div id="tab-localization" class="tab-pane active">
+<div id="tab-stack" class="tab-pane active">
+    <div class="card">
+        <div class="card-body">
+            <div class="stack-selector-grid">
+                <div class="stack-column">
+                    <h4 class="stack-column-title">Base Stack</h4>
+                    <div class="stack-options-list" id="stack-base-options">
+                        <div class="form-group">
+                            <select name="app-stack_base" id="app-stack_base">
+                                <optgroup label="PHP Base">
+                                    <option value="core_php" data-stack-group="php-generic">Core PHP</option>
+                                    <option value="laravel_filament" data-stack-group="laravel-filament">Laravel [Filament]</option>
+                                    <option value="laravel_backpack" data-stack-group="laravel-backpack">Laravel [Backpack]</option>
+                                    <option value="ci4" data-stack-group="php-generic">Codeigniter 4</option>
+                                    <option value="ci3" data-stack-group="php-generic">Codeigniter 3</option>
+                                    <option value="appgini" data-stack-group="appgini">AppGini Scripts</option>
+                                    <option value="wordpress" data-stack-group="wordpress">Wordpress</option>
+                                    </optgroup>
+                                <optgroup label="Python Base">
+                                    <option value="django" data-stack-group="python-generic">Django</option>
+                                    <option value="flask" data-stack-group="python-generic">Flask</option>
+                                </optgroup>
+                                <optgroup label="C# Base">
+                                    <option value="aspnet_core" data-stack-group="aspnet-core">ASP.NET Core</option>
+                                </optgroup>
+                                <optgroup label="Ruby Base">
+                                    <option value="ror" data-stack-group="ror">Ruby on Rails</option>
+                                </optgroup>
+                                <optgroup label="Java Base">
+                                    <option value="java_spring" data-stack-group="java-generic">Spring Boot</option>
+                                    <option value="java_struts" data-stack-group="java-generic">Apache Struts</option>
+                                    </optgroup>
+                                <optgroup label="Javascript Base">
+                                    <option value="mean" data-stack-group="js-mean">MEAN</option>
+                                    <option value="mern" data-stack-group="js-mern">MERN</option>
+                                    <option value="mevn" data-stack-group="js-mevn">MEVN</option>
+                                    <option value="pern" data-stack-group="js-pern">PERN</option>
+                                </optgroup>
+                            </select>
+							<div id="stack-description-container" class="stack-description"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stack-column">
+                    <div id="stack-details-panel">
+                        <div class="stack-detail-group" data-stack-ref="php-generic python-generic laravel-backpack">
+                            <h4 class="stack-column-title">Database</h4>
+                            <select class="app-stack-database">
+                                <option value="mysql_mariadb">MySQL/MariaDB</option>
+                                <option value="sqlite">SQLite</option>
+                                <option value="postgresql">PostgreSQL</option>
+                                <option value="sql_server">SQL Server</option>
+                            </select>
+                        </div>
+                        <div class="stack-detail-group" data-stack-ref="laravel-filament">
+                            <h4 class="stack-column-title">Database</h4>
+                            <select class="app-stack-database">
+                                <option value="mysql_mariadb">MySQL/MariaDB</option>
+                                <option value="sqlite">SQLite</option>
+                                <option value="postgresql">PostgreSQL</option>
+                                <option value="sql_server">SQL Server</option>
+                            </select>
+                        </div>
+                        <div class="stack-detail-group" data-stack-ref="wordpress appgini">
+                            <h4 class="stack-column-title">Database</h4>
+                            <select class="app-stack-database">
+                                <option value="mysql_mariadb">MySQL/MariaDB</option>
+                            </select>
+                        </div>
+                        <div class="stack-detail-group" data-stack-ref="java-generic">
+                             <h4 class="stack-column-title">Database</h4>
+                            <select class="app-stack-database">
+                                <option value="mysql_mariadb">MySQL/MariaDB</option>
+                                <option value="postgresql">PostgreSQL</option>
+                                <option value="sql_server">SQL Server</option>
+								<option value="oracle_database">Oracle</option>
+                            </select>
+                        </div>
+                        <div class="stack-detail-group" data-stack-ref="aspnet-core">
+                            <h4 class="stack-column-title">Database</h4>
+                            <input type="text" value="SQL Server" readonly>
+                        </div>
+                        <div class="stack-detail-group" data-stack-ref="ror">
+                             <h4 class="stack-column-title">Database</h4>
+                            <select class="app-stack-database">
+                                <option value="sqlite">SQLite</option>
+                                <option value="postgresql">PostgreSQL</option>
+                                <option value="mysql_mariadb">MySQL/MariaDB</option>
+                            </select>
+                        </div>
+                        <div class="stack-detail-group" data-stack-ref="js-mean js-mern js-mevn"><h4 class="stack-column-title">Database</h4><input type="text" value="MongoDB" readonly></div>
+                        <div class="stack-detail-group" data-stack-ref="js-pern"><h4 class="stack-column-title">Database</h4><input type="text" value="PostgreSQL" readonly></div>
+
+                        <div class="stack-detail-group" data-stack-ref="php-generic python-generic aspnet-core ror java-generic">
+                            <h4 class="stack-column-title">Theme</h4>
+                            <select class="app-stack-theme">
+                                <option value="fiziSys">fiziSys</option>
+                                <option value="adminlte">adminLTE</option>
+                                <option value="coreui">CoreUI</option>
+                                <option value="tabler">Tabler</option>
+                                <option value="matrix_admin">Matrix Admin</option>
+                                <option value="mazer">Mazer</option>
+                            </select>
+                        </div>
+                        <div class="stack-detail-group" data-stack-ref="laravel-backpack">
+                            <h4 class="stack-column-title">Theme</h4>
+                            <select class="app-stack-theme">
+                                <option value="fiziSys">fiziSys</option>
+                                <option value="coreui">CoreUI</option>
+                                <option value="tabler">Tabler</option>
+                            </select>
+                        </div>
+                        <div class="stack-detail-group" data-stack-ref="laravel-filament">
+                            <h4 class="stack-column-title">Theme</h4>
+                            <select class="app-stack-theme">
+                                <option value="fiziSys">fiziSys</option>
+                                <option value="brisk">Brisk</option>
+                                <option value="nord_theme">Nord Theme</option>
+                            </select>
+                        </div>
+                         <div class="stack-detail-group" data-stack-ref="appgini wordpress js-mean js-mern js-mevn js-pern">
+                            <h4 class="stack-column-title">Theme</h4>
+                            <input type="text" value="Default Theme" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+                <div id="tab-localization" class="tab-pane">
                     <div class="card">
                         <div class="card-body">
                             <div class="form-grid">

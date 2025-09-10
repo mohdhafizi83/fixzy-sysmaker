@@ -1885,6 +1885,75 @@ export function applyFontSize(size) {
     document.documentElement.style.fontSize = fontSizeValue;
 }
 
+export function initializeStackSelectorHandlers() {
+    const baseStackSelect = document.getElementById('app-stack_base');
+    const detailGroups = document.querySelectorAll('.stack-detail-group');
+    const descriptionContainer = document.getElementById('stack-description-container');
+
+    // Object containing all descriptions
+    const stackDescriptions = {
+        'core_php': 'A foundational stack using native PHP, Bootstrap for styling, and jQuery for client-side scripting. Ideal for simple, fast-loading applications without a complex framework.',
+        'laravel_filament': 'A powerful combination using the Laravel framework with the Filament admin panel, which is built on the modern TALL stack (Tailwind CSS, Alpine.js, Livewire, Laravel).',
+        'laravel_backpack': 'Uses the robust Laravel framework paired with the Backpack for Laravel admin panel, which leverages the classic Bootstrap and jQuery ecosystem for rapid development.',
+        'ci4': 'A modern, lightweight PHP framework. CodeIgniter 4 is known for its speed, small footprint, and clear documentation, making it great for building full-featured web applications.',
+        'ci3': 'The legacy version of the popular CodeIgniter framework. It remains a stable and reliable choice for many existing applications and developers familiar with its architecture.',
+        'appgini': 'A low-code development tool that generates PHP applications from a MySQL database, enabling extremely fast creation of data-driven web apps.',
+        'wordpress': "The world's most popular content management system (CMS). Built on PHP and MySQL, it's highly extensible with a vast ecosystem of plugins and themes.",
+        'django': 'A high-level Python web framework that encourages rapid development and clean, pragmatic design. It follows the "batteries-included" philosophy, providing most common functionalities out of the box.',
+        'flask': 'A Python microframework that provides the essentials for web development, giving developers the flexibility to choose their own tools and libraries for other tasks.',
+        'aspnet_core': 'A cross-platform, high-performance, open-source framework by Microsoft for building modern, cloud-based, and Internet-connected applications with C#.',
+        'ror': 'A server-side web application framework written in Ruby. Rails follows the model–view–controller (MVC) pattern, emphasizing convention over configuration to increase developer productivity.',
+        'java_spring': 'A powerful Java-based framework for creating stand-alone, production-grade web applications. It focuses on simplicity, productivity, and solving enterprise-level problems.',
+        'java_struts': 'An open-source MVC framework for creating elegant, modern Java web applications. It favors convention over configuration and is known for its robustness in enterprise environments.',
+        'mean': 'A full-stack JavaScript solution for building fast, robust web applications. It comprises MongoDB (database), Express.js (backend), Angular (frontend), and Node.js (runtime).',
+        'mern': 'Similar to the MEAN stack, but with React as the frontend library instead of Angular. It is one of the most popular stacks for building modern single-page applications.',
+        'mevn': 'Another variation of the popular JavaScript stack, using Vue.js as its frontend framework. Vue is known for its gentle learning curve and high performance.',
+        'pern': 'A powerful alternative to the MERN/MEAN stack that replaces the NoSQL MongoDB database with the relational PostgreSQL database, ideal for applications requiring complex queries and data integrity.'
+    };
+
+    const updateStackDetails = () => {
+        if (!baseStackSelect) return;
+
+        const selectedOption = baseStackSelect.selectedOptions[0];
+        if (!selectedOption) return;
+        
+        const selectedValue = selectedOption.value;
+        const selectedGroup = selectedOption.dataset.stackGroup;
+        
+        // Update description text
+        if (descriptionContainer) {
+            descriptionContainer.innerHTML = stackDescriptions[selectedValue] || '';
+        }
+        
+        // Hide all detail groups first
+        detailGroups.forEach(group => group.style.display = 'none');
+
+        // Then, show only the relevant ones
+        detailGroups.forEach(group => {
+            const refGroups = group.dataset.stackRef.split(' ');
+            if (refGroups.includes(selectedGroup)) {
+                group.style.display = 'block';
+            }
+        });
+
+        // Rename the visible selects to be included in the save logic
+        document.querySelectorAll('.app-stack-database, .app-stack-theme').forEach(select => {
+            if (select.closest('.stack-detail-group').style.display !== 'none') {
+                 if(select.classList.contains('app-stack-database')) select.id = 'app-stack-database';
+                 if(select.classList.contains('app-stack-theme')) select.id = 'app-stack-theme';
+            } else {
+                select.id = ''; // Remove ID to exclude from saving
+            }
+        });
+    };
+
+    if (baseStackSelect) {
+        baseStackSelect.addEventListener('change', updateStackDetails);
+        // Initial call to set the correct view on load
+        updateStackDetails();
+    }
+}
+
 import { allTableNames, jsonData, loadProjectData, activeProject, SaveManager, isAutoSaveEnabled, isPopulatingData, lastActiveChildTable, setLastActiveChildTable, setAwaitingMenuGroupSave } from './js.main.js';
 
 // TAMBAH DUA FUNGSI BAHARU INI DALAM uiHandlers.js
@@ -3154,6 +3223,19 @@ export function populateMainDashboard(projectData) {
         return;
     }
 
+    // Tab: Web Development Stack
+    setElementValue('app-stack_base', projectData.stack_base || 'core_php');
+    // Trigger change to show correct dependent fields
+    const stackSelect = document.getElementById('app-stack_base');
+    if (stackSelect) {
+        stackSelect.dispatchEvent(new Event('change'));
+    }
+    // Now set the values for the visible selects
+    const dbSelect = document.getElementById('app-stack-database');
+    const themeSelect = document.getElementById('app-stack-theme');
+    if(dbSelect) setElementValue('app-stack-database', projectData.stack_database);
+    if(themeSelect) setElementValue('app-stack-theme', projectData.stack_theme);
+	
     // Tab: Localization
     setElementValue('app-title', projectData.app_title);
     setElementValue('app-date-order', projectData.date_order);

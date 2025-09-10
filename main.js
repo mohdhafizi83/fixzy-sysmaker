@@ -1140,7 +1140,8 @@ ipcMain.handle('project:update', async (event, data) => {
             'use_3d_effects', 'rtl', 'compact', 'menu_orientation', 'menu_at_homepage',
             'tables_per_row', 'extra_wide', 'panel_height', 'hide_login', 'allow_sql_tool',
             'allow_server_status', 'admins_group_access', 'allow_table_view_sql',
-            'copy_children_async', 'allow_pwa_install', 'url'
+            'copy_children_async', 'allow_pwa_install', 'url','stack_base', 'stack_database',
+			'stack_theme'
         ];
 
         const setClause = Object.keys(fieldsToUpdate)

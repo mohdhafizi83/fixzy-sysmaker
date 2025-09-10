@@ -3466,3 +3466,98 @@ fieldset.fieldset-disabled {
     border-radius: 4px;
     font-family: monospace;
 }
+
+/* FILE: styles.css */
+
+/* ================================================================== */
+/* == STYLES FOR WEB DEVELOPMENT STACK SELECTOR                    == */
+/* ================================================================== */
+
+.stack-selector-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.stack-column-title {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.stack-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.stack-options-list fieldset {
+    padding: 1rem 1rem 0.5rem;
+    margin-top: 0;
+}
+
+.stack-options-list legend {
+    font-size: 0.9em;
+}
+
+.stack-options-list label {
+    display: block;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.stack-options-list label:hover {
+    background-color: #F3F4F6;
+}
+
+.stack-options-list input[type="radio"] {
+    margin-right: 0.5rem;
+}
+
+.stack-options-list label:has(input[type="radio"]:checked) {
+    background-color: #E0E7FF;
+    font-weight: 500;
+    color: var(--primary-color);
+}
+
+.stack-detail-group {
+    margin-bottom: 1.5rem;
+}
+
+.stack-detail-group select,
+.stack-detail-group input[readonly] {
+    width: 100%;
+    padding: 0.6rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background-color: #F9FAFB;
+}
+
+.stack-detail-group input[readonly] {
+    background-color: #E5E7EB;
+    font-weight: 500;
+}
+
+/* FILE: styles.css */
+
+/* ================================================================== */
+/* == STYLES FOR STACK DESCRIPTION BOX                             == */
+/* ================================================================== */
+
+.stack-description {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background-color: #F9FAFB;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.9em;
+    color: var(--secondary-color);
+    line-height: 1.6;
+    min-height: 80px; /* Ensures consistent height */
+    transition: background-color 0.3s;
+}

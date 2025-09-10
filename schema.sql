@@ -33,6 +33,9 @@ CREATE TABLE projects (
     allow_pwa_install            INTEGER DEFAULT 1,
     url                          TEXT,
     project_hook_workflow        TEXT,
+    stack_base                   TEXT DEFAULT 'core_php',
+    stack_database               TEXT DEFAULT 'mysql_mariadb',
+    stack_theme                  TEXT DEFAULT 'fiziSys',
 	is_active                    INTEGER DEFAULT 0
 );
 

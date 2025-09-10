@@ -43,6 +43,7 @@ import {
     showNewProjectModal,
 initializeCalculationBuilder,
 initializeQueryBuilder,
+initializeStackSelectorHandlers,
 } from './uiHandlers.js';
 import { initializeWorkflowBuilder } from './workflowBuilder.js';
 
@@ -433,7 +434,8 @@ window.addEventListener('beforeunload', (event) => {
 	initializeLocalizationHandlers();
 	initializeThemeHandlers();
 	initializeMenuManagementHandlers();
-
+	initializeStackSelectorHandlers();
+	
 	initializeSecurityTabHandlers();
 	initializeClassSelectorHandlers();
 	initializeAutoDefaultHandlers();
