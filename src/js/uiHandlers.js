@@ -3236,6 +3236,14 @@ export function populateMainDashboard(projectData) {
     if(dbSelect) setElementValue('app-stack-database', projectData.stack_database);
     if(themeSelect) setElementValue('app-stack-theme', projectData.stack_theme);
 	
+	setElementValue('app-module-auth-email-2fa', projectData.module_auth_email_2fa);
+    setElementValue('app-module-auth-email-captcha', projectData.module_auth_email_captcha);
+    setElementValue('app-module-auth-ldap', projectData.module_auth_ldap);
+    setElementValue('app-module-auth-google-sso', projectData.module_auth_google_sso);
+    setElementValue('app-module-authorization', projectData.module_authorization);
+    setElementValue('app-module-log-audit', projectData.module_log_audit);
+	setRadioValue('app-data_delete_type', projectData.data_delete_type || 'hard');
+	
     // Tab: Localization
     setElementValue('app-title', projectData.app_title);
     setElementValue('app-date-order', projectData.date_order);
@@ -5513,3 +5521,35 @@ export function openQueryHelperModal(options) {
     
     populateInitialUI(state.mainTable);
 }
+
+// FILE: uiHandlers.js
+
+// ▼▼▼ ADD THIS ENTIRE NEW FUNCTION ▼▼▼
+/**
+ * Adds logic to radio buttons to allow them to be deselected.
+ * A standard radio button group doesn't allow having no option selected once a selection is made.
+ */
+export function initializeAuthRadioLogic() {
+    const radios = document.querySelectorAll('input[name="app-module-auth-extra"]');
+    if (!radios) return;
+
+    radios.forEach(radio => {
+        // We need to store the state on "mousedown" because by the time "click" fires,
+        // the state will have already changed.
+        radio.addEventListener('mousedown', function() {
+            // Store the current checked state in a temporary property.
+            this.wasChecked = this.checked;
+        });
+
+        radio.addEventListener('click', function() {
+            // If the radio was already checked when the user pressed the mouse,
+            // uncheck it now.
+            if (this.wasChecked) {
+                this.checked = false;
+                // Manually trigger the 'change' event so our auto-save system picks it up.
+                this.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+    });
+}
+// ▲▲▲ END OF NEW FUNCTION ▲▲▲

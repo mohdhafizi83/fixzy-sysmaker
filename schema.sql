@@ -36,6 +36,14 @@ CREATE TABLE projects (
     stack_base                   TEXT DEFAULT 'core_php',
     stack_database               TEXT DEFAULT 'mysql_mariadb',
     stack_theme                  TEXT DEFAULT 'fiziSys',
+	data_delete_type             TEXT DEFAULT 'hard',
+    module_auth_email            INTEGER DEFAULT 1,
+    module_auth_email_2fa        INTEGER DEFAULT 0,
+    module_auth_email_captcha    INTEGER DEFAULT 0,
+    module_auth_ldap             INTEGER DEFAULT 0,
+    module_auth_google_sso       INTEGER DEFAULT 0,
+    module_authorization         INTEGER DEFAULT 0,
+    module_log_audit             INTEGER DEFAULT 0,
 	is_active                    INTEGER DEFAULT 0
 );
 

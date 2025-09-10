@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FiziSysMaker: Ultimate Data management system Maker</title>
+    <title>FiziSysMaker: Ultimate Data-Driven System Maker</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
 	<script type="module" src="js/js.main.js"></script>
@@ -111,131 +111,200 @@
 <div id="tab-stack" class="tab-pane active">
     <div class="card">
         <div class="card-body">
-            <div class="stack-selector-grid">
-                <div class="stack-column">
-                    <h4 class="stack-column-title">Base Stack</h4>
-                    <div class="stack-options-list" id="stack-base-options">
-                        <div class="form-group">
-                            <select name="app-stack_base" id="app-stack_base">
-                                <optgroup label="PHP Base">
-                                    <option value="core_php" data-stack-group="php-generic">Core PHP</option>
-                                    <option value="laravel_filament" data-stack-group="laravel-filament">Laravel [Filament]</option>
-                                    <option value="laravel_backpack" data-stack-group="laravel-backpack">Laravel [Backpack]</option>
-                                    <option value="ci4" data-stack-group="php-generic">Codeigniter 4</option>
-                                    <option value="ci3" data-stack-group="php-generic">Codeigniter 3</option>
-                                    <option value="appgini" data-stack-group="appgini">AppGini Scripts</option>
-                                    <option value="wordpress" data-stack-group="wordpress">Wordpress</option>
-                                    </optgroup>
-                                <optgroup label="Python Base">
-                                    <option value="django" data-stack-group="python-generic">Django</option>
-                                    <option value="flask" data-stack-group="python-generic">Flask</option>
-                                </optgroup>
-                                <optgroup label="C# Base">
-                                    <option value="aspnet_core" data-stack-group="aspnet-core">ASP.NET Core</option>
-                                </optgroup>
-                                <optgroup label="Ruby Base">
-                                    <option value="ror" data-stack-group="ror">Ruby on Rails</option>
-                                </optgroup>
-                                <optgroup label="Java Base">
-                                    <option value="java_spring" data-stack-group="java-generic">Spring Boot</option>
-                                    <option value="java_struts" data-stack-group="java-generic">Apache Struts</option>
-                                    </optgroup>
-                                <optgroup label="Javascript Base">
-                                    <option value="mean" data-stack-group="js-mean">MEAN</option>
-                                    <option value="mern" data-stack-group="js-mern">MERN</option>
-                                    <option value="mevn" data-stack-group="js-mevn">MEVN</option>
-                                    <option value="pern" data-stack-group="js-pern">PERN</option>
-                                </optgroup>
-                            </select>
-							<div id="stack-description-container" class="stack-description"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="stack-column">
-                    <div id="stack-details-panel">
-                        <div class="stack-detail-group" data-stack-ref="php-generic python-generic laravel-backpack">
-                            <h4 class="stack-column-title">Database</h4>
-                            <select class="app-stack-database">
-                                <option value="mysql_mariadb">MySQL/MariaDB</option>
-                                <option value="sqlite">SQLite</option>
-                                <option value="postgresql">PostgreSQL</option>
-                                <option value="sql_server">SQL Server</option>
-                            </select>
-                        </div>
-                        <div class="stack-detail-group" data-stack-ref="laravel-filament">
-                            <h4 class="stack-column-title">Database</h4>
-                            <select class="app-stack-database">
-                                <option value="mysql_mariadb">MySQL/MariaDB</option>
-                                <option value="sqlite">SQLite</option>
-                                <option value="postgresql">PostgreSQL</option>
-                                <option value="sql_server">SQL Server</option>
-                            </select>
-                        </div>
-                        <div class="stack-detail-group" data-stack-ref="wordpress appgini">
-                            <h4 class="stack-column-title">Database</h4>
-                            <select class="app-stack-database">
-                                <option value="mysql_mariadb">MySQL/MariaDB</option>
-                            </select>
-                        </div>
-                        <div class="stack-detail-group" data-stack-ref="java-generic">
-                             <h4 class="stack-column-title">Database</h4>
-                            <select class="app-stack-database">
-                                <option value="mysql_mariadb">MySQL/MariaDB</option>
-                                <option value="postgresql">PostgreSQL</option>
-                                <option value="sql_server">SQL Server</option>
-								<option value="oracle_database">Oracle</option>
-                            </select>
-                        </div>
-                        <div class="stack-detail-group" data-stack-ref="aspnet-core">
-                            <h4 class="stack-column-title">Database</h4>
-                            <input type="text" value="SQL Server" readonly>
-                        </div>
-                        <div class="stack-detail-group" data-stack-ref="ror">
-                             <h4 class="stack-column-title">Database</h4>
-                            <select class="app-stack-database">
-                                <option value="sqlite">SQLite</option>
-                                <option value="postgresql">PostgreSQL</option>
-                                <option value="mysql_mariadb">MySQL/MariaDB</option>
-                            </select>
-                        </div>
-                        <div class="stack-detail-group" data-stack-ref="js-mean js-mern js-mevn"><h4 class="stack-column-title">Database</h4><input type="text" value="MongoDB" readonly></div>
-                        <div class="stack-detail-group" data-stack-ref="js-pern"><h4 class="stack-column-title">Database</h4><input type="text" value="PostgreSQL" readonly></div>
-
-                        <div class="stack-detail-group" data-stack-ref="php-generic python-generic aspnet-core ror java-generic">
-                            <h4 class="stack-column-title">Theme</h4>
-                            <select class="app-stack-theme">
-                                <option value="fiziSys">fiziSys</option>
-                                <option value="adminlte">adminLTE</option>
-                                <option value="coreui">CoreUI</option>
-                                <option value="tabler">Tabler</option>
-                                <option value="matrix_admin">Matrix Admin</option>
-                                <option value="mazer">Mazer</option>
-                            </select>
-                        </div>
-                        <div class="stack-detail-group" data-stack-ref="laravel-backpack">
-                            <h4 class="stack-column-title">Theme</h4>
-                            <select class="app-stack-theme">
-                                <option value="fiziSys">fiziSys</option>
-                                <option value="coreui">CoreUI</option>
-                                <option value="tabler">Tabler</option>
-                            </select>
-                        </div>
-                        <div class="stack-detail-group" data-stack-ref="laravel-filament">
-                            <h4 class="stack-column-title">Theme</h4>
-                            <select class="app-stack-theme">
-                                <option value="fiziSys">fiziSys</option>
-                                <option value="brisk">Brisk</option>
-                                <option value="nord_theme">Nord Theme</option>
-                            </select>
-                        </div>
-                         <div class="stack-detail-group" data-stack-ref="appgini wordpress js-mean js-mern js-mevn js-pern">
-                            <h4 class="stack-column-title">Theme</h4>
-                            <input type="text" value="Default Theme" readonly>
-                        </div>
-                    </div>
-                </div>
+<div class="stack-selector-grid">
+    <div class="stack-column">
+        <h4 class="stack-column-title">Base Stack</h4>
+        <div class="stack-options-list" id="stack-base-options">
+            <div class="form-group">
+                <select name="app-stack_base" id="app-stack_base">
+                    <optgroup label="PHP Base">
+                        <option value="core_php" data-stack-group="php-generic">Core PHP</option>
+                        <option value="laravel_filament" data-stack-group="laravel-filament">Laravel [Filament]</option>
+                        <option value="laravel_backpack" data-stack-group="laravel-backpack">Laravel [Backpack]</option>
+                        <option value="ci4" data-stack-group="php-generic">Codeigniter 4</option>
+                        <option value="ci3" data-stack-group="php-generic">Codeigniter 3</option>
+						<option value="wordpress" data-stack-group="wordpress">Wordpress</option>
+                        <option value="appgini" data-stack-group="appgini">AppGini Scripts</option>
+                    </optgroup>
+                    <optgroup label="Python Base">
+                        <option value="django" data-stack-group="python-generic">Django</option>
+                        <option value="flask" data-stack-group="python-generic">Flask</option>
+                    </optgroup>
+                    <optgroup label="C# Base">
+                        <option value="aspnet_core" data-stack-group="aspnet-core">ASP.NET Core</option>
+                    </optgroup>
+                    <optgroup label="Ruby Base">
+                        <option value="ror" data-stack-group="ror">Ruby on Rails</option>
+                    </optgroup>
+                    <optgroup label="Java Base">
+                        <option value="java_spring" data-stack-group="java-generic">Spring Boot</option>
+                        <option value="java_struts" data-stack-group="java-generic">Apache Struts</option>
+                    </optgroup>
+                    <optgroup label="Javascript Base">
+                        <option value="mean" data-stack-group="js-mean">MEAN</option>
+                        <option value="mern" data-stack-group="js-mern">MERN</option>
+                        <option value="mevn" data-stack-group="js-mevn">MEVN</option>
+                        <option value="pern" data-stack-group="js-pern">PERN</option>
+                    </optgroup>
+                </select>
+				<div id="stack-description-container" class="stack-description"></div>
             </div>
+            
+        </div>
+		
+        <div id="stack-details-panel">
+            <div class="stack-detail-group" data-stack-ref="php-generic python-generic laravel-backpack">
+                <h4 class="stack-column-title">Database</h4>
+                <select class="app-stack-database">
+                    <option value="mysql_mariadb">MySQL/MariaDB</option>
+                    <option value="sqlite">SQLite</option>
+                    <option value="postgresql">PostgreSQL</option>
+                    <option value="sql_server">SQL Server</option>
+                </select>
+            </div>
+            <div class="stack-detail-group" data-stack-ref="laravel-filament">
+                <h4 class="stack-column-title">Database</h4>
+                <select class="app-stack-database">
+                    <option value="mysql_mariadb">MySQL/MariaDB</option>
+                    <option value="sqlite">SQLite</option>
+                    <option value="postgresql">PostgreSQL</option>
+                    <option value="sql_server">SQL Server</option>
+                </select>
+            </div>
+            <div class="stack-detail-group" data-stack-ref="wordpress appgini">
+                <h4 class="stack-column-title">Database</h4>
+                <select class="app-stack-database">
+                    <option value="mysql_mariadb">MySQL/MariaDB</option>
+                </select>
+            </div>
+            <div class="stack-detail-group" data-stack-ref="java-generic">
+                 <h4 class="stack-column-title">Database</h4>
+                <select class="app-stack-database">
+                    <option value="mysql_mariadb">MySQL/MariaDB</option>
+                    <option value="postgresql">PostgreSQL</option>
+                    <option value="sql_server">SQL Server</option>
+                </select>
+            </div>
+            <div class="stack-detail-group" data-stack-ref="aspnet-core">
+                <h4 class="stack-column-title">Database</h4>
+                <input type="text" value="SQL Server" readonly>
+            </div>
+            <div class="stack-detail-group" data-stack-ref="ror">
+                 <h4 class="stack-column-title">Database</h4>
+                <select class="app-stack-database">
+                    <option value="sqlite">SQLite</option>
+                    <option value="postgresql">PostgreSQL</option>
+                    <option value="mysql_mariadb">MySQL/MariaDB</option>
+                </select>
+            </div>
+            <div class="stack-detail-group" data-stack-ref="js-mean js-mern js-mevn"><h4 class="stack-column-title">Database</h4><input type="text" value="MongoDB" readonly></div>
+            <div class="stack-detail-group" data-stack-ref="js-pern"><h4 class="stack-column-title">Database</h4><input type="text" value="PostgreSQL" readonly></div>
+
+            <div class="stack-detail-group" data-stack-ref="php-generic python-generic aspnet-core ror java-generic">
+                <h4 class="stack-column-title">Theme</h4>
+                <select class="app-stack-theme">
+                    <option value="fiziSys">fiziSys</option>
+                    <option value="adminlte">adminLTE</option>
+                    <option value="coreui">CoreUI</option>
+                    <option value="tabler">Tabler</option>
+                    <option value="matrix_admin">Matrix Admin</option>
+                    <option value="mazer">Mazer</option>
+                </select>
+            </div>
+            <div class="stack-detail-group" data-stack-ref="laravel-backpack">
+                <h4 class="stack-column-title">Theme</h4>
+                <select class="app-stack-theme">
+                    <option value="fiziSys">fiziSys</option>
+                    <option value="coreui">CoreUI</option>
+                    <option value="tabler">Tabler</option>
+                </select>
+            </div>
+            <div class="stack-detail-group" data-stack-ref="laravel-filament">
+                <h4 class="stack-column-title">Theme</h4>
+                <select class="app-stack-theme">
+                    <option value="fiziSys">fiziSys</option>
+                    <option value="brisk">Brisk</option>
+                    <option value="nord_theme">Nord Theme</option>
+                </select>
+            </div>
+             <div class="stack-detail-group" data-stack-ref="appgini wordpress js-mean js-mern js-mevn js-pern">
+                <h4 class="stack-column-title">Theme</h4>
+                <input type="text" value="Default Theme" readonly>
+            </div>
+        </div>
+		
+		
+		<div>
+
+                <h4 class="stack-column-title">Data Deletion Strategy</h4>
+                <div class="radio-group" style="flex-direction: column; gap: 0.75rem; align-items: flex-start;">
+                    <label>
+                        <input type="radio" name="app-data_delete_type" value="soft"> Soft Delete
+                    </label>
+                    <p class="module-description" style="margin-left: 1.75rem; margin-top: 1rem;">
+                        Marks records as deleted (e.g., using a `deleted_at` timestamp) but they remain in the database. This allows for easy data recovery but requires manual cleanup.
+                    </p>
+                    <label>
+                        <input type="radio" name="app-data_delete_type" value="hard" checked> Hard Delete
+                    </label>
+                    <p class="module-description" style="margin-left: 1.75rem; margin-top: 1rem;">
+                        Permanently removes records from the database using `DELETE FROM...`. This action is irreversible and frees up database space immediately.
+                    </p>
+                </div>
+	
+		</div>
+    </div>
+
+    <div class="stack-column">
+
+        
+        <h4 class="stack-column-title">Modules</h4>
+        <div class="module-options-list">
+<fieldset>
+    <legend>Authentication</legend>
+    <p class="module-description">
+        The process of verifying who a user is. This module provides different ways for users to sign in to your application.
+    </p>
+    <label class="checkbox-label">
+        <input type="checkbox" id="app-module-auth-email" name="app-module-auth-email" checked disabled> Email & Password
+    </label>
+
+    <label class="checkbox-label sub-option">
+        <input type="radio" id="app-module-auth-email-2fa" name="app-module-auth-extra"> Enable 2-Factor Authentication (2FA)
+    </label>
+    <label class="checkbox-label sub-option">
+        <input type="radio" id="app-module-auth-email-captcha" name="app-module-auth-extra"> Enable Captcha
+    </label>
+    <label class="checkbox-label">
+        <input type="checkbox" id="app-module-auth-ldap" name="app-module-auth-ldap"> LDAP
+    </label>
+    <label class="checkbox-label">
+        <input type="checkbox" id="app-module-auth-google-sso" name="app-module-auth-google-sso"> Google SSO
+    </label>
+</fieldset>
+
+            <fieldset>
+                <legend>Authorization</legend>
+                 <p class="module-description">
+                    The process of determining what an authenticated user is allowed to do. This typically involves user groups and permissions.
+                </p>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="app-module-authorization" name="app-module-authorization"> Enable Group-Based Permissions
+                </label>
+            </fieldset>
+
+            <fieldset>
+                <legend>Log Audit</legend>
+                 <p class="module-description">
+                    Records significant events in a log file or database table, such as user logins, data changes, and administrative actions for security and compliance.
+                </p>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="app-module-log-audit" name="app-module-log-audit"> Enable Audit Trail
+                </label>
+            </fieldset>
+        </div>
+    </div>
+</div>
         </div>
     </div>
 </div>

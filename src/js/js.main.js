@@ -44,6 +44,7 @@ import {
 initializeCalculationBuilder,
 initializeQueryBuilder,
 initializeStackSelectorHandlers,
+initializeAuthRadioLogic
 } from './uiHandlers.js';
 import { initializeWorkflowBuilder } from './workflowBuilder.js';
 
@@ -435,6 +436,7 @@ window.addEventListener('beforeunload', (event) => {
 	initializeThemeHandlers();
 	initializeMenuManagementHandlers();
 	initializeStackSelectorHandlers();
+	initializeAuthRadioLogic();
 	
 	initializeSecurityTabHandlers();
 	initializeClassSelectorHandlers();
@@ -453,7 +455,7 @@ window.addEventListener('beforeunload', (event) => {
 	initializeOptionsListRules();
 	initializeCalculatedFieldRules();
 	initializeTemplatePreviewHandlers();
-initializeQueryBuilder();
+	initializeQueryBuilder();
     initializeTableHookBuilder();
     initializeProjectHookBuilder();
     initializeCalculationBuilder();

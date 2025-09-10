@@ -3561,3 +3561,20 @@ fieldset.fieldset-disabled {
     min-height: 80px; /* Ensures consistent height */
     transition: background-color 0.3s;
 }
+
+
+.module-description {
+    font-size: 0.9em;
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+.module-options-list label {
+    display: block;
+    margin-bottom: 0.75rem;
+}
+
+.module-options-list .sub-option {
+    margin-left: 1.75rem;
+}
