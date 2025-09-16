@@ -3578,3 +3578,217 @@ fieldset.fieldset-disabled {
 .module-options-list .sub-option {
     margin-left: 1.75rem;
 }
+
+/* ADD THIS ENTIRE CSS BLOCK AT THE END OF styles.css */
+
+/* ================================================================== */
+/* == STYLES FOR CUSTOM VIEWS FEATURE                            == */
+/* ================================================================== */
+
+/* --- Tab & List Styles --- */
+.custom-view-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+#custom-views-list-container {
+    margin-top: 1.5rem;
+}
+
+.cv-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: #F9FAFB;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+}
+
+.cv-info {
+    font-weight: 500;
+}
+
+.cv-info i {
+    margin-right: 0.75rem;
+    color: var(--secondary-color);
+}
+
+.cv-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* --- Config Modal & Form Builder Styles --- */
+#cv-modal-body {
+    min-height: 60vh;
+}
+
+.form-builder-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 1.5rem;
+    margin-top: 1rem;
+    height: 55vh;
+}
+
+.form-builder-panel {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1rem;
+    height: 100%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-builder-panel h5 {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: -1rem; /* Stick to the top of the panel */
+    background-color: var(--card-bg);
+    padding-top: 1rem;
+    margin-top: -1rem;
+    z-index: 2;
+}
+
+/* Tree-view for available fields */
+.field-tree {
+    list-style: none;
+    padding: 0;
+}
+.field-tree .table-node > span {
+    font-weight: 600;
+    cursor: pointer;
+}
+.field-tree .table-node > span i {
+    margin-right: 0.5rem;
+    transition: transform 0.2s;
+}
+.field-tree .table-node.collapsed > span i {
+    transform: rotate(-90deg);
+}
+.field-tree .field-list {
+    list-style: none;
+    padding-left: 1.5rem;
+    margin-top: 0.5rem;
+}
+.field-tree .field-list.hidden {
+    display: none;
+}
+.field-tree .field-item {
+    padding: 0.5rem;
+    border-radius: 4px;
+    cursor: grab;
+    margin-bottom: 0.25rem;
+}
+.field-tree .field-item:hover {
+    background-color: #F3F4F6;
+}
+
+/* Draggable item in the form layout */
+.form-field-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background-color: #F9FAFB;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.form-field-item .drag-handle {
+    cursor: grab;
+    color: var(--secondary-color);
+}
+
+.form-field-item .field-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-field-item .field-label {
+    font-weight: 500;
+}
+
+.form-field-item .field-source {
+    font-size: 0.8em;
+    color: var(--secondary-color);
+}
+
+.form-field-item .delete-form-field-btn {
+    margin-left: auto;
+}
+
+/* Drag & Drop States */
+.form-field-item.dragging {
+    opacity: 0.5;
+}
+
+#cv-form-layout-panel.drag-over {
+    border-color: var(--primary-color);
+    border-style: dashed;
+    background-color: #EFF6FF;
+}
+
+#cv-filter-builder-container .cqb-rule,
+#cv-filter-builder-container .cqb-rule-group {
+    font-size: 0.9em;
+}
+
+/* ADD THIS ENTIRE CSS BLOCK AT THE END OF styles.css */
+
+/* --- Updated Form Builder Grid --- */
+.form-builder-grid {
+    grid-template-columns: 1fr auto 1fr; /* Change to 3 columns */
+}
+
+.form-builder-controls {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+/* --- Field Selection Styles --- */
+.field-tree .field-item.selected,
+#cv-form-layout-panel .form-field-item.selected {
+    background-color: #E0E7FF; /* Light indigo for selection */
+    border-color: var(--primary-color);
+}
+
+/* --- Updated Form Field Item in Layout Panel --- */
+.form-field-item {
+    gap: 0.75rem; /* Adjust spacing */
+}
+
+.form-field-item .drag-handle {
+    display: none; /* Hide old drag handle */
+}
+
+.field-item-controls {
+    display: flex;
+    gap: 0.25rem;
+    margin-left: auto;
+}
+
+.field-item-controls .btn-sidebar-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 0.8em;
+}
+
+.field-item-controls .btn-sidebar-icon:disabled {
+    background-color: #F3F4F6;
+    color: #D1D5DB;
+    border-color: var(--border-color);
+    cursor: not-allowed;
+}

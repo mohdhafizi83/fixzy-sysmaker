@@ -209,15 +209,42 @@ CREATE TABLE menu_items (
     project_id      INTEGER NOT NULL,
     menu_group_id   INTEGER, -- Akan NULL untuk menu individu
     table_id        INTEGER, -- NULL untuk menu custom
+	custom_view_id  INTEGER,
     item_label      TEXT,    -- Label untuk menu custom
     item_url        TEXT,    -- URL untuk menu custom
     item_order      INTEGER,
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
     FOREIGN KEY (menu_group_id) REFERENCES menu_groups(menu_group_id) ON DELETE CASCADE,
+    FOREIGN KEY (table_id) REFERENCES tables(table_id) ON DELETE CASCADE,
+	FOREIGN KEY (custom_view_id) REFERENCES custom_views(custom_view_id) ON DELETE CASCADE
+);
+
+-- ADD THESE TWO NEW TABLES AT THE END OF schema.sql
+
+-- 8. Jadual untuk menyimpan konfigurasi Custom View
+CREATE TABLE custom_views (
+    custom_view_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    table_id            INTEGER NOT NULL,
+    view_name           TEXT NOT NULL,
+    menu_icon           TEXT,
+    filter_rules        TEXT, -- Akan menyimpan konfigurasi penapis dalam format JSON
+    view_order          INTEGER,
     FOREIGN KEY (table_id) REFERENCES tables(table_id) ON DELETE CASCADE
 );
 
--- Data Awal untuk Tetapan FiziSysMaker
+-- 9. Jadual untuk menyimpan medan-medan yang dipaparkan dalam borang Custom View
+CREATE TABLE custom_view_fields (
+    custom_view_field_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+    custom_view_id          INTEGER NOT NULL,
+    field_source_table      TEXT NOT NULL, -- cth: 'pelajar', 'kursus'
+    field_source_name       TEXT NOT NULL, -- cth: 'nama_penuh', 'kod_kursus'
+    field_label             TEXT,
+    is_readonly             INTEGER NOT NULL DEFAULT 0,
+    display_order           INTEGER,
+    FOREIGN KEY (custom_view_id) REFERENCES custom_views(custom_view_id) ON DELETE CASCADE
+);
+
+-- 10. Data Awal untuk Tetapan FiziSysMaker
 INSERT INTO fizisys_settings (setting_name, setting_value) VALUES
 ('check_updates', '1'),
 ('autosave_interval', '15'),

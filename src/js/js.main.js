@@ -45,7 +45,8 @@ import {
 	initializeQueryBuilder,
 	initializeStackSelectorHandlers,
 	initializeAuthRadioLogic,
-	showImportErrorGuide
+	showImportErrorGuide,
+	initializeCustomViews 
 } from './uiHandlers.js';
 import { initializeWorkflowBuilder } from './workflowBuilder.js';
 
@@ -486,6 +487,8 @@ window.addEventListener('beforeunload', (event) => {
 
 	initializeRelationshipSaveHandlers();
 	initializeLookupFieldSaveHandler();	
+	
+	initializeCustomViews();
 	
     // Setup Event Listeners
     const newProjectBtn = document.getElementById('new-project-btn');

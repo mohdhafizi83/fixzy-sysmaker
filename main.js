@@ -83,15 +83,15 @@ ipcMain.handle('database:batch-update', async (event, queue) => {
 
                 // Jika nama jadual telah ditukar, kemas kini juga 'menu_items'
                 if (oldTableName && newTableName && oldTableName !== newTableName) {
-                    const newUrl = `${newTableName} Model`;
-                    const oldUrl = `${oldTableName} Model`;
+                    const newUrl = `${newTableName} Resource`;
+                    const oldUrl = `${oldTableName} Resource`;
 
                     // Kemas kini label HANYA jika ia sepadan dengan nama jadual lama
                     db.prepare(
                         'UPDATE menu_items SET item_label = ? WHERE table_id = ? AND item_label = ?'
                     ).run(newTableName, id, oldTableName);
                     
-                    // Kemas kini URL HANYA jika ia sepadan dengan format 'Model' yang lama
+                    // Kemas kini URL HANYA jika ia sepadan dengan format 'Resource' yang lama
                     db.prepare(
                         'UPDATE menu_items SET item_url = ? WHERE table_id = ? AND item_url = ?'
                     ).run(newUrl, id, oldUrl);
@@ -551,7 +551,7 @@ ipcMain.handle('table:create', async (event, projectId) => {
             const nextMenuOrder = (maxMenuOrderResult && maxMenuOrderResult.max_order !== null ? maxMenuOrderResult.max_order : -1) + 1;
             
             // ▼▼▼ MULA PERUBAHAN ▼▼▼
-            const itemUrl = `${newName} Model`;
+            const itemUrl = `${newName} Resource`;
             db.prepare(
                 'INSERT INTO menu_items (project_id, table_id, item_label, item_url, item_order, menu_group_id) VALUES (?, ?, ?, ?, ?, NULL)'
             ).run(projectId, tableId, newName, itemUrl, nextMenuOrder);
@@ -568,9 +568,6 @@ ipcMain.handle('table:create', async (event, projectId) => {
         return null;
     }
 });
-
-// Handler untuk mendapatkan skema penuh
-// FIND AND REPLACE THIS ENTIRE HANDLER IN: src/main.js
 
 ipcMain.handle("project:get-full-schema", async (event, projectId) => {
   try {
@@ -591,9 +588,29 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
         fields = db.prepare(`SELECT * FROM fields WHERE table_id IN (${placeholder}) ORDER BY field_order, field_id`).all(...tableIds);
     }
     
+    // ▼▼▼ MULA LOGIK BAHARU: Dapatkan data Custom Views ▼▼▼
+    let customViews = [];
+    if (tableIds.length > 0) {
+        const placeholder = tableIds.map(() => "?").join(",");
+        customViews = db.prepare(`SELECT * FROM custom_views WHERE table_id IN (${placeholder}) ORDER BY view_order`).all(...tableIds);
+    }
+
+    let customViewFields = [];
+    const viewIds = customViews.map(v => v.custom_view_id);
+    if (viewIds.length > 0) {
+        const placeholder = viewIds.map(() => "?").join(",");
+        customViewFields = db.prepare(`SELECT * FROM custom_view_fields WHERE custom_view_id IN (${placeholder}) ORDER BY display_order`).all(...viewIds);
+    }
+    // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
+
     const structuredTables = {};
     tables.forEach((table) => {
-      structuredTables[table.table_name] = { ...table, fields: {} };
+      // Lampirkan custom views pada setiap jadual
+      const viewsForTable = customViews.filter(v => v.table_id === table.table_id);
+      viewsForTable.forEach(view => {
+          view.fields = customViewFields.filter(f => f.custom_view_id === view.custom_view_id);
+      });
+      structuredTables[table.table_name] = { ...table, fields: {}, custom_views: viewsForTable };
     });
 
     fields.forEach((field) => {
@@ -619,54 +636,18 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
         .all(...tableIds, ...tableIds);
     }
 
-    // ▼▼▼ MULA LOGIK MENU BERSEPADU ▼▼▼
-    const groups = db.prepare(
-        "SELECT * FROM menu_groups WHERE project_id = ? ORDER BY group_order"
-    ).all(projectId);
-      
-    const groupedItems = db.prepare(`
-        SELECT mi.*, t.table_name 
-        FROM menu_items mi
-        LEFT JOIN tables t ON mi.table_id = t.table_id
-        WHERE mi.project_id = ? AND mi.menu_group_id IS NOT NULL
-        ORDER BY mi.item_order
-    `).all(projectId);
+    const groups = db.prepare("SELECT * FROM menu_groups WHERE project_id = ? ORDER BY group_order").all(projectId);
+    const groupedItems = db.prepare(`SELECT mi.*, t.table_name FROM menu_items mi LEFT JOIN tables t ON mi.table_id = t.table_id WHERE mi.project_id = ? AND mi.menu_group_id IS NOT NULL ORDER BY mi.item_order`).all(projectId);
+    const topLevelItems = db.prepare(`SELECT mi.*, t.table_name FROM menu_items mi LEFT JOIN tables t ON mi.table_id = t.table_id WHERE mi.project_id = ? AND mi.menu_group_id IS NULL ORDER BY item_order`).all(projectId);
     
-    const topLevelItems = db.prepare(`
-        SELECT mi.*, t.table_name
-        FROM menu_items mi
-        LEFT JOIN tables t ON mi.table_id = t.table_id
-        WHERE mi.project_id = ? AND mi.menu_group_id IS NULL ORDER BY item_order
-    `).all(projectId);
-
-    // Gabungkan kumpulan dan item peringkat atasan ke dalam satu senarai
     const unifiedMenu = [];
-
     groups.forEach(group => {
-        unifiedMenu.push({
-            type: 'group',
-            id: group.menu_group_id,
-            order: group.group_order,
-            name: group.group_name,
-            // Lampirkan item-item yang tergolong dalam kumpulan ini
-            items: groupedItems.filter(item => item.menu_group_id === group.menu_group_id)
-        });
+        unifiedMenu.push({ type: 'group', id: group.menu_group_id, order: group.group_order, name: group.group_name, items: groupedItems.filter(item => item.menu_group_id === group.menu_group_id) });
     });
-
     topLevelItems.forEach(item => {
-        unifiedMenu.push({
-            type: item.table_id ? 'table_item' : 'custom_item',
-            id: item.item_id,
-            order: item.item_order,
-            label: item.item_label || item.table_name,
-            url: item.item_url,
-            table_name: item.table_name,
-        });
+        unifiedMenu.push({ type: item.table_id ? 'table_item' : 'custom_item', id: item.item_id, order: item.item_order, label: item.item_label || item.table_name, url: item.item_url, table_name: item.table_name });
     });
-    
-    // Susun senarai bersepadu berdasarkan 'order'
     unifiedMenu.sort((a, b) => (a.order || 0) - (b.order || 0));
-    // ▲▲▲ TAMAT LOGIK MENU BERSEPADU ▲▲▲
 
     return {
       project: project,
@@ -674,7 +655,7 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
         name: project.app_title,
         table: structuredTables,
         relationships: relationships,
-        unified_menu: unifiedMenu, // Hantar data yang telah disatukan
+        unified_menu: unifiedMenu,
       },
     };
   } catch (error) {
@@ -860,7 +841,7 @@ function importSchema(sql, projectId, dialect) {
 
                 const maxOrderResult = getMaxMenuOrderStmt.get(projectId);
                 const nextMenuOrder = (maxOrderResult && maxOrderResult.max_order !== null ? maxOrderResult.max_order : -1) + 1;
-                const itemUrl = `${tableName} Model`;
+                const itemUrl = `${tableName} Resource`;
                 insertMenuItemStmt.run(projectId, tableId, tableName, itemUrl, nextMenuOrder);
 
 				let fieldOrder = 0;
@@ -1206,15 +1187,15 @@ ipcMain.handle('table:update', async (event, data) => {
             // 2. Jika nama jadual ditukar, kemas kini juga 'menu_items'
             if (oldTableName && fieldsToUpdate.table_name) {
                 const newTableName = fieldsToUpdate.table_name;
-                const newUrl = `${newTableName} Model`;
-                const oldUrl = `${oldTableName} Model`;
+                const newUrl = `${newTableName} Resource`;
+                const oldUrl = `${oldTableName} Resource`;
 
                 // Kemas kini label HANYA jika ia sepadan dengan nama jadual lama
                 db.prepare(
                     'UPDATE menu_items SET item_label = ? WHERE table_id = ? AND item_label = ?'
                 ).run(newTableName, table_id, oldTableName);
                 
-                // Kemas kini URL HANYA jika ia sepadan dengan format 'Model' yang lama
+                // Kemas kini URL HANYA jika ia sepadan dengan format 'Resource' yang lama
                 db.prepare(
                     'UPDATE menu_items SET item_url = ? WHERE table_id = ? AND item_url = ?'
                 ).run(newUrl, table_id, oldUrl);
@@ -1442,6 +1423,97 @@ ipcMain.handle('relationship:update', async (event, data) => {
         return { success: true };
     } catch (error) {
         console.error("Gagal mengemas kini hubungan:", error);
+        return { success: false, message: error.message };
+    }
+});
+
+// FIND AND REPLACE this entire handler in: main.js
+
+ipcMain.handle('custom-view:save', async (event, data) => {
+    const { custom_view_id, table_id, view_name, menu_icon, filter_rules, fields } = data;
+    if (!table_id || !view_name) {
+        return { success: false, message: 'Table ID and View Name are required.' };
+    }
+
+    const transaction = db.transaction(() => {
+        let viewId = custom_view_id;
+        let isNewView = false;
+
+        if (viewId) { // Update existing view
+            db.prepare(
+                `UPDATE custom_views SET view_name = ?, menu_icon = ?, filter_rules = ? WHERE custom_view_id = ?`
+            ).run(view_name, menu_icon, filter_rules, viewId);
+        } else { // Insert new view
+            isNewView = true;
+            const maxOrderResult = db.prepare('SELECT MAX(view_order) as max_order FROM custom_views WHERE table_id = ?').get(table_id);
+            const nextOrder = (maxOrderResult?.max_order ?? -1) + 1;
+            const info = db.prepare(
+                `INSERT INTO custom_views (table_id, view_name, menu_icon, filter_rules, view_order) VALUES (?, ?, ?, ?, ?)`
+            ).run(table_id, view_name, menu_icon, filter_rules, nextOrder);
+            viewId = info.lastInsertRowid;
+        }
+
+        db.prepare('DELETE FROM custom_view_fields WHERE custom_view_id = ?').run(viewId);
+        const insertFieldStmt = db.prepare(
+            `INSERT INTO custom_view_fields (custom_view_id, field_source_table, field_source_name, field_label, is_readonly, display_order) 
+             VALUES (?, ?, ?, ?, ?, ?)`
+        );
+
+        if (fields && Array.isArray(fields)) {
+            fields.forEach((field, index) => {
+                insertFieldStmt.run(viewId, field.sourceTable, field.sourceName, field.label, field.isReadonly ? 1 : 0, index);
+            });
+        }
+        
+        // ▼▼▼ MULA LOGIK BAHARU: Cipta item menu jika ia adalah view baharu ▼▼▼
+        if (isNewView) {
+            const tableInfo = db.prepare('SELECT table_name, project_id FROM tables WHERE table_id = ?').get(table_id);
+            if (tableInfo) {
+                const maxMenuOrderResult = db.prepare(
+                    'SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL'
+                ).get(tableInfo.project_id);
+                const nextMenuOrder = (maxMenuOrderResult?.max_order ?? -1) + 1;
+                
+                const menuLabel = `${tableInfo.table_name} - custom`;
+                const menuUrl = view_name; // Seperti yang diminta
+
+                db.prepare(
+                    `INSERT INTO menu_items (project_id, custom_view_id, item_label, item_url, item_order) VALUES (?, ?, ?, ?, ?)`
+                ).run(tableInfo.project_id, viewId, menuLabel, menuUrl, nextMenuOrder);
+            }
+        }
+        // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
+        
+        return viewId;
+    });
+
+    try {
+        const savedViewId = transaction();
+        const savedView = db.prepare('SELECT * FROM custom_views WHERE custom_view_id = ?').get(savedViewId);
+        return { success: true, view: savedView };
+    } catch (error) {
+        console.error("Failed to save custom view:", error);
+        return { success: false, message: error.message };
+    }
+});
+
+// FIND AND REPLACE this entire handler in: main.js
+
+ipcMain.handle('custom-view:delete', async (event, viewId) => {
+    if (!viewId) {
+        return { success: false, message: 'Custom View ID is required.' };
+    }
+    try {
+        const transaction = db.transaction(() => {
+            // Padam item menu yang berkaitan dahulu
+            db.prepare('DELETE FROM menu_items WHERE custom_view_id = ?').run(viewId);
+            // Kemudian padam custom view (akan memadam custom_view_fields melalui CASCADE)
+            db.prepare('DELETE FROM custom_views WHERE custom_view_id = ?').run(viewId);
+        });
+        transaction();
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to delete custom view:", error);
         return { success: false, message: error.message };
     }
 });

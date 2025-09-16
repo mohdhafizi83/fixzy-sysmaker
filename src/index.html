@@ -1017,6 +1017,7 @@
         <div class="tabs-nav">
             <button class="tab-link active" data-tab="parent-tab-table-view" id="tbl-tab-tableview" name="tbl-tab-tableview">Table view</button>
             <button class="tab-link" data-tab="parent-tab-detail-view" id="tbl-tab-detailview" name="tbl-tab-detailview">Detail View</button>
+			<button class="tab-link" data-tab="tab-custom-views" id="tbl-tab-customview" name="tbl-tab-customview">Custom Views</button>
         </div>
 
         <div class="tabs-content">
@@ -1290,6 +1291,30 @@
                     </div>
                 </div>
             </div>
+			
+			
+        <div id="tab-custom-views" class="tab-pane">
+            <div class="card">
+                <div class="card-body">
+                    <div class="custom-view-header">
+                        <h4>Custom Views for this Table</h4>
+                        <button id="btn-add-custom-view" class="btn btn-primary"><i class="fas fa-plus"></i> Add Custom View</button>
+                    </div>
+                    <p class="helper-text">
+                        Create specialized pages for this table with pre-filtered data and custom forms. These views will appear as new items in the main navigation menu.
+                    </p>
+                    <div id="custom-views-list-container">
+                        <div class="empty-state-label">
+                            <p>No Custom Views created yet.</p>
+                            <span>Click the button above to create one.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>			
+			
+			
+			
         </div>
     </div>
 </div>
@@ -2754,5 +2779,82 @@
         </div>
     </div>
 </div>
+<div id="custom-view-config-modal" class="modal-overlay hidden">
+    <div class="modal-content extra-large">
+        <div class="modal-header">
+            <h3 id="cv-modal-title">Create New Custom View</h3>
+            <button id="cv-modal-close" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="cv-view-id">
+            
+            <div id="cv-step-1">
+                <div class="form-group">
+                    <label for="cv-view-name">View Name / Menu Title</label>
+                    <input type="text" id="cv-view-name" placeholder="e.g., Pending Confirmations">
+                    <p class="helper-text" style="margin-top: 0.25rem;">This will appear in the application's navigation menu.</p>
+                </div>
+                <div class="form-group">
+                    <label for="cv-menu-icon">Menu Icon (Font Awesome)</label>
+                    <input type="text" id="cv-menu-icon" placeholder="e.g., fa-check-square">
+                </div>
+
+                <fieldset style="margin-top: 2rem;">
+                    <legend>Default Filter Criteria</legend>
+                    <p class="helper-text" style="margin-bottom: 1rem;">Show records from this table that match the following rules.</p>
+                    <div id="cv-filter-builder-container">
+                        </div>
+                </fieldset>
+            </div>
+
+<div id="cv-step-2" class="hidden">
+    <h4>Design the Detail View Form</h4>
+    <p class="helper-text">Select one or more fields from the left panel, then use the arrow buttons to move them to the form layout on the right. Use the up/down buttons to reorder.</p>
+    <div class="form-builder-grid">
+        <div class="form-builder-panel">
+            <h5>Available Fields</h5>
+            <ul id="cv-available-fields-list" class="field-tree">
+                </ul>
+        </div>
+
+        <div class="form-builder-controls">
+            <button id="cv-btn-move-to-layout" class="btn" title="Add to form">&gt;&gt;</button>
+            <button id="cv-btn-remove-from-layout" class="btn" title="Remove from form">&lt;&lt;</button>
+        </div>
+
+        <div id="cv-form-layout-panel" class="form-builder-panel">
+            <h5>Form Layout</h5>
+            <div class="empty-state-label">
+                <p>No fields selected</p>
+            </div>
+            </div>
+    </div>
+</div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cv-modal-cancel">Cancel</button>
+            <button class="btn" id="cv-modal-back" class="hidden"><i class="fas fa-arrow-left"></i> Back</button>
+            <button class="btn btn-primary" id="cv-modal-next">Next: Design Form <i class="fas fa-arrow-right"></i></button>
+            <button class="btn btn-primary hidden" id="cv-modal-save">Save Custom View</button>
+        </div>
+    </div>
+</div>
+
+<template id="cv-form-field-template">
+    <div class="form-field-item">
+        <div class="field-info">
+            <span class="field-label">Field Label</span>
+            <span class="field-source">source.table</span>
+        </div>
+        <label class="checkbox-label">
+            <input type="checkbox" class="is-readonly-checkbox"> Read-only
+        </label>
+        <div class="field-item-controls">
+            <button class="btn-sidebar-icon move-up-btn" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+            <button class="btn-sidebar-icon move-down-btn" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+            <button class="btn-sidebar-icon delete-form-field-btn" title="Remove field">&times;</button>
+        </div>
+    </div>
+</template>
 </body>
 </html>

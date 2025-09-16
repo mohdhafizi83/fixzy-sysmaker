@@ -41,4 +41,7 @@ updateIndividualMenuOrder: (data) => ipcRenderer.invoke('menu:update-individual-
   deleteProjectSchema: (projectId) => ipcRenderer.invoke('project:delete-schema', projectId),
   onShowOverlay: (callback) => ipcRenderer.on('show-overlay', (event) => callback()),
   parseCalculationQuery: (sql) => ipcRenderer.invoke('sql:parse-calculation-query', sql),
+
+  saveCustomView: (data) => ipcRenderer.invoke('custom-view:save', data),
+  deleteCustomView: (viewId) => ipcRenderer.invoke('custom-view:delete', viewId),
 });

@@ -3293,6 +3293,7 @@ export function populateTableSettings(tableName) {
     populateSortByDropdown(tableName);
     populateFocusFieldDropdown(tableName);
     populateRecordOwnerDropdown(tableName);
+	populateCustomViewsTab(tableName);
 		
     const tableData = jsonData.database.table[tableName];
     if (!tableData) {
@@ -3876,7 +3877,7 @@ export function initializeMenuManagementHandlers() {
 
                 // Dapatkan nama jadual dari URL yang disimpan (jika ada) atau label
                 const url = itemEl.dataset.url || '';
-                const tableNameMatch = url.match(/^(.*?) Model$/);
+                const tableNameMatch = url.match(/^(.*?) Resource$/);
                 const tableName = tableNameMatch ? tableNameMatch[1] : itemEl.dataset.label;
                 
                 elements.tableLabelInput.value = itemEl.dataset.label;
@@ -3938,7 +3939,7 @@ export function initializeMenuManagementHandlers() {
 
                 dataToSave = { 
                     label: tableLabel, 
-                    url: `${tableName} Model`, // <<< INI ADALAH PERUBAHAN YANG DIMINTA
+                    url: `${tableName} Resource`, // <<< INI ADALAH PERUBAHAN YANG DIMINTA
                     table_id: tableData.table_id
                 };
 
@@ -5256,12 +5257,33 @@ function moveFields(sourceSelector, destinationSelector) {
     itemsToMove.forEach(item => { item.classList.remove('selected'); destination.appendChild(item); });
 }
 
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
+
 function addRuleOrGroup(button, type) {
-    const targetContainer = button.closest('.cqb-rule-group, #cqb-container').querySelector('.qb-nested-rules, #cqb-rules-container');
-    const tableName = button.closest('#configurable-query-builder-modal').dataset.tableName;
+    // ▼▼▼ MULA PEMBETULAN: Selector 'closest' dan 'querySelector' telah diperluas ▼▼▼
+    const parentContainer = button.closest('.cqb-rule-group, #cqb-container, #cv-filter-builder-container');
+    if (!parentContainer) return; // Safety check
+
+    // Cari bekas yang betul untuk menambah peraturan (rule) atau kumpulan (group)
+    const targetContainer = parentContainer.querySelector('.qb-nested-rules, #cqb-rules-container, div');
+    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
+
+    const tableName = button.closest('#configurable-query-builder-modal, #custom-view-config-modal').dataset.tableName;
+    
     if (targetContainer) {
-        if(type === 'rule') targetContainer.appendChild(createRuleElement(tableName));
-        else targetContainer.appendChild(createRuleGroupElement());
+        if(type === 'rule') {
+            const newRule = createRuleElement(tableName);
+            targetContainer.appendChild(newRule);
+            
+            // Jika ini adalah peraturan pertama, buang butang "Add Rule" asal
+            const initialAddButton = parentContainer.querySelector('.cqb-add-nested-rule');
+            if (initialAddButton && initialAddButton.parentElement !== targetContainer) {
+                initialAddButton.parentElement.remove();
+            }
+        }
+        else {
+             targetContainer.appendChild(createRuleGroupElement());
+        }
     }
 }
 
@@ -5566,4 +5588,422 @@ export function showImportErrorGuide() {
     newOkBtn.addEventListener('click', closeModal);
     
     modal.classList.remove('hidden');
+}
+
+// ADD THIS ENTIRE CODE BLOCK AT THE END OF uiHandlers.js
+
+// ==================================================================
+// == CUSTOM VIEWS FEATURE LOGIC                                 ==
+// ==================================================================
+
+/**
+ * Mengisi kandungan tab "Custom Views" dengan senarai view yang telah dicipta.
+ * @param {string} tableName - Nama jadual semasa.
+ */
+export function populateCustomViewsTab(tableName) {
+    const container = document.getElementById('custom-views-list-container');
+    if (!container) return;
+
+    const views = jsonData.database.table[tableName]?.custom_views || [];
+
+    if (views.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state-label">
+                <p>No Custom Views created yet.</p>
+                <span>Click the button above to create one.</span>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = views.map(view => `
+        <div class="cv-list-item">
+            <div class="cv-info">
+                <i class="fas ${view.menu_icon || 'fa-eye'}"></i>
+                <span>${view.view_name}</span>
+            </div>
+            <div class="cv-actions">
+                <button class="btn btn-secondary cv-edit-btn" data-view-id="${view.custom_view_id}">
+                    <i class="fas fa-pencil-alt"></i> Edit
+                </button>
+                <button class="btn cv-delete-btn" data-view-id="${view.custom_view_id}">
+                    <i class="fas fa-trash-alt"></i> Delete
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+
+/**
+ * Membuka dan menguruskan modal konfigurasi Custom View (untuk tambah/edit).
+ * @param {string} tableName - Nama jadual semasa.
+ * @param {object|null} viewData - Data untuk view sedia ada jika dalam mod edit.
+ */
+// FIND AND REPLACE this entire function in uiHandlers.js
+
+function openCustomViewModal(tableName, viewData = null) {
+    const modal = document.getElementById('custom-view-config-modal');
+    if (!modal) return;
+
+    modal.dataset.tableName = tableName;
+    
+    const elements = {
+        title: document.getElementById('cv-modal-title'),
+        viewIdInput: document.getElementById('cv-view-id'),
+        viewNameInput: document.getElementById('cv-view-name'),
+        menuIconInput: document.getElementById('cv-menu-icon'),
+        filterContainer: document.getElementById('cv-filter-builder-container'),
+    };
+
+    // --- Reset & Isi Data ---
+    const isEditing = viewData !== null;
+    elements.title.textContent = isEditing ? `Edit Custom View: ${viewData.view_name}` : `Create New Custom View for '${tableName}'`;
+    elements.viewIdInput.value = isEditing ? viewData.custom_view_id : '';
+    elements.viewNameInput.value = isEditing ? viewData.view_name : '';
+    elements.menuIconInput.value = isEditing ? viewData.menu_icon : '';
+
+    // --- Sediakan Filter Builder ---
+    const filterState = isEditing ? JSON.parse(viewData.filter_rules || '{}') : null;
+    elements.filterContainer.innerHTML = '';
+    const filterBuilderWrapper = document.createElement('div');
+    elements.filterContainer.appendChild(filterBuilderWrapper);
+    buildRulesUI(filterBuilderWrapper, filterState, tableName);
+    
+    if (!filterState || !filterState.rules || !filterState.rules.length === 0) {
+        const buttonContainer = document.createElement('div');
+        buttonContainer.innerHTML = `<button class="btn btn-secondary btn-sm cqb-add-nested-rule"><i class="fas fa-plus"></i> Add Rule</button>`;
+        filterBuilderWrapper.appendChild(buttonContainer);
+        buttonContainer.querySelector('button').addEventListener('click', e => addRuleOrGroup(e.target, 'rule'));
+    }
+
+    // --- Sediakan Form Builder ---
+    populateAvailableFieldsTree(tableName);
+    const formLayoutPanel = document.getElementById('cv-form-layout-panel');
+    formLayoutPanel.innerHTML = `<div class="empty-state-label"><p>Drag fields here</p></div>`;
+    if (isEditing && viewData.fields) {
+        populateFormBuilder(viewData.fields);
+    }
+    
+    // --- Tetapkan Keadaan Awal Paparan Modal ---
+    document.getElementById('cv-step-1').classList.remove('hidden');
+    document.getElementById('cv-step-2').classList.add('hidden');
+    document.getElementById('cv-modal-back').classList.add('hidden');
+    document.getElementById('cv-modal-save').classList.add('hidden');
+    document.getElementById('cv-modal-next').classList.remove('hidden');
+
+    // Paparkan Modal
+    modal.classList.remove('hidden');
+}
+
+// FIND AND REPLACE 'initializeCustomViews', 'populateAvailableFieldsTree', and 'populateFormBuilder' in uiHandlers.js
+// ALSO ADD the new helper function 'initializeCustomViewModalLogic'
+
+/**
+ * Fungsi utama untuk memasang semua event listener untuk ciri Custom Views.
+ */
+export function initializeCustomViews() {
+    const tableSettingsPage = document.getElementById('table-settings-page');
+    if (!tableSettingsPage) return;
+
+    // Pasang listener untuk modal SEKALI SAHAJA
+    initializeCustomViewModalLogic();
+
+    // Event delegation untuk butang "Add", "Edit", dan "Delete" di dalam tab
+    tableSettingsPage.addEventListener('click', e => {
+        const currentTableName = document.querySelector('#table-settings-page .table-name').textContent;
+        if (!currentTableName) return;
+
+        if (e.target.closest('#btn-add-custom-view')) {
+            openCustomViewModal(currentTableName);
+        }
+
+        const editBtn = e.target.closest('.cv-edit-btn');
+        if (editBtn) {
+            const viewId = parseInt(editBtn.dataset.viewId, 10);
+            const viewData = jsonData.database.table[currentTableName]?.custom_views.find(v => v.custom_view_id === viewId);
+            if (viewData) {
+                openCustomViewModal(currentTableName, viewData);
+            }
+        }
+
+        const deleteBtn = e.target.closest('.cv-delete-btn');
+        if (deleteBtn) {
+            const viewId = parseInt(deleteBtn.dataset.viewId, 10);
+            showCustomDialog({
+                title: "Confirm Deletion",
+                message: "Are you sure you want to permanently delete this Custom View? This action cannot be undone.",
+                showCancelButton: true,
+                onOk: async () => {
+                    const result = await window.electronAPI.deleteCustomView(viewId);
+                    if (result.success) {
+                        await loadProjectData(activeProject);
+                        populateCustomViewsTab(currentTableName);
+                    } else {
+                        showCustomDialog({ title: "Error", message: `Failed to delete view: ${result.message}`});
+                    }
+                }
+            });
+        }
+    });
+}
+
+
+/**
+ * Memasang semua event listener untuk modal Custom View SEKALI SAHAJA.
+ */
+// FIND AND REPLACE this entire function in uiHandlers.js
+
+function initializeCustomViewModalLogic() {
+    const modal = document.getElementById('custom-view-config-modal');
+    if (!modal) return;
+    
+    if (modal.dataset.listenersAttached === 'true') return;
+
+    // Rujukan kepada semua elemen interaktif
+    const listContainer = document.getElementById('cv-available-fields-list');
+    const formLayoutPanel = document.getElementById('cv-form-layout-panel');
+    const btnMoveToLayout = document.getElementById('cv-btn-move-to-layout');
+    const btnRemoveFromLayout = document.getElementById('cv-btn-remove-from-layout');
+    const elements = {
+        step1: document.getElementById('cv-step-1'),
+        step2: document.getElementById('cv-step-2'),
+        btnBack: document.getElementById('cv-modal-back'),
+        btnNext: document.getElementById('cv-modal-next'),
+        btnSave: document.getElementById('cv-modal-save'),
+        btnCancel: document.getElementById('cv-modal-cancel'),
+        btnClose: document.getElementById('cv-modal-close'),
+    };
+
+    // --- Logik Multi-Select (sedia ada) ---
+    const handleMultiSelect = (e) => {
+        const item = e.target.closest('.field-item, .form-field-item');
+        if (!item) return;
+        item.classList.toggle('selected');
+    };
+    listContainer.addEventListener('click', handleMultiSelect);
+    formLayoutPanel.addEventListener('click', handleMultiSelect);
+
+    // --- Logik Butang Pindah (sedia ada) ---
+    btnMoveToLayout.addEventListener('click', () => {
+        const selectedFields = listContainer.querySelectorAll('.field-item.selected');
+        selectedFields.forEach(field => {
+            createFormFieldInLayout({ ...field.dataset }, formLayoutPanel);
+            field.remove();
+        });
+        updateFormFieldMoveButtons(formLayoutPanel);
+    });
+
+    btnRemoveFromLayout.addEventListener('click', () => {
+        const selectedFields = formLayoutPanel.querySelectorAll('.form-field-item.selected');
+        const currentTableName = modal.dataset.tableName;
+        selectedFields.forEach(field => field.remove());
+        populateAvailableFieldsTree(currentTableName);
+        updateFormFieldMoveButtons(formLayoutPanel);
+    });
+    
+    // --- Logik Butang Naik/Turun/Padam (sedia ada) ---
+    formLayoutPanel.addEventListener('click', e => {
+        const button = e.target.closest('button');
+        if (!button) return;
+        const item = e.target.closest('.form-field-item');
+        if (!item) return;
+        
+        const currentTableName = modal.dataset.tableName;
+
+        if (button.classList.contains('move-up-btn')) {
+            if (item.previousElementSibling) item.parentElement.insertBefore(item, item.previousElementSibling);
+        } else if (button.classList.contains('move-down-btn')) {
+            if (item.nextElementSibling) item.parentElement.insertBefore(item.nextElementSibling, item);
+        } else if (button.classList.contains('delete-form-field-btn')) {
+            item.remove();
+            populateAvailableFieldsTree(currentTableName);
+        }
+        updateFormFieldMoveButtons(formLayoutPanel);
+    });
+
+    // ▼▼▼ MULA LOGIK BAHARU: Navigasi & Simpan Modal ▼▼▼
+    const showStep = (step) => {
+        if (step === 1) {
+            elements.step1.classList.remove('hidden');
+            elements.step2.classList.add('hidden');
+            elements.btnBack.classList.add('hidden');
+            elements.btnSave.classList.add('hidden');
+            elements.btnNext.classList.remove('hidden');
+        } else if (step === 2) {
+            elements.step1.classList.add('hidden');
+            elements.step2.classList.remove('hidden');
+            elements.btnBack.classList.remove('hidden');
+            elements.btnSave.classList.remove('hidden');
+            elements.btnNext.classList.add('hidden');
+        }
+    };
+
+    const closeModal = () => modal.classList.add('hidden');
+    elements.btnNext.addEventListener('click', () => showStep(2));
+    elements.btnBack.addEventListener('click', () => showStep(1));
+    elements.btnCancel.addEventListener('click', closeModal);
+    elements.btnClose.addEventListener('click', closeModal);
+    
+    elements.btnSave.addEventListener('click', async () => {
+        const tableName = modal.dataset.tableName;
+        const filterData = readRuleState(modal.querySelector('#cv-filter-builder-container div'));
+        const formFields = Array.from(formLayoutPanel.querySelectorAll('.form-field-item')).map(item => ({
+            sourceTable: item.dataset.sourceTable,
+            sourceName: item.dataset.sourceName,
+            label: item.querySelector('.field-label').textContent,
+            isReadonly: item.querySelector('.is-readonly-checkbox').checked,
+        }));
+
+        const dataToSave = {
+            custom_view_id: document.getElementById('cv-view-id').value || null,
+            table_id: jsonData.database.table[tableName].table_id,
+            view_name: document.getElementById('cv-view-name').value.trim(),
+            menu_icon: document.getElementById('cv-menu-icon').value.trim(),
+            filter_rules: JSON.stringify(filterData),
+            fields: formFields,
+        };
+
+        const result = await window.electronAPI.saveCustomView(dataToSave);
+        if (result.success) {
+            closeModal();
+            await loadProjectData(activeProject);
+            populateCustomViewsTab(tableName);
+        } else {
+            showCustomDialog({ title: "Save Error", message: `Failed to save Custom View: ${result.message}` });
+        }
+    });
+    // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
+
+    modal.dataset.listenersAttached = 'true';
+}
+
+
+/**
+ * HANYA membina dan memaparkan struktur pokok untuk senarai medan yang boleh dipilih.
+ * @param {string} currentTableName - Nama jadual semasa.
+ */
+function populateAvailableFieldsTree(currentTableName) {
+    const listContainer = document.getElementById('cv-available-fields-list');
+    const formLayoutPanel = document.getElementById('cv-form-layout-panel');
+    listContainer.innerHTML = '';
+
+    const relationships = jsonData.database.relationships;
+    const allTables = jsonData.database.table;
+    const fieldsInLayout = Array.from(formLayoutPanel.querySelectorAll('.form-field-item')).map(
+        item => `${item.dataset.sourceTable}.${item.dataset.sourceName}`
+    );
+
+    const findAncestors = (tableName, level = 0) => {
+        if (level > 2) return [];
+        let ancestors = [];
+        const parentRelations = relationships.filter(r => r.child_table_name === tableName);
+        parentRelations.forEach(rel => {
+            ancestors.push({ name: rel.parent_table_name, relation: 'Parent' });
+            ancestors = ancestors.concat(findAncestors(rel.parent_table_name, level + 1));
+        });
+        return ancestors;
+    };
+
+    const tablesToShow = [{ name: currentTableName, relation: 'Current' }, ...findAncestors(currentTableName)];
+    const uniqueTables = [...new Map(tablesToShow.map(item => [item['name'], item])).values()];
+
+    uniqueTables.forEach(tableInfo => {
+        const tableData = allTables[tableInfo.name];
+        if (!tableData) return;
+
+        const tableNode = document.createElement('li');
+        tableNode.className = 'table-node';
+        tableNode.innerHTML = `<span><i class="fas fa-chevron-down"></i> ${tableInfo.name} <small>(${tableInfo.relation})</small></span>`;
+        
+        const fieldList = document.createElement('ul');
+        fieldList.className = 'field-list';
+
+        Object.keys(tableData.fields).forEach(fieldName => {
+            const qualifiedName = `${tableInfo.name}.${fieldName}`;
+            // Hanya papar jika medan ini TIADA dalam panel kanan
+            if (!fieldsInLayout.includes(qualifiedName)) {
+                const fieldItem = document.createElement('li');
+                fieldItem.className = 'field-item';
+                fieldItem.textContent = fieldName;
+                fieldItem.dataset.sourceTable = tableInfo.name;
+                fieldItem.dataset.sourceName = fieldName;
+                fieldItem.dataset.isParent = tableInfo.relation !== 'Current';
+                fieldList.appendChild(fieldItem);
+            }
+        });
+        
+        if (fieldList.children.length > 0) {
+            tableNode.appendChild(fieldList);
+            listContainer.appendChild(tableNode);
+        }
+    });
+
+    listContainer.querySelectorAll('.table-node > span').forEach(span => {
+        span.addEventListener('click', () => {
+            span.parentElement.classList.toggle('collapsed');
+            span.nextElementSibling.classList.toggle('hidden');
+        });
+    });
+}
+
+
+/**
+ * Mengisi Form Builder dengan medan-medan sedia ada (untuk mod edit).
+ * @param {Array} fields - Senarai objek medan dari viewData.
+ */
+function populateFormBuilder(fields) {
+    const formLayoutPanel = document.getElementById('cv-form-layout-panel');
+    const emptyState = formLayoutPanel.querySelector('.empty-state-label');
+    if (emptyState) emptyState.remove();
+
+    fields.forEach(field => {
+        const fieldData = {
+            sourceTable: field.field_source_table,
+            sourceName: field.field_source_name,
+            isParent: field.field_source_table !== formLayoutPanel.closest('.modal-overlay').dataset.tableName,
+            isReadonly: field.is_readonly === 1
+        };
+        createFormFieldInLayout(fieldData, formLayoutPanel);
+    });
+    updateFormFieldMoveButtons(formLayoutPanel);
+}
+
+/**
+ * Mencipta satu elemen medan di dalam panel Form Layout.
+ * @param {object} fieldData - Dataset dari elemen medan asal.
+ * @param {HTMLElement} layoutPanel - Elemen panel Form Layout.
+ */
+function createFormFieldInLayout(fieldData, layoutPanel) {
+    const emptyState = layoutPanel.querySelector('.empty-state-label');
+    if (emptyState) emptyState.remove();
+
+    const template = document.getElementById('cv-form-field-template');
+    const clone = template.content.cloneNode(true);
+    const formFieldItem = clone.querySelector('.form-field-item');
+    
+    formFieldItem.dataset.sourceTable = fieldData.sourceTable;
+    formFieldItem.dataset.sourceName = fieldData.sourceName;
+    clone.querySelector('.field-label').textContent = fieldData.sourceName;
+    clone.querySelector('.field-source').textContent = `${fieldData.sourceTable}.${fieldData.sourceName}`;
+    clone.querySelector('.is-readonly-checkbox').checked = (fieldData.isParent === 'true' || fieldData.isParent === true || fieldData.isReadonly === true);
+    
+    layoutPanel.appendChild(clone);
+}
+
+/**
+ * Mengemas kini status (disabled/enabled) untuk butang naik/turun bagi setiap medan.
+ * @param {HTMLElement} formLayoutPanel - Elemen panel Form Layout.
+ */
+function updateFormFieldMoveButtons(formLayoutPanel) {
+    const items = formLayoutPanel.querySelectorAll('.form-field-item');
+    if (items.length === 0 && !formLayoutPanel.querySelector('.empty-state-label')) {
+        formLayoutPanel.innerHTML = `<div class="empty-state-label"><p>No fields selected</p></div>`;
+    }
+
+    items.forEach((item, index) => {
+        const upBtn = item.querySelector('.move-up-btn');
+        const downBtn = item.querySelector('.move-down-btn');
+        if (upBtn) upBtn.disabled = (index === 0);
+        if (downBtn) downBtn.disabled = (index === items.length - 1);
+    });
 }
