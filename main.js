@@ -776,37 +776,67 @@ ipcMain.handle("tables:check-exists", async (event, projectId) => {
     .get(projectId);
 });
 
-// main.js
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: src/main.js
 
-function importSchema(sql, projectId) {
+function importSchema(sql, projectId, dialect) {
+    const dialectMap = {
+        'MySQL': 'mysql',
+        'PostgreSQL': 'postgresql',
+        'TSQL': 'mysql', 
+        'SQLite': 'sqlite'
+    };
+    const parserDialect = dialectMap[dialect] || 'mysql';
+
     let tablesCreated = 0;
     let relationshipsCreated = 0;
     const tableMap = {};
     const foreignKeysToProcess = [];
 
-    const cleanedSql = sql.replace(
-        /\s+ENGINE=\w+\s*DEFAULT\s*CHARSET=\w+(\s*COLLATE=\w+)?(\s*COMMENT='.*?')?;/gi,
-        ";"
-    );
+    let processedSql = sql;
 
+    if (dialect === 'TSQL') {
+        processedSql = processedSql
+            .replace(/^GO\s*$/gim, '')
+            .replace(/IDENTITY\s*\(\d+\s*,\s*\d+\)/gi, 'AUTO_INCREMENT')
+            .replace(/\((MAX)\)/gi, '')
+            .replace(/\b(NVARCHAR|VARCHAR|TEXT)\s*(?!\()/gi, 'TEXT ')
+            .replace(/GETDATE\(\)/gi, 'CURRENT_TIMESTAMP')
+            .replace(/\bN(VARCHAR|CHAR|TEXT)\b/gi, '$1')
+            // ▼▼▼ PENAMBAHBAIKAN ▼▼▼
+            .replace(/\bDATETIME2\b/gi, 'DATETIME'); // Tukar DATETIME2 kepada DATETIME
+            // ▲▲▲ TAMAT PENAMBAHBAIKAN ▲▲▲
+    }
+    
+    if (dialect === 'SQLite') {
+        processedSql = processedSql.replace(/^PRAGMA.*?;/gim, '');
+    }
+
+    if (dialect === 'MySQL') {
+        processedSql = processedSql.replace(
+            /\s+ENGINE=\w+\s*DEFAULT\s*CHARSET=\w+(\s*COLLATE=\w+)?(\s*COMMENT='.*?')?;/gi,
+            ";"
+        );
+    }
+    
+    const getFieldNameFromAST = (columnRef) => {
+        if (!columnRef || !columnRef.column) return 'parse_error';
+        if (typeof columnRef.column === 'string') return columnRef.column;
+        if (typeof columnRef.column === 'object' && columnRef.column.expr && columnRef.column.expr.value) {
+            return columnRef.column.expr.value;
+        }
+        console.warn("Unrecognized field name structure in AST:", JSON.stringify(columnRef, null, 2));
+        return String(columnRef.column); 
+    };
+    
     const extractDefaultValue = (defaultNode) => {
-        // ... (fungsi ini tidak berubah) ...
         if (!defaultNode || !defaultNode.value) return null;
         const valueNode = defaultNode.value;
         switch (valueNode.type) {
-            case "null":
-                return "NULL";
-            case "single_quote_string":
-            case "number":
-                return String(valueNode.value);
+            case "null": return "NULL";
+            case "single_quote_string": case "number": return String(valueNode.value);
             case "function":
-                if (
-                    valueNode.name &&
-                    valueNode.name.name &&
-                    Array.isArray(valueNode.name.name) &&
-                    valueNode.name.name.length > 0
-                ) {
-                    return valueNode.name.name[0].value;
+                if (valueNode.name && valueNode.name.name && Array.isArray(valueNode.name.name)) {
+                    return valueNode.name.name.map(part => part.value).join('.');
                 }
                 break;
         }
@@ -816,24 +846,13 @@ function importSchema(sql, projectId) {
     let tableOrder = 0;
 	
     const transaction = db.transaction((ast) => {
-        const getMaxMenuOrderStmt = db.prepare(
-            'SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL'
-        );
-        // ▼▼▼ MULA PERUBAHAN ▼▼▼
-        const insertMenuItemStmt = db.prepare(
-            'INSERT INTO menu_items (project_id, table_id, item_label, item_url, item_order, menu_group_id) VALUES (?, ?, ?, ?, ?, NULL)'
-        );
-        // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+        const getMaxMenuOrderStmt = db.prepare('SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL');
+        const insertMenuItemStmt = db.prepare('INSERT INTO menu_items (project_id, table_id, item_label, item_url, item_order, menu_group_id) VALUES (?, ?, ?, ?, ?, NULL)');
 
         for (const statement of ast) {
             if (statement.type === "create" && statement.keyword === "table") {
                 const tableName = statement.table[0].table;
-                const tableInfo = db
-                    .prepare(
-                        "INSERT INTO tables (project_id, table_name, table_view_title, table_order) VALUES (?, ?, ?, ?)"
-                    )
-                    .run(projectId, tableName, tableName, tableOrder); 
-                
+                const tableInfo = db.prepare("INSERT INTO tables (project_id, table_name, table_view_title, table_order) VALUES (?, ?, ?, ?)").run(projectId, tableName, tableName, tableOrder); 
                 tableOrder++;
                 const tableId = tableInfo.lastInsertRowid;
                 tablesCreated++;
@@ -841,22 +860,31 @@ function importSchema(sql, projectId) {
 
                 const maxOrderResult = getMaxMenuOrderStmt.get(projectId);
                 const nextMenuOrder = (maxOrderResult && maxOrderResult.max_order !== null ? maxOrderResult.max_order : -1) + 1;
-                
-                // ▼▼▼ MULA PERUBAHAN ▼▼▼
                 const itemUrl = `${tableName} Model`;
                 insertMenuItemStmt.run(projectId, tableId, tableName, itemUrl, nextMenuOrder);
-                // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
 
 				let fieldOrder = 0;
                 const tableLevelConstraints = [];
                 for (const col of statement.create_definitions) {
                     if (col.resource === "column") {
+                        let dataType = col.definition.dataType;
+                        if ((col.auto_increment || col.autoincrement) && !dataType) dataType = 'INTEGER';
+                        if (dataType && Array.isArray(col.definition.suffix) && col.definition.suffix.length > 0) {
+                            dataType += ' ' + col.definition.suffix.join(' ');
+                        }
+                        if (!dataType) {
+                            console.warn(`Could not determine data type for column '${getFieldNameFromAST(col.column)}'. Defaulting to 'TEXT'.`);
+                            dataType = 'TEXT';
+                        }
+                        const extractedFieldName = getFieldNameFromAST(col.column);
                         let fieldData = {
                             table_id: tableId,
-                            field_name: col.column.column,
+                            field_name: extractedFieldName,
+                            caption: extractedFieldName,
 							field_order: fieldOrder,
-                            data_type: col.definition.dataType,
+                            data_type: dataType,
                             length: col.definition.length || null,
+                            precision: col.definition.scale || null,
                             required: 0,
                             auto_increment: 0,
                             unsigned: 0,
@@ -868,53 +896,36 @@ function importSchema(sql, projectId) {
 							read_only: 0,
                             default_value: null,
                         };
-                        const dataType = fieldData.data_type.toUpperCase();
-
-                        if (dataType === 'TEXT') {
-                            fieldData.text_area = 1;
-                        } else if (dataType === 'MEDIUMTEXT' || dataType === 'LONGTEXT') {
-                            fieldData.rich_html = 1;
+                        const upperDataType = fieldData.data_type ? fieldData.data_type.toUpperCase() : '';
+                        if (upperDataType === 'TEXT') fieldData.text_area = 1;
+                        else if (upperDataType === 'MEDIUMTEXT' || upperDataType === 'LONGTEXT') fieldData.rich_html = 1;
+                        
+                        if (col.auto_increment || col.autoincrement) {
+                            fieldData.auto_increment = 1;
                         }
-                        if (col.auto_increment) fieldData.auto_increment = 1;
-
-                        if ((col.nullable && col.nullable.type === "not null") && !col.auto_increment) {
-                            fieldData.required = 1;
-                        }
-						
+                        if ((col.nullable && col.nullable.type === "not null") && !fieldData.auto_increment) fieldData.required = 1;
                         if (col.unsigned) fieldData.unsigned = 1;
                         if (col.zerofill) fieldData.zero_fill = 1;
-                        if (col.default_val) {
-                            fieldData.default_value = extractDefaultValue(col.default_val);
-                        }
+                        if (col.default_val) fieldData.default_value = extractDefaultValue(col.default_val);
+                        
                         if (col.constraints) {
                             for (const constraint of col.constraints) {
                                 const definition = constraint.definition || constraint;
                                 switch (definition.constraint_type.toLowerCase()) {
-                                    case "primary key":
-                                        fieldData.primary_key = 1;
-                                        fieldData.read_only = 1; 
-                                        break;
-                                    case "unique key":
-                                        fieldData.unique = 1;
-                                        break;
-                                    case "not null":
-                                        fieldData.required = 1;
-                                        break;
-                                    case "auto_increment":
-                                        fieldData.auto_increment = 1;
-                                        break;
-                                    case "default":
-                                        if (!fieldData.default_value) {
-                                            fieldData.default_value = extractDefaultValue(definition);
-                                        }
-                                        break;
+                                    case "primary key": fieldData.primary_key = 1; fieldData.read_only = 1; break;
+                                    case "unique key": fieldData.unique = 1; break;
+                                    case "not null": fieldData.required = 1; break;
+                                    case "autoincrement": 
+                                    case "auto_increment": fieldData.auto_increment = 1; break;
+                                    case "default": if (!fieldData.default_value) fieldData.default_value = extractDefaultValue(definition); break;
                                 }
                             }
                         }
-                        db.prepare(
-                            `INSERT INTO fields (table_id, field_name, data_type, length, required, auto_increment, unsigned, zero_fill, primary_key, "unique", text_area, rich_html, read_only, default_value, caption, field_order) VALUES (@table_id, @field_name, @data_type, @length, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @text_area, @rich_html, @read_only, @default_value, @field_name, @field_order)`
-                        ).run(fieldData);
-                        
+                        if (col.primary_key === 'primary key') {
+                            fieldData.primary_key = 1;
+                            fieldData.read_only = 1;
+                        }
+                        db.prepare(`INSERT INTO fields (table_id, field_name, data_type, length, precision, required, auto_increment, unsigned, zero_fill, primary_key, "unique", text_area, rich_html, read_only, default_value, caption, field_order) VALUES (@table_id, @field_name, @data_type, @length, @precision, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @text_area, @rich_html, @read_only, @default_value, @caption, @field_order)`).run(fieldData);
                         fieldOrder++;
                     } else if (col.resource === "constraint") {
                         tableLevelConstraints.push(col);
@@ -924,44 +935,19 @@ function importSchema(sql, projectId) {
                 for (const constraint of tableLevelConstraints) {
                     if (constraint.constraint_type) {
                         const constraintType = constraint.constraint_type.toLowerCase();
-
-                        if (constraintType === "primary key") {
-                            if (constraint.definition && Array.isArray(constraint.definition)) {
-                                for (const col of constraint.definition) {
-                                    db.prepare(
-                                        `UPDATE fields SET primary_key = 1, read_only = 1 WHERE table_id = ? AND field_name = ?`
-                                    ).run(tableId, col.column);
-                                }
+                        if (constraintType === "primary key" && constraint.definition && Array.isArray(constraint.definition)) {
+                            for (const colDef of constraint.definition) {
+                                db.prepare(`UPDATE fields SET primary_key = 1, read_only = 1 WHERE table_id = ? AND field_name = ?`).run(tableId, getFieldNameFromAST({column: colDef.column}));
                             }
-                        } else if (constraintType === "unique key") {
-                             if (constraint.definition && Array.isArray(constraint.definition)) {
-                                for (const col of constraint.definition) {
-                                    db.prepare(
-                                        `UPDATE fields SET "unique" = 1 WHERE table_id = ? AND field_name = ?`
-                                    ).run(tableId, col.column);
-                                }
+                        } else if (constraintType === "unique key" && constraint.definition && Array.isArray(constraint.definition)) {
+                            for (const colDef of constraint.definition) {
+                                db.prepare(`UPDATE fields SET "unique" = 1 WHERE table_id = ? AND field_name = ?`).run(tableId, getFieldNameFromAST({column: colDef.column}));
                             }
-                        }
-                        
-                        else if (
-                            constraintType === "foreign key" &&
-                            constraint.reference_definition &&
-                            constraint.definition && constraint.definition.length > 0 &&
-                            constraint.reference_definition.definition && constraint.reference_definition.definition.length > 0
-                        ) {
+                        } else if (constraintType === "foreign key" && constraint.reference_definition && constraint.definition && constraint.definition.length > 0 && constraint.reference_definition.definition && constraint.reference_definition.definition.length > 0) {
                             const parentTableName = constraint.reference_definition.table[0].table;
-                            const fkChildField = constraint.definition[0].column;
-                            const parentField = constraint.reference_definition.definition[0].column;
-
-                            foreignKeysToProcess.push({
-                                childTableName: tableName,
-                                parentTableName: parentTableName,
-                                fkChildField: fkChildField,
-                                parentField: parentField,
-                                tabTitle: tableName
-                                    .replace(/_/g, " ")
-                                    .replace(/\b\w/g, (l) => l.toUpperCase()),
-                            });
+                            const fkChildField = getFieldNameFromAST({column: constraint.definition[0].column});
+                            const parentField = getFieldNameFromAST({column: constraint.reference_definition.definition[0].column});
+                            foreignKeysToProcess.push({ childTableName: tableName, parentTableName: parentTableName, fkChildField: fkChildField, parentField: parentField, tabTitle: tableName.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) });
                         }
                     }
                 }
@@ -972,42 +958,32 @@ function importSchema(sql, projectId) {
             const childTableId = tableMap[fk.childTableName];
             const parentTableId = tableMap[fk.parentTableName];
             if (childTableId && parentTableId) {
-                db.prepare(
-                    `INSERT INTO parent_child_relationships 
-                     (parent_table_id, child_table_id, fk_child_field, parent_field, tab_title) 
-                     VALUES (?, ?, ?, ?, ?)`
-                ).run(parentTableId, childTableId, fk.fkChildField, fk.parentField, fk.tabTitle);
+                db.prepare(`INSERT INTO parent_child_relationships (parent_table_id, child_table_id, fk_child_field, parent_field, tab_title) VALUES (?, ?, ?, ?, ?)`).run(parentTableId, childTableId, fk.fkChildField, fk.parentField, fk.tabTitle);
                 relationshipsCreated++;
-
                 let captionField = '';
                 const parentFields = db.prepare('SELECT field_name, primary_key, data_type FROM fields WHERE table_id = ? ORDER BY field_order').all(parentTableId);
-                
                 const nonNumericTypes = ['VARCHAR', 'CHAR', 'TEXT', 'MEDIUMTEXT', 'LONGTEXT', 'DATE', 'DATETIME', 'TIMESTAMP'];
-                const nonNumericField = parentFields.find(f => nonNumericTypes.includes(f.data_type.toUpperCase()));
-
+                const nonNumericField = parentFields.find(f => {
+                    const upperType = f.data_type ? f.data_type.toUpperCase() : '';
+                    return nonNumericTypes.includes(upperType);
+                });
                 if (nonNumericField) {
                     captionField = nonNumericField.field_name;
-                }
-                else {
+                } else {
                     const pkIndex = parentFields.findIndex(f => f.primary_key === 1);
                     if (pkIndex > -1 && pkIndex + 1 < parentFields.length) {
                         captionField = parentFields[pkIndex + 1].field_name;
                     }
                 }
-
                 if (captionField) {
-                    db.prepare(
-                        `UPDATE fields 
-                         SET lookup_parent_table = ?, lookup_caption_1 = ? 
-                         WHERE table_id = ? AND field_name = ?`
-                    ).run(fk.parentTableName, captionField, childTableId, fk.fkChildField);
+                    db.prepare(`UPDATE fields SET lookup_parent_table = ?, lookup_caption_1 = ? WHERE table_id = ? AND field_name = ?`).run(fk.parentTableName, captionField, childTableId, fk.fkChildField);
                 }
             }
         }
     });
 
     try {
-        const ast = parser.astify(cleanedSql, { database: "MySQL" });
+        const ast = parser.astify(processedSql, { database: parserDialect });
         transaction(ast);
         return {
             success: true,
@@ -1015,31 +991,28 @@ function importSchema(sql, projectId) {
         };
     } catch (error) {
         console.error("Gagal mengimport SQL:", error);
-        return { success: false, message: `Ralat: ${error.message}` };
+        return { success: false, message: `SQL Parsing/Import Error: ${error.message}` };
     }
 }
 
-ipcMain.handle("sql:import-file", async (event, projectId) => {
+ipcMain.handle("sql:import-file", async (event, { projectId, dialect }) => {
   const { canceled, filePaths } = await dialog.showOpenDialog({
     properties: ["openFile"],
     filters: [{ name: "SQL Files", extensions: ["sql"] }],
   });
 
   if (!canceled && filePaths.length > 0) {
-    // ▼▼▼ KEMAS KINI DI SINI ▼▼▼
-    // Hantar isyarat ke frontend untuk paparkan overlay SELEPAS fail dipilih
     const win = BrowserWindow.fromWebContents(event.sender);
     win?.webContents.send('show-overlay');
-    // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
-
+    
     const sqlContent = fs.readFileSync(filePaths[0], "utf8");
-    return importSchema(sqlContent, projectId);
+    return importSchema(sqlContent, projectId, dialect);
   }
   return { success: false, message: "No file selected." };
 });
 
-ipcMain.handle("sql:import-text", (event, { sql, projectId }) => {
-  return importSchema(sql, projectId);
+ipcMain.handle("sql:import-text", (event, { sql, projectId, dialect }) => {
+  return importSchema(sql, projectId, dialect);
 });
 
 // Handler utiliti

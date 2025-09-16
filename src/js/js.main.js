@@ -520,33 +520,59 @@ window.addEventListener('beforeunload', (event) => {
 
     if (closeTutorialBtn) closeTutorialBtn.addEventListener('click', () => tutorialModal.classList.add('hidden'));
 
-    if (importSqlFileBtn) importSqlFileBtn.addEventListener('click', () => {
-        handleSqlImport(() => window.electronAPI.importSqlFile(activeProject.project_id));
-    });
+    // Pengendali Import SQL yang diperbaharui
+    const importSqlModal = document.getElementById('import-sql-modal');
+    const importSqlModalTitle = document.getElementById('import-sql-modal-title');
+    const importSqlCloseBtn = document.getElementById('import-sql-modal-close');
+    const importSqlCancelBtn = document.getElementById('import-sql-modal-cancel');
+    const importSqlImportBtn = document.getElementById('import-sql-modal-import-btn');
+    const importSqlDialectSelect = document.getElementById('import-sql-dialect');
+    const importSqlTextGroup = document.getElementById('import-sql-text-group');
+    const importSqlFileGroup = document.getElementById('import-sql-file-group');
 
-    if (importSqlPasteBtn) importSqlPasteBtn.addEventListener('click', () => pasteSqlModal.classList.remove('hidden'));
-    if (pasteSqlCloseBtn) pasteSqlCloseBtn.addEventListener('click', () => pasteSqlModal.classList.add('hidden'));
-    if (pasteSqlCancelBtn) pasteSqlCancelBtn.addEventListener('click', () => pasteSqlModal.classList.add('hidden'));
-
-    if (pasteSqlImportBtn) pasteSqlImportBtn.addEventListener('click', () => {
-        const sqlText = document.getElementById('sql-paste-area').value;
-        if (sqlText.trim()) {
-            pasteSqlModal.classList.add('hidden');
-            
-            // ▼▼▼ KEMAS KINI DI SINI ▼▼▼
-            // Paparkan overlay sejurus sebelum proses import bermula
-            const overlay = document.getElementById('loading-overlay');
-            if (overlay) overlay.classList.remove('loading-overlay-hidden');
-            // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
-
-            handleSqlImport(() => window.electronAPI.importSqlText({ sql: sqlText, projectId: activeProject.project_id }));
+    const openImportModal = (mode) => {
+        importSqlModal.dataset.mode = mode;
+        if (mode === 'file') {
+            importSqlModalTitle.textContent = 'Import SQL from File';
+            importSqlTextGroup.classList.add('hidden');
+            importSqlFileGroup.classList.remove('hidden');
         } else {
-            showCustomDialog({
-                title: "Input Required",
-                message: "Please paste the SQL commands."
-            });
+            importSqlModalTitle.textContent = 'Import SQL via Copy/Paste';
+            importSqlTextGroup.classList.remove('hidden');
+            importSqlFileGroup.classList.add('hidden');
         }
-    });
+        importSqlModal.classList.remove('hidden');
+    };
+
+    if (importSqlFileBtn) importSqlFileBtn.addEventListener('click', () => openImportModal('file'));
+    if (importSqlPasteBtn) importSqlPasteBtn.addEventListener('click', () => openImportModal('text'));
+
+    const closeImportModal = () => importSqlModal.classList.add('hidden');
+    if (importSqlCloseBtn) importSqlCloseBtn.addEventListener('click', closeImportModal);
+    if (importSqlCancelBtn) importSqlCancelBtn.addEventListener('click', closeImportModal);
+
+    if (importSqlImportBtn) {
+        importSqlImportBtn.addEventListener('click', () => {
+            const mode = importSqlModal.dataset.mode;
+            const dialect = importSqlDialectSelect.value;
+            const overlay = document.getElementById('loading-overlay');
+
+            if (overlay) overlay.classList.remove('loading-overlay-hidden');
+            closeImportModal();
+
+            if (mode === 'file') {
+                handleSqlImport(() => window.electronAPI.importSqlFile({ projectId: activeProject.project_id, dialect }));
+            } else {
+                const sqlText = document.getElementById('sql-paste-area').value;
+                if (sqlText.trim()) {
+                    handleSqlImport(() => window.electronAPI.importSqlText({ sql: sqlText, projectId: activeProject.project_id, dialect }));
+                } else {
+                    if (overlay) overlay.classList.add('loading-overlay-hidden');
+                    showCustomDialog({ title: "Input Required", message: "Please paste the SQL commands." });
+                }
+            }
+        });
+    }
 
 	    // Aktifkan butang sidebar
     initializeSidebarButtons(); // <-- TAMBAH PANGGILAN INI	

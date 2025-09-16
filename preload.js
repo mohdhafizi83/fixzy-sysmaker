@@ -35,7 +35,7 @@ updateIndividualMenuOrder: (data) => ipcRenderer.invoke('menu:update-individual-
   getFullSchema: (projectId) => ipcRenderer.invoke('project:get-full-schema', projectId),
   // Fungsi sedia ada
   getTablesByProject: (projectId) => ipcRenderer.invoke('tables:get-by-project', projectId),
-  importSqlFile: (projectId) => ipcRenderer.invoke('sql:import-file', projectId),
+  importSqlFile: (data) => ipcRenderer.invoke('sql:import-file', data),
   importSqlText: (data) => ipcRenderer.invoke('sql:import-text', data),
   checkTablesExist: (projectId) => ipcRenderer.invoke('tables:check-exists', projectId),
   deleteProjectSchema: (projectId) => ipcRenderer.invoke('project:delete-schema', projectId),

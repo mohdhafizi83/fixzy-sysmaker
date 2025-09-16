@@ -51,21 +51,35 @@
             </ul>
         </nav>
 
-<div id="paste-sql-modal" class="modal-overlay hidden">
+<div id="import-sql-modal" class="modal-overlay hidden">
     <div class="modal-content large">
         <div class="modal-header">
-            <h3>Import SQL via Copy/Paste</h3>
-            <button id="paste-sql-modal-close" class="modal-close">&times;</button>
+            <h3 id="import-sql-modal-title">Import SQL</h3>
+            <button id="import-sql-modal-close" class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
-            <p>Paste your `CREATE TABLE` statements below.</p>
             <div class="form-group">
-                <textarea id="sql-paste-area" rows="15" placeholder="CREATE TABLE users (...);"></textarea>
+                <label for="import-sql-dialect">Select SQL Dialect</label>
+                <select id="import-sql-dialect">
+                    <option value="MySQL" selected>MySQL / MariaDB</option>
+                    <option value="PostgreSQL">PostgreSQL</option>
+                    <option value="TSQL">SQL Server (T-SQL)</option>
+                    <option value="SQLite">SQLite</option>
+                </select>
+            </div>
+            <div id="import-sql-text-group">
+                <p>Paste your `CREATE TABLE` statements below.</p>
+                <div class="form-group">
+                    <textarea id="sql-paste-area" rows="15" placeholder="CREATE TABLE users (...);"></textarea>
+                </div>
+            </div>
+             <div id="import-sql-file-group" class="hidden">
+                <p>Select the SQL dialect above, then click 'Import' to open the file selection dialog.</p>
             </div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-secondary" id="paste-sql-modal-cancel">Cancel</button>
-            <button class="btn btn-primary" id="paste-sql-modal-import-btn">Import</button>
+            <button class="btn btn-secondary" id="import-sql-modal-cancel">Cancel</button>
+            <button class="btn btn-primary" id="import-sql-modal-import-btn">Import</button>
         </div>
     </div>
 </div>
