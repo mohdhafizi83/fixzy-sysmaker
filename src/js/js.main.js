@@ -46,7 +46,8 @@ import {
 	initializeStackSelectorHandlers,
 	initializeAuthRadioLogic,
 	showImportErrorGuide,
-	initializeCustomViews 
+	initializeCustomViews,
+	populateParentChildTab	
 } from './uiHandlers.js';
 import { initializeWorkflowBuilder } from './workflowBuilder.js';
 
@@ -74,6 +75,8 @@ export const SaveManager = {
         this.debounceTimer = setTimeout(() => this.processQueue(), 2500);
     },
 
+// IN js/main.js, FIND THE SaveManager OBJECT AND REPLACE THE ENTIRE processQueue FUNCTION
+
     async processQueue() {
         if (this.isProcessing || this.isQueueEmpty()) {
             return;
@@ -87,9 +90,14 @@ export const SaveManager = {
         try {
             const activeElementId = document.activeElement ? document.activeElement.id : null;
             
-            // Semak jika terdapat perubahan nama SEBELUM menyimpan
             const isRename = (this.saveQueue.tables && Object.values(this.saveQueue.tables).some(t => t.hasOwnProperty('table_name'))) ||
                              (this.saveQueue.fields && Object.values(this.saveQueue.fields).some(f => f.hasOwnProperty('field_name')));
+            
+            // ▼▼▼ MULA LOGIK BAHARU: Kesan perubahan pada hubungan ▼▼▼
+            const hasRelationshipChanges = Object.keys(this.saveQueue.relationships).length > 0 || 
+                                           this.saveQueue.upserts.length > 0 || 
+                                           this.saveQueue.relationshipDeletes.length > 0;
+            // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
 
             const result = await window.electronAPI.batchUpdate(this.saveQueue);
 
@@ -97,13 +105,11 @@ export const SaveManager = {
                 console.log("[SaveManager] Kemas kini berkelompok berjaya.");
 
                 if (isRename) {
-                    // JIKA ADA PERUBAHAN NAMA: Muat semula sidebar sahaja
+                    // ... (logik sedia ada untuk rename, tidak berubah)
                     let tableToFocus = null;
                     let itemToSelect = null;
-
                     const tablePage = document.getElementById('table-settings-page');
                     const fieldPage = document.getElementById('field-settings-page');
-
                     if (tablePage && !tablePage.classList.contains('hidden')) {
                         const originalTableName = tablePage.querySelector('.table-name')?.textContent;
                         if (originalTableName && jsonData.database.table[originalTableName]) {
@@ -114,26 +120,35 @@ export const SaveManager = {
                         const nameParts = fieldPage.querySelector('.field-name')?.textContent.split('.');
                         const originalTableName = nameParts[0];
                         const originalFieldName = nameParts[1];
-                        
                         if (originalTableName && originalFieldName && jsonData.database.table[originalTableName]?.fields[originalFieldName]) {
                             const fieldId = jsonData.database.table[originalTableName].fields[originalFieldName].field_id;
                             const fieldNameToFocus = this.saveQueue.fields[fieldId]?.field_name || originalFieldName;
-                            
                             const tableId = jsonData.database.table[originalTableName].table_id;
                             const tableNameToFocus = this.saveQueue.tables[tableId]?.table_name || originalTableName;
-
                             itemToSelect = { table: tableNameToFocus, field: fieldNameToFocus };
                         }
                     }
-                    
                     this.clearQueue();
-                    // ▼▼▼ MULA PEMBETULAN ▼▼▼
-                    // Panggil loadProjectData dengan parameter yang betul
                     await loadProjectData(activeProject, { tableToSelect: tableToFocus, itemToSelect, refreshMode: 'sidebarOnly' });
-                    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
+                
+                // ▼▼▼ MULA LOGIK BAHARU: Kendalikan kemas kini Parent/Child Tab ▼▼▼
+                } else if (hasRelationshipChanges) {
+                    const currentTableName = document.querySelector('#table-settings-page .table-name')?.textContent;
+                    if (currentTableName) {
+                        // Ingat anak jadual mana yang sedang aktif
+                        const activeChildLi = document.querySelector('#child-table-list li.active');
+                        setLastActiveChildTable(activeChildLi ? activeChildLi.dataset.childName : null);
+                        
+                        // Muat semula data di latar belakang
+                        await loadProjectData(activeProject, { refreshMode: 'dataOnly' });
+                        
+                        // Populate semula hanya tab Parent/Child
+                        populateParentChildTab(currentTableName);
+                    }
+                    this.clearQueue();
+                // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
 
                 } else {
-                    // JIKA TIADA PERUBAHAN NAMA: Hanya bersihkan queue, tiada muat semula UI
                     this.clearQueue();
                 }
 
@@ -161,14 +176,13 @@ export const SaveManager = {
             this.isProcessing = false;
             
             if (isAwaitingMenuGroupSave) {
-                const overlay = document.getElementById('loading-overlay');
-                if (overlay) {
-                    overlay.classList.add('loading-overlay-hidden');
-                }
+                document.getElementById('loading-overlay')?.classList.add('loading-overlay-hidden');
                 setAwaitingMenuGroupSave(false);
             }
 
-            setLastActiveChildTable(null); 
+            // Jangan reset `lastActiveChildTable` di sini lagi
+            // setLastActiveChildTable(null); 
+
             setTimeout(() => {
                 if (saveStatus.textContent === 'All changes saved ✔' || saveStatus.textContent === 'Save failed!') {
                     saveStatus.textContent = '';
@@ -180,7 +194,8 @@ export const SaveManager = {
             }
         }
     },
-
+	
+	
     clearQueue() {
         this.saveQueue = { project: {}, tables: {}, fields: {}, relationships: {}, upserts: [], relationshipDeletes: [] };
     },
@@ -232,6 +247,8 @@ export function setLastActiveChildTable(tableName) {
 }
 
 // KOD PENUH: Gantikan fungsi loadProjectData sedia ada dengan yang ini.
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: js/main.js
+
 export async function loadProjectData(project, options = {}) {
     const { tableToSelect = null, itemToSelect = null, refreshMode = 'full' } = options;
 
@@ -245,31 +262,33 @@ export async function loadProjectData(project, options = {}) {
     const data = await window.electronAPI.getFullSchema(project.project_id);
 
     if (data && data.project && data.database) {
-        console.log(`LOG 1: Bendera 'isPopulatingData' dinaikkan kepada TRUE. Mod: ${refreshMode}`);
         isPopulatingData = true;
 
         activeProject = data.project;
         jsonData = data;
         allTableNames = Object.keys(jsonData.database.table || {});
+
+        // ▼▼▼ MULA LOGIK BAHARU: Mod 'dataOnly' ▼▼▼
+        if (refreshMode === 'dataOnly') {
+            isPopulatingData = false;
+            return; // Keluar selepas mengemas kini data tanpa menyentuh UI
+        }
+        // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
         
-        // Hanya populate borang utama jika dalam mod 'full'
         if (refreshMode === 'full') {
             populateMainDashboard(activeProject);  
             populateMenuManagement(jsonData.database.unified_menu);
             document.getElementById('app-title').value = activeProject.app_title || 'Project Name';
         }
         
-        // Sidebar sentiasa dijana semula untuk memastikan ia terkini
         await generateSidebarMenu();
 		
-        // Logik pemilihan semula item di sidebar sentiasa berjalan
         if (itemToSelect && itemToSelect.field) {
             await focusOnSidebarField(itemToSelect.table, itemToSelect.field);
         } else if (tableToSelect) {
             setActiveSidebarLink(tableToSelect);
         }
         
-        // Hanya tunjuk modal tutorial pada muat penuh kali pertama
         if (refreshMode === 'full') {
             const tablesExistResult = await window.electronAPI.checkTablesExist(project.project_id);
             if (tablesExistResult && tablesExistResult.count === 0) {
@@ -278,13 +297,10 @@ export async function loadProjectData(project, options = {}) {
         }
 
         isPopulatingData = false;
-        console.log("LOG 3: Bendera 'isPopulatingData' diturunkan kepada FALSE.");
-
     } else {
         console.error("Gagal memuatkan data skema dari backend.");
     }
 	
-    // Hanya populate dropdown projek pada muat penuh
     if (refreshMode === 'full') {
         await populateProjectDropdown();
     }
