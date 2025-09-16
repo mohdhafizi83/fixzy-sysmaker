@@ -2709,5 +2709,50 @@
         <div class="variable-helper-title">User-Defined Variables</div>
         </div>
 </div>
+<div id="sql-import-error-modal" class="modal-overlay hidden">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h3>SQL Import Error Troubleshooting Guide</h3>
+        </div>
+        <div class="modal-body">
+            <p style="font-size: 1.1em;"><strong>The import process failed.</strong></p>
+            <p>
+                This usually happens not because of a bug in FiziSysMaker, but because your SQL script contains advanced or vendor-specific syntax that cannot be translated. Our parser is designed to understand the core <strong><code>CREATE TABLE</code></strong> structure.
+            </p>
+            
+            <hr style="margin: 1.5rem 0;">
+
+            <h4><strong>What Should You Do?</strong></h4>
+            <p>Please review and clean up your SQL script. Focus on keeping only the basic <code>CREATE TABLE</code> commands. Here is a checklist of items to remove:</p>
+            
+            <ul>
+                <li style="margin-bottom: 1rem;">
+                    <strong>Commands Other Than <code>CREATE TABLE</code>:</strong>
+                    <span>Remove any commands such as <code>CREATE VIEW</code>, <code>CREATE TRIGGER</code>, <code>CREATE PROCEDURE</code>, or <code>PARTITION BY</code> clauses.</span>
+                </li>
+                <li style="margin-bottom: 1rem;">
+                    <strong>Complex Column-Level Clauses:</strong>
+                    <span>Remove clauses like <code>CHECK</code>, <code>CHARACTER SET</code>, and <code>COLLATE</code> from individual column definitions.</span>
+                    <div class="helper-box mt-1" style="background-color: #FFFBEB; border-color: #FDE68A;">
+                        <p><strong>Example:</strong></p>
+                        <p><u>Before (Complex):</u></p>
+                        <code style="display: block; padding: 0.5rem; background: #fff; border-radius: 4px;">price DECIMAL(10,2) NOT NULL CHECK (price > 0) CHARACTER SET latin1,</code>
+                        <p style="margin-top: 0.5rem;"><u>After (Simplified):</u></p>
+                        <code style="display: block; padding: 0.5rem; background: #fff; border-radius: 4px;">price DECIMAL(10,2) NOT NULL,</code>
+                    </div>
+                </li>
+                 <li style="margin-bottom: 1rem;">
+                    <strong>Non-Standard Comments:</strong>
+                     <span>While standard comments (<code>--</code> or <code>/* ... */</code>) are safe, some database tools export proprietary metadata or comments. Please remove these.</span>
+                </li>
+            </ul>
+
+            <p>After cleaning up the script, please save it and try importing again.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" id="sql-import-error-ok-btn">Understood</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>

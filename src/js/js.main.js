@@ -41,10 +41,11 @@ import {
 	initializeAlgorithmBuilder,
 	configureNewProjectModal,
     showNewProjectModal,
-initializeCalculationBuilder,
-initializeQueryBuilder,
-initializeStackSelectorHandlers,
-initializeAuthRadioLogic
+	initializeCalculationBuilder,
+	initializeQueryBuilder,
+	initializeStackSelectorHandlers,
+	initializeAuthRadioLogic,
+	showImportErrorGuide
 } from './uiHandlers.js';
 import { initializeWorkflowBuilder } from './workflowBuilder.js';
 
@@ -289,8 +290,7 @@ export async function loadProjectData(project, options = {}) {
 }
 
 // Fungsi untuk menguruskan import SQL
-async function handleSqlImport(importFunction) {
-    // NOTA: Arahan untuk memaparkan overlay telah dibuang dari sini.
+async function handleSqlImport(importFunction, dialect) {
     const overlay = document.getElementById('loading-overlay');
     try {
         if (!activeProject) {
@@ -313,16 +313,34 @@ async function handleSqlImport(importFunction) {
         const result = await importFunction();
 
         if (result.success) {
+            const dialectToDbValueMap = {
+                'MySQL': 'mysql_mariadb',
+                'PostgreSQL': 'postgresql',
+                'TSQL': 'sql_server',
+                'SQLite': 'sqlite'
+            };
+            const dbValue = dialectToDbValueMap[dialect];
+
+            if (dbValue) {
+                SaveManager.addToQueue('project', activeProject.project_id, {
+                    stack_database: dbValue
+                });
+                await SaveManager.processQueue(); 
+            }
+
             showCustomDialog({ title: "Success", message: result.message });
             await loadProjectData(activeProject);
         } else {
-            showCustomDialog({ title: "Import Failed", message: `Error: ${result.message}` });
+            // ▼▼▼ PERUBAHAN UTAMA DI SINI ▼▼▼
+            // Jika import gagal, paparkan modal panduan dan bukannya dialog biasa.
+            console.error("Import Failed:", result.message); // Simpan log ralat teknikal untuk debug
+            showImportErrorGuide(); 
+            // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
         }
     } catch (error) {
         console.error("An unexpected error occurred during SQL import:", error);
-        showCustomDialog({ title: "Error", message: `An unexpected error occurred: ${error.message}` });
+        showImportErrorGuide(); // Paparkan panduan juga jika terdapat ralat tidak dijangka
     } finally {
-        // Logik untuk menutup overlay ini masih betul dan dikekalkan.
         if (overlay) overlay.classList.add('loading-overlay-hidden');
     }
 }
@@ -551,28 +569,28 @@ window.addEventListener('beforeunload', (event) => {
     if (importSqlCloseBtn) importSqlCloseBtn.addEventListener('click', closeImportModal);
     if (importSqlCancelBtn) importSqlCancelBtn.addEventListener('click', closeImportModal);
 
-    if (importSqlImportBtn) {
-        importSqlImportBtn.addEventListener('click', () => {
-            const mode = importSqlModal.dataset.mode;
-            const dialect = importSqlDialectSelect.value;
-            const overlay = document.getElementById('loading-overlay');
+if (importSqlImportBtn) {
+    importSqlImportBtn.addEventListener('click', () => {
+        const mode = importSqlModal.dataset.mode;
+        const dialect = importSqlDialectSelect.value;
+        const overlay = document.getElementById('loading-overlay');
 
-            if (overlay) overlay.classList.remove('loading-overlay-hidden');
-            closeImportModal();
+        if (overlay) overlay.classList.remove('loading-overlay-hidden');
+        closeImportModal();
 
-            if (mode === 'file') {
-                handleSqlImport(() => window.electronAPI.importSqlFile({ projectId: activeProject.project_id, dialect }));
+        if (mode === 'file') {
+            handleSqlImport(() => window.electronAPI.importSqlFile({ projectId: activeProject.project_id, dialect }), dialect);
+        } else {
+            const sqlText = document.getElementById('sql-paste-area').value;
+            if (sqlText.trim()) {
+                handleSqlImport(() => window.electronAPI.importSqlText({ sql: sqlText, projectId: activeProject.project_id, dialect }), dialect);
             } else {
-                const sqlText = document.getElementById('sql-paste-area').value;
-                if (sqlText.trim()) {
-                    handleSqlImport(() => window.electronAPI.importSqlText({ sql: sqlText, projectId: activeProject.project_id, dialect }));
-                } else {
-                    if (overlay) overlay.classList.add('loading-overlay-hidden');
-                    showCustomDialog({ title: "Input Required", message: "Please paste the SQL commands." });
-                }
+                if (overlay) overlay.classList.add('loading-overlay-hidden');
+                showCustomDialog({ title: "Input Required", message: "Please paste the SQL commands." });
             }
-        });
-    }
+        }
+    });
+}
 
 	    // Aktifkan butang sidebar
     initializeSidebarButtons(); // <-- TAMBAH PANGGILAN INI	

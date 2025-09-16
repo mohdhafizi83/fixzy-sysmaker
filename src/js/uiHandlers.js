@@ -5522,9 +5522,6 @@ export function openQueryHelperModal(options) {
     populateInitialUI(state.mainTable);
 }
 
-// FILE: uiHandlers.js
-
-// ▼▼▼ ADD THIS ENTIRE NEW FUNCTION ▼▼▼
 /**
  * Adds logic to radio buttons to allow them to be deselected.
  * A standard radio button group doesn't allow having no option selected once a selection is made.
@@ -5552,4 +5549,21 @@ export function initializeAuthRadioLogic() {
         });
     });
 }
-// ▲▲▲ END OF NEW FUNCTION ▲▲▲
+
+/**
+ * Memaparkan modal panduan penyelesaian ralat untuk Import SQL.
+ */
+export function showImportErrorGuide() {
+    const modal = document.getElementById('sql-import-error-modal');
+    if (!modal) return;
+
+    const okBtn = document.getElementById('sql-import-error-ok-btn');
+    const closeModal = () => modal.classList.add('hidden');
+    
+    // Guna cloneNode untuk memastikan event listener lama dibuang
+    const newOkBtn = okBtn.cloneNode(true);
+    okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+    newOkBtn.addEventListener('click', closeModal);
+    
+    modal.classList.remove('hidden');
+}
