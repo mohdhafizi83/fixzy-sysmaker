@@ -588,7 +588,6 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
         fields = db.prepare(`SELECT * FROM fields WHERE table_id IN (${placeholder}) ORDER BY field_order, field_id`).all(...tableIds);
     }
     
-    // ▼▼▼ MULA LOGIK BAHARU: Dapatkan data Custom Views ▼▼▼
     let customViews = [];
     if (tableIds.length > 0) {
         const placeholder = tableIds.map(() => "?").join(",");
@@ -601,11 +600,9 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
         const placeholder = viewIds.map(() => "?").join(",");
         customViewFields = db.prepare(`SELECT * FROM custom_view_fields WHERE custom_view_id IN (${placeholder}) ORDER BY display_order`).all(...viewIds);
     }
-    // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
 
     const structuredTables = {};
     tables.forEach((table) => {
-      // Lampirkan custom views pada setiap jadual
       const viewsForTable = customViews.filter(v => v.table_id === table.table_id);
       viewsForTable.forEach(view => {
           view.fields = customViewFields.filter(f => f.custom_view_id === view.custom_view_id);
@@ -644,8 +641,18 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
     groups.forEach(group => {
         unifiedMenu.push({ type: 'group', id: group.menu_group_id, order: group.group_order, name: group.group_name, items: groupedItems.filter(item => item.menu_group_id === group.menu_group_id) });
     });
+    
+
     topLevelItems.forEach(item => {
-        unifiedMenu.push({ type: item.table_id ? 'table_item' : 'custom_item', id: item.item_id, order: item.item_order, label: item.item_label || item.table_name, url: item.item_url, table_name: item.table_name });
+        unifiedMenu.push({ 
+            type: item.table_id ? 'table_item' : 'custom_item', 
+            id: item.item_id, 
+            table_id: item.table_id, // <-- Baris ini memastikan table_id sentiasa ada
+            order: item.item_order, 
+            label: item.item_label || item.table_name, 
+            url: item.item_url, 
+            table_name: item.table_name 
+        });
     });
     unifiedMenu.sort((a, b) => (a.order || 0) - (b.order || 0));
 
@@ -663,7 +670,6 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
     return null;
   }
 });
-
 
 // ADD THIS NEW HANDLER in: src/main.js
 ipcMain.handle('menu:save-unified-structure', async (event, { projectId, menuStructure }) => {
@@ -1164,9 +1170,7 @@ ipcMain.handle('table:update', async (event, data) => {
             const allowedColumns = [
                 'table_name', 'table_view_title', 'table_description', 'show_quick_search', 'records_per_page',
                 'default_sort_by', 'sort_descending', 'allow_sorting', 'allow_filters', 'allow_csv_export',
-                'allow_print_view', 'allow_user_save_filters', 'hide_homepage_link', 'allow_mass_delete',
-                'filter_before_view', 'hide_nav_menu_link', 'show_record_count', 'tv_template',
-                'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input',
+                'allow_print_view', 'allow_user_save_filters', 'allow_mass_delete', 'show_record_count', 'tv_template', 'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input',
                 'detail_view_classes_input', 'detail_view_title', 'record_owner', 'default_focus',
                 'redirect_after_insert', 'enable_detail_view', 'delete_with_children', 'dv_allow_print_view',
                 'dv_separate_page', 'dv_hide_save_as_copy', 'dv_sticky_buttons', 'dv_allow_add_from_homepage'

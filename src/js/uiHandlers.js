@@ -3306,22 +3306,17 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-table-view-title', tableData.table_view_title);
     setElementValue('tbl-table-description', tableData.table_description);
 
-    // Tab: Table view -> Display & Data
+    // Tab: Table view -> Features
     setElementValue('tbl-show-quick-search', tableData.show_quick_search);
     setElementValue('tbl-records-per-page', tableData.records_per_page);
     setElementValue('tbl-default-sort-by', tableData.default_sort_by);
     setElementValue('tbl-sort-descending', tableData.sort_descending);
-
-    // Tab: Table view -> Permissions
     setElementValue('tbl-allow-sorting', tableData.allow_sorting);
     setElementValue('tbl-allow-filters', tableData.allow_filters);
     setElementValue('tbl-allow-csv-export', tableData.allow_csv_export);
     setElementValue('tbl-allow-print-view', tableData.allow_print_view);
     setElementValue('tbl-allow-user-save-filters', tableData.allow_user_save_filters);
-    setElementValue('tbl-hide-homepage-link', tableData.hide_homepage_link);
     setElementValue('tbl-allow-mass-delete', tableData.allow_mass_delete);
-    setElementValue('tbl-filter-before-view', tableData.filter_before_view);
-    setElementValue('tbl-hide-nav-menu-link', tableData.hide_nav_menu_link);
     setElementValue('tbl-show-record-count', tableData.show_record_count);
 
     // Tab: Table view -> Template
@@ -3756,223 +3751,179 @@ export function initializeMenuManagementHandlers() {
     const unifiedMenuList = document.getElementById('unified-menu-list');
 
 // FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
-    const openCustomMenuModal = (itemEl = null) => {
-        const modal = document.getElementById('custom-menu-modal');
-        if (!modal) return;
 
-        // 1. Dapatkan elemen modal dan sediakannya
-        const modalBody = modal.querySelector('.modal-body');
-        modalBody.innerHTML = `
-            <div id="menu-type-selector" class="form-group">
-                <label>Menu Type</label>
-                <div class="radio-group-horizontal" style="margin-top: 0.5rem;">
-                    <label class="checkbox-label"><input type="radio" name="menu-item-type" value="custom" checked> Custom Menu</label>
-                    <label class="checkbox-label"><input type="radio" name="menu-item-type" value="table"> Table Menu</label>
-                </div>
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN uiHandlers.js (This is the full, corrected version)
+
+function openCustomMenuModal(itemEl = null) {
+    const modal = document.getElementById('custom-menu-modal');
+    if (!modal) return;
+
+    // 1. Dapatkan elemen modal dan sediakannya
+    const modalBody = modal.querySelector('.modal-body');
+    modalBody.innerHTML = `
+        <div id="menu-type-selector" class="form-group">
+            <label>Menu Type</label>
+            <div class="radio-group-horizontal" style="margin-top: 0.5rem;">
+                <label class="checkbox-label"><input type="radio" name="menu-item-type" value="custom" checked> Custom Menu</label>
+                <label class="checkbox-label"><input type="radio" name="menu-item-type" value="table"> Table Menu</label>
             </div>
-
-            <div id="custom-menu-fields-container">
-                <div class="form-group">
-                    <label for="custom-menu-label-input">Menu Label</label>
-                    <input type="text" id="custom-menu-label-input" placeholder="e.g., Customer Support">
-                </div>
-                <div class="form-group">
-                    <label for="custom-menu-url-input">URL</label>
-                    <input type="text" id="custom-menu-url-input" placeholder="e.g., support.php">
-                </div>
+        </div>
+        <div id="custom-menu-fields-container">
+            <div class="form-group">
+                <label for="custom-menu-label-input">Menu Label</label>
+                <input type="text" id="custom-menu-label-input" placeholder="e.g., Customer Support">
             </div>
-
-            <div id="table-menu-fields-container" class="hidden">
-                <div class="form-group">
-                    <label for="table-menu-label-input">Menu Label</label>
-                    <input type="text" id="table-menu-label-input" placeholder="Enter menu label">
-                </div>
-                <div id="table-menu-list-container" class="form-group">
-                    <label>Available Tables</label>
-                    <ul id="modal-available-tables-list" class="item-list" style="max-height: 200px; overflow-y: auto; margin-top: 0.5rem;"></ul>
-                </div>
+            <div class="form-group">
+                <label for="custom-menu-url-input">URL</label>
+                <input type="text" id="custom-menu-url-input" placeholder="e.g., support.php">
             </div>
-
-            <div id="custom-menu-group-selector-group" class="form-group">
-                <label for="custom-menu-group-select">Parent Group</label>
-                <select id="custom-menu-group-select"></select>
+        </div>
+        <div id="table-menu-fields-container" class="hidden">
+            <div class="form-group">
+                <label for="table-menu-label-input">Menu Label</label>
+                <input type="text" id="table-menu-label-input" placeholder="Enter menu label">
             </div>
-            <input type="hidden" id="custom-menu-item-id">
-        `;
+            <div id="table-menu-list-container" class="form-group">
+                <label>Available Tables</label>
+                <ul id="modal-available-tables-list" class="item-list" style="max-height: 200px; overflow-y: auto; margin-top: 0.5rem;"></ul>
+            </div>
+        </div>
+        <div id="custom-menu-group-selector-group" class="form-group">
+            <label for="custom-menu-group-select">Parent Group</label>
+            <select id="custom-menu-group-select"></select>
+        </div>
+        <input type="hidden" id="custom-menu-item-id">
+    `;
 
-        const elements = {
-            title: modal.querySelector('#custom-menu-modal-title'),
-            labelInput: modal.querySelector('#custom-menu-label-input'),
-            urlInput: modal.querySelector('#custom-menu-url-input'),
-            tableLabelInput: modal.querySelector('#table-menu-label-input'),
-            itemIdInput: modal.querySelector('#custom-menu-item-id'),
-            groupSelect: modal.querySelector('#custom-menu-group-select'),
-            okBtn: modal.querySelector('#custom-menu-modal-ok'),
-            cancelBtn: modal.querySelector('#custom-menu-modal-cancel'),
-            closeBtn: modal.querySelector('#custom-menu-modal-close'),
-            radios: modal.querySelectorAll('input[name="menu-item-type"]'),
-            customFieldsContainer: modal.querySelector('#custom-menu-fields-container'),
-            tableFieldsContainer: modal.querySelector('#table-menu-fields-container'),
-            tableListContainer: modal.querySelector('#table-menu-list-container'),
-            tableListUl: modal.querySelector('#modal-available-tables-list')
-        };
-
-        // 2. Pasang event listener asas
-        const newOkBtn = elements.okBtn.cloneNode(true);
-        elements.okBtn.parentNode.replaceChild(newOkBtn, elements.okBtn);
-        const closeModal = () => modal.classList.add('hidden');
-        elements.cancelBtn.addEventListener('click', closeModal, { once: true });
-        elements.closeBtn.addEventListener('click', closeModal, { once: true });
-
-        elements.radios.forEach(radio => {
-            radio.addEventListener('change', () => {
-                const isCustom = radio.value === 'custom';
-                elements.customFieldsContainer.classList.toggle('hidden', !isCustom);
-                elements.tableFieldsContainer.classList.toggle('hidden', isCustom);
-            });
-        });
-
-        // 3. Isi kandungan dinamik (senarai jadual dan kumpulan)
-        const getUsedTableIds = () => {
-            const usedIds = new Set();
-            // Semak semua item menu yang sedia ada, sama ada di dalam kumpulan atau di luar
-            jsonData.database.unified_menu.forEach(item => {
-                if (item.type === 'group') {
-                    item.items.forEach(nestedItem => {
-                        if (nestedItem.table_id) usedIds.add(nestedItem.table_id);
-                    });
-                } else if (item.table_id) {
-                    usedIds.add(item.table_id);
-                }
-            });
-            return usedIds;
-        };
-        const usedTableIds = getUsedTableIds();
-        
-        const availableTables = Object.values(jsonData.database.table).filter(t => !usedTableIds.has(t.table_id));
-
-        elements.tableListUl.innerHTML = availableTables.length > 0
-            ? availableTables.map(t => `<li data-table-name="${t.table_name}">${t.table_name}</li>`).join('')
-            : '<li>No unassigned tables available.</li>';
-
-
-        elements.groupSelect.innerHTML = '<option value="">None (Top Level)</option>';
-        const menuGroups = jsonData.database.unified_menu.filter(item => item.type === 'group');
-        menuGroups.forEach(group => {
-            elements.groupSelect.innerHTML += `<option value="${group.id}">${group.name}</option>`;
-        });
-
-        // 4. Konfigurasi untuk mod 'Add' atau 'Edit'
-        if (itemEl) {
-            elements.title.textContent = 'Edit Menu Item';
-            elements.itemIdInput.value = itemEl.dataset.itemId;
-            elements.radios.forEach(radio => radio.disabled = true); // Tak boleh tukar jenis item
-            
-            const isTableItem = itemEl.dataset.type === 'table_item';
-
-            if (isTableItem) {
-                modal.querySelector('input[value="table"]').checked = true;
-                elements.customFieldsContainer.classList.add('hidden');
-                elements.tableFieldsContainer.classList.remove('hidden');
-
-                // Dapatkan nama jadual dari URL yang disimpan (jika ada) atau label
-                const url = itemEl.dataset.url || '';
-                const tableNameMatch = url.match(/^(.*?) Resource$/);
-                const tableName = tableNameMatch ? tableNameMatch[1] : itemEl.dataset.label;
-                
-                elements.tableLabelInput.value = itemEl.dataset.label;
-                
-                // Paparkan jadual semasa dalam senarai (dan nyahaktifkan interaksi)
-                elements.tableListUl.innerHTML = `<li class="active" data-table-name="${tableName}">${tableName}</li>`;
-                elements.tableListUl.style.pointerEvents = 'none';
-
-            } else { // custom_item
-                modal.querySelector('input[value="custom"]').checked = true;
-                elements.labelInput.value = itemEl.dataset.label;
-                elements.urlInput.value = itemEl.dataset.url || '';
-            }
-
-            const parentGroup = itemEl.closest('.menu-group-item');
-            elements.groupSelect.value = parentGroup ? parentGroup.dataset.groupId : '';
-
-        } else {
-            elements.title.textContent = 'Add New Menu Item';
-        }
-
-        // 5. Pasang event listener utama (OK button)
-        let selectedTableName = null;
-        elements.tableListUl.addEventListener('click', e => {
-            if (e.target.tagName === 'LI' && e.target.dataset.tableName) {
-                elements.tableListUl.querySelectorAll('li').forEach(li => li.classList.remove('active'));
-                e.target.classList.add('active');
-                selectedTableName = e.target.dataset.tableName;
-                 // Secara automatik, tetapkan label kepada nama jadual
-                elements.tableLabelInput.value = selectedTableName;
-            }
-        });
-        
-        newOkBtn.addEventListener('click', async () => {
-            const selectedType = modal.querySelector('input[name="menu-item-type"]:checked').value;
-            let dataToSave;
-
-            if (selectedType === 'table') {
-                const tableLabel = elements.tableLabelInput.value.trim();
-                if (!tableLabel) {
-                    showCustomDialog({ title: "Input Required", message: "Menu Label cannot be empty." });
-                    return;
-                }
-                
-                // Dapatkan nama jadual dari item yang dipilih
-                const activeLi = elements.tableListUl.querySelector('li.active');
-                const tableName = activeLi ? activeLi.dataset.tableName : null;
-
-                if (!tableName) {
-                    showCustomDialog({ title: "Input Required", message: "Please select a table from the list." });
-                    return;
-                }
-                
-                const tableData = jsonData.database.table[tableName];
-                if (!tableData) {
-                     showCustomDialog({ title: "Error", message: `Could not find data for table: ${tableName}` });
-                     return;
-                }
-
-                dataToSave = { 
-                    label: tableLabel, 
-                    url: `${tableName} Resource`, // <<< INI ADALAH PERUBAHAN YANG DIMINTA
-                    table_id: tableData.table_id
-                };
-
-            } else { // 'custom'
-                const customLabel = elements.labelInput.value.trim();
-                if (!customLabel) {
-                    showCustomDialog({ title: "Input Required", message: "Menu Label cannot be empty." });
-                    return;
-                }
-                dataToSave = { 
-                    label: customLabel, 
-                    url: elements.urlInput.value.trim(),
-                    table_id: null // Tiada table_id untuk item khas
-                };
-            }
-
-            dataToSave.project_id = activeProject.project_id;
-            dataToSave.item_id = elements.itemIdInput.value || null;
-            dataToSave.menu_group_id = elements.groupSelect.value || null;
-
-            const result = await window.electronAPI.saveCustomMenuItem(dataToSave);
-            if (result.success) {
-                closeModal();
-                await loadProjectData(activeProject);
-            } else {
-                showCustomDialog({ title: "Error", message: `Failed to save menu item: ${result.message}` });
-            }
-        }, { once: true });
-
-        modal.classList.remove('hidden');
-        elements.labelInput.focus();
+    const elements = {
+        title: modal.querySelector('#custom-menu-modal-title'),
+        labelInput: modal.querySelector('#custom-menu-label-input'),
+        urlInput: modal.querySelector('#custom-menu-url-input'),
+        tableLabelInput: modal.querySelector('#table-menu-label-input'),
+        itemIdInput: modal.querySelector('#custom-menu-item-id'),
+        groupSelect: modal.querySelector('#custom-menu-group-select'),
+        okBtn: modal.querySelector('#custom-menu-modal-ok'),
+        cancelBtn: modal.querySelector('#custom-menu-modal-cancel'),
+        closeBtn: modal.querySelector('#custom-menu-modal-close'),
+        radios: modal.querySelectorAll('input[name="menu-item-type"]'),
+        customFieldsContainer: modal.querySelector('#custom-menu-fields-container'),
+        tableFieldsContainer: modal.querySelector('#table-menu-fields-container'),
+        tableListContainer: modal.querySelector('#table-menu-list-container'),
+        tableListUl: modal.querySelector('#modal-available-tables-list')
     };
 
+    const newOkBtn = elements.okBtn.cloneNode(true);
+    elements.okBtn.parentNode.replaceChild(newOkBtn, elements.okBtn);
+    const closeModal = () => modal.classList.add('hidden');
+    elements.cancelBtn.addEventListener('click', closeModal, { once: true });
+    elements.closeBtn.addEventListener('click', closeModal, { once: true });
+
+    elements.radios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            const isCustom = radio.value === 'custom';
+            elements.customFieldsContainer.classList.toggle('hidden', !isCustom);
+            elements.tableFieldsContainer.classList.toggle('hidden', isCustom);
+        });
+    });
+
+    const getUsedTableIds = () => {
+        const usedIds = new Set();
+        jsonData.database.unified_menu.forEach(item => {
+            if (item.type === 'group') {
+                item.items.forEach(nestedItem => {
+                    if (nestedItem.table_id) usedIds.add(nestedItem.table_id);
+                });
+            } else if (item.type === 'table_item') {
+                if (item.table_id) usedIds.add(item.table_id);
+            }
+        });
+        return usedIds;
+    };
+    
+    const usedTableIds = getUsedTableIds();
+    const availableTables = Object.values(jsonData.database.table).filter(t => !usedTableIds.has(t.table_id));
+
+    elements.tableListUl.innerHTML = availableTables.length > 0
+        ? availableTables.map(t => `<li data-table-name="${t.table_name}">${t.table_name}</li>`).join('')
+        : '<li>No unassigned tables available.</li>';
+
+    elements.groupSelect.innerHTML = '<option value="">None (Top Level)</option>';
+    const menuGroups = jsonData.database.unified_menu.filter(item => item.type === 'group');
+    menuGroups.forEach(group => {
+        elements.groupSelect.innerHTML += `<option value="${group.id}">${group.name}</option>`;
+    });
+
+    if (itemEl) {
+        elements.title.textContent = 'Edit Menu Item';
+        elements.itemIdInput.value = itemEl.dataset.itemId;
+        elements.radios.forEach(radio => radio.disabled = true);
+        
+        const isTableItem = itemEl.dataset.type === 'table_item';
+        if (isTableItem) {
+            modal.querySelector('input[value="table"]').checked = true;
+            elements.customFieldsContainer.classList.add('hidden');
+            elements.tableFieldsContainer.classList.remove('hidden');
+            const tableName = itemEl.dataset.label;
+            elements.tableLabelInput.value = itemEl.dataset.label;
+            elements.tableListUl.innerHTML = `<li class="active" data-table-name="${tableName}">${tableName}</li>`;
+            elements.tableListUl.style.pointerEvents = 'none';
+        } else {
+            modal.querySelector('input[value="custom"]').checked = true;
+            elements.labelInput.value = itemEl.dataset.label;
+            elements.urlInput.value = itemEl.dataset.url || '';
+        }
+
+        const parentGroup = itemEl.closest('.menu-group-item');
+        elements.groupSelect.value = parentGroup ? parentGroup.dataset.groupId : '';
+    } else {
+        elements.title.textContent = 'Add New Menu Item';
+    }
+
+    let selectedTableName = null;
+    elements.tableListUl.addEventListener('click', e => {
+        if (e.target.tagName === 'LI' && e.target.dataset.tableName) {
+            elements.tableListUl.querySelectorAll('li').forEach(li => li.classList.remove('active'));
+            e.target.classList.add('active');
+            selectedTableName = e.target.dataset.tableName;
+            elements.tableLabelInput.value = selectedTableName;
+        }
+    });
+    
+    newOkBtn.addEventListener('click', async () => {
+        const selectedType = modal.querySelector('input[name="menu-item-type"]:checked').value;
+        let dataToSave;
+
+        if (selectedType === 'table') {
+            const tableLabel = elements.tableLabelInput.value.trim();
+            if (!tableLabel) { showCustomDialog({ title: "Input Required", message: "Menu Label cannot be empty." }); return; }
+            const activeLi = elements.tableListUl.querySelector('li.active');
+            const tableName = activeLi ? activeLi.dataset.tableName : null;
+            if (!tableName) { showCustomDialog({ title: "Input Required", message: "Please select a table from the list." }); return; }
+            const tableData = jsonData.database.table[tableName];
+            if (!tableData) { showCustomDialog({ title: "Error", message: `Could not find data for table: ${tableName}` }); return; }
+            dataToSave = { label: tableLabel, url: `${tableName} Resource`, table_id: tableData.table_id };
+        } else {
+            const customLabel = elements.labelInput.value.trim();
+            if (!customLabel) { showCustomDialog({ title: "Input Required", message: "Menu Label cannot be empty." }); return; }
+            dataToSave = { label: customLabel, url: elements.urlInput.value.trim(), table_id: null };
+        }
+
+        dataToSave.project_id = activeProject.project_id;
+        dataToSave.item_id = elements.itemIdInput.value || null;
+        dataToSave.menu_group_id = elements.groupSelect.value || null;
+
+        const result = await window.electronAPI.saveCustomMenuItem(dataToSave);
+        if (result.success) {
+            closeModal();
+            await loadProjectData(activeProject);
+        } else {
+            showCustomDialog({ title: "Error", message: `Failed to save menu item: ${result.message}` });
+        }
+    }, { once: true });
+
+    modal.classList.remove('hidden');
+    elements.labelInput.focus();
+}
 
         // Fungsi Simpan Utama untuk keseluruhan struktur
     const saveUnifiedStructure = async () => {
