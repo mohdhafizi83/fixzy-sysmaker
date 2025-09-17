@@ -162,7 +162,7 @@ ipcMain.handle('database:batch-update', async (event, queue) => {
 });
 
 // FIND AND REPLACE THIS ENTIRE HANDLER IN: src/main.js
-ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, label, url, menu_group_id, table_id }) => {
+ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, label, url, menu_group_id, table_id, show_record_count }) => {
     try {
         if (!project_id) {
             throw new Error("Project ID is required.");
@@ -175,33 +175,29 @@ ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, lab
             ).run(item_id, project_id);
         } else if (item_id) {
             // Logic to update an existing item
+
             db.prepare(
-                `UPDATE menu_items SET item_label = ?, item_url = ?, menu_group_id = ?, table_id = ? WHERE item_id = ? AND project_id = ?`
-            ).run(label, url || null, menu_group_id || null, table_id || null, item_id, project_id);
+                `UPDATE menu_items SET item_label = ?, item_url = ?, menu_group_id = ?, table_id = ?, show_record_count = ? WHERE item_id = ? AND project_id = ?`
+            ).run(label, url || null, menu_group_id || null, table_id || null, show_record_count ? 1 : 0, item_id, project_id);
+
         } else {
             // Logic to insert a new item
             if (!label) {
-                 throw new Error("Label is required for a new menu item.");
-            }
-            
-            // Kira 'order' berdasarkan kumpulan
-            let nextOrder;
-            if (menu_group_id) {
-                const maxOrderResult = db.prepare(
-                    'SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id = ?'
-                ).get(project_id, menu_group_id);
-                nextOrder = (maxOrderResult && maxOrderResult.max_order !== null ? maxOrderResult.max_order : -1) + 1;
-            } else {
-                const maxOrderResult = db.prepare(
-                    'SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL'
-                ).get(project_id);
-                nextOrder = (maxOrderResult && maxOrderResult.max_order !== null ? maxOrderResult.max_order : -1) + 1;
+                throw new Error("Label is required for a new menu item.");
             }
 
-            // Guna 'table_id' yang dihantar terus dari frontend. Tiada lagi tekaan.
+            let nextOrder;
+            if (menu_group_id) {
+                const maxOrderResult = db.prepare('SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id = ?').get(project_id, menu_group_id);
+                nextOrder = (maxOrderResult?.max_order ?? -1) + 1;
+            } else {
+                const maxOrderResult = db.prepare('SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL').get(project_id);
+                nextOrder = (maxOrderResult?.max_order ?? -1) + 1;
+            }
+
             db.prepare(
-                `INSERT INTO menu_items (project_id, table_id, item_label, item_url, item_order, menu_group_id) VALUES (?, ?, ?, ?, ?, ?)`
-            ).run(project_id, table_id || null, label, url || null, nextOrder, menu_group_id || null);
+                `INSERT INTO menu_items (project_id, table_id, item_label, item_url, item_order, menu_group_id, show_record_count) VALUES (?, ?, ?, ?, ?, ?, ?)`
+            ).run(project_id, table_id || null, label, url || null, nextOrder, menu_group_id || null, show_record_count ? 1 : 0);
         }
         return { success: true };
     } catch (error) {
@@ -1170,7 +1166,7 @@ ipcMain.handle('table:update', async (event, data) => {
             const allowedColumns = [
                 'table_name', 'table_view_title', 'table_description', 'show_quick_search', 'records_per_page',
                 'default_sort_by', 'sort_descending', 'allow_sorting', 'allow_filters', 'allow_csv_export',
-                'allow_print_view', 'allow_user_save_filters', 'allow_mass_delete', 'show_record_count', 'tv_template', 'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input',
+                'allow_print_view', 'allow_user_save_filters', 'allow_mass_delete', 'tv_template', 'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input',
                 'detail_view_classes_input', 'detail_view_title', 'record_owner', 'default_focus',
                 'redirect_after_insert', 'enable_detail_view', 'delete_with_children', 'dv_allow_print_view',
                 'dv_separate_page', 'dv_hide_save_as_copy', 'dv_sticky_buttons', 'dv_allow_add_from_homepage'

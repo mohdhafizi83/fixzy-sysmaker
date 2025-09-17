@@ -3317,7 +3317,6 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-allow-print-view', tableData.allow_print_view);
     setElementValue('tbl-allow-user-save-filters', tableData.allow_user_save_filters);
     setElementValue('tbl-allow-mass-delete', tableData.allow_mass_delete);
-    setElementValue('tbl-show-record-count', tableData.show_record_count);
 
     // Tab: Table view -> Template
     setElementValue('tbl-tv-template', tableData.tv_template);
@@ -3750,15 +3749,10 @@ export function initializeMenuManagementHandlers() {
     const addCustomMenuBtn = document.getElementById('app-add_custom_menu');
     const unifiedMenuList = document.getElementById('unified-menu-list');
 
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
-
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN uiHandlers.js (This is the full, corrected version)
-
 function openCustomMenuModal(itemEl = null) {
     const modal = document.getElementById('custom-menu-modal');
     if (!modal) return;
 
-    // 1. Dapatkan elemen modal dan sediakannya
     const modalBody = modal.querySelector('.modal-body');
     modalBody.innerHTML = `
         <div id="menu-type-selector" class="form-group">
@@ -3768,6 +3762,7 @@ function openCustomMenuModal(itemEl = null) {
                 <label class="checkbox-label"><input type="radio" name="menu-item-type" value="table"> Table Menu</label>
             </div>
         </div>
+
         <div id="custom-menu-fields-container">
             <div class="form-group">
                 <label for="custom-menu-label-input">Menu Label</label>
@@ -3778,6 +3773,7 @@ function openCustomMenuModal(itemEl = null) {
                 <input type="text" id="custom-menu-url-input" placeholder="e.g., support.php">
             </div>
         </div>
+
         <div id="table-menu-fields-container" class="hidden">
             <div class="form-group">
                 <label for="table-menu-label-input">Menu Label</label>
@@ -3785,9 +3781,15 @@ function openCustomMenuModal(itemEl = null) {
             </div>
             <div id="table-menu-list-container" class="form-group">
                 <label>Available Tables</label>
-                <ul id="modal-available-tables-list" class="item-list" style="max-height: 200px; overflow-y: auto; margin-top: 0.5rem;"></ul>
+                <ul id="modal-available-tables-list" class="item-list" style="max-height: 150px; overflow-y: auto; margin-top: 0.5rem;"></ul>
+            </div>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="menu-show-record-count"> Show record count in homepage
+                </label>
             </div>
         </div>
+
         <div id="custom-menu-group-selector-group" class="form-group">
             <label for="custom-menu-group-select">Parent Group</label>
             <select id="custom-menu-group-select"></select>
@@ -3809,7 +3811,8 @@ function openCustomMenuModal(itemEl = null) {
         customFieldsContainer: modal.querySelector('#custom-menu-fields-container'),
         tableFieldsContainer: modal.querySelector('#table-menu-fields-container'),
         tableListContainer: modal.querySelector('#table-menu-list-container'),
-        tableListUl: modal.querySelector('#modal-available-tables-list')
+        tableListUl: modal.querySelector('#modal-available-tables-list'),
+        recordCountCheckbox: modal.querySelector('#menu-show-record-count')
     };
 
     const newOkBtn = elements.okBtn.cloneNode(true);
@@ -3839,8 +3842,7 @@ function openCustomMenuModal(itemEl = null) {
         });
         return usedIds;
     };
-    
-    const usedTableIds = getUsedTableIds();
+        const usedTableIds = getUsedTableIds();
     const availableTables = Object.values(jsonData.database.table).filter(t => !usedTableIds.has(t.table_id));
 
     elements.tableListUl.innerHTML = availableTables.length > 0
@@ -3854,27 +3856,12 @@ function openCustomMenuModal(itemEl = null) {
     });
 
     if (itemEl) {
-        elements.title.textContent = 'Edit Menu Item';
-        elements.itemIdInput.value = itemEl.dataset.itemId;
-        elements.radios.forEach(radio => radio.disabled = true);
-        
-        const isTableItem = itemEl.dataset.type === 'table_item';
-        if (isTableItem) {
-            modal.querySelector('input[value="table"]').checked = true;
-            elements.customFieldsContainer.classList.add('hidden');
-            elements.tableFieldsContainer.classList.remove('hidden');
-            const tableName = itemEl.dataset.label;
-            elements.tableLabelInput.value = itemEl.dataset.label;
-            elements.tableListUl.innerHTML = `<li class="active" data-table-name="${tableName}">${tableName}</li>`;
-            elements.tableListUl.style.pointerEvents = 'none';
-        } else {
-            modal.querySelector('input[value="custom"]').checked = true;
-            elements.labelInput.value = itemEl.dataset.label;
-            elements.urlInput.value = itemEl.dataset.url || '';
+        const itemId = parseInt(itemEl.dataset.itemId, 10);
+        const allItems = [...jsonData.database.unified_menu.flatMap(i => i.type === 'group' ? i.items : i)];
+        const itemData = allItems.find(i => i.item_id === itemId);
+        if(itemData) {
+            elements.recordCountCheckbox.checked = itemData.show_record_count === 1;
         }
-
-        const parentGroup = itemEl.closest('.menu-group-item');
-        elements.groupSelect.value = parentGroup ? parentGroup.dataset.groupId : '';
     } else {
         elements.title.textContent = 'Add New Menu Item';
     }
@@ -3888,8 +3875,7 @@ function openCustomMenuModal(itemEl = null) {
             elements.tableLabelInput.value = selectedTableName;
         }
     });
-    
-    newOkBtn.addEventListener('click', async () => {
+        newOkBtn.addEventListener('click', async () => {
         const selectedType = modal.querySelector('input[name="menu-item-type"]:checked').value;
         let dataToSave;
 
@@ -3898,14 +3884,26 @@ function openCustomMenuModal(itemEl = null) {
             if (!tableLabel) { showCustomDialog({ title: "Input Required", message: "Menu Label cannot be empty." }); return; }
             const activeLi = elements.tableListUl.querySelector('li.active');
             const tableName = activeLi ? activeLi.dataset.tableName : null;
-            if (!tableName) { showCustomDialog({ title: "Input Required", message: "Please select a table from the list." }); return; }
-            const tableData = jsonData.database.table[tableName];
-            if (!tableData) { showCustomDialog({ title: "Error", message: `Could not find data for table: ${tableName}` }); return; }
-            dataToSave = { label: tableLabel, url: `${tableName} Resource`, table_id: tableData.table_id };
+            if (!tableName && !itemEl) { showCustomDialog({ title: "Input Required", message: "Please select a table from the list." }); return; }
+            const finalTableName = tableName || itemEl.dataset.label;
+            const tableData = jsonData.database.table[finalTableName];
+            if (!tableData) { showCustomDialog({ title: "Error", message: `Could not find data for table: ${finalTableName}` }); return; }
+
+            dataToSave = { 
+                label: tableLabel, 
+                url: `${finalTableName} Resource`,
+                table_id: tableData.table_id,
+                show_record_count: elements.recordCountCheckbox.checked
+            };
         } else {
             const customLabel = elements.labelInput.value.trim();
             if (!customLabel) { showCustomDialog({ title: "Input Required", message: "Menu Label cannot be empty." }); return; }
-            dataToSave = { label: customLabel, url: elements.urlInput.value.trim(), table_id: null };
+            dataToSave = { 
+                label: customLabel, 
+                url: elements.urlInput.value.trim(),
+                table_id: null,
+                show_record_count: false
+            };
         }
 
         dataToSave.project_id = activeProject.project_id;

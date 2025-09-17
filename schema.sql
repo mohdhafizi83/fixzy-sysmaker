@@ -65,7 +65,6 @@ CREATE TABLE tables (
     allow_print_view             INTEGER DEFAULT 1,
     allow_user_save_filters      INTEGER DEFAULT 0,
     allow_mass_delete            INTEGER DEFAULT 1,
-    show_record_count            INTEGER DEFAULT 0,
     tv_template                  TEXT DEFAULT 'horizontal',
     hide_field_captions          INTEGER DEFAULT 0,
     use_first_field_as_title     INTEGER DEFAULT 0,
@@ -210,6 +209,7 @@ CREATE TABLE menu_items (
     item_label      TEXT,    -- Label untuk menu custom
     item_url        TEXT,    -- URL untuk menu custom
     item_order      INTEGER,
+	show_record_count INTEGER DEFAULT 0,
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
     FOREIGN KEY (menu_group_id) REFERENCES menu_groups(menu_group_id) ON DELETE CASCADE,
     FOREIGN KEY (table_id) REFERENCES tables(table_id) ON DELETE CASCADE,
