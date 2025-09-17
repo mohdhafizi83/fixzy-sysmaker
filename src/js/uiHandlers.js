@@ -3675,10 +3675,9 @@ const itemsHtml = group.items.map(item => {
 
 
         groupEl.innerHTML = `
-            <div class="menu-group-header">
-                <i class="fas fa-grip-vertical drag-handle"></i>
-                <input type="text" class="group-name-input" value="${group.name}">
-                <div class="group-actions">
+    <div class="menu-group-header">
+        <input type="text" class="group-name-input" value="${group.name}">
+        <div class="group-actions">
                     <button class="btn-sidebar-icon menu-move-up-btn" title="Move Up"><i class="fas fa-arrow-up"></i></button>
                     <button class="btn-sidebar-icon menu-move-down-btn" title="Move Down"><i class="fas fa-arrow-down"></i></button>
                     <button class="btn-sidebar-icon group-delete-btn" title="Delete group"><i class="fas fa-trash-alt"></i></button>
@@ -3710,9 +3709,8 @@ const createItemElement = (item) => {
     const icon = item.type === 'table_item' ? 'fa-table' : 'fa-link';
     
     itemEl.innerHTML = `
-        <i class="fas fa-grip-vertical drag-handle"></i>
-        <i class="fas ${icon}" style="margin: 0 0.5rem; color: var(--secondary-color);"></i>
-        <div class="form-group" style="flex: 1;">
+    <i class="fas ${icon}" style="margin: 0 0.5rem; color: var(--secondary-color);"></i>
+    <div class="form-group" style="flex: 1;">
             <input type="text" readonly value="${item.label}" title="Label: ${item.label}">
         </div>
         <div class="form-group" style="flex: 2;">
