@@ -60,45 +60,41 @@ ipcMain.handle('database:batch-update', async (event, queue) => {
         }
 
         // Kemas kini Jadual (DIPERBAIKI DENGAN LOGIK KEMAS KINI MENU)
-        if (queue.tables && Object.keys(queue.tables).length > 0) {
-            for (const id in queue.tables) {
-                const fieldsToUpdate = queue.tables[id];
-                const newTableName = fieldsToUpdate.table_name;
-                let oldTableName = null;
+if (queue.tables && Object.keys(queue.tables).length > 0) {
+    for (const id in queue.tables) {
+        const fieldsToUpdate = queue.tables[id];
+        const newTableName = fieldsToUpdate.table_name;
+        let oldTableName = null;
 
-                // Semak jika nama jadual sedang dikemas kini
-                if (newTableName) {
-                    const tableInfo = db.prepare('SELECT table_name FROM tables WHERE table_id = ?').get(id);
-                    if (tableInfo) {
-                        oldTableName = tableInfo.table_name;
-                    }
-                }
-
-                // Bina dan laksanakan kemas kini untuk jadual 'tables'
-                const setClause = Object.keys(fieldsToUpdate).map(key => `${key} = ?`).join(', ');
-                const values = Object.values(fieldsToUpdate);
-                if (setClause) {
-                    db.prepare(`UPDATE tables SET ${setClause} WHERE table_id = ?`).run(...values, id);
-                }
-
-                // Jika nama jadual telah ditukar, kemas kini juga 'menu_items'
-                if (oldTableName && newTableName && oldTableName !== newTableName) {
-                    const newUrl = `${newTableName} Resource`;
-                    const oldUrl = `${oldTableName} Resource`;
-
-                    // Kemas kini label HANYA jika ia sepadan dengan nama jadual lama
-                    db.prepare(
-                        'UPDATE menu_items SET item_label = ? WHERE table_id = ? AND item_label = ?'
-                    ).run(newTableName, id, oldTableName);
-                    
-                    // Kemas kini URL HANYA jika ia sepadan dengan format 'Resource' yang lama
-                    db.prepare(
-                        'UPDATE menu_items SET item_url = ? WHERE table_id = ? AND item_url = ?'
-                    ).run(newUrl, id, oldUrl);
-                }
+        // Semak jika nama jadual sedang dikemas kini
+        if (newTableName) {
+            const tableInfo = db.prepare('SELECT table_name FROM tables WHERE table_id = ?').get(id);
+            if (tableInfo) {
+                oldTableName = tableInfo.table_name;
             }
         }
 
+        // Bina dan laksanakan kemas kini untuk jadual 'tables'
+        const setClause = Object.keys(fieldsToUpdate).map(key => `${key} = ?`).join(', ');
+        const values = Object.values(fieldsToUpdate);
+        if (setClause) {
+            db.prepare(`UPDATE tables SET ${setClause} WHERE table_id = ?`).run(...values, id);
+        }
+
+        // ▼▼▼ KAWASAN INI TELAH DIPERBAIKI ▼▼▼
+        // Jika nama jadual telah ditukar, kemas kini juga 'menu_items'
+        if (oldTableName && newTableName && oldTableName !== newTableName) {
+            const newUrl = `${newTableName} Resource`;
+
+            // KEMAS KINI DIPERBAIKI: Kemas kini label dan URL berdasarkan table_id,
+            // tanpa mengira apa nilai lama mereka. Ini memastikan konsistensi.
+            db.prepare(
+                'UPDATE menu_items SET item_label = ?, item_url = ? WHERE table_id = ?'
+            ).run(newTableName, newUrl, id);
+        }
+        // ▲▲▲ TAMAT KAWASAN PEMBAIKAN ▲▲▲
+    }
+}
         // Kemas kini Medan
         if (queue.fields && Object.keys(queue.fields).length > 0) {
             for (const id in queue.fields) {

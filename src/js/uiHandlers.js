@@ -3647,28 +3647,32 @@ export function populateMenuManagement(unifiedMenu) {
         groupEl.dataset.type = 'group';
         groupEl.dataset.groupId = group.id;
 
-        // ▼▼▼ MULA PERUBAHAN: Gantikan 'tags' dengan item menu sebenar ▼▼▼
-        const itemsHtml = group.items.map(item => {
-            const itemType = item.table_id ? 'table_item' : 'custom_item';
-            const icon = itemType === 'table_item' ? 'fa-table' : 'fa-link';
-            return `
-            <div class="nested-menu-item" 
-                 data-item-id="${item.item_id}" 
-                 data-label="${item.item_label || ''}" 
-                 data-url="${item.item_url || ''}"
-                 data-type="${itemType}">
-                <i class="fas ${icon} nested-item-icon"></i>
-                <span class="nested-item-label" title="${item.item_label}">${item.item_label}</span>
-                <span class="nested-item-url" title="URL: ${item.item_url || 'N/A'}">${item.item_url || '(Not a link)'}</span>
-                <div class="nested-item-actions">
-                    <button class="btn-sidebar-icon nested-menu-move-up-btn" title="Move Up"><i class="fas fa-arrow-up"></i></button>
-                    <button class="btn-sidebar-icon nested-menu-move-down-btn" title="Move Down"><i class="fas fa-arrow-down"></i></button>
-                    <button class="btn-sidebar-icon nested-menu-edit-btn" title="Edit Item"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="btn-sidebar-icon nested-menu-delete-btn" title="Delete Item"><i class="fas fa-trash-alt"></i></button>
-                </div>
-            </div>
-        `}).join('');
-        // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+const itemsHtml = group.items.map(item => {
+    const itemType = item.table_id ? 'table_item' : 'custom_item';
+    const icon = itemType === 'table_item' ? 'fa-table' : 'fa-link';
+    
+    // PENAMBAHBAIKAN: Tambah data-table-name untuk menyimpan rujukan sebenar
+    const tableNameAttribute = itemType === 'table_item' ? `data-table-name="${item.table_name}"` : '';
+
+    return `
+    <div class="nested-menu-item" 
+         data-item-id="${item.item_id}" 
+         data-label="${item.item_label || ''}" 
+         data-url="${item.item_url || ''}"
+         data-type="${itemType}"
+         ${tableNameAttribute}>
+        <i class="fas ${icon} nested-item-icon"></i>
+        <span class="nested-item-label" title="${item.item_label}">${item.item_label}</span>
+        <span class="nested-item-url" title="URL: ${item.item_url || 'N/A'}">${item.item_url || '(Not a link)'}</span>
+        <div class="nested-item-actions">
+            <button class="btn-sidebar-icon nested-menu-move-up-btn" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+            <button class="btn-sidebar-icon nested-menu-move-down-btn" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+            <button class="btn-sidebar-icon nested-menu-edit-btn" title="Edit Item"><i class="fas fa-pencil-alt"></i></button>
+            <button class="btn-sidebar-icon nested-menu-delete-btn" title="Delete Item"><i class="fas fa-trash-alt"></i></button>
+        </div>
+    </div>
+`}).join('');
+
 
         groupEl.innerHTML = `
             <div class="menu-group-header">
@@ -3684,36 +3688,45 @@ export function populateMenuManagement(unifiedMenu) {
         return groupEl;
     };
 
-    // Fungsi bantuan untuk mencipta elemen item individu
-    const createItemElement = (item) => {
-        const itemEl = document.createElement('div');
-        // Guna semula gaya sedia ada
-        itemEl.className = 'custom-menu-item'; 
-        itemEl.dataset.type = item.type;
-        itemEl.dataset.itemId = item.id;
-        itemEl.dataset.label = item.label;
-        itemEl.dataset.url = item.url || '';
+// PASTE THIS REPLACEMENT CODE IN: uiHandlers.js
 
-        const icon = item.type === 'table_item' ? 'fa-table' : 'fa-link';
-        
-        itemEl.innerHTML = `
-            <i class="fas fa-grip-vertical drag-handle"></i>
-            <i class="fas ${icon}" style="margin: 0 0.5rem; color: var(--secondary-color);"></i>
-            <div class="form-group" style="flex: 1;">
-                <input type="text" readonly value="${item.label}" title="Label: ${item.label}">
-            </div>
-            <div class="form-group" style="flex: 2;">
-                <input type="text" readonly value="${item.url || '(Not a link)'}" title="URL: ${item.url || 'N/A'}">
-            </div>
-            <div class="group-actions">
-                <button class="btn-sidebar-icon menu-move-up-btn" title="Move Up"><i class="fas fa-arrow-up"></i></button>
-                <button class="btn-sidebar-icon menu-move-down-btn" title="Move Down"><i class="fas fa-arrow-down"></i></button>
-                <button class="btn-sidebar-icon custom-menu-edit-btn" title="Edit Item"><i class="fas fa-pencil-alt"></i></button>
-                <button class="btn-sidebar-icon custom-menu-delete-btn" title="Delete Item"><i class="fas fa-trash-alt"></i></button>
-            </div>
-        `;
-        return itemEl;
-    };
+// Fungsi bantuan untuk mencipta elemen item individu
+const createItemElement = (item) => {
+    const itemEl = document.createElement('div');
+    // Guna semula gaya sedia ada
+    itemEl.className = 'custom-menu-item'; 
+    itemEl.dataset.type = item.type;
+    itemEl.dataset.itemId = item.id;
+    itemEl.dataset.label = item.label;
+    itemEl.dataset.url = item.url || '';
+
+    // ▼▼▼ PEMBETULAN UTAMA ADA DI SINI ▼▼▼
+    // Pastikan nama jadual sebenar disimpan untuk item peringkat atasan juga
+    if (item.type === 'table_item') {
+        itemEl.dataset.tableName = item.table_name;
+    }
+    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
+
+    const icon = item.type === 'table_item' ? 'fa-table' : 'fa-link';
+    
+    itemEl.innerHTML = `
+        <i class="fas fa-grip-vertical drag-handle"></i>
+        <i class="fas ${icon}" style="margin: 0 0.5rem; color: var(--secondary-color);"></i>
+        <div class="form-group" style="flex: 1;">
+            <input type="text" readonly value="${item.label}" title="Label: ${item.label}">
+        </div>
+        <div class="form-group" style="flex: 2;">
+            <input type="text" readonly value="${item.url || '(Not a link)'}" title="URL: ${item.url || 'N/A'}">
+        </div>
+        <div class="group-actions">
+            <button class="btn-sidebar-icon menu-move-up-btn" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+            <button class="btn-sidebar-icon menu-move-down-btn" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+            <button class="btn-sidebar-icon custom-menu-edit-btn" title="Edit Item"><i class="fas fa-pencil-alt"></i></button>
+            <button class="btn-sidebar-icon custom-menu-delete-btn" title="Delete Item"><i class="fas fa-trash-alt"></i></button>
+        </div>
+    `;
+    return itemEl;
+};
 
     // Kosongkan senarai sedia ada
     unifiedMenuList.innerHTML = ''; 
@@ -3856,26 +3869,30 @@ function openCustomMenuModal(itemEl = null) {
 
     // ▼▼▼ MULA BLOK KOD YANG TELAH DIPULIHKAN & DITAMBAH BAIK ▼▼▼
     if (itemEl) {
-        elements.title.textContent = 'Edit Menu Item';
-        elements.itemIdInput.value = itemEl.dataset.itemId;
-        elements.radios.forEach(radio => radio.disabled = true);
+    elements.title.textContent = 'Edit Menu Item';
+    elements.itemIdInput.value = itemEl.dataset.itemId;
+    elements.radios.forEach(radio => radio.disabled = true);
+    
+    const isTableItem = itemEl.dataset.type === 'table_item';
+    
+    if (isTableItem) {
+        modal.querySelector('input[value="table"]').checked = true;
+        elements.customFieldsContainer.classList.add('hidden');
+        elements.tableFieldsContainer.classList.remove('hidden');
         
-        const isTableItem = itemEl.dataset.type === 'table_item';
-        
-        if (isTableItem) {
-            modal.querySelector('input[value="table"]').checked = true;
-            elements.customFieldsContainer.classList.add('hidden');
-            elements.tableFieldsContainer.classList.remove('hidden');
-            
-            const tableName = itemEl.dataset.label;
-            elements.tableLabelInput.value = itemEl.dataset.label;
-            elements.tableListUl.innerHTML = `<li class="active" data-table-name="${tableName}">${tableName}</li>`;
-            elements.tableListUl.style.pointerEvents = 'none'; // Halang pemilihan jadual lain semasa edit
-        } else { // custom_item
-            modal.querySelector('input[value="custom"]').checked = true;
-            elements.labelInput.value = itemEl.dataset.label;
-            elements.urlInput.value = itemEl.dataset.url || '';
-        }
+        // PEMBETULAN UTAMA: Baca nama jadual sebenar dari `data-table-name`
+        const trueTableName = itemEl.dataset.tableName; 
+        const currentLabel = itemEl.dataset.label;
+
+        elements.tableLabelInput.value = currentLabel; // Paparkan label semasa yang boleh diedit
+        // Paparkan nama jadual sebenar dalam senarai (dan nyahaktifkan ia)
+        elements.tableListUl.innerHTML = `<li class="active" data-table-name="${trueTableName}">${trueTableName}</li>`;
+        elements.tableListUl.style.pointerEvents = 'none';
+    } else { // custom_item
+        modal.querySelector('input[value="custom"]').checked = true;
+        elements.labelInput.value = itemEl.dataset.label;
+        elements.urlInput.value = itemEl.dataset.url || '';
+    }
 
         const parentGroup = itemEl.closest('.menu-group-item');
         elements.groupSelect.value = parentGroup ? parentGroup.dataset.groupId : '';
@@ -3902,55 +3919,90 @@ function openCustomMenuModal(itemEl = null) {
         }
     });
     
-    newOkBtn.addEventListener('click', async () => {
-        const selectedType = modal.querySelector('input[name="menu-item-type"]:checked').value;
-        let dataToSave;
+// FIND AND REPLACE THIS ENTIRE 'newOkBtn.addEventListener' BLOCK IN: uiHandlers.js
+// It is located inside the openCustomMenuModal function
 
-        if (selectedType === 'table') {
-            const tableLabel = elements.tableLabelInput.value.trim();
-            if (!tableLabel) { showCustomDialog({ title: "Input Required", message: "Menu Label cannot be empty." }); return; }
-            
-            // Semasa edit, activeLi mungkin tiada, jadi kita ambil dari itemEl
-            const activeLi = elements.tableListUl.querySelector('li.active');
-            let tableName = activeLi ? activeLi.dataset.tableName : null;
-            if(itemEl && !tableName) {
-                tableName = itemEl.dataset.label;
+newOkBtn.addEventListener('click', async () => {
+    const selectedType = modal.querySelector('input[name="menu-item-type"]:checked').value;
+    const itemId = elements.itemIdInput.value || null;
+    let dataToSave = {};
+
+    if (selectedType === 'table') {
+        const tableLabel = elements.tableLabelInput.value.trim();
+        if (!tableLabel) {
+            showCustomDialog({ title: "Input Required", message: "Menu Label cannot be empty." });
+            return;
+        }
+
+        let tableIdForSave;
+        let tableNameForSave;
+
+        if (itemId && itemEl) { // --- MOD EDIT (LOGIK DIPERBAIKI SEPENUHNYA) ---
+            // 1. Dapatkan nama jadual SEBENAR dari atribut 'data-table-name' pada elemen HTML.
+            // Ini adalah sumber rujukan yang betul, bukan label yang boleh diubah.
+            const trueTableName = itemEl.dataset.tableName;
+
+            if (!trueTableName || !jsonData.database.table[trueTableName]) {
+                showCustomDialog({ title: "Fatal Error", message: "Cannot determine the original table for this menu item. It might be corrupted. Please try deleting and recreating it." });
+                return;
             }
-
-            if (!tableName) { showCustomDialog({ title: "Input Required", message: "Please select a table from the list." }); return; }
             
-            const tableData = jsonData.database.table[tableName];
-            if (!tableData) { showCustomDialog({ title: "Error", message: `Could not find data for table: ${tableName}` }); return; }
+            // 2. Gunakan nama jadual sebenar untuk mencari semula maklumat yang betul dari sumber data utama.
+            const tableData = jsonData.database.table[trueTableName];
+            tableIdForSave = tableData.table_id;
+            tableNameForSave = tableData.table_name; // Ini adalah nama jadual yang dijamin betul
 
-            dataToSave = { 
-                label: tableLabel, 
-                url: `${tableName} Resource`,
-                table_id: tableData.table_id,
-                show_record_count: elements.recordCountCheckbox.checked
-            };
-        } else {
-            const customLabel = elements.labelInput.value.trim();
-            if (!customLabel) { showCustomDialog({ title: "Input Required", message: "Menu Label cannot be empty." }); return; }
-            dataToSave = { 
-                label: customLabel, 
-                url: elements.urlInput.value.trim(),
-                table_id: null,
-                show_record_count: false
-            };
+        } else { // --- MOD TAMBAH BARU (Logik ini sudah betul) ---
+            const activeLi = elements.tableListUl.querySelector('li.active');
+            tableNameForSave = activeLi ? activeLi.dataset.tableName : null;
+            if (!tableNameForSave) {
+                showCustomDialog({ title: "Input Required", message: "Please select a table from the list." });
+                return;
+            }
+            const tableData = jsonData.database.table[tableNameForSave];
+            tableIdForSave = tableData?.table_id;
         }
 
-        dataToSave.project_id = activeProject.project_id;
-        dataToSave.item_id = elements.itemIdInput.value || null;
-        dataToSave.menu_group_id = elements.groupSelect.value || null;
-
-        const result = await window.electronAPI.saveCustomMenuItem(dataToSave);
-        if (result.success) {
-            closeModal();
-            await loadProjectData(activeProject);
-        } else {
-            showCustomDialog({ title: "Error", message: `Failed to save menu item: ${result.message}` });
+        if (!tableIdForSave || !tableNameForSave) {
+            showCustomDialog({ title: "Fatal Error", message: `Could not resolve table information. Table Name: ${tableNameForSave}, Table ID: ${tableIdForSave}`});
+            return;
         }
-    }, { once: true });
+
+        // 3. Bina data untuk dihantar dengan maklumat yang dijamin betul.
+        dataToSave = {
+            label: tableLabel, // Label baharu dari input pengguna
+            url: `${tableNameForSave} Resource`, // URL dibina dari nama jadual sebenar
+            table_id: tableIdForSave, // ID jadual sebenar
+            show_record_count: elements.recordCountCheckbox.checked
+        };
+
+    } else { // --- MOD CUSTOM MENU (Logik ini sudah betul) ---
+        const customLabel = elements.labelInput.value.trim();
+        if (!customLabel) {
+            showCustomDialog({ title: "Input Required", message: "Menu Label cannot be empty." });
+            return;
+        }
+        dataToSave = {
+            label: customLabel,
+            url: elements.urlInput.value.trim(),
+            table_id: null,
+            show_record_count: false
+        };
+    }
+
+    // Tambah data umum dan hantar ke backend
+    dataToSave.project_id = activeProject.project_id;
+    dataToSave.item_id = itemId;
+    dataToSave.menu_group_id = elements.groupSelect.value || null;
+
+    const result = await window.electronAPI.saveCustomMenuItem(dataToSave);
+    if (result.success) {
+        closeModal();
+        await loadProjectData(activeProject);
+    } else {
+        showCustomDialog({ title: "Error", message: `Failed to save menu item: ${result.message}` });
+    }
+}, { once: true });
 
     modal.classList.remove('hidden');
     elements.labelInput.focus();
