@@ -5649,7 +5649,6 @@ export function populateCustomViewsTab(tableName) {
  * @param {string} tableName - Nama jadual semasa.
  * @param {object|null} viewData - Data untuk view sedia ada jika dalam mod edit.
  */
-// FIND AND REPLACE this entire function in uiHandlers.js
 
 function openCustomViewModal(tableName, viewData = null) {
     const modal = document.getElementById('custom-view-config-modal');
@@ -5663,16 +5662,43 @@ function openCustomViewModal(tableName, viewData = null) {
         viewNameInput: document.getElementById('cv-view-name'),
         menuIconInput: document.getElementById('cv-menu-icon'),
         filterContainer: document.getElementById('cv-filter-builder-container'),
+        ownerOnlyCheckbox: document.getElementById('cv-owner-only-checkbox'),
+        ownerFieldContainer: document.getElementById('cv-owner-field-container'),
+        ownerFieldSelect: document.getElementById('cv-owner-field-select'),
+        nextBtn: document.getElementById('cv-modal-next'), // <-- TAMBAH RUJUKAN BUTANG
     };
 
-    // --- Reset & Isi Data ---
     const isEditing = viewData !== null;
     elements.title.textContent = isEditing ? `Edit Custom View: ${viewData.view_name}` : `Create New Custom View for '${tableName}'`;
     elements.viewIdInput.value = isEditing ? viewData.custom_view_id : '';
     elements.viewNameInput.value = isEditing ? viewData.view_name : '';
     elements.menuIconInput.value = isEditing ? viewData.menu_icon : '';
+    
+    elements.ownerFieldSelect.innerHTML = '';
+    const fields = jsonData.database.table[tableName]?.fields || {};
+    Object.keys(fields).forEach(fieldName => {
+        elements.ownerFieldSelect.add(new Option(fieldName, fieldName));
+    });
 
-    // --- Sediakan Filter Builder ---
+    elements.ownerOnlyCheckbox.checked = isEditing && viewData.owner_only === 1;
+    elements.ownerFieldContainer.classList.toggle('hidden', !elements.ownerOnlyCheckbox.checked);
+    if (isEditing && viewData.owner_field) {
+        elements.ownerFieldSelect.value = viewData.owner_field;
+    }
+
+    // Listener ini kini dikendalikan dalam initializeCustomViewModalLogic untuk mengelak pertindihan
+    // elements.ownerOnlyCheckbox.addEventListener('change', ...);
+
+    // ▼▼▼ MULA LOGIK BAHARU ▼▼▼
+    // Tetapkan keadaan awal butang 'Next'.
+    // Jika mod sunting (isEditing), aktifkan butang. Jika tidak, nyahaktifkan.
+    elements.nextBtn.disabled = !isEditing;
+    // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
+
+    // Reset keadaan pengesahan setiap kali modal dibuka
+    document.getElementById('cv-name-validation-message').style.display = 'none';
+    elements.viewNameInput.classList.remove('is-invalid');
+	
     const filterState = isEditing ? JSON.parse(viewData.filter_rules || '{}') : null;
     elements.filterContainer.innerHTML = '';
     const filterBuilderWrapper = document.createElement('div');
@@ -5686,7 +5712,6 @@ function openCustomViewModal(tableName, viewData = null) {
         buttonContainer.querySelector('button').addEventListener('click', e => addRuleOrGroup(e.target, 'rule'));
     }
 
-    // --- Sediakan Form Builder ---
     populateAvailableFieldsTree(tableName);
     const formLayoutPanel = document.getElementById('cv-form-layout-panel');
     formLayoutPanel.innerHTML = `<div class="empty-state-label"><p>Drag fields here</p></div>`;
@@ -5694,19 +5719,14 @@ function openCustomViewModal(tableName, viewData = null) {
         populateFormBuilder(viewData.fields);
     }
     
-    // --- Tetapkan Keadaan Awal Paparan Modal ---
     document.getElementById('cv-step-1').classList.remove('hidden');
     document.getElementById('cv-step-2').classList.add('hidden');
     document.getElementById('cv-modal-back').classList.add('hidden');
     document.getElementById('cv-modal-save').classList.add('hidden');
     document.getElementById('cv-modal-next').classList.remove('hidden');
 
-    // Paparkan Modal
     modal.classList.remove('hidden');
 }
-
-// FIND AND REPLACE 'initializeCustomViews', 'populateAvailableFieldsTree', and 'populateFormBuilder' in uiHandlers.js
-// ALSO ADD the new helper function 'initializeCustomViewModalLogic'
 
 /**
  * Fungsi utama untuk memasang semua event listener untuk ciri Custom Views.
@@ -5757,11 +5777,8 @@ export function initializeCustomViews() {
     });
 }
 
-
-/**
- * Memasang semua event listener untuk modal Custom View SEKALI SAHAJA.
- */
-// FIND AND REPLACE this entire function in uiHandlers.js
+// js/uiHandlers.js
+// CARI DAN GANTI KESELURUHAN FUNGSI INI
 
 function initializeCustomViewModalLogic() {
     const modal = document.getElementById('custom-view-config-modal');
@@ -5769,7 +5786,11 @@ function initializeCustomViewModalLogic() {
     
     if (modal.dataset.listenersAttached === 'true') return;
 
-    // Rujukan kepada semua elemen interaktif
+    // Rujukan kepada elemen yang terlibat
+    const viewNameInput = document.getElementById('cv-view-name');
+    const nextBtn = document.getElementById('cv-modal-next');
+    const ownerOnlyCheckbox = document.getElementById('cv-owner-only-checkbox');
+    const ownerFieldContainer = document.getElementById('cv-owner-field-container');
     const listContainer = document.getElementById('cv-available-fields-list');
     const formLayoutPanel = document.getElementById('cv-form-layout-panel');
     const btnMoveToLayout = document.getElementById('cv-btn-move-to-layout');
@@ -5778,22 +5799,49 @@ function initializeCustomViewModalLogic() {
         step1: document.getElementById('cv-step-1'),
         step2: document.getElementById('cv-step-2'),
         btnBack: document.getElementById('cv-modal-back'),
-        btnNext: document.getElementById('cv-modal-next'),
+        btnNext: nextBtn,
         btnSave: document.getElementById('cv-modal-save'),
         btnCancel: document.getElementById('cv-modal-cancel'),
         btnClose: document.getElementById('cv-modal-close'),
     };
 
-    // --- Logik Multi-Select (sedia ada) ---
+    const showStep = (step) => {
+        if (step === 2) {
+            elements.step1.classList.add('hidden');
+            elements.step2.classList.remove('hidden');
+            elements.btnBack.classList.remove('hidden');
+            elements.btnSave.classList.remove('hidden');
+            elements.btnNext.classList.add('hidden');
+        } else { // Balik ke langkah 1
+            elements.step1.classList.remove('hidden');
+            elements.step2.classList.add('hidden');
+            elements.btnBack.classList.add('hidden');
+            elements.btnSave.classList.add('hidden');
+            elements.btnNext.classList.remove('hidden');
+        }
+    };
+
+    // --- LOGIK YANG DIPERMUDAHKAN ---
+    // Hanya periksa input untuk mengaktifkan/menyahaktifkan butang 'Next'
+    viewNameInput.addEventListener('input', () => {
+        nextBtn.disabled = viewNameInput.value.trim() === '';
+    });
+
+    // Butang 'Next' kini hanya mempunyai satu tugas: pergi ke langkah 2
+    elements.btnNext.addEventListener('click', () => showStep(2));
+    
+    // Logik sedia ada yang lain dikekalkan
+    ownerOnlyCheckbox.addEventListener('change', () => {
+        ownerFieldContainer.classList.toggle('hidden', !ownerOnlyCheckbox.checked);
+    });
+    
     const handleMultiSelect = (e) => {
         const item = e.target.closest('.field-item, .form-field-item');
-        if (!item) return;
-        item.classList.toggle('selected');
+        if (item) item.classList.toggle('selected');
     };
     listContainer.addEventListener('click', handleMultiSelect);
     formLayoutPanel.addEventListener('click', handleMultiSelect);
 
-    // --- Logik Butang Pindah (sedia ada) ---
     btnMoveToLayout.addEventListener('click', () => {
         const selectedFields = listContainer.querySelectorAll('.field-item.selected');
         selectedFields.forEach(field => {
@@ -5811,46 +5859,22 @@ function initializeCustomViewModalLogic() {
         updateFormFieldMoveButtons(formLayoutPanel);
     });
     
-    // --- Logik Butang Naik/Turun/Padam (sedia ada) ---
     formLayoutPanel.addEventListener('click', e => {
         const button = e.target.closest('button');
-        if (!button) return;
         const item = e.target.closest('.form-field-item');
-        if (!item) return;
-        
+        if (!button || !item) return;
         const currentTableName = modal.dataset.tableName;
-
-        if (button.classList.contains('move-up-btn')) {
-            if (item.previousElementSibling) item.parentElement.insertBefore(item, item.previousElementSibling);
-        } else if (button.classList.contains('move-down-btn')) {
-            if (item.nextElementSibling) item.parentElement.insertBefore(item.nextElementSibling, item);
-        } else if (button.classList.contains('delete-form-field-btn')) {
+        if (button.classList.contains('move-up-btn') && item.previousElementSibling) item.parentElement.insertBefore(item, item.previousElementSibling);
+        else if (button.classList.contains('move-down-btn') && item.nextElementSibling) item.parentElement.insertBefore(item.nextElementSibling, item);
+        else if (button.classList.contains('delete-form-field-btn')) {
             item.remove();
             populateAvailableFieldsTree(currentTableName);
         }
         updateFormFieldMoveButtons(formLayoutPanel);
     });
 
-    // ▼▼▼ MULA LOGIK BAHARU: Navigasi & Simpan Modal ▼▼▼
-    const showStep = (step) => {
-        if (step === 1) {
-            elements.step1.classList.remove('hidden');
-            elements.step2.classList.add('hidden');
-            elements.btnBack.classList.add('hidden');
-            elements.btnSave.classList.add('hidden');
-            elements.btnNext.classList.remove('hidden');
-        } else if (step === 2) {
-            elements.step1.classList.add('hidden');
-            elements.step2.classList.remove('hidden');
-            elements.btnBack.classList.remove('hidden');
-            elements.btnSave.classList.remove('hidden');
-            elements.btnNext.classList.add('hidden');
-        }
-    };
-
-    const closeModal = () => modal.classList.add('hidden');
-    elements.btnNext.addEventListener('click', () => showStep(2));
     elements.btnBack.addEventListener('click', () => showStep(1));
+    const closeModal = () => modal.classList.add('hidden');
     elements.btnCancel.addEventListener('click', closeModal);
     elements.btnClose.addEventListener('click', closeModal);
     
@@ -5863,7 +5887,6 @@ function initializeCustomViewModalLogic() {
             label: item.querySelector('.field-label').textContent,
             isReadonly: item.querySelector('.is-readonly-checkbox').checked,
         }));
-
         const dataToSave = {
             custom_view_id: document.getElementById('cv-view-id').value || null,
             table_id: jsonData.database.table[tableName].table_id,
@@ -5871,8 +5894,9 @@ function initializeCustomViewModalLogic() {
             menu_icon: document.getElementById('cv-menu-icon').value.trim(),
             filter_rules: JSON.stringify(filterData),
             fields: formFields,
+            owner_only: document.getElementById('cv-owner-only-checkbox').checked ? 1 : 0,
+            owner_field: document.getElementById('cv-owner-field-select').value,
         };
-
         const result = await window.electronAPI.saveCustomView(dataToSave);
         if (result.success) {
             closeModal();
@@ -5882,11 +5906,9 @@ function initializeCustomViewModalLogic() {
             showCustomDialog({ title: "Save Error", message: `Failed to save Custom View: ${result.message}` });
         }
     });
-    // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
 
     modal.dataset.listenersAttached = 'true';
 }
-
 
 /**
  * HANYA membina dan memaparkan struktur pokok untuk senarai medan yang boleh dipilih.

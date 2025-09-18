@@ -1437,10 +1437,9 @@ ipcMain.handle('relationship:update', async (event, data) => {
     }
 });
 
-// FIND AND REPLACE this entire handler in: main.js
-
 ipcMain.handle('custom-view:save', async (event, data) => {
-    const { custom_view_id, table_id, view_name, menu_icon, filter_rules, fields } = data;
+    // Guna destructuring untuk dapatkan semua data termasuk yang baharu
+    const { custom_view_id, table_id, view_name, menu_icon, filter_rules, fields, owner_only, owner_field } = data;
     if (!table_id || !view_name) {
         return { success: false, message: 'Table ID and View Name are required.' };
     }
@@ -1451,15 +1450,15 @@ ipcMain.handle('custom-view:save', async (event, data) => {
 
         if (viewId) { // Update existing view
             db.prepare(
-                `UPDATE custom_views SET view_name = ?, menu_icon = ?, filter_rules = ? WHERE custom_view_id = ?`
-            ).run(view_name, menu_icon, filter_rules, viewId);
+                `UPDATE custom_views SET view_name = ?, menu_icon = ?, filter_rules = ?, owner_only = ?, owner_field = ? WHERE custom_view_id = ?`
+            ).run(view_name, menu_icon, filter_rules, owner_only, owner_field, viewId);
         } else { // Insert new view
             isNewView = true;
             const maxOrderResult = db.prepare('SELECT MAX(view_order) as max_order FROM custom_views WHERE table_id = ?').get(table_id);
             const nextOrder = (maxOrderResult?.max_order ?? -1) + 1;
             const info = db.prepare(
-                `INSERT INTO custom_views (table_id, view_name, menu_icon, filter_rules, view_order) VALUES (?, ?, ?, ?, ?)`
-            ).run(table_id, view_name, menu_icon, filter_rules, nextOrder);
+                `INSERT INTO custom_views (table_id, view_name, menu_icon, filter_rules, owner_only, owner_field, view_order) VALUES (?, ?, ?, ?, ?, ?, ?)`
+            ).run(table_id, view_name, menu_icon, filter_rules, owner_only, owner_field, nextOrder);
             viewId = info.lastInsertRowid;
         }
 
@@ -1506,8 +1505,6 @@ ipcMain.handle('custom-view:save', async (event, data) => {
         return { success: false, message: error.message };
     }
 });
-
-// FIND AND REPLACE this entire handler in: main.js
 
 ipcMain.handle('custom-view:delete', async (event, viewId) => {
     if (!viewId) {

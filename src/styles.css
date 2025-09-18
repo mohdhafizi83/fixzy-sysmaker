@@ -3792,3 +3792,39 @@ fieldset.fieldset-disabled {
     border-color: var(--border-color);
     cursor: not-allowed;
 }
+
+/* styles.css */
+
+/* Menjadikan butang yang dinyahaktifkan kelihatan kelabu dan tidak boleh diklik */
+button:disabled {
+    background-color: #D1D5DB; /* Kelabu Pucat */
+    border-color: #9CA3AF;
+    color: #6B7280;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Gaya untuk mesej pengesahan (validation) */
+.validation-message {
+    display: none; /* Sembunyi secara lalai */
+    font-size: 0.8em;
+    font-weight: 500;
+    color: #DC2626; /* Merah */
+    margin-top: 0.25rem;
+}
+
+/* Gaya untuk input yang tidak sah (apabila ditanda oleh JavaScript) */
+input.is-invalid {
+    border-color: #DC2626 !important; /* Merah */
+}
+input.is-invalid:focus {
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+}
+
+/* styles.css */
+
+.required-star {
+    color: #DC2626; /* Merah */
+    font-weight: bold;
+    margin-left: 2px;
+}

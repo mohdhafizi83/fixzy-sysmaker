@@ -2778,14 +2778,29 @@
             
             <div id="cv-step-1">
                 <div class="form-group">
-                    <label for="cv-view-name">View Name / Menu Title</label>
-                    <input type="text" id="cv-view-name" placeholder="e.g., Pending Confirmations">
+                    <label for="cv-view-name">View Name / Menu Title <span class="required-star">*</span></label>
+                    <input type="text" id="cv-view-name" placeholder="e.g., Pending Confirmations" required>
+					<p id="cv-name-validation-message" class="validation-message">This field is required.</p>
                     <p class="helper-text" style="margin-top: 0.25rem;">This will appear in the application's navigation menu.</p>
                 </div>
                 <div class="form-group">
                     <label for="cv-menu-icon">Menu Icon (Font Awesome)</label>
                     <input type="text" id="cv-menu-icon" placeholder="e.g., fa-check-square">
                 </div>
+
+                <fieldset style="margin-top: 2rem;">
+                    <legend>Record Access Control</legend>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="cv-owner-only-checkbox"> 
+                            <strong>Only show records created by the current user.</strong>
+                        </label>
+                        <div id="cv-owner-field-container" class="hidden" style="margin-left: 1.75rem; margin-top: 0.5rem;">
+                            <label for="cv-owner-field-select" style="font-size: 0.9em;">Based on the field that stores the user's ID:</label>
+                            <select id="cv-owner-field-select" style="max-width: 250px;"></select>
+                        </div>
+                    </div>
+                </fieldset>
 
                 <fieldset style="margin-top: 2rem;">
                     <legend>Default Filter Criteria</legend>
@@ -2795,29 +2810,26 @@
                 </fieldset>
             </div>
 
-<div id="cv-step-2" class="hidden">
-    <h4>Design the Detail View Form</h4>
-    <p class="helper-text">Select one or more fields from the left panel, then use the arrow buttons to move them to the form layout on the right. Use the up/down buttons to reorder.</p>
-    <div class="form-builder-grid">
-        <div class="form-builder-panel">
-            <h5>Available Fields</h5>
-            <ul id="cv-available-fields-list" class="field-tree">
-                </ul>
-        </div>
-
-        <div class="form-builder-controls">
-            <button id="cv-btn-move-to-layout" class="btn" title="Add to form">&gt;&gt;</button>
-            <button id="cv-btn-remove-from-layout" class="btn" title="Remove from form">&lt;&lt;</button>
-        </div>
-
-        <div id="cv-form-layout-panel" class="form-builder-panel">
-            <h5>Form Layout</h5>
-            <div class="empty-state-label">
-                <p>No fields selected</p>
+            <div id="cv-step-2" class="hidden">
+                <h4>Design the Detail View Form</h4>
+                <p class="helper-text">Select one or more fields from the left panel, then use the arrow buttons to move them to the form layout on the right. Use the up/down buttons to reorder.</p>
+                <div class="form-builder-grid">
+                    <div class="form-builder-panel">
+                        <h5>Available Fields</h5>
+                        <ul id="cv-available-fields-list" class="field-tree"></ul>
+                    </div>
+                    <div class="form-builder-controls">
+                        <button id="cv-btn-move-to-layout" class="btn" title="Add to form">&gt;&gt;</button>
+                        <button id="cv-btn-remove-from-layout" class="btn" title="Remove from form">&lt;&lt;</button>
+                    </div>
+                    <div id="cv-form-layout-panel" class="form-builder-panel">
+                        <h5>Form Layout</h5>
+                        <div class="empty-state-label">
+                            <p>No fields selected</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-            </div>
-    </div>
-</div>
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" id="cv-modal-cancel">Cancel</button>
@@ -2827,7 +2839,6 @@
         </div>
     </div>
 </div>
-
 <template id="cv-form-field-template">
     <div class="form-field-item">
         <div class="field-info">
