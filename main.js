@@ -1470,8 +1470,8 @@ ipcMain.handle('custom-view:save', async (event, data) => {
                 ).get(tableInfo.project_id);
                 const nextMenuOrder = (maxMenuOrderResult?.max_order ?? -1) + 1;
                 
-                const menuLabel = `${tableInfo.table_name} - custom`;
-                const menuUrl = view_name; // Seperti yang diminta
+                const menuLabel = view_name; // Seperti yang diminta
+                const menuUrl = `${tableInfo.table_name} Custom View`;
 
                 db.prepare(
                     `INSERT INTO menu_items (project_id, custom_view_id, item_label, item_url, item_order) VALUES (?, ?, ?, ?, ?)`
