@@ -3649,7 +3649,7 @@ export function populateMenuManagement(unifiedMenu) {
 
 const itemsHtml = group.items.map(item => {
     const itemType = item.table_id ? 'table_item' : 'custom_item';
-    const icon = itemType === 'table_item' ? 'fa-table' : 'fa-link';
+    const icon = itemType === 'table_item' ? 'fa-table' : (itemType === 'custom_view_item' ? 'fa-eye' : 'fa-link');
     
     // PENAMBAHBAIKAN: Tambah data-table-name untuk menyimpan rujukan sebenar
     const tableNameAttribute = itemType === 'table_item' ? `data-table-name="${item.table_name}"` : '';
@@ -3706,7 +3706,7 @@ const createItemElement = (item) => {
     }
     // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
 
-    const icon = item.type === 'table_item' ? 'fa-table' : 'fa-link';
+    const icon = item.type === 'table_item' ? 'fa-table' : (item.type === 'custom_view_item' ? 'fa-eye' : 'fa-link');
     
     itemEl.innerHTML = `
     <i class="fas ${icon}" style="margin: 0 0.5rem; color: var(--secondary-color);"></i>
@@ -3760,6 +3760,7 @@ export function initializeMenuManagementHandlers() {
     const addCustomMenuBtn = document.getElementById('app-add_custom_menu');
     const unifiedMenuList = document.getElementById('unified-menu-list');
 
+
 // FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
 
 function openCustomMenuModal(itemEl = null) {
@@ -3773,55 +3774,37 @@ function openCustomMenuModal(itemEl = null) {
             <div class="radio-group-horizontal" style="margin-top: 0.5rem;">
                 <label class="checkbox-label"><input type="radio" name="menu-item-type" value="custom" checked> Custom Menu</label>
                 <label class="checkbox-label"><input type="radio" name="menu-item-type" value="table"> Table Menu</label>
+                <label class="checkbox-label"><input type="radio" name="menu-item-type" value="custom_view"> Custom View Menu</label>
             </div>
         </div>
         <div id="custom-menu-fields-container">
-            <div class="form-group">
-                <label for="custom-menu-label-input">Menu Label</label>
-                <input type="text" id="custom-menu-label-input" placeholder="e.g., Customer Support">
-            </div>
-            <div class="form-group">
-                <label for="custom-menu-url-input">URL</label>
-                <input type="text" id="custom-menu-url-input" placeholder="e.g., support.php">
-            </div>
+            <div class="form-group"><label for="custom-menu-label-input">Menu Label</label><input type="text" id="custom-menu-label-input" placeholder="e.g., Customer Support"></div>
+            <div class="form-group"><label for="custom-menu-url-input">URL</label><input type="text" id="custom-menu-url-input" placeholder="e.g., support.php"></div>
         </div>
         <div id="table-menu-fields-container" class="hidden">
-            <div class="form-group">
-                <label for="table-menu-label-input">Menu Label</label>
-                <input type="text" id="table-menu-label-input" placeholder="Enter menu label">
-            </div>
-            <div id="table-menu-list-container" class="form-group">
-                <label>Available Tables</label>
-                <ul id="modal-available-tables-list" class="item-list" style="max-height: 150px; overflow-y: auto; margin-top: 0.5rem;"></ul>
-            </div>
-            <div class="form-group">
-                <label class="checkbox-label">
-                    <input type="checkbox" id="menu-show-record-count"> Show record count in homepage
-                </label>
-            </div>
+            <div class="form-group"><label for="table-menu-label-input">Menu Label</label><input type="text" id="table-menu-label-input" placeholder="Enter menu label"></div>
+            <div class="form-group"><label>Available Tables</label><ul id="modal-available-tables-list" class="item-list" style="max-height: 150px; overflow-y: auto; margin-top: 0.5rem;"></ul></div>
         </div>
-        <div id="custom-menu-group-selector-group" class="form-group">
-            <label for="custom-menu-group-select">Parent Group</label>
-            <select id="custom-menu-group-select"></select>
+        <div id="custom-view-menu-fields-container" class="hidden">
+            <div class="form-group"><label for="cv-menu-label-input">Menu Label</label><input type="text" id="cv-menu-label-input" placeholder="Enter menu label"></div>
+            <div class="form-group"><label>Available Custom Views</label><ul id="modal-available-cv-list" class="item-list" style="max-height: 150px; overflow-y: auto; margin-top: 0.5rem;"></ul></div>
         </div>
+        <div class="form-group shared-menu-options"><label class="checkbox-label"><input type="checkbox" id="menu-show-record-count"> Show record count in homepage</label></div>
+        <div class="form-group"><label for="custom-menu-group-select">Parent Group</label><select id="custom-menu-group-select"></select></div>
         <input type="hidden" id="custom-menu-item-id">
     `;
 
     const elements = {
-        title: modal.querySelector('#custom-menu-modal-title'),
-        labelInput: modal.querySelector('#custom-menu-label-input'),
-        urlInput: modal.querySelector('#custom-menu-url-input'),
-        tableLabelInput: modal.querySelector('#table-menu-label-input'),
-        itemIdInput: modal.querySelector('#custom-menu-item-id'),
-        groupSelect: modal.querySelector('#custom-menu-group-select'),
-        okBtn: modal.querySelector('#custom-menu-modal-ok'),
-        cancelBtn: modal.querySelector('#custom-menu-modal-cancel'),
-        closeBtn: modal.querySelector('#custom-menu-modal-close'),
+        title: modal.querySelector('#custom-menu-modal-title'), okBtn: modal.querySelector('#custom-menu-modal-ok'),
+        cancelBtn: modal.querySelector('#custom-menu-modal-cancel'), closeBtn: modal.querySelector('#custom-menu-modal-close'),
+        itemIdInput: modal.querySelector('#custom-menu-item-id'), groupSelect: modal.querySelector('#custom-menu-group-select'),
+        recordCountCheckbox: modal.querySelector('#menu-show-record-count'), sharedOptions: modal.querySelector('.shared-menu-options'),
         radios: modal.querySelectorAll('input[name="menu-item-type"]'),
-        customFieldsContainer: modal.querySelector('#custom-menu-fields-container'),
-        tableFieldsContainer: modal.querySelector('#table-menu-fields-container'),
-        tableListUl: modal.querySelector('#modal-available-tables-list'),
-        recordCountCheckbox: modal.querySelector('#menu-show-record-count')
+        customFieldsContainer: modal.querySelector('#custom-menu-fields-container'), labelInput: modal.querySelector('#custom-menu-label-input'),
+        urlInput: modal.querySelector('#custom-menu-url-input'), tableFieldsContainer: modal.querySelector('#table-menu-fields-container'),
+        tableLabelInput: modal.querySelector('#table-menu-label-input'), tableListUl: modal.querySelector('#modal-available-tables-list'),
+        cvFieldsContainer: modal.querySelector('#custom-view-menu-fields-container'), cvLabelInput: modal.querySelector('#cv-menu-label-input'),
+        cvListUl: modal.querySelector('#modal-available-cv-list'),
     };
 
     const newOkBtn = elements.okBtn.cloneNode(true);
@@ -3832,82 +3815,101 @@ function openCustomMenuModal(itemEl = null) {
 
     elements.radios.forEach(radio => {
         radio.addEventListener('change', () => {
-            const isCustom = radio.value === 'custom';
-            elements.customFieldsContainer.classList.toggle('hidden', !isCustom);
-            elements.tableFieldsContainer.classList.toggle('hidden', isCustom);
+            const selectedType = radio.value;
+            elements.customFieldsContainer.classList.toggle('hidden', selectedType !== 'custom');
+            elements.tableFieldsContainer.classList.toggle('hidden', selectedType !== 'table');
+            elements.cvFieldsContainer.classList.toggle('hidden', selectedType !== 'custom_view');
+            elements.sharedOptions.classList.toggle('hidden', selectedType === 'custom');
         });
     });
 
-    const getUsedTableIds = () => {
-        const usedIds = new Set();
+    const getUsedIds = () => {
+        const ids = { tableIds: new Set(), cvIds: new Set() };
         jsonData.database.unified_menu.forEach(item => {
-            if (item.type === 'group') {
-                item.items.forEach(nestedItem => {
-                    if (nestedItem.table_id) usedIds.add(nestedItem.table_id);
-                });
-            } else if (item.type === 'table_item') {
-                if (item.table_id) usedIds.add(item.table_id);
+            const items = item.type === 'group' ? item.items : [item];
+            items.forEach(i => {
+                if (i.table_id) ids.tableIds.add(i.table_id);
+                if (i.custom_view_id) ids.cvIds.add(i.custom_view_id);
+            });
+        });
+        return ids;
+    };
+    const { tableIds: usedTableIds, cvIds: usedCvIds } = getUsedIds();
+
+    const availableTables = Object.values(jsonData.database.table).filter(t => !usedTableIds.has(t.table_id));
+    elements.tableListUl.innerHTML = availableTables.length > 0 ? availableTables.filter(t => t && t.table_name).map(t => `<li data-table-name="${t.table_name}">${t.table_name}</li>`).join('') : '<li>No unassigned tables available.</li>';
+
+    const availableCustomViews = [];
+    Object.values(jsonData.database.table).forEach(table => {
+        (table.custom_views || []).forEach(view => {
+            if (!usedCvIds.has(view.custom_view_id)) {
+                availableCustomViews.push({ ...view, table_name: table.table_name });
             }
         });
-        return usedIds;
-    };
+    });
+    elements.cvListUl.innerHTML = availableCustomViews.length > 0 ? availableCustomViews.map(v => `<li data-cv-id="${v.custom_view_id}">${v.table_name} - ${v.view_name}</li>`).join('') : '<li>No unassigned Custom Views available.</li>';
     
-    const usedTableIds = getUsedTableIds();
-    const availableTables = Object.values(jsonData.database.table).filter(t => !usedTableIds.has(t.table_id));
-
-    elements.tableListUl.innerHTML = availableTables.length > 0
-        ? availableTables.map(t => `<li data-table-name="${t.table_name}">${t.table_name}</li>`).join('')
-        : '<li>No unassigned tables available.</li>';
-
-    elements.groupSelect.innerHTML = '<option value="">None (Top Level)</option>';
-    const menuGroups = jsonData.database.unified_menu.filter(item => item.type === 'group');
-    menuGroups.forEach(group => {
-        elements.groupSelect.innerHTML += `<option value="${group.id}">${group.name}</option>`;
+    const allCustomViews = [];
+    Object.values(jsonData.database.table).forEach(table => {
+        (table.custom_views || []).forEach(view => {
+            allCustomViews.push({ ...view, table_name: table.table_name });
+        });
     });
 
-    // ▼▼▼ MULA BLOK KOD YANG TELAH DIPULIHKAN & DITAMBAH BAIK ▼▼▼
+    elements.groupSelect.innerHTML = '<option value="">None (Top Level)</option>';
+    jsonData.database.unified_menu.filter(item => item.type === 'group').forEach(group => { elements.groupSelect.innerHTML += `<option value="${group.id}">${group.name}</option>`; });
+
     if (itemEl) {
-    elements.title.textContent = 'Edit Menu Item';
-    elements.itemIdInput.value = itemEl.dataset.itemId;
-    elements.radios.forEach(radio => radio.disabled = true);
-    
-    const isTableItem = itemEl.dataset.type === 'table_item';
-    
-    if (isTableItem) {
-        modal.querySelector('input[value="table"]').checked = true;
-        elements.customFieldsContainer.classList.add('hidden');
-        elements.tableFieldsContainer.classList.remove('hidden');
+        elements.title.textContent = 'Edit Menu Item';
+        elements.itemIdInput.value = itemEl.dataset.itemId;
+        elements.radios.forEach(radio => radio.disabled = true);
+        const itemType = itemEl.dataset.type;
+        const allItems = [...jsonData.database.unified_menu.flatMap(i => i.type === 'group' ? i.items : i)];
         
-        // PEMBETULAN UTAMA: Baca nama jadual sebenar dari `data-table-name`
-        const trueTableName = itemEl.dataset.tableName; 
-        const currentLabel = itemEl.dataset.label;
+        // ▼▼▼ KOD CARIAN YANG TELAH DIPERBAIKI SEPENUHNYA ▼▼▼
+        const itemIdToFind = parseInt(itemEl.dataset.itemId, 10);
+        const itemData = allItems.find(i => (i.item_id || i.id) === itemIdToFind);
+        // ▲▲▲ TAMAT PEMBAIKAN ▲▲▲
 
-        elements.tableLabelInput.value = currentLabel; // Paparkan label semasa yang boleh diedit
-        // Paparkan nama jadual sebenar dalam senarai (dan nyahaktifkan ia)
-        elements.tableListUl.innerHTML = `<li class="active" data-table-name="${trueTableName}">${trueTableName}</li>`;
-        elements.tableListUl.style.pointerEvents = 'none';
-    } else { // custom_item
-        modal.querySelector('input[value="custom"]').checked = true;
-        elements.labelInput.value = itemEl.dataset.label;
-        elements.urlInput.value = itemEl.dataset.url || '';
-    }
+        const radioValueMap = { 'custom_item': 'custom', 'table_item': 'table', 'custom_view_item': 'custom_view' };
+        const radioToSelect = document.querySelector(`input[name="menu-item-type"][value="${radioValueMap[itemType]}"]`);
+        if (radioToSelect) { radioToSelect.checked = true; radioToSelect.dispatchEvent(new Event('change')); }
+        if (itemType === 'table_item') {
+            elements.tableLabelInput.value = itemEl.dataset.label;
+            elements.tableListUl.innerHTML = `<li class="active">${itemEl.dataset.tableName}</li>`;
+            elements.tableListUl.style.pointerEvents = 'none';
+        } else if (itemType === 'custom_view_item') {
+            elements.cvLabelInput.value = itemEl.dataset.label;
 
+            // ▼▼▼ BLOK DEBUGGING DITAMBAH DI SINI ▼▼▼
+            console.log("--- DEBUGGING CUSTOM VIEW EDIT ---");
+            console.log("1. Data Item Menu (dari jsonData):", itemData);
+            console.log("2. ID yang dicari:", itemData?.custom_view_id, "(Jenis:", typeof itemData?.custom_view_id, ")");
+            console.log("3. Mencari di dalam senarai ini (allCustomViews):", allCustomViews);
+            
+            const cvData = allCustomViews.find(v => {
+                console.log(`- Membandingkan: Menu Item CV ID ${itemData?.custom_view_id} (jenis: ${typeof itemData?.custom_view_id}) dengan View ID ${v.custom_view_id} (jenis: ${typeof v.custom_view_id})`);
+                return v.custom_view_id == itemData?.custom_view_id;
+            }) || { table_name: 'Unknown', view_name: 'View' };
+            
+            console.log("4. Hasil carian (cvData):", cvData);
+            console.log("--- TAMAT DEBUGGING ---");
+            // ▲▲▲ TAMAT BLOK DEBUGGING ▲▲▲
+            
+            elements.cvListUl.innerHTML = `<li class="active" data-cv-id="${cvData.custom_view_id}">${cvData.table_name} - ${cvData.view_name}</li>`;
+            elements.cvListUl.style.pointerEvents = 'none';
+        } else {
+            elements.labelInput.value = itemEl.dataset.label;
+            elements.urlInput.value = itemEl.dataset.url || '';
+        }
+        if (itemData) { elements.recordCountCheckbox.checked = itemData.show_record_count === 1; }
         const parentGroup = itemEl.closest('.menu-group-item');
         elements.groupSelect.value = parentGroup ? parentGroup.dataset.groupId : '';
-        
-        const itemId = parseInt(itemEl.dataset.itemId, 10);
-        const allItems = [...jsonData.database.unified_menu.flatMap(i => i.type === 'group' ? i.items : i)];
-        const itemData = allItems.find(i => i.item_id === itemId);
-        if(itemData) {
-            elements.recordCountCheckbox.checked = itemData.show_record_count === 1;
-        }
-
     } else {
         elements.title.textContent = 'Add New Menu Item';
     }
-    // ▲▲▲ TAMAT BLOK KOD ▲▲▲
 
-    let selectedTableName = null;
+    let selectedTableName = null, selectedCvId = null;
     elements.tableListUl.addEventListener('click', e => {
         if (e.target.tagName === 'LI' && e.target.dataset.tableName) {
             elements.tableListUl.querySelectorAll('li').forEach(li => li.classList.remove('active'));
@@ -3916,96 +3918,73 @@ function openCustomMenuModal(itemEl = null) {
             elements.tableLabelInput.value = selectedTableName;
         }
     });
-    
+    elements.cvListUl.addEventListener('click', e => {
+        if (e.target.tagName === 'LI' && e.target.dataset.cvId) {
+            elements.cvListUl.querySelectorAll('li').forEach(li => li.classList.remove('active'));
+            e.target.classList.add('active');
+            selectedCvId = e.target.dataset.cvId;
+            elements.cvLabelInput.value = e.target.textContent;
+        }
+    });
+
 // FIND AND REPLACE THIS ENTIRE 'newOkBtn.addEventListener' BLOCK IN: uiHandlers.js
 // It is located inside the openCustomMenuModal function
 
-newOkBtn.addEventListener('click', async () => {
-    const selectedType = modal.querySelector('input[name="menu-item-type"]:checked').value;
-    const itemId = elements.itemIdInput.value || null;
-    let dataToSave = {};
+    newOkBtn.addEventListener('click', async () => {
+        const selectedType = modal.querySelector('input[name="menu-item-type"]:checked').value;
+        const itemId = elements.itemIdInput.value || null;
+        let dataToSave = { project_id: activeProject.project_id, item_id: itemId, menu_group_id: elements.groupSelect.value || null };
 
-    if (selectedType === 'table') {
-        const tableLabel = elements.tableLabelInput.value.trim();
-        if (!tableLabel) {
-            showCustomDialog({ title: "Input Required", message: "Menu Label cannot be empty." });
-            return;
-        }
-
-        let tableIdForSave;
-        let tableNameForSave;
-
-        if (itemId && itemEl) { // --- MOD EDIT (LOGIK DIPERBAIKI SEPENUHNYA) ---
-            // 1. Dapatkan nama jadual SEBENAR dari atribut 'data-table-name' pada elemen HTML.
-            // Ini adalah sumber rujukan yang betul, bukan label yang boleh diubah.
-            const trueTableName = itemEl.dataset.tableName;
-
-            if (!trueTableName || !jsonData.database.table[trueTableName]) {
-                showCustomDialog({ title: "Fatal Error", message: "Cannot determine the original table for this menu item. It might be corrupted. Please try deleting and recreating it." });
-                return;
-            }
+        if (selectedType === 'table') {
+            const tableLabel = elements.tableLabelInput.value.trim();
+            if (!tableLabel) { showCustomDialog({ title: "Input Required", message: "Menu Label is required." }); return; }
             
-            // 2. Gunakan nama jadual sebenar untuk mencari semula maklumat yang betul dari sumber data utama.
-            const tableData = jsonData.database.table[trueTableName];
-            tableIdForSave = tableData.table_id;
-            tableNameForSave = tableData.table_name; // Ini adalah nama jadual yang dijamin betul
+            let tableNameForSave;
+            if (itemId) { // Mod Edit
+                tableNameForSave = itemEl.dataset.tableName;
+            } else { // Mod Tambah Baru
+                const activeLi = elements.tableListUl.querySelector('li.active');
+                tableNameForSave = activeLi ? activeLi.dataset.tableName : null;
+            }
 
-        } else { // --- MOD TAMBAH BARU (Logik ini sudah betul) ---
-            const activeLi = elements.tableListUl.querySelector('li.active');
-            tableNameForSave = activeLi ? activeLi.dataset.tableName : null;
-            if (!tableNameForSave) {
-                showCustomDialog({ title: "Input Required", message: "Please select a table from the list." });
+            if (!tableNameForSave) { showCustomDialog({ title: "Input Required", message: "Please select a table." }); return; }
+            const tableData = jsonData.database.table[tableNameForSave];
+            if (!tableData) { showCustomDialog({ title: "Error", message: "Table data not found." }); return; }
+            dataToSave = { ...dataToSave, label: tableLabel, url: `${tableNameForSave} Resource`, table_id: tableData.table_id, custom_view_id: null, show_record_count: elements.recordCountCheckbox.checked };
+        
+        } else if (selectedType === 'custom_view') {
+            const cvLabel = elements.cvLabelInput.value.trim();
+            if (!cvLabel) { showCustomDialog({ title: "Input Required", message: "Menu Label is required." }); return; }
+
+            // ▼▼▼ BLOK PEMBAIKAN UTAMA ▼▼▼
+            // Dapatkan ID terus dari elemen senarai yang aktif.
+            // Logik ini berfungsi untuk kedua-dua mod Tambah Baru (selepas diklik) dan mod Edit (sudah sedia aktif).
+            const activeLi = elements.cvListUl.querySelector('li.active');
+            const cvIdForSave = activeLi ? activeLi.dataset.cvId : null;
+
+            if (!cvIdForSave) {
+                showCustomDialog({ title: "Input Required", message: "Please select a Custom View." });
                 return;
             }
-            const tableData = jsonData.database.table[tableNameForSave];
-            tableIdForSave = tableData?.table_id;
+            // ▲▲▲ TAMAT BLOK PEMBAIKAN ▲▲▲
+
+            const cvData = allCustomViews.find(v => v.custom_view_id == cvIdForSave);
+            if (!cvData) { showCustomDialog({ title: "Error", message: "Custom View data not found." }); return; }
+            dataToSave = { ...dataToSave, label: cvLabel, url: `${cvData.table_name} - ${cvData.view_name}`, table_id: null, custom_view_id: cvIdForSave, show_record_count: elements.recordCountCheckbox.checked };
+            
+        } else { // custom
+            const customLabel = elements.labelInput.value.trim();
+            if (!customLabel) { showCustomDialog({ title: "Input Required", message: "Menu Label is required." }); return; }
+            dataToSave = { ...dataToSave, label: customLabel, url: elements.urlInput.value.trim(), table_id: null, custom_view_id: null, show_record_count: false };
         }
 
-        if (!tableIdForSave || !tableNameForSave) {
-            showCustomDialog({ title: "Fatal Error", message: `Could not resolve table information. Table Name: ${tableNameForSave}, Table ID: ${tableIdForSave}`});
-            return;
-        }
-
-        // 3. Bina data untuk dihantar dengan maklumat yang dijamin betul.
-        dataToSave = {
-            label: tableLabel, // Label baharu dari input pengguna
-            url: `${tableNameForSave} Resource`, // URL dibina dari nama jadual sebenar
-            table_id: tableIdForSave, // ID jadual sebenar
-            show_record_count: elements.recordCountCheckbox.checked
-        };
-
-    } else { // --- MOD CUSTOM MENU (Logik ini sudah betul) ---
-        const customLabel = elements.labelInput.value.trim();
-        if (!customLabel) {
-            showCustomDialog({ title: "Input Required", message: "Menu Label cannot be empty." });
-            return;
-        }
-        dataToSave = {
-            label: customLabel,
-            url: elements.urlInput.value.trim(),
-            table_id: null,
-            show_record_count: false
-        };
-    }
-
-    // Tambah data umum dan hantar ke backend
-    dataToSave.project_id = activeProject.project_id;
-    dataToSave.item_id = itemId;
-    dataToSave.menu_group_id = elements.groupSelect.value || null;
-
-    const result = await window.electronAPI.saveCustomMenuItem(dataToSave);
-    if (result.success) {
-        closeModal();
-        await loadProjectData(activeProject);
-    } else {
-        showCustomDialog({ title: "Error", message: `Failed to save menu item: ${result.message}` });
-    }
-}, { once: true });
-
+        const result = await window.electronAPI.saveCustomMenuItem(dataToSave);
+        if (result.success) { closeModal(); await loadProjectData(activeProject); }
+        else { showCustomDialog({ title: "Error", message: `Failed to save menu item: ${result.message}` }); }
+    }, { once: true });
     modal.classList.remove('hidden');
-    elements.labelInput.focus();
 }
-        // Fungsi Simpan Utama untuk keseluruhan struktur
+
     const saveUnifiedStructure = async () => {
         if (!unifiedMenuList) return;
         

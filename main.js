@@ -157,8 +157,9 @@ if (queue.tables && Object.keys(queue.tables).length > 0) {
     }
 });
 
-// FIND AND REPLACE THIS ENTIRE HANDLER IN: src/main.js
-ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, label, url, menu_group_id, table_id, show_record_count }) => {
+// PASTE THIS REPLACEMENT CODE IN: main.js
+
+ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, label, url, menu_group_id, table_id, custom_view_id, show_record_count }) => {
     try {
         if (!project_id) {
             throw new Error("Project ID is required.");
@@ -171,10 +172,11 @@ ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, lab
             ).run(item_id, project_id);
         } else if (item_id) {
             // Logic to update an existing item
-
             db.prepare(
-                `UPDATE menu_items SET item_label = ?, item_url = ?, menu_group_id = ?, table_id = ?, show_record_count = ? WHERE item_id = ? AND project_id = ?`
-            ).run(label, url || null, menu_group_id || null, table_id || null, show_record_count ? 1 : 0, item_id, project_id);
+                `UPDATE menu_items 
+                 SET item_label = ?, item_url = ?, menu_group_id = ?, table_id = ?, custom_view_id = ?, show_record_count = ? 
+                 WHERE item_id = ? AND project_id = ?`
+            ).run(label, url || null, menu_group_id || null, table_id || null, custom_view_id || null, show_record_count ? 1 : 0, item_id, project_id);
 
         } else {
             // Logic to insert a new item
@@ -182,6 +184,7 @@ ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, lab
                 throw new Error("Label is required for a new menu item.");
             }
 
+            // ... (kod sedia ada untuk mendapatkan nextOrder tidak berubah) ...
             let nextOrder;
             if (menu_group_id) {
                 const maxOrderResult = db.prepare('SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id = ?').get(project_id, menu_group_id);
@@ -192,8 +195,9 @@ ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, lab
             }
 
             db.prepare(
-                `INSERT INTO menu_items (project_id, table_id, item_label, item_url, item_order, menu_group_id, show_record_count) VALUES (?, ?, ?, ?, ?, ?, ?)`
-            ).run(project_id, table_id || null, label, url || null, nextOrder, menu_group_id || null, show_record_count ? 1 : 0);
+                `INSERT INTO menu_items (project_id, table_id, custom_view_id, item_label, item_url, item_order, menu_group_id, show_record_count) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+            ).run(project_id, table_id || null, custom_view_id || null, label, url || null, nextOrder, menu_group_id || null, show_record_count ? 1 : 0);
         }
         return { success: true };
     } catch (error) {
@@ -635,12 +639,22 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
     });
     
 
-    topLevelItems.forEach(item => {
-        unifiedMenu.push({ 
-            type: item.table_id ? 'table_item' : 'custom_item', 
-            id: item.item_id, 
-            table_id: item.table_id, // <-- Baris ini memastikan table_id sentiasa ada
-            order: item.item_order, 
+topLevelItems.forEach(item => {
+    // ▼▼▼ LOGIK BAHARU UNTUK MENGENAL PASTI JENIS ITEM ▼▼▼
+    let itemType = 'custom_item';
+    if (item.table_id) {
+        itemType = 'table_item';
+    } else if (item.custom_view_id) {
+        itemType = 'custom_view_item';
+    }
+    // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
+
+    unifiedMenu.push({ 
+        type: itemType, 
+        id: item.item_id, 
+        table_id: item.table_id,
+        custom_view_id: item.custom_view_id, // Tambah ini untuk rujukan
+        order: item.item_order, 
             label: item.item_label || item.table_name, 
             url: item.item_url, 
             table_name: item.table_name 
