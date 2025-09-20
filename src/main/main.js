@@ -21,7 +21,7 @@ if (!dbExists) {
   //console.log("Pangkalan data tidak ditemui, mencipta skema baharu...");
   try {
     const schemaSql = fs.readFileSync(
-      path.join(__dirname, "schema.sql"),
+      path.join(__dirname, '../../resources/schema.sql'),
       "utf8"
     );
     db.exec(schemaSql);
@@ -1033,20 +1033,21 @@ ipcMain.handle("settings:get-all", async () => {
 // =================================================================
 
 function createWindow() {
+  const path = require('path');	
   const win = new BrowserWindow({
     width: 1200, // Lebar ini masih berguna sebagai saiz sandaran
     height: 800, // Tinggi ini masih berguna sebagai saiz sandaran
     show: false, // UBAH: Mulakan tetingkap secara tersembunyi
 	resizable: false, //Kunci saiz tetingkap
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, '../preload/preload.js'),
     },
   });
 
   // TAMBAH: Panggil fungsi maximize() pada objek tetingkap
   win.maximize();
   
-  win.loadFile("src/index.html");
+  win.loadFile(path.join(__dirname, '../renderer/index.html'));
 
   // TAMBAH: Tunjukkan tetingkap hanya apabila ia sedia untuk dipaparkan
   win.on('ready-to-show', () => {
@@ -1523,4 +1524,55 @@ ipcMain.handle('custom-view:delete', async (event, viewId) => {
         console.error("Failed to delete custom view:", error);
         return { success: false, message: error.message };
     }
+});
+
+// =================================================================
+// Generator functions will be put here
+// =================================================================
+/**
+ * Mencipta dan mengembalikan laluan ke folder 'generated' yang selamat.
+ * Folder ini berada di dalam direktori data pengguna, jadi ia sentiasa boleh ditulis.
+ * @returns {string} Laluan penuh ke folder 'generated'.
+ */
+function getGeneratedFolderPath() {
+  // Laluan ini akan berbeza untuk setiap pengguna dan OS, cth:
+  // Windows: C:\Users\NamaAnda\AppData\Roaming\fizisysmaker
+  const userDataPath = app.getPath('userData');
+  
+  const generatedPath = path.join(userDataPath, 'generated');
+
+  // Pastikan folder ini wujud. Jika tidak, ciptakannya.
+  if (!fs.existsSync(generatedPath)) {
+    fs.mkdirSync(generatedPath, { recursive: true });
+  }
+
+  return generatedPath;
+}
+
+ipcMain.handle('generate-app', async () => {
+    try {
+        const generatedAppPath = getGeneratedFolderPath();
+        const newFilePath = path.join(generatedAppPath, 'fail_baru.php');
+        const fileContent = '<?php\n\n// Ini adalah fail yang dijana secara automatik.\necho "Hello, FiziSysMaker!";';
+
+        // Tulis fail ke dalam folder 'generated' di AppData
+        fs.writeFileSync(newFilePath, fileContent);
+
+        console.log(`Fail berjaya dicipta di: ${newFilePath}`);
+
+        // Hantar kembali status kejayaan dan laluan fail
+        return { 
+            success: true, 
+            path: newFilePath,
+            folderPath: generatedAppPath // Hantar laluan folder juga
+        };
+    } catch (error) {
+        console.error('Gagal menulis fail:', error);
+        return { success: false, message: error.message };
+    }
+});
+
+// Handler untuk membuka folder
+ipcMain.on('open-folder', (event, path) => {
+    shell.openPath(path);
 });

@@ -51,8 +51,6 @@ import {
 } from './uiHandlers.js';
 import { initializeWorkflowBuilder } from './workflowBuilder.js';
 
-// FIND AND REPLACE THIS ENTIRE OBJECT IN: js.main.js
-
 export const SaveManager = {
     saveQueue: {
         project: {}, tables: {}, fields: {}, relationships: {}, upserts: [], relationshipDeletes: []
@@ -614,6 +612,44 @@ if (importSqlImportBtn) {
 	    // Aktifkan butang sidebar
     initializeSidebarButtons(); // <-- TAMBAH PANGGILAN INI	
     initializeSidebarInteractivity(); // PASTIKAN PANGGILAN INI WUJUD DI SINI
+	
+// =================================================================
+// Generator functions will be put here
+// =================================================================
+const generateAppBtn = document.getElementById('app-generate_app');
+    const loadingOverlay = document.getElementById('loading-overlay');
+
+    if (generateAppBtn) {
+        generateAppBtn.addEventListener('click', async () => {
+            if (loadingOverlay) {
+                loadingOverlay.classList.remove('loading-overlay-hidden');
+            }
+            try {
+                const result = await window.electronAPI.generateApp();
+                if (result.success) {
+                    showCustomDialog({
+                        title: "Success",
+                        message: `Aplikasi berjaya dijana! Fail ujian 'fail_baru.php' telah dicipta di:\n\n${result.path}`
+                    });
+                    window.electronAPI.openFolder(result.folderPath);
+                } else {
+                    showCustomDialog({
+                        title: "Error",
+                        message: `Gagal menjana aplikasi: ${result.message}`
+                    });
+                }
+            } catch (error) {
+                console.error("Ralat IPC semasa menjana aplikasi:", error);
+                // ...
+            } finally {
+                if (loadingOverlay) {
+                    loadingOverlay.classList.add('loading-overlay-hidden');
+                }
+            }
+        });
+    }
+// =================================================================	
+	
     // Mulakan aplikasi dengan cuba mendapatkan projek aktif dari DB
     const project = await window.electronAPI.getActiveProject();
     await loadProjectData(project);

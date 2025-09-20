@@ -44,4 +44,10 @@ updateIndividualMenuOrder: (data) => ipcRenderer.invoke('menu:update-individual-
 
   saveCustomView: (data) => ipcRenderer.invoke('custom-view:save', data),
   deleteCustomView: (viewId) => ipcRenderer.invoke('custom-view:delete', viewId),
+
+// =================================================================
+// Generator functions will be put here
+// =================================================================  
+    generateApp: () => ipcRenderer.invoke('generate-app'),
+    openFolder: (path) => ipcRenderer.send('open-folder', path)
 });

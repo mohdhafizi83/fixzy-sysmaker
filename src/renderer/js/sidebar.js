@@ -9,7 +9,7 @@ setupMediaTab,
 populateParentChildTab,
 showCustomDialog
   } from './uiHandlers.js'; 
-import { jsonData, activeProject, loadProjectData   } from './js.main.js';
+import { jsonData, activeProject, loadProjectData   } from './renderer.js';
 
 // KOD PENUH: Gantikan keseluruhan fungsi sedia ada dengan yang ini.
 export function focusOnSidebarField(tableName, fieldName) {
