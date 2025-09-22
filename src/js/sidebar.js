@@ -7,9 +7,10 @@ populateMainDashboard,
 updateActionButtonsState,
 setupMediaTab, 
 populateParentChildTab,
-showCustomDialog
+showCustomDialog,
+applyFormLock 
   } from './uiHandlers.js'; 
-import { jsonData, activeProject, loadProjectData   } from '../renderer.js';
+import { jsonData, activeProject, loadProjectData, isCoreLockingEnabled   } from '../renderer.js';
 
 // KOD PENUH: Gantikan keseluruhan fungsi sedia ada dengan yang ini.
 export function focusOnSidebarField(tableName, fieldName) {
@@ -346,7 +347,11 @@ export function initializeSidebarInteractivity() {
     const sidebarList = document.querySelector('.sidebar .nav-list');
     if (!sidebarList) return;
 
-    // Fungsi bantuan untuk menutup semua submenu
+    // ▼▼▼ PERUBAHAN: Mesej baharu yang lebih terperinci ▼▼▼
+    const fieldLockMessage = "This core system field cannot be modified.\n\nTo proceed, you can disable this protection in Configuration. This is highly discouraged and there is no guarantee the final generated application will work properly.";
+    const tableLockMessage = "The 'users' table is a core system component and cannot be modified.\n\nTo proceed, you can disable this protection in Configuration. This is highly discouraged and there is no guarantee the final generated application will work properly.";
+    // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+
     const closeAllSubmenus = (exceptThisLink = null) => {
         const allTableLinks = sidebarList.querySelectorAll('.has-submenu > a');
         allTableLinks.forEach(link => {
@@ -357,30 +362,45 @@ export function initializeSidebarInteractivity() {
         });
     };
 
-    // SATU event listener utama untuk semua klik
     sidebarList.addEventListener('click', function(event) {
         const link = event.target.closest('a');
         if (!link) return;
         event.preventDefault();
 
-        // --- 1. URUSKAN STATUS AKTIF (SENTIASA JALAN DAHULU) ---
         sidebarList.querySelectorAll('a.active').forEach(l => l.classList.remove('active'));
         link.classList.add('active');
         updateActionButtonsState();
 
-        // --- 2. TENTUKAN JENIS KLIK & LAKSANAKAN LOGIK ---
         const isFieldLink = link.closest('ul.submenu-level-3');
         const isTableLink = link.parentElement.classList.contains('has-submenu');
         
         if (isFieldLink) {
-            showPage('field-settings');
             const tableName = link.closest('li.has-submenu').querySelector('a > span').textContent.trim();
             const fieldName = link.querySelector('span').textContent.trim();
+            const protectedFields = ['id', 'created_at', 'updated_at', 'deleted_at'];
+
+            if (isCoreLockingEnabled && (tableName === 'users' || protectedFields.includes(fieldName))) {
+                document.querySelector('.main-content').scrollTop = 0;
+                applyFormLock('field', true, fieldLockMessage); // <-- Guna mesej baharu
+            } else {
+                applyFormLock('field', false);
+            }
+
+            showPage('field-settings');
             document.querySelector('#field-settings-page .field-name').textContent = `${tableName}.${fieldName}`;
             setupMediaTab(tableName, fieldName);
             populateFieldSettings(tableName, fieldName);
 
         } else if (isTableLink) {
+            const tableName = link.querySelector('span').textContent.trim();
+            
+            if (isCoreLockingEnabled && tableName === 'users') {
+                document.querySelector('.main-content').scrollTop = 0;
+                applyFormLock('table', true, tableLockMessage); // <-- Guna mesej baharu
+            } else {
+                applyFormLock('table', false);
+            }
+
             const isToggleClick = event.target.classList.contains('toggle-icon');
             closeAllSubmenus(link);
             
@@ -393,12 +413,14 @@ export function initializeSidebarInteractivity() {
             }
 
             showPage('table-settings');
-            const tableName = link.querySelector('span').textContent.trim();
             document.querySelector('#table-settings-page .table-name').textContent = tableName;
             populateTableSettings(tableName);
             populateParentChildTab(tableName);
 
-        } else {
+        } else { // Project Setup Link
+            applyFormLock('table', false);
+            applyFormLock('field', false);
+            
             showPage('main-dashboard');
             populateMainDashboard(activeProject);
             closeAllSubmenus();

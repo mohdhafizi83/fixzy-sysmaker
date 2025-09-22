@@ -264,4 +264,5 @@ INSERT INTO fizisys_settings (setting_name, setting_value) VALUES
 ('project_doxygen', '1'),
 ('project_hide_footer', '0'),
 ('max_entries', '150'),
-('project_no_trim', '0');
+('project_no_trim', '0'),
+('lock_core_components', '1');

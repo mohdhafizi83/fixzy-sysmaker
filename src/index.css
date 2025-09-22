@@ -74,6 +74,7 @@ html, body {
     grid-area: content;
     overflow-y: auto; /* INI KUNCI UTAMA: Benarkan hanya bahagian ini untuk scroll */
     padding: 2rem; /* Pindahkan padding ke sini */
+	position: relative;
 }
 
 /* Sidebar */
@@ -3827,4 +3828,51 @@ input.is-invalid:focus {
     color: #DC2626; /* Merah */
     font-weight: bold;
     margin-left: 2px;
+}
+
+/* ================================================================== */
+/* == STYLES FOR FORM LOCK OVERLAY                               == */
+/* ================================================================== */
+
+.form-lock-overlay {
+    position: absolute;
+    top: 0; /* Position below the main header */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(243, 244, 246, 0.85); /* Semi-transparent background from theme */
+    backdrop-filter: blur(2px);
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border-radius: 0 0 8px 8px;
+}
+
+.lock-message {
+    padding: 2rem;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    max-width: 450px;
+}
+
+.lock-message i {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.lock-message p {
+    font-size: 1.1em;
+    font-weight: 500;
+    color: var(--text-color);
+    line-height: 1.6;
+	white-space: pre-wrap;
+}
+
+.no-scroll {
+    overflow-y: hidden;
 }

@@ -207,6 +207,14 @@ export const SaveManager = {
     }
 };
 
+/**
+ * Menetapkan nilai untuk pembolehubah global 'isCoreLockingEnabled'.
+ * @param {boolean} value - Nilai baharu (true atau false).
+ */
+export function setIsCoreLockingEnabled(value) {
+    isCoreLockingEnabled = value;
+}
+
 function showConfirmationDialog(title, message) {
     return new Promise((resolve) => {
         showCustomDialog({
@@ -220,6 +228,7 @@ function showConfirmationDialog(title, message) {
 }
 
 // Pembolehubah global untuk menyimpan data projek semasa dan pengurusan UI
+export let isCoreLockingEnabled = true;
 export let jsonData = null;
 export let allTableNames = [];
 export let activeProject = null;
@@ -437,6 +446,9 @@ window.addEventListener('beforeunload', (event) => {
         const settings = await window.electronAPI.getAllSettings();
         if (settings && settings.font_size) {
             applyFontSize(settings.font_size);
+        }
+        if (settings && settings.lock_core_components) {
+            isCoreLockingEnabled = settings.lock_core_components === '1';
         }
     } catch (error) {
         console.error("Gagal memuatkan tetapan awal:", error);

@@ -1954,9 +1954,7 @@ export function initializeStackSelectorHandlers() {
     }
 }
 
-import { allTableNames, jsonData, loadProjectData, activeProject, SaveManager, isAutoSaveEnabled, isPopulatingData, lastActiveChildTable, setLastActiveChildTable, setAwaitingMenuGroupSave } from '../renderer.js';
-
-// TAMBAH DUA FUNGSI BAHARU INI DALAM uiHandlers.js
+import { allTableNames, jsonData, loadProjectData, activeProject, SaveManager, isAutoSaveEnabled, isPopulatingData, lastActiveChildTable, setLastActiveChildTable, setAwaitingMenuGroupSave, setIsCoreLockingEnabled  } from '../renderer.js';
 
 /**
  * Mengemas kini imej di dalam kotak "Template preview" berdasarkan
@@ -2439,6 +2437,7 @@ async function populateSettingsModal() {
     setValue('fizisys-check-updates', settings.check_updates);
     setValue('fizisys-autosave-interval', settings.autosave_interval);
     setValue('fizisys-show-begin-box', settings.show_begin_box);
+	setValue('fizisys-lock-core-components', settings.lock_core_components);
     const fontSizeRadio = document.querySelector(`input[name="fizisys-font-size"][value="${settings.font_size}"]`);
     if (fontSizeRadio) fontSizeRadio.checked = true;
     setValue('fizisys-doc-root', settings.doc_root);
@@ -2585,22 +2584,43 @@ export function initializeModalHandlers() {
     const configModalCancel = document.getElementById('config-modal-cancel');
     const configModalOk = document.getElementById('config-modal-ok');
     
-    // Fungsi untuk mengumpul semua data dari modal FiziSysMaker Preferences
+    // ▼▼▼ MULA LOGIK PENGESAHAN BARU ▼▼▼
+    const lockCoreCheckbox = document.getElementById('fizisys-lock-core-components');
+    if (lockCoreCheckbox) {
+        lockCoreCheckbox.addEventListener('click', () => {
+            // Hanya jalankan logik ini jika pengguna sedang MENYAH-TANDA (unchecking)
+            if (!lockCoreCheckbox.checked) {
+                showCustomDialog({
+                    title: "Are you sure?",
+                    message: "This is highly discouraged and there is no guarantee the final generated application will work properly.",
+                    showCancelButton: true,
+                    onOk: () => {
+                        // Pengguna bersetuju, biarkan checkbox tidak ditanda. Tiada tindakan diperlukan.
+                    },
+                    onCancel: () => {
+                        // Pengguna membatalkan, paksa checkbox untuk ditanda semula.
+                        lockCoreCheckbox.checked = true;
+                    }
+                });
+            }
+        });
+    }
+    // ▲▲▲ TAMAT LOGIK PENGESAHAN BARU ▲▲▲
+
     const gatherFizisysSettings = () => {
         const settings = {};
-        // Gunakan ID sebenar dari HTML (dengan sempang)
         const settingIds = [
             'check-updates', 'autosave-interval', 'show-begin-box', 'doc-root',
             'base-url', 'field-default-type', 'field-default-length', 'table-suggest-icon',
             'table-allow-csv', 'table-dv-separate-page', 'table-hide-save-as-copy',
             'table-allow-add-from-homepage', 'table-show-record-count', 'project-encoding',
-            'project-rtl', 'project-doxygen', 'project-hide-footer', 'max-entries', 'project-no-trim'
+            'project-rtl', 'project-doxygen', 'project-hide-footer', 'max-entries', 'project-no-trim',
+            'lock-core-components'
         ];
 
         settingIds.forEach(id => {
             const element = document.getElementById(`fizisys-${id}`);
             if (element) {
-                // Tukar ID kepada nama lajur DB (dengan garis bawah)
                 const settingKey = id.replace(/-/g, '_');
                 if (element.type === 'checkbox') {
                     settings[settingKey] = element.checked ? '1' : '0';
@@ -2637,6 +2657,7 @@ export function initializeModalHandlers() {
             
             if (result.success) {
                 applyFontSize(settingsData.font_size); 
+                setIsCoreLockingEnabled(settingsData.lock_core_components === '1');
                 showCustomDialog({ title: "Success", message: "Preferences have been saved." });
             } else {
                 showCustomDialog({ title: "Error", message: `Failed to save preferences: ${result.message}` });
@@ -6038,4 +6059,28 @@ function updateFormFieldMoveButtons(formLayoutPanel) {
         if (upBtn) upBtn.disabled = (index === 0);
         if (downBtn) downBtn.disabled = (index === items.length - 1);
     });
+}
+
+/**
+ * Memaparkan atau menyembunyikan lapisan kunci pada borang tetapan.
+ * @param {('table'|'field')} pageType - Jenis halaman ('table' atau 'field').
+ * @param {boolean} isLocked - Tetapkan 'true' untuk kunci, 'false' untuk buka.
+ * @param {string} [message] - Mesej untuk dipaparkan apabila dikunci.
+ */
+export function applyFormLock(pageType, isLocked, message = '') {
+    const pageId = `${pageType}-settings-page`;
+    const overlay = document.querySelector(`#${pageId} .form-lock-overlay`);
+    const messageEl = document.getElementById(`${pageType}-lock-message`);
+    const mainContent = document.querySelector('.main-content'); // <-- Rujukan kepada kandungan utama
+
+    if (!overlay || !messageEl || !mainContent) return;
+
+    if (isLocked) {
+        messageEl.textContent = message;
+        overlay.classList.remove('hidden');
+        mainContent.classList.add('no-scroll'); // <-- Kunci skrol
+    } else {
+        overlay.classList.add('hidden');
+        mainContent.classList.remove('no-scroll'); // <-- Buka skrol
+    }
 }
