@@ -242,7 +242,6 @@ export function setLastActiveChildTable(tableName) {
 }
 
 // KOD PENUH: Gantikan fungsi loadProjectData sedia ada dengan yang ini.
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: js/main.js
 
 export async function loadProjectData(project, options = {}) {
     const { tableToSelect = null, itemToSelect = null, refreshMode = 'full' } = options;
@@ -263,12 +262,10 @@ export async function loadProjectData(project, options = {}) {
         jsonData = data;
         allTableNames = Object.keys(jsonData.database.table || {});
 
-        // ▼▼▼ MULA LOGIK BAHARU: Mod 'dataOnly' ▼▼▼
         if (refreshMode === 'dataOnly') {
             isPopulatingData = false;
-            return; // Keluar selepas mengemas kini data tanpa menyentuh UI
+            return;
         }
-        // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
         
         if (refreshMode === 'full') {
             populateMainDashboard(activeProject);  
@@ -285,10 +282,12 @@ export async function loadProjectData(project, options = {}) {
         }
         
         if (refreshMode === 'full') {
-            const tablesExistResult = await window.electronAPI.checkTablesExist(project.project_id);
-            if (tablesExistResult && tablesExistResult.count === 0) {
+            // ▼▼▼ PERUBAHAN UTAMA DI SINI ▼▼▼
+            const initialStatus = await window.electronAPI.getInitialProjectStatus(project.project_id);
+            if (initialStatus && initialStatus.showTutorial) {
                 document.getElementById('tutorial-modal')?.classList.remove('hidden');
             }
+            // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
         }
 
         isPopulatingData = false;
@@ -310,18 +309,7 @@ async function handleSqlImport(importFunction, dialect) {
             return;
         }
 
-        const tablesExistResult = await window.electronAPI.checkTablesExist(activeProject.project_id);
-        if (tablesExistResult && tablesExistResult.count > 0) {
-            const message = "This project already has tables. Importing a new schema will DELETE ALL existing tables and fields. Continue?";
-            const userConfirmed = await showConfirmationDialog("Warning", message);
-            
-            if (!userConfirmed) {
-                return;
-            }
-            
-            await window.electronAPI.deleteProjectSchema(activeProject.project_id);
-        }
-        
+        // Terus panggil fungsi import. Backend akan menguruskan dialog pengesahan.
         const result = await importFunction();
 
         if (result.success) {
@@ -342,16 +330,14 @@ async function handleSqlImport(importFunction, dialect) {
 
             showCustomDialog({ title: "Success", message: result.message });
             await loadProjectData(activeProject);
-        } else {
-            // ▼▼▼ PERUBAHAN UTAMA DI SINI ▼▼▼
-            // Jika import gagal, paparkan modal panduan dan bukannya dialog biasa.
-            console.error("Import Failed:", result.message); // Simpan log ralat teknikal untuk debug
+        } else if (result.message !== "Import cancelled by user.") {
+            // Hanya tunjukkan panduan ralat jika ia bukan pembatalan oleh pengguna
+            console.error("Import Failed:", result.message);
             showImportErrorGuide(); 
-            // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
         }
     } catch (error) {
         console.error("An unexpected error occurred during SQL import:", error);
-        showImportErrorGuide(); // Paparkan panduan juga jika terdapat ralat tidak dijangka
+        showImportErrorGuide();
     } finally {
         if (overlay) overlay.classList.add('loading-overlay-hidden');
     }

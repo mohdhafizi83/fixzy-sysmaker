@@ -37,7 +37,7 @@ updateIndividualMenuOrder: (data) => ipcRenderer.invoke('menu:update-individual-
   getTablesByProject: (projectId) => ipcRenderer.invoke('tables:get-by-project', projectId),
   importSqlFile: (data) => ipcRenderer.invoke('sql:import-file', data),
   importSqlText: (data) => ipcRenderer.invoke('sql:import-text', data),
-  checkTablesExist: (projectId) => ipcRenderer.invoke('tables:check-exists', projectId),
+  getInitialProjectStatus: (projectId) => ipcRenderer.invoke('project:get-initial-status', projectId),
   deleteProjectSchema: (projectId) => ipcRenderer.invoke('project:delete-schema', projectId),
   onShowOverlay: (callback) => ipcRenderer.on('show-overlay', (event) => callback()),
   parseCalculationQuery: (sql) => ipcRenderer.invoke('sql:parse-calculation-query', sql),

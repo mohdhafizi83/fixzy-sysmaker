@@ -435,11 +435,9 @@ ipcMain.handle('field:delete', async (event, { fieldId, tableName, fieldName }) 
 });
 
 // Handler untuk mencipta medan baharu
-// main.js
 
 ipcMain.handle('field:create', async (event, tableId) => {
     try {
-		
         const settings = db.prepare("SELECT setting_name, setting_value FROM fizisys_settings WHERE setting_name IN ('field_default_type', 'field_default_length')").all();
         const defaultSettings = settings.reduce((acc, setting) => {
             acc[setting.setting_name] = setting.setting_value;
@@ -462,14 +460,41 @@ ipcMain.handle('field:create', async (event, tableId) => {
             }
         }
         
-        const maxOrderResult = db.prepare('SELECT MAX(field_order) as max_order FROM fields WHERE table_id = ?').get(tableId);
-        const nextOrder = (maxOrderResult && maxOrderResult.max_order !== null ? maxOrderResult.max_order : -1) + 1;
+        // ▼▼▼ MULA LOGIK BAHARU UNTUK MENENTUKAN 'field_order' ▼▼▼
+        const transaction = db.transaction(() => {
+            // 1. Cari 'field_order' untuk medan 'created_at'
+            const createdAtField = db.prepare(
+                "SELECT field_order FROM fields WHERE table_id = ? AND field_name = 'created_at'"
+            ).get(tableId);
 
-        const info = db.prepare(
-            `INSERT INTO fields (table_id, field_name, caption, data_type, length, field_order) VALUES (?, ?, ?, ?, ?, ?)`
-        ).run(tableId, newName, newName, defaultType, defaultLength, nextOrder);
+            let targetOrder;
 
-        return db.prepare('SELECT * FROM fields WHERE field_id = ?').get(info.lastInsertRowid);
+            if (createdAtField) {
+                // Jika 'created_at' ditemui, itulah posisi sasaran kita.
+                targetOrder = createdAtField.field_order;
+
+                // 2. Anjak semua medan dari 'created_at' ke bawah untuk memberi ruang.
+                db.prepare(
+                    "UPDATE fields SET field_order = field_order + 1 WHERE table_id = ? AND field_order >= ?"
+                ).run(tableId, targetOrder);
+            } else {
+                // Jika 'created_at' tidak ditemui (kes luar jangka), guna logik lama.
+                const maxOrderResult = db.prepare('SELECT MAX(field_order) as max_order FROM fields WHERE table_id = ?').get(tableId);
+                targetOrder = (maxOrderResult && maxOrderResult.max_order !== null ? maxOrderResult.max_order : -1) + 1;
+            }
+
+            // 3. Masukkan medan baharu pada 'targetOrder' yang telah dikosongkan.
+            const info = db.prepare(
+                `INSERT INTO fields (table_id, field_name, caption, data_type, length, field_order) VALUES (?, ?, ?, ?, ?, ?)`
+            ).run(tableId, newName, newName, defaultType, defaultLength, targetOrder);
+
+            return info.lastInsertRowid;
+        });
+
+        const newFieldId = transaction();
+        return db.prepare('SELECT * FROM fields WHERE field_id = ?').get(newFieldId);
+        // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
+
     } catch (error) {
         console.error("Gagal mencipta medan baharu:", error);
         return null;
@@ -534,24 +559,49 @@ ipcMain.handle('table:create', async (event, projectId) => {
         const nextOrder = (maxOrderResult ? (maxOrderResult.max_order || 0) : 0) + 1;
 
         const transaction = db.transaction(() => {
-            // 1. Cipta jadual
+            // 1. Cipta jadual (Logik asal tidak berubah)
             const info = db.prepare(
                 'INSERT INTO tables (project_id, table_name, table_view_title, table_order) VALUES (?, ?, ?, ?)'
             ).run(projectId, newName, newName, nextOrder);
             const tableId = info.lastInsertRowid;
 
-            // 2. Cipta item menu yang sepadan
+            // ▼▼▼ MULA KOD BAHARU UNTUK MENAMBAH MEDAN STANDARD ▼▼▼
+            const insertFieldStmt = db.prepare(`
+                INSERT INTO fields (table_id, field_name, caption, data_type, length, primary_key, auto_increment, unsigned, read_only, field_order)
+                VALUES (@table_id, @field_name, @caption, @data_type, @length, @primary_key, @auto_increment, @unsigned, @read_only, @field_order)
+            `);
+
+            // 1a. Cipta medan 'id' sebagai Primary Key
+            insertFieldStmt.run({
+                table_id: tableId, field_name: 'id', caption: 'ID', data_type: 'INT',
+                length: 11, primary_key: 1, auto_increment: 1, unsigned: 1, read_only: 1, field_order: 0
+            });
+
+            // 1b. Cipta medan cap masa (timestamps)
+            const timestamps = [
+                { name: 'created_at', caption: 'Created At', order: 1 },
+                { name: 'updated_at', caption: 'Updated At', order: 2 },
+                { name: 'deleted_at', caption: 'Deleted At', order: 3 }
+            ];
+
+            for (const ts of timestamps) {
+                insertFieldStmt.run({
+                    table_id: tableId, field_name: ts.name, caption: ts.caption, data_type: 'DATETIME',
+                    length: null, primary_key: 0, auto_increment: 0, unsigned: 0, read_only: 0, field_order: ts.order
+                });
+            }
+            // ▲▲▲ TAMAT KOD BAHARU ▲▲▲
+
+            // 2. Cipta item menu yang sepadan (Logik asal tidak berubah)
             const maxMenuOrderResult = db.prepare(
                 'SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL'
             ).get(projectId);
             const nextMenuOrder = (maxMenuOrderResult && maxMenuOrderResult.max_order !== null ? maxMenuOrderResult.max_order : -1) + 1;
             
-            // ▼▼▼ MULA PERUBAHAN ▼▼▼
             const itemUrl = `${newName} Resource`;
             db.prepare(
                 'INSERT INTO menu_items (project_id, table_id, item_label, item_url, item_order, menu_group_id) VALUES (?, ?, ?, ?, ?, NULL)'
             ).run(projectId, tableId, newName, itemUrl, nextMenuOrder);
-            // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
             
             return tableId;
         });
@@ -722,13 +772,75 @@ ipcMain.handle("project:get-active", async () => {
 
 ipcMain.handle("project:create", async (event, projectName) => {
   try {
-    db.prepare("UPDATE projects SET is_active = 0").run();
-    const info = db
-      .prepare("INSERT INTO projects (app_title, is_active) VALUES (?, 1)")
-      .run(projectName);
-    return db
-      .prepare("SELECT * FROM projects WHERE project_id = ?")
-      .get(info.lastInsertRowid);
+    const createProjectTransaction = db.transaction(() => {
+        // 1. Set semua projek lain sebagai tidak aktif
+        db.prepare("UPDATE projects SET is_active = 0").run();
+
+        // 2. Cipta rekod projek baharu
+        const projectInfo = db.prepare("INSERT INTO projects (app_title, is_active) VALUES (?, 1)").run(projectName);
+        const projectId = projectInfo.lastInsertRowid;
+
+        // ▼▼▼ MULA LOGIK BAHARU: Cipta jadual 'users' secara automatik ▼▼▼
+
+        // 3. Cipta rekod untuk jadual 'users'
+        const tableInfo = db.prepare(
+            'INSERT INTO tables (project_id, table_name, table_view_title, table_order) VALUES (?, ?, ?, ?)'
+        ).run(projectId, 'users', 'Users', 0);
+        const tableId = tableInfo.lastInsertRowid;
+
+        // 4. Cipta item menu untuk jadual 'users'
+        const menuUrl = 'users Resource';
+        db.prepare(
+            'INSERT INTO menu_items (project_id, table_id, item_label, item_url, item_order) VALUES (?, ?, ?, ?, ?)'
+        ).run(projectId, tableId, 'Users', menuUrl, 0);
+
+        // 5. Definisikan dan cipta semua medan untuk jadual 'users'
+        const fieldsToCreate = [
+            { name: 'id', caption: 'ID', type: 'BIGINT', length: 20, unsigned: 1, pk: 1, auto_increment: 1, read_only: 1, order: 0 },
+            { name: 'name', caption: 'Name', type: 'VARCHAR', length: 255, required: 1, order: 1 },
+            { name: 'email', caption: 'Email', type: 'VARCHAR', length: 255, required: 1, unique: 1, order: 2 },
+            { name: 'email_verified_at', caption: 'Email Verified At', type: 'TIMESTAMP', required: 0, order: 3 },
+            { name: 'password', caption: 'Password', type: 'VARCHAR', length: 255, required: 1, order: 4 },
+            { name: 'remember_token', caption: 'Remember Token', type: 'VARCHAR', length: 100, required: 0, order: 5 },
+            { name: 'created_at', caption: 'Created At', type: 'TIMESTAMP', required: 0, order: 6 },
+            { name: 'updated_at', caption: 'Updated At', type: 'TIMESTAMP', required: 0, order: 7 },
+            { name: 'deleted_at', caption: 'Deleted At', type: 'TIMESTAMP', required: 0, order: 8 }
+        ];
+
+        const insertFieldStmt = db.prepare(`
+            INSERT INTO fields (
+                table_id, field_name, caption, data_type, length, "unique",
+                required, primary_key, auto_increment, unsigned, read_only, field_order
+            ) VALUES (
+                @table_id, @field_name, @caption, @data_type, @length, @unique,
+                @required, @primary_key, @auto_increment, @unsigned, @read_only, @field_order
+            )
+        `);
+
+        for (const field of fieldsToCreate) {
+            insertFieldStmt.run({
+                table_id: tableId,
+                field_name: field.name,
+                caption: field.caption,
+                data_type: field.type,
+                length: field.length || null,
+                unique: field.unique || 0,
+                required: field.required || 0,
+                primary_key: field.pk || 0,
+                auto_increment: field.auto_increment || 0,
+                unsigned: field.unsigned || 0,
+                read_only: field.read_only || 0,
+                field_order: field.order
+            });
+        }
+        // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
+
+        return projectId;
+    });
+
+    const newProjectId = createProjectTransaction();
+    return db.prepare("SELECT * FROM projects WHERE project_id = ?").get(newProjectId);
+
   } catch (error) {
     console.error("Gagal mencipta projek:", error);
     return null;
@@ -769,7 +881,75 @@ ipcMain.handle("tables:check-exists", async (event, projectId) => {
     .get(projectId);
 });
 
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: src/main.js
+/**
+ * Mengendalikan semakan pra-import: memberi amaran kepada pengguna dan memadam jadual lama jika perlu.
+ * @param {BrowserWindow} win - Tetingkap utama aplikasi untuk melampirkan dialog.
+ * @param {number} projectId - ID projek semasa.
+ * @param {string} sqlContent - Kandungan penuh skrip SQL yang akan diimport.
+ * @returns {Promise<boolean>} - Mengembalikan 'true' jika import boleh diteruskan, 'false' jika dibatalkan.
+ */
+async function handleImportPreflight(win, projectId, sqlContent) {
+  const existingTables = db.prepare('SELECT table_name FROM tables WHERE project_id = ?').all(projectId);
+
+  if (existingTables.length === 0) {
+    return true; // Tiada jadual, teruskan import tanpa amaran.
+  }
+
+  // Semak jika SQL mengandungi definisi untuk jadual 'users'. Guna regex yang tidak sensitif huruf.
+  const sqlDefinesUsers = /CREATE\s+TABLE\s+[`'"]?users[`'"]?/i.test(sqlContent);
+
+  let message = "This project already has tables. Importing a new schema will delete existing data.\n\n";
+  const tablesToDelete = [];
+
+  if (sqlDefinesUsers) {
+    message += "The imported SQL defines a 'users' table. ALL existing tables, including the current 'users' table, will be DELETED. Continue?";
+    tablesToDelete.push(...existingTables.map(t => t.table_name));
+  } else {
+    message += "The existing 'users' table will be preserved. All OTHER tables will be DELETED. Continue?";
+    tablesToDelete.push(...existingTables.filter(t => t.table_name !== 'users').map(t => t.table_name));
+  }
+
+  if (tablesToDelete.length === 0) {
+      // Tiada apa-apa untuk dipadam (mungkin hanya ada jadual 'users' dan SQL tidak mendefinisikannya)
+      return true;
+  }
+
+  const { response } = await dialog.showMessageBox(win, {
+    type: 'warning',
+    buttons: ['OK', 'Cancel'],
+    defaultId: 0,
+    title: 'Confirm Import',
+    message: 'Warning: Overwrite Existing Schema?',
+    detail: message,
+  });
+
+  if (response === 1) { // Pengguna klik 'Cancel'
+    return false;
+  }
+
+  // Teruskan dengan pemadaman
+  try {
+    const deleteTransaction = db.transaction(() => {
+      const getTableId = db.prepare('SELECT table_id FROM tables WHERE project_id = ? AND table_name = ?');
+      const deleteMenuItem = db.prepare('DELETE FROM menu_items WHERE table_id = ?');
+      const deleteTable = db.prepare('DELETE FROM tables WHERE table_id = ?');
+
+      for (const tableName of tablesToDelete) {
+        const table = getTableId.get(projectId, tableName);
+        if (table) {
+          deleteMenuItem.run(table.table_id);
+          deleteTable.run(table.table_id); // ON DELETE CASCADE akan menguruskan medan
+        }
+      }
+    });
+    deleteTransaction();
+    return true;
+  } catch (error) {
+    console.error("Gagal memadam skema lama:", error);
+    dialog.showErrorBox("Deletion Failed", `An error occurred while deleting the old schema: ${error.message}`);
+    return false;
+  }
+}
 
 function importSchema(sql, projectId, dialect) {
     const dialectMap = {
@@ -1066,22 +1246,38 @@ function importSchema(sql, projectId, dialect) {
 }
 
 ipcMain.handle("sql:import-file", async (event, { projectId, dialect }) => {
-  const { canceled, filePaths } = await dialog.showOpenDialog({
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
     properties: ["openFile"],
     filters: [{ name: "SQL Files", extensions: ["sql"] }],
   });
 
-  if (!canceled && filePaths.length > 0) {
-    const win = BrowserWindow.fromWebContents(event.sender);
-    win?.webContents.send('show-overlay');
-    
-    const sqlContent = fs.readFileSync(filePaths[0], "utf8");
-    return importSchema(sqlContent, projectId, dialect);
+  if (canceled || filePaths.length === 0) {
+    return { success: false, message: "Import cancelled by user." };
   }
-  return { success: false, message: "No file selected." };
+
+  const sqlContent = fs.readFileSync(filePaths[0], "utf8");
+  
+  // Logik pra-penerbangan baharu
+  const canProceed = await handleImportPreflight(win, projectId, sqlContent);
+  if (!canProceed) {
+      return { success: false, message: "Import cancelled by user." };
+  }
+
+  win?.webContents.send('show-overlay');
+  return importSchema(sqlContent, projectId, dialect);
 });
 
-ipcMain.handle("sql:import-text", (event, { sql, projectId, dialect }) => {
+ipcMain.handle("sql:import-text", async (event, { sql, projectId, dialect }) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+
+  // Logik pra-penerbangan baharu
+  const canProceed = await handleImportPreflight(win, projectId, sql);
+  if (!canProceed) {
+      return { success: false, message: "Import cancelled by user." };
+  }
+  
+  win?.webContents.send('show-overlay');
   return importSchema(sql, projectId, dialect);
 });
 
@@ -1601,6 +1797,22 @@ ipcMain.handle('custom-view:delete', async (event, viewId) => {
         console.error("Failed to delete custom view:", error);
         return { success: false, message: error.message };
     }
+});
+
+ipcMain.handle('project:get-initial-status', async (event, projectId) => {
+  try {
+    const tables = db.prepare('SELECT table_name FROM tables WHERE project_id = ?').all(projectId);
+
+    // Tunjukkan tutorial jika tiada jadual, ATAU jika hanya ada 1 jadual dan namanya 'users'
+    if (tables.length === 0 || (tables.length === 1 && tables[0].table_name === 'users')) {
+      return { showTutorial: true };
+    }
+
+    return { showTutorial: false };
+  } catch (error) {
+    console.error("Gagal mendapatkan status awal projek:", error);
+    return { showTutorial: false };
+  }
 });
 
 // =================================================================
