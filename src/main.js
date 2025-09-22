@@ -785,6 +785,10 @@ function importSchema(sql, projectId, dialect) {
     const tableMap = {};
     const foreignKeysToProcess = [];
 
+    // ▼▼▼ PERUBAHAN: Sediakan log untuk penyeragaman ▼▼▼
+    const standardizationLog = {};
+    // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+
     let processedSql = sql;
 
     if (dialect === 'TSQL') {
@@ -795,9 +799,7 @@ function importSchema(sql, projectId, dialect) {
             .replace(/\b(NVARCHAR|VARCHAR|TEXT)\s*(?!\()/gi, 'TEXT ')
             .replace(/GETDATE\(\)/gi, 'CURRENT_TIMESTAMP')
             .replace(/\bN(VARCHAR|CHAR|TEXT)\b/gi, '$1')
-            // ▼▼▼ PENAMBAHBAIKAN ▼▼▼
-            .replace(/\bDATETIME2\b/gi, 'DATETIME'); // Tukar DATETIME2 kepada DATETIME
-            // ▲▲▲ TAMAT PENAMBAHBAIKAN ▲▲▲
+            .replace(/\bDATETIME2\b/gi, 'DATETIME');
     }
     
     if (dialect === 'SQLite') {
@@ -947,6 +949,67 @@ function importSchema(sql, projectId, dialect) {
             }
         }
 
+        const checkPKStmt = db.prepare('SELECT 1 FROM fields WHERE table_id = ? AND primary_key = 1 LIMIT 1');
+        const checkFieldExistsStmt = db.prepare('SELECT 1 FROM fields WHERE table_id = ? AND field_name = ? LIMIT 1');
+        const insertFieldStmt = db.prepare(`
+            INSERT INTO fields (table_id, field_name, caption, data_type, length, primary_key, auto_increment, unsigned, read_only, field_order)
+            VALUES (@table_id, @field_name, @caption, @data_type, @length, @primary_key, @auto_increment, @unsigned, @read_only, @field_order)
+        `);
+
+        for (const tableName in tableMap) {
+            const tableId = tableMap[tableName];
+            
+            const hasPK = checkPKStmt.get(tableId);
+            if (!hasPK) {
+                const idFieldExists = checkFieldExistsStmt.get(tableId, 'id');
+                if (!idFieldExists) {
+                    insertFieldStmt.run({
+                        table_id: tableId,
+                        field_name: 'id',
+                        caption: 'ID',
+                        data_type: 'INT',
+                        length: 11,
+                        primary_key: 1,
+                        auto_increment: 1,
+                        unsigned: 1,
+                        read_only: 1,
+                        field_order: -1
+                    });
+                    // ▼▼▼ PERUBAHAN: Catat penambahan medan 'id' ▼▼▼
+                    if (!standardizationLog[tableName]) standardizationLog[tableName] = [];
+                    standardizationLog[tableName].push('id');
+                    // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+                }
+            }
+
+            const requiredTimestamps = ['created_at', 'updated_at', 'deleted_at'];
+            const allFields = db.prepare('SELECT field_name FROM fields WHERE table_id = ?').all(tableId);
+            const existingFieldNames = new Set(allFields.map(f => f.field_name));
+            let lastOrder = allFields.length;
+
+            for (const fieldName of requiredTimestamps) {
+                if (!existingFieldNames.has(fieldName)) {
+                    const caption = fieldName.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                    insertFieldStmt.run({
+                        table_id: tableId,
+                        field_name: fieldName,
+                        caption: caption,
+                        data_type: 'DATETIME',
+                        length: null,
+                        primary_key: 0,
+                        auto_increment: 0,
+                        unsigned: 0,
+                        read_only: 0,
+                        field_order: lastOrder++
+                    });
+                    // ▼▼▼ PERUBAHAN: Catat penambahan medan cap masa ▼▼▼
+                    if (!standardizationLog[tableName]) standardizationLog[tableName] = [];
+                    standardizationLog[tableName].push(fieldName);
+                    // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+                }
+            }
+        }
+
         for (const fk of foreignKeysToProcess) {
             const childTableId = tableMap[fk.childTableName];
             const parentTableId = tableMap[fk.parentTableName];
@@ -978,10 +1041,24 @@ function importSchema(sql, projectId, dialect) {
     try {
         const ast = parser.astify(processedSql, { database: parserDialect });
         transaction(ast);
+
+        // ▼▼▼ PERUBAHAN: Bina mesej kejayaan dinamik ▼▼▼
+        let finalMessage = `Successfully imported ${tablesCreated} tables and ${relationshipsCreated} relationships!`;
+
+        if (Object.keys(standardizationLog).length > 0) {
+            let standardizationNote = "\n\nAdditionally, the following fields were automatically added for standardization purposes required by FiziSysMaker:";
+            for (const tableName in standardizationLog) {
+                standardizationNote += `\n- ${tableName}: ${standardizationLog[tableName].join(', ')}`;
+            }
+            finalMessage += standardizationNote;
+        }
+        
         return {
             success: true,
-            message: `Successfully imported ${tablesCreated} tables and ${relationshipsCreated} relationships!`,
+            message: finalMessage,
         };
+        // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+
     } catch (error) {
         console.error("Gagal mengimport SQL:", error);
         return { success: false, message: `SQL Parsing/Import Error: ${error.message}` };
