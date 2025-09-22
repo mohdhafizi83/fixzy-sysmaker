@@ -1,0 +1,44 @@
+
+
+fizisysmaker/
+├── 📂 assets/
+│   └── 📄 icon.ico                <-- Ikon untuk aplikasi Windows
+│   └── 📄 icon.icns               <-- Ikon untuk aplikasi macOS
+│   └── 📂 images/                 <-- Folder untuk imej pratonton tema, dsb.
+│
+├── 📂 bin/
+│   ├── 📂 win-php-8.x/            <-- Folder PHP mudah alih (portable)
+│   │   └── 📄 php.exe
+│   └── 📄 composer.phar          <-- Fail Composer
+│
+├── 📂 resources/
+│   └── 📄 schema.sql             <-- Sumber data bukan kod
+│
+├── 📂 src/                        <-- SEMUA KOD SUMBER APLIKASI
+│   ├── 📄 main.js                 <-- Titik masukan (entry point) untuk Main Process
+│   ├── 📄 preload.js             <-- Skrip Preload
+│   │
+│   ├── 📄 index.html             <-- Fail HTML utama untuk UI
+│   ├── 📄 index.css              <-- Fail CSS utama untuk UI
+│   ├── 📄 renderer.js            <-- Titik masukan JS utama untuk UI
+│   │
+│   └── 📂 js/                     <-- Folder untuk modul-modul JS anda
+│   │   ├── 📄 sidebar.js
+│   │   ├── 📄 uiHandlers.js
+│   │   ├── 📄 pageManager.js
+│   │   └── 📄 workflowBuilder.js
+│   │
+│   └── 📂 templates/              <-- FOLDER TEMPLAT BAHARU
+│       ├── 📂 dotnet/
+│       ├── 📂 java/
+│       ├── 📂 javascript/
+│       ├── 📂 php/
+│       ├── 📂 python/
+│       └── 📂 ruby/
+│
+├── 📄 .gitignore                 <-- Mengabaikan fail/folder yang tidak perlu
+├── 📄 package.json               <-- Jantung projek: skrip, dependensi & konfigurasi
+├── 📄 package-lock.json          <-- Mengunci versi dependensi
+├── 📄 webpack.main.config.js     <-- Konfigurasi Webpack untuk Main Process
+├── 📄 webpack.renderer.config.js <-- Konfigurasi Webpack untuk Renderer Process
+└── 📄 webpack.rules.js           <-- Peraturan (rules) yang dikongsi oleh Webpack

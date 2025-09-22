@@ -21,7 +21,7 @@ if (!dbExists) {
   //console.log("Pangkalan data tidak ditemui, mencipta skema baharu...");
   try {
     const schemaSql = fs.readFileSync(
-      path.join(__dirname, '../../resources/schema.sql'),
+      path.join(__dirname, '../resources/schema.sql'),
       "utf8"
     );
     db.exec(schemaSql);
@@ -1040,14 +1040,14 @@ function createWindow() {
     show: false, // UBAH: Mulakan tetingkap secara tersembunyi
 	resizable: false, //Kunci saiz tetingkap
     webPreferences: {
-      preload: path.join(__dirname, '../preload/preload.js'),
+      preload: path.join(__dirname, './preload.js'),
     },
   });
-
+  
   // TAMBAH: Panggil fungsi maximize() pada objek tetingkap
   win.maximize();
   
-  win.loadFile(path.join(__dirname, '../renderer/index.html'));
+  win.loadFile(path.join(__dirname, './index.html'));
 
   // TAMBAH: Tunjukkan tetingkap hanya apabila ia sedia untuk dipaparkan
   win.on('ready-to-show', () => {

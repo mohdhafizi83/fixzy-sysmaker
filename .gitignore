@@ -6,3 +6,6 @@ backup.ffs_batch
 BatchRun.ffs_batch
 CMD-go-here.bat
 start_electronbat.bat
+package-lock.json
+package-lock.json
+/assets

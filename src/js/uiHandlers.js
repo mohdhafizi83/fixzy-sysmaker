@@ -1954,7 +1954,7 @@ export function initializeStackSelectorHandlers() {
     }
 }
 
-import { allTableNames, jsonData, loadProjectData, activeProject, SaveManager, isAutoSaveEnabled, isPopulatingData, lastActiveChildTable, setLastActiveChildTable, setAwaitingMenuGroupSave } from './renderer.js';
+import { allTableNames, jsonData, loadProjectData, activeProject, SaveManager, isAutoSaveEnabled, isPopulatingData, lastActiveChildTable, setLastActiveChildTable, setAwaitingMenuGroupSave } from '../renderer.js';
 
 // TAMBAH DUA FUNGSI BAHARU INI DALAM uiHandlers.js
 
@@ -1973,7 +1973,7 @@ function updateTableViewTemplatePreview() {
 
     const selectedValue = templateSelect.value;
     if (selectedValue) {
-        const imagePath = `./assets/images/${selectedValue}.png`;
+        const imagePath = `../assets/images/${selectedValue}.png`;
         previewArea.innerHTML = `<img src="${imagePath}" alt="Preview untuk template ${selectedValue}" style="width: 100%; object-fit: contain;">`;
     } else {
         // Jika tiada pilihan, paparkan teks lalai
@@ -2778,7 +2778,7 @@ function updatePreviewImage() {
     const viewMode = selectedViewRadio.value === 'table_view' ? 'TV' : 'DV'; // Tukar kepada 'TV' atau 'DV'
 
     // Bina nama fail imej yang baharu
-    previewImage.src = `./assets/images/northwind-${theme}-${viewMode}.png`;
+    previewImage.src = `../assets/images/northwind-${theme}-${viewMode}.png`;
 }
 
 export function initializeThemeHandlers() {

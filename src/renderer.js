@@ -1,5 +1,4 @@
-// js/main.js (Proses Renderer)
-import { generateSidebarMenu, initializeSidebarInteractivity, initializeSidebarButtons, setActiveSidebarLink, focusOnSidebarField } from './sidebar.js';
+import { generateSidebarMenu, initializeSidebarInteractivity, initializeSidebarButtons, setActiveSidebarLink, focusOnSidebarField } from './js/sidebar.js';
 import { 
 	applyFontSize,
 	showCustomDialog,
@@ -48,8 +47,8 @@ import {
 	showImportErrorGuide,
 	initializeCustomViews,
 	populateParentChildTab	
-} from './uiHandlers.js';
-import { initializeWorkflowBuilder } from './workflowBuilder.js';
+} from './js/uiHandlers.js';
+import { initializeWorkflowBuilder } from './js/workflowBuilder.js';
 
 export const SaveManager = {
     saveQueue: {
@@ -72,8 +71,6 @@ export const SaveManager = {
         clearTimeout(this.debounceTimer);
         this.debounceTimer = setTimeout(() => this.processQueue(), 2500);
     },
-
-// IN js/main.js, FIND THE SaveManager OBJECT AND REPLACE THE ENTIRE processQueue FUNCTION
 
     async processQueue() {
         if (this.isProcessing || this.isQueueEmpty()) {
