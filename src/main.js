@@ -6,6 +6,7 @@ const fs = require("fs");
 const Database = require("better-sqlite3");
 const { Parser } = require("node-sql-parser");
 const parser = new Parser();
+const { spawn } = require('child_process');
 
 // Tentukan laluan ke pangkalan data
 const dbPath = path.join(app.getPath("userData"), "FiziSysMaker.db");
@@ -40,8 +41,7 @@ if (!dbExists) {
 // =================================================================
 // ▼▼▼ SEMUA IPC HANDLER DIKUMPULKAN DI SINI UNTUK KONSISTENSI ▼▼▼
 // =================================================================
-// Tambah keseluruhan fungsi ini di dalam src/main.js
-// FIND AND REPLACE THIS ENTIRE HANDLER IN: src/main.js
+
 ipcMain.handle('database:batch-update', async (event, queue) => {
     if (!queue) return { success: false, message: 'Queue is empty.' };
 
@@ -1575,4 +1575,66 @@ ipcMain.handle('generate-app', async () => {
 // Handler untuk membuka folder
 ipcMain.on('open-folder', (event, path) => {
     shell.openPath(path);
+});
+
+/**
+ * Menjalankan 'composer install' di dalam folder projek yang telah dijana.
+ * @param {string} projectPath Laluan penuh ke folder di mana 'composer.json' berada.
+ * @returns {Promise<boolean>} Mengembalikan true jika berjaya, false jika gagal.
+ */
+async function runComposerInstall(projectPath) {
+  return new Promise((resolve, reject) => {
+    // Tentukan laluan ke PHP dan Composer berdasarkan mod aplikasi
+    const isPackaged = app.isPackaged;
+    const baseBinPath = isPackaged
+      ? path.join(process.resourcesPath, 'app.asar.unpacked', 'bin')
+      : path.join(__dirname, '../../bin'); // Keluar dari src/main
+
+    const phpPath = path.join(baseBinPath, 'win-php-8.x', 'php.exe');
+    const composerPath = path.join(baseBinPath, 'composer.phar');
+
+    console.log(`Running composer in: ${projectPath}`);
+    console.log(`Using PHP: ${phpPath}`);
+
+    // Gunakan spawn untuk kawalan yang lebih baik
+    const composerProcess = spawn(phpPath, [composerPath, 'install'], {
+      cwd: projectPath, // Tetapkan direktori kerja ke folder projek yang dijana
+      stdio: 'pipe' // Tangkap output
+    });
+
+    // Dengar output untuk dipaparkan (cth., di konsol atau hantar ke UI)
+    composerProcess.stdout.on('data', (data) => {
+      console.log(`Composer: ${data.toString()}`);
+      // Di sini anda boleh hantar kemajuan ke tetingkap UI
+      // mainWindow.webContents.send('composer-output', data.toString());
+    });
+
+    composerProcess.stderr.on('data', (data) => {
+      console.error(`Composer Error: ${data.toString()}`);
+    });
+
+    composerProcess.on('close', (code) => {
+      if (code === 0) {
+        console.log('Composer install completed successfully.');
+        resolve(true);
+      } else {
+        console.error(`Composer process exited with code ${code}`);
+        reject(false);
+      }
+    });
+
+    composerProcess.on('error', (err) => {
+        console.error('Failed to start Composer process.', err);
+        reject(false);
+    });
+  });
+}
+
+// IPC handler untuk menerima permintaan dari UI
+ipcMain.handle('run-composer', async (event, projectPath) => {
+    try {
+        return await runComposerInstall(projectPath);
+    } catch (error) {
+        return false;
+    }
 });

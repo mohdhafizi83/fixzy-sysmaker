@@ -701,3 +701,20 @@ function resolveVariables(configString, variableScope) {
         return match;
     });
 }
+
+// =================================================================
+// Generator functions will be put here
+// =================================================================
+async function finalizeGeneratedApp(pathKeProjekBaharu) {
+  // Paparkan status kepada pengguna, cth: "Memasang dependensi..."
+  
+  const success = await window.electronAPI.runComposer(pathKeProjekBaharu);
+  
+  if (success) {
+    // Paparkan mesej kejayaan
+    console.log("Semua dependensi berjaya dipasang!");
+  } else {
+    // Paparkan mesej ralat
+    console.error("Gagal memasang dependensi PHP.");
+  }
+}

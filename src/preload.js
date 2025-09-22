@@ -49,5 +49,6 @@ updateIndividualMenuOrder: (data) => ipcRenderer.invoke('menu:update-individual-
 // Generator functions will be put here
 // =================================================================  
     generateApp: () => ipcRenderer.invoke('generate-app'),
-    openFolder: (path) => ipcRenderer.send('open-folder', path)
+    openFolder: (path) => ipcRenderer.send('open-folder', path),
+	runComposer: (projectPath) => ipcRenderer.invoke('run-composer', projectPath)
 });
