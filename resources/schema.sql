@@ -179,6 +179,7 @@ CREATE TABLE parent_child_relationships (
     child_table_id    INTEGER NOT NULL,
 	fk_child_field    TEXT NOT NULL,
 	parent_field      TEXT NOT NULL,
+    relationship_type TEXT DEFAULT 'one-to-many',
     show_tab          INTEGER DEFAULT 1,
     show_icon         INTEGER DEFAULT 1,
     autoclose_modal   INTEGER DEFAULT 0,

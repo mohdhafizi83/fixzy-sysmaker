@@ -294,10 +294,16 @@ ipcMain.handle('sql:parse-calculation-query', (event, sql) => {
 
 async function getFullProjectSchema(projectId) {
   try {
-    const project = db.prepare("SELECT * FROM projects WHERE project_id = ?").get(projectId);
-    if (!project) throw new Error(`Projek dengan ID ${projectId} tidak ditemui.`);
+    const project = db
+      .prepare("SELECT * FROM projects WHERE project_id = ?")
+      .get(projectId);
+    if (!project)
+      throw new Error(`Projek dengan ID ${projectId} tidak ditemui.`);
 
-    const tables = db.prepare("SELECT * FROM tables WHERE project_id = ? ORDER BY table_order, table_id").all(projectId);
+    // 1. Dapatkan semua jadual, custom view, dan medan yang berkaitan dengan projek ini
+    const tables = db
+      .prepare("SELECT * FROM tables WHERE project_id = ? ORDER BY table_order, table_id")
+      .all(projectId);
     const tableIds = tables.map((t) => t.table_id);
 
     let fields = [];
@@ -306,65 +312,122 @@ async function getFullProjectSchema(projectId) {
         fields = db.prepare(`SELECT * FROM fields WHERE table_id IN (${placeholder}) ORDER BY field_order, field_id`).all(...tableIds);
     }
     
+    let customViews = [];
+    if (tableIds.length > 0) {
+        const placeholder = tableIds.map(() => "?").join(",");
+        customViews = db.prepare(`SELECT * FROM custom_views WHERE table_id IN (${placeholder}) ORDER BY view_order`).all(...tableIds);
+    }
+
+    let customViewFields = [];
+    const viewIds = customViews.map(v => v.custom_view_id);
+    if (viewIds.length > 0) {
+        const placeholder = viewIds.map(() => "?").join(",");
+        customViewFields = db.prepare(`SELECT * FROM custom_view_fields WHERE custom_view_id IN (${placeholder}) ORDER BY display_order`).all(...viewIds);
+    }
+
+    // 2. Susun jadual, medan, dan custom view dalam format bersarang (nested)
     const structuredTables = {};
     tables.forEach((table) => {
-      structuredTables[table.table_name] = { ...table, fields: {} };
+      // Cari semua custom view untuk jadual ini
+      const viewsForTable = customViews.filter(v => v.table_id === table.table_id);
+      
+      // Untuk setiap custom view, cari dan masukkan medan-medannya
+      viewsForTable.forEach(view => {
+          view.fields = customViewFields.filter(f => f.custom_view_id === view.custom_view_id);
+      });
+
+      // Bina objek jadual utama
+      structuredTables[table.table_name] = { ...table, fields: {}, custom_views: viewsForTable };
     });
+
     fields.forEach((field) => {
       const parentTable = tables.find((t) => t.table_id === field.table_id);
       if (parentTable) {
-        structuredTables[parentTable.table_name].fields[field.field_name] = field;
+        structuredTables[parentTable.table_name].fields[field.field_name] = {
+          ...field, // Masukkan semua data medan
+        };
       }
     });
 
+    // 3. Dapatkan semua hubungan (relationships) yang melibatkan jadual-jadual ini
     let relationships = [];
     if (tableIds.length > 0) {
       const placeholder = tableIds.map(() => "?").join(",");
-      relationships = db.prepare(
+      relationships = db
+        .prepare(
           `SELECT r.*, p.table_name as parent_table_name, c.table_name as child_table_name
            FROM parent_child_relationships r
            JOIN tables p ON r.parent_table_id = p.table_id
            JOIN tables c ON r.child_table_id = c.table_id
            WHERE r.parent_table_id IN (${placeholder}) OR r.child_table_id IN (${placeholder})`
-        ).all(...tableIds, ...tableIds);
+        )
+        .all(...tableIds, ...tableIds);
     }
 
-    const groups = db.prepare("SELECT * FROM menu_groups WHERE project_id = ? ORDER BY group_order, group_name").all(projectId);
-    const groupedItems = db.prepare(`
+    // 4. Bina struktur menu bersepadu (unified menu structure)
+    const groups = db.prepare("SELECT * FROM menu_groups WHERE project_id = ? ORDER BY group_order").all(projectId);
+    const allItems = db.prepare(`
         SELECT mi.*, t.table_name 
-        FROM menu_items mi
-        JOIN tables t ON mi.table_id = t.table_id
-        WHERE mi.project_id = ? AND mi.menu_group_id IS NOT NULL
-        ORDER BY mi.item_order
+        FROM menu_items mi 
+        LEFT JOIN tables t ON mi.table_id = t.table_id 
+        WHERE mi.project_id = ? 
+        ORDER BY mi.menu_group_id, mi.item_order
     `).all(projectId);
     
-    const individualItems = db.prepare(`
-        SELECT mi.*, t.table_name
-        FROM menu_items mi
-        LEFT JOIN tables t ON mi.table_id = t.table_id
-        WHERE mi.project_id = ? AND mi.menu_group_id IS NULL
-        ORDER BY mi.item_order
-    `).all(projectId);
+    const unifiedMenu = [];
+    let topLevelOrder = 0;
 
-    const structuredMenuGroups = groups.map(group => {
-        return {
-            ...group,
-            items: groupedItems.filter(item => item.menu_group_id === group.menu_group_id)
-        };
+    // Tambah kumpulan ke dalam menu
+    groups.forEach(group => {
+        const groupItems = allItems
+            .filter(item => item.menu_group_id === group.menu_group_id)
+            .map(item => identifyMenuItemType(item)); // Kenal pasti jenis setiap item
+
+        unifiedMenu.push({ 
+            type: 'group', 
+            id: group.menu_group_id, 
+            order: group.group_order, 
+            name: group.group_name, 
+            items: groupItems
+        });
+    });
+    
+    // Tambah item peringkat atasan (top-level)
+    allItems.forEach(item => {
+        if (item.menu_group_id === null) {
+            unifiedMenu.push(identifyMenuItemType(item));
+        }
     });
 
+    // Fungsi bantuan untuk mengenal pasti jenis item menu
+    function identifyMenuItemType(item) {
+        let itemType = 'custom_item'; // Lalai
+        if (item.table_id) {
+            itemType = 'table_item';
+        } else if (item.custom_view_id) {
+            itemType = 'custom_view_item';
+        }
+        return { 
+            type: itemType, 
+            ...item 
+        };
+    }
+
+    // Susun menu akhir berdasarkan 'order'
+    unifiedMenu.sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
+
+    // 5. Kembalikan objek data yang lengkap dan tersusun
     return {
       project: project,
       database: {
         name: project.app_title,
         table: structuredTables,
         relationships: relationships,
-        menu_groups: structuredMenuGroups,
-        individual_menus: individualItems
+        unified_menu: unifiedMenu,
       },
     };
   } catch (error) {
-    console.error("Gagal mengambil skema penuh (fungsi bantuan):", error);
+    console.error("Gagal mengambil skema penuh:", error);
     return null;
   }
 }
@@ -616,115 +679,8 @@ ipcMain.handle('table:create', async (event, projectId) => {
 });
 
 ipcMain.handle("project:get-full-schema", async (event, projectId) => {
-  try {
-    const project = db
-      .prepare("SELECT * FROM projects WHERE project_id = ?")
-      .get(projectId);
-    if (!project)
-      throw new Error(`Projek dengan ID ${projectId} tidak ditemui.`);
-
-    const tables = db
-      .prepare("SELECT * FROM tables WHERE project_id = ? ORDER BY table_order, table_id")
-      .all(projectId);
-    const tableIds = tables.map((t) => t.table_id);
-
-    let fields = [];
-    if (tableIds.length > 0) {
-        const placeholder = tableIds.map(() => "?").join(",");
-        fields = db.prepare(`SELECT * FROM fields WHERE table_id IN (${placeholder}) ORDER BY field_order, field_id`).all(...tableIds);
-    }
-    
-    let customViews = [];
-    if (tableIds.length > 0) {
-        const placeholder = tableIds.map(() => "?").join(",");
-        customViews = db.prepare(`SELECT * FROM custom_views WHERE table_id IN (${placeholder}) ORDER BY view_order`).all(...tableIds);
-    }
-
-    let customViewFields = [];
-    const viewIds = customViews.map(v => v.custom_view_id);
-    if (viewIds.length > 0) {
-        const placeholder = viewIds.map(() => "?").join(",");
-        customViewFields = db.prepare(`SELECT * FROM custom_view_fields WHERE custom_view_id IN (${placeholder}) ORDER BY display_order`).all(...viewIds);
-    }
-
-    const structuredTables = {};
-    tables.forEach((table) => {
-      const viewsForTable = customViews.filter(v => v.table_id === table.table_id);
-      viewsForTable.forEach(view => {
-          view.fields = customViewFields.filter(f => f.custom_view_id === view.custom_view_id);
-      });
-      structuredTables[table.table_name] = { ...table, fields: {}, custom_views: viewsForTable };
-    });
-
-    fields.forEach((field) => {
-      const parentTable = tables.find((t) => t.table_id === field.table_id);
-      if (parentTable) {
-        structuredTables[parentTable.table_name].fields[field.field_name] = {
-          ...field,
-        };
-      }
-    });
-
-    let relationships = [];
-    if (tableIds.length > 0) {
-      const placeholder = tableIds.map(() => "?").join(",");
-      relationships = db
-        .prepare(
-          `SELECT r.*, p.table_name as parent_table_name, c.table_name as child_table_name
-           FROM parent_child_relationships r
-           JOIN tables p ON r.parent_table_id = p.table_id
-           JOIN tables c ON r.child_table_id = c.table_id
-           WHERE r.parent_table_id IN (${placeholder}) OR r.child_table_id IN (${placeholder})`
-        )
-        .all(...tableIds, ...tableIds);
-    }
-
-    const groups = db.prepare("SELECT * FROM menu_groups WHERE project_id = ? ORDER BY group_order").all(projectId);
-    const groupedItems = db.prepare(`SELECT mi.*, t.table_name FROM menu_items mi LEFT JOIN tables t ON mi.table_id = t.table_id WHERE mi.project_id = ? AND mi.menu_group_id IS NOT NULL ORDER BY mi.item_order`).all(projectId);
-    const topLevelItems = db.prepare(`SELECT mi.*, t.table_name FROM menu_items mi LEFT JOIN tables t ON mi.table_id = t.table_id WHERE mi.project_id = ? AND mi.menu_group_id IS NULL ORDER BY item_order`).all(projectId);
-    
-    const unifiedMenu = [];
-    groups.forEach(group => {
-        unifiedMenu.push({ type: 'group', id: group.menu_group_id, order: group.group_order, name: group.group_name, items: groupedItems.filter(item => item.menu_group_id === group.menu_group_id) });
-    });
-    
-
-topLevelItems.forEach(item => {
-    // ▼▼▼ LOGIK BAHARU UNTUK MENGENAL PASTI JENIS ITEM ▼▼▼
-    let itemType = 'custom_item';
-    if (item.table_id) {
-        itemType = 'table_item';
-    } else if (item.custom_view_id) {
-        itemType = 'custom_view_item';
-    }
-    // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
-
-    unifiedMenu.push({ 
-        type: itemType, 
-        id: item.item_id, 
-        table_id: item.table_id,
-        custom_view_id: item.custom_view_id, // Tambah ini untuk rujukan
-        order: item.item_order, 
-            label: item.item_label || item.table_name, 
-            url: item.item_url, 
-            table_name: item.table_name 
-        });
-    });
-    unifiedMenu.sort((a, b) => (a.order || 0) - (b.order || 0));
-
-    return {
-      project: project,
-      database: {
-        name: project.app_title,
-        table: structuredTables,
-        relationships: relationships,
-        unified_menu: unifiedMenu,
-      },
-    };
-  } catch (error) {
-    console.error("Gagal mengambil skema penuh:", error);
-    return null;
-  }
+    // Panggilan ini kini akan menggunakan fungsi yang lebih berkuasa di atas
+    return getFullProjectSchema(projectId);
 });
 
 // ADD THIS NEW HANDLER in: src/main.js
@@ -964,10 +920,11 @@ function importSchema(sql, projectId, dialect) {
     let relationshipsCreated = 0;
     const tableMap = {};
     const foreignKeysToProcess = [];
-
-    // ▼▼▼ PERUBAHAN: Sediakan log untuk penyeragaman ▼▼▼
     const standardizationLog = {};
-    // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+    
+    // ▼▼▼ TAMBAHAN BAHARU: Objek untuk menyimpan lajur unik bagi setiap jadual ▼▼▼
+    const tableUniqueColumnsMap = {};
+    // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
 
     let processedSql = sql;
 
@@ -1027,6 +984,10 @@ function importSchema(sql, projectId, dialect) {
         for (const statement of ast) {
             if (statement.type === "create" && statement.keyword === "table") {
                 const tableName = statement.table[0].table;
+                // ▼▼▼ TAMBAHAN BAHARU: Sediakan Set untuk menyimpan lajur unik jadual ini ▼▼▼
+                const uniqueColumns = new Set();
+                // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
+
                 const tableInfo = db.prepare("INSERT INTO tables (project_id, table_name, table_view_title, table_order) VALUES (?, ?, ?, ?)").run(projectId, tableName, tableName, tableOrder); 
                 tableOrder++;
                 const tableId = tableInfo.lastInsertRowid;
@@ -1042,42 +1003,30 @@ function importSchema(sql, projectId, dialect) {
                 const tableLevelConstraints = [];
                 for (const col of statement.create_definitions) {
                     if (col.resource === "column") {
+                        const extractedFieldName = getFieldNameFromAST(col.column);
+                        let isColumnUnique = false; // Flag sementara
                         let dataType = col.definition.dataType;
                         if ((col.auto_increment || col.autoincrement) && !dataType) dataType = 'INTEGER';
                         if (dataType && Array.isArray(col.definition.suffix) && col.definition.suffix.length > 0) {
                             dataType += ' ' + col.definition.suffix.join(' ');
                         }
                         if (!dataType) {
-                            console.warn(`Could not determine data type for column '${getFieldNameFromAST(col.column)}'. Defaulting to 'TEXT'.`);
+                            console.warn(`Could not determine data type for column '${extractedFieldName}'. Defaulting to 'TEXT'.`);
                             dataType = 'TEXT';
                         }
-                        const extractedFieldName = getFieldNameFromAST(col.column);
+                        
                         let fieldData = {
-                            table_id: tableId,
-                            field_name: extractedFieldName,
-                            caption: extractedFieldName,
-							field_order: fieldOrder,
-                            data_type: dataType,
-                            length: col.definition.length || null,
-                            precision: col.definition.scale || null,
-                            required: 0,
-                            auto_increment: 0,
-                            unsigned: 0,
-                            zero_fill: 0,
-                            primary_key: 0,
-                            unique: 0,
-                            text_area: 0, 
-                            rich_html: 0,
-							read_only: 0,
-                            default_value: null,
+                            table_id: tableId, field_name: extractedFieldName, caption: extractedFieldName,
+							field_order: fieldOrder, data_type: dataType, length: col.definition.length || null,
+                            precision: col.definition.scale || null, required: 0, auto_increment: 0,
+                            unsigned: 0, zero_fill: 0, primary_key: 0, "unique": 0, text_area: 0, 
+                            rich_html: 0, read_only: 0, default_value: null,
                         };
                         const upperDataType = fieldData.data_type ? fieldData.data_type.toUpperCase() : '';
                         if (upperDataType === 'TEXT') fieldData.text_area = 1;
                         else if (upperDataType === 'MEDIUMTEXT' || upperDataType === 'LONGTEXT') fieldData.rich_html = 1;
                         
-                        if (col.auto_increment || col.autoincrement) {
-                            fieldData.auto_increment = 1;
-                        }
+                        if (col.auto_increment || col.autoincrement) fieldData.auto_increment = 1;
                         if ((col.nullable && col.nullable.type === "not null") && !fieldData.auto_increment) fieldData.required = 1;
                         if (col.unsigned) fieldData.unsigned = 1;
                         if (col.zerofill) fieldData.zero_fill = 1;
@@ -1088,7 +1037,7 @@ function importSchema(sql, projectId, dialect) {
                                 const definition = constraint.definition || constraint;
                                 switch (definition.constraint_type.toLowerCase()) {
                                     case "primary key": fieldData.primary_key = 1; fieldData.read_only = 1; break;
-                                    case "unique key": fieldData.unique = 1; break;
+                                    case "unique key": fieldData.unique = 1; isColumnUnique = true; break;
                                     case "not null": fieldData.required = 1; break;
                                     case "autoincrement": 
                                     case "auto_increment": fieldData.auto_increment = 1; break;
@@ -1096,6 +1045,11 @@ function importSchema(sql, projectId, dialect) {
                                 }
                             }
                         }
+
+                        if (isColumnUnique) { // ▼▼▼ TAMBAHAN BAHARU ▼▼▼
+                            uniqueColumns.add(extractedFieldName);
+                        } // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
+                        
                         if (col.primary_key === 'primary key') {
                             fieldData.primary_key = 1;
                             fieldData.read_only = 1;
@@ -1115,9 +1069,14 @@ function importSchema(sql, projectId, dialect) {
                                 db.prepare(`UPDATE fields SET primary_key = 1, read_only = 1 WHERE table_id = ? AND field_name = ?`).run(tableId, getFieldNameFromAST({column: colDef.column}));
                             }
                         } else if (constraintType === "unique key" && constraint.definition && Array.isArray(constraint.definition)) {
-                            for (const colDef of constraint.definition) {
-                                db.prepare(`UPDATE fields SET "unique" = 1 WHERE table_id = ? AND field_name = ?`).run(tableId, getFieldNameFromAST({column: colDef.column}));
+                             // ▼▼▼ LOGIK DIPERBAIKI ▼▼▼
+                            // Hanya anggap sebagai UNIQUE individu jika ia melibatkan satu lajur sahaja
+                            if (constraint.definition.length === 1) {
+                                const fieldName = getFieldNameFromAST({column: constraint.definition[0].column});
+                                db.prepare(`UPDATE fields SET "unique" = 1 WHERE table_id = ? AND field_name = ?`).run(tableId, fieldName);
+                                uniqueColumns.add(fieldName);
                             }
+                             // ▲▲▲ TAMAT LOGIK DIPERBAIKI ▲▲▲
                         } else if (constraintType === "foreign key" && constraint.reference_definition && constraint.definition && constraint.definition.length > 0 && constraint.reference_definition.definition && constraint.reference_definition.definition.length > 0) {
                             const parentTableName = constraint.reference_definition.table[0].table;
                             const fkChildField = getFieldNameFromAST({column: constraint.definition[0].column});
@@ -1126,6 +1085,9 @@ function importSchema(sql, projectId, dialect) {
                         }
                     }
                 }
+                // ▼▼▼ TAMBAHAN BAHARU: Simpan senarai lajur unik untuk jadual ini ▼▼▼
+                tableUniqueColumnsMap[tableName] = uniqueColumns;
+                // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
             }
         }
 
@@ -1138,27 +1100,16 @@ function importSchema(sql, projectId, dialect) {
 
         for (const tableName in tableMap) {
             const tableId = tableMap[tableName];
-            
             const hasPK = checkPKStmt.get(tableId);
             if (!hasPK) {
                 const idFieldExists = checkFieldExistsStmt.get(tableId, 'id');
                 if (!idFieldExists) {
                     insertFieldStmt.run({
-                        table_id: tableId,
-                        field_name: 'id',
-                        caption: 'ID',
-                        data_type: 'INT',
-                        length: 11,
-                        primary_key: 1,
-                        auto_increment: 1,
-                        unsigned: 1,
-                        read_only: 1,
-                        field_order: -1
+                        table_id: tableId, field_name: 'id', caption: 'ID', data_type: 'INT',
+                        length: 11, primary_key: 1, auto_increment: 1, unsigned: 1, read_only: 1, field_order: -1
                     });
-                    // ▼▼▼ PERUBAHAN: Catat penambahan medan 'id' ▼▼▼
                     if (!standardizationLog[tableName]) standardizationLog[tableName] = [];
                     standardizationLog[tableName].push('id');
-                    // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
                 }
             }
 
@@ -1171,21 +1122,11 @@ function importSchema(sql, projectId, dialect) {
                 if (!existingFieldNames.has(fieldName)) {
                     const caption = fieldName.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
                     insertFieldStmt.run({
-                        table_id: tableId,
-                        field_name: fieldName,
-                        caption: caption,
-                        data_type: 'DATETIME',
-                        length: null,
-                        primary_key: 0,
-                        auto_increment: 0,
-                        unsigned: 0,
-                        read_only: 0,
-                        field_order: lastOrder++
+                        table_id: tableId, field_name: fieldName, caption: caption, data_type: 'DATETIME',
+                        length: null, primary_key: 0, auto_increment: 0, unsigned: 0, read_only: 0, field_order: lastOrder++
                     });
-                    // ▼▼▼ PERUBAHAN: Catat penambahan medan cap masa ▼▼▼
                     if (!standardizationLog[tableName]) standardizationLog[tableName] = [];
                     standardizationLog[tableName].push(fieldName);
-                    // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
                 }
             }
         }
@@ -1194,7 +1135,14 @@ function importSchema(sql, projectId, dialect) {
             const childTableId = tableMap[fk.childTableName];
             const parentTableId = tableMap[fk.parentTableName];
             if (childTableId && parentTableId) {
-                db.prepare(`INSERT INTO parent_child_relationships (parent_table_id, child_table_id, fk_child_field, parent_field, tab_title) VALUES (?, ?, ?, ?, ?)`).run(parentTableId, childTableId, fk.fkChildField, fk.parentField, fk.tabTitle);
+                // ▼▼▼ LOGIK UTAMA DIPERBAIKI DI SINI ▼▼▼
+                const uniqueFieldsForChildTable = tableUniqueColumnsMap[fk.childTableName] || new Set();
+                const isUnique = uniqueFieldsForChildTable.has(fk.fkChildField);
+                const relationshipType = isUnique ? 'one-to-one' : 'one-to-many';
+
+                db.prepare(`INSERT INTO parent_child_relationships (parent_table_id, child_table_id, fk_child_field, parent_field, tab_title, relationship_type) VALUES (?, ?, ?, ?, ?, ?)`).run(parentTableId, childTableId, fk.fkChildField, fk.parentField, fk.tabTitle, relationshipType);
+                // ▲▲▲ TAMAT PEMBAIKAN ▲▲▲
+
                 relationshipsCreated++;
                 let captionField = '';
                 const parentFields = db.prepare('SELECT field_name, primary_key, data_type FROM fields WHERE table_id = ? ORDER BY field_order').all(parentTableId);
@@ -1221,8 +1169,6 @@ function importSchema(sql, projectId, dialect) {
     try {
         const ast = parser.astify(processedSql, { database: parserDialect });
         transaction(ast);
-
-        // ▼▼▼ PERUBAHAN: Bina mesej kejayaan dinamik ▼▼▼
         let finalMessage = `Successfully imported ${tablesCreated} tables and ${relationshipsCreated} relationships!`;
 
         if (Object.keys(standardizationLog).length > 0) {
@@ -1237,7 +1183,6 @@ function importSchema(sql, projectId, dialect) {
             success: true,
             message: finalMessage,
         };
-        // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
 
     } catch (error) {
         console.error("Gagal mengimport SQL:", error);
@@ -1839,26 +1784,202 @@ function getGeneratedFolderPath() {
   return generatedPath;
 }
 
-ipcMain.handle('generate-app', async () => {
+// ADD THESE HELPER FUNCTIONS IN: main.js (inside the generator section)
+
+/**
+ * Menukar rentetan snake_case atau kebab-case kepada PascalCase.
+ * Contoh: 'pelajar_sekolah' -> 'PelajarSekolah'
+ * @param {string} str - Rentetan input.
+ * @returns {string} Rentetan dalam format PascalCase.
+ */
+function toPascalCase(str) {
+    if (!str) return '';
+    return str.split(/[-_]/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
+}
+
+/**
+ * Menukar rentetan snake_case kepada camelCase.
+ * Contoh: 'pelajar_sekolah' -> 'pelajarSekolah'
+ * @param {string} str - Rentetan input.
+ * @returns {string} Rentetan dalam format camelCase.
+ */
+function toCamelCase(str) {
+    if (!str) return '';
+    const pascal = toPascalCase(str);
+    return pascal.charAt(0).toLowerCase() + pascal.slice(1);
+}
+
+/**
+ * Menukar rentetan snake_case kepada camelCase jamak (plural).
+ * Ini adalah versi ringkas; untuk kes kompleks, pustaka khas diperlukan.
+ * Contoh: 'pelajar' -> 'pelajars'
+ * @param {string} str - Rentetan input.
+ * @returns {string} Rentetan jamak dalam format camelCase.
+ */
+function toPluralCamelCase(str) {
+    if (!str) return '';
+    // Logik plural yang sangat ringkas: tambah 's'. 
+    // Untuk bahasa Inggeris, ini selalunya betul tetapi tidak sempurna (cth: category -> categories).
+    // Untuk Bahasa Melayu, ia memadai sebagai pengenal pasti unik.
+    return toCamelCase(str) + 's';
+}
+
+// ADD THIS MAIN GENERATOR FUNCTION IN: main.js
+
+/**
+ * Menjana fail Model Laravel Filament berdasarkan skema pangkalan data.
+ * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.
+ * @param {string} basePath - Laluan asas ke folder 'generated'.
+ */
+async function generateFilamentModels(fullSchema, basePath) {
     try {
+        const projectSettings = fullSchema.project;
+        const tables = fullSchema.database.table;
+        const relationships = fullSchema.database.relationships;
+
+        // Tentukan laluan templat dan pastikan ia wujud
+        const templatePath = path.join(__dirname, 'templates/php/filament/app/Models/Model.template');
+        if (!fs.existsSync(templatePath)) {
+            throw new Error(`Template file not found at: ${templatePath}`);
+        }
+        const templateContent = fs.readFileSync(templatePath, 'utf8');
+
+        // Tentukan laluan output dan cipta folder jika belum wujud
+        const modelsPath = path.join(basePath, 'app', 'Models');
+        fs.mkdirSync(modelsPath, { recursive: true });
+
+        // Mula proses untuk setiap jadual
+        for (const tableName in tables) {
+            if (tableName === 'users') {
+                continue; // Langkau jadual 'users'
+            }
+
+            const tableData = tables[tableName];
+            let modelContent = templateContent;
+
+            // 1. & 2. Handle Soft Deletes
+            if (projectSettings.data_delete_type === 'soft') {
+                modelContent = modelContent.replace('<<IMPORT_SOFTDELETE>>', 'use Illuminate\\Database\\Eloquent\\SoftDeletes;');
+                modelContent = modelContent.replace('<<TRAIT_SOFTDELETE>>', 'use SoftDeletes;');
+            }
+
+            // 3. 4. & 5. Handle Auditing
+            if (projectSettings.module_log_audit === 1) {
+                const importAudit = `use OwenIt\\Auditing\\Contracts\\Auditable;\nuse OwenIt\\Auditing\\Auditable as AuditableTrait;`;
+                modelContent = modelContent.replace('<<IMPORT_AUDIT>>', importAudit);
+                modelContent = modelContent.replace('<<CLASS_IMPLEMENTS_AUDIT>>', 'implements Auditable');
+                modelContent = modelContent.replace('<<TRAIT_AUDIT>>', ', AuditableTrait');
+            }
+
+            // 6. Ganti Nama Kelas
+            const className = toPascalCase(tableName);
+            modelContent = modelContent.replace(/<<CLASS_NAME>>/g, className);
+
+            // 7. Ganti Nama Jadual
+            modelContent = modelContent.replace('<<TABLE_NAME>>', tableName);
+
+            // 8. Ganti Kunci Primer
+            const primaryKeyField = Object.values(tableData.fields).find(f => f.primary_key === 1);
+            modelContent = modelContent.replace('<<PRIMARY_KEY>>', primaryKeyField ? primaryKeyField.field_name : 'id');
+
+            // 9. Ganti Senarai Boleh Isi ($fillable)
+            const excludedFields = ['created_at', 'updated_at', 'deleted_at', primaryKeyField?.field_name];
+            const fillableFields = Object.values(tableData.fields)
+                .filter(field => !excludedFields.includes(field.field_name) && field.read_only !== 1)
+                .map(field => `\n        '${field.field_name}'`)
+                .join(',');
+            modelContent = modelContent.replace('<<ARRAY_EDITABLE_BYUSER_FIELDS>>', fillableFields ? `${fillableFields}\n    ` : '');
+
+            // 10. Ganti Fungsi Hubungan (Eloquent Relationships)
+            let relationshipFunctions = [];
+            
+            // Mencari hubungan di mana jadual ini adalah PARENT (hasMany)
+            relationships.filter(r => r.parent_table_name === tableName).forEach(rel => {
+                const childClassName = toPascalCase(rel.child_table_name);
+                const functionName = toPluralCamelCase(rel.child_table_name);
+                relationshipFunctions.push(`
+    public function ${functionName}()
+    {
+        return $this->hasMany(${childClassName}::class);
+    }
+`);
+            });
+
+            // Mencari hubungan di mana jadual ini adalah CHILD (belongsTo)
+            relationships.filter(r => r.child_table_name === tableName).forEach(rel => {
+                const parentClassName = toPascalCase(rel.parent_table_name);
+                const functionName = toCamelCase(rel.parent_table_name);
+                relationshipFunctions.push(`
+    public function ${functionName}()
+    {
+        return $this->belongsTo(${parentClassName}::class, '${rel.fk_child_field}', '${rel.parent_field}');
+    }
+`);
+            });
+            modelContent = modelContent.replace('<<RELATIONSHIP_FUNCTIONS>>', relationshipFunctions.join(''));
+
+            // Bersihkan mana-mana placeholder yang tidak diganti
+            modelContent = modelContent.replace(/<<.*?>>/g, '');
+
+            // 11. Jana fail output
+            const outputFilePath = path.join(modelsPath, `${className}.php`);
+            fs.writeFileSync(outputFilePath, modelContent);
+            console.log(`Model generated: ${outputFilePath}`);
+        }
+        
+        return { success: true, message: 'Models generated successfully.' };
+
+    } catch (error) {
+        console.error('Failed to generate Filament Models:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+// FIND AND REPLACE THIS ENTIRE HANDLER IN: main.js
+
+ipcMain.handle('generate-app', async () => {
+    const win = BrowserWindow.getFocusedWindow();
+    try {
+        // 1. Dapatkan projek yang sedang aktif
+        const activeProject = await db.prepare("SELECT * FROM projects WHERE is_active = 1 LIMIT 1").get();
+        if (!activeProject) {
+            throw new Error("No active project found.");
+        }
+
+        // 2. Dapatkan keseluruhan skema pangkalan data yang tersusun
+        const fullSchema = await getFullProjectSchema(activeProject.project_id);
+        if (!fullSchema) {
+            throw new Error("Failed to retrieve the full project schema.");
+        }
+        
+        // Hantar mesej ke UI untuk paparkan overlay
+        win?.webContents.send('show-overlay', { message: 'Generating application files...' });
+
+        // 3. Dapatkan laluan folder output utama
         const generatedAppPath = getGeneratedFolderPath();
-        const newFilePath = path.join(generatedAppPath, 'fail_baru.php');
-        const fileContent = '<?php\n\n// Ini adalah fail yang dijana secara automatik.\necho "Hello, FiziSysMaker!";';
+        const filamentPath = path.join(generatedAppPath, 'filament_app'); // Cipta subfolder khusus
 
-        // Tulis fail ke dalam folder 'generated' di AppData
-        fs.writeFileSync(newFilePath, fileContent);
+        // 4. Panggil fungsi penjana untuk Models
+        const modelResult = await generateFilamentModels(fullSchema, filamentPath);
+        if (!modelResult.success) {
+            throw new Error(`Model generation failed: ${modelResult.message}`);
+        }
 
-        console.log(`Fail berjaya dicipta di: ${newFilePath}`);
+        // (Di sini anda akan tambah panggilan untuk penjana lain seperti Migrations, Resources, dll. pada masa hadapan)
+        
+        console.log(`All files generated successfully in: ${filamentPath}`);
 
-        // Hantar kembali status kejayaan dan laluan fail
         return { 
             success: true, 
-            path: newFilePath,
-            folderPath: generatedAppPath // Hantar laluan folder juga
+            message: 'Application models generated successfully!',
+            folderPath: filamentPath 
         };
     } catch (error) {
-        console.error('Gagal menulis fail:', error);
+        console.error('Gagal menjana aplikasi:', error);
         return { success: false, message: error.message };
+    } finally {
+        // Hantar mesej ke UI untuk sembunyikan overlay
+        win?.webContents.send('hide-overlay');
     }
 });
 
