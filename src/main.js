@@ -1382,7 +1382,8 @@ ipcMain.handle('project:update', async (event, data) => {
             'allow_server_status', 'admins_group_access', 'allow_table_view_sql',
             'copy_children_async', 'allow_pwa_install', 'url','stack_base', 'stack_database',
 			'stack_theme', 'module_auth_email_2fa', 'module_auth_email_captcha', 'module_auth_ldap',
-            'module_auth_google_sso', 'module_authorization', 'module_log_audit', 'data_delete_type'
+            'module_auth_google_sso', 'module_authorization', 'module_log_audit', 'data_delete_type',
+            'module_fake_data' // ADD THIS ITEM
         ];
 
         const setClause = Object.keys(fieldsToUpdate)

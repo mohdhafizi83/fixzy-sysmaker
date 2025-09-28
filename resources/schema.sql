@@ -42,8 +42,9 @@ CREATE TABLE projects (
     module_auth_email_captcha    INTEGER DEFAULT 0,
     module_auth_ldap             INTEGER DEFAULT 0,
     module_auth_google_sso       INTEGER DEFAULT 0,
-    module_authorization         INTEGER DEFAULT 0,
-    module_log_audit             INTEGER DEFAULT 0,
+    module_authorization         INTEGER DEFAULT 1,
+    module_log_audit             INTEGER DEFAULT 1,
+    module_fake_data             INTEGER DEFAULT 1,
 	is_active                    INTEGER DEFAULT 0
 );
 
