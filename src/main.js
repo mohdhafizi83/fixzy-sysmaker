@@ -884,17 +884,19 @@ async function handleImportPreflight(win, projectId, sqlContent) {
 // FIND AND REPLACE this entire function in your src/main.js file
 
 function importSchema(sql, projectId, dialect) {
+
+    // ▼▼▼ PERUBAHAN DI SINI: Kembalikan TSQL untuk diparsing sebagai 'mysql' ▼▼▼
     const dialectMap = {
         'MySQL': 'mysql', 'PostgreSQL': 'postgresql', 'TSQL': 'mysql', 'SQLite': 'sqlite'
     };
+    // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
     const parserDialect = dialectMap[dialect] || 'mysql';
 
     let tablesCreated = 0;
     let relationshipsCreated = 0;
-    const tableMap = {}; // Maps tableName -> tableId
+    const tableMap = {};
     const standardizationLog = {};
 
-    // Helper functions remain the same
     let processedSql = sql;
     if (dialect === 'TSQL') {
         processedSql = processedSql.replace(/^GO\s*$/gim, '').replace(/IDENTITY\s*\(\d+\s*,\s*\d+\)/gi, 'AUTO_INCREMENT').replace(/\((MAX)\)/gi, '').replace(/\b(NVARCHAR|VARCHAR|TEXT)\s*(?!\()/gi, 'TEXT ').replace(/GETDATE\(\)/gi, 'CURRENT_TIMESTAMP').replace(/\bN(VARCHAR|CHAR|TEXT)\b/gi, '$1').replace(/\bDATETIME2\b/gi, 'DATETIME');
@@ -925,117 +927,104 @@ function importSchema(sql, projectId, dialect) {
     let tableOrder = 0;
 
     const transaction = db.transaction((ast) => {
-        const insertTableStmt = db.prepare("INSERT INTO tables (project_id, table_name, table_view_title, table_order) VALUES (?, ?, ?, ?)");
-        const insertFieldStmt = db.prepare(`INSERT INTO fields (table_id, field_name, data_type, length, precision, required, auto_increment, unsigned, zero_fill, primary_key, "unique", is_indexed, text_area, rich_html, read_only, default_value, caption, field_order) VALUES (@table_id, @field_name, @data_type, @length, @precision, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @is_indexed, @text_area, @rich_html, @read_only, @default_value, @caption, @field_order)`);
         const insertConstraintStmt = db.prepare('INSERT INTO table_constraints (table_id, constraint_name, constraint_type, columns) VALUES (?, ?, ?, ?)');
-        const insertRelationshipStmt = db.prepare(`INSERT INTO parent_child_relationships (parent_table_id, child_table_id, fk_child_field, parent_field, tab_title, relationship_type) VALUES (?, ?, ?, ?, ?, ?)`);
-        const updateFieldLookupStmt = db.prepare(`UPDATE fields SET lookup_parent_table = ?, lookup_caption_1 = ? WHERE table_id = ? AND field_name = ?`);
         const getMaxMenuOrderStmt = db.prepare('SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL');
         const insertMenuItemStmt = db.prepare('INSERT INTO menu_items (project_id, table_id, item_label, item_url, item_order, menu_group_id) VALUES (?, ?, ?, ?, ?, NULL)');
-
         const foreignKeysToProcess = [];
-
         for (const statement of ast) {
             if (statement.type !== "create" || statement.keyword !== "table") continue;
-            
             const tableName = statement.table[0].table;
-            const tableInfo = insertTableStmt.run(projectId, tableName, tableName, tableOrder++);
+            const tableInfo = db.prepare("INSERT INTO tables (project_id, table_name, table_view_title, table_order) VALUES (?, ?, ?, ?)").run(projectId, tableName, tableName, tableOrder++);
             const tableId = tableInfo.lastInsertRowid;
             tablesCreated++;
             tableMap[tableName] = tableId;
-
             const maxMenuOrderResult = getMaxMenuOrderStmt.get(projectId);
             const nextMenuOrder = (maxMenuOrderResult?.max_order ?? -1) + 1;
             insertMenuItemStmt.run(projectId, tableId, tableName, `${tableName} Resource`, nextMenuOrder);
-
             const definitions = statement.create_definitions || [];
             const fieldDataMap = new Map();
             const tableLevelRules = [];
-
-            // LANGKAH 1: Kumpul semua definisi lajur dan peraturan
-            definitions.forEach((definition, index) => {
+            definitions.forEach(definition => {
                 if (definition.resource === 'column') {
                     const fieldName = getFieldNameFromAST(definition.column);
                     let dataType = definition.definition.dataType;
-                    if ((definition.auto_increment || definition.autoincrement) && !dataType) dataType = 'INTEGER';
+                    if ((definition.auto_increment || definition.autoincrement || dataType === 'SERIAL') && !dataType) dataType = 'INTEGER';
                     if (dataType && Array.isArray(definition.definition.suffix)) dataType += ' ' + definition.definition.suffix.join(' ');
                     if (!dataType) dataType = 'TEXT';
-                    
                     const fieldData = {
-                        table_id: tableId, field_name: fieldName, caption: fieldName, field_order: index,
+                        table_id: tableId, field_name: fieldName, caption: fieldName,
                         data_type: dataType, length: definition.definition.length || null, precision: definition.definition.scale || null,
                         required: 0, auto_increment: 0, unsigned: 0, zero_fill: 0, primary_key: 0, "unique": 0,
                         is_indexed: 0, text_area: 0, rich_html: 0, read_only: 0, default_value: null,
                     };
-                    
-                    if (definition.auto_increment || definition.autoincrement) fieldData.auto_increment = 1;
+                    if (definition.auto_increment || definition.autoincrement || dataType === 'SERIAL') fieldData.auto_increment = 1;
                     if (definition.nullable?.type === "not null" && !fieldData.auto_increment) fieldData.required = 1;
                     if (definition.unsigned) fieldData.unsigned = 1;
                     if (definition.zerofill) fieldData.zero_fill = 1;
                     if (definition.default_val) fieldData.default_value = extractDefaultValue(definition.default_val);
                     if (definition.primary_key === 'primary key') { fieldData.primary_key = 1; fieldData.read_only = 1; }
-                    
+                    if (definition.unique === 'unique') fieldData.unique = 1;
                     (definition.constraints || []).forEach(constraint => {
                         const type = constraint.definition.constraint_type.toLowerCase();
                         if (type === "primary key") { fieldData.primary_key = 1; fieldData.read_only = 1; }
-                        if (type === "unique key") fieldData.unique = 1;
-                        if (type === "not null") fieldData.required = 1;
+                        if (type === "unique key" || type === "unique") { fieldData.unique = 1; }
+                        if (type === "not null") { fieldData.required = 1; }
                     });
                     fieldDataMap.set(fieldName, fieldData);
                 } else {
                     tableLevelRules.push(definition);
                 }
             });
-
-            // LANGKAH 2: Ubah suai data medan dalam memori berdasarkan peraturan peringkat jadual
             tableLevelRules.forEach(rule => {
                 const ruleType = rule.constraint_type?.toLowerCase() || rule.keyword;
                 const columns = (rule.definition || []).map(c => getFieldNameFromAST(c));
                 if (columns.length === 0) return;
-
                 if (ruleType === "primary key") {
-                    columns.forEach(fieldName => {
-                        if (fieldDataMap.has(fieldName)) {
-                            fieldDataMap.get(fieldName).primary_key = 1;
-                            fieldDataMap.get(fieldName).read_only = 1;
-                        }
-                    });
-                } else if (ruleType === "unique key") {
-                    if (columns.length === 1 && fieldDataMap.has(columns[0])) {
-                        fieldDataMap.get(columns[0]).unique = 1;
-                    } else if (columns.length > 1) {
-                        insertConstraintStmt.run(tableId, rule.index || null, 'UNIQUE', JSON.stringify(columns));
-                    }
+                    columns.forEach(fieldName => { if (fieldDataMap.has(fieldName)) { fieldDataMap.get(fieldName).primary_key = 1; fieldDataMap.get(fieldName).read_only = 1; } });
+                } else if (ruleType === "unique key" || ruleType === "unique") {
+                    if (columns.length === 1 && fieldDataMap.has(columns[0])) { fieldDataMap.get(columns[0]).unique = 1; } 
+                    else if (columns.length > 1) { insertConstraintStmt.run(tableId, rule.index || rule.constraint || null, 'UNIQUE', JSON.stringify(columns)); }
                 } else if (ruleType === "index" || ruleType === "key") {
-                    if (columns.length === 1 && fieldDataMap.has(columns[0])) {
-                        fieldDataMap.get(columns[0]).is_indexed = 1; // <--- PEMBETULAN UTAMA DI SINI
-                    } else if (columns.length > 1) {
-                        insertConstraintStmt.run(tableId, rule.index || null, 'INDEX', JSON.stringify(columns));
-                    }
+                    if (columns.length === 1 && fieldDataMap.has(columns[0])) { fieldDataMap.get(columns[0]).is_indexed = 1; } 
+                    else if (columns.length > 1) { insertConstraintStmt.run(tableId, rule.index || null, 'INDEX', JSON.stringify(columns)); }
                 } else if (ruleType === "foreign key") {
                     const ref = rule.reference_definition;
-                    if (ref) {
-                        foreignKeysToProcess.push({
-                            childTableName: tableName,
-                            parentTableName: ref.table[0].table,
-                            fkChildField: columns[0],
-                            parentField: getFieldNameFromAST(ref.definition[0]),
-                        });
-                    }
+                    if (ref) { foreignKeysToProcess.push({ childTableName: tableName, parentTableName: ref.table[0].table, fkChildField: columns[0], parentField: getFieldNameFromAST(ref.definition[0]), }); }
                 }
             });
-
-            // LANGKAH 3: Masukkan semua medan yang telah diproses ke dalam pangkalan data
+            let fieldOrderCounter = 0;
             for (const fieldData of fieldDataMap.values()) {
-                insertFieldStmt.run(fieldData);
+                fieldData.field_order = fieldOrderCounter++;
+                db.prepare(`INSERT INTO fields (table_id, field_name, data_type, length, precision, required, auto_increment, unsigned, zero_fill, primary_key, "unique", is_indexed, text_area, rich_html, read_only, default_value, caption, field_order) VALUES (@table_id, @field_name, @data_type, @length, @precision, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @is_indexed, @text_area, @rich_html, @read_only, @default_value, @caption, @field_order)`).run(fieldData);
             }
         }
-        
-        // LANGKAH 4: Tambah medan standard (id, timestamps) jika tiada
+        const updateFieldIndexStmt = db.prepare(`UPDATE fields SET is_indexed = 1 WHERE table_id = ? AND field_name = ?`);
+        const updateFieldUniqueStmt = db.prepare(`UPDATE fields SET "unique" = 1, is_indexed = 1 WHERE table_id = ? AND field_name = ?`);
+        for (const statement of ast) {
+            if (statement.type !== 'create' || statement.keyword !== 'index') continue;
+            const tableName = statement.table?.table || statement.on[0]?.table;
+            if (!tableName) continue;
+            const tableId = tableMap[tableName];
+            if (!tableId) {
+                console.warn(`Skipping index creation for table "${tableName}" because it was not found.`);
+                continue;
+            }
+            const columns = (statement.index_columns || statement.definition).map(c => getFieldNameFromAST(c));
+            const isUnique = statement.unique === 'unique';
+            if (columns.length === 1) {
+                const fieldName = columns[0];
+                if (isUnique) {
+                    updateFieldUniqueStmt.run(tableId, fieldName);
+                } else {
+                    updateFieldIndexStmt.run(tableId, fieldName);
+                }
+            } else if (columns.length > 1) {
+                insertConstraintStmt.run(tableId, statement.index || null, isUnique ? 'UNIQUE' : 'INDEX', JSON.stringify(columns));
+            }
+        }
         const checkPKStmt = db.prepare('SELECT 1 FROM fields WHERE table_id = ? AND primary_key = 1 LIMIT 1');
         const checkFieldExistsStmt = db.prepare('SELECT 1 FROM fields WHERE table_id = ? AND field_name = ? LIMIT 1');
         const insertStandardFieldStmt = db.prepare(`INSERT INTO fields (table_id, field_name, caption, data_type, length, primary_key, auto_increment, unsigned, read_only, is_indexed, field_order) VALUES (@table_id, @field_name, @caption, @data_type, @length, @primary_key, @auto_increment, @unsigned, @read_only, @is_indexed, @field_order)`);
-
         for (const tableName in tableMap) {
             const tableId = tableMap[tableName];
             if (!checkPKStmt.get(tableId)) {
@@ -1057,8 +1046,6 @@ function importSchema(sql, projectId, dialect) {
                 }
             }
         }
-
-        // LANGKAH 5: Proses Foreign Keys untuk mencipta hubungan
         for (const fk of foreignKeysToProcess) {
             const childTableId = tableMap[fk.childTableName];
             const parentTableId = tableMap[fk.parentTableName];
@@ -1067,15 +1054,12 @@ function importSchema(sql, projectId, dialect) {
                 const isUnique = childField ? childField.unique === 1 : false;
                 const relationshipType = isUnique ? 'one-to-one' : 'one-to-many';
                 const tabTitle = fk.childTableName.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
-
-                insertRelationshipStmt.run(parentTableId, childTableId, fk.fkChildField, fk.parentField, tabTitle, relationshipType);
+                db.prepare(`INSERT INTO parent_child_relationships (parent_table_id, child_table_id, fk_child_field, parent_field, tab_title, relationship_type) VALUES (?, ?, ?, ?, ?, ?)`).run(parentTableId, childTableId, fk.fkChildField, fk.parentField, tabTitle, relationshipType);
                 relationshipsCreated++;
-                
                 let captionField = '';
                 const parentFields = db.prepare('SELECT field_name, primary_key, data_type FROM fields WHERE table_id = ? ORDER BY field_order').all(parentTableId);
                 const nonNumericTypes = ['VARCHAR', 'CHAR', 'TEXT', 'MEDIUMTEXT', 'LONGTEXT', 'DATE', 'DATETIME', 'TIMESTAMP'];
                 const nonNumericField = parentFields.find(f => nonNumericTypes.includes(f.data_type ? f.data_type.toUpperCase() : ''));
-                
                 if (nonNumericField) {
                     captionField = nonNumericField.field_name;
                 } else {
@@ -1084,9 +1068,8 @@ function importSchema(sql, projectId, dialect) {
                         captionField = parentFields[pkIndex + 1].field_name;
                     }
                 }
-                
                 if (captionField) {
-                    updateFieldLookupStmt.run(fk.parentTableName, captionField, childTableId, fk.fkChildField);
+                    db.prepare(`UPDATE fields SET lookup_parent_table = ?, lookup_caption_1 = ? WHERE table_id = ? AND field_name = ?`).run(fk.parentTableName, captionField, childTableId, fk.fkChildField);
                 }
             }
         }
@@ -1094,6 +1077,7 @@ function importSchema(sql, projectId, dialect) {
 
     try {
         const ast = parser.astify(processedSql, { database: parserDialect });
+
         transaction(ast);
         let finalMessage = `Successfully imported ${tablesCreated} tables and ${relationshipsCreated} relationships!`;
         if (Object.keys(standardizationLog).length > 0) {
@@ -1102,8 +1086,9 @@ function importSchema(sql, projectId, dialect) {
         }
         return { success: true, message: finalMessage };
     } catch (error) {
-        console.error("Gagal mengimport SQL:", error);
-        return { success: false, message: `SQL Parsing/Import Error: ${error.message}` };
+        console.error("SQL PARSING FAILED! The script may contain syntax incompatible with the parser for the selected dialect.");
+        console.error("Full parser error:", error);
+        return { success: false, message: `SQL Parsing Error: ${error.message}. Please check the console for more details.` };
     }
 }
 ipcMain.handle("sql:import-file", async (event, { projectId, dialect }) => {
