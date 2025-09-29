@@ -300,60 +300,53 @@ async function getFullProjectSchema(projectId) {
     if (!project)
       throw new Error(`Projek dengan ID ${projectId} tidak ditemui.`);
 
-    // 1. Dapatkan semua jadual, custom view, dan medan yang berkaitan dengan projek ini
     const tables = db
       .prepare("SELECT * FROM tables WHERE project_id = ? ORDER BY table_order, table_id")
       .all(projectId);
     const tableIds = tables.map((t) => t.table_id);
 
-    let fields = [];
-    if (tableIds.length > 0) {
-        const placeholder = tableIds.map(() => "?").join(",");
-        fields = db.prepare(`SELECT * FROM fields WHERE table_id IN (${placeholder}) ORDER BY field_order, field_id`).all(...tableIds);
+    if (tableIds.length === 0) {
+        return {
+            project,
+            database: { name: project.app_title, table: {}, relationships: [], unified_menu: [] },
+        };
     }
+
+    const placeholder = tableIds.map(() => "?").join(",");
+    const fields = db.prepare(`SELECT * FROM fields WHERE table_id IN (${placeholder}) ORDER BY field_order, field_id`).all(...tableIds);
+    const constraints = db.prepare(`SELECT * FROM table_constraints WHERE table_id IN (${placeholder})`).all(...tableIds);
     
-    let customViews = [];
-    if (tableIds.length > 0) {
-        const placeholder = tableIds.map(() => "?").join(",");
-        customViews = db.prepare(`SELECT * FROM custom_views WHERE table_id IN (${placeholder}) ORDER BY view_order`).all(...tableIds);
-    }
-
-    let customViewFields = [];
+    let customViews = db.prepare(`SELECT * FROM custom_views WHERE table_id IN (${placeholder}) ORDER BY view_order`).all(...tableIds);
     const viewIds = customViews.map(v => v.custom_view_id);
+    let customViewFields = [];
     if (viewIds.length > 0) {
-        const placeholder = viewIds.map(() => "?").join(",");
-        customViewFields = db.prepare(`SELECT * FROM custom_view_fields WHERE custom_view_id IN (${placeholder}) ORDER BY display_order`).all(...viewIds);
+        const viewPlaceholder = viewIds.map(() => "?").join(",");
+        customViewFields = db.prepare(`SELECT * FROM custom_view_fields WHERE custom_view_id IN (${viewPlaceholder}) ORDER BY display_order`).all(...viewIds);
     }
 
-    // 2. Susun jadual, medan, dan custom view dalam format bersarang (nested)
     const structuredTables = {};
     tables.forEach((table) => {
-      // Cari semua custom view untuk jadual ini
       const viewsForTable = customViews.filter(v => v.table_id === table.table_id);
-      
-      // Untuk setiap custom view, cari dan masukkan medan-medannya
       viewsForTable.forEach(view => {
           view.fields = customViewFields.filter(f => f.custom_view_id === view.custom_view_id);
       });
 
-      // Bina objek jadual utama
-      structuredTables[table.table_name] = { ...table, fields: {}, custom_views: viewsForTable };
+      structuredTables[table.table_name] = { 
+          ...table, 
+          fields: {}, 
+          custom_views: viewsForTable,
+          constraints: constraints.filter(c => c.table_id === table.table_id)
+      };
     });
 
     fields.forEach((field) => {
       const parentTable = tables.find((t) => t.table_id === field.table_id);
       if (parentTable) {
-        structuredTables[parentTable.table_name].fields[field.field_name] = {
-          ...field, // Masukkan semua data medan
-        };
+        structuredTables[parentTable.table_name].fields[field.field_name] = field;
       }
     });
 
-    // 3. Dapatkan semua hubungan (relationships) yang melibatkan jadual-jadual ini
-    let relationships = [];
-    if (tableIds.length > 0) {
-      const placeholder = tableIds.map(() => "?").join(",");
-      relationships = db
+    let relationships = db
         .prepare(
           `SELECT r.*, p.table_name as parent_table_name, c.table_name as child_table_name
            FROM parent_child_relationships r
@@ -362,9 +355,7 @@ async function getFullProjectSchema(projectId) {
            WHERE r.parent_table_id IN (${placeholder}) OR r.child_table_id IN (${placeholder})`
         )
         .all(...tableIds, ...tableIds);
-    }
-
-    // 4. Bina struktur menu bersepadu (unified menu structure)
+    
     const groups = db.prepare("SELECT * FROM menu_groups WHERE project_id = ? ORDER BY group_order").all(projectId);
     const allItems = db.prepare(`
         SELECT mi.*, t.table_name 
@@ -375,48 +366,31 @@ async function getFullProjectSchema(projectId) {
     `).all(projectId);
     
     const unifiedMenu = [];
-    let topLevelOrder = 0;
-
-    // Tambah kumpulan ke dalam menu
     groups.forEach(group => {
         const groupItems = allItems
             .filter(item => item.menu_group_id === group.menu_group_id)
-            .map(item => identifyMenuItemType(item)); // Kenal pasti jenis setiap item
-
+            .map(item => {
+                let itemType = 'custom_item';
+                if (item.table_id) itemType = 'table_item';
+                else if (item.custom_view_id) itemType = 'custom_view_item';
+                return { type: itemType, ...item };
+            });
         unifiedMenu.push({ 
-            type: 'group', 
-            id: group.menu_group_id, 
-            order: group.group_order, 
-            name: group.group_name, 
-            items: groupItems
+            type: 'group', id: group.menu_group_id, order: group.group_order, name: group.group_name, items: groupItems
         });
     });
     
-    // Tambah item peringkat atasan (top-level)
     allItems.forEach(item => {
         if (item.menu_group_id === null) {
-            unifiedMenu.push(identifyMenuItemType(item));
+            let itemType = 'custom_item';
+            if (item.table_id) itemType = 'table_item';
+            else if (item.custom_view_id) itemType = 'custom_view_item';
+            unifiedMenu.push({ type: itemType, ...item });
         }
     });
 
-    // Fungsi bantuan untuk mengenal pasti jenis item menu
-    function identifyMenuItemType(item) {
-        let itemType = 'custom_item'; // Lalai
-        if (item.table_id) {
-            itemType = 'table_item';
-        } else if (item.custom_view_id) {
-            itemType = 'custom_view_item';
-        }
-        return { 
-            type: itemType, 
-            ...item 
-        };
-    }
-
-    // Susun menu akhir berdasarkan 'order'
     unifiedMenu.sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
 
-    // 5. Kembalikan objek data yang lengkap dan tersusun
     return {
       project: project,
       database: {
@@ -907,250 +881,201 @@ async function handleImportPreflight(win, projectId, sqlContent) {
   }
 }
 
+// FIND AND REPLACE this entire function in your src/main.js file
+
 function importSchema(sql, projectId, dialect) {
     const dialectMap = {
-        'MySQL': 'mysql',
-        'PostgreSQL': 'postgresql',
-        'TSQL': 'mysql', 
-        'SQLite': 'sqlite'
+        'MySQL': 'mysql', 'PostgreSQL': 'postgresql', 'TSQL': 'mysql', 'SQLite': 'sqlite'
     };
     const parserDialect = dialectMap[dialect] || 'mysql';
 
     let tablesCreated = 0;
     let relationshipsCreated = 0;
-    const tableMap = {};
-    const foreignKeysToProcess = [];
+    const tableMap = {}; // Maps tableName -> tableId
     const standardizationLog = {};
-    
-    // ▼▼▼ TAMBAHAN BAHARU: Objek untuk menyimpan lajur unik bagi setiap jadual ▼▼▼
-    const tableUniqueColumnsMap = {};
-    // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
 
+    // Helper functions remain the same
     let processedSql = sql;
-
     if (dialect === 'TSQL') {
-        processedSql = processedSql
-            .replace(/^GO\s*$/gim, '')
-            .replace(/IDENTITY\s*\(\d+\s*,\s*\d+\)/gi, 'AUTO_INCREMENT')
-            .replace(/\((MAX)\)/gi, '')
-            .replace(/\b(NVARCHAR|VARCHAR|TEXT)\s*(?!\()/gi, 'TEXT ')
-            .replace(/GETDATE\(\)/gi, 'CURRENT_TIMESTAMP')
-            .replace(/\bN(VARCHAR|CHAR|TEXT)\b/gi, '$1')
-            .replace(/\bDATETIME2\b/gi, 'DATETIME');
+        processedSql = processedSql.replace(/^GO\s*$/gim, '').replace(/IDENTITY\s*\(\d+\s*,\s*\d+\)/gi, 'AUTO_INCREMENT').replace(/\((MAX)\)/gi, '').replace(/\b(NVARCHAR|VARCHAR|TEXT)\s*(?!\()/gi, 'TEXT ').replace(/GETDATE\(\)/gi, 'CURRENT_TIMESTAMP').replace(/\bN(VARCHAR|CHAR|TEXT)\b/gi, '$1').replace(/\bDATETIME2\b/gi, 'DATETIME');
     }
-    
     if (dialect === 'SQLite') {
         processedSql = processedSql.replace(/^PRAGMA.*?;/gim, '');
     }
-
     if (dialect === 'MySQL') {
-        processedSql = processedSql.replace(
-            /\s+ENGINE=\w+\s*DEFAULT\s*CHARSET=\w+(\s*COLLATE=\w+)?(\s*COMMENT='.*?')?;/gi,
-            ";"
-        );
+        processedSql = processedSql.replace(/\s+ENGINE=\w+\s*DEFAULT\s*CHARSET=\w+(\s*COLLATE=\w+)?(\s*COMMENT='.*?')?;/gi, ";");
     }
     
     const getFieldNameFromAST = (columnRef) => {
         if (!columnRef || !columnRef.column) return 'parse_error';
         if (typeof columnRef.column === 'string') return columnRef.column;
-        if (typeof columnRef.column === 'object' && columnRef.column.expr && columnRef.column.expr.value) {
-            return columnRef.column.expr.value;
-        }
-        console.warn("Unrecognized field name structure in AST:", JSON.stringify(columnRef, null, 2));
-        return String(columnRef.column); 
+        if (typeof columnRef.column === 'object' && columnRef.column.expr && columnRef.column.expr.value) { return columnRef.column.expr.value; }
+        return String(columnRef.column);
     };
     
     const extractDefaultValue = (defaultNode) => {
         if (!defaultNode || !defaultNode.value) return null;
         const valueNode = defaultNode.value;
-        switch (valueNode.type) {
-            case "null": return "NULL";
-            case "single_quote_string": case "number": return String(valueNode.value);
-            case "function":
-                if (valueNode.name && valueNode.name.name && Array.isArray(valueNode.name.name)) {
-                    return valueNode.name.name.map(part => part.value).join('.');
-                }
-                break;
-        }
+        if (valueNode.type === "null") return "NULL";
+        if (["single_quote_string", "number"].includes(valueNode.type)) return String(valueNode.value);
+        if (valueNode.type === "function" && Array.isArray(valueNode.name?.name)) return valueNode.name.name.map(part => part.value).join('.');
         return null;
     };
 	
     let tableOrder = 0;
-	
+
     const transaction = db.transaction((ast) => {
+        const insertTableStmt = db.prepare("INSERT INTO tables (project_id, table_name, table_view_title, table_order) VALUES (?, ?, ?, ?)");
+        const insertFieldStmt = db.prepare(`INSERT INTO fields (table_id, field_name, data_type, length, precision, required, auto_increment, unsigned, zero_fill, primary_key, "unique", is_indexed, text_area, rich_html, read_only, default_value, caption, field_order) VALUES (@table_id, @field_name, @data_type, @length, @precision, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @is_indexed, @text_area, @rich_html, @read_only, @default_value, @caption, @field_order)`);
+        const insertConstraintStmt = db.prepare('INSERT INTO table_constraints (table_id, constraint_name, constraint_type, columns) VALUES (?, ?, ?, ?)');
+        const insertRelationshipStmt = db.prepare(`INSERT INTO parent_child_relationships (parent_table_id, child_table_id, fk_child_field, parent_field, tab_title, relationship_type) VALUES (?, ?, ?, ?, ?, ?)`);
+        const updateFieldLookupStmt = db.prepare(`UPDATE fields SET lookup_parent_table = ?, lookup_caption_1 = ? WHERE table_id = ? AND field_name = ?`);
         const getMaxMenuOrderStmt = db.prepare('SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL');
         const insertMenuItemStmt = db.prepare('INSERT INTO menu_items (project_id, table_id, item_label, item_url, item_order, menu_group_id) VALUES (?, ?, ?, ?, ?, NULL)');
 
+        const foreignKeysToProcess = [];
+
         for (const statement of ast) {
-            if (statement.type === "create" && statement.keyword === "table") {
-                const tableName = statement.table[0].table;
-                // ▼▼▼ TAMBAHAN BAHARU: Sediakan Set untuk menyimpan lajur unik jadual ini ▼▼▼
-                const uniqueColumns = new Set();
-                // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
+            if (statement.type !== "create" || statement.keyword !== "table") continue;
+            
+            const tableName = statement.table[0].table;
+            const tableInfo = insertTableStmt.run(projectId, tableName, tableName, tableOrder++);
+            const tableId = tableInfo.lastInsertRowid;
+            tablesCreated++;
+            tableMap[tableName] = tableId;
 
-                const tableInfo = db.prepare("INSERT INTO tables (project_id, table_name, table_view_title, table_order) VALUES (?, ?, ?, ?)").run(projectId, tableName, tableName, tableOrder); 
-                tableOrder++;
-                const tableId = tableInfo.lastInsertRowid;
-                tablesCreated++;
-                tableMap[tableName] = tableId;
+            const maxMenuOrderResult = getMaxMenuOrderStmt.get(projectId);
+            const nextMenuOrder = (maxMenuOrderResult?.max_order ?? -1) + 1;
+            insertMenuItemStmt.run(projectId, tableId, tableName, `${tableName} Resource`, nextMenuOrder);
 
-                const maxOrderResult = getMaxMenuOrderStmt.get(projectId);
-                const nextMenuOrder = (maxOrderResult && maxOrderResult.max_order !== null ? maxOrderResult.max_order : -1) + 1;
-                const itemUrl = `${tableName} Resource`;
-                insertMenuItemStmt.run(projectId, tableId, tableName, itemUrl, nextMenuOrder);
+            const definitions = statement.create_definitions || [];
+            const fieldDataMap = new Map();
+            const tableLevelRules = [];
 
-				let fieldOrder = 0;
-                const tableLevelConstraints = [];
-                for (const col of statement.create_definitions) {
-                    if (col.resource === "column") {
-                        const extractedFieldName = getFieldNameFromAST(col.column);
-                        let isColumnUnique = false; // Flag sementara
-                        let dataType = col.definition.dataType;
-                        if ((col.auto_increment || col.autoincrement) && !dataType) dataType = 'INTEGER';
-                        if (dataType && Array.isArray(col.definition.suffix) && col.definition.suffix.length > 0) {
-                            dataType += ' ' + col.definition.suffix.join(' ');
-                        }
-                        if (!dataType) {
-                            console.warn(`Could not determine data type for column '${extractedFieldName}'. Defaulting to 'TEXT'.`);
-                            dataType = 'TEXT';
-                        }
-                        
-                        let fieldData = {
-                            table_id: tableId, field_name: extractedFieldName, caption: extractedFieldName,
-							field_order: fieldOrder, data_type: dataType, length: col.definition.length || null,
-                            precision: col.definition.scale || null, required: 0, auto_increment: 0,
-                            unsigned: 0, zero_fill: 0, primary_key: 0, "unique": 0, text_area: 0, 
-                            rich_html: 0, read_only: 0, default_value: null,
-                        };
-                        const upperDataType = fieldData.data_type ? fieldData.data_type.toUpperCase() : '';
-                        if (upperDataType === 'TEXT') fieldData.text_area = 1;
-                        else if (upperDataType === 'MEDIUMTEXT' || upperDataType === 'LONGTEXT') fieldData.rich_html = 1;
-                        
-                        if (col.auto_increment || col.autoincrement) fieldData.auto_increment = 1;
-                        if ((col.nullable && col.nullable.type === "not null") && !fieldData.auto_increment) fieldData.required = 1;
-                        if (col.unsigned) fieldData.unsigned = 1;
-                        if (col.zerofill) fieldData.zero_fill = 1;
-                        if (col.default_val) fieldData.default_value = extractDefaultValue(col.default_val);
-                        
-                        if (col.constraints) {
-                            for (const constraint of col.constraints) {
-                                const definition = constraint.definition || constraint;
-                                switch (definition.constraint_type.toLowerCase()) {
-                                    case "primary key": fieldData.primary_key = 1; fieldData.read_only = 1; break;
-                                    case "unique key": fieldData.unique = 1; isColumnUnique = true; break;
-                                    case "not null": fieldData.required = 1; break;
-                                    case "autoincrement": 
-                                    case "auto_increment": fieldData.auto_increment = 1; break;
-                                    case "default": if (!fieldData.default_value) fieldData.default_value = extractDefaultValue(definition); break;
-                                }
-                            }
-                        }
+            // LANGKAH 1: Kumpul semua definisi lajur dan peraturan
+            definitions.forEach((definition, index) => {
+                if (definition.resource === 'column') {
+                    const fieldName = getFieldNameFromAST(definition.column);
+                    let dataType = definition.definition.dataType;
+                    if ((definition.auto_increment || definition.autoincrement) && !dataType) dataType = 'INTEGER';
+                    if (dataType && Array.isArray(definition.definition.suffix)) dataType += ' ' + definition.definition.suffix.join(' ');
+                    if (!dataType) dataType = 'TEXT';
+                    
+                    const fieldData = {
+                        table_id: tableId, field_name: fieldName, caption: fieldName, field_order: index,
+                        data_type: dataType, length: definition.definition.length || null, precision: definition.definition.scale || null,
+                        required: 0, auto_increment: 0, unsigned: 0, zero_fill: 0, primary_key: 0, "unique": 0,
+                        is_indexed: 0, text_area: 0, rich_html: 0, read_only: 0, default_value: null,
+                    };
+                    
+                    if (definition.auto_increment || definition.autoincrement) fieldData.auto_increment = 1;
+                    if (definition.nullable?.type === "not null" && !fieldData.auto_increment) fieldData.required = 1;
+                    if (definition.unsigned) fieldData.unsigned = 1;
+                    if (definition.zerofill) fieldData.zero_fill = 1;
+                    if (definition.default_val) fieldData.default_value = extractDefaultValue(definition.default_val);
+                    if (definition.primary_key === 'primary key') { fieldData.primary_key = 1; fieldData.read_only = 1; }
+                    
+                    (definition.constraints || []).forEach(constraint => {
+                        const type = constraint.definition.constraint_type.toLowerCase();
+                        if (type === "primary key") { fieldData.primary_key = 1; fieldData.read_only = 1; }
+                        if (type === "unique key") fieldData.unique = 1;
+                        if (type === "not null") fieldData.required = 1;
+                    });
+                    fieldDataMap.set(fieldName, fieldData);
+                } else {
+                    tableLevelRules.push(definition);
+                }
+            });
 
-                        if (isColumnUnique) { // ▼▼▼ TAMBAHAN BAHARU ▼▼▼
-                            uniqueColumns.add(extractedFieldName);
-                        } // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
-                        
-                        if (col.primary_key === 'primary key') {
-                            fieldData.primary_key = 1;
-                            fieldData.read_only = 1;
+            // LANGKAH 2: Ubah suai data medan dalam memori berdasarkan peraturan peringkat jadual
+            tableLevelRules.forEach(rule => {
+                const ruleType = rule.constraint_type?.toLowerCase() || rule.keyword;
+                const columns = (rule.definition || []).map(c => getFieldNameFromAST(c));
+                if (columns.length === 0) return;
+
+                if (ruleType === "primary key") {
+                    columns.forEach(fieldName => {
+                        if (fieldDataMap.has(fieldName)) {
+                            fieldDataMap.get(fieldName).primary_key = 1;
+                            fieldDataMap.get(fieldName).read_only = 1;
                         }
-                        db.prepare(`INSERT INTO fields (table_id, field_name, data_type, length, precision, required, auto_increment, unsigned, zero_fill, primary_key, "unique", text_area, rich_html, read_only, default_value, caption, field_order) VALUES (@table_id, @field_name, @data_type, @length, @precision, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @text_area, @rich_html, @read_only, @default_value, @caption, @field_order)`).run(fieldData);
-                        fieldOrder++;
-                    } else if (col.resource === "constraint") {
-                        tableLevelConstraints.push(col);
+                    });
+                } else if (ruleType === "unique key") {
+                    if (columns.length === 1 && fieldDataMap.has(columns[0])) {
+                        fieldDataMap.get(columns[0]).unique = 1;
+                    } else if (columns.length > 1) {
+                        insertConstraintStmt.run(tableId, rule.index || null, 'UNIQUE', JSON.stringify(columns));
+                    }
+                } else if (ruleType === "index" || ruleType === "key") {
+                    if (columns.length === 1 && fieldDataMap.has(columns[0])) {
+                        fieldDataMap.get(columns[0]).is_indexed = 1; // <--- PEMBETULAN UTAMA DI SINI
+                    } else if (columns.length > 1) {
+                        insertConstraintStmt.run(tableId, rule.index || null, 'INDEX', JSON.stringify(columns));
+                    }
+                } else if (ruleType === "foreign key") {
+                    const ref = rule.reference_definition;
+                    if (ref) {
+                        foreignKeysToProcess.push({
+                            childTableName: tableName,
+                            parentTableName: ref.table[0].table,
+                            fkChildField: columns[0],
+                            parentField: getFieldNameFromAST(ref.definition[0]),
+                        });
                     }
                 }
+            });
 
-                for (const constraint of tableLevelConstraints) {
-                    if (constraint.constraint_type) {
-                        const constraintType = constraint.constraint_type.toLowerCase();
-                        if (constraintType === "primary key" && constraint.definition && Array.isArray(constraint.definition)) {
-                            for (const colDef of constraint.definition) {
-                                db.prepare(`UPDATE fields SET primary_key = 1, read_only = 1 WHERE table_id = ? AND field_name = ?`).run(tableId, getFieldNameFromAST({column: colDef.column}));
-                            }
-                        } else if (constraintType === "unique key" && constraint.definition && Array.isArray(constraint.definition)) {
-                             // ▼▼▼ LOGIK DIPERBAIKI ▼▼▼
-                            // Hanya anggap sebagai UNIQUE individu jika ia melibatkan satu lajur sahaja
-                            if (constraint.definition.length === 1) {
-                                const fieldName = getFieldNameFromAST({column: constraint.definition[0].column});
-                                db.prepare(`UPDATE fields SET "unique" = 1 WHERE table_id = ? AND field_name = ?`).run(tableId, fieldName);
-                                uniqueColumns.add(fieldName);
-                            }
-                             // ▲▲▲ TAMAT LOGIK DIPERBAIKI ▲▲▲
-                        } else if (constraintType === "foreign key" && constraint.reference_definition && constraint.definition && constraint.definition.length > 0 && constraint.reference_definition.definition && constraint.reference_definition.definition.length > 0) {
-                            const parentTableName = constraint.reference_definition.table[0].table;
-                            const fkChildField = getFieldNameFromAST({column: constraint.definition[0].column});
-                            const parentField = getFieldNameFromAST({column: constraint.reference_definition.definition[0].column});
-                            foreignKeysToProcess.push({ childTableName: tableName, parentTableName: parentTableName, fkChildField: fkChildField, parentField: parentField, tabTitle: tableName.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) });
-                        }
-                    }
-                }
-                // ▼▼▼ TAMBAHAN BAHARU: Simpan senarai lajur unik untuk jadual ini ▼▼▼
-                tableUniqueColumnsMap[tableName] = uniqueColumns;
-                // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
+            // LANGKAH 3: Masukkan semua medan yang telah diproses ke dalam pangkalan data
+            for (const fieldData of fieldDataMap.values()) {
+                insertFieldStmt.run(fieldData);
             }
         }
-
+        
+        // LANGKAH 4: Tambah medan standard (id, timestamps) jika tiada
         const checkPKStmt = db.prepare('SELECT 1 FROM fields WHERE table_id = ? AND primary_key = 1 LIMIT 1');
         const checkFieldExistsStmt = db.prepare('SELECT 1 FROM fields WHERE table_id = ? AND field_name = ? LIMIT 1');
-        const insertFieldStmt = db.prepare(`
-            INSERT INTO fields (table_id, field_name, caption, data_type, length, primary_key, auto_increment, unsigned, read_only, field_order)
-            VALUES (@table_id, @field_name, @caption, @data_type, @length, @primary_key, @auto_increment, @unsigned, @read_only, @field_order)
-        `);
+        const insertStandardFieldStmt = db.prepare(`INSERT INTO fields (table_id, field_name, caption, data_type, length, primary_key, auto_increment, unsigned, read_only, is_indexed, field_order) VALUES (@table_id, @field_name, @caption, @data_type, @length, @primary_key, @auto_increment, @unsigned, @read_only, @is_indexed, @field_order)`);
 
         for (const tableName in tableMap) {
             const tableId = tableMap[tableName];
-            const hasPK = checkPKStmt.get(tableId);
-            if (!hasPK) {
-                const idFieldExists = checkFieldExistsStmt.get(tableId, 'id');
-                if (!idFieldExists) {
-                    insertFieldStmt.run({
-                        table_id: tableId, field_name: 'id', caption: 'ID', data_type: 'INT',
-                        length: 11, primary_key: 1, auto_increment: 1, unsigned: 1, read_only: 1, field_order: -1
-                    });
+            if (!checkPKStmt.get(tableId)) {
+                if (!checkFieldExistsStmt.get(tableId, 'id')) {
+                    insertStandardFieldStmt.run({ table_id: tableId, field_name: 'id', caption: 'ID', data_type: 'INT', length: 11, primary_key: 1, auto_increment: 1, unsigned: 1, read_only: 1, is_indexed: 0, field_order: -1 });
                     if (!standardizationLog[tableName]) standardizationLog[tableName] = [];
                     standardizationLog[tableName].push('id');
                 }
             }
-
             const requiredTimestamps = ['created_at', 'updated_at', 'deleted_at'];
             const allFields = db.prepare('SELECT field_name FROM fields WHERE table_id = ?').all(tableId);
             const existingFieldNames = new Set(allFields.map(f => f.field_name));
             let lastOrder = allFields.length;
-
             for (const fieldName of requiredTimestamps) {
                 if (!existingFieldNames.has(fieldName)) {
-                    const caption = fieldName.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-                    insertFieldStmt.run({
-                        table_id: tableId, field_name: fieldName, caption: caption, data_type: 'DATETIME',
-                        length: null, primary_key: 0, auto_increment: 0, unsigned: 0, read_only: 0, field_order: lastOrder++
-                    });
+                    insertStandardFieldStmt.run({ table_id: tableId, field_name: fieldName, caption: fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), data_type: 'DATETIME', length: null, primary_key: 0, auto_increment: 0, unsigned: 0, read_only: 0, is_indexed: 0, field_order: lastOrder++ });
                     if (!standardizationLog[tableName]) standardizationLog[tableName] = [];
                     standardizationLog[tableName].push(fieldName);
                 }
             }
         }
 
+        // LANGKAH 5: Proses Foreign Keys untuk mencipta hubungan
         for (const fk of foreignKeysToProcess) {
             const childTableId = tableMap[fk.childTableName];
             const parentTableId = tableMap[fk.parentTableName];
             if (childTableId && parentTableId) {
-                // ▼▼▼ LOGIK UTAMA DIPERBAIKI DI SINI ▼▼▼
-                const uniqueFieldsForChildTable = tableUniqueColumnsMap[fk.childTableName] || new Set();
-                const isUnique = uniqueFieldsForChildTable.has(fk.fkChildField);
+                const childField = db.prepare('SELECT "unique" FROM fields WHERE table_id = ? AND field_name = ?').get(childTableId, fk.fkChildField);
+                const isUnique = childField ? childField.unique === 1 : false;
                 const relationshipType = isUnique ? 'one-to-one' : 'one-to-many';
+                const tabTitle = fk.childTableName.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
 
-                db.prepare(`INSERT INTO parent_child_relationships (parent_table_id, child_table_id, fk_child_field, parent_field, tab_title, relationship_type) VALUES (?, ?, ?, ?, ?, ?)`).run(parentTableId, childTableId, fk.fkChildField, fk.parentField, fk.tabTitle, relationshipType);
-                // ▲▲▲ TAMAT PEMBAIKAN ▲▲▲
-
+                insertRelationshipStmt.run(parentTableId, childTableId, fk.fkChildField, fk.parentField, tabTitle, relationshipType);
                 relationshipsCreated++;
+                
                 let captionField = '';
                 const parentFields = db.prepare('SELECT field_name, primary_key, data_type FROM fields WHERE table_id = ? ORDER BY field_order').all(parentTableId);
                 const nonNumericTypes = ['VARCHAR', 'CHAR', 'TEXT', 'MEDIUMTEXT', 'LONGTEXT', 'DATE', 'DATETIME', 'TIMESTAMP'];
-                const nonNumericField = parentFields.find(f => {
-                    const upperType = f.data_type ? f.data_type.toUpperCase() : '';
-                    return nonNumericTypes.includes(upperType);
-                });
+                const nonNumericField = parentFields.find(f => nonNumericTypes.includes(f.data_type ? f.data_type.toUpperCase() : ''));
+                
                 if (nonNumericField) {
                     captionField = nonNumericField.field_name;
                 } else {
@@ -1159,8 +1084,9 @@ function importSchema(sql, projectId, dialect) {
                         captionField = parentFields[pkIndex + 1].field_name;
                     }
                 }
+                
                 if (captionField) {
-                    db.prepare(`UPDATE fields SET lookup_parent_table = ?, lookup_caption_1 = ? WHERE table_id = ? AND field_name = ?`).run(fk.parentTableName, captionField, childTableId, fk.fkChildField);
+                    updateFieldLookupStmt.run(fk.parentTableName, captionField, childTableId, fk.fkChildField);
                 }
             }
         }
@@ -1170,26 +1096,16 @@ function importSchema(sql, projectId, dialect) {
         const ast = parser.astify(processedSql, { database: parserDialect });
         transaction(ast);
         let finalMessage = `Successfully imported ${tablesCreated} tables and ${relationshipsCreated} relationships!`;
-
         if (Object.keys(standardizationLog).length > 0) {
-            let standardizationNote = "\n\nAdditionally, the following fields were automatically added for standardization purposes required by FiziSysMaker:";
-            for (const tableName in standardizationLog) {
-                standardizationNote += `\n- ${tableName}: ${standardizationLog[tableName].join(', ')}`;
-            }
-            finalMessage += standardizationNote;
+            finalMessage += "\n\nAdditionally, the following fields were automatically added for standardization purposes required by FiziSysMaker:" + 
+                            Object.entries(standardizationLog).map(([tbl, flds]) => `\n- ${tbl}: ${flds.join(', ')}`).join('');
         }
-        
-        return {
-            success: true,
-            message: finalMessage,
-        };
-
+        return { success: true, message: finalMessage };
     } catch (error) {
         console.error("Gagal mengimport SQL:", error);
         return { success: false, message: `SQL Parsing/Import Error: ${error.message}` };
     }
 }
-
 ipcMain.handle("sql:import-file", async (event, { projectId, dialect }) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   const { canceled, filePaths } = await dialog.showOpenDialog(win, {
@@ -1860,7 +1776,7 @@ async function generateFilamentModels(fullSchema, basePath) {
             // 1. & 2. Handle Soft Deletes
             if (projectSettings.data_delete_type === 'soft') {
                 modelContent = modelContent.replace('<<IMPORT_SOFTDELETE>>', 'use Illuminate\\Database\\Eloquent\\SoftDeletes;');
-                modelContent = modelContent.replace('<<TRAIT_SOFTDELETE>>', 'use SoftDeletes;');
+                modelContent = modelContent.replace('<<TRAIT_SOFTDELETE>>', ', SoftDeletes');
             }
 
             // 3. 4. & 5. Handle Auditing
@@ -1890,32 +1806,48 @@ async function generateFilamentModels(fullSchema, basePath) {
                 .join(',');
             modelContent = modelContent.replace('<<ARRAY_EDITABLE_BYUSER_FIELDS>>', fillableFields ? `${fillableFields}\n    ` : '');
 
-            // 10. Ganti Fungsi Hubungan (Eloquent Relationships)
+            // 10. Ganti Fungsi Hubungan (Eloquent Relationships) - DIPERBAIKI
             let relationshipFunctions = [];
-            
-            // Mencari hubungan di mana jadual ini adalah PARENT (hasMany)
+
+            // Mencari hubungan di mana jadual ini adalah PARENT (hasOne / hasMany)
             relationships.filter(r => r.parent_table_name === tableName).forEach(rel => {
                 const childClassName = toPascalCase(rel.child_table_name);
-                const functionName = toPluralCamelCase(rel.child_table_name);
-                relationshipFunctions.push(`
+                const foreignKey = rel.fk_child_field;
+                const localKey = rel.parent_field;
+
+                if (rel.relationship_type === 'one-to-one') {
+                    const functionName = toCamelCase(rel.child_table_name); // Singular
+                    relationshipFunctions.push(`
     public function ${functionName}()
     {
-        return $this->hasMany(${childClassName}::class);
+        return $this->hasOne(${childClassName}::class, '${foreignKey}', '${localKey}');
     }
 `);
+                } else { // Lalai kepada 'one-to-many'
+                    const functionName = toPluralCamelCase(rel.child_table_name); // Plural
+                    relationshipFunctions.push(`
+    public function ${functionName}()
+    {
+        return $this->hasMany(${childClassName}::class, '${foreignKey}', '${localKey}');
+    }
+`);
+                }
             });
 
             // Mencari hubungan di mana jadual ini adalah CHILD (belongsTo)
             relationships.filter(r => r.child_table_name === tableName).forEach(rel => {
                 const parentClassName = toPascalCase(rel.parent_table_name);
                 const functionName = toCamelCase(rel.parent_table_name);
+                const foreignKey = rel.fk_child_field; // Kunci di jadual SEMASA
+                const ownerKey = rel.parent_field;    // Kunci di jadual INDUK
                 relationshipFunctions.push(`
     public function ${functionName}()
     {
-        return $this->belongsTo(${parentClassName}::class, '${rel.fk_child_field}', '${rel.parent_field}');
+        return $this->belongsTo(${parentClassName}::class, '${foreignKey}', '${ownerKey}');
     }
 `);
             });
+
             modelContent = modelContent.replace('<<RELATIONSHIP_FUNCTIONS>>', relationshipFunctions.join(''));
 
             // Bersihkan mana-mana placeholder yang tidak diganti
@@ -2047,5 +1979,86 @@ ipcMain.handle('run-composer', async (event, projectPath) => {
         return await runComposerInstall(projectPath);
     } catch (error) {
         return false;
+    }
+});
+
+// ADD THESE TWO NEW HANDLERS ANYWHERE INSIDE: src/main.js
+
+ipcMain.handle('table:save-constraint', async (event, { table_id, constraint_type, columns }) => {
+    if (!table_id || !constraint_type || !columns || columns.length === 0) {
+        return { success: false, message: 'Invalid data provided for constraint.' };
+    }
+
+    try {
+        const transaction = db.transaction(() => {
+            // 1. Simpan definisi kekangan baharu
+            const columnsJson = JSON.stringify(columns);
+            db.prepare(
+                `INSERT INTO table_constraints (table_id, constraint_type, columns) VALUES (?, ?, ?)`
+            ).run(table_id, constraint_type, columnsJson);
+
+            // 2. Kemas kini status 'unique' untuk setiap medan yang terlibat
+            const updateStmt = db.prepare(`UPDATE fields SET "unique" = 1 WHERE table_id = ? AND field_name = ?`);
+            for (const fieldName of columns) {
+                updateStmt.run(table_id, fieldName);
+            }
+        });
+
+        transaction();
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal menyimpan kekangan jadual:", error);
+        return { success: false, message: error.message };
+    }
+});
+
+ipcMain.handle('table:delete-constraint', async (event, { constraint_id }) => {
+    if (!constraint_id) {
+        return { success: false, message: 'Constraint ID is required.' };
+    }
+    
+    try {
+        const transaction = db.transaction(() => {
+            // 1. Dapatkan maklumat kekangan sebelum memadam
+            const constraint = db.prepare('SELECT * FROM table_constraints WHERE constraint_id = ?').get(constraint_id);
+            if (!constraint) {
+                throw new Error('Constraint not found.');
+            }
+            const { table_id, columns: columnsJson } = constraint;
+            const columns = JSON.parse(columnsJson);
+
+            // 2. Padam kekangan itu sendiri
+            db.prepare('DELETE FROM table_constraints WHERE constraint_id = ?').run(constraint_id);
+
+            // 3. Semak semula setiap medan yang terlibat
+            const checkStmt = db.prepare('SELECT 1 FROM table_constraints WHERE table_id = ? AND columns LIKE ? LIMIT 1');
+            const updateStmt = db.prepare(`UPDATE fields SET "unique" = 0 WHERE table_id = ? AND field_name = ?`);
+            
+            for (const fieldName of columns) {
+                // Semak jika medan ini masih sebahagian daripada KEKANGAN UNIK LAIN
+                const isStillUnique = checkStmt.get(table_id, `%"${fieldName}"%`);
+                
+                // Jika tidak, buang status 'unique' daripadanya
+                if (!isStillUnique) {
+                    updateStmt.run(table_id, fieldName);
+                }
+            }
+        });
+
+        transaction();
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal memadam kekangan jadual:", error);
+        return { success: false, message: error.message };
+    }
+});
+
+ipcMain.handle('field:update-index', async (event, { field_id, is_indexed }) => {
+    try {
+        db.prepare('UPDATE fields SET is_indexed = ? WHERE field_id = ?').run(is_indexed ? 1 : 0, field_id);
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal mengemas kini indeks medan:", error);
+        return { success: false, message: error.message };
     }
 });

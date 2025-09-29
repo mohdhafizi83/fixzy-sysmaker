@@ -77,7 +77,7 @@ CREATE TABLE pendaftaran_kursus (
 -- ---------------------------------
 CREATE TABLE pengesahan_pendaftaran (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    pendaftaran_id INTEGER NOT NULL,
+    pendaftaran_id INTEGER NOT NULL UNIQUE,
     user_id INTEGER NOT NULL, -- Merujuk kepada jadual 'pentadbir'
     status TEXT NOT NULL, -- 'Approved' atau 'Disapproved'
     catatan TEXT DEFAULT NULL, -- Ruang untuk admin memberi sebab/komen

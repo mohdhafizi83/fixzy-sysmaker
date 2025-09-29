@@ -91,6 +91,7 @@ CREATE TABLE `pengesahan_pendaftaran` (
   `catatan` TEXT DEFAULT NULL, -- Ruang untuk admin memberi sebab/komen
   `tarikh_tindakan` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `pendaftaran_id_unique` (`pendaftaran_id`),
   INDEX `idx_pendaftaran` (`pendaftaran_id`),
   INDEX `idx_user` (`user_id`),
   CONSTRAINT `fk_pengesahan_pendaftaran` FOREIGN KEY (`pendaftaran_id`) REFERENCES `pendaftaran_kursus` (`id`) ON DELETE CASCADE ON UPDATE CASCADE

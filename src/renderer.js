@@ -46,7 +46,10 @@ import {
 	initializeAuthRadioLogic,
 	showImportErrorGuide,
 	initializeCustomViews,
-	populateParentChildTab	
+	populateParentChildTab,
+    initializeUniqueFieldHandler,
+    initializeConstraintsTabHandlers,
+    initializeIndexCheckboxHandler	
 } from './js/uiHandlers.js';
 import { initializeWorkflowBuilder } from './js/workflowBuilder.js';
 
@@ -488,6 +491,9 @@ window.addEventListener('beforeunload', (event) => {
     initializeProjectHookBuilder();
     initializeCalculationBuilder();
 	initializeAlgorithmBuilder();
+	initializeUniqueFieldHandler();
+    initializeConstraintsTabHandlers();
+    initializeIndexCheckboxHandler();
 	
 	
 	initializeProjectSaveHandlers();

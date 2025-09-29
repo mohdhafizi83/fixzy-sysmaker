@@ -107,6 +107,7 @@ CREATE TABLE fields (
     rich_html                    INTEGER DEFAULT 0,
     auto_increment               INTEGER DEFAULT 0,
     "unique"                     INTEGER DEFAULT 0,
+    is_indexed                   INTEGER DEFAULT 0,
     show_sum                     INTEGER DEFAULT 0,
     text_area                    INTEGER DEFAULT 0,
     unsigned                     INTEGER DEFAULT 0,
@@ -245,7 +246,17 @@ CREATE TABLE custom_view_fields (
     FOREIGN KEY (custom_view_id) REFERENCES custom_views(custom_view_id) ON DELETE CASCADE
 );
 
--- 10. Data Awal untuk Tetapan FiziSysMaker
+-- 10. Jadual untuk menyimpan definisi kekangan peringkat jadual
+CREATE TABLE table_constraints (
+    constraint_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+    table_id        INTEGER NOT NULL,
+    constraint_name TEXT,
+    constraint_type TEXT NOT NULL, -- 'UNIQUE' atau 'PRIMARY KEY'
+    columns         TEXT NOT NULL, -- JSON array of column names
+    FOREIGN KEY (table_id) REFERENCES tables(table_id) ON DELETE CASCADE
+);
+
+-- 11. Data Awal untuk Tetapan FiziSysMaker
 INSERT INTO fizisys_settings (setting_name, setting_value) VALUES
 ('check_updates', '1'),
 ('autosave_interval', '15'),

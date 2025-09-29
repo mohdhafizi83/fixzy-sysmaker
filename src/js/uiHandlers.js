@@ -3316,6 +3316,7 @@ export function populateTableSettings(tableName) {
     populateFocusFieldDropdown(tableName);
     populateRecordOwnerDropdown(tableName);
 	populateCustomViewsTab(tableName);
+    populateConstraintsTab(tableName);
 		
     const tableData = jsonData.database.table[tableName];
     if (!tableData) {
@@ -3395,6 +3396,8 @@ function populateParentTableDropdown(currentTableName) {
     });
 }
 
+// FIND AND REPLACE this entire function in your src/js/uiHandlers.js file
+
 export function populateFieldSettings(tableName, fieldName) {
 	
     const allFieldPageControls = document.querySelectorAll(
@@ -3434,6 +3437,9 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-rich-html', fieldData.rich_html);
     setElementValue('fld-auto-increment', fieldData.auto_increment);
     setElementValue('fld-unique', fieldData.unique);
+    // ▼▼▼ BARIS KOD BAHARU DI SINI ▼▼▼
+    setElementValue('fld-is-indexed', fieldData.is_indexed);
+    // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
     setElementValue('fld-show-sum', fieldData.show_sum);
     setElementValue('fld-text-area', fieldData.text_area);
     setElementValue('fld-unsigned', fieldData.unsigned);
@@ -6084,4 +6090,238 @@ export function applyFormLock(pageType, isLocked, message = '') {
         overlay.classList.add('hidden');
         mainContent.classList.remove('no-scroll'); // <-- Buka skrol
     }
+}
+
+export function initializeUniqueFieldHandler() {
+    const uniqueCheckbox = document.getElementById('fld-unique');
+    if (!uniqueCheckbox) return;
+
+    let previousValue = uniqueCheckbox.checked;
+
+    uniqueCheckbox.addEventListener('focus', () => {
+        previousValue = uniqueCheckbox.checked;
+    });
+
+    uniqueCheckbox.addEventListener('change', () => {
+        if (isPopulatingData) return;
+
+        const [tableName, fieldName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
+        const tableData = jsonData.database.table[tableName];
+        if (!tableData) return;
+        
+        const isNowChecked = uniqueCheckbox.checked;
+
+        // Cari hubungan yang relevan
+        const relationship = jsonData.database.relationships.find(
+            rel => rel.child_table_name === tableName && rel.fk_child_field === fieldName
+        );
+
+        // Cari semua kekangan UNIK yang melibatkan medan ini
+        const relevantConstraints = (tableData.constraints || []).filter(
+            c => c.constraint_type === 'UNIQUE' && JSON.parse(c.columns).includes(fieldName)
+        );
+
+        // Cari kekangan UNIK tunggal (bukan komposit) untuk medan ini
+        const singleUniqueConstraint = relevantConstraints.find(c => JSON.parse(c.columns).length === 1);
+
+        let action = 'doNothing';
+        let message = '';
+        let newType = '';
+
+        if (isNowChecked) { // Pengguna MENANDA kotak
+            if (singleUniqueConstraint) {
+                // Tiada tindakan, ia memang sudah unik secara individu
+                action = 'doNothing';
+            } else if (relevantConstraints.length > 0) {
+                // Ia sebahagian daripada kekangan komposit
+                action = 'revert';
+                message = `Medan ini sudah pun menjadi sebahagian daripada kekangan unik komposit. Menjadikannya unik secara individu mungkin tidak perlu.\n\nPerubahan dibatalkan.`;
+            } else if (relationship) {
+                // Ia adalah FK dan tidak unik, jadi kita boleh tukar ke 1-to-1
+                action = 'confirmAndUpdate';
+                newType = 'one-to-one';
+                message = `Anda pasti mahu menukar hubungan dengan jadual '${relationship.parent_table_name}' kepada 'one-to-one'?`;
+            }
+        } else { // Pengguna MEMBUANG TANDA kotak
+            if (singleUniqueConstraint && relationship) {
+                // Ia adalah FK dan unik secara individu, jadi kita boleh tukar ke 1-to-many
+                action = 'confirmAndUpdate';
+                newType = 'one-to-many';
+                message = `Anda pasti mahu menukar hubungan dengan jadual '${relationship.parent_table_name}' kepada 'one-to-many'?`;
+            } else if (relevantConstraints.length > 0) {
+                // Ia sebahagian daripada kekangan komposit, tanda tidak boleh dibuang
+                action = 'revert';
+                message = `Medan ini adalah sebahagian daripada kekangan unik komposit. Untuk membuang status uniknya, anda perlu mengubah suai definisi jadual.\n\nPerubahan dibatalkan.`;
+            }
+        }
+
+        // Laksanakan tindakan berdasarkan analisis
+        switch (action) {
+            case 'confirmAndUpdate':
+                showCustomDialog({
+                    title: "Pengesahan Perubahan Hubungan",
+                    message: message,
+                    showCancelButton: true,
+                    onOk: () => {
+                        SaveManager.addToQueue('relationships', relationship.relationship_id, {
+                            relationship_type: newType
+                        });
+                        previousValue = isNowChecked; // Sahkan perubahan
+                    },
+                    onCancel: () => {
+                        uniqueCheckbox.checked = previousValue; // Batal & kembalikan
+                    }
+                });
+                break;
+            case 'revert':
+                showCustomDialog({ title: "Makluman", message: message });
+                uniqueCheckbox.checked = previousValue; // Kembalikan secara automatik
+                break;
+            case 'doNothing':
+            default:
+                previousValue = isNowChecked; // Hanya kemas kini nilai untuk rujukan seterusnya
+                break;
+        }
+    });
+}
+
+export function initializeIndexCheckboxHandler() {
+    const indexCheckbox = document.getElementById('fld-is-indexed');
+    if (!indexCheckbox) return;
+
+    indexCheckbox.addEventListener('change', () => {
+        if (isPopulatingData) return;
+
+        const [tableName, fieldName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
+        const fieldData = jsonData.database.table[tableName]?.fields[fieldName];
+        if (!fieldData) return;
+
+        window.electronAPI.updateFieldIndex({
+            field_id: fieldData.field_id,
+            is_indexed: indexCheckbox.checked
+        });
+    });
+}
+
+/**
+ * Mengisi kandungan tab "Constraints" dengan senarai kekangan sedia ada.
+ * @param {string} tableName - Nama jadual semasa.
+ */
+function populateConstraintsTab(tableName) {
+    const container = document.getElementById('constraints-list-container');
+    if (!container) return;
+
+    // Now this includes both UNIQUE and INDEX types
+    const constraints = jsonData.database.table[tableName]?.constraints || [];
+
+    if (constraints.length === 0) {
+        container.innerHTML = `<div class="empty-state-label"><p>No composite rules defined for this table.</p><span>Use the field settings for individual rules.</span></div>`;
+        return;
+    }
+
+    container.innerHTML = constraints.map(constraint => {
+        const columns = JSON.parse(constraint.columns).join(', ');
+        const isUnique = constraint.constraint_type === 'UNIQUE';
+        return `
+        <div class="cv-list-item">
+            <div class="cv-info">
+                <i class="fas ${isUnique ? 'fa-key' : 'fa-list-ol'}"></i>
+                <span><strong>${constraint.constraint_type}</strong> (${columns})</span>
+            </div>
+            <div class="cv-actions">
+                <button class="btn cv-delete-btn delete-constraint-btn" data-constraint-id="${constraint.constraint_id}">
+                    <i class="fas fa-trash-alt"></i> Delete
+                </button>
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+
+/**
+ * Memasang semua event listener untuk ciri pengurusan kekangan.
+ */
+export function initializeConstraintsTabHandlers() {
+    const tableSettingsPage = document.getElementById('table-settings-page');
+    const modal = document.getElementById('add-constraint-modal');
+    if (!tableSettingsPage || !modal) return;
+    
+    const elements = {
+        typeSelect: document.getElementById('constraint-type-select'),
+        fieldsSelect: document.getElementById('constraint-fields-select'),
+        okBtn: document.getElementById('add-constraint-modal-ok'),
+        cancelBtn: document.getElementById('add-constraint-modal-cancel'),
+        closeBtn: document.getElementById('add-constraint-modal-close'),
+    };
+
+    const closeModal = () => modal.classList.add('hidden');
+    
+    tableSettingsPage.addEventListener('click', e => {
+        const currentTableName = document.querySelector('#table-settings-page .table-name').textContent;
+        if (!currentTableName) return;
+
+        if (e.target.closest('#btn-add-constraint')) {
+            elements.fieldsSelect.innerHTML = '';
+            const fields = jsonData.database.table[currentTableName]?.fields || {};
+            for (const fieldName in fields) {
+                elements.fieldsSelect.add(new Option(fieldName, fieldName));
+            }
+            elements.okBtn.disabled = true; // Disable OK button initially
+            modal.classList.remove('hidden');
+        }
+
+        const deleteBtn = e.target.closest('.delete-constraint-btn');
+        if (deleteBtn) {
+            const constraintId = deleteBtn.dataset.constraintId;
+            showCustomDialog({
+                title: "Confirm Deletion",
+                message: "Are you sure you want to delete this composite rule?",
+                showCancelButton: true,
+                onOk: async () => {
+                    const result = await window.electronAPI.deleteTableConstraint({ constraint_id: constraintId });
+                    if (result.success) {
+                        await loadProjectData(activeProject);
+                        populateConstraintsTab(currentTableName);
+                    } else {
+                        showCustomDialog({ title: "Error", message: `Failed to delete rule: ${result.message}` });
+                    }
+                }
+            });
+        }
+    });
+
+    elements.closeBtn.addEventListener('click', closeModal);
+    elements.cancelBtn.addEventListener('click', closeModal);
+
+    // Validation Rule: Enable OK button only if 2 or more fields are selected
+    elements.fieldsSelect.addEventListener('change', () => {
+        elements.okBtn.disabled = elements.fieldsSelect.selectedOptions.length < 2;
+    });
+
+    elements.okBtn.addEventListener('click', async () => {
+        const selectedFields = Array.from(elements.fieldsSelect.selectedOptions).map(opt => opt.value);
+        
+        // This check is a safeguard, but the disabled state should prevent this.
+        if (selectedFields.length < 2) {
+            showCustomDialog({ title: "Input Required", message: "Please select at least two fields for a composite rule." });
+            return;
+        }
+
+        const tableName = document.querySelector('#table-settings-page .table-name').textContent;
+        const tableId = jsonData.database.table[tableName]?.table_id;
+        
+        const result = await window.electronAPI.saveTableConstraint({
+            table_id: tableId,
+            constraint_type: elements.typeSelect.value, // Now sends UNIQUE or INDEX
+            columns: selectedFields
+        });
+
+        if (result.success) {
+            closeModal();
+            await loadProjectData(activeProject);
+            populateConstraintsTab(tableName);
+        } else {
+            showCustomDialog({ title: "Error", message: `Failed to save rule: ${result.message}` });
+        }
+    });
 }

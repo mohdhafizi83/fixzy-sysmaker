@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updateProject: (data) => ipcRenderer.invoke('project:update', data),
   updateTable: (data) => ipcRenderer.invoke('table:update', data),
   updateField: (data) => ipcRenderer.invoke('field:update', data),
+  updateFieldIndex: (data) => ipcRenderer.invoke('field:update-index', data),
   updateRelationship: (data) => ipcRenderer.invoke('relationship:update', data),
   upsertRelationship: (data) => ipcRenderer.invoke('relationship:upsert', data),
   
@@ -44,6 +45,9 @@ updateIndividualMenuOrder: (data) => ipcRenderer.invoke('menu:update-individual-
 
   saveCustomView: (data) => ipcRenderer.invoke('custom-view:save', data),
   deleteCustomView: (viewId) => ipcRenderer.invoke('custom-view:delete', viewId),
+
+  saveTableConstraint: (data) => ipcRenderer.invoke('table:save-constraint', data),
+  deleteTableConstraint: (data) => ipcRenderer.invoke('table:delete-constraint', data),
 
 // =================================================================
 // Generator functions will be put here

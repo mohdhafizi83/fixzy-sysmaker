@@ -1038,6 +1038,7 @@
             <button class="tab-link active" data-tab="parent-tab-table-view" id="tbl-tab-tableview" name="tbl-tab-tableview">Table view</button>
             <button class="tab-link" data-tab="parent-tab-detail-view" id="tbl-tab-detailview" name="tbl-tab-detailview">Detail View</button>
 			<button class="tab-link" data-tab="tab-custom-views" id="tbl-tab-customview" name="tbl-tab-customview">Custom Views</button>
+    <button class="tab-link" data-tab="tab-constraints" id="tbl-tab-constraints" name="tbl-tab-constraints">Constraints & Indexes</button>
         </div>
 
         <div class="tabs-content">
@@ -1321,8 +1322,48 @@
             </div>
         </div>			
 			
-			
-			
+<div id="tab-constraints" class="tab-pane">
+            <div class="card">
+                <div class="card-body">
+                    <div class="custom-view-header">
+                        <h4>Table Constraints</h4>
+                        <button id="btn-add-constraint" class="btn btn-primary"><i class="fas fa-plus"></i> Add Constraint</button>
+                    </div>
+                    <p class="helper-text">
+                        Manage table-level constraints like composite UNIQUE keys.
+                    </p>
+                    <div id="constraints-list-container">
+                        </div>
+                </div>
+            </div>
+
+<div id="add-constraint-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="add-constraint-modal-title">Add New Table Rule</h3>
+            <button id="add-constraint-modal-close" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="constraint-type-select">Rule Type</label>
+                <select id="constraint-type-select">
+                    <option value="UNIQUE" selected>UNIQUE (Composite)</option>
+                    <option value="INDEX">INDEX (Composite)</option>
+                </select>
+                </div>
+            <div class="form-group">
+                <label for="constraint-fields-select">Select two or more fields</label>
+                <select id="constraint-fields-select" multiple style="height: 200px;"></select>
+                <p class="helper-text" style="margin-top: 0.5rem; margin-bottom: 0;">Use Ctrl/Cmd + Click to select multiple fields.</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="add-constraint-modal-cancel">Cancel</button>
+            <button class="btn btn-primary" id="add-constraint-modal-ok">Add Rule</button>
+        </div>
+    </div>
+</div>			
+</div>			
         </div>
     </div>
 </div>
@@ -1444,6 +1485,7 @@
         <label class="checkbox-label"><input type="checkbox" id="fld-primary-key" name="fld-primary-key"> Primary Key</label>
         <label class="checkbox-label"><input type="checkbox" id="fld-auto-increment" name="fld-auto-increment"> Auto Increment</label>
         <label class="checkbox-label"><input type="checkbox" id="fld-unique" name="fld-unique"> Unique</label>
+        <label class="checkbox-label"><input type="checkbox" id="fld-is-indexed" name="fld-is-indexed"> Index</label>
 
 
 <label class="checkbox-label">

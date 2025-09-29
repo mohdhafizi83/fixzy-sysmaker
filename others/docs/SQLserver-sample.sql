@@ -89,6 +89,7 @@ CREATE TABLE pengesahan_pendaftaran (
     catatan NVARCHAR(MAX) DEFAULT NULL, -- Ruang untuk admin memberi sebab/komen
     tarikh_tindakan DATETIME2 NOT NULL DEFAULT GETDATE(),
     CONSTRAINT PK_pengesahan_pendaftaran PRIMARY KEY (id),
+    CONSTRAINT UQ_pengesahan_pendaftaran_pendaftaran_id UNIQUE (pendaftaran_id),
     CONSTRAINT FK_pengesahan_pendaftaran FOREIGN KEY (pendaftaran_id) REFERENCES pendaftaran_kursus(id) ON DELETE CASCADE ON UPDATE CASCADE
     -- CONSTRAINT FK_pengesahan_admin FOREIGN KEY (user_id) REFERENCES [user](id) ON DELETE NO ACTION ON UPDATE CASCADE
 );
