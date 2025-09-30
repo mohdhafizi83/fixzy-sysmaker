@@ -1852,50 +1852,157 @@ async function generateFilamentModels(fullSchema, basePath) {
     }
 }
 
+// ADD THIS NEW FUNCTION IN: main.js
+
+/**
+ * Menjana fail Model User.php Laravel Filament secara spesifik.
+ * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.
+ * @param {string} basePath - Laluan asas ke folder 'generated'.
+ */
+async function generateFilamentUserModel(fullSchema, basePath) {
+    try {
+        const projectSettings = fullSchema.project;
+        const relationships = fullSchema.database.relationships;
+        const userData = fullSchema.database.table.users;
+
+        // Hentikan jika skema jadual 'users' tidak wujud
+        if (!userData) {
+            console.warn("Skema untuk jadual 'users' tidak ditemui. Melangkau penjanaan User.php.");
+            return { success: true, message: 'User model skipped as users table was not found.' };
+        }
+
+        // Tentukan laluan templat dan pastikan ia wujud
+        const templatePath = path.join(__dirname, 'templates/php/filament/app/Models/User.template');
+        if (!fs.existsSync(templatePath)) {
+            throw new Error(`Template file not found at: ${templatePath}`);
+        }
+        const templateContent = fs.readFileSync(templatePath, 'utf8');
+        let userModelContent = templateContent;
+
+        // 1. & 2. Handle Soft Deletes
+        if (projectSettings.data_delete_type === 'soft') {
+            userModelContent = userModelContent.replace('<<IMPORT_SOFTDELETE>>', 'use Illuminate\\Database\\Eloquent\\SoftDeletes;');
+            userModelContent = userModelContent.replace('<<TRAIT_SOFTDELETE>>', ', SoftDeletes');
+        }
+
+        // 3, 4, & 5. Handle Auditing
+        if (projectSettings.module_log_audit === 1) {
+            const importAudit = `use OwenIt\\Auditing\\Contracts\\Auditable;\nuse OwenIt\\Auditing\\Auditable as AuditableTrait;`;
+            userModelContent = userModelContent.replace('<<IMPORT_AUDIT>>', importAudit);
+            userModelContent = userModelContent.replace('<<CLASS_IMPLEMENTS_AUDIT>>', 'implements Auditable');
+            userModelContent = userModelContent.replace('<<TRAIT_AUDIT>>', ', AuditableTrait');
+        }
+
+        // Handle Authorization (Spatie/Permission/Shield)
+        if (projectSettings.module_authorization === 1) {
+            userModelContent = userModelContent.replace('<<IMPORT_SHIELD>>', 'use Spatie\\Permission\\Traits\\HasRoles;');
+            userModelContent = userModelContent.replace('<<TRAIT_SHIELD>>', 'HasRoles');
+        }
+
+        // 10. Ganti Fungsi Hubungan (Eloquent Relationships)
+        let relationshipFunctions = [];
+        const tableName = 'users';
+
+        // Mencari hubungan di mana 'users' adalah PARENT (hasOne / hasMany)
+        relationships.filter(r => r.parent_table_name === tableName).forEach(rel => {
+            const childClassName = toPascalCase(rel.child_table_name);
+            const foreignKey = rel.fk_child_field;
+            const localKey = rel.parent_field;
+
+            if (rel.relationship_type === 'one-to-one') {
+                const functionName = toCamelCase(rel.child_table_name);
+                relationshipFunctions.push(`
+    public function ${functionName}()
+    {
+        return $this->hasOne(${childClassName}::class, '${foreignKey}', '${localKey}');
+    }
+`);
+            } else {
+                const functionName = toPluralCamelCase(rel.child_table_name);
+                relationshipFunctions.push(`
+    public function ${functionName}()
+    {
+        return $this->hasMany(${childClassName}::class, '${foreignKey}', '${localKey}');
+    }
+`);
+            }
+        });
+
+        // Mencari hubungan di mana 'users' adalah CHILD (belongsTo)
+        relationships.filter(r => r.child_table_name === tableName).forEach(rel => {
+            const parentClassName = toPascalCase(rel.parent_table_name);
+            const functionName = toCamelCase(rel.parent_table_name);
+            relationshipFunctions.push(`
+    public function ${functionName}()
+    {
+        return $this->belongsTo(${parentClassName}::class, '${rel.fk_child_field}', '${rel.parent_field}');
+    }
+`);
+        });
+
+        userModelContent = userModelContent.replace('<<RELATIONSHIP_FUNCTIONS>>', relationshipFunctions.join(''));
+
+        // Bersihkan mana-mana placeholder yang tidak diganti
+        userModelContent = userModelContent.replace(/<<.*?>>/g, '');
+
+        // 11. Jana fail output
+        const outputFilePath = path.join(basePath, 'app', 'Models', 'User.php');
+        fs.writeFileSync(outputFilePath, userModelContent);
+        console.log(`User Model generated: ${outputFilePath}`);
+        
+        return { success: true, message: 'User Model generated successfully.' };
+
+    } catch (error) {
+        console.error('Failed to generate Filament User Model:', error);
+        return { success: false, message: error.message };
+    }
+}
+
 // FIND AND REPLACE THIS ENTIRE HANDLER IN: main.js
 
 ipcMain.handle('generate-app', async () => {
     const win = BrowserWindow.getFocusedWindow();
     try {
-        // 1. Dapatkan projek yang sedang aktif
         const activeProject = await db.prepare("SELECT * FROM projects WHERE is_active = 1 LIMIT 1").get();
         if (!activeProject) {
             throw new Error("No active project found.");
         }
 
-        // 2. Dapatkan keseluruhan skema pangkalan data yang tersusun
         const fullSchema = await getFullProjectSchema(activeProject.project_id);
         if (!fullSchema) {
             throw new Error("Failed to retrieve the full project schema.");
         }
         
-        // Hantar mesej ke UI untuk paparkan overlay
         win?.webContents.send('show-overlay', { message: 'Generating application files...' });
 
-        // 3. Dapatkan laluan folder output utama
         const generatedAppPath = getGeneratedFolderPath();
-        const filamentPath = path.join(generatedAppPath, 'filament_app'); // Cipta subfolder khusus
+        const filamentPath = path.join(generatedAppPath, 'filament_app');
 
-        // 4. Panggil fungsi penjana untuk Models
+        // 1. Panggil fungsi penjana untuk semua model biasa (kecuali User)
         const modelResult = await generateFilamentModels(fullSchema, filamentPath);
         if (!modelResult.success) {
             throw new Error(`Model generation failed: ${modelResult.message}`);
         }
 
-        // (Di sini anda akan tambah panggilan untuk penjana lain seperti Migrations, Resources, dll. pada masa hadapan)
+        // ▼▼▼ PENAMBAHAN BAHARU DI SINI ▼▼▼
+        // 2. Panggil fungsi penjana KHAS untuk model User
+        const userModelResult = await generateFilamentUserModel(fullSchema, filamentPath);
+        if (!userModelResult.success) {
+            throw new Error(`User Model generation failed: ${userModelResult.message}`);
+        }
+        // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
         
         console.log(`All files generated successfully in: ${filamentPath}`);
 
         return { 
             success: true, 
-            message: 'Application models generated successfully!',
+            message: 'Application models (including User model) generated successfully!',
             folderPath: filamentPath 
         };
     } catch (error) {
         console.error('Gagal menjana aplikasi:', error);
         return { success: false, message: error.message };
     } finally {
-        // Hantar mesej ke UI untuk sembunyikan overlay
         win?.webContents.send('hide-overlay');
     }
 });
