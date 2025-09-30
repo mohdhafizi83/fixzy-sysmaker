@@ -818,46 +818,51 @@ ipcMain.handle("tables:check-exists", async (event, projectId) => {
  * @param {string} sqlContent - Kandungan penuh skrip SQL yang akan diimport.
  * @returns {Promise<boolean>} - Mengembalikan 'true' jika import boleh diteruskan, 'false' jika dibatalkan.
  */
+// FIND AND REPLACE this entire function in your src/main.js file
+
 async function handleImportPreflight(win, projectId, sqlContent) {
   const existingTables = db.prepare('SELECT table_name FROM tables WHERE project_id = ?').all(projectId);
 
   if (existingTables.length === 0) {
-    return true; // Tiada jadual, teruskan import tanpa amaran.
+    return true; // No tables, proceed without warning.
   }
 
-  // Semak jika SQL mengandungi definisi untuk jadual 'users'. Guna regex yang tidak sensitif huruf.
   const sqlDefinesUsers = /CREATE\s+TABLE\s+[`'"]?users[`'"]?/i.test(sqlContent);
-
-  let message = "This project already has tables. Importing a new schema will delete existing data.\n\n";
+  let detailMessage = "This project already has tables. Importing a new schema will delete existing data.\n\n";
   const tablesToDelete = [];
 
   if (sqlDefinesUsers) {
-    message += "The imported SQL defines a 'users' table. ALL existing tables, including the current 'users' table, will be DELETED. Continue?";
+    detailMessage += "The imported SQL defines a 'users' table. ALL existing tables, including the current 'users' table, will be DELETED. Continue?";
     tablesToDelete.push(...existingTables.map(t => t.table_name));
   } else {
-    message += "The existing 'users' table will be preserved. All OTHER tables will be DELETED. Continue?";
+    detailMessage += "The existing 'users' table will be preserved. All OTHER tables will be DELETED. Continue?";
     tablesToDelete.push(...existingTables.filter(t => t.table_name !== 'users').map(t => t.table_name));
   }
 
   if (tablesToDelete.length === 0) {
-      // Tiada apa-apa untuk dipadam (mungkin hanya ada jadual 'users' dan SQL tidak mendefinisikannya)
       return true;
   }
 
-  const { response } = await dialog.showMessageBox(win, {
-    type: 'warning',
-    buttons: ['OK', 'Cancel'],
-    defaultId: 0,
-    title: 'Confirm Import',
-    message: 'Warning: Overwrite Existing Schema?',
-    detail: message,
+  // ▼▼▼ MULA PERUBAHAN: Gantikan dialog natif dengan sistem modal custom ▼▼▼
+  const userConfirmed = await new Promise(resolve => {
+      ipcMain.once('custom-dialog-response', (event, response) => {
+          resolve(response); // response will be true for OK, false for Cancel
+      });
+      win.webContents.send('show-custom-dialog', {
+          type: 'warning',
+          buttons: ['OK', 'Cancel'],
+          title: 'Confirm Import',
+          message: 'Warning: Overwrite Existing Schema?',
+          detail: detailMessage,
+      });
   });
 
-  if (response === 1) { // Pengguna klik 'Cancel'
+  if (!userConfirmed) { // User clicked 'Cancel' or closed the modal
     return false;
   }
+  // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
 
-  // Teruskan dengan pemadaman
+  // Proceed with deletion
   try {
     const deleteTransaction = db.transaction(() => {
       const getTableId = db.prepare('SELECT table_id FROM tables WHERE project_id = ? AND table_name = ?');
@@ -868,7 +873,7 @@ async function handleImportPreflight(win, projectId, sqlContent) {
         const table = getTableId.get(projectId, tableName);
         if (table) {
           deleteMenuItem.run(table.table_id);
-          deleteTable.run(table.table_id); // ON DELETE CASCADE akan menguruskan medan
+          deleteTable.run(table.table_id);
         }
       }
     });
@@ -876,12 +881,10 @@ async function handleImportPreflight(win, projectId, sqlContent) {
     return true;
   } catch (error) {
     console.error("Gagal memadam skema lama:", error);
-    dialog.showErrorBox("Deletion Failed", `An error occurred while deleting the old schema: ${error.message}`);
+    // Since we can't use the native dialog easily here, we'll rely on console logs for this specific error
     return false;
   }
 }
-
-// FIND AND REPLACE this entire function in your src/main.js file
 
 function importSchema(sql, projectId, dialect) {
 

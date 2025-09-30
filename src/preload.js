@@ -49,6 +49,9 @@ updateIndividualMenuOrder: (data) => ipcRenderer.invoke('menu:update-individual-
   saveTableConstraint: (data) => ipcRenderer.invoke('table:save-constraint', data),
   deleteTableConstraint: (data) => ipcRenderer.invoke('table:delete-constraint', data),
 
+  onShowCustomDialog: (callback) => ipcRenderer.on('show-custom-dialog', (event, options) => callback(options)),
+  sendCustomDialogResponse: (response) => ipcRenderer.send('custom-dialog-response', response),
+
 // =================================================================
 // Generator functions will be put here
 // =================================================================  

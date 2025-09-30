@@ -665,6 +665,18 @@ const generateAppBtn = document.getElementById('app-generate_app');
             }
         });
     }
+    
+// ADD THIS ENTIRE BLOCK in src/renderer.js inside the DOMContentLoaded listener
+
+    // Listener for custom dialog requests from the main process
+    window.electronAPI.onShowCustomDialog(async (options) => {
+        const result = await showCustomDialog({
+            title: options.message, // Map native 'message' to our modal's 'title'
+            message: options.detail,  // Map native 'detail' to our modal's 'message'
+            showCancelButton: (options.buttons && options.buttons.length > 1),
+        });
+        window.electronAPI.sendCustomDialogResponse(result);
+    });
 });
 
 /**

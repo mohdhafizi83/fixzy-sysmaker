@@ -2345,47 +2345,51 @@ export async function populateProjectDropdown() {
     });
 }
 
+// FIND AND REPLACE this entire function in your src/js/uiHandlers.js file
+// This new version supports both new Promise-based calls and old callback-based calls.
+
 export function showCustomDialog({ title, message, onOk, onCancel, showCancelButton = false }) {
-    const modal = document.getElementById('custom-alert-modal');
-    const titleEl = document.getElementById('custom-alert-title');
-    const messageEl = document.getElementById('custom-alert-message');
-    const okBtn = document.getElementById('custom-alert-ok-btn');
-    const cancelBtn = document.getElementById('custom-alert-cancel-btn');
-    const closeBtn = document.getElementById('custom-alert-close');
+    return new Promise((resolve) => {
+        const modal = document.getElementById('custom-alert-modal');
+        const titleEl = document.getElementById('custom-alert-title');
+        const messageEl = document.getElementById('custom-alert-message');
+        const okBtn = document.getElementById('custom-alert-ok-btn');
+        const cancelBtn = document.getElementById('custom-alert-cancel-btn');
+        const closeBtn = document.getElementById('custom-alert-close');
 
-    titleEl.textContent = title || 'Notification';
-    messageEl.textContent = message;
+        titleEl.textContent = title || 'Notification';
+        messageEl.textContent = message;
+        cancelBtn.style.display = showCancelButton ? 'inline-block' : 'none';
 
-    // Tunjukkan atau sembunyikan butang Cancel
-    cancelBtn.style.display = showCancelButton ? 'inline-block' : 'none';
+        // Clone buttons to ensure old event listeners are removed
+        const newOkBtn = okBtn.cloneNode(true);
+        okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        const newCloseBtn = closeBtn.cloneNode(true);
+        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
 
-    // Fungsi untuk menutup modal dan membuang listener
-    const closeModal = () => {
-        modal.classList.add('hidden');
-        // Buang listener lama untuk elak panggilan berganda
-        okBtn.replaceWith(okBtn.cloneNode(true));
-        cancelBtn.replaceWith(cancelBtn.cloneNode(true));
-        closeBtn.replaceWith(closeBtn.cloneNode(true));
-    };
+        const closeModalAndResolve = (result) => {
+            modal.classList.add('hidden');
+            
+            // 1. Resolve the promise for new asynchronous code
+            resolve(result);
 
-    // Tambah listener baharu
-    document.getElementById('custom-alert-ok-btn').addEventListener('click', () => {
-        if (typeof onOk === 'function') {
-            onOk();
-        }
-        closeModal();
+            // 2. Execute old callbacks for backward compatibility
+            if (result && typeof onOk === 'function') {
+                onOk();
+            }
+            if (!result && typeof onCancel === 'function') {
+                onCancel();
+            }
+        };
+
+        newOkBtn.addEventListener('click', () => closeModalAndResolve(true), { once: true });
+        newCancelBtn.addEventListener('click', () => closeModalAndResolve(false), { once: true });
+        newCloseBtn.addEventListener('click', () => closeModalAndResolve(false), { once: true });
+
+        modal.classList.remove('hidden');
     });
-
-    document.getElementById('custom-alert-cancel-btn').addEventListener('click', () => {
-        if (typeof onCancel === 'function') {
-            onCancel();
-        }
-        closeModal();
-    });
-
-    document.getElementById('custom-alert-close').addEventListener('click', closeModal);
-
-    modal.classList.remove('hidden');
 }
 
 // (Pastikan helper ini wujud di skop yang boleh diakses)
@@ -3658,7 +3662,8 @@ export function initializeLookupFieldHandlers() {
     }
 }
 
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
+// FIND AND REPLACE this entire function in your src/js/uiHandlers.js file
+
 export function populateMenuManagement(unifiedMenu) {
     const unifiedMenuList = document.getElementById('unified-menu-list');
     if (!unifiedMenu || unifiedMenu.length === 0) {
@@ -3666,46 +3671,40 @@ export function populateMenuManagement(unifiedMenu) {
         return;
     }
 
-    // ▼▼▼ MULA PERUBAHAN ▼▼▼
-    // Tambah zon drop di bahagian paling atas untuk membenarkan item digugurkan di kedudukan pertama
-    // Fungsi bantuan untuk mencipta elemen kumpulan
     const createGroupElement = (group) => {
         const groupEl = document.createElement('div');
         groupEl.className = 'menu-group-item';
         groupEl.dataset.type = 'group';
         groupEl.dataset.groupId = group.id;
 
-const itemsHtml = group.items.map(item => {
-    const itemType = item.table_id ? 'table_item' : 'custom_item';
-    const icon = itemType === 'table_item' ? 'fa-table' : (itemType === 'custom_view_item' ? 'fa-eye' : 'fa-link');
-    
-    // PENAMBAHBAIKAN: Tambah data-table-name untuk menyimpan rujukan sebenar
-    const tableNameAttribute = itemType === 'table_item' ? `data-table-name="${item.table_name}"` : '';
+        const itemsHtml = group.items.map(item => {
+            const itemType = item.table_id ? 'table_item' : (item.custom_view_id ? 'custom_view_item' : 'custom_item');
+            const icon = itemType === 'table_item' ? 'fa-table' : (itemType === 'custom_view_item' ? 'fa-eye' : 'fa-link');
+            const tableNameAttribute = itemType === 'table_item' ? `data-table-name="${item.table_name}"` : '';
 
-    return `
-    <div class="nested-menu-item" 
-         data-item-id="${item.item_id}" 
-         data-label="${item.item_label || ''}" 
-         data-url="${item.item_url || ''}"
-         data-type="${itemType}"
-         ${tableNameAttribute}>
-        <i class="fas ${icon} nested-item-icon"></i>
-        <span class="nested-item-label" title="${item.item_label}">${item.item_label}</span>
-        <span class="nested-item-url" title="URL: ${item.item_url || 'N/A'}">${item.item_url || '(Not a link)'}</span>
-        <div class="nested-item-actions">
-            <button class="btn-sidebar-icon nested-menu-move-up-btn" title="Move Up"><i class="fas fa-arrow-up"></i></button>
-            <button class="btn-sidebar-icon nested-menu-move-down-btn" title="Move Down"><i class="fas fa-arrow-down"></i></button>
-            <button class="btn-sidebar-icon nested-menu-edit-btn" title="Edit Item"><i class="fas fa-pencil-alt"></i></button>
-            <button class="btn-sidebar-icon nested-menu-delete-btn" title="Delete Item"><i class="fas fa-trash-alt"></i></button>
-        </div>
-    </div>
-`}).join('');
-
+            return `
+            <div class="nested-menu-item" 
+                 data-item-id="${item.item_id}" 
+                 data-label="${item.item_label || ''}" 
+                 data-url="${item.item_url || ''}"
+                 data-type="${itemType}"
+                 ${tableNameAttribute}>
+                <i class="fas ${icon} nested-item-icon"></i>
+                <span class="nested-item-label" title="${item.item_label}">${item.item_label}</span>
+                <span class="nested-item-url" title="URL: ${item.item_url || 'N/A'}">${item.item_url || '(Not a link)'}</span>
+                <div class="nested-item-actions">
+                    <button class="btn-sidebar-icon nested-menu-move-up-btn" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+                    <button class="btn-sidebar-icon nested-menu-move-down-btn" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+                    <button class="btn-sidebar-icon nested-menu-edit-btn" title="Edit Item"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="btn-sidebar-icon nested-menu-delete-btn" title="Delete Item"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            </div>`;
+        }).join('');
 
         groupEl.innerHTML = `
-    <div class="menu-group-header">
-        <input type="text" class="group-name-input" value="${group.name}">
-        <div class="group-actions">
+            <div class="menu-group-header">
+                <input type="text" class="group-name-input" value="${group.name}">
+                <div class="group-actions">
                     <button class="btn-sidebar-icon menu-move-up-btn" title="Move Up"><i class="fas fa-arrow-up"></i></button>
                     <button class="btn-sidebar-icon menu-move-down-btn" title="Move Down"><i class="fas fa-arrow-down"></i></button>
                     <button class="btn-sidebar-icon group-delete-btn" title="Delete group"><i class="fas fa-trash-alt"></i></button>
@@ -3715,51 +3714,45 @@ const itemsHtml = group.items.map(item => {
         return groupEl;
     };
 
-// PASTE THIS REPLACEMENT CODE IN: uiHandlers.js
+    const createItemElement = (item) => {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'custom-menu-item';
+        itemEl.dataset.type = item.type;
+        // ▼▼▼ MULA PEMBETULAN ▼▼▼
+        itemEl.dataset.itemId = item.item_id;
+        itemEl.dataset.label = item.item_label;
+        itemEl.dataset.url = item.item_url || '';
+        // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
 
-// Fungsi bantuan untuk mencipta elemen item individu
-const createItemElement = (item) => {
-    const itemEl = document.createElement('div');
-    // Guna semula gaya sedia ada
-    itemEl.className = 'custom-menu-item'; 
-    itemEl.dataset.type = item.type;
-    itemEl.dataset.itemId = item.id;
-    itemEl.dataset.label = item.label;
-    itemEl.dataset.url = item.url || '';
+        if (item.type === 'table_item') {
+            itemEl.dataset.tableName = item.table_name;
+        }
 
-    // ▼▼▼ PEMBETULAN UTAMA ADA DI SINI ▼▼▼
-    // Pastikan nama jadual sebenar disimpan untuk item peringkat atasan juga
-    if (item.type === 'table_item') {
-        itemEl.dataset.tableName = item.table_name;
-    }
-    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
+        const icon = item.type === 'table_item' ? 'fa-table' : (item.type === 'custom_view_item' ? 'fa-eye' : 'fa-link');
+        
+        // ▼▼▼ MULA PEMBETULAN ▼▼▼
+        itemEl.innerHTML = `
+            <i class="fas ${icon}" style="margin: 0 0.5rem; color: var(--secondary-color);"></i>
+            <div class="form-group" style="flex: 1;">
+                <input type="text" readonly value="${item.item_label}" title="Label: ${item.item_label}">
+            </div>
+            <div class="form-group" style="flex: 2;">
+                <input type="text" readonly value="${item.item_url || '(Not a link)'}" title="URL: ${item.item_url || 'N/A'}">
+            </div>
+            <div class="group-actions">
+                <button class="btn-sidebar-icon menu-move-up-btn" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+                <button class="btn-sidebar-icon menu-move-down-btn" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+                <button class="btn-sidebar-icon custom-menu-edit-btn" title="Edit Item"><i class="fas fa-pencil-alt"></i></button>
+                <button class="btn-sidebar-icon custom-menu-delete-btn" title="Delete Item"><i class="fas fa-trash-alt"></i></button>
+            </div>
+        `;
+        // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
+        return itemEl;
+    };
 
-    const icon = item.type === 'table_item' ? 'fa-table' : (item.type === 'custom_view_item' ? 'fa-eye' : 'fa-link');
-    
-    itemEl.innerHTML = `
-    <i class="fas ${icon}" style="margin: 0 0.5rem; color: var(--secondary-color);"></i>
-    <div class="form-group" style="flex: 1;">
-            <input type="text" readonly value="${item.label}" title="Label: ${item.label}">
-        </div>
-        <div class="form-group" style="flex: 2;">
-            <input type="text" readonly value="${item.url || '(Not a link)'}" title="URL: ${item.url || 'N/A'}">
-        </div>
-        <div class="group-actions">
-            <button class="btn-sidebar-icon menu-move-up-btn" title="Move Up"><i class="fas fa-arrow-up"></i></button>
-            <button class="btn-sidebar-icon menu-move-down-btn" title="Move Down"><i class="fas fa-arrow-down"></i></button>
-            <button class="btn-sidebar-icon custom-menu-edit-btn" title="Edit Item"><i class="fas fa-pencil-alt"></i></button>
-            <button class="btn-sidebar-icon custom-menu-delete-btn" title="Delete Item"><i class="fas fa-trash-alt"></i></button>
-        </div>
-    `;
-    return itemEl;
-};
-
-    // Kosongkan senarai sedia ada
     unifiedMenuList.innerHTML = ''; 
 
-    // Bina senarai bersepadu
     unifiedMenu.forEach(item => {
-        let element;
         if (item.type === 'group') {
             const groupEl = createGroupElement(item);
             unifiedMenuList.appendChild(groupEl);
@@ -3769,14 +3762,15 @@ const createItemElement = (item) => {
         }
     });
 
-    // Kemas kini keadaan butang naik/turun selepas semua item dipaparkan
     const menuItems = unifiedMenuList.children;
     if (menuItems.length > 0) {
-        menuItems[0].querySelector('.menu-move-up-btn').disabled = true;
-        menuItems[menuItems.length - 1].querySelector('.menu-move-down-btn').disabled = true;
+        if (menuItems[0].querySelector('.menu-move-up-btn')) {
+            menuItems[0].querySelector('.menu-move-up-btn').disabled = true;
+        }
+        if (menuItems[menuItems.length - 1].querySelector('.menu-move-down-btn')) {
+            menuItems[menuItems.length - 1].querySelector('.menu-move-down-btn').disabled = true;
+        }
     }
-
-    // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
 }
 
 export function initializeMenuManagementHandlers() {
