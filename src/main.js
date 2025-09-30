@@ -290,7 +290,7 @@ ipcMain.handle('sql:parse-calculation-query', (event, sql) => {
     }
 });
 
-// main.js
+// FIND AND REPLACE this entire function in your src/main.js file
 
 async function getFullProjectSchema(projectId) {
   try {
@@ -356,16 +356,20 @@ async function getFullProjectSchema(projectId) {
         )
         .all(...tableIds, ...tableIds);
     
-    const groups = db.prepare("SELECT * FROM menu_groups WHERE project_id = ? ORDER BY group_order").all(projectId);
+    // ▼▼▼ MULA LOGIK PEMBETULAN ▼▼▼
     const allItems = db.prepare(`
         SELECT mi.*, t.table_name 
         FROM menu_items mi 
         LEFT JOIN tables t ON mi.table_id = t.table_id 
         WHERE mi.project_id = ? 
-        ORDER BY mi.menu_group_id, mi.item_order
+        ORDER BY mi.item_order
     `).all(projectId);
     
+    const groups = db.prepare("SELECT * FROM menu_groups WHERE project_id = ? ORDER BY group_order").all(projectId);
     const unifiedMenu = [];
+
+    // Proses kumpulan dan sediakan 'map' untuk item di dalamnya
+    const groupMap = new Map();
     groups.forEach(group => {
         const groupItems = allItems
             .filter(item => item.menu_group_id === group.menu_group_id)
@@ -375,21 +379,36 @@ async function getFullProjectSchema(projectId) {
                 else if (item.custom_view_id) itemType = 'custom_view_item';
                 return { type: itemType, ...item };
             });
-        unifiedMenu.push({ 
-            type: 'group', id: group.menu_group_id, order: group.group_order, name: group.group_name, items: groupItems
-        });
+
+        const groupObject = { 
+            type: 'group', 
+            id: group.menu_group_id, 
+            order: group.group_order, 
+            name: group.group_name, 
+            items: groupItems
+        };
+        unifiedMenu.push(groupObject);
+        groupMap.set(group.group_order, groupObject);
     });
     
+    // Proses item peringkat atasan
     allItems.forEach(item => {
         if (item.menu_group_id === null) {
             let itemType = 'custom_item';
             if (item.table_id) itemType = 'table_item';
             else if (item.custom_view_id) itemType = 'custom_view_item';
-            unifiedMenu.push({ type: itemType, ...item });
+            
+            unifiedMenu.push({ 
+                type: itemType,
+                order: item.item_order, // Gunakan item_order untuk susunan
+                ...item 
+            });
         }
     });
 
-    unifiedMenu.sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
+    // Akhir sekali, susun semula keseluruhan senarai berdasarkan 'order'
+    unifiedMenu.sort((a, b) => a.order - b.order);
+    // ▲▲▲ TAMAT LOGIK PEMBETULAN ▲▲▲
 
     return {
       project: project,
@@ -657,7 +676,8 @@ ipcMain.handle("project:get-full-schema", async (event, projectId) => {
     return getFullProjectSchema(projectId);
 });
 
-// ADD THIS NEW HANDLER in: src/main.js
+// FIND AND REPLACE this entire handler in your src/main.js file
+
 ipcMain.handle('menu:save-unified-structure', async (event, { projectId, menuStructure }) => {
     if (!projectId || !Array.isArray(menuStructure)) {
         return { success: false, message: "Data tidak sah." };
@@ -667,23 +687,26 @@ ipcMain.handle('menu:save-unified-structure', async (event, { projectId, menuStr
         const updateGroupStmt = db.prepare('UPDATE menu_groups SET group_name = ?, group_order = ? WHERE menu_group_id = ?');
         const updateItemStmt = db.prepare('UPDATE menu_items SET item_order = ?, menu_group_id = ? WHERE item_id = ?');
 
-        // 1. Set all items to be top-level first to handle items being moved out of groups.
+        // Set semua item sebagai peringkat atasan dahulu untuk mengendalikan item yang dialihkan keluar dari kumpulan.
         db.prepare('UPDATE menu_items SET menu_group_id = NULL WHERE project_id = ?').run(projectId);
         
-        // 2. Iterate through the new structure and apply changes.
+        // ▼▼▼ MULA LOGIK PEMBETULAN ▼▼▼
+        // Gunakan satu indeks tunggal (topIndex) untuk KEDUA-DUA jadual.
         menuStructure.forEach((topLevelItem, topIndex) => {
             if (topLevelItem.type === 'group') {
-                // Update the group's name and its order among top-level items.
+                // Gunakan 'topIndex' untuk group_order
                 updateGroupStmt.run(topLevelItem.name, topIndex, topLevelItem.id);
-                // Update each child item to belong to this group with its new order.
+
+                // Kemas kini item di dalam kumpulan (susunan dalaman)
                 topLevelItem.items.forEach((childItem, childIndex) => {
                     updateItemStmt.run(childIndex, topLevelItem.id, childItem.id);
                 });
-            } else { // type 'table_item' or 'custom_item'
-                // Update the top-level item's order. Its group_id is already NULL.
+            } else { // type 'table_item' atau 'custom_item'
+                // Gunakan 'topIndex' untuk item_order
                 updateItemStmt.run(topIndex, null, topLevelItem.id);
             }
         });
+        // ▲▲▲ TAMAT LOGIK PEMBETULAN ▲▲▲
     });
 
     try {
