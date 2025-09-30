@@ -63,6 +63,7 @@ CREATE TABLE tables (
     allow_sorting                INTEGER DEFAULT 1,
     allow_filters                INTEGER DEFAULT 1,
     allow_csv_export             INTEGER DEFAULT 1,
+    allow_csv_import             INTEGER DEFAULT 1,
     allow_print_view             INTEGER DEFAULT 1,
     allow_user_save_filters      INTEGER DEFAULT 0,
     allow_mass_delete            INTEGER DEFAULT 1,

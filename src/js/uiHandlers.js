@@ -3341,6 +3341,7 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-allow-sorting', tableData.allow_sorting);
     setElementValue('tbl-allow-filters', tableData.allow_filters);
     setElementValue('tbl-allow-csv-export', tableData.allow_csv_export);
+    setElementValue('tbl-allow-csv-import', tableData.allow_csv_import);
     setElementValue('tbl-allow-print-view', tableData.allow_print_view);
     setElementValue('tbl-allow-user-save-filters', tableData.allow_user_save_filters);
     setElementValue('tbl-allow-mass-delete', tableData.allow_mass_delete);

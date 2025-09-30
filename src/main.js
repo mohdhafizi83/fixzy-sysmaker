@@ -1751,8 +1751,6 @@ function toPluralCamelCase(str) {
     return toCamelCase(str) + 's';
 }
 
-// ADD THIS MAIN GENERATOR FUNCTION IN: main.js
-
 /**
  * Menjana fail Model Laravel Filament berdasarkan skema pangkalan data.
  * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.
@@ -1783,33 +1781,43 @@ async function generateFilamentModels(fullSchema, basePath) {
 
             const tableData = tables[tableName];
             let modelContent = templateContent;
+            
+            // ▼▼▼ MULA KAWASAN YANG DIKEMAS KINI ▼▼▼
 
-            // 1. & 2. Handle Soft Deletes
-            if (projectSettings.data_delete_type === 'soft') {
-                modelContent = modelContent.replace('<<IMPORT_SOFTDELETE>>', 'use Illuminate\\Database\\Eloquent\\SoftDeletes;');
-                modelContent = modelContent.replace('<<TRAIT_SOFTDELETE>>', ', SoftDeletes');
+            // 1. & 2. Handle HasFactory Trait (untuk Fake Data Seeder)
+            if (projectSettings.module_fake_data === 1) {
+                modelContent = modelContent.replace('<<IMPORT_FACTORY>>', 'use Illuminate\\Database\\Eloquent\\Factories\\HasFactory;');
+                modelContent = modelContent.replace('<<TRAIT_FACTORY>>', 'use HasFactory;');
             }
 
-            // 3. 4. & 5. Handle Auditing
+            // 3. & 4. Handle Soft Deletes
+            if (projectSettings.data_delete_type === 'soft') {
+                modelContent = modelContent.replace('<<IMPORT_SOFTDELETE>>', 'use Illuminate\\Database\\Eloquent\\SoftDeletes;');
+                modelContent = modelContent.replace('<<TRAIT_SOFTDELETE>>', 'use SoftDeletes;');
+            }
+
+            // 5, 6, & 7. Handle Auditing
             if (projectSettings.module_log_audit === 1) {
                 const importAudit = `use OwenIt\\Auditing\\Contracts\\Auditable;\nuse OwenIt\\Auditing\\Auditable as AuditableTrait;`;
                 modelContent = modelContent.replace('<<IMPORT_AUDIT>>', importAudit);
                 modelContent = modelContent.replace('<<CLASS_IMPLEMENTS_AUDIT>>', 'implements Auditable');
-                modelContent = modelContent.replace('<<TRAIT_AUDIT>>', ', AuditableTrait');
+                modelContent = modelContent.replace('<<TRAIT_AUDIT>>', 'use AuditableTrait;');
             }
+            
+            // ▲▲▲ TAMAT KAWASAN YANG DIKEMAS KINI ▲▲▲
 
-            // 6. Ganti Nama Kelas
+            // 8. Ganti Nama Kelas
             const className = toPascalCase(tableName);
             modelContent = modelContent.replace(/<<CLASS_NAME>>/g, className);
 
-            // 7. Ganti Nama Jadual
+            // 9. Ganti Nama Jadual
             modelContent = modelContent.replace('<<TABLE_NAME>>', tableName);
 
-            // 8. Ganti Kunci Primer
+            // 10. Ganti Kunci Primer
             const primaryKeyField = Object.values(tableData.fields).find(f => f.primary_key === 1);
             modelContent = modelContent.replace('<<PRIMARY_KEY>>', primaryKeyField ? primaryKeyField.field_name : 'id');
 
-            // 9. Ganti Senarai Boleh Isi ($fillable)
+            // 11. Ganti Senarai Boleh Isi ($fillable)
             const excludedFields = ['created_at', 'updated_at', 'deleted_at', primaryKeyField?.field_name];
             const fillableFields = Object.values(tableData.fields)
                 .filter(field => !excludedFields.includes(field.field_name) && field.read_only !== 1)
@@ -1817,7 +1825,7 @@ async function generateFilamentModels(fullSchema, basePath) {
                 .join(',');
             modelContent = modelContent.replace('<<ARRAY_EDITABLE_BYUSER_FIELDS>>', fillableFields ? `${fillableFields}\n    ` : '');
 
-            // 10. Ganti Fungsi Hubungan (Eloquent Relationships) - DIPERBAIKI
+            // 12. Ganti Fungsi Hubungan (Eloquent Relationships)
             let relationshipFunctions = [];
 
             // Mencari hubungan di mana jadual ini adalah PARENT (hasOne / hasMany)
@@ -1864,7 +1872,7 @@ async function generateFilamentModels(fullSchema, basePath) {
             // Bersihkan mana-mana placeholder yang tidak diganti
             modelContent = modelContent.replace(/<<.*?>>/g, '');
 
-            // 11. Jana fail output
+            // Jana fail output
             const outputFilePath = path.join(modelsPath, `${className}.php`);
             fs.writeFileSync(outputFilePath, modelContent);
             console.log(`Model generated: ${outputFilePath}`);
@@ -1877,8 +1885,6 @@ async function generateFilamentModels(fullSchema, basePath) {
         return { success: false, message: error.message };
     }
 }
-
-// ADD THIS NEW FUNCTION IN: main.js
 
 /**
  * Menjana fail Model User.php Laravel Filament secara spesifik.
