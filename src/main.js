@@ -2157,6 +2157,341 @@ async function generateFilamentResources(fullSchema, basePath) {
     }
 }
 
+// ADD THIS NEW, INDEPENDENT FUNCTION IN: main.js
+
+/**
+ * Menjana fail List Page Laravel Filament untuk setiap resource.
+ * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.
+ * @param {string} basePath - Laluan asas ke folder 'generated'.
+ */
+async function generateFilamentListPages(fullSchema, basePath) {
+    try {
+        const tables = fullSchema.database.table;
+        const relationships = fullSchema.database.relationships;
+
+        const templatePath = path.join(__dirname, 'templates/php/filament/app/Filament/Resources/PagesList.template');
+        if (!fs.existsSync(templatePath)) {
+            throw new Error(`Template file not found at: ${templatePath}`);
+        }
+        const templateContent = fs.readFileSync(templatePath, 'utf8');
+
+        for (const tableName in tables) {
+            if (tableName === 'users') {
+                continue; // Langkau jadual 'users'
+            }
+
+            const tableData = tables[tableName];
+            let listContent = templateContent;
+
+            // 1. & 2. Gantikan Nama Singular dan Plural
+            const modelNameSingular = toSingularPascalCase(tableName);
+            const modelNamePlural = toPluralPascalCase(tableName);
+            listContent = listContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);
+            listContent = listContent.replace(/<<TABLE_NAME_PLURAL>>/g, modelNamePlural);
+
+            // 3. Ganti Title
+            listContent = listContent.replace('<<TABLE_VIEW_TITLE>>', tableData.table_view_title || modelNamePlural);
+            
+            // Semak jika jadual ini adalah 'child' kepada mana-mana jadual lain
+            const parentRelations = relationships.filter(r => r.child_table_name === tableName);
+            const isChildTable = parentRelations.length > 0;
+
+            if (isChildTable) {
+                const foreignKeys = parentRelations.map(r => r.fk_child_field);
+
+                // 4. Create Action (untuk child table)
+                const urlParams = foreignKeys.map(fk => `'${fk}' => request()->query('${fk}')`).join(',\n                    ');
+                const createActionCode = `CreateAction::make()
+    ->when(
+        session('is_in_iframe'),
+        fn (CreateAction $action) => $action->url(fn (): string => static::getResource()::getUrl('create', [
+                    ${urlParams}
+                ]))
+    )`;
+                listContent = listContent.replace('<<CREATE_ACTION>>', createActionCode);
+                
+                // 7. Import Builder
+                listContent = listContent.replace('<<IMPORT_BUILDER>>', 'use Illuminate\\Database\\Eloquent\\Builder;');
+
+                // 8. Filter Query
+                const whereClauses = foreignKeys.map(fk => `
+        if ($fkValue = request()->query('${fk}')) {
+            $query->where('${fk}', $fkValue);
+        }`).join('');
+                const filterQueryCode = `
+    protected function getTableQuery(): Builder
+    {
+        $query = parent::getTableQuery();
+        ${whereClauses}
+        return $query;
+    }`;
+                listContent = listContent.replace('<<FILTER_QUERY>>', filterQueryCode);
+
+                // 9. Iframe Setup
+                const iframeSetupCode = `
+    public function mount(): void
+    {
+        parent::mount();
+        if (request()->has('iframe')) {
+            session(['is_in_iframe' => true]);
+        } else {
+            session()->forget('is_in_iframe');
+        }
+    }
+    
+    public function getLayout(): string
+    {
+        if (session('is_in_iframe')) {
+            return 'filament.layouts.custom-iframe-layout';
+        }
+        return parent::getLayout();
+    }`;
+                listContent = listContent.replace('<<IFRAME_SETUP>>', iframeSetupCode);
+
+            } else {
+                // 5. Create Action (untuk parent table / standalone table)
+                listContent = listContent.replace('<<CREATE_ACTION>>', 'CreateAction::make(),');
+            }
+
+            // 6. Vertical Action Button CSS (jika jadual ini adalah parent)
+            const hasChildWithCount = relationships.some(r => r.parent_table_name === tableName && r.show_count_in_tv === 1);
+            if (hasChildWithCount) {
+                const cssCode = `
+        FilamentView::registerRenderHook(
+            'panels::body.end',
+            fn (): string => <<<HTML
+                <style>
+                    td.fi-ta-cell > .fi-ta-actions {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: flex-start; 
+                        gap: 0.5rem; 
+                    }
+                </style>
+            HTML
+        );`;
+                listContent = listContent.replace('<<VERTICAL_ACTION_BUTTON_CSS>>', cssCode);
+            }
+
+            // 10. Print Action CSS
+            if (tableData.allow_print_view === 1) {
+                const printCssCode = `
+        if ((bool) request()->query('print')) {
+            FilamentView::registerRenderHook(
+                'panels::body.end',
+                fn (): string => <<<HTML
+                    <style>
+                        @media print {
+                            body { visibility: hidden; }
+                            .fi-ta-content-ctn, .fi-ta-content-ctn * { visibility: visible; }
+                            .fi-ta-content-ctn { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; margin: 0 !important; }
+                            body { font-size: 12pt !important; background-color: #fff !important; }
+                            .fi-ta-cell .fi-ta-actions { display: none !important; }
+                        }
+                    </style>
+                    <script>
+                        window.onload = () => {
+                            window.print();
+                            window.onafterprint = () => { window.close(); };
+                        };
+                    </script>
+                HTML
+            );
+        }`;
+                listContent = listContent.replace('<<PRINT_ACTION_CSS>>', printCssCode);
+            }
+
+            // Bersihkan placeholder yang tidak digunakan
+            listContent = listContent.replace(/<<.*?>>/g, '');
+
+            // 11. Jana fail output
+            const resourceFolder = modelNamePlural;
+            const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'Pages');
+            fs.mkdirSync(outputFolderPath, { recursive: true });
+
+            const outputFilePath = path.join(outputFolderPath, `List${modelNamePlural}.php`);
+            fs.writeFileSync(outputFilePath, listContent);
+            console.log(`List Page generated: ${outputFilePath}`);
+        }
+        
+        return { success: true, message: 'Filament List Pages generated successfully.' };
+
+    } catch (error) {
+        console.error('Failed to generate Filament List Pages:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+/**
+ * Menjana fail Create Page Laravel Filament untuk setiap resource.
+ * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.
+ * @param {string} basePath - Laluan asas ke folder 'generated'.
+ */
+async function generateFilamentCreatePages(fullSchema, basePath) {
+    try {
+        const tables = fullSchema.database.table;
+
+        const templatePath = path.join(__dirname, 'templates/php/filament/app/Filament/Resources/PagesCreate.template');
+        if (!fs.existsSync(templatePath)) {
+            throw new Error(`Template file not found at: ${templatePath}`);
+        }
+        const templateContent = fs.readFileSync(templatePath, 'utf8');
+
+        for (const tableName in tables) {
+            if (tableName === 'users') {
+                continue; // Langkau jadual 'users'
+            }
+
+            let createContent = templateContent;
+
+            // 1. Gantikan Nama Singular
+            const modelNameSingular = toSingularPascalCase(tableName);
+            createContent = createContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);
+
+            // 2. Gantikan Nama Plural
+            const modelNamePlural = toPluralPascalCase(tableName);
+            createContent = createContent.replace(/<<TABLE_NAME_PLURAL>>/g, modelNamePlural);
+
+            // Bersihkan placeholder lain jika ada (sebagai langkah keselamatan)
+            createContent = createContent.replace(/<<.*?>>/g, '');
+
+            // 3. Jana fail output dalam folder yang betul
+            const resourceFolder = modelNamePlural;
+            const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'Pages');
+            fs.mkdirSync(outputFolderPath, { recursive: true });
+
+            const outputFilePath = path.join(outputFolderPath, `Create${modelNameSingular}.php`);
+            fs.writeFileSync(outputFilePath, createContent);
+            console.log(`Create Page generated: ${outputFilePath}`);
+        }
+        
+        return { success: true, message: 'Filament Create Pages generated successfully.' };
+
+    } catch (error) {
+        console.error('Failed to generate Filament Create Pages:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+/**
+ * Menjana fail Edit Page Laravel Filament untuk setiap resource.
+ * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.
+ * @param {string} basePath - Laluan asas ke folder 'generated'.
+ */
+async function generateFilamentEditPages(fullSchema, basePath) {
+    try {
+        const tables = fullSchema.database.table;
+        const relationships = fullSchema.database.relationships;
+
+        const templatePath = path.join(__dirname, 'templates/php/filament/app/Filament/Resources/PagesEdit.template');
+        if (!fs.existsSync(templatePath)) {
+            throw new Error(`Template file not found at: ${templatePath}`);
+        }
+        const templateContent = fs.readFileSync(templatePath, 'utf8');
+
+        for (const tableName in tables) {
+            if (tableName === 'users') {
+                continue; // Langkau jadual 'users'
+            }
+            const tableData = tables[tableName];
+            let editContent = templateContent;
+
+            // 1. Gantikan Nama Singular
+            const modelNameSingular = toSingularPascalCase(tableName);
+            editContent = editContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);
+
+            // 2. Gantikan Nama Plural
+            const modelNamePlural = toPluralPascalCase(tableName);
+            editContent = editContent.replace(/<<TABLE_NAME_PLURAL>>/g, modelNamePlural);
+            
+            // 3. Gantikan Primary Key
+            const primaryKeyField = Object.values(tableData.fields).find(f => f.primary_key === 1);
+            editContent = editContent.replace(/<<PRIMARY_KEY>>/g, primaryKeyField ? primaryKeyField.field_name : 'id');
+
+            // 4. Handle Unique Fields for Replication
+            const uniqueFields = Object.values(tableData.fields).filter(f => f.unique === 1);
+            if (uniqueFields.length > 0) {
+                const uniqueEmptyLines = uniqueFields.map(f => `        $data['${f.field_name}'] = '';`).join('\n');
+                editContent = editContent.replace('<<UNIQUE_EMPTY>>', uniqueEmptyLines);
+            }
+
+            // 5. Gantikan dengan medan string pertama
+            const stringTypes = ['VARCHAR', 'CHAR', 'TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT'];
+            const firstStringField = Object.values(tableData.fields).find(f => stringTypes.includes(f.data_type.toUpperCase()));
+            editContent = editContent.replace('<<FIRST_STRING_FIELD>>', firstStringField ? firstStringField.field_name : '');
+            
+            // 6. Setup Iframe jika ia adalah PARENT table
+            const isParentTable = relationships.some(r => r.parent_table_name === tableName);
+            if(isParentTable) {
+                const iframeParentCode = `
+    public function mount(string|int $record): void
+    {
+        parent::mount($record);
+        if (request()->has('iframe')) {
+            session(['is_in_iframe' => true]);
+        } else {
+            session()->forget('is_in_iframe');
+        }
+    }
+	
+    public function getLayout(): string
+    {
+        if (request()->has('iframe')) {
+            return 'filament.layouts.custom-iframe-layout';
+        }
+        return parent::getLayout();
+    }`;
+                editContent = editContent.replace('<<IFRAME_PARENT_SETUP>>', iframeParentCode);
+            }
+
+            // 6 & 7. Setup Iframe jika ia adalah CHILD table
+            const isChildTable = relationships.some(r => r.child_table_name === tableName);
+            if (isChildTable) {
+                editContent = editContent.replace('<<IMPORT_CLOSE_IFRAME>>', 'use Filament\\Support\\Facades\\FilamentView;\nuse Illuminate\\Contracts\\View\\View;');
+                const refreshIframeCode = `
+    public function render(): View
+    {
+        FilamentView::registerRenderHook(
+            'panels::body.end',
+            fn (): string => <<<HTML
+                <script>
+                    document.addEventListener('click', function (event) {
+                        if (event.target.closest('.fi-modal-close-btn')) {
+                            setTimeout(() => {
+                                window.parent.location.reload();
+                            }, 100);
+                        }
+                    });
+                </script>
+            HTML
+        );
+        return parent::render();
+    }`;
+                editContent = editContent.replace('<<REFRESH_CLOSE_IFRAME>>', refreshIframeCode);
+            }
+
+            // Bersihkan placeholder yang tidak digunakan
+            editContent = editContent.replace(/<<.*?>>/g, '');
+
+            // 8. Jana fail output
+            const resourceFolder = modelNamePlural;
+            const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'Pages');
+            fs.mkdirSync(outputFolderPath, { recursive: true });
+            
+            const outputFilePath = path.join(outputFolderPath, `Edit${modelNameSingular}.php`);
+            fs.writeFileSync(outputFilePath, editContent);
+            console.log(`Edit Page generated: ${outputFilePath}`);
+        }
+        
+        return { success: true, message: 'Filament Edit Pages generated successfully.' };
+
+    } catch (error) {
+        console.error('Failed to generate Filament Edit Pages:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+
 ipcMain.handle('generate-app', async () => {
     const win = BrowserWindow.getFocusedWindow();
     try {
@@ -2175,31 +2510,37 @@ ipcMain.handle('generate-app', async () => {
         const generatedAppPath = getGeneratedFolderPath();
         const filamentPath = path.join(generatedAppPath, 'filament_app');
 
-        // 1. Panggil fungsi penjana untuk semua model biasa (kecuali User)
+        // 1. Panggil fungsi penjana untuk Models
         const modelResult = await generateFilamentModels(fullSchema, filamentPath);
-        if (!modelResult.success) {
-            throw new Error(`Model generation failed: ${modelResult.message}`);
-        }
+        if (!modelResult.success) throw new Error(`Model generation failed: ${modelResult.message}`);
 
         // 2. Panggil fungsi penjana KHAS untuk model User
         const userModelResult = await generateFilamentUserModel(fullSchema, filamentPath);
-        if (!userModelResult.success) {
-            throw new Error(`User Model generation failed: ${userModelResult.message}`);
-        }
+        if (!userModelResult.success) throw new Error(`User Model generation failed: ${userModelResult.message}`);
 
-        // ▼▼▼ PENAMBAHAN BAHARU DI SINI ▼▼▼
         // 3. Panggil fungsi penjana untuk Filament Resources
         const resourceResult = await generateFilamentResources(fullSchema, filamentPath);
-        if (!resourceResult.success) {
-            throw new Error(`Filament Resource generation failed: ${resourceResult.message}`);
-        }
+        if (!resourceResult.success) throw new Error(`Filament Resource generation failed: ${resourceResult.message}`);
+
+        // 4. Panggil fungsi penjana untuk Filament List Pages
+        const listPageResult = await generateFilamentListPages(fullSchema, filamentPath);
+        if (!listPageResult.success) throw new Error(`Filament List Page generation failed: ${listPageResult.message}`);
+
+        // 5. Panggil fungsi penjana untuk Filament Create Pages
+        const createPageResult = await generateFilamentCreatePages(fullSchema, filamentPath);
+        if (!createPageResult.success) throw new Error(`Filament Create Page generation failed: ${createPageResult.message}`);
+
+        // ▼▼▼ PENAMBAHAN BAHARU DI SINI ▼▼▼
+        // 6. Panggil fungsi penjana untuk Filament Edit Pages
+        const editPageResult = await generateFilamentEditPages(fullSchema, filamentPath);
+        if (!editPageResult.success) throw new Error(`Filament Edit Page generation failed: ${editPageResult.message}`);
         // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
         
         console.log(`All files generated successfully in: ${filamentPath}`);
 
         return { 
             success: true, 
-            message: 'Application models and resources generated successfully!',
+            message: 'Application files generated successfully!',
             folderPath: filamentPath 
         };
     } catch (error) {
