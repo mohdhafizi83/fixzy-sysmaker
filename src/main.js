@@ -1737,7 +1737,7 @@ function toCamelCase(str) {
 function toPluralPascalCase(str) {
     if (!str) return '';
     // Gunakan 'pluralize' pada rentetan asal sebelum menukar kes
-    return toPascalCase(pluralize(str));
+    return toPascalCase(pluralize.plural(str));
 }
 
 /**
@@ -1747,7 +1747,19 @@ function toPluralPascalCase(str) {
 function toPluralCamelCase(str) {
     if (!str) return '';
     // Gunakan 'pluralize' pada rentetan asal sebelum menukar kes
-    return toCamelCase(pluralize(str));
+    return toCamelCase(pluralize.plural(str));
+}
+
+function toSingularPascalCase(str) {
+    if (!str) return '';
+    // Gunakan 'pluralize.singular' pada rentetan asal sebelum menukar kes
+    return toPascalCase(pluralize.singular(str));
+}
+
+function toSingularCamelCase(str) {
+    if (!str) return '';
+    // Gunakan 'pluralize.singular' pada rentetan asal sebelum menukar kes
+    return toCamelCase(pluralize.singular(str));
 }
 
 /**
@@ -1790,8 +1802,6 @@ async function generateFilamentModels(fullSchema, basePath) {
             const tableData = tables[tableName];
             let modelContent = templateContent;
             
-            // ▼▼▼ MULA KAWASAN YANG DIKEMAS KINI ▼▼▼
-
             // 1. & 2. Handle HasFactory Trait (untuk Fake Data Seeder)
             if (projectSettings.module_fake_data === 1) {
                 modelContent = modelContent.replace('<<IMPORT_FACTORY>>', 'use Illuminate\\Database\\Eloquent\\Factories\\HasFactory;');
@@ -1812,10 +1822,8 @@ async function generateFilamentModels(fullSchema, basePath) {
                 modelContent = modelContent.replace('<<TRAIT_AUDIT>>', 'use AuditableTrait;');
             }
             
-            // ▲▲▲ TAMAT KAWASAN YANG DIKEMAS KINI ▲▲▲
-
             // 8. Ganti Nama Kelas
-            const className = toPascalCase(tableName);
+            const className = toSingularPascalCase(tableName);
             modelContent = modelContent.replace(/<<CLASS_NAME>>/g, className);
 
             // 9. Ganti Nama Jadual
@@ -1838,12 +1846,12 @@ async function generateFilamentModels(fullSchema, basePath) {
 
             // Mencari hubungan di mana jadual ini adalah PARENT (hasOne / hasMany)
             relationships.filter(r => r.parent_table_name === tableName).forEach(rel => {
-                const childClassName = toPascalCase(rel.child_table_name);
+                const childClassName = toSingularPascalCase(rel.child_table_name);
                 const foreignKey = rel.fk_child_field;
                 const localKey = rel.parent_field;
 
                 if (rel.relationship_type === 'one-to-one') {
-                    const functionName = toCamelCase(rel.child_table_name); // Singular
+                    const functionName = toSingularCamelCase(rel.child_table_name); // Singular
                     relationshipFunctions.push(`
     public function ${functionName}()
     {
@@ -1863,10 +1871,10 @@ async function generateFilamentModels(fullSchema, basePath) {
 
             // Mencari hubungan di mana jadual ini adalah CHILD (belongsTo)
             relationships.filter(r => r.child_table_name === tableName).forEach(rel => {
-                const parentClassName = toPascalCase(rel.parent_table_name);
-                const functionName = toCamelCase(rel.parent_table_name);
-                const foreignKey = rel.fk_child_field; // Kunci di jadual SEMASA
-                const ownerKey = rel.parent_field;    // Kunci di jadual INDUK
+                const parentClassName = toSingularPascalCase(rel.parent_table_name);
+                const functionName = toSingularCamelCase(rel.parent_table_name); // Singular
+                const foreignKey = rel.fk_child_field;// Kunci di jadual SEMASA
+                const ownerKey = rel.parent_field;// Kunci di jadual INDUK
                 relationshipFunctions.push(`
     public function ${functionName}()
     {
@@ -1876,11 +1884,9 @@ async function generateFilamentModels(fullSchema, basePath) {
             });
 
             modelContent = modelContent.replace('<<RELATIONSHIP_FUNCTIONS>>', relationshipFunctions.join(''));
-
-            // Bersihkan mana-mana placeholder yang tidak diganti
             modelContent = modelContent.replace(/<<.*?>>/g, '');
 
-            // Jana fail output
+            // DIPERBAIKI: Nama fail juga kini singular
             const outputFilePath = path.join(modelsPath, `${className}.php`);
             fs.writeFileSync(outputFilePath, modelContent);
             console.log(`Model generated: ${outputFilePath}`);
@@ -1936,7 +1942,7 @@ async function generateFilamentUserModel(fullSchema, basePath) {
         // Handle Authorization (Spatie/Permission/Shield)
         if (projectSettings.module_authorization === 1) {
             userModelContent = userModelContent.replace('<<IMPORT_SHIELD>>', 'use Spatie\\Permission\\Traits\\HasRoles;');
-            userModelContent = userModelContent.replace('<<TRAIT_SHIELD>>', 'HasRoles');
+            userModelContent = userModelContent.replace('<<TRAIT_SHIELD>>', ', HasRoles');
         }
 
         // 10. Ganti Fungsi Hubungan (Eloquent Relationships)
@@ -1945,12 +1951,12 @@ async function generateFilamentUserModel(fullSchema, basePath) {
 
         // Mencari hubungan di mana 'users' adalah PARENT (hasOne / hasMany)
         relationships.filter(r => r.parent_table_name === tableName).forEach(rel => {
-            const childClassName = toPascalCase(rel.child_table_name);
+            const childClassName = toSingularPascalCase(rel.child_table_name);
             const foreignKey = rel.fk_child_field;
             const localKey = rel.parent_field;
 
             if (rel.relationship_type === 'one-to-one') {
-                const functionName = toCamelCase(rel.child_table_name);
+                const functionName = toSingularCamelCase(rel.child_table_name); // Singular
                 relationshipFunctions.push(`
     public function ${functionName}()
     {
@@ -1958,7 +1964,7 @@ async function generateFilamentUserModel(fullSchema, basePath) {
     }
 `);
             } else {
-                const functionName = toPluralCamelCase(rel.child_table_name);
+                const functionName = toPluralCamelCase(rel.child_table_name); // Plural
                 relationshipFunctions.push(`
     public function ${functionName}()
     {
@@ -1970,8 +1976,8 @@ async function generateFilamentUserModel(fullSchema, basePath) {
 
         // Mencari hubungan di mana 'users' adalah CHILD (belongsTo)
         relationships.filter(r => r.child_table_name === tableName).forEach(rel => {
-            const parentClassName = toPascalCase(rel.parent_table_name);
-            const functionName = toCamelCase(rel.parent_table_name);
+            const parentClassName = toSingularPascalCase(rel.parent_table_name);
+            const functionName = toSingularCamelCase(rel.parent_table_name); // Singular
             relationshipFunctions.push(`
     public function ${functionName}()
     {
@@ -1981,8 +1987,6 @@ async function generateFilamentUserModel(fullSchema, basePath) {
         });
 
         userModelContent = userModelContent.replace('<<RELATIONSHIP_FUNCTIONS>>', relationshipFunctions.join(''));
-
-        // Bersihkan mana-mana placeholder yang tidak diganti
         userModelContent = userModelContent.replace(/<<.*?>>/g, '');
 
         // 11. Jana fail output
@@ -1998,13 +2002,13 @@ async function generateFilamentUserModel(fullSchema, basePath) {
     }
 }
 
-// ADD THIS NEW, INDEPENDENT FUNCTION IN: main.js
-
 /**
  * Menjana fail Resource Laravel Filament untuk setiap jadual.
  * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.
  * @param {string} basePath - Laluan asas ke folder 'generated'.
  */
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: main.js
+
 async function generateFilamentResources(fullSchema, basePath) {
     try {
         const projectSettings = fullSchema.project;
@@ -2020,13 +2024,12 @@ async function generateFilamentResources(fullSchema, basePath) {
 
         for (const tableName in tables) {
             if (tableName === 'users') {
-                continue; // Langkau jadual 'users'
+                continue; 
             }
 
             const tableData = tables[tableName];
             let resourceContent = templateContent;
 
-            // Cari maklumat menu untuk jadual semasa
             let menuItem = null;
             let menuGroup = null;
             for (const topLevelItem of unifiedMenu) {
@@ -2043,34 +2046,34 @@ async function generateFilamentResources(fullSchema, basePath) {
                 }
             }
 
-            // --- Mulakan Proses Penggantian ---
-
-            // 1. & 2. Ganti Nama Model
-            const modelName = toPascalCase(tableName);
+            const modelName = toSingularPascalCase(tableName);
             const modelNamePlural = toPluralPascalCase(tableName);
             resourceContent = resourceContent.replace(/<<MODEL_NAME>>/g, modelName);
             resourceContent = resourceContent.replace(/<<MODEL_NAME_PLURAL>>/g, modelNamePlural);
             
-            // 3. & 4. Handle 'Show Child Count in Table View'
             const childrenWithCount = relationships.filter(r => r.parent_table_name === tableName && r.show_count_in_tv === 1);
             if (childrenWithCount.length > 0) {
                 resourceContent = resourceContent.replace('<<IMPORT_SHOW_COUNT_IN_TV>>', 'use Illuminate\\Database\\Eloquent\\Builder;');
-                const childCamelNames = childrenWithCount.map(r => `'${toCamelCase(r.child_table_name)}'`).join(', ');
+                const childPluralCamelNames = childrenWithCount.map(r => `'${toPluralCamelCase(r.child_table_name)}'`).join(', ');
                 const withCountFunction = `
-public static function getEloquentQuery(): Builder
-{
-    return parent::getEloquentQuery()->withCount([${childCamelNames}]);
-}`;
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withCount([${childPluralCamelNames}]);
+    }`;
                 resourceContent = resourceContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', withCountFunction);
             }
 
-            // 5. & 6. Handle Print Action
             if (tableData.allow_print_view === 1) {
-                resourceContent = resourceContent.replace('<<IMPORT_PRINTACTION>>', 'use App\\Filament\\Actions\\PrintAction;');
-                resourceContent = resourceContent.replace('<<PRINT_ACTION>>', 'PrintAction::make(),');
+                resourceContent = resourceContent.replace('<<IMPORT_PRINTACTION>>', 'use Filament\\Actions\\Action;\nuse App\\Filament\\Actions\\PrintAction;');
+                const printAction = `Action::make('print')
+                    ->label('Print')
+                    ->icon('heroicon-o-printer')
+                    ->color('gray')
+                    ->url(fn (): string => request()->fullUrlWithQuery(['print' => 1]))
+                    ->openUrlInNewTab(),`;
+                resourceContent = resourceContent.replace('<<PRINT_ACTION>>', printAction);
             }
 
-            // 7. & 8. Handle Export Action
             if (tableData.allow_csv_export === 1) {
                 const importExport = `use App\\Filament\\Exports\\${modelName}Exporter;\nuse Filament\\Actions\\ExportAction;`;
                 const exportAction = `ExportAction::make()->exporter(${modelName}Exporter::class),`;
@@ -2078,7 +2081,6 @@ public static function getEloquentQuery(): Builder
                 resourceContent = resourceContent.replace('<<EXPORT_ACTION>>', exportAction);
             }
 
-            // 9. & 10. Handle Import Action
             if (tableData.allow_csv_import === 1) {
                 const importImport = `use App\\Filament\\Imports\\${modelName}Importer;\nuse Filament\\Actions\\ImportAction;`;
                 const importAction = `ImportAction::make()->importer(${modelName}Importer::class),`;
@@ -2086,56 +2088,58 @@ public static function getEloquentQuery(): Builder
                 resourceContent = resourceContent.replace('<<IMPORT_ACTION>>', importAction);
             }
             
-            // 11. & 12. Handle Relation Managers
-            const childrenWithTabs = relationships.filter(r => r.parent_table_name === tableName && r.show_tab === 1);
-            if (childrenWithTabs.length > 0) {
-                const importManagers = childrenWithTabs.map(r => `use App\\Filament\\Resources\\${modelNamePlural}\\RelationManagers\\${toPascalCase(r.child_table_name)}RelationManager;`).join('\n');
-                const relationManagers = childrenWithTabs.map(r => `            ${toPascalCase(r.child_table_name)}RelationManager::class,`).join('\n');
+            // ▼▼▼ PERUBAHAN UTAMA DI SINI ▼▼▼
+            // Kini ia hanya akan mengambil hubungan 'one-to-many' untuk Relation Manager
+            const childrenForRelationManager = relationships.filter(r => 
+                r.parent_table_name === tableName && 
+                r.show_tab === 1 &&
+                r.relationship_type !== 'one-to-one' // <-- SYARAT BAHARU DITAMBAH
+            );
+
+            if (childrenForRelationManager.length > 0) {
+                const importManagers = childrenForRelationManager.map(r => `use App\\Filament\\Resources\\${modelNamePlural}\\RelationManagers\\${toSingularPascalCase(r.child_table_name)}RelationManager;`).join('\n');
+                const relationManagers = childrenForRelationManager.map(r => `            ${toSingularPascalCase(r.child_table_name)}RelationManager::class,`).join('\n');
                 resourceContent = resourceContent.replace('<<IMPORT_RELATIONMANAGERS>>', importManagers);
                 resourceContent = resourceContent.replace('<<RELATION_RELATIONMANAGERS>>', relationManagers);
             }
+            // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
 
-            // 13, 17, & 18. Handle Navigation Menu Integration
             if (menuItem) {
-                if (menuGroup) { // Item is in a group
+                if (menuGroup) { 
                     const groupFunction = `
-public static function getNavigationGroup(): string
-{
-    return '${menuGroup.name}';
-}`;
+    public static function getNavigationGroup(): string
+    {
+        return '${menuGroup.name}';
+    }`;
                     const sortFunction = `
-public static function getNavigationSort(): int
-{
-    return ${menuItem.item_order};
-}`;
+    public static function getNavigationSort(): int
+    {
+        return ${menuItem.item_order};
+    }`;
                     resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONGROUP>>', groupFunction);
                     resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONSORT>>', sortFunction);
-                } else { // Item is top-level
+                } else { 
                     const sortProperty = `protected static ?int $navigationSort = ${menuItem.item_order};`;
                     resourceContent = resourceContent.replace('<<SHORTCUT_MENU_ORDER>>', sortProperty);
                 }
             }
 
-            // 14. Handle Audit Relation Manager
             if (projectSettings.module_log_audit === 1) {
                 const auditRelation = `
-if (auth()->check() && auth()->user()->can('view_any_audit')) {
-    $relations[] = AuditsRelationManager::class;
-}`;
+        if (auth()->check() && auth()->user()->can('view_any_audit')) {
+            $relations[] = AuditsRelationManager::class;
+        }`;
                 resourceContent = resourceContent.replace('<<RELATIONS_AUDIT>>', auditRelation);
             }
 
-            // 15. & 16. Ganti Nama Flatcase dan Nama Menu
             resourceContent = resourceContent.replace('<<MODEL_NAME_FLATCASE>>', toFlatCase(tableName));
             if (menuItem) {
                 resourceContent = resourceContent.replace('<<MENU_NAME>>', menuItem.item_label);
             }
 
-            // Bersihkan placeholder yang tidak digunakan
             resourceContent = resourceContent.replace(/<<.*?>>/g, '');
 
-            // 19. Jana fail output dalam folder yang betul
-            const resourceFolder = modelNamePlural;
+            const resourceFolder = toPluralPascalCase(tableName); // Nama folder kekal plural
             const resourceClassName = `${modelName}Resource`;
             const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder);
             fs.mkdirSync(outputFolderPath, { recursive: true });
@@ -2152,8 +2156,6 @@ if (auth()->check() && auth()->user()->can('view_any_audit')) {
         return { success: false, message: error.message };
     }
 }
-
-// FIND AND REPLACE THIS ENTIRE HANDLER IN: main.js
 
 ipcMain.handle('generate-app', async () => {
     const win = BrowserWindow.getFocusedWindow();
