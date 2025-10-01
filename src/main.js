@@ -7,6 +7,7 @@ const Database = require("better-sqlite3");
 const { Parser } = require("node-sql-parser");
 const parser = new Parser();
 const { spawn } = require('child_process');
+const pluralize = require('pluralize');
 
 // Tentukan laluan ke pangkalan data
 const dbPath = path.join(app.getPath("userData"), "FiziSysMaker.db");
@@ -1322,8 +1323,7 @@ ipcMain.handle('table:update', async (event, data) => {
             // Bina klausa SET untuk jadual 'tables'
             const allowedColumns = [
                 'table_name', 'table_view_title', 'table_description', 'show_quick_search', 'records_per_page',
-                'default_sort_by', 'sort_descending', 'allow_sorting', 'allow_filters', 'allow_csv_export',
-                'allow_print_view', 'allow_user_save_filters', 'allow_mass_delete', 'tv_template', 'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input',
+                'default_sort_by', 'sort_descending', 'allow_sorting', 'allow_filters', 'allow_csv_export', 'allow_csv_import','allow_print_view', 'allow_user_save_filters', 'allow_mass_delete', 'tv_template', 'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input',
                 'detail_view_classes_input', 'detail_view_title', 'record_owner', 'default_focus',
                 'redirect_after_insert', 'enable_detail_view', 'delete_with_children', 'dv_allow_print_view',
                 'dv_separate_page', 'dv_hide_save_as_copy', 'dv_sticky_buttons', 'dv_allow_add_from_homepage'
@@ -1711,13 +1711,9 @@ function getGeneratedFolderPath() {
   return generatedPath;
 }
 
-// ADD THESE HELPER FUNCTIONS IN: main.js (inside the generator section)
-
 /**
  * Menukar rentetan snake_case atau kebab-case kepada PascalCase.
  * Contoh: 'pelajar_sekolah' -> 'PelajarSekolah'
- * @param {string} str - Rentetan input.
- * @returns {string} Rentetan dalam format PascalCase.
  */
 function toPascalCase(str) {
     if (!str) return '';
@@ -1727,8 +1723,6 @@ function toPascalCase(str) {
 /**
  * Menukar rentetan snake_case kepada camelCase.
  * Contoh: 'pelajar_sekolah' -> 'pelajarSekolah'
- * @param {string} str - Rentetan input.
- * @returns {string} Rentetan dalam format camelCase.
  */
 function toCamelCase(str) {
     if (!str) return '';
@@ -1737,18 +1731,32 @@ function toCamelCase(str) {
 }
 
 /**
- * Menukar rentetan snake_case kepada camelCase jamak (plural).
- * Ini adalah versi ringkas; untuk kes kompleks, pustaka khas diperlukan.
- * Contoh: 'pelajar' -> 'pelajars'
- * @param {string} str - Rentetan input.
- * @returns {string} Rentetan jamak dalam format camelCase.
+ * Menukar rentetan snake_case kepada Plural PascalCase menggunakan logik Bahasa Inggeris yang betul.
+ * Contoh: 'activity_log' -> 'ActivityLogs'
+ */
+function toPluralPascalCase(str) {
+    if (!str) return '';
+    // Gunakan 'pluralize' pada rentetan asal sebelum menukar kes
+    return toPascalCase(pluralize(str));
+}
+
+/**
+ * Menukar rentetan snake_case kepada Plural camelCase menggunakan logik Bahasa Inggeris yang betul.
+ * Contoh: 'activity_log' -> 'activityLogs'
  */
 function toPluralCamelCase(str) {
     if (!str) return '';
-    // Logik plural yang sangat ringkas: tambah 's'. 
-    // Untuk bahasa Inggeris, ini selalunya betul tetapi tidak sempurna (cth: category -> categories).
-    // Untuk Bahasa Melayu, ia memadai sebagai pengenal pasti unik.
-    return toCamelCase(str) + 's';
+    // Gunakan 'pluralize' pada rentetan asal sebelum menukar kes
+    return toCamelCase(pluralize(str));
+}
+
+/**
+ * Menukar rentetan kepada flatcase (lowercase tanpa sempang atau garis bawah).
+ * Contoh: 'pelajar_sekolah' -> 'pelajarsekolah'
+ */
+function toFlatCase(str) {
+    if (!str) return '';
+    return str.replace(/[-_]/g, '').toLowerCase();
 }
 
 /**
@@ -1990,6 +1998,161 @@ async function generateFilamentUserModel(fullSchema, basePath) {
     }
 }
 
+// ADD THIS NEW, INDEPENDENT FUNCTION IN: main.js
+
+/**
+ * Menjana fail Resource Laravel Filament untuk setiap jadual.
+ * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.
+ * @param {string} basePath - Laluan asas ke folder 'generated'.
+ */
+async function generateFilamentResources(fullSchema, basePath) {
+    try {
+        const projectSettings = fullSchema.project;
+        const tables = fullSchema.database.table;
+        const relationships = fullSchema.database.relationships;
+        const unifiedMenu = fullSchema.database.unified_menu;
+
+        const templatePath = path.join(__dirname, 'templates/php/filament/app/Filament/Resources/Resource.template');
+        if (!fs.existsSync(templatePath)) {
+            throw new Error(`Template file not found at: ${templatePath}`);
+        }
+        const templateContent = fs.readFileSync(templatePath, 'utf8');
+
+        for (const tableName in tables) {
+            if (tableName === 'users') {
+                continue; // Langkau jadual 'users'
+            }
+
+            const tableData = tables[tableName];
+            let resourceContent = templateContent;
+
+            // Cari maklumat menu untuk jadual semasa
+            let menuItem = null;
+            let menuGroup = null;
+            for (const topLevelItem of unifiedMenu) {
+                if (topLevelItem.type === 'group') {
+                    const foundItem = topLevelItem.items.find(item => item.table_id === tableData.table_id);
+                    if (foundItem) {
+                        menuItem = foundItem;
+                        menuGroup = topLevelItem;
+                        break;
+                    }
+                } else if (topLevelItem.table_id === tableData.table_id) {
+                    menuItem = topLevelItem;
+                    break;
+                }
+            }
+
+            // --- Mulakan Proses Penggantian ---
+
+            // 1. & 2. Ganti Nama Model
+            const modelName = toPascalCase(tableName);
+            const modelNamePlural = toPluralPascalCase(tableName);
+            resourceContent = resourceContent.replace(/<<MODEL_NAME>>/g, modelName);
+            resourceContent = resourceContent.replace(/<<MODEL_NAME_PLURAL>>/g, modelNamePlural);
+            
+            // 3. & 4. Handle 'Show Child Count in Table View'
+            const childrenWithCount = relationships.filter(r => r.parent_table_name === tableName && r.show_count_in_tv === 1);
+            if (childrenWithCount.length > 0) {
+                resourceContent = resourceContent.replace('<<IMPORT_SHOW_COUNT_IN_TV>>', 'use Illuminate\\Database\\Eloquent\\Builder;');
+                const childCamelNames = childrenWithCount.map(r => `'${toCamelCase(r.child_table_name)}'`).join(', ');
+                const withCountFunction = `
+public static function getEloquentQuery(): Builder
+{
+    return parent::getEloquentQuery()->withCount([${childCamelNames}]);
+}`;
+                resourceContent = resourceContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', withCountFunction);
+            }
+
+            // 5. & 6. Handle Print Action
+            if (tableData.allow_print_view === 1) {
+                resourceContent = resourceContent.replace('<<IMPORT_PRINTACTION>>', 'use App\\Filament\\Actions\\PrintAction;');
+                resourceContent = resourceContent.replace('<<PRINT_ACTION>>', 'PrintAction::make(),');
+            }
+
+            // 7. & 8. Handle Export Action
+            if (tableData.allow_csv_export === 1) {
+                const importExport = `use App\\Filament\\Exports\\${modelName}Exporter;\nuse Filament\\Actions\\ExportAction;`;
+                const exportAction = `ExportAction::make()->exporter(${modelName}Exporter::class),`;
+                resourceContent = resourceContent.replace('<<IMPORT_EXPORTDATA>>', importExport);
+                resourceContent = resourceContent.replace('<<EXPORT_ACTION>>', exportAction);
+            }
+
+            // 9. & 10. Handle Import Action
+            if (tableData.allow_csv_import === 1) {
+                const importImport = `use App\\Filament\\Imports\\${modelName}Importer;\nuse Filament\\Actions\\ImportAction;`;
+                const importAction = `ImportAction::make()->importer(${modelName}Importer::class),`;
+                resourceContent = resourceContent.replace('<<IMPORT_IMPORTDATA>>', importImport);
+                resourceContent = resourceContent.replace('<<IMPORT_ACTION>>', importAction);
+            }
+            
+            // 11. & 12. Handle Relation Managers
+            const childrenWithTabs = relationships.filter(r => r.parent_table_name === tableName && r.show_tab === 1);
+            if (childrenWithTabs.length > 0) {
+                const importManagers = childrenWithTabs.map(r => `use App\\Filament\\Resources\\${modelNamePlural}\\RelationManagers\\${toPascalCase(r.child_table_name)}RelationManager;`).join('\n');
+                const relationManagers = childrenWithTabs.map(r => `            ${toPascalCase(r.child_table_name)}RelationManager::class,`).join('\n');
+                resourceContent = resourceContent.replace('<<IMPORT_RELATIONMANAGERS>>', importManagers);
+                resourceContent = resourceContent.replace('<<RELATION_RELATIONMANAGERS>>', relationManagers);
+            }
+
+            // 13, 17, & 18. Handle Navigation Menu Integration
+            if (menuItem) {
+                if (menuGroup) { // Item is in a group
+                    const groupFunction = `
+public static function getNavigationGroup(): string
+{
+    return '${menuGroup.name}';
+}`;
+                    const sortFunction = `
+public static function getNavigationSort(): int
+{
+    return ${menuItem.item_order};
+}`;
+                    resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONGROUP>>', groupFunction);
+                    resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONSORT>>', sortFunction);
+                } else { // Item is top-level
+                    const sortProperty = `protected static ?int $navigationSort = ${menuItem.item_order};`;
+                    resourceContent = resourceContent.replace('<<SHORTCUT_MENU_ORDER>>', sortProperty);
+                }
+            }
+
+            // 14. Handle Audit Relation Manager
+            if (projectSettings.module_log_audit === 1) {
+                const auditRelation = `
+if (auth()->check() && auth()->user()->can('view_any_audit')) {
+    $relations[] = AuditsRelationManager::class;
+}`;
+                resourceContent = resourceContent.replace('<<RELATIONS_AUDIT>>', auditRelation);
+            }
+
+            // 15. & 16. Ganti Nama Flatcase dan Nama Menu
+            resourceContent = resourceContent.replace('<<MODEL_NAME_FLATCASE>>', toFlatCase(tableName));
+            if (menuItem) {
+                resourceContent = resourceContent.replace('<<MENU_NAME>>', menuItem.item_label);
+            }
+
+            // Bersihkan placeholder yang tidak digunakan
+            resourceContent = resourceContent.replace(/<<.*?>>/g, '');
+
+            // 19. Jana fail output dalam folder yang betul
+            const resourceFolder = modelNamePlural;
+            const resourceClassName = `${modelName}Resource`;
+            const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder);
+            fs.mkdirSync(outputFolderPath, { recursive: true });
+            
+            const outputFilePath = path.join(outputFolderPath, `${resourceClassName}.php`);
+            fs.writeFileSync(outputFilePath, resourceContent);
+            console.log(`Resource generated: ${outputFilePath}`);
+        }
+        
+        return { success: true, message: 'Filament Resources generated successfully.' };
+
+    } catch (error) {
+        console.error('Failed to generate Filament Resources:', error);
+        return { success: false, message: error.message };
+    }
+}
+
 // FIND AND REPLACE THIS ENTIRE HANDLER IN: main.js
 
 ipcMain.handle('generate-app', async () => {
@@ -2016,11 +2179,17 @@ ipcMain.handle('generate-app', async () => {
             throw new Error(`Model generation failed: ${modelResult.message}`);
         }
 
-        // ▼▼▼ PENAMBAHAN BAHARU DI SINI ▼▼▼
         // 2. Panggil fungsi penjana KHAS untuk model User
         const userModelResult = await generateFilamentUserModel(fullSchema, filamentPath);
         if (!userModelResult.success) {
             throw new Error(`User Model generation failed: ${userModelResult.message}`);
+        }
+
+        // ▼▼▼ PENAMBAHAN BAHARU DI SINI ▼▼▼
+        // 3. Panggil fungsi penjana untuk Filament Resources
+        const resourceResult = await generateFilamentResources(fullSchema, filamentPath);
+        if (!resourceResult.success) {
+            throw new Error(`Filament Resource generation failed: ${resourceResult.message}`);
         }
         // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
         
@@ -2028,7 +2197,7 @@ ipcMain.handle('generate-app', async () => {
 
         return { 
             success: true, 
-            message: 'Application models (including User model) generated successfully!',
+            message: 'Application models and resources generated successfully!',
             folderPath: filamentPath 
         };
     } catch (error) {
