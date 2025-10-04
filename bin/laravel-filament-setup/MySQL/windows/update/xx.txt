@@ -1,0 +1,8 @@
+npm run build
+composer dump-autoload
+php artisan filament:optimize-clear
+php artisan filament:optimize
+php artisan config:clear
+php artisan cache:clear
+php artisan view:clear
+php artisan route:clear

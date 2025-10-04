@@ -3474,11 +3474,24 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-enable-global-filter', fieldData.enable_global_filter);
     setElementValue('fld-enable-individual-filter', fieldData.enable_individual_filter);
     setElementValue('fld-enable-range-filter', fieldData.enable_range_filter);
-    setElementValue('fld-enable-column-width', fieldData.enable_column_width);
-    setElementValue('fld-column-width', fieldData.column_width);
-    
+   
     // Tetapkan radio button 'Display As' berdasarkan data yang disimpan
     setRadioValue('fld-display-type', fieldData.display_type || 'text_input');
+    
+    setElementValue('fld-tv-wrap-header', fieldData.tv_wrap_header);
+    setElementValue('fld-tv-wrap-text', fieldData.tv_wrap_text);
+    setElementValue('fld-tv-enable-toggle', fieldData.tv_enable_toggle);
+    setElementValue('fld-tv-description-tooltips', fieldData.tv_description_tooltips);
+
+    setElementValue('fld-tv-text-limit', fieldData.tv_text_limit);
+    setElementValue('fld-tv-text-size', fieldData.tv_text_size);
+    setElementValue('fld-tv-font-weight', fieldData.tv_font_weight);
+    setElementValue('fld-tv-date-time-format', fieldData.tv_date_time_format);
+    setElementValue('fld-tv-currency-code', fieldData.tv_currency_code);
+    setElementValue('fld-tv-alignment', fieldData.tv_alignment);
+    setElementValue('fld-tv-text-color', fieldData.tv_text_color);
+    setElementValue('fld-tv-icon', fieldData.tv_icon);
+    setElementValue('fld-tv-icon-color', fieldData.tv_icon_color);
 
     // ▼▼▼ MULA LOGIK PAPAR/SEMBUNYI YANG DIPERBAIKI ▼▼▼
     const displayTypeRadios = document.querySelectorAll('input[name="fld-display-type"]');
@@ -4294,11 +4307,25 @@ function applyDataTypeRules() {
     const dateTypes = ['DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR'];
     const isDateType = dateTypes.includes(selectedType);
 
+    const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
+    const isNumericType = numericTypes.includes(selectedType);
+
+    const currencyCodeGroup = document.getElementById('currency-code-group');
+    if (currencyCodeGroup) {
+        currencyCodeGroup.classList.toggle('hidden', !isNumericType);
+    }
+    
     if (rangeFilterCheckbox) {
         rangeFilterCheckbox.disabled = !isDateType;
         if (!isDateType) {
             rangeFilterCheckbox.checked = false;
         }
+    }
+    
+    const dateTimeFormatGroup = document.getElementById('date-time-format-group');
+    if (dateTimeFormatGroup) {
+        // Paparkan kumpulan ini HANYA jika jenis data adalah berkaitan tarikh/masa
+        dateTimeFormatGroup.classList.toggle('hidden', !isDateType);
     }
 
     // ▼▼▼ MULA KAWASAN PEMBETULAN ▼▼▼

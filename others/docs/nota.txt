@@ -1,0 +1,28 @@
+Note:
+
+AppGini setup page - http://localhost/completexample/setup.php
+
+Papan Pemuka Utama: Dengan sistem tab untuk Localization, Theme, Menu management, dan Security.
+Papan Pemuka Tetapan Jadual: Paparan khusus yang muncul apabila jadual dipilih, lengkap dengan nested tabs untuk Table view dan Detail View.
+Papan Pemuka Tetapan Medan: Paparan paling terperinci yang muncul apabila medan dipilih, juga menggunakan sistem tab untuk General, Media, Lookup field, dan lain-lain.
+
+Cadangan untuk simpan data menu & parentchild:
+setting menu group -> mungkin pakai textbox + multiselect (group_name|table_1,table2,table3) -> new table
+setting child table -> new table
+
+
+Run electron: D:\Projects\webapps\FiziSysMaker>npm start
+
+Progress:
+main,localization,24 hour format ------------------------------------------------------------------ DONE
+main,theme, [snapshot gambar theme]
+table,table view,general,description [tukar Table imported using MySQL2AppGini on 2025-08-17] ----- DONE
+table,table view,template,Table view template[dropdown populate] ---------------------------------- DONE
+table,table view,template,Table view template[snapshot gambar template]
+table,table view,template,view classes[dropdown populate] ----------------------------------------- DONE
+table,detail view,general,Default focus field [dropdown populate] --------------------------------- DONE
+table,detail view,general,Record owner [dropdown populate]									
+field,media --------------------------------------------------------------------------------------- DONE
+field,data format, -------------------------------------------------------------------------------- DONE
+field,calculated field ---------------------------------------------------------------------------- DONE
+

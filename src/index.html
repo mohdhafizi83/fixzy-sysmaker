@@ -1805,13 +1805,96 @@
         <label class="checkbox-label">
             <input type="checkbox" id="fld-enable-range-filter" name="fld-enable-range-filter"> Enable range filter
         </label>
-            <label class="checkbox-label"><input type="checkbox" id="fld-show-sum" name="fld-show-sum"> Show column sum</label>
-            <div class="form-group mt-1">
-                <label class="checkbox-label">
-                    <input type="checkbox" id="fld-enable-column-width" name="fld-enable-column-width"> Column width (pixels)
-                    <input type="number" id="fld-column-width" name="fld-column-width" value="150" style="width: 80px; margin-left: 10px;">
-                </label>
+        <div class="form-group hidden" id="date-time-format-group" style="margin-top: 1rem;">
+            <label for="fld-tv-date-time-format">Date Time Format</label>
+            <div class="input-group">
+                <input type="text" id="fld-tv-date-time-format" name="fld-tv-date-time-format" value="M j, Y H:i:s">
+                <a href="https://www.php.net/manual/en/datetime.format.php" target="_blank" class="btn">PHP Format</a>
             </div>
+        </div>
+                <div class="form-group hidden" id="currency-code-group" style="margin-top: 1rem;">
+            <label for="fld-tv-currency-code">Currency code</label>
+            <div class="input-group">
+                <input type="text" id="fld-tv-currency-code" name="fld-tv-currency-code" placeholder="e.g., MYR" maxlength="3">
+                <a href="https://en.wikipedia.org/wiki/ISO_4217#List_of_currency_codes" target="_blank" class="btn">ISO 4217</a>
+            </div>
+        </div>
+            <label class="checkbox-label"><input type="checkbox" id="fld-show-sum" name="fld-show-sum"> Show column sum</label>
+            
+        <hr style="margin: 1rem 0;">
+        
+        <label class="checkbox-label"><input type="checkbox" id="fld-tv-wrap-header" name="fld-tv-wrap-header"> Enable wrap column header</label>
+        <label class="checkbox-label"><input type="checkbox" id="fld-tv-wrap-text" name="fld-tv-wrap-text"> Enable wrap text</label>
+        <label class="checkbox-label"><input type="checkbox" id="fld-tv-enable-toggle" name="fld-tv-enable-toggle"> Enable Toggled Hidden By Default</label>
+        <label class="checkbox-label"><input type="checkbox" id="fld-tv-description-tooltips" name="fld-tv-description-tooltips"> Enable description tooltips</label>
+
+        <div class="form-group" style="margin-top: 1rem;">
+            <label for="fld-tv-alignment">Alignment</label>
+            <select id="fld-tv-alignment" name="fld-tv-alignment">
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="fld-tv-text-limit">Text limit</label>
+            <input type="number" id="fld-tv-text-limit" name="fld-tv-text-limit" value="50" style="max-width: 100px;">
+        </div>
+        <div class="form-group">
+            <label for="fld-tv-text-size">Text Size</label>
+            <select id="fld-tv-text-size" name="fld-tv-text-size">
+                <option value="ExtraSmall">Extra Small</option>
+                <option value="Normal" selected>Normal</option>
+                <option value="Medium">Medium</option>
+                <option value="Large">Large</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="fld-tv-font-weight">Font weight</label>
+            <select id="fld-tv-font-weight" name="fld-tv-font-weight">
+                <option value="Thin">Thin</option>
+                <option value="ExtraLight">Extra Light</option>
+                <option value="Light">Light</option>
+                <option value="Regular" selected>Regular</option>
+                <option value="Medium">Medium</option>
+                <option value="SemiBold">Semi Bold</option>
+                <option value="Bold">Bold</option>
+                <option value="ExtraBold">Extra Bold</option>
+                <option value="Black">Black</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="fld-tv-text-color">Text color</label>
+            <select id="fld-tv-text-color" name="fld-tv-text-color">
+                <option value=""></option>
+                <option value="gray">Gray</option>
+                <option value="info">Info</option>
+                <option value="primary">Primary</option>
+                <option value="warning">Warning</option>
+                <option value="success">Success</option>
+                <option value="danger">Danger</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="fld-tv-icon">Icon</label>
+            <div class="input-group">
+                <input type="text" id="fld-tv-icon" name="fld-tv-icon" placeholder="e.g., check-circle">
+                <a href="https://heroicons.com/" target="_blank" class="btn">Heroicons</a>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="fld-tv-icon-color">Icon color</label>
+            <select id="fld-tv-icon-color" name="fld-tv-icon-color">
+                <option value=""></option>
+                <option value="gray">Gray</option>
+                <option value="info">Info</option>
+                <option value="primary">Primary</option>
+                <option value="warning">Warning</option>
+                <option value="success">Success</option>
+                <option value="danger">Danger</option>
+            </select>
+        </div>
+        
         </div>
     </fieldset>
 <fieldset>

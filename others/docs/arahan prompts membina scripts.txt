@@ -1,0 +1,644 @@
+--------------------
+Membina fungsi utama -------------------- DONE
+--------------------
+Bina satu fungsi utama untuk membaca keseluruhan maklumat yang terdapat didalam database dan saling kait antara satu sama lain. Berikan nama yang sesuai untuk function ini. Return dari fungsi utama ini akan digunakan semula untuk membina pelbagai script. 
+
+Function ini dan function jana script lain akan dipanggil ketika pengguna klik butang 'Generate app'.
+
+Buat masa ini, bantu saya untuk bina script php laravel filament seperti dibawah:
+
+------------------------
+1.Membina laravel Models
+------------------------
+
+Proses generate laravel Model kecuali untuk table users adalah seperti dibawah:
+- Copy content fail Model.template di src/templates/php/filament/app/Models 
+- Bandingkan dengan fungsi utama yang menyimpan keseluruhan maklumat dari database untuk proses seterusnya.
+
+Replace content Model.template seperti berikut:
+
+1. Jika module_fake_data = 1, gantikan "<<IMPORT_FACTORY>>" dengan "use Illuminate\Database\Eloquent\Factories\HasFactory;". Jika tidak, gantikan dengan empty.
+
+2. Jika module_fake_data = 1, gantikan "<<TRAIT_FACTORY>>" dengan "use HasFactory;". Jika tidak, gantikan dengan empty.
+
+1. Jika data_delete_type = soft, gantikan "<<IMPORT_SOFTDELETE>>" dengan "use Illuminate\Database\Eloquent\SoftDeletes;". Jika tidak, gantikan dengan empty.
+
+2. Jika data_delete_type = soft, gantikan "<<TRAIT_SOFTDELETE>>" dengan ", SoftDeletes". Jika tidak, gantikan dengan empty.
+
+3. Jika module_log_audit = 1, gantikan "<<IMPORT_AUDIT>>" dengan 
+"
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+".
+Jika tidak, gantikan dengan empty.
+
+4. Jika module_log_audit = 1, gantikan "<<CLASS_IMPLEMENTS_AUDIT>>" dengan "implements Auditable". Jika tidak, gantikan dengan empty.
+
+5. Jika module_log_audit = 1, gantikan "<<TRAIT_AUDIT>>" dengan ", AuditableTrait". Jika tidak, gantikan dengan empty.
+
+6. Gantikan "<<CLASS_NAME>>" dengan PascalCase table_name value. Contoh table_name = pelajar_sekolah, gantikan <<CLASS_NAME>> dengan PelajarSekolah.
+
+7. Gantikan "<<TABLE_NAME>>" dengan table_name value.
+
+8. Gantikan "<<PRIMARY_KEY>>" dengan field_name value yang mana primary_key = 1.
+
+9. Gantikan "<<ARRAY_EDITABLE_BYUSER_FIELDS>>" dengan senarai field_name value table berkenaan (kecuali field_name ialah primary key, created_at, updated_at, deleted_at, dan field_name dengan syarat readonly = 1) dalam format begini:
+        'field_name1',
+        'field_name2',
+        'field_name3',
+        
+10. Ganti <<RELATIONSHIP_FUNCTIONS>> dengan  Eloquent Relationship Methods seperti yang terdapat di table parent_child_relationships.  Jika tidak, gantikan dengan empty.
+Kenal pasti one-to-one (foreignkey = unique), one-to-many, many-to-many dan relation lain untuk setiap Model.
+
+11. Jana output di folder AppData.../generated/filament/app/Models dengan nama PascalCase table_name dengan extension php. Contoh table_name = pelajar_sekolah, fail terjana akan bernama PelajarSekolah.php
+
+Sebelum menyediakan kod, terangkan semula kepada saya tugasan ini bagi memastikan anda memahami tugasan.
+
+Seterusnya, bantu saya untuk bina script php laravel filament seperti dibawah. Pastikan fungsi ini independent atau fungsi baru:
+----------------------------
+2.Membina laravel Model User
+----------------------------
+Proses generate laravel Model untuk table users:
+- Copy content fail User.template di src/templates/php/filament/app/Models 
+- Bandingkan dengan fungsi utama yang menyimpan keseluruhan maklumat dari database untuk proses seterusnya.
+
+Replace content User.template seperti berikut:
+
+1. Jika data_delete_type = soft, gantikan "<<IMPORT_SOFTDELETE>>" dengan "use Illuminate\Database\Eloquent\SoftDeletes;". Jika tidak, gantikan dengan empty.
+
+2. Jika data_delete_type = soft, gantikan "<<TRAIT_SOFTDELETE>>" dengan ", SoftDeletes". Jika tidak, gantikan dengan empty.
+
+3. Jika module_log_audit = 1, gantikan "<<IMPORT_AUDIT>>" dengan 
+"
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+".
+Jika tidak, gantikan dengan empty.
+
+4. Jika module_log_audit = 1, gantikan "<<CLASS_IMPLEMENTS_AUDIT>>" dengan "implements Auditable". Jika tidak, gantikan dengan empty.
+
+5. Jika module_log_audit = 1, gantikan "<<TRAIT_AUDIT>>" dengan ", AuditableTrait". Jika tidak, gantikan dengan empty.
+        
+6. Ganti <<RELATIONSHIP_FUNCTIONS>> dengan  Eloquent Relationship Methods seperti yang terdapat di table parent_child_relationships.  Jika tidak, gantikan dengan empty.
+
+7. Jika module_authorization = 1, gantikan "<<IMPORT_SHIELD>>" dengan "use Spatie\Permission\Traits\HasRoles;". Jika tidak, gantikan dengan empty.
+
+8. Jika module_authorization = 1, gantikan "<<TRAIT_SHIELD>>" dengan "HasRoles". Jika tidak, gantikan dengan empty.
+
+9. Jana output di folder AppData.../generated/filament/app/Models dengan nama User.php
+
+Seterusnya, bantu saya untuk bina script php laravel filament seperti dibawah. Pastikan fungsi ini independent atau fungsi baru:
+-----------------------------------------------------------------
+3.Membina laravel filament fail resources (tidak termasuk jadual users)
+-----------------------------------------------------------------
+Proses generate laravel filament fail resources:
+- Copy content fail Resource.template di src/templates/php/filament/app/Filament/Resources 
+- Bandingkan dengan fungsi utama yang menyimpan keseluruhan maklumat dari database untuk proses seterusnya.
+
+Replace content Resource.template seperti berikut:
+
+1. Gantikan "<<MODEL_NAME>>" dengan PascalCase table_name value. Contoh table_name = pelajar_sekolah, gantikan <<MODEL_NAME>> dengan PelajarSekolah.
+
+2. Gantikan "<<MODEL_NAME_PLURAL>>" dengan plural PascalCase table_name value. Contoh table_name = pelajar_sekolah, gantikan <<MODEL_NAME_PLURAL>> dengan PelajarSekolahs.
+
+3. Jika terdapat show_count_in_tv = 1 dimana-mana child table untuk parent table ini, gantikan "<<IMPORT_SHOW_COUNT_IN_TV>>" dengan "use Illuminate\Database\Eloquent\Builder;". Jika tidak, gantikan dengan empty.
+
+4. JIka terdapat show_count_in_tv = 1 dimana-mana child table untuk parent table ini, gantikan <<FUNCTION_SHOW_COUNT_IN_TV>> dengan kod dibawah. Gantikan <<ARRAY_CAMELCASE_CHILD_NAME>> dengan senarai array child tables. Contoh, dokumen_pelajar dan daftar_kursus ialah child table kepada pelajar yang mana kedua-duanya direkodkan show_count_in_tv = 1. Maka  <<ARRAY_CAMELCASE_CHILD_NAME>> digantikan dengan ['dokumenPelajar', 'daftarKursus'].
+"
+public static function getEloquentQuery(): Builder
+{
+    return parent::getEloquentQuery()->withCount(<<ARRAY_CAMELCASE_CHILD_NAME>>);
+}
+"
+
+5. Jika allow_print_view = 1, gantikan "<<IMPORT_PRINTACTION>>" dengan "use App\Filament\Actions\PrintAction;". Jika tidak, gantikan dengan empty.
+
+6. Jika allow_print_view = 1, gantikan "<<PRINT_ACTION>>" dengan "PrintAction::make(),". Jika tidak, gantikan dengan empty.
+
+7. Jika allow_csv_export = 1, gantikan <<IMPORT__EXPORTDATA>> dengan kod import berikut. Gantikan "<<MODEL_NAME>>" dengan PascalCase table_name value. Jika tidak, gantikan dengan empty.
+"
+use App\Filament\Exports\<<MODEL_NAME>>Exporter;
+use Filament\Actions\ExportAction;
+"
+
+8. Jika allow_csv_export = 1, gantikan <<EXPORT_ACTION>> dengan kod import berikut. Gantikan "<<MODEL_NAME>>" dengan PascalCase table_name value. Jika tidak, gantikan dengan empty.
+"
+            ExportAction::make()
+                ->exporter(<<MODEL_NAME>>Exporter::class),
+"
+
+9. Jika allow_csv_import = 1, gantikan <<IMPORT__IMPORTDATA>> dengan kod import berikut. Gantikan "<<MODEL_NAME>>" dengan PascalCase table_name value. Jika tidak, gantikan dengan empty.
+"
+use App\Filament\Imports\<<MODEL_NAME>>Importer;
+use Filament\Actions\ImportAction;
+"
+
+10. Jika allow_csv_import = 1, gantikan <<IMPORT_ACTION>> dengan kod import berikut. Gantikan "<<MODEL_NAME>>" dengan PascalCase table_name value. Jika tidak, gantikan dengan empty.
+"
+            ImportAction::make()
+                ->importer(<<MODEL_NAME>>Importer::class),
+"
+
+11. Ganti <<IMPORT_RELATIONMANAGERS>> dengan kod import seperti format dibawah yang terdapat di table parent_child_relationships jika show_tab = 1. Gantikan "<<MODEL_NAME_PLURAL>>" dengan plural PascalCase table_name value. Gantikan <<CHILD_TABLE>> dengan PascalCase child table_name. Jika tidak, gantikan dengan empty.
+"
+use App\Filament\Resources\<<MODEL_NAME_PLURAL>>\RelationManagers\<<CHILD_TABLE>>RelationManager;
+...
+"
+
+12. Ganti <<RELATION_RELATIONMANAGERS>> dengan kod import seperti format dibawah yang terdapat di table parent_child_relationships jika show_tab = 1. Gantikan <<CHILD_TABLE>> dengan PascalCase child table_name. Jika tidak, gantikan dengan empty.
+"
+<<CHILD_TABLE>>RelationManager::class,
+...
+"
+
+13. Jika menu_items bukan didalam group menu, gantikan <<SHORTCUT_MENU_ORDER>> dengan "protected static ?int $navigationSort = <<MENU_ORDER>>;". Gantikan <<MENU_ORDER>> dengan item_order value didalam table menu_items.
+
+14. Jika module_log_audit = 1, gantikan "<<RELATIONS_AUDIT>>" dengan 
+"
+if (auth()->check() && auth()->user()->can('view_any_audit')) {
+    $relations[] = AuditsRelationManager::class;
+}
+".
+Jika tidak, gantikan dengan empty. 
+
+15. Gantikan "<<MODEL_NAME_FLATCASE>>" dengan flatcase/lowecase table_name value. Contoh table_name = pelajar_sekolah, gantikan <<MODEL_NAME_FLATCASE>> dengan pelajarsekolah.
+
+16. Gantikan "<<MENU_NAME>>" dengan item_label value yang terdapat didalam table menu_items. 
+
+17. Jika table_id mempunyai menu_group_id bukan null didalam table menu_items, gantikan <<FUNCTION_GETNAVIGATIONGROUP>> dengan kod dibawah. Gantikan <<MENU_GROUP_NAME>> dengan group_name didalam table menu_groups.
+
+"
+// 4. Define the menu group	
+public static function getNavigationGroup(): string
+{
+    return '<<MENU_GROUP_NAME>>';
+}
+"
+
+18. Jika table_id mempunyai menu_group_id bukan null didalam table menu_items, gantikan <<FUNCTION_GETNAVIGATIONSORT>> dengan kod dibawah. Gantikan <<MENU_ORDER>> dengan item_order value didalam table menu_items.
+
+"
+// 5. Set the menu position within the group
+public static function getNavigationSort(): int
+{
+    return <<MENU_ORDER>>; // Nombor 1 akan diletakkan paling atas dalam kumpulan 'Biodata'
+}
+"
+11. Jana output di folder AppData.../generated/filament/app/Filament/Resources/<<RESOURCE_FOLDER>> dengan nama PascalCase table_name value dengan extension php. Contoh table_name = pelajar_sekolah, fail terjana akan bernama PelajarSekolahResource.php. <<RESOURCE_FOLDER>> pula ialah plural PascalCase table_name value.
+
+Seterusnya, bantu saya untuk bina script php laravel filament seperti dibawah. Pastikan fungsi ini independent atau fungsi baru:
+-----------------------------------------------------------------------
+3.Membina laravel filament fail Pages/List (tidak termasuk jadual users)
+-----------------------------------------------------------------------
+Proses generate laravel filament fail resources:
+- Copy content fail PagesList.template di 'src/templates/php/filament/app/Filament/Resources'
+- Bandingkan dengan fungsi utama yang menyimpan keseluruhan maklumat dari database untuk proses seterusnya.
+
+Replace content Resource.template seperti berikut:
+
+1. Gantikan <<TABLE_NAME_SINGULAR>> dengan singular PascalCase table_name. Contoh table_name = pelajar_sekolah, singular PascalCase ialah PelajarSekolah.
+
+2. Gantikan <<TABLE_NAME_PLURAL>> dengan plural PascalCase table_name. Contoh table_name = pelajar_sekolah, plural PascalCase ialah PelajarSekolahs.
+
+3. Ganti <<TABLE_VIEW_TITLE>> dengan table_view_title
+
+4. Jika show_count_in_tv = 1, gantikan <<CREATE_ACTION>> dengan kod dibawah. Gantikan <<FOREIGNKEY>> dengan foreignkey table ini. Modify kod jika ada 2 atau lebih foreignkey.
+"
+CreateAction::make()
+// carry variables to be directly inserted into the create form.
+    ->when(
+        // Condition: Only execute if the 'is_in_iframe' session is true.
+        session('is_in_iframe'),
+        
+        // This function will only run if the above condition is met.
+        fn (CreateAction $action) => $action->url(fn (): string => static::getResource()::getUrl('create', [
+            '<<FOREIGNKEY>>' => request()->query('<<FOREIGNKEY>>')
+        ]))
+    ),
+"
+                
+5. Jika show_count_in_tv = 0, gantikan <<CREATE_ACTION>> dengan kod "CreateAction::make(),"
+
+6. JIka terdapat show_count_in_tv = 1 dimana-mana child table untuk table ini, gantikan <<VERTICAL_ACTION_BUTTON_CSS>> dengan kod dibawah. Jika tidak, gantikan dengan empty.
+"
+        FilamentView::registerRenderHook(
+            'panels::body.end',
+            fn (): string => <<<HTML
+                <style>
+                    /* Sasarkan bekas (container) yang memegang butang-butang tindakan */
+                    td.fi-ta-cell > .fi-ta-actions {
+                        display: flex;
+                        flex-direction: column;
+                        /* Jajarkan butang ke permulaan (kiri) */
+                        align-items: flex-start; 
+                        /* Tambah sedikit jarak di antara butang */
+                        gap: 0.5rem; 
+                    }
+                </style>
+            HTML
+        );
+"
+
+7. Jika show_count_in_tv = 1, gantikan <<IMPORT_BUILDER>> dengan kod "use Illuminate\Database\Eloquent\Builder;". Jika tidak, gantikan dengan empty.
+
+8. Jika show_count_in_tv = 1, gantikan <<FILTER_QUERY>> dengan kod dibawah. Gantikan <<FOREIGNKEY>> dengan foreignkey table ini. Jika tidak, gantikan dengan empty.
+"
+    protected function getTableQuery(): Builder
+    {
+        $query = parent::getTableQuery();
+        if ($pelajarId = request()->query('<<FOREIGNKEY>>')) {
+            $query->where('<<FOREIGNKEY>>', $pelajarId);
+        }
+
+        return $query;
+    }
+"
+
+9. Jika show_count_in_tv = 1, gantikan <<IFRAME_SETUP>> dengan kod dibawah. Jika tidak, gantikan dengan empty.
+"
+/**
+ * This method runs when the component is loaded.
+ * It is an appropriate place to set the initial state.
+ */
+public function mount(): void
+{
+    parent::mount();
+
+    if (request()->has('iframe')) {
+        session(['is_in_iframe' => true]);
+    } else {
+        session()->forget('is_in_iframe');
+    }
+}
+    
+    /**
+     * This method will select the layout dynamically.
+     */
+    public function getLayout(): string
+    {
+        if (session('is_in_iframe')) {
+            return 'filament.layouts.custom-iframe-layout';
+        }
+        
+        return parent::getLayout();
+    }
+"
+
+10. Jika allow_print_view = 1, gantikan <<PRINT_ACTION_CSS>> dengan kod dibawah. Jika tidak, gantikan dengan empty.
+
+"
+ if ((bool) request()->query('print')) {
+    FilamentView::registerRenderHook(
+        'panels::body.end',
+        fn (): string => <<<HTML
+            <style>
+                @media print {
+                    body {
+                        /* 1. Sembunyikan SEMUA elemen secara lalai */
+                        visibility: hidden;
+                    }
+
+                    /* 2. Paparkan SEMULA HANYA bahagian yang dikehendaki dan elemen di dalamnya */
+                    .fi-sc-form,      /* Untuk kandungan borang */
+                    .fi-sc-form *,
+                    .fi-ta-content-ctn,  /* Untuk kandungan jadual */
+                    .fi-ta-content-ctn * {
+                        visibility: visible;
+                    }
+
+                    /* 3. Letakkan kandungan di penjuru atas kiri halaman cetakan */
+                    .fi-sc-form,
+                    .fi-ta-content-ctn {
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 100%;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                    }
+
+                    body {
+                        font-size: 12pt !important;
+                        background-color: #fff !important;
+                    }
+                    
+                        /* Sembunyikan sel lajur Actions pada setiap baris */
+                        .fi-ta-cell .fi-ta-actions {
+                            display: none !important;
+                        }
+                }
+            </style>
+            <script>
+                // Tunggu sehingga semua kandungan halaman dimuatkan sepenuhnya
+                window.onload = () => {
+                    // Cetuskankan dialog cetakan pelayar web
+                    window.print();
+
+                    // (Pilihan - untuk pengalaman pengguna yang lebih baik)
+                    // Cuba tutup tab ini selepas pengguna selesai mencetak atau membatalkan.
+                    // Nota: Sesetengah pelayar web mungkin menyekat fungsi ini atas sebab keselamatan.
+                    window.onafterprint = () => {
+                        window.close();
+                    };
+                };
+            </script>
+HTML
+    );
+}
+"
+
+11. Jana output di folder 'AppData.../generated/filament/app/Filament/Resources/<<RESOURCE_FOLDER>>/Pages' dengan nama plural PascalCase table_name value dengan extension php. Contoh table_name = pelajar_sekolah, fail terjana akan bernama ListPelajarSekolahs.php. <<RESOURCE_FOLDER>> pula ialah plural PascalCase table_name value. Path Fail sepatutnya 'AppData.../generated/filament/app/Filament/Resources/PelajarSekolahs/Pages/ListPelajarSekolahs.php'
+
+Seterusnya, bantu saya untuk bina script php laravel filament seperti dibawah. Pastikan fungsi ini independent atau fungsi baru:
+-----------------------------------------------------------------------
+4.Membina laravel filament fail Pages/Create (tidak termasuk jadual users)
+-----------------------------------------------------------------------
+Proses generate laravel filament fail resources:
+- Copy content fail PagesCreate.template di 'src/templates/php/filament/app/Filament/Resources'
+- Bandingkan dengan fungsi utama yang menyimpan keseluruhan maklumat dari database untuk proses seterusnya.
+
+Replace content PagesCreate.template seperti berikut:
+
+1. Gantikan <<TABLE_NAME_SINGULAR>> dengan singular PascalCase table_name. Contoh table_name = pelajar_sekolah, singular PascalCase ialah PelajarSekolah.
+
+2. Gantikan <<TABLE_NAME_PLURAL>> dengan plural PascalCase table_name. Contoh table_name = pelajar_sekolah, plural PascalCase ialah PelajarSekolahs.
+
+3. Jana output di folder 'AppData.../generated/filament/app/Filament/Resources/<<RESOURCE_FOLDER>>/Pages' dengan nama singular PascalCase table_name value dengan extension php. Contoh table_name = pelajar_sekolah, fail terjana akan bernama CreatePelajarSekolah.php. <<RESOURCE_FOLDER>> pula ialah plural PascalCase table_name value. Path Fail sepatutnya 'AppData.../generated/filament/app/Filament/Resources/PelajarSekolahs/Pages/CreatePelajarSekolah.php'
+
+
+Seterusnya, bantu saya untuk bina script php laravel filament seperti dibawah. Pastikan fungsi ini independent atau fungsi baru:
+-----------------------------------------------------------------------
+5.Membina laravel filament fail Pages/Edit (tidak termasuk jadual users)
+-----------------------------------------------------------------------
+Proses generate laravel filament fail resources:
+- Copy content fail PagesEdit.template di 'src/templates/php/filament/app/Filament/Resources'
+- Bandingkan dengan fungsi utama yang menyimpan keseluruhan maklumat dari database untuk proses seterusnya.
+
+Replace content PagesEdit.template seperti berikut:
+
+1. Gantikan <<TABLE_NAME_SINGULAR>> dengan singular PascalCase table_name. Contoh table_name = pelajar_sekolah, singular PascalCase ialah PelajarSekolah.
+
+2. Gantikan <<TABLE_NAME_PLURAL>> dengan plural PascalCase table_name. Contoh table_name = pelajar_sekolah, plural PascalCase ialah PelajarSekolahs.
+
+3. Gantikan <<PRIMARY_KEY>> dengan primary key table ini.
+
+4. Jika terdapat field_name unique = 1 didalam table ini, Gantikan <<UNIQUE_EMPTY>> dengan "$data['<<FIELD_NAME_UNIQUE>>'] = '';". Ulang jika terdapat unique lain. Gantikan <<FIELD_NAME_UNIQUE>> dengan field_name. Jika tidak, gantikan dengan empty.
+
+5. Gantikan <<FIRST_STRING_FIELD>> dengan field_name pertama berjenis string.
+
+6. Jika table ini mempunyai child table, gantikan <<IFRAME_PARENT_SETUP>> dengan kod dibawah. Jika tidak, gantikan dengan empty.
+"
+    public function mount(string|int $record): void
+    {
+        parent::mount($record);
+        if (request()->has('iframe')) {
+            session(['is_in_iframe' => true]);
+        } else {
+            session()->forget('is_in_iframe');
+        }
+    }
+	
+    public function getLayout(): string
+    {
+        if (request()->has('iframe')) {
+            return 'filament.layouts.custom-iframe-layout';
+        }
+
+        return parent::getLayout();
+    }
+"
+
+6. Jika table ini ialah child kepada table lain, gantikan <<IMPORT_CLOSE_IFRAME>> dengan kod dibawah. Jika tidak, gantikan dengan empty.
+"
+use Filament\Support\Facades\FilamentView;
+use Illuminate\Contracts\View\View;
+"
+
+7. Jika table ini ialah child kepada table lain, gantikan <<REFRESH_CLOSE_IFRAME>> dengan kod dibawah. Jika tidak, gantikan dengan empty.
+"
+    public function render(): View
+    {
+        FilamentView::registerRenderHook(
+            'panels::body.end',
+            fn (): string => <<<HTML
+                <script>
+                    document.addEventListener('click', function (event) {
+                        if (event.target.closest('.fi-modal-close-btn')) {
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 100);
+                        }
+                    });
+                </script>
+            HTML
+        );
+
+        return parent::render();
+    }
+"
+
+8. Jana output di folder 'AppData.../generated/filament/app/Filament/Resources/<<RESOURCE_FOLDER>>/Pages' dengan nama singular PascalCase table_name value dengan extension php. Contoh table_name = pelajar_sekolah, fail terjana akan bernama EditPelajarSekolah.php. <<RESOURCE_FOLDER>> pula ialah plural PascalCase table_name value. Path Fail sepatutnya 'AppData.../generated/filament/app/Filament/Resources/PelajarSekolahs/Pages/EditPelajarSekolah.php'
+
+Seterusnya, bantu saya untuk bina script php laravel filament seperti dibawah. Pastikan fungsi ini independent atau fungsi baru:
+-----------------------------------------------------------------------
+6.Membina laravel filament fail RelationManager (tidak termasuk jadual users dan one-to-one relationship)
+-----------------------------------------------------------------------
+Proses generate laravel filament fail resources:
+- Loop through kesemua child table untuk table ini.
+- Copy content fail RelationManagers.template di 'src/templates/php/filament/app/Filament/Resources'
+- Bandingkan dengan fungsi utama yang menyimpan keseluruhan maklumat dari database untuk proses seterusnya.
+
+Replace content RelationManagers.template seperti berikut:
+
+1. Gantikan <<TABLE_NAME_PLURAL>> dengan plural PascalCase parent table (table ini) table_name. Contoh parent table table_name = pelajar_sekolah, plural PascalCase ialah PelajarSekolahs.
+
+2. Gantikan <<CHILD_TABLE_NAME_PLURAL>> dengan plural PascalCase child table table_name. Contoh child table table_name = bas_sekolah, plural PascalCase ialah BasSekolahs.
+
+3. Gantikan <<CHILD_TABLE_NAME_PLURAL_CAMEL>> dengan plural camelCase child table table_name. Contoh child table table_name = bas_sekolah, plural camelCase ialah basSekolahs.
+
+4. Gantikan <<CHILD_TABLE_NAME_SINGULAR>> dengan singular PascalCase child table table_name. Contoh child table table_name = bas_sekolah, singular PascalCase ialah BasSekolah.
+
+5. Jana output di folder 'AppData.../generated/filament/app/Filament/Resources/<<RESOURCE_FOLDER>>/RelationManagers' dengan nama singular PascalCase table_name value dengan extension php. Contoh table_name = pelajar_sekolah, fail terjana akan bernama PelajarSekolahRelationManager.php. <<RESOURCE_FOLDER>> pula ialah plural PascalCase table_name value. Path Fail sepatutnya 'AppData.../generated/filament/app/Filament/Resources/PelajarSekolahs/RelationManagers/PelajarSekolahRelationManager.php'
+
+Seterusnya, bantu saya untuk bina script php laravel filament seperti dibawah. Pastikan fungsi ini independent atau fungsi baru:
+-----------------------------------------------------------------------
+6.Membina laravel filament fail Table (tidak termasuk jadual users)
+-----------------------------------------------------------------------
+Proses generate laravel filament fail resources:
+- Copy content fail TablesTable.template di 'src/templates/php/filament/app/Filament/Resources'
+- Bandingkan dengan fungsi utama yang menyimpan keseluruhan maklumat dari database untuk proses seterusnya.
+
+Replace content TablesTable.template seperti berikut:
+
+1. Gantikan <<TABLE_NAME_PLURAL>> dengan plural PascalCase parent table (table ini) table_name. Contoh parent table table_name = pelajar_sekolah, plural PascalCase ialah PelajarSekolahs.
+
+2. Gantikan <<TABLE_NAME_SINGULAR>> dengan singular PascalCase table_name. Contoh table_name = pelajar_sekolah, singular PascalCase ialah PelajarSekolah.
+
+3. Loop child table untuk table ini dan jika child table show_count_in_tv = 1, gantikan <<IMPORT_RESOURCES>> dengan kod dibawah.  Ulang jika terdapat child table lain dengan show_count_in_tv = 1. Ganti <<CHILD_TABLE_NAME_PLURAL>> dengan plural PascalCase dan <<CHILD_TABLE_NAME_SINGULAR>> dengan singular PascalCase.
+"
+use App\Filament\Resources\<<CHILD_TABLE_NAME_PLURAL>>\<<CHILD_TABLE_NAME_SINGULAR>>Resource;
+"
+
+4. Jika allow_mass_delete = 1, gantikan <<ACTION_MASS_DELETE>> dengan kod dibawah.
+"
+BulkActionGroup::make([
+    DeleteBulkAction::make(),
+]),
+"
+dan gantikan <<IMPORT_MASS_DELETE>> dengan kod dibawah.
+"
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+"
+
+5. Jika show_edit_button = 1 dan enable_detail_view = 1 dan dv_separate_page = 0, gantikan <<ACTION_EDIT_BUTTON>> dengan "EditAction::make()," dan gantikan <<DISABLED_ROW_INTERACTION>> dengan "->recordUrl(null)" dan gantikan <<IMPORT_EDIT_ACTION>> dengan "use Filament\Actions\EditAction;". Jika tidak, gantikan dengan empty.
+
+6. Jika show_edit_button = 1 dan enable_detail_view = 1 dan dv_separate_page = 1, gantikan <<DISABLED_ROW_INTERACTION>> dengan "->recordUrl(null)"  dan gantikan <<IMPORT_EDIT_ACTION>> dengan "use Filament\Actions\EditAction;" dan gantikan <<ACTION_EDIT_BUTTON>> dengan kod dibawah. Jika tidak, gantikan dengan empty.
+"
+EditAction::make()
+->openUrlInNewTab(),
+"
+7. Jika pagination_type = 'simple', gantikan <<PAGINATION_TYPE>> dengan "->paginationMode(PaginationMode::Simple)". Jika tidak, gantikan dengan empty.
+
+8. Jika pagination_type = 'extreme', gantikan <<PAGINATION_TYPE>> dengan "->extremePaginationLinks()". Jika tidak, gantikan dengan empty.
+
+9. Gantikan <<ADD_DESCRIPTION>> dengan table_description. Jika tidak, gantikan dengan empty.
+ 
+10. Jika show_delete_button = 1, gantikan <<ACTION_DELETE_BUTTON>> dengan "DeleteAction::make()," dan gantikan <<IMPORT_DELETE_ACTION>> dengan "use Filament\Actions\DeleteAction;". Jika tidak, gantikan dengan empty.
+
+11. Jika allow_restore_delete = 1 dan data_delete_type = 'soft', gantikan <<ACTION_RESTORE_BUTTON>> dengan "RestoreAction::make()," dan gantikan <<IMPORT_RESTORE_ACTION>> dengan "use Filament\Actions\RestoreAction;". Jika tidak, gantikan dengan empty.
+
+12. Jika allow_force_delete = 1 dan data_delete_type = 'soft', gantikan <<ACTION_FORCEDELETE_BUTTON>> dengan "ForceDeleteAction::make()," dan gantikan <<IMPORT_FORCEDELETE_ACTION>> dengan "use Filament\Actions\ForceDeleteAction;". Jika tidak, gantikan dengan empty.
+
+13. Jika dan data_delete_type = 'soft' dan allow_restore_delete = 1 atau allow_force_delete = 1, gantikan <<TRASHED_FILTER>> dengan "TrashedFilter::make()," dan gantikan <<IMPORT_TRASHEDFILTER>> dengan "use Filament\Tables\Filters\TrashedFilter;". Jika tidak, gantikan dengan empty.
+
+14. Jika allow_pagination = 0, gantikan <<DISABLED_PAGINATION>> dengan "->paginated(false)". Jika tidak, gantikan dengan empty.
+
+15. Jika dv_separate_page = 1, gantikan <<OPEN_TO_NEW_TAB>> dengan "->openRecordUrlInNewTab()". Jika tidak, gantikan dengan empty.
+
+16. Jika enable_detail_view = 0, gantikan <<DISABLED_DETAILVIEW>> dengan "->recordUrl(null)". Jika tidak, gantikan dengan empty.
+
+17. Jika terdapat show_count_in_tv = 1 dimana-mana child table untuk parent table ini, gantikan "<<IMPORT_ACTION>>" dengan kod dibawah. Jika tidak, gantikan dengan empty.
+"
+use Filament\Actions\Action;
+use Illuminate\Contracts\View\View;
+"
+
+18. Loop semua fields untuk table ini, jika terdapat mana-mana field dengan media_type = 'image', gantikan <<IMPORT_IMAGE>> dengan "use Filament\Tables\Columns\ImageColumn;". Jika tidak, gantikan dengan empty.
+
+19. Loop semua fields untuk table ini, jika terdapat mana-mana field dengan media_type = 'upload', gantikan <<IMPORT_UPLOAD>> dengan kod dibawah. Jika tidak, gantikan dengan empty.
+"
+use Filament\Tables\Columns\IconColumn;
+use Illuminate\Support\Facades\Storage;
+"
+
+20. Loop child table untuk table ini dan jika child table show_count_in_tv = 1, gantikan <<SHOW_COUNT_IN_TV>> dengan kod dibawah.  Ulang jika terdapat child table lain dengan show_count_in_tv = 1. Jika tidak, gantikan dengan empty. Ganti <<CHILD_TABLE_NAME_SINGULAR>> dengan singular PascalCase child table_name. Gantikan <<TABLE_NAME_SINGULAR>> dengan singular PascalCase table_name (parent table). Gantikan <<CHILD_TABLE_PLURAL_SNAKE_CASE>> dengan plural snake_case child table_name. Contoh table_name = bas_sekolah, plural snake_case ialah bas_sekolahs. Ganti <<CHILD_TABLE_NAME_TITLE>> dengan Title case. Contoh child table_name = bas_sekolah, Title case ialah 'Bas sekolah'. Ganti <<CHILD_TABLE_NAME_FRASA>> dengan frasa biasa. Contoh child table_name = bas_sekolah, frasa biasa ialah 'bas sekolah'. Gantikan <<FIRST_STRING_FIELD>> dengan parent table (table ini) field_name pertama berjenis string (bukan url, bukan email, bukan path, bukan long text) dan <<FIRST_STRING_FIELD_TITLE>> dengan field yang sama dengan format Title case. Gantikan <<FOREIGNKEY>> dengan foreignkey child table untuk parent table (table ini). Gantikan <<PRIMARY_KEY>> dengan primary key parent table (table ini).
+"
+Action::make('show<<CHILD_TABLE_NAME_SINGULAR>>')
+    ->label(fn (<<TABLE_NAME_SINGULAR>> $record): string => '<<CHILD_TABLE_NAME_TITLE>>: ' . $record-><<CHILD_TABLE_PLURAL_SNAKE_CASE>>_count)
+    ->button()
+    ->outlined()
+    ->color('info')
+    ->tooltip('Show total of <<CHILD_TABLE_NAME_FRASA>>')
+    ->visible(fn (<<TABLE_NAME_SINGULAR>> $record): bool => $record-><<CHILD_TABLE_PLURAL_SNAKE_CASE>>_count > 0)
+    ->modalHeading(fn (<<TABLE_NAME_SINGULAR>> $record) => '<<FIRST_STRING_FIELD_TITLE>>: ' . $record-><<FIRST_STRING_FIELD>>)
+    ->modalSubmitAction(false)
+    ->modalCancelAction(false)
+    ->modalWidth('6xl')
+    ->modalContent(fn (<<TABLE_NAME_SINGULAR>> $record): View =>
+        view(
+            'filament.components.modal-iframe',
+            [
+                'src' => <<CHILD_TABLE_NAME_SINGULAR>>Resource::getUrl('index', [
+                    '<<FOREIGNKEY>>' => $record-><<PRIMARY_KEY>>,
+                    'iframe' => 1
+                ])
+            ]
+        )
+    ),
+"
+
+21. Jika allow_print_view = 1, gantikan <<SHOW_ALL_FOR_PRINT>> dengan kod dibawah. Jika tidak, gantikan dengan empty.
+"
+->when(
+    (bool) request()->query('print'),
+    fn (Table $table) => $table->paginated(false),
+)
+"
+-----------
+22.1. Jika tv_icon bukan null/empty, gantikan <<IMPORT_ICON_COLUMN_TEXT>> dengan "use Filament\Support\Icons\Heroicon;".
+22.2. Jika tv_text_size bukan 'Normal', gantikan <<IMPORT_COLUMN_TEXT_SIZE>> dengan "use Filament\Support\Enums\TextSize;".
+22.3. Jika tv_font_weight bukan 'Regular', gantikan <<IMPORT_FONTWEIGHT_COLUMN_TEXT>> dengan "use Filament\Support\Enums\FontWeight;".
+
+22. Seterusnya kita akan membuat kod untuk column. Ia melibatkan kesemua fields yang terdapat didalam table ini. Loop semua field dan bina kod berdasarkan jenis dan ketetapan seperti yang dinyatakan.
+
+Jenis 1: Jika field media_type = 'link' dan hide_in_tv = 0 dan editable_in_tv = 0 dan bukan foreignkey dan display_type bukan 'options_list' atau 'check_box'. Gunakan kod dibawah. 
+1.1. Gantikan <<FIELD_NAME>> dengan field_name. 
+1.2. Gantikan <<FIELD_LABEL>> dengan "->label('<<FIELD_NAME_TITLECASE>>')" dan gantikan <<FIELD_NAME_TITLECASE>> dengan 1.3. Title case field_name. Contoh table_name = bas_sekolah, Title case ialah 'Bas sekolah'. 
+1.4. Jika allow_sorting = 1, gantikan <<ALLOW_SORTING>> dengan "->sortable()". 
+1.5. Jika enable_global_filter = 1 dan enable_individual_filter = 0, ganti <<SEARCHABLE>> dengan "->searchable()". 
+1.6. Jika enable_global_filter = 0 dan enable_individual_filter = 1, ganti <<SEARCHABLE>> dengan "->searchable(isIndividual: true, isGlobal: false)". 
+1.7. Jika enable_global_filter = 1 dan enable_individual_filter = 1, ganti <<SEARCHABLE>> dengan "->searchable(isIndividual: true)".
+1.8. Jika tv_wrap_header = 1, gantikan <<WRAP_COLUMN_HEADER>> dengan "->wrapHeader()".
+1.9. Jika tv_wrap_text = 1, gantikan <<WRAP_COLUMN_TEXT>> dengan "->wrap()".
+1.10. Jika tv_enable_toggle = 1, gantikan <<TOGGLE_TYPE>> dengan "->toggleable(isToggledHiddenByDefault: true)".
+1.11. Jika tv_enable_toggle = 0, gantikan <<TOGGLE_TYPE>> dengan "->toggleable()".
+1.12. Jika tv_description_tooltips = 1, gantikan <<COLUMN_TOOLTIPS>> dengan "->tooltip('<<COLUMN_DESCRIPTION>>')". Gantikan <<COLUMN_DESCRIPTION>> dengan description.
+1.13. Jika tv_font_weight bukan 'Regular', gantikan <<FONTWEIGHT_COLUMN_TEXT>> dengan "->weight(FontWeight::<<FONTWEIGHT_VALUE>>)". Gantikan <<FONTWEIGHT_VALUE>> dengan tv_font_weight.
+1.14. Jika tv_text_limit bukan null/empty, gantikan <<LIMIT_COLUMN_TEXT>> dengan "->limit(<<TEXT_LIMIT_VALUE>>, end: ' (more)')". Gantikan <<TEXT_LIMIT_VALUE>> dengan tv_text_limit.
+1.15. Jika tv_alignment = 'center', gantikan <<ALIGN_COLUMN_TEXT>> dengan "->alignCenter()".
+1.15. Jika tv_alignment = 'right', gantikan <<ALIGN_COLUMN_TEXT>> dengan "->alignEnd()".
+1.16. Jika tv_text_color bukan null/empty, gantikan <<COLOR_COLUMN_TEXT>> dengan "->color('<<COLOR_VALUE>>')". Gantikan <<COLOR_VALUE>> dengan tv_text_color.
+1.17. Jika tv_icon bukan null/empty, gantikan <<ICON_COLUMN_TEXT>> dengan "->icon(Heroicon::<<ICON_VALUE>>)". Gantikan <<ICON_VALUE>> dengan tv_icon.
+1.18. Jika tv_icon_color bukan null/empty, gantikan <<COLORICON_COLUMN_TEXT>> dengan "->iconColor('<<ICONCOLOR_VALUE>>')". Gantikan <<ICONCOLOR_VALUE>> dengan tv_icon_color.
+1.19. Jika tv_text_size bukan 'Normal', gantikan <<COLUMN_TEXT_SIZE>> dengan "->size(TextSize::<<TEXT_SIZE>>)". Gantikan <<TEXT_SIZE>> dengan tv_text_size.
+1.20. Jika data_type ialah 'DATE' atau 'DATETIME' atau 'TIMESTAMP' dan tv_date_time_format bukan null/empty, gantikan <<DATETIME_FIELD>> dengan "->dateTime('<<DATETIME_FORMAT>>')". Gantikan <<DATETIME_FORMAT>> dengan tv_date_time_format.
+1.21. Jika data_type ialah 'DATE' atau 'DATETIME' atau 'TIMESTAMP' dan tv_date_time_format ialah null/empty, gantikan <<DATETIME_FIELD>> dengan "->dateTime()".
+1.22. Jika data_type ialah numeric types dan tv_currency_code adalah null/empty, gantikan <<NUMERIC_FIELD>> dengan "->numeric()".
+1.23. Jika data_type ialah numeric types dan tv_currency_code bukan null/empty, gantikan <<NUMERIC_FIELD>> dengan "->money('<<CURRENCY_CODE>>')". Gantikan <<CURRENCY_CODE>> dengan tv_currency_code. 
+1.24. Jika display_type=rich_html, gantikan <<HTML_FIELD>> dengan "->html()".
+"
+TextColumn::make('<<FIELD_NAME>>')
+    <<FIELD_LABEL>>
+    <<DATETIME_FIELD>>
+    <<NUMERIC_FIELD>>
+    <<ALLOW_SORTING>>
+    <<TOGGLE_TYPE>>
+    <<WRAP_COLUMN_HEADER>>
+    <<WRAP_COLUMN_TEXT>>
+    <<COLUMN_TOOLTIPS>>
+    <<FONTWEIGHT_COLUMN_TEXT>>
+    <<LIMIT_COLUMN_TEXT>>
+    <<ALIGN_COLUMN_TEXT>>
+    <<COLOR_COLUMN_TEXT>>
+    <<ICON_COLUMN_TEXT>>
+    <<COLORICON_COLUMN_TEXT>>
+    <<SEARCHABLE>>,
+"
+-----------
+
+23. Seterusnya kita akan membuat kod untuk filter date range. Filter melibatkan fields jenis date sahaja. Loop semua fields untuk table ini, jika enable_range_filter = 1 dan data_type ialah 'DATE' atau 'DATETIME' atau 'TIMESTAMP', gantikan <<DATE_RANGE_FILTER>> dengan kod dibawah. Gantikan <<DATE_FIELD_NAME>> dengan field_name jenis date/time berkenaan. Jika tidak, gantikan dengan empty.
+"
+Filter::make('Date Range')
+    ->form([                    
+        DatePicker::make('start')
+            ->label('Start from'),
+        
+        DatePicker::make('end')
+            ->label('until'),
+    ])
+
+        ->query(function (Builder $query, array $data): Builder {
+    return $query
+    ->when(
+    $data['start'],
+    fn (Builder $query, $tarikh): Builder => $query->whereDate('<<DATE_FIELD_NAME>>', '>=', $tarikh)
+    )
+    ->when(
+    $data['end'],
+    fn (Builder $query, $tarikh): Builder => $query->whereDate('<<DATE_FIELD_NAME>>', '<=', $tarikh)
+    );
+    })
+"
+
+24. Jana output di folder 'AppData.../generated/filament/app/Filament/Resources/<<RESOURCE_FOLDER>>/RelationManagers' dengan nama singular PascalCase table_name value dengan extension php. Contoh table_name = pelajar_sekolah, fail terjana akan bernama PelajarSekolahRelationManager.php. <<RESOURCE_FOLDER>> pula ialah plural PascalCase table_name value. Path Fail sepatutnya 'AppData.../generated/filament/app/Filament/Resources/PelajarSekolahs/RelationManagers/PelajarSekolahRelationManager.php'

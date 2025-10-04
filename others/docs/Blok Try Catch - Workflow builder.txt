@@ -1,0 +1,22 @@
+## Nota Arkitektur & Cadangan Penting
+Blok Try/Catch adalah jauh lebih kompleks untuk dibina berbanding blok-blok sebelum ini. Reka bentuk yang anda cadangkan (sebuah blok bekas dengan "laluan" atau kanvas bersarang di dalamnya) memerlukan perubahan besar pada logik teras drag-and-drop, lukisan penyambung, dan penyimpanan state.
+
+Daripada membina semula separuh daripada Workflow Builder, saya mencadangkan pendekatan yang lebih bijak dan mudah diurus yang mencapai matlamat yang sama menggunakan sistem penyambung sedia ada.
+
+Cadangan Reka Bentuk (Versi Mudah Diurus):
+Daripada satu blok bekas, kita akan cipta satu blok Try/Catch yang mempunyai satu input dan dua output:
+
+Try (Laluan Utama): Aliran kerja akan diteruskan melalui output ini untuk melaksanakan tindakan utama.
+
+Catch (Laluan Ralat): Jika mana-mana blok dalam cabang Try gagal, enjin pelaksana akan berhenti dan melompat ke blok yang disambungkan ke output Catch.
+
+Gambaran Aliran:
+
+                                    ┌──────────────────────────┐
+                           ┌───────────┐
+(Aliran Masuk) ─────► │ Try/Catch │ --(Laluan Try)───► [Action: Panggil API] ───► [Blok Seterusnya]
+                           └───────────┘
+                                 │
+                                 └─(Laluan Catch)──► [Action: Hantar Emel Ralat] ─► [Blok Seterusnya]
+												 
+Pendekatan ini memberikan anda fungsi pengendalian ralat yang anda perlukan tanpa perlu menulis semula logik kanvas yang kompleks. Ia adalah amalan biasa dalam banyak alat workflow.

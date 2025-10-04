@@ -1,0 +1,34 @@
+Tentu, jangan risau. Mari kita pecahkannya kepada langkah-langkah mudah menggunakan satu analogi untuk menjelaskan fungsi ketiga-tiga titik sambungan tersebut.
+
+Bayangkan anda seorang guru yang perlu menanda kertas peperiksaan untuk satu kelas. 🧑‍🏫
+
+Senarai Data Anda: Setimbun kertas peperiksaan.
+
+Blok For Each Loop: Proses penandaan kertas.
+
+## 1. Titik Kiri (Input): "Mula Proses"
+Analogi: Ini adalah saat anda (sebagai guru) mengambil setimbun kertas peperiksaan (iaitu senarai data yang anda masukkan dalam kotak, contohnya ##variable.senarai_pelajar##).
+
+Fungsi Teknikal: Aliran kerja anda tiba di titik ini untuk memulakan proses gelung. Ia memberitahu blok ini, "Baiklah, saya ada senarai data ini, sila mulakan kerja anda."
+
+## 2. Titik Kanan Atas ("Loop Body"): "Buat Kerja Berulang"
+Analogi: Dari sini, anda akan ambil satu kertas pada satu masa. Anda akan menandanya (melakukan tindakan). Kemudian anda ambil kertas kedua, dan tanda lagi. Anda ulang proses yang sama ini untuk setiap helai kertas sehingga habis.
+
+Fungsi Teknikal: Aliran kerja akan keluar melalui titik ini untuk setiap item di dalam senarai anda. Apa sahaja blok yang anda sambungkan di sini (contohnya, Action Block: Update Record) akan dilaksanakan berulang kali, sekali untuk setiap item. Di dalam cabang inilah anda akan menggunakan pembolehubah khas seperti ##loop.current_item.id_pelajar## untuk merujuk kepada item yang sedang diproses.
+
+## 3. Titik Kanan Bawah ("After Loop"): "Kerja Selesai, Seterusnya?"
+Analogi: Selepas semua kertas peperiksaan selesai ditanda, anda mungkin mahu mengira gred purata kelas atau menghantar laporan kepada pengetua. Ini adalah tindakan yang anda buat sekali sahaja selepas kerja berulang selesai.
+
+Fungsi Teknikal: Aliran kerja hanya akan keluar melalui titik ini sekali sahaja, iaitu selepas gelung selesai memproses semua item dalam senarai. Ia digunakan untuk menyambung ke langkah seterusnya dalam aliran kerja utama anda, seperti menghantar notifikasi ringkasan.
+
+## Ringkasan Aliran
+Berikut adalah gambaran mudah aliran tersebut:
+
+                                    ┌──────────────────────────┐
+(Aliran Masuk) ───────────► │       FOR EACH LOOP      │ --(Untuk SETIAP item)──► [Blok dalam Loop Body]
+                                    │ (Proses Senarai Pelajar) │
+                                    └──────────────────────────┘
+                                                 │
+                                                 └─(Selepas SEMUA selesai)─► [Blok Seterusnya]
+												 
+Jadi, secara ringkas: Aliran masuk ke kiri, keluar berulang kali melalui kanan atas untuk setiap item, dan akhirnya keluar sekali sahaja melalui kanan bawah apabila semuanya selesai.

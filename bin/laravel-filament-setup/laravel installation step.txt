@@ -1,0 +1,33 @@
+Ini ialah cadangan untuk deployment di production:
+1. Klon github projek templat ke myproject
+2. Copy files yang dijana oleh low code app ke myproject
+3. cd myproject
+4. cp .env.example .env
+5. composer install --no-dev --optimize-autoloader
+6. composer require fakerphp/faker
+7. php artisan key:generate
+8. php artisan migrate --force
+9. php artisan shield:generate --all --panel=admin --no-interaction
+10. php artisan db:seed
+11. composer remove fakerphp/faker
+12. npm install
+13. npm run build
+14. php artisan storage:link
+15. php artisan filament:optimize-clear
+16. php artisan filament:optimize
+
+Ini ialah cadangan untuk deployment di development:
+1. Klon github projek templat ke myproject
+2. Copy files yang dijana oleh low code app ke myproject
+3. cd myproject
+4. cp .env.example .env
+5. composer install
+6. php artisan key:generate
+7. php artisan migrate --force
+8. php artisan shield:generate --all --panel=admin --no-interaction
+9. php artisan db:seed
+10. npm install
+11. npm run build
+12. php artisan storage:link
+13. php artisan serve
+ 
