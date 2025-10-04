@@ -862,8 +862,8 @@
                             <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1rem 0;">
 
                             <div class="radio-group-horizontal">
-                                <label><input type="radio" name="view_mode" id="app-view_mode_table" value="table_view" checked> Preview Table View</label>
-                                <label><input type="radio" name="view_mode" id="app-view_mode_detail" value="detail_view"> Preview Detail View</label>
+                                <label><input type="radio" name="view_mode" id="app-view_mode_table" value="table_view" checked> Preview 'Table List'</label>
+                                <label><input type="radio" name="view_mode" id="app-view_mode_detail" value="detail_view"> Preview 'Record Form'</label>
                             </div>
 
                             <div class="theme-preview-window">
@@ -1000,7 +1000,7 @@
                                 <label class="checkbox-label"><input type="checkbox" id="app-allow_sql_tool" name="app-allow_sql_tool" checked> Allow admin access to interactive SQL tool</label>
                                 <label class="checkbox-label"><input type="checkbox" id="app-allow_server_status" name="app-allow_server_status"> Allow admin access to server status page</label>
                                 <label class="checkbox-label"><input type="checkbox" id="app-admins_group_access" name="app-admins_group_access" checked> All members of 'Admins' group can access the admin area</label>
-                                <label class="checkbox-label"><input type="checkbox" id="app-allow_table_view_sql" name="app-allow_table_view_sql"> Allow admin access to table view SQL</label>
+                                <label class="checkbox-label"><input type="checkbox" id="app-allow_table_view_sql" name="app-allow_table_view_sql"> Allow admin access to 'Table List' SQL</label>
                                 <label class="checkbox-label"><input type="checkbox" id="app-copy_children_async" name="app-copy_children_async" checked> Copy children asynchronously using curl</label>
                                 <label class="checkbox-label"><input type="checkbox" id="app-allow_pwa_install" name="app-allow_pwa_install" checked> Allow users to install app on mobile (PWA)</label>
                             </div>
@@ -1035,9 +1035,9 @@
 	
     <div class="tabs-container">
         <div class="tabs-nav">
-            <button class="tab-link active" data-tab="parent-tab-table-view" id="tbl-tab-tableview" name="tbl-tab-tableview">Table view</button>
-            <button class="tab-link" data-tab="parent-tab-detail-view" id="tbl-tab-detailview" name="tbl-tab-detailview">Detail View</button>
-			<button class="tab-link" data-tab="tab-custom-views" id="tbl-tab-customview" name="tbl-tab-customview">Custom Views</button>
+            <button class="tab-link active" data-tab="parent-tab-table-view" id="tbl-tab-tableview" name="tbl-tab-tableview">Table List</button>
+            <button class="tab-link" data-tab="parent-tab-detail-view" id="tbl-tab-detailview" name="tbl-tab-detailview">Record Form</button>
+			<button class="tab-link" data-tab="tab-custom-views" id="tbl-tab-customview" name="tbl-tab-customview">Custom Pages</button>
     <button class="tab-link" data-tab="tab-constraints" id="tbl-tab-constraints" name="tbl-tab-constraints">Constraints & Indexes</button>
         </div>
 
@@ -1055,12 +1055,12 @@
                             <div class="card">
                                 <div class="card-body">
                                     <div class="form-group">
-                                        <label for="tbl-table-view-title">Table view title</label>
+                                        <label for="tbl-table-view-title">'Table List' title</label>
                                         <input type="text" id="tbl-table-view-title" name="tbl-table-view-title" value="Bilik">
                                     </div>
                                     <div class="form-group">
                                         <label for="tbl-table-description">Description</label>
-                                        <textarea id="tbl-table-description" name="tbl-table-description" rows="4">List of {Table view title}</textarea>
+                                        <textarea id="tbl-table-description" name="tbl-table-description" rows="4">List of {'Table List' title}</textarea>
                                     </div>
                                 </div>
                             </div>
@@ -1127,7 +1127,7 @@
                                     <div class="form-grid">
                                         <div>
                                             <div class="form-group">
-                                                <label>Table view template</label>
+                                                <label>'Table List' template</label>
                                                 <select id="tbl-tv-template" name="tbl-tv-template">
                                                     <option value="horizontal">Horizontal (Default)</option>
                                                     <option value="vertical_1">Vertical (1 field per line)</option>
@@ -1141,7 +1141,7 @@
                                                 <label class="checkbox-label mt-1"><input type="checkbox" id="tbl-use-first-field-as-title" name="tbl-use-first-field-as-title"> Use the first textual field as a title for the record</label>
                                             </div>
                                             <div class="form-group">
-                                                <label>Table view classes</label>
+                                                <label>'Table List' classes</label>
                                                 <div class="input-group">
                                                     <input type="text" id="tbl-table-view-classes-input" name="tbl-table-view-classes-input" value="">
                                                     <select id="table-view-classes-select" name="table-view-classes-select">
@@ -1154,7 +1154,7 @@
                                                 </div>
                                             </div>
                                             <div class="form-group">
-                                                <label>Detail view classes</label>
+                                                <label>'Record Form' classes</label>
                                                 <div class="input-group">
                                                     <input type="text" id="tbl-detail-view-classes-input" name="tbl-detail-view-classes-input" value="">
                                                     <select id="detail-view-classes-select" name="detail-view-classes-select">
@@ -1186,8 +1186,8 @@
                 <div class="tabs-container">
                     <div class="tabs-nav">
                         <button class="tab-link active" data-tab="tab-detail-general" id="tbl-dv-tab-general" name="tbl-dv-tab-general">General</button>
-                        <button class="tab-link" data-tab="tab-detail-permissions" id="tbl-dv-tab-permissions" name="tbl-dv-tab-permissions">Permissions</button>
-                        <button class="tab-link" data-tab="tab-detail-parent-child" id="tbl-dv-tab-parent-child" name="tbl-dv-tab-parent-child">Parent/Child settings</button>
+                        <button class="tab-link" data-tab="tab-detail-permissions" id="tbl-dv-tab-permissions" name="tbl-dv-tab-permissions">Features</button>
+                        <button class="tab-link" data-tab="tab-detail-parent-child" id="tbl-dv-tab-parent-child" name="tbl-dv-tab-parent-child">Parent-Child </button>
 						<button class="tab-link" data-tab="tab-detail-hooks">Hooks (Optional - for sophisticated App)</button>
                     </div>
 
@@ -1197,8 +1197,8 @@
                                 <div class="card-body">
                                     <div class="form-grid">
                                         <div class="form-group">
-                                            <label for="tbl-detail-view-title">Detail view title</label>
-                                            <input type="text" id="tbl-detail-view-title" name="tbl-detail-view-title" value="Detail View">
+                                            <label for="tbl-detail-view-title">'Record Form' title</label>
+                                            <input type="text" id="tbl-detail-view-title" name="tbl-detail-view-title" value="Detail Record">
                                         </div>
                                         <div class="form-group">
                                             <label for="tbl-record-owner">Record owner</label>
@@ -1225,10 +1225,10 @@
                             <div class="card">
                                 <div class="card-body">
                                     <div class="permission-grid">
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-enable-detail-view" name="tbl-enable-detail-view" checked> Enable detail view</label>
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-enable-detail-view" name="tbl-enable-detail-view" checked> Enable 'Record Form'</label>
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-delete-with-children" name="tbl-delete-with-children"> Delete records even if they have children</label>
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-dv-allow-print-view" name="tbl-dv-allow-print-view" checked> Allow print-view</label>
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-dv-separate-page" name="tbl-dv-separate-page"> Display detail view in a separate page</label>
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-dv-separate-page" name="tbl-dv-separate-page"> Display 'Record Form' in a separate page</label>
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-dv-hide-save-as-copy" name="tbl-dv-hide-save-as-copy"> Hide "Save As Copy"</label>
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-dv-sticky-buttons" name="tbl-dv-sticky-buttons" checked> Keep action buttons visible while scrolling</label>
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-dv-allow-add-from-homepage" name="tbl-dv-allow-add-from-homepage"> Allow adding new records from homepage</label>
@@ -1306,7 +1306,7 @@
                                         <div>
                                             <h4>Options for "<span id="selected-child-table-name">tempahan_penginapan</span>"</h4>
                                             <div class="permission-grid mt-2">
-                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-show-tab" name="parentchild-show-tab" checked> Show tab below detail view</label>
+                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-show-tab" name="parentchild-show-tab" checked> Show tab below 'Record Form'</label>
                                                 <label class="checkbox-label"><input type="checkbox" id="parentchild-show-icon" name="parentchild-show-icon" checked> Show icon</label>
                                                 <label class="checkbox-label"><input type="checkbox" id="parentchild-autoclose-modal" name="parentchild-autoclose-modal"> Auto-close modal after saving changes</label>
                                                 <div class="form-group">
@@ -1314,9 +1314,9 @@
                                                     <input type="text" id="parentchild-tab-title" name="parentchild-tab-title" value="Tempahan penginapan">
                                                 </div>
                                                 <label class="checkbox-label"><input type="checkbox" id="parentchild-copy-records" name="parentchild-copy-records"> Copy child records when copying parent</label>
-                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-show-link-above" name="parentchild-show-link-above" checked> Show link above detail view</label>
-                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-show-count-in-tv" name="parentchild-show-count-in-tv"> Show count of children in table view (TV)</label>
-                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-allow-add-from-tv" name="parentchild-allow-add-from-tv"> Add new children from table view</label>
+                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-show-link-above" name="parentchild-show-link-above" checked> Show link above 'Record Form'</label>
+                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-show-count-in-tv" name="parentchild-show-count-in-tv"> Show count of children in 'Table List' (TL)</label>
+                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-allow-add-from-tv" name="parentchild-allow-add-from-tv"> Add new children from 'Table List'</label>
                                             </div>
                                         </div>
                                     </div>
@@ -1436,40 +1436,33 @@
                                 </div>
                                 <div class="form-group">
                                     <label>Data type</label>
-                                    <select id="fld-data-type" name="fld-data-type">
-        <option value="" disabled selected>-- Please Select a Data Type --</option>
-        <optgroup label="Numeric Types">
-            <option value="TINYINT">TINYINT</option>
-            <option value="SMALLINT">SMALLINT</option>
-            <option value="MEDIUMINT">MEDIUMINT</option>
-            <option value="INT">INT</option>
-            <option value="BIGINT">BIGINT</option>
-            <option value="DECIMAL">DECIMAL</option>
-            <option value="FLOAT">FLOAT</option>
-            <option value="DOUBLE">DOUBLE</option>
-        </optgroup>
-        <optgroup label="Date and Time Types">
-            <option value="DATE">DATE</option>
-            <option value="DATETIME">DATETIME</option>
-            <option value="TIMESTAMP">TIMESTAMP</option>
-            <option value="TIME">TIME</option>
-            <option value="YEAR">YEAR</option>
-        </optgroup>
-        <optgroup label="String Types">
-            <option value="CHAR">CHAR</option>
-            <option value="VARCHAR">VARCHAR</option>
-            <option value="TINYTEXT">TINYTEXT</option>
-            <option value="TEXT">TEXT</option>
-            <option value="MEDIUMTEXT">MEDIUMTEXT</option>
-            <option value="LONGTEXT">LONGTEXT</option>
-        </optgroup>
-        <optgroup label="Binary & Blob Types">
-            <option value="BLOB">BLOB</option>
-            <option value="TINYBLOB">TINYBLOB</option>
-            <option value="MEDIUMBLOB">MEDIUMBLOB</option>
-            <option value="LONGBLOB">LONGBLOB</option>
-        </optgroup>
-                                    </select>
+ <select id="fld-data-type" name="fld-data-type" required>
+    <option value="" disabled selected>-- Please Select a Data Type --</option>
+    
+    <optgroup label="Text Types">
+        <option value="VARCHAR">Short Text (Name, Email)</option>
+        <option value="TEXT">Long Text (Paragraph, Description)</option>
+        <option value="LONGTEXT">Very Long Text (Article, Log)</option>
+    </optgroup>
+    
+    <optgroup label="Numeric Types">
+        <option value="INT">Integer (ID, Quantity)</option>
+        <option value="BIGINT">Large Integer (Primary Key)</option>
+        <option value="DECIMAL">Decimal (Price, Money)</option>
+        <option value="BOOLEAN">Boolean (True/False, Active Status)</option>
+    </optgroup>
+    
+    <optgroup label="Date & Time Types">
+        <option value="DATE">Date Only</option>
+        <option value="DATETIME">Date and Time</option>
+        <option value="TIMESTAMP">Timestamp</option>
+    </optgroup>
+    
+    <optgroup label="Special Types">
+        <option value="JSON">JSON Data</option>
+        <option value="UUID">UUID</option>
+    </optgroup>
+</select>
                                 </div>
 <div class="form-row-condensed">
     <div class="form-group">
@@ -1481,7 +1474,7 @@
         <input type="number" id="fld-precision" name="fld-precision">
     </div>
     <div class="form-group">
-        <label for="fld-max-chars-in-tv">Max characters in table view</label>
+        <label for="fld-max-chars-in-tv">Max characters in 'Table List'</label>
         <input type="number" id="fld-max-chars-in-tv" name="fld-max-chars-in-tv">
     </div>
 </div>
@@ -1568,16 +1561,16 @@
                                 </div>
                                 <div class="media-options-body">
                                     <div class="form-group">
-                                        <label for="fld-media-link-behavior">Behavior of this field when clicked in the table view</label>
+                                        <label for="fld-media-link-behavior">Behavior of this field when clicked in the 'Table List'</label>
                                         <select id="fld-media-link-behavior" name="fld-media-link-behavior">
-                                            <option value="detail_view">Select the record in the detail view (default behavior)</option>
+                                            <option value="detail_view">Select the record in the 'Record Form' (default behavior)</option>
                                             <option value="no_action">No action (text only without link)</option>
                                             <option value="web_link">Web link (http://yourdomain.com)</option>
                                             <option value="email_link">Email link (mailto:username@domain.com)</option>
                                         </select>
                                     </div>
                                     <div class="form-group hidden" id="link-display-as-group">
-                                        <label for="fld-media-link-display-as">Display the link in the table view as</label>
+                                        <label for="fld-media-link-display-as">Display the link in the 'Table List' as</label>
                                         <select id="fld-media-link-display-as" name="fld-media-link-display-as">
                                             <option value="field_contents">Field contents</option>
                                             <option value="clickable_icon">Clickable icon</option>
@@ -1618,8 +1611,8 @@
                                     </div>
                                     <div id="image-options-tabs" class="tabs-container hidden mt-2">
                                         <div class="tabs-nav">
-                                            <button class="tab-link active" data-tab="tab-image-tv" id="fld-image-tab-tv" name="fld-image-tab-tv">Table view</button>
-                                            <button class="tab-link" data-tab="tab-image-dv" id="fld-image-tab-dv" name="fld-image-tab-dv">Detail view</button>
+                                            <button class="tab-link active" data-tab="tab-image-tv" id="fld-image-tab-tv" name="fld-image-tab-tv">Table List</button>
+                                            <button class="tab-link" data-tab="tab-image-dv" id="fld-image-tab-dv" name="fld-image-tab-dv">Record Form</button>
                                         </div>
                                         <div class="tabs-content">
                                             <div id="tab-image-tv" class="tab-pane active">
@@ -1662,8 +1655,8 @@
                                     <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="fld-delete-file-server" name="fld-delete-file-server" disabled> Delete files from server when removed from record</label></div>
                                     <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="fld-dont-rename-file" name="fld-dont-rename-file" disabled> Don't rename uploaded files</label></div>
                                     <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
-                                    <div class="form-group"><label for="fld-file-behavior">Behavior of this field when clicked in the table view</label><select id="fld-file-behavior" name="fld-file-behavior" disabled><option value="detail_view">Select the record in the detail view (default behavior)</option><option value="no_action">No action (text only without link)</option><option value="download_link">Download link</option></select></div>
-                                    <div class="form-group hidden" id="fld-file-display-as-group"><label for="fld-file-display-as">Display the link in the table view as</label><select id="fld-file-display-as" name="fld-file-display-as"><option value="field_contents">Field contents</option><option value="clickable_icon">Clickable icon</option><option value="other_field">Contents of another field</option></select></div>
+                                    <div class="form-group"><label for="fld-file-behavior">Behavior of this field when clicked in the 'Table List'</label><select id="fld-file-behavior" name="fld-file-behavior" disabled><option value="detail_view">Select the record in the 'Record Form' (default behavior)</option><option value="no_action">No action (text only without link)</option><option value="download_link">Download link</option></select></div>
+                                    <div class="form-group hidden" id="fld-file-display-as-group"><label for="fld-file-display-as">Display the link in the 'Table List' as</label><select id="fld-file-display-as" name="fld-file-display-as"><option value="field_contents">Field contents</option><option value="clickable_icon">Clickable icon</option><option value="other_field">Contents of another field</option></select></div>
                                     <div class="form-group hidden" id="fld-file-other-field-group"><label for="fld-file-other-field">The other field</label><select id="fld-file-other-field" name="fld-file-other-field"></select></div>
                                 </div>
                             </div>
@@ -1680,12 +1673,12 @@
                                         </div>
                                         <div class="form-grid">
                                             <div>
-                                                <h5>Table view (thumbnail)</h5>
+                                                <h5>Table List (thumbnail)</h5>
                                                 <div class="form-group"><label>Width in pixels</label><input type="number" id="fld-gmap-tv-width" name="fld-gmap-tv-width" value="50"></div>
                                                 <div class="form-group"><label>Height in pixels</label><input type="number" id="fld-gmap-tv-height" name="fld-gmap-tv-height" value="50"></div>
                                             </div>
                                             <div>
-                                                <h5>Detail view (interactive map)</h5>
+                                                <h5>Record Form (interactive map)</h5>
                                                 <div class="form-group"><label>Width is set automatically</label></div>
                                                 <div class="form-group"><label>Height in pixels</label><input type="number" id="fld-gmap-dv-height" name="fld-gmap-dv-height" value="360"></div>
                                             </div>
@@ -1703,16 +1696,16 @@
                                     <h4 id="youtube-options-title">Youtube options for ...</h4>
                                 </div>
                                 <div class="media-options-body">
-                                    <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="fld-accept-video-url" name="fld-accept-video-url"> Accept a video URL* and display as a video in the detail view</label></div>
+                                    <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="fld-accept-video-url" name="fld-accept-video-url"> Accept a video URL* and display as a video in the 'Record Form'</label></div>
                                     <div id="youtube-details" class="hidden">
                                         <div class="form-grid">
                                             <div>
-                                                <h5>Table view (thumbnail)</h5>
+                                                <h5>Table List (thumbnail)</h5>
                                                 <div class="form-group"><label>Maximum width in pixels</label><input type="number" id="fld-youtube-tv-width" name="fld-youtube-tv-width" value="50"></div>
                                                 <div class="form-group"><label>Maximum height in pixels</label><input type="number" id="fld-youtube-tv-height" name="fld-youtube-tv-height" value="50"></div>
                                             </div>
                                             <div>
-                                                <h5>Detail view (video)</h5>
+                                                <h5>Record Form (video)</h5>
                                                 <div class="form-group"><label>Maximum width in pixels</label><input type="number" id="fld-youtube-dv-width" name="fld-youtube-dv-width" value="480"></div>
                                                 <div class="form-group"><label>Maximum height in pixels</label><input type="number" id="fld-youtube-dv-height" name="fld-youtube-dv-height" value="360"></div>
                                             </div>
@@ -1771,7 +1764,7 @@
     <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
 
     <div class="form-group">
-        <label for="fld-lookup-link-behavior">Link to parent record in detail view</label>
+        <label for="fld-lookup-link-behavior">Link to parent record in 'Record Form'</label>
         <select id="fld-lookup-link-behavior">
             <option value="disable">Disable</option>
             <option value="modal" selected>Open parent record in a modal popup window</option>
@@ -1793,9 +1786,38 @@
                     <div class="card-body">
                    
 <div class="fieldset-grid">
+    <fieldset>
+        <legend>Table List: Content Display & Options</legend>
+        <div class="checkbox-group">
+            <label class="checkbox-label"><input type="checkbox" id="fld-hide-in-tv" name="fld-hide-in-tv"> Hide in 'Table List'</label>
+        <label class="checkbox-label">
+            <input type="checkbox" id="fld-editable-in-tv" name="fld-editable-in-tv"> Editable in 'Table List'
+        </label>
+        <label class="checkbox-label">
+            <input type="checkbox" id="fld-allow-sorting" name="fld-allow-sorting" checked> Enable sorting
+        </label>
+        <label class="checkbox-label">
+            <input type="checkbox" id="fld-enable-global-filter" name="fld-enable-global-filter"> Enable global filter
+        </label>
+        <label class="checkbox-label">
+            <input type="checkbox" id="fld-enable-individual-filter" name="fld-enable-individual-filter"> Enable individual filter
+        </label>
+        <label class="checkbox-label">
+            <input type="checkbox" id="fld-enable-range-filter" name="fld-enable-range-filter"> Enable range filter
+        </label>
+            <label class="checkbox-label"><input type="checkbox" id="fld-show-sum" name="fld-show-sum"> Show column sum</label>
+            <div class="form-group mt-1">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="fld-enable-column-width" name="fld-enable-column-width"> Column width (pixels)
+                    <input type="number" id="fld-column-width" name="fld-column-width" value="150" style="width: 80px; margin-left: 10px;">
+                </label>
+            </div>
+        </div>
+    </fieldset>
 <fieldset>
-    <legend>Form Display & Behavior</legend>
+    <legend>Record Form:  Element Display & Behavior</legend>
     <div class="checkbox-group">
+       <label class="checkbox-label"><input type="checkbox" id="fld-hide-in-dv" name="fld-hide-in-dv"> Hide in 'Record Form'</label>
         <label class="checkbox-label"><input type="checkbox" id="fld-required" name="fld-required"> Required</label>
         <label class="checkbox-label"><input type="checkbox" id="fld-read-only" name="fld-read-only"> Read Only</label>
         
@@ -1930,36 +1952,6 @@
         
         </div>
 </fieldset>
-
-    <fieldset>
-        <legend>Application View Options</legend>
-        <div class="checkbox-group">
-            <label class="checkbox-label"><input type="checkbox" id="fld-hide-in-tv" name="fld-hide-in-tv"> Hide in table view</label>
-        <label class="checkbox-label">
-            <input type="checkbox" id="fld-editable-in-tv" name="fld-editable-in-tv"> Editable in table view
-        </label>
-            <label class="checkbox-label"><input type="checkbox" id="fld-hide-in-dv" name="fld-hide-in-dv"> Hide in detail view</label>
-            <label class="checkbox-label"><input type="checkbox" id="fld-show-sum" name="fld-show-sum"> Show column sum</label>
-        <label class="checkbox-label">
-            <input type="checkbox" id="fld-allow-sorting" name="fld-allow-sorting" checked> Enable sorting
-        </label>
-        <label class="checkbox-label">
-            <input type="checkbox" id="fld-enable-global-filter" name="fld-enable-global-filter"> Enable global filter
-        </label>
-        <label class="checkbox-label">
-            <input type="checkbox" id="fld-enable-individual-filter" name="fld-enable-individual-filter"> Enable individual filter
-        </label>
-        <label class="checkbox-label">
-            <input type="checkbox" id="fld-enable-range-filter" name="fld-enable-range-filter"> Enable range filter
-        </label>
-            <div class="form-group mt-1">
-                <label class="checkbox-label">
-                    <input type="checkbox" id="fld-enable-column-width" name="fld-enable-column-width"> Column width (pixels)
-                    <input type="number" id="fld-column-width" name="fld-column-width" value="150" style="width: 80px; margin-left: 10px;">
-                </label>
-            </div>
-        </div>
-    </fieldset>
 </div>
 
 
@@ -2159,7 +2151,7 @@
                         <div class="permission-grid">
                             <label class="checkbox-label"><input type="checkbox" id="fizisys-table-suggest-icon" name="fizisys-table-suggest-icon" checked> Suggest a table icon based on table name</label>
                             <label class="checkbox-label"><input type="checkbox" id="fizisys-table-allow-csv" name="fizisys-table-allow-csv" checked> Allow saving data to CSV files</label>
-                            <label class="checkbox-label"><input type="checkbox" id="fizisys-table-dv-separate-page" name="fizisys-table-dv-separate-page" checked> Display detail view in a separate page</label>
+                            <label class="checkbox-label"><input type="checkbox" id="fizisys-table-dv-separate-page" name="fizisys-table-dv-separate-page" checked> Display 'Record Form' in a separate page</label>
                             <label class="checkbox-label"><input type="checkbox" id="fizisys-table-hide-save-as-copy" name="fizisys-table-hide-save-as-copy"> Hide "Save as copy" when editing records</label>
                             <label class="checkbox-label"><input type="checkbox" id="fizisys-table-allow-add-from-homepage" name="fizisys-table-allow-add-from-homepage"> Allow adding new records from homepage</label>
                             <label class="checkbox-label"><input type="checkbox" id="fizisys-table-show-record-count" name="fizisys-table-show-record-count"> Show record count in homepage</label>
@@ -2626,7 +2618,7 @@
                 <input type="text" id="custom-menu-url-input" placeholder="https://... atau pilih jadual di bawah">
             </div>
             <div class="form-group">
-                <label for="custom-menu-url-table-select">Atau, jana pautan ke Detail View jadual:</label>
+                <label for="custom-menu-url-table-select">Atau, jana pautan ke 'Record Form' jadual:</label>
                 <select id="custom-menu-url-table-select">
                     <option value="">-- Pilih Jadual --</option>
                     </select>
@@ -3005,7 +2997,7 @@
             </div>
 
             <div id="cv-step-2" class="hidden">
-                <h4>Design the Detail View Form</h4>
+                <h4>Design the 'Record Form'</h4>
                 <p class="helper-text">Select one or more fields from the left panel, then use the arrow buttons to move them to the form layout on the right. Use the up/down buttons to reorder.</p>
                 <div class="form-builder-grid">
                     <div class="form-builder-panel">
