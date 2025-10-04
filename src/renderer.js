@@ -49,7 +49,10 @@ import {
 	populateParentChildTab,
     initializeUniqueFieldHandler,
     initializeConstraintsTabHandlers,
-    initializeIndexCheckboxHandler	
+    initializeIndexCheckboxHandler,
+    initializeDisplayTypeRules,
+    initializeMediaDependencies,
+    initializeLookupFieldDependencies
 } from './js/uiHandlers.js';
 import { initializeWorkflowBuilder } from './js/workflowBuilder.js';
 
@@ -461,6 +464,9 @@ window.addEventListener('beforeunload', (event) => {
     initializeTabSystems();
     initializeModalHandlers();
     initializeMediaTabHandlers();
+    initializeDisplayTypeRules();
+    initializeMediaDependencies();
+    initializeLookupFieldDependencies();
     initializeOptionsListHandlers();
     updateActionButtonsState();
 	initializeLocalizationHandlers();

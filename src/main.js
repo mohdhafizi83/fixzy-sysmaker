@@ -492,7 +492,6 @@ ipcMain.handle('field:delete', async (event, { fieldId, tableName, fieldName }) 
 });
 
 // Handler untuk mencipta medan baharu
-
 ipcMain.handle('field:create', async (event, tableId) => {
     try {
         const settings = db.prepare("SELECT setting_name, setting_value FROM fizisys_settings WHERE setting_name IN ('field_default_type', 'field_default_length')").all();
@@ -517,9 +516,7 @@ ipcMain.handle('field:create', async (event, tableId) => {
             }
         }
         
-        // ▼▼▼ MULA LOGIK BAHARU UNTUK MENENTUKAN 'field_order' ▼▼▼
         const transaction = db.transaction(() => {
-            // 1. Cari 'field_order' untuk medan 'created_at'
             const createdAtField = db.prepare(
                 "SELECT field_order FROM fields WHERE table_id = ? AND field_name = 'created_at'"
             ).get(tableId);
@@ -527,30 +524,35 @@ ipcMain.handle('field:create', async (event, tableId) => {
             let targetOrder;
 
             if (createdAtField) {
-                // Jika 'created_at' ditemui, itulah posisi sasaran kita.
                 targetOrder = createdAtField.field_order;
-
-                // 2. Anjak semua medan dari 'created_at' ke bawah untuk memberi ruang.
                 db.prepare(
                     "UPDATE fields SET field_order = field_order + 1 WHERE table_id = ? AND field_order >= ?"
                 ).run(tableId, targetOrder);
             } else {
-                // Jika 'created_at' tidak ditemui (kes luar jangka), guna logik lama.
                 const maxOrderResult = db.prepare('SELECT MAX(field_order) as max_order FROM fields WHERE table_id = ?').get(tableId);
                 targetOrder = (maxOrderResult && maxOrderResult.max_order !== null ? maxOrderResult.max_order : -1) + 1;
             }
+            
+            let isRangeFilterDefault = 0;
+            const dateTypes = ['DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR'];
+            if(dateTypes.includes(defaultType.toUpperCase())) {
+                isRangeFilterDefault = 1;
+            }
 
-            // 3. Masukkan medan baharu pada 'targetOrder' yang telah dikosongkan.
+            // ▼▼▼ UBAH SUAI 'INSERT' DI SINI ▼▼▼
             const info = db.prepare(
-                `INSERT INTO fields (table_id, field_name, caption, data_type, length, field_order) VALUES (?, ?, ?, ?, ?, ?)`
-            ).run(tableId, newName, newName, defaultType, defaultLength, targetOrder);
+                `INSERT INTO fields (
+                    table_id, field_name, caption, data_type, length, field_order, 
+                    enable_global_filter, enable_individual_filter, enable_range_filter, allow_sorting
+                 ) VALUES (?, ?, ?, ?, ?, ?, 1, 0, ?, 1)`
+            ).run(tableId, newName, newName, defaultType, defaultLength, targetOrder, isRangeFilterDefault);
+            // ▲▲▲ TAMAT UBAH SUAI ▲▲▲
 
             return info.lastInsertRowid;
         });
 
         const newFieldId = transaction();
         return db.prepare('SELECT * FROM fields WHERE field_id = ?').get(newFieldId);
-        // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
 
     } catch (error) {
         console.error("Gagal mencipta medan baharu:", error);
@@ -2491,6 +2493,70 @@ async function generateFilamentEditPages(fullSchema, basePath) {
     }
 }
 
+/**
+ * Menjana fail RelationManager Laravel Filament untuk setiap hubungan one-to-many.
+ * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.
+ * @param {string} basePath - Laluan asas ke folder 'generated'.
+ */
+async function generateFilamentRelationManagers(fullSchema, basePath) {
+    try {
+        const relationships = fullSchema.database.relationships;
+
+        const templatePath = path.join(__dirname, 'templates/php/filament/app/Filament/Resources/RelationManagers.template');
+        if (!fs.existsSync(templatePath)) {
+            throw new Error(`Template file not found at: ${templatePath}`);
+        }
+        const templateContent = fs.readFileSync(templatePath, 'utf8');
+
+        // Loop melalui setiap hubungan yang wujud
+        for (const rel of relationships) {
+            // Langkau jika ia adalah 'one-to-one' atau melibatkan jadual 'users'
+            if (rel.relationship_type === 'one-to-one' || rel.parent_table_name === 'users' || rel.child_table_name === 'users') {
+                continue;
+            }
+
+            let managerContent = templateContent;
+
+            // Sediakan semua variasi nama yang diperlukan
+            const parentTablePlural = toPluralPascalCase(rel.parent_table_name);
+            const childTablePlural = toPluralPascalCase(rel.child_table_name);
+            const childTablePluralCamel = toPluralCamelCase(rel.child_table_name);
+            const childTableSingular = toSingularPascalCase(rel.child_table_name);
+
+            // 1. Gantikan <<TABLE_NAME_PLURAL>> (Parent)
+            managerContent = managerContent.replace(/<<TABLE_NAME_PLURAL>>/g, parentTablePlural);
+            
+            // 2. Gantikan <<CHILD_TABLE_NAME_PLURAL>>
+            managerContent = managerContent.replace(/<<CHILD_TABLE_NAME_PLURAL>>/g, childTablePlural);
+            
+            // 3. Gantikan <<CHILD_TABLE_NAME_PLURAL_CAMEL>>
+            managerContent = managerContent.replace(/<<CHILD_TABLE_NAME_PLURAL_CAMEL>>/g, childTablePluralCamel);
+
+            // 4. Gantikan <<CHILD_TABLE_NAME_SINGULAR>>
+            managerContent = managerContent.replace(/<<CHILD_TABLE_NAME_SINGULAR>>/g, childTableSingular);
+
+            // Bersihkan placeholder lain jika ada
+            managerContent = managerContent.replace(/<<.*?>>/g, '');
+
+            // 5. Jana fail output
+            const resourceFolder = parentTablePlural;
+            const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'RelationManagers');
+            fs.mkdirSync(outputFolderPath, { recursive: true });
+
+            const outputFileName = `${childTableSingular}RelationManager.php`;
+            const outputFilePath = path.join(outputFolderPath, outputFileName);
+            
+            fs.writeFileSync(outputFilePath, managerContent);
+            console.log(`RelationManager generated: ${outputFilePath}`);
+        }
+        
+        return { success: true, message: 'Filament Relation Managers generated successfully.' };
+
+    } catch (error) {
+        console.error('Failed to generate Filament Relation Managers:', error);
+        return { success: false, message: error.message };
+    }
+}
 
 ipcMain.handle('generate-app', async () => {
     const win = BrowserWindow.getFocusedWindow();
@@ -2530,10 +2596,14 @@ ipcMain.handle('generate-app', async () => {
         const createPageResult = await generateFilamentCreatePages(fullSchema, filamentPath);
         if (!createPageResult.success) throw new Error(`Filament Create Page generation failed: ${createPageResult.message}`);
 
-        // ▼▼▼ PENAMBAHAN BAHARU DI SINI ▼▼▼
         // 6. Panggil fungsi penjana untuk Filament Edit Pages
         const editPageResult = await generateFilamentEditPages(fullSchema, filamentPath);
         if (!editPageResult.success) throw new Error(`Filament Edit Page generation failed: ${editPageResult.message}`);
+
+        // ▼▼▼ PENAMBAHAN BAHARU DI SINI ▼▼▼
+        // 7. Panggil fungsi penjana untuk Filament Relation Managers
+        const relationManagerResult = await generateFilamentRelationManagers(fullSchema, filamentPath);
+        if (!relationManagerResult.success) throw new Error(`Filament Relation Manager generation failed: ${relationManagerResult.message}`);
         // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
         
         console.log(`All files generated successfully in: ${filamentPath}`);

@@ -2726,14 +2726,12 @@ export function initializeOptionsListHandlers() {
 
     if (quickListSelect && valuesInput) {
         quickListSelect.addEventListener('change', () => {
-            if (quickListSelect.value) {
-                // 1. Tetapkan nilai textbox seperti biasa
-                valuesInput.value = quickListSelect.value;
-                
-                // 2. ▼▼▼ BARIS KOD KRITIKAL ▼▼▼
-                // Cetuskan acara 'input' secara manual untuk memaklumkan SaveManager
-                valuesInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
+            // DIPERBAIKI: Buang syarat 'if' untuk memastikan ia sentiasa berjalan
+            // Tetapkan nilai textbox kepada nilai dropdown yang dipilih (termasuk nilai kosong)
+            valuesInput.value = quickListSelect.value;
+            
+            // Cetuskan acara 'input' secara manual untuk memaklumkan SaveManager
+            valuesInput.dispatchEvent(new Event('input', { bubbles: true }));
         });
     }
 }
@@ -3335,16 +3333,45 @@ export function populateTableSettings(tableName) {
 
     // Tab: Table view -> Features
     setElementValue('tbl-show-quick-search', tableData.show_quick_search);
-    setElementValue('tbl-records-per-page', tableData.records_per_page);
+    setElementValue('tbl-allow-pagination', tableData.allow_pagination);
+    setRadioValue('tbl-pagination-type', tableData.pagination_type);
     setElementValue('tbl-default-sort-by', tableData.default_sort_by);
     setElementValue('tbl-sort-descending', tableData.sort_descending);
-    setElementValue('tbl-allow-sorting', tableData.allow_sorting);
-    setElementValue('tbl-allow-filters', tableData.allow_filters);
     setElementValue('tbl-allow-csv-export', tableData.allow_csv_export);
     setElementValue('tbl-allow-csv-import', tableData.allow_csv_import);
     setElementValue('tbl-allow-print-view', tableData.allow_print_view);
-    setElementValue('tbl-allow-user-save-filters', tableData.allow_user_save_filters);
     setElementValue('tbl-allow-mass-delete', tableData.allow_mass_delete);
+    
+    setElementValue('tbl-show-edit-button', tableData.show_edit_button);
+    setElementValue('tbl-show-delete-button', tableData.show_delete_button);
+    setElementValue('tbl-allow-restore-delete', tableData.allow_restore_delete);
+    setElementValue('tbl-allow-force-delete', tableData.allow_force_delete);
+
+    // Logik untuk menyahaktifkan ciri soft-delete jika projek menggunakan hard-delete
+    const isHardDelete = activeProject.data_delete_type === 'hard';
+    const restoreCheckbox = document.getElementById('tbl-allow-restore-delete');
+    const forceDeleteCheckbox = document.getElementById('tbl-allow-force-delete');
+
+    if (restoreCheckbox) restoreCheckbox.disabled = isHardDelete;
+    if (forceDeleteCheckbox) forceDeleteCheckbox.disabled = isHardDelete;
+    
+    const paginationCheckbox = document.getElementById('tbl-allow-pagination');
+    const recordsPerPageGroup = document.getElementById('records-per-page-group');
+
+    if (paginationCheckbox && recordsPerPageGroup) {
+        const toggleVisibility = () => {
+            recordsPerPageGroup.classList.toggle('hidden', !paginationCheckbox.checked);
+        };
+
+        // Pasang listener HANYA jika ia belum dipasang
+        if (!paginationCheckbox.dataset.listenerAttached) {
+            paginationCheckbox.addEventListener('change', toggleVisibility);
+            paginationCheckbox.dataset.listenerAttached = 'true';
+        }
+        
+        // Jalankan logik sekali untuk menetapkan keadaan awal yang betul
+        toggleVisibility();
+    }
 
     // Tab: Table view -> Template
     setElementValue('tbl-tv-template', tableData.tv_template);
@@ -3401,8 +3428,6 @@ function populateParentTableDropdown(currentTableName) {
     });
 }
 
-// FIND AND REPLACE this entire function in your src/js/uiHandlers.js file
-
 export function populateFieldSettings(tableName, fieldName) {
 	
     const allFieldPageControls = document.querySelectorAll(
@@ -3413,11 +3438,6 @@ export function populateFieldSettings(tableName, fieldName) {
     });
 	
     const fieldData = jsonData.database.table[tableName]?.fields[fieldName];
-     // ▼▼▼ CHECKPOINT #3: DATA SELEPAS DITERIMA DI FRONTEND ▼▼▼
-    //console.log(`--- CHECKPOINT 3 (uiHandlers.js): Data Untuk Medan ${tableName}.${fieldName} ---`);
-    //console.log(fieldData);
-    // ▲▲▲ TAMAT CHECKPOINT #3 ▲▲▲   
-    //console.log(`Mempaparkan data untuk medan: ${tableName}.${fieldName}`, fieldData);
 
     if (!fieldData) {
         console.error(`Tiada data ditemui untuk medan: ${tableName}.${fieldName}`);
@@ -3435,30 +3455,65 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-max-chars-in-tv', fieldData.max_chars_in_tv);
     setElementValue('fld-alignment', fieldData.alignment);
     setElementValue('fld-default-value', fieldData.default_value);
+    
+    // Mengisi nilai untuk semua checkbox dan radio button
     setElementValue('fld-read-only', fieldData.read_only);
     setElementValue('fld-primary-key', fieldData.primary_key);
     setElementValue('fld-zero-fill', fieldData.zero_fill);
     setElementValue('fld-required', fieldData.required);
-    setElementValue('fld-rich-html', fieldData.rich_html);
     setElementValue('fld-auto-increment', fieldData.auto_increment);
     setElementValue('fld-unique', fieldData.unique);
-    // ▼▼▼ BARIS KOD BAHARU DI SINI ▼▼▼
     setElementValue('fld-is-indexed', fieldData.is_indexed);
-    // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
     setElementValue('fld-show-sum', fieldData.show_sum);
-    setElementValue('fld-text-area', fieldData.text_area);
+    setElementValue('fld-allow-sorting', fieldData.allow_sorting);
     setElementValue('fld-unsigned', fieldData.unsigned);
-    setElementValue('fld-no-filter', fieldData.no_filter);
     setElementValue('fld-binary', fieldData.binary);
-    setElementValue('fld-check-box', fieldData.check_box);
     setElementValue('fld-hide-in-tv', fieldData.hide_in_tv);
+    setElementValue('fld-editable-in-tv', fieldData.editable_in_tv);
     setElementValue('fld-hide-in-dv', fieldData.hide_in_dv);
+    setElementValue('fld-enable-global-filter', fieldData.enable_global_filter);
+    setElementValue('fld-enable-individual-filter', fieldData.enable_individual_filter);
+    setElementValue('fld-enable-range-filter', fieldData.enable_range_filter);
     setElementValue('fld-enable-column-width', fieldData.enable_column_width);
     setElementValue('fld-column-width', fieldData.column_width);
+    
+    // Tetapkan radio button 'Display As' berdasarkan data yang disimpan
+    setRadioValue('fld-display-type', fieldData.display_type || 'text_input');
+
+    // ▼▼▼ MULA LOGIK PAPAR/SEMBUNYI YANG DIPERBAIKI ▼▼▼
+    const displayTypeRadios = document.querySelectorAll('input[name="fld-display-type"]');
+    const optionsListGroup = document.getElementById('options-list-settings-group');
+    const formatAsGroup = document.getElementById('format-as-group');
+
+    if (displayTypeRadios.length > 0 && optionsListGroup && formatAsGroup) {
+        // Fungsi ini akan dipanggil serta-merta dan setiap kali radio button ditukar
+        const updateVisibility = () => {
+            const selectedValue = document.querySelector('input[name="fld-display-type"]:checked').value;
+            
+            // Peraturan 1: Paparkan 'format-as-group' HANYA jika 'text_input' dipilih
+            formatAsGroup.classList.toggle('hidden', selectedValue !== 'text_input');
+
+            // Peraturan 2: Paparkan 'options-list-settings-group' HANYA jika 'options_list' dipilih
+            optionsListGroup.classList.toggle('hidden', selectedValue !== 'options_list');
+        };
+
+        // Pasang listener HANYA sekali sahaja untuk menguruskan klik pengguna
+        if (!displayTypeRadios[0].dataset.listenerAttached) {
+            displayTypeRadios.forEach(radio => {
+                radio.addEventListener('change', updateVisibility);
+                radio.dataset.listenerAttached = 'true'; // Tandakan listener sudah dipasang
+            });
+        }
+        
+        // Panggil fungsi ini sekali untuk menetapkan keadaan awal yang betul berdasarkan data yang dimuatkan
+        updateVisibility();
+    }
+    // ▲▲▲ TAMAT LOGIK PAPAR/SEMBUNYI ▲▲▲
 
     // Tab: Media
     const mediaType = fieldData.media_type || 'link';
     setRadioValue('fld-media-type', mediaType);
+    document.querySelector('input[name="fld-media-type"]:checked')?.dispatchEvent(new Event('change', { bubbles: true }));
     document.getElementById(`fld-media-${mediaType}`)?.dispatchEvent(new Event('click'));
     setElementValue('fld-media-link-behavior', fieldData.media_link_behavior);
     setElementValue('fld-media-link-display-as', fieldData.media_link_display_as);
@@ -3501,9 +3556,7 @@ export function populateFieldSettings(tableName, fieldName) {
     // Tab: Lookup field
     setElementValue('fld-lookup-parent-table', fieldData.lookup_parent_table);
     const parentTableSelect = document.getElementById('fld-lookup-parent-table');
-    if (parentTableSelect) {
-        parentTableSelect.dispatchEvent(new Event('change'));
-    }
+    if (parentTableSelect) { parentTableSelect.dispatchEvent(new Event('change')); }
     setElementValue('fld-lookup-caption-1', fieldData.lookup_caption_1);
     setElementValue('fld-lookup-separator', fieldData.lookup_separator);
     setElementValue('fld-lookup-caption-2', fieldData.lookup_caption_2);
@@ -3511,11 +3564,8 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-lookup-inherit-permissions', fieldData.lookup_inherit_permissions);
     setElementValue('fld-lookup-link-behavior', fieldData.lookup_link_behavior);
     setElementValue('fld-lookup-custom-query-hidden', fieldData.lookup_custom_query);
-
     if (parentTableSelect && !parentTableSelect.value) {
-        const relationship = jsonData.database.relationships.find(rel =>
-            rel.child_table_name === tableName && rel.fk_child_field === fieldName
-        );
+        const relationship = jsonData.database.relationships.find(rel => rel.child_table_name === tableName && rel.fk_child_field === fieldName);
         if (relationship) {
             const parentTable = relationship.parent_table_name;
             const parentPKField = relationship.parent_field;
@@ -3536,13 +3586,10 @@ export function populateFieldSettings(tableName, fieldName) {
     // Tab: Options list
     setElementValue('fld-options-list-values', fieldData.options_list_values);
     setRadioValue('fld-options-display', fieldData.options_display);
-
-    // ▼▼▼ KOD PEMBAIKAN BUG ADA DI SINI ▼▼▼
     const quickListSelect = document.getElementById('options-quick-list');
     if (quickListSelect) {
         const currentValue = fieldData.options_list_values || '';
         let matchFound = false;
-        // Cari jika nilai semasa sepadan dengan mana-mana opsyen dalam "Quick List!"
         for (const option of quickListSelect.options) {
             if (option.value === currentValue) {
                 option.selected = true;
@@ -3550,12 +3597,10 @@ export function populateFieldSettings(tableName, fieldName) {
                 break;
             }
         }
-        // Jika tiada padanan, pastikan opsyen lalai "Quick List!" dipilih
         if (!matchFound) {
             quickListSelect.value = '';
         }
     }
-    // ▲▲▲ TAMAT PEMBAIKAN BUG ▲▲▲
 
     // Tab: Data format
     setElementValue('fld-format-as', fieldData.format_as);
@@ -3567,30 +3612,21 @@ export function populateFieldSettings(tableName, fieldName) {
 	// Tab: Algorithm field
 	setElementValue('fld-algorithm-enable', fieldData.algorithm_enable);
 	setElementValue('fld-algorithm-logic', fieldData.algorithm_logic);
-	
-	// ▼▼▼ KOD PEMBETULAN: Cetuskan event 'change' secara manual ▼▼▼
-	// Ini memastikan UI builder dipaparkan jika 'algorithm_enable' adalah benar.
 	const algorithmEnableCheckbox = document.getElementById('fld-algorithm-enable');
 	if (algorithmEnableCheckbox) {
 		algorithmEnableCheckbox.dispatchEvent(new Event('change'));
 	}
-	// ▲▲▲ TAMAT PEMBETULAN ▲▲▲
-	
 	applyDataTypeRules();
-	
     setTimeout(() => {
         const queryTextarea = document.getElementById('fld-calculated-query');
         if (queryTextarea) {
             queryTextarea.disabled = false;
         }
     }, 50);
-
-
     const behaviorSelect = document.getElementById('fld-media-link-behavior');
     if (behaviorSelect) {
         behaviorSelect.dispatchEvent(new Event('change'));
     }
-
 }
 
 /**
@@ -3662,8 +3698,6 @@ export function initializeLookupFieldHandlers() {
         });
     }
 }
-
-// FIND AND REPLACE this entire function in your src/js/uiHandlers.js file
 
 export function populateMenuManagement(unifiedMenu) {
     const unifiedMenuList = document.getElementById('unified-menu-list');
@@ -4249,16 +4283,25 @@ export function initializeHomepageMenuHandlers() {
     toggleOptionsVisibility();
 }
 
-// js/uiHandlers.js
-
 // Fungsi ini akan dipanggil dari populateFieldSettings juga, jadi kita letakkan di luar
 function applyDataTypeRules() {
     const dataTypeSelect = document.getElementById('fld-data-type');
     if (!dataTypeSelect) return;
 
-    const selectedType = dataTypeSelect.value;
+    const selectedType = dataTypeSelect.value.toUpperCase();
 
-    // Kumpulkan semua elemen yang akan dikawal
+    const rangeFilterCheckbox = document.getElementById('fld-enable-range-filter');
+    const dateTypes = ['DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR'];
+    const isDateType = dateTypes.includes(selectedType);
+
+    if (rangeFilterCheckbox) {
+        rangeFilterCheckbox.disabled = !isDateType;
+        if (!isDateType) {
+            rangeFilterCheckbox.checked = false;
+        }
+    }
+
+    // ▼▼▼ MULA KAWASAN PEMBETULAN ▼▼▼
     const elements = {
 		length: document.getElementById('fld-length'),
         precision: document.getElementById('fld-precision'),
@@ -4270,11 +4313,10 @@ function applyDataTypeRules() {
         mediaRadios: document.querySelectorAll('input[name="fld-media-type"]'),
         behaviorOptions: document.querySelectorAll('#fld-media-link-behavior option[value="web_link"], #fld-media-link-behavior option[value="email_link"]'),
 		dbPropertiesFieldset: document.querySelector('#tab-field-general .fieldset-grid fieldset:nth-child(1)'),
-        formBehaviorFieldset: document.querySelector('#tab-field-general .fieldset-grid fieldset:nth-child(2)'),
-        defaultValue: document.getElementById('fld-default-value') // Tambah elemen Default Value
+        // Rujukan kepada 'formBehaviorFieldset' telah dibuang kerana ia tidak lagi relevan di sini
+        defaultValue: document.getElementById('fld-default-value')
     };
 
-    // 1. Reset: Aktifkan semua elemen secara lalai
     Object.values(elements).forEach(el => {
         if (el && el.forEach) {
             el.forEach(item => { item.disabled = false; item.hidden = false; });
@@ -4282,29 +4324,29 @@ function applyDataTypeRules() {
             el.disabled = false;
         }
     });
-    elements.dbPropertiesFieldset.classList.remove('fieldset-disabled');
-    elements.formBehaviorFieldset.classList.remove('fieldset-disabled');
+    
+    // Pastikan kita hanya menyentuh fieldset yang masih wujud
+    if (elements.dbPropertiesFieldset) {
+        elements.dbPropertiesFieldset.classList.remove('fieldset-disabled');
+    }
+    // Baris untuk 'formBehaviorFieldset.classList.remove' telah dibuang
+    // ▲▲▲ TAMAT KAWASAN PEMBETULAN ▲▲▲
 	
-    // ▼▼▼ MULA LOGIK TAMBAHAN ▼▼▼
-    // Peraturan 1: Nyahaktifkan 'Length' untuk jenis data tertentu
     const typesWithoutLength = ['TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT', 'DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'BLOB', 'TINYBLOB', 'MEDIUMBLOB', 'LONGBLOB'];
-    if (typesWithoutLength.includes(selectedType.toUpperCase())) {
+    if (typesWithoutLength.includes(selectedType)) {
         if (elements.length) {
             elements.length.disabled = true;
-            elements.length.value = ''; // Kosongkan nilai jika ada
+            elements.length.value = '';
         }
     }
 
-    // Peraturan 2: Nyahaktifkan 'Default Value' jika 'Auto Increment' aktif
     if (elements.autoIncrement && elements.defaultValue) {
         if (elements.autoIncrement.checked) {
             elements.defaultValue.disabled = true;
-            elements.defaultValue.value = ''; // Kosongkan nilai jika ada
+            elements.defaultValue.value = '';
         }
     }
-    // ▲▲▲ TAMAT LOGIK TAMBAHAN ▲▲▲
 	
-    // 2. Kumpulan Data Type
     const numericAndDate = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'FLOAT', 'DOUBLE', 'DECIMAL', 'DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR'];
     const integerOnly = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'];
     const floatOnly = ['FLOAT', 'DOUBLE', 'DECIMAL'];
@@ -4312,7 +4354,6 @@ function applyDataTypeRules() {
     const binaryString = ['CHAR', 'VARCHAR', 'TINYBLOB', 'BLOB', 'MEDIUMBLOB', 'LONGBLOB'];
     const textOnly = ['TINYTEXT', 'TEXT', 'MEDIUMTEXT', 'LONGTEXT'];
 
-    // 3. Laksanakan Peraturan
     if (numericAndDate.includes(selectedType)) {
         elements.mediaRadios.forEach(radio => { if (radio.value !== 'link') radio.disabled = true; });
         elements.behaviorOptions.forEach(opt => opt.hidden = true);
@@ -4324,7 +4365,7 @@ function applyDataTypeRules() {
     if (floatOnly.includes(selectedType)) {
         if (elements.binary) elements.binary.disabled = true;
         if (elements.autoIncrement) elements.autoIncrement.disabled = true;
-        if (elements.precision) elements.precision.disabled = false; // Pastikan ia enabled
+        if (elements.precision) elements.precision.disabled = false;
     }
     if (dateOnly.includes(selectedType)) {
         if (elements.autoIncrement) elements.autoIncrement.disabled = true;
@@ -4356,25 +4397,21 @@ function applyDataTypeRules() {
         if (!elements.precision.value) elements.precision.value = 2;
     }
 	
-    // Logik untuk menyahaktifkan fieldset
     if (textOnly.includes(selectedType) || binaryString.includes(selectedType)) {
         if(selectedType !== 'CHAR' && selectedType !== 'VARCHAR') {
-             elements.dbPropertiesFieldset.classList.add('fieldset-disabled');
+             if (elements.dbPropertiesFieldset) elements.dbPropertiesFieldset.classList.add('fieldset-disabled');
         }
     }
 	
     const multiSelectRadio = document.querySelector('input[name="fld-options-display"][value="multi"]');
     const dropdownRadio = document.querySelector('input[name="fld-options-display"][value="dropdown"]');
 
-    // Semak jika 'Multiple-choice' sedang dipilih
     if (multiSelectRadio && multiSelectRadio.checked) {
-        const selectedType = document.getElementById('fld-data-type').value.toUpperCase();
+        const currentDataType = document.getElementById('fld-data-type').value.toUpperCase();
         const allowedTypes = ['TEXT', 'BLOB'];
-        const isAllowed = allowedTypes.some(type => selectedType.includes(type));
+        const isAllowed = allowedTypes.some(type => currentDataType.includes(type));
 
-        // Jika Data Type yang baru dipilih tidak serasi
         if (!isAllowed) {
-            // Tukar pilihan kembali kepada default (Drop-down list)
             dropdownRadio.checked = true;
         }
     }
@@ -4449,59 +4486,31 @@ function populateRecordOwnerDropdown(tableName) {
     // ▲▲▲ TAMAT LOGIK YANG DIPERBAIKI ▲▲▲
 }
 
-// js/uiHandlers.js
-
 export function initializeFormDisplayRules() {
+    const displayTypeRadios = document.querySelectorAll('input[name="fld-display-type"]');
     const dataTypeSelect = document.getElementById('fld-data-type');
-
-    // --- Bahagian 1: Logik Checkbox Eksklusif ---
-    const exclusiveCheckboxIds = ['fld-text-area', 'fld-rich-html', 'fld-check-box'];
-    const checkboxElements = exclusiveCheckboxIds.map(id => document.getElementById(id));
-
-    checkboxElements.forEach(checkbox => {
-        if (!checkbox) return;
-        checkbox.addEventListener('change', (event) => {
-            const currentCheckbox = event.target;
-            if (currentCheckbox.checked) {
-                checkboxElements.forEach(otherCheckbox => {
-                    if (otherCheckbox !== currentCheckbox) {
-                        otherCheckbox.checked = false;
-                    }
-                });
-            }
-        });
-    });
-
-    // --- Bahagian 2: Logik Amaran untuk Data Type ---
-    const richHtmlCheckbox = document.getElementById('fld-rich-html');
-    const textAreaCheckbox = document.getElementById('fld-text-area');
+    if (displayTypeRadios.length === 0 || !dataTypeSelect) return;
 
     // Fungsi bantuan untuk menyemak keserasian dengan jenis data TEXT
-    const checkTextCompatibility = (checkbox, warningMessage) => {
-        if (!checkbox || !dataTypeSelect) return;
+    const checkTextCompatibility = () => {
+        const selectedRadio = document.querySelector('input[name="fld-display-type"]:checked');
+        if (!selectedRadio) return;
 
-        checkbox.addEventListener('change', () => {
-            if (checkbox.checked) {
-                const currentDataType = dataTypeSelect.value.toUpperCase();
-                const suitableTypes = ['TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT'];
-
-                if (!suitableTypes.includes(currentDataType)) {
-                    showCustomDialog({ title: "Warning!", message: warningMessage });
-                }
-            }
-        });
+        const selectedType = selectedRadio.value;
+        const currentDataType = dataTypeSelect.value.toUpperCase();
+        const suitableTypes = ['TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT'];
+        
+        if (selectedType === 'rich_html' && !suitableTypes.includes(currentDataType)) {
+            showCustomDialog({ title: "Warning!", message: "To enable this field to behave as a rich (HTML) box, you should change its data type to 'TEXT', 'MEDIUMTEXT' or 'LONGTEXT'." });
+        } else if (selectedType === 'text_area' && !suitableTypes.includes(currentDataType)) {
+            showCustomDialog({ title: "Warning!", message: "This field can only be set as a Text area if its data type is one of the 'TEXT' family data types." });
+        }
     };
-
-    // Laksanakan semakan untuk kedua-dua checkbox
-    checkTextCompatibility(
-        richHtmlCheckbox,
-        "To enable this field to behave as a rich (HTML) box, you should change its data type to 'TEXT', 'MEDIUMTEXT' or 'LONGTEXT'."
-    );
-
-    checkTextCompatibility(
-        textAreaCheckbox,
-        "This field can only be set as a Text area if its data type is one of the 'TEXT' family data types."
-    );
+    
+    // Pasang listener pada setiap radio button
+    displayTypeRadios.forEach(radio => {
+        radio.addEventListener('change', checkTextCompatibility);
+    });
 }
 
 export function initializeRealtimeValidation() {
@@ -6319,4 +6328,123 @@ export function initializeConstraintsTabHandlers() {
             showCustomDialog({ title: "Error", message: `Failed to save rule: ${result.message}` });
         }
     });
+}
+
+// ADD THIS NEW FUNCTION in src/js/uiHandlers.js
+
+/**
+ * Handles the logic for the 'Display As' radio button group.
+ * It shows or hides the detailed 'Options list' settings based on the selection.
+ */
+export function initializeDisplayTypeRules() {
+    const displayTypeRadios = document.querySelectorAll('input[name="fld-display-type"]');
+    const optionsListGroup = document.getElementById('options-list-settings-group');
+    // ▼▼▼ TAMBAH RUJUKAN BAHARU DI SINI ▼▼▼
+    const formatAsGroup = document.getElementById('format-as-group');
+
+    if (displayTypeRadios.length === 0 || !optionsListGroup || !formatAsGroup) return;
+
+    const toggleOptionsVisibility = () => {
+        const selectedRadio = document.querySelector('input[name="fld-display-type"]:checked');
+        if (!selectedRadio) return;
+
+        const selectedValue = selectedRadio.value;
+
+        // Logik untuk 'Options list'
+        optionsListGroup.classList.toggle('hidden', selectedValue !== 'options_list');
+        
+        // ▼▼▼ TAMBAH LOGIK BAHARU DI SINI ▼▼▼
+        // Logik untuk 'Format this field as'
+        formatAsGroup.classList.toggle('hidden', selectedValue !== 'text_input');
+    };
+
+    displayTypeRadios.forEach(radio => {
+        radio.addEventListener('change', toggleOptionsVisibility);
+    });
+}
+
+/**
+ * Initializes rules that depend on the selected media type.
+ * Hides/disables fields that are irrelevant for non-link media types.
+ */
+export function initializeMediaDependencies() {
+    const mediaRadios = document.querySelectorAll('input[name="fld-media-type"]');
+    if (mediaRadios.length === 0) return;
+
+    const elementsToControl = {
+        displayAsGroup: document.getElementById('display-as-group'),
+        editableInTv: document.getElementById('fld-editable-in-tv'),
+        allowSorting: document.getElementById('fld-allow-sorting'),
+        globalFilter: document.getElementById('fld-enable-global-filter'),
+        individualFilter: document.getElementById('fld-enable-individual-filter'),
+    };
+
+    const handleMediaChange = () => {
+        const selectedRadio = document.querySelector('input[name="fld-media-type"]:checked');
+        if (!selectedRadio) return;
+
+        const isNotLinkType = selectedRadio.value !== 'link';
+
+        // 1. Hide the entire 'Display As' group
+        if (elementsToControl.displayAsGroup) {
+            elementsToControl.displayAsGroup.classList.toggle('hidden', isNotLinkType);
+        }
+
+        // 2, 3, 4, 5. Disable the checkboxes
+        const checkboxesToDisable = [
+            elementsToControl.editableInTv,
+            elementsToControl.allowSorting,
+            elementsToControl.globalFilter,
+            elementsToControl.individualFilter
+        ];
+
+        checkboxesToDisable.forEach(checkbox => {
+            if (checkbox) {
+                checkbox.disabled = isNotLinkType;
+                // Uncheck the box if it's being disabled for clarity
+                if (isNotLinkType) {
+                    checkbox.checked = false;
+                }
+            }
+        });
+    };
+
+    mediaRadios.forEach(radio => {
+        radio.addEventListener('change', handleMediaChange);
+    });
+}
+
+/**
+ * Hides dependent UI groups if the field is a foreign key (has a parent table),
+ * and restores visibility rules based on the 'Display As' selection otherwise.
+ */
+export function initializeLookupFieldDependencies() {
+    const parentTableSelect = document.getElementById('fld-lookup-parent-table');
+    const displayAsGroup = document.getElementById('display-as-group');
+    const optionsListGroup = document.getElementById('options-list-settings-group');
+    const formatAsGroup = document.getElementById('format-as-group');
+
+    if (!parentTableSelect || !displayAsGroup || !optionsListGroup || !formatAsGroup) return;
+
+    const handleParentTableChange = () => {
+        const isForeignKey = parentTableSelect.value !== '';
+
+        // Sentiasa sembunyikan/papar kumpulan utama 'Display As'
+        displayAsGroup.classList.toggle('hidden', isForeignKey);
+
+        if (isForeignKey) {
+            // JIKA IALAH FOREIGN KEY: Sembunyikan kedua-dua kumpulan bersandaran secara paksa.
+            optionsListGroup.classList.add('hidden');
+            formatAsGroup.classList.add('hidden');
+        } else {
+            // JIKA BUKAN FOREIGN KEY: Jangan buat apa-apa. Sebaliknya,
+            // cetuskan semula logik 'Display As' untuk menentukan apa yang patut dipaparkan.
+            const checkedRadio = document.querySelector('input[name="fld-display-type"]:checked');
+            if (checkedRadio) {
+                checkedRadio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+    };
+
+    parentTableSelect.addEventListener('change', handleParentTableChange);
 }

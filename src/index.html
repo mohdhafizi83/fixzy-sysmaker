@@ -1071,10 +1071,26 @@
                                     <div class="form-group">
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-show-quick-search" name="tbl-show-quick-search" checked> Show quick search box</label>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="tbl-records-per-page">Records per page</label>
-                                        <input type="number" id="tbl-records-per-page" name="tbl-records-per-page" value="10" style="max-width: 150px;">
-                                    </div>
+                                    
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="tbl-allow-pagination" name="tbl-allow-pagination" checked> Enable pagination (Highly recommended)
+                </label>
+            </div>
+<div class="form-group" id="records-per-page-group">
+    <div class="form-group radio-group-horizontal" style="margin-top: 1rem; align-items: center;">
+        <label style="margin-right: 1rem;">Pagination style:</label>
+        <label class="radio-label">
+            <input type="radio" name="tbl-pagination-type" value="simple"> Simple
+        </label>
+        <label class="radio-label">
+            <input type="radio" name="tbl-pagination-type" value="standard" checked> Standard
+        </label>
+        <label class="radio-label">
+            <input type="radio" name="tbl-pagination-type" value="extreme"> Extreme
+        </label>
+    </div>
+    </div>
                                     <div class="form-group">
                                         <label for="tbl-default-sort-by">Default sort by</label>
                                         <div class="input-group">
@@ -1085,13 +1101,22 @@
                                         </div>
                                     </div>
                                     <div class="permission-grid">
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-allow-sorting" name="tbl-allow-sorting" checked> Allow sorting</label>
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-allow-filters" name="tbl-allow-filters" checked> Allow filters</label>
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-allow-csv-export" name="tbl-allow-csv-export" checked> Allow saving data to CSV files</label>
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-allow-csv-import" name="tbl-allow-csv-import" checked> Allow import CSV file</label>
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-allow-print-view" name="tbl-allow-print-view" checked> Allow print-view</label>
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-allow-user-save-filters" name="tbl-allow-user-save-filters"> Allow users to save filters</label>
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-allow-mass-delete" name="tbl-allow-mass-delete" checked> Allow mass delete</label>
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-allow-csv-export" name="tbl-allow-csv-export" checked> Enable saving data to CSV files</label>
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-allow-csv-import" name="tbl-allow-csv-import" checked> Enable import CSV file</label>
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-allow-print-view" name="tbl-allow-print-view" checked> Enable print-view</label>
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-allow-mass-delete" name="tbl-allow-mass-delete" checked> Enable bulk delete</label>
+    <label class="checkbox-label">
+        <input type="checkbox" id="tbl-show-edit-button" name="tbl-show-edit-button" checked> Show edit button
+    </label>
+    <label class="checkbox-label">
+        <input type="checkbox" id="tbl-show-delete-button" name="tbl-show-delete-button" checked> Show delete button
+    </label>
+    <label class="checkbox-label">
+        <input type="checkbox" id="tbl-allow-restore-delete" name="tbl-allow-restore-delete" checked> Allow restore deleted records (Soft Delete)
+    </label>
+    <label class="checkbox-label">
+        <input type="checkbox" id="tbl-allow-force-delete" name="tbl-allow-force-delete" checked> Allow force delete (Soft Delete)
+    </label>
                                     </div>
                                 </div>
                             </div>
@@ -1390,8 +1415,7 @@
             <button class="tab-link active" data-tab="tab-field-general" id="fld-tab-general" name="fld-tab-general">General</button>
             <button class="tab-link" data-tab="tab-field-media" id="fld-tab-media" name="fld-tab-media">Media</button>
             <button class="tab-link" data-tab="tab-field-lookup" id="fld-tab-lookup" name="fld-tab-lookup">Lookup field</button>
-            <button class="tab-link" data-tab="tab-field-options" id="fld-tab-options" name="fld-tab-options">Options list</button>
-            <button class="tab-link" data-tab="tab-field-format" id="fld-tab-format" name="fld-tab-format">Data format</button>
+            <button class="tab-link" data-tab="tab-field-options" id="fld-tab-options" name="fld-tab-options">View options</button>
             <button class="tab-link" data-tab="tab-field-calculated" id="fld-tab-calculated" name="fld-tab-calculated">Calculated field</button>
 			<button class="tab-link" data-tab="tab-field-algorithm" id="fld-tab-algorithm" name="fld-tab-algorithm">Algorithm field</button>
         </div>
@@ -1469,6 +1493,7 @@
                                         <option value="center">Center</option>
                                     </select>
                                 </div>
+
                             </div>
 
                             <div>
@@ -1516,32 +1541,6 @@
     </div>
 </fieldset>
 
-    <fieldset>
-        <legend>Form Display & Behavior</legend>
-        <div class="checkbox-group">
-            <label class="checkbox-label"><input type="checkbox" id="fld-required" name="fld-required"> Required</label>
-            <label class="checkbox-label"><input type="checkbox" id="fld-read-only" name="fld-read-only"> Read Only</label>
-            <label class="checkbox-label"><input type="checkbox" id="fld-text-area" name="fld-text-area"> Text area</label>
-            <label class="checkbox-label"><input type="checkbox" id="fld-rich-html" name="fld-rich-html"> Rich (HTML) area</label>
-            <label class="checkbox-label"><input type="checkbox" id="fld-check-box" name="fld-check-box"> Check box</label>
-        </div>
-    </fieldset>
-
-    <fieldset>
-        <legend>Application View Options</legend>
-        <div class="checkbox-group">
-            <label class="checkbox-label"><input type="checkbox" id="fld-hide-in-tv" name="fld-hide-in-tv"> Hide in table view</label>
-            <label class="checkbox-label"><input type="checkbox" id="fld-hide-in-dv" name="fld-hide-in-dv"> Hide in detail view</label>
-            <label class="checkbox-label"><input type="checkbox" id="fld-show-sum" name="fld-show-sum"> Show column sum</label>
-            <label class="checkbox-label"><input type="checkbox" id="fld-no-filter" name="fld-no-filter"> Do not filter</label>
-            <div class="form-group mt-1">
-                <label class="checkbox-label">
-                    <input type="checkbox" id="fld-enable-column-width" name="fld-enable-column-width"> Column width (pixels)
-                    <input type="number" id="fld-column-width" name="fld-column-width" value="150" style="width: 80px; margin-left: 10px;">
-                </label>
-            </div>
-        </div>
-    </fieldset>
 </div>
                             </div>
                         </div>
@@ -1792,21 +1791,128 @@
             <div id="tab-field-options" class="tab-pane">
                 <div class="card">
                     <div class="card-body">
+                   
+<div class="fieldset-grid">
+<fieldset>
+    <legend>Form Display & Behavior</legend>
+    <div class="checkbox-group">
+        <label class="checkbox-label"><input type="checkbox" id="fld-required" name="fld-required"> Required</label>
+        <label class="checkbox-label"><input type="checkbox" id="fld-read-only" name="fld-read-only"> Read Only</label>
+        
+        <div class="form-group" style="margin-top: 0.75rem;" id="display-as-group">
+            <label style="margin-bottom: 0.75rem;">Display As</label>
+            <div class="radio-group" style="flex-direction: column; gap: 0.75rem; align-items: flex-start;">
+                <label><input type="radio" name="fld-display-type" value="text_input" checked> Text Input (Default)</label>
+                <label><input type="radio" name="fld-display-type" value="text_area"> Text Area</label>
+                <label><input type="radio" name="fld-display-type" value="rich_html"> Rich (HTML) Area</label>
+                <label><input type="radio" name="fld-display-type" value="check_box"> Check Box (select 1 or 0)</label>
+                <label><input type="radio" name="fld-display-type" value="options_list"> Options list</label>
+            </div>
+        </div>
+        
+        <div class="form-group hidden" id="format-as-group" style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+<label for="fld-format-as">Format this field as</label>
+<select id="fld-format-as" name="fld-format-as">
+    <option value="default" selected>No special formatting (default)</option>
+
+    <optgroup label="Currency Formats">
+        <option value="US Currency">US Currency (example: $21,345.67)</option>
+        <option value="Euro Currency">Euro Currency (example: €21,345.67)</option>
+        <option value="UK Currency">UK Currency (example: £21,345.67)</option>
+    </optgroup>
+
+    <optgroup label="Date/Time Formats">
+        <option value="US Short Date/Time">US Short Date/Time (example: 3/28/2008 5:42PM)</option>
+        <option value="UK Short Date/Time">UK Short Date/Time (example: 28/3/2008 5:42PM)</option>
+        <option value="US Long Date/Time">US Long Date/Time (example: March 28th, 2008 5:42PM)</option>
+        <option value="UK Long Date/Time">UK Long Date/Time (example: 28th March 2008 5:42PM)</option>
+        <option value="European Short Date/Time">European Short Date/Time (example: 2008-03-28 13:00)</option>
+        <option value="12-hour time format">12-hour time format (example: 05:42 PM instead of 17:42)</option>
+    </optgroup>
+
+    <optgroup label="Numeric Formats">
+        <option value="Thousands separator, no decimals">Thousands separator, no decimals (example: 21,345)</option>
+        <option value="Thousands separator, 2 decimals">Thousands separator, 2 decimals (example: 21,345.67)</option>
+        <option value="Thousands separator, 3 decimals">Thousands separator, 3 decimals (example: 21,345.678)</option>
+        <option value="">Points for thousands and comma for decimals, 2 decimals (example: 21.345,67)</option>
+    </optgroup>
+
+    <optgroup label="Other Formats">
+        <option value="Phone numbers">Phone numbers (example: 123-456-7890)</option>
+        <option value="Canadian Postal Code">Canadian Postal Code (example: M2H-1G1)</option>
+    </optgroup>
+</select>
+</div>
+        
+<div id="options-list-settings-group" class="hidden">
                         <div class="form-group">
                             <label>List values (separated by double semi-colons ;;)</label>
                             <div class="input-group">
                                 <input type="text" style="flex-grow: 1;" id="fld-options-list-values" name="fld-options-list-values">
-                                <select class="btn" style="max-width: 150px;" id="options-quick-list" name="options-quick-list">
-                                    <option value="" selected>Quick List!</option>
-                                    <option value="January;;February;;March;;April;;May;;June;;July;;August;;September;;October;;November;;December">Months</option>
-                                    <option value="AL;;AK;;AZ;;AR;;CA;;CO;;CT;;DE;;FL;;GA;;HI;;ID;;IL;;IN;;IA;;KS;;KY;;LA;;ME;;MD;;MA;;MI;;MN;;MS;;MO;;MT;;NE;;NV;;NH;;NJ;;NM;;NY;;NC;;ND;;OH;;OK;;OR;;PA;;RI;;SC;;SD;;TN;;TX;;UT;;VT;;VA;;WA;;WV;;WI;;WY">US states (abbreviated)</option>
-                                    <option value="AL:Alabama;;AK:Alaska;;AZ:Arizona;;AR:Arkansas;;CA:California;;CO:Colorado;;CT:Connecticut;;DE:Delaware;;FL:Florida;;GA:Georgia;;HI:Hawaii;;ID:Idaho;;IL:Illinois;;IN:Indiana;;IA:Iowa;;KS:Kansas;;KY:Kentucky;;LA:Louisiana;;ME:Maine;;MD:Maryland;;MA:Massachusetts;;MI:Michigan;;MN:Minnesota;;MS:Mississippi;;MO:Missouri;;MT:Montana;;NE:Nebraska;;NV:Nevada;;NH:New Hampshire;;NJ:New Jersey;;NM:New Mexico;;NY:New York;;NC:North Carolina;;ND:North Dakota;;OH:Ohio;;OK:Oklahoma;;OR:Oregon;;PA:Pennsylvania;;RI:Rhode Island;;SC:South Carolina;;SD:South Dakota;;TN:Tennessee;;TX:Texas;;UT:Utah;;VT:Vermont;;VA:Virginia;;WA:Washington;;WV:West Virginia;;WI:Wisconsin;;WY:Wyoming">US states (both formats)</option>
-                                    <option value="Alabama;;Alaska;;Arizona;;Arkansas;;California;;Colorado;;Connecticut;;Delaware;;Florida;;Georgia;;Hawaii;;Idaho;;Illinois;;Indiana;;Iowa;;Kansas;;Kentucky;;Louisiana;;Maine;;Maryland;;Massachusetts;;Michigan;;Minnesota;;Mississippi;;Missouri;;Montana;;Nebraska;;Nevada;;New Hampshire;;New Jersey;;New Mexico;;New York;;North Carolina;;North Dakota;;Ohio;;Oklahoma;;Oregon;;Pennsylvania;;Rhode Island;;South Carolina;;South Dakota;;Tennessee;;Texas;;Utah;;Vermont;;Virginia;;Washington;;West Virginia;;Wisconsin;;Wyoming">US states (non-abbreviated)</option>
-                                    <option value="Sunday;;Monday;;Tuesday;;Wednesday;;Thursday;;Friday;;Saturday">Week Days</option>
-                                    <option value="Sun;;Mon;;Tue;;Wed;;Thu;;Fri;;Sat">Week Days (abbreviated)</option>
-                                    <option value="Afghanistan;;Albania;;Algeria;;Andorra;;Angola;;Antigua and Barbuda;;Argentina;;Armenia;;Australia;;Austria;;Azerbaijan;;Bahamas;;Bahrain;;Bangladesh;;Barbados;;Belarus;;Belgium;;Belize;;Benin;;Bhutan;;Bolivia;;Bosnia and Herzegovina;;Botswana;;Brazil;;Brunei;;Bulgaria;;Burkina Faso;;Burundi;;Cabo Verde;;Cambodia;;Cameroon;;Canada;;Central African Republic;;Chad;;Chile;;China;;Colombia;;Comoros;;Congo, Democratic Republic of the;;Congo, Republic of the;;Costa Rica;;Cote d'Ivoire;;Croatia;;Cuba;;Cyprus;;Czechia;;Denmark;;Djibouti;;Dominica;;Dominican Republic;;Ecuador;;Egypt;;El Salvador;;Equatorial Guinea;;Eritrea;;Estonia;;Eswatini;;Ethiopia;;Fiji;;Finland;;France;;Gabon;;Gambia;;Georgia;;Germany;;Ghana;;Greece;;Grenada;;Guatemala;;Guinea;;Guinea-Bissau;;Guyana;;Haiti;;Honduras;;Hungary;;Iceland;;India;;Indonesia;;Iran;;Iraq;;Ireland;;Israel;;Italy;;Jamaica;;Japan;;Jordan;;Kazakhstan;;Kenya;;Kiribati;;Kosovo;;Kuwait;;Kyrgyzstan;;Laos;;Latvia;;Lebanon;;Lesotho;;Liberia;;Libya;;Liechtenstein;;Lithuania;;Luxembourg;;Madagascar;;Malawi;;Malaysia;;Maldives;;Mali;;Malta;;Marshall Islands;;Mauritania;;Mauritius;;Mexico;;Micronesia;;Moldova;;Monaco;;Mongolia;;Montenegro;;Morocco;;Mozambique;;Myanmar;;Namibia;;Nauru;;Nepal;;Netherlands;;New Zealand;;Nicaragua;;Niger;;Nigeria;;North Korea;;North Macedonia;;Norway;;Oman;;Pakistan;;Palau;;Palestine State;;Panama;;Papua New Guinea;;Paraguay;;Peru;;Philippines;;Poland;;Portugal;;Qatar;;Romania;;Russia;;Rwanda;;Saint Kitts and Nevis;;Saint Lucia;;Saint Vincent and the Grenadines;;Samoa;;San Marino;;Sao Tome and Principe;;Saudi Arabia;;Senegal;;Serbia;;Seychelles;;Sierra Leone;;Singapore;;Slovakia;;Slovenia;;Solomon Islands;;Somalia;;South Africa;;South Korea;;South Sudan;;Spain;;Sri Lanka;;Sudan;;Suriname;;Sweden;;Switzerland;;Syria;;Taiwan;;Tajikistan;;Tanzania;;Thailand;;Timor-Leste;;Togo;;Tonga;;Trinidad and Tobago;;Tunisia;;Turkey;;Turkmenistan;;Tuvalu;;Uganda;;Ukraine;;United Arab Emirates;;United Kingdom;;United States of America;;Uruguay;;Uzbekistan;;Vanuatu;;Vatican City;;Venezuela;;Vietnam;;Yemen;;Zambia;;Zimbabwe">World countries list</option>
-                                    <option value="Africa/Abidjan;;Africa/Accra;;Africa/Algiers;;Africa/Bissau;;Africa/Cairo;;Africa/Casablanca;;Africa/Ceuta;;Africa/El_Aaiun;;Africa/Johannesburg;;Africa/Juba;;Africa/Khartoum;;Africa/Lagos;;Africa/Maputo;;Africa/Monrovia;;Africa/Nairobi;;Africa/Ndjamena;;Africa/Sao_Tome;;Africa/Tripoli;;Africa/Tunis;;Africa/Windhoek;;America/Adak;;America/Anchorage;;America/Araguaina;;America/Argentina/Buenos_Aires;;America/Argentina/Catamarca;;America/Argentina/Cordoba;;America/Argentina/Jujuy;;America/Argentina/La_Rioja;;America/Argentina/Mendoza;;America/Argentina/Rio_Gallegos;;America/Argentina/Salta;;America/Argentina/San_Juan;;America/Argentina/San_Luis;;America/Argentina/Tucuman;;America/Argentina/Ushuaia;;America/Asuncion;;America/Atikokan;;America/Bahia;;America/Bahia_Banderas;;America/Barbados;;America/Belem;;America/Belize;;America/Blanc-Sablon;;America/Boa_Vista;;America/Bogota;;America/Boise;;America/Cambridge_Bay;;America/Campo_Grande;;America/Cancun;;America/Caracas;;America/Cayenne;;America/Chicago;;America/Chihuahua;;America/Costa_Rica;;America/Creston;;America/Cuiaba;;America/Curacao;;America/Danmarkshavn;;America/Dawson;;America/Dawson_Creek;;America/Denver;;America/Detroit;;America/Edmonton;;America/Eirunepe;;America/El_Salvador;;America/Fort_Nelson;;America/Fortaleza;;America/Glace_Bay;;America/Goose_Bay;;America/Grand_Turk;;America/Guatemala;;America/Guayaquil;;America/Guyana;;America/Halifax;;America/Havana;;America/Hermosillo;;America/Indiana/Indianapolis;;America/Indiana/Knox;;America/Indiana/Marengo;;America/Indiana/Petersburg;;America/Indiana/Tell_City;;America/Indiana/Vevay;;America/Indiana/Vincennes;;America/Indiana/Winamac;;America/Inuvik;;America/Iqaluit;;America/Jamaica;;America/Juneau;;America/Kentucky/Louisville;;America/Kentucky/Monticello;;America/La_Paz;;America/Lima;;America/Los_Angeles;;America/Maceio;;America/Managua;;America/Manaus;;America/Martinique;;America/Matamoros;;America/Mazatlan;;America/Menominee;;America/Merida;;America/Metlakatla;;America/Mexico_City;;America/Miquelon;;America/Moncton;;America/Monterrey;;America/Montevideo;;America/Nassau;;America/New_York;;America/Nipigon;;America/Nome;;America/Noronha;;America/North_Dakota/Beulah;;America/North_Dakota/Center;;America/North_Dakota/New_Salem;;America/Nuuk;;America/Ojinaga;;America/Panama;;America/Pangnirtung;;America/Paramaribo;;America/Phoenix;;America/Port-au-Prince;;America/Port_of_Spain;;America/Porto_Velho;;America/Puerto_Rico;;America/Punta_Arenas;;America/Rainy_River;;America/Rankin_Inlet;;America/Recife;;America/Regina;;America/Resolute;;America/Rio_Branco;;America/Santarem;;America/Santiago;;America/Santo_Domingo;;America/Sao_Paulo;;America/Scoresbysund;;America/Sitka;;America/St_Johns;;America/Swift_Current;;America/Tegucigalpa;;America/Thule;;America/Thunder_Bay;;America/Tijuana;;America/Toronto;;America/Vancouver;;America/Whitehorse;;America/Winnipeg;;America/Yakutat;;America/Yellowknife;;Antarctica/Casey;;Antarctica/Davis;;Antarctica/DumontDUrville;;Antarctica/Macquarie;;Antarctica/Mawson;;Antarctica/Palmer;;Antarctica/Rothera;;Antarctica/Syowa;;Antarctica/Troll;;Antarctica/Vostok;;Asia/Almaty;;Asia/Amman;;Asia/Anadyr;;Asia/Aqtau;;Asia/Aqtobe;;Asia/Ashgabat;;Asia/Atyrau;;Asia/Baghdad;;Asia/Baku;;Asia/Bangkok;;Asia/Barnaul;;Asia/Beirut;;Asia/Bishkek;;Asia/Brunei;;Asia/Chita;;Asia/Choibalsan;;Asia/Colombo;;Asia/Damascus;;Asia/Dhaka;;Asia/Dili;;Asia/Dubai;;Asia/Dushanbe;;Asia/Famagusta;;Asia/Gaza;;Asia/Hebron;;Asia/Ho_Chi_Minh;;Asia/Hong_Kong;;Asia/Hovd;;Asia/Irkutsk;;Asia/Jakarta;;Asia/Jayapura;;Asia/Jerusalem;;Asia/Kabul;;Asia/Kamchatka;;Asia/Karachi;;Asia/Kathmandu;;Asia/Khandyga;;Asia/Kolkata;;Asia/Krasnoyarsk;;Asia/Kuala_Lumpur;;Asia/Kuching;;Asia/Macau;;Asia/Magadan;;Asia/Makassar;;Asia/Manila;;Asia/Nicosia;;Asia/Novokuznetsk;;Asia/Novosibirsk;;Asia/Omsk;;Asia/Oral;;Asia/Pontianak;;Asia/Pyongyang;;Asia/Qatar;;Asia/Qostanay;;Asia/Qyzylorda;;Asia/Riah;;Asia/Sakhalin;;Asia/Samarkand;;Asia/Seoul;;Asia/Shanghai;;Asia/Singapore;;Asia/Srednekolymsk;;Asia/Taipei;;Asia/Tashkent;;Asia/Tbilisi;;Asia/Tehran;;Asia/Thimphu;;Asia/Tokyo;;Asia/Tomsk;;Asia/Ulaanbaatar;;Asia/Urumqi;;Asia/Ust-Nera;;Asia/Vladivostok;;Asia/Yakutsk;;Asia/Yangon;;Asia/Yekaterinburg;;Asia/Yerevan;;Atlantic/Azores;;Atlantic/Bermuda;;Atlantic/Canary;;Atlantic/Cape_Verde;;Atlantic/Faroe;;Atlantic/Madeira;;Atlantic/Reykjavik;;Atlantic/South_Georgia;;Atlantic/Stanley;;Australia/Adelaide;;Australia/Brisbane;;Australia/Broken_Hill;;Australia/Darwin;;Australia/Eucla;;Australia/Hobart;;Australia/Lindeman;;Australia/Lord_Howe;;Australia/Melbourne;;Australia/Perth;;Australia/Sydney;;Europe/Amsterdam;;Europe/Andorra;;Europe/Astrakhan;;Europe/Athens;;Europe/Belgrade;;Europe/Berlin;;Europe/Brussels;;Europe/Bucharest;;Europe/Budapest;;Europe/Chisinau;;Europe/Copenhagen;;Europe/Dublin;;Europe/Gibraltar;;Europe/Helsinki;;Europe/Istanbul;;Europe/Kaliningrad;;Europe/Kiev;;Europe/Kirov;;Europe/Lisbon;;Europe/London;;Europe/Luxembourg;;Europe/Madrid;;Europe/Malta;;Europe/Minsk;;Europe/Monaco;;Europe/Moscow;;Europe/Oslo;;Europe/Paris;;Europe/Prague;;Europe/Riga;;Europe/Rome;;Europe/Samara;;Europe/Saratov;;Europe/Simferopol;;Europe/Sofia;;Europe/Stockholm;;Europe/Tallinn;;Europe/Tirane;;Europe/Ulyanovsk;;Europe/Uzhgorod;;Europe/Vienna;;Europe/Vilnius;;Europe/Volgograd;;Europe/Warsaw;;Europe/Zaporozhye;;Europe/Zurich;;Indian/Chagos;;Indian/Christmas;;Indian/Cocos;;Indian/Kerguelen;;Indian/Mahe;;Indian/Maldives;;Indian/Mauritius;;Indian/Reunion;;Pacific/Apia;;Pacific/Auckland;;Pacific/Bougainville;;Pacific/Chatham;;Pacific/Chuuk;;Pacific/Easter;;Pacific/Efate;;Pacific/Enderbury;;Pacific/Fakaofo;;Pacific/Fiji;;Pacific/Funafuti;;Pacific/Galapagos;;Pacific/Gambier;;Pacific/Guadalcanal;;Pacific/Guam;;Pacific/Honolulu;;Pacific/Kiritimati;;Pacific/Kosrae;;Pacific/Kwajalein;;Pacific/Majuro;;Pacific/Marquesas;;Pacific/Nauru;;Pacific/Niue;;Pacific/Norfolk;;Pacific/Noumea;;Pacific/Pago_Pago;;Pacific/Palau;;Pacific/Pitcairn;;Pacific/Pohnpei;;Pacific/Port_Moresby;;Pacific/Rarotonga;;Pacific/Tahiti;;Pacific/Tarawa;;Pacific/Tongatapu;;Pacific/Wake;;Pacific/Wallis;;UTC">World time zones</option>
-                                </select>
+<select class="btn" style="max-width: 150px;" id="options-quick-list" name="options-quick-list">
+    <option value="" selected>Quick List!</option>
+    <option value="Yes;;No">Yes/No</option>
+
+    <optgroup label="Status & Workflow">
+        <option value="Draft;;Under Review;;Pending Approval;;Approved;;Rejected;;Returned;;Cancelled;;Completed;;Auto-Approved;;Deferred;;In Progress">Approval Statuses</option>
+        <option value="Pending;;Paid;;Failed;;Refunded;;Cancelled">Payment Status</option>
+        <option value="Processing;;Shipped;;Delivered;;Returned;;Cancelled">Order Status</option>
+        <option value="Active;;Inactive;;Suspended;;Pending Verification">User Account Status</option>
+        <option value="Draft;;Submitted;;Reviewed;;Archived">Document Status</option>
+    </optgroup>
+
+    <optgroup label="User & Access">
+        <option value="Admin;;Editor;;Viewer;;Contributor;;Guest">User Roles</option>
+        <option value="Read;;Write;;Execute;;Full Access;;Restricted">Access Levels</option>
+    </optgroup>
+
+    <optgroup label="Product & Inventory">
+        <option value="Electronics;;Books;;Clothing;;Furniture;;Software">Product Categories</option>
+        <option value="In Stock;;Out of Stock;;Low Stock;;Pre-order">Stock Status</option>
+        <option value="Standard;;Express;;Pickup;;Courier;;Same-day">Shipping Methods</option>
+    </optgroup>
+
+    <optgroup label="Date & Time">
+        <option value="January;;February;;March;;April;;May;;June;;July;;August;;September;;October;;November;;December">Months</option>
+        <option value="Morning;;Afternoon;;Evening;;Night">Time Slots</option>
+        <option value="Daily;;Weekly;;Monthly;;Yearly;;Custom">Recurrence</option>
+        <option value="Sunday;;Monday;;Tuesday;;Wednesday;;Thursday;;Friday;;Saturday">Week Days</option>
+        <option value="Sun;;Mon;;Tue;;Wed;;Thu;;Fri;;Sat">Week Days (abbreviated)</option>
+    </optgroup>
+
+    <optgroup label="Locale & Language">
+        <option value="English;;Malay;;Chinese;;Tamil;;Arabic">Languages</option>
+        <option value="MYR;;USD;;EUR;;JPY;;SGD">Currencies</option>
+        <option value="Metric;;Imperial">Measurement Units</option>
+    </optgroup>
+
+    <optgroup label="Personal Info">
+        <option value="Mr;;Mrs;;Ms;;Dr;;Prof">Salutations</option>
+        <option value="Male;;Female;;Other;;Prefer not to say">Gender</option>
+        <option value="Single;;Married;;Divorced;;Widowed">Marital Status</option>
+        <option value="Primary;;Secondary;;Diploma;;Degree;;Masters;;PhD">Education Level</option>
+    </optgroup>
+
+    <optgroup label="Organization">
+        <option value="HR;;Finance;;IT;;Operations;;Legal">Departments</option>
+        <option value="Manager;;Executive;;Intern;;Consultant;;Technician">Job Titles</option>
+        <option value="Annual;;Medical;;Emergency;;Maternity;;Unpaid">Leave Types</option>
+    </optgroup>
+
+    <optgroup label="Geography">
+        <option value="Asia;;Europe;;Americas;;Africa;;Oceania">Regions</option>
+        <option value="Afghanistan;;Albania;;Algeria;;Andorra;;Angola;;Antigua and Barbuda;;Argentina;;Armenia;;Australia;;Austria;;Azerbaijan;;Bahamas;;Bahrain;;Bangladesh;;Barbados;;Belarus;;Belgium;;Belize;;Benin;;Bhutan;;Bolivia;;Bosnia and Herzegovina;;Botswana;;Brazil;;Brunei;;Bulgaria;;Burkina Faso;;Burundi;;Cabo Verde;;Cambodia;;Cameroon;;Canada;;Central African Republic;;Chad;;Chile;;China;;Colombia;;Comoros;;Congo, Democratic Republic of the;;Congo, Republic of the;;Costa Rica;;Cote d'Ivoire;;Croatia;;Cuba;;Cyprus;;Czechia;;Denmark;;Djibouti;;Dominica;;Dominican Republic;;Ecuador;;Egypt;;El Salvador;;Equatorial Guinea;;Eritrea;;Estonia;;Eswatini;;Ethiopia;;Fiji;;Finland;;France;;Gabon;;Gambia;;Georgia;;Germany;;Ghana;;Greece;;Grenada;;Guatemala;;Guinea;;Guinea-Bissau;;Guyana;;Haiti;;Honduras;;Hungary;;Iceland;;India;;Indonesia;;Iran;;Iraq;;Ireland;;Israel;;Italy;;Jamaica;;Japan;;Jordan;;Kazakhstan;;Kenya;;Kiribati;;Kosovo;;Kuwait;;Kyrgyzstan;;Laos;;Latvia;;Lebanon;;Lesotho;;Liberia;;Libya;;Liechtenstein;;Lithuania;;Luxembourg;;Madagascar;;Malawi;;Malaysia;;Maldives;;Mali;;Malta;;Marshall Islands;;Mauritania;;Mauritius;;Mexico;;Micronesia;;Moldova;;Monaco;;Mongolia;;Montenegro;;Morocco;;Mozambique;;Myanmar;;Namibia;;Nauru;;Nepal;;Netherlands;;New Zealand;;Nicaragua;;Niger;;Nigeria;;North Korea;;North Macedonia;;Norway;;Oman;;Pakistan;;Palau;;Palestine State;;Panama;;Papua New Guinea;;Paraguay;;Peru;;Philippines;;Poland;;Portugal;;Qatar;;Romania;;Russia;;Rwanda;;Saint Kitts and Nevis;;Saint Lucia;;Saint Vincent and the Grenadines;;Samoa;;San Marino;;Sao Tome and Principe;;Saudi Arabia;;Senegal;;Serbia;;Seychelles;;Sierra Leone;;Singapore;;Slovakia;;Slovenia;;Solomon Islands;;Somalia;;South Africa;;South Korea;;South Sudan;;Spain;;Sri Lanka;;Sudan;;Suriname;;Sweden;;Switzerland;;Syria;;Taiwan;;Tajikistan;;Tanzania;;Thailand;;Timor-Leste;;Togo;;Tonga;;Trinidad and Tobago;;Tunisia;;Turkey;;Turkmenistan;;Tuvalu;;Uganda;;Ukraine;;United Arab Emirates;;United Kingdom;;United States of America;;Uruguay;;Uzbekistan;;Vanuatu;;Vatican City;;Venezuela;;Vietnam;;Yemen;;Zambia;;Zimbabwe">World countries list</option>
+        <option value="Selangor;;Johor;;Penang;;Sabah;;Sarawak;;Kuala Lumpur;;Perak;;Pahang;;Negeri Sembilan;;Melaka;;Terengganu;;Kelantan;;Putrajaya;;Labuan">Malaysian States</option>
+        <option value="AL;;AK;;AZ;;AR;;CA;;CO;;CT;;DE;;FL;;GA;;HI;;ID;;IL;;IN;;IA;;KS;;KY;;LA;;ME;;MD;;MA;;MI;;MN;;MS;;MO;;MT;;NE;;NV;;NH;;NJ;;NM;;NY;;NC;;ND;;OH;;OK;;OR;;PA;;RI;;SC;;SD;;TN;;TX;;UT;;VT;;VA;;WA;;WV;;WI;;WY">US States (abbreviated)</option>
+        <option value="AL:Alabama;;AK:Alaska;;AZ:Arizona;;AR:Arkansas;;CA:California;;CO:Colorado;;CT:Connecticut;;DE:Delaware;;FL:Florida;;GA:Georgia;;HI:Hawaii;;ID:Idaho;;IL:Illinois;;IN:Indiana;;IA:Iowa;;KS:Kansas;;KY:Kentucky;;LA:Louisiana;;ME:Maine;;MD:Maryland;;MA:Massachusetts;;MI:Michigan;;MN:Minnesota;;MS:Mississippi;;MO:Missouri;;MT:Montana;;NE:Nebraska;;NV:Nevada;;NH:New Hampshire;;NJ:New Jersey;;NM:New Mexico;;NY:New York;;NC:North Carolina;;ND:North Dakota;;OH:Ohio;;OK:Oklahoma;;OR:Oregon;;PA:Pennsylvania;;RI:Rhode Island;;SC:South Carolina;;SD:South Dakota;;TN:Tennessee;;TX:Texas;;UT:Utah;;VT:Vermont;;VA:Virginia;;WA:Washington;;WV:West Virginia;;WI:Wisconsin;;WY:Wyoming">US States (both formats)</option>
+        <option value="Alabama;;Alaska;;Arizona;;Arkansas;;California;;Colorado;;Connecticut;;Delaware;;Florida;;Georgia;;Hawaii;;Idaho;;Illinois;;Indiana;;Iowa;;Kansas;;Kentucky;;Louisiana;;Maine;;Maryland;;Massachusetts;;Michigan;;Minnesota;;Mississippi;;Missouri;;Montana;;Nebraska;;Nevada;;New Hampshire;;New Jersey;;New Mexico;;New York;;North Carolina;;North Dakota;;Ohio;;Oklahoma;;Oregon;;Pennsylvania;;Rhode Island;;South Carolina;;South Dakota;;Tennessee;;Texas;;Utah;;Vermont;;Virginia;;Washington;;West Virginia;;Wisconsin;;Wyoming">US States (non-abbreviated)</option>
+        <option value="Africa/Abidjan;;Africa/Accra;;Africa/Algiers;;Africa/Bissau;;Africa/Cairo;;Africa/Casablanca;;Africa/Ceuta;;Africa/El_Aaiun;;Africa/Johannesburg;;Africa/Juba;;Africa/Khartoum;;Africa/Lagos;;Africa/Maputo;;Africa/Monrovia;;Africa/Nairobi;;Africa/Ndjamena;;Africa/Sao_Tome;;Africa/Tripoli;;Africa/Tunis;;Africa/Windhoek;;America/Adak;;America/Anchorage;;America/Araguaina;;America/Argentina/Buenos_Aires;;America/Argentina/Catamarca;;America/Argentina/Cordoba;;America/Argentina/Jujuy;;America/Argentina/La_Rioja;;America/Argentina/Mendoza;;America/Argentina/Rio_Gallegos;;America/Argentina/Salta;;America/Argentina/San_Juan;;America/Argentina/San_Luis;;America/Argentina/Tucuman;;America/Argentina/Ushuaia;;America/Asuncion;;America/Atikokan;;America/Bahia;;America/Bahia_Banderas;;America/Barbados;;America/Belem;;America/Belize;;America/Blanc-Sablon;;America/Boa_Vista;;America/Bogota;;America/Boise;;America/Cambridge_Bay;;America/Campo_Grande;;America/Cancun;;America/Caracas;;America/Cayenne;;America/Chicago;;America/Chihuahua;;America/Costa_Rica;;America/Creston;;America/Cuiaba;;America/Curacao;;America/Danmarkshavn;;America/Dawson;;America/Dawson_Creek;;America/Denver;;America/Detroit;;America/Edmonton;;America/Eirunepe;;America/El_Salvador;;America/Fort_Nelson;;America/Fortaleza;;America/Glace_Bay;;America/Goose_Bay;;America/Grand_Turk;;America/Guatemala;;America/Guayaquil;;America/Guyana;;America/Halifax;;America/Havana;;America/Hermosillo;;America/Indiana/Indianapolis;;America/Indiana/Knox;;America/Indiana/Marengo;;America/Indiana/Petersburg;;America/Indiana/Tell_City;;America/Indiana/Vevay;;America/Indiana/Vincennes;;America/Indiana/Winamac;;America/Inuvik;;America/Iqaluit;;America/Jamaica;;America/Juneau;;America/Kentucky/Louisville;;America/Kentucky/Monticello;;America/La_Paz;;America/Lima;;America/Los_Angeles;;America/Maceio;;America/Managua;;America/Manaus;;America/Martinique;;America/Matamoros;;America/Mazatlan;;America/Menominee;;America/Merida;;America/Metlakatla;;America/Mexico_City;;America/Miquelon;;America/Moncton;;America/Monterrey;;America/Montevideo;;America/Nassau;;America/New_York;;America/Nipigon;;America/Nome;;America/Noronha;;America/North_Dakota/Beulah;;America/North_Dakota/Center;;America/North_Dakota/New_Salem;;America/Nuuk;;America/Ojinaga;;America/Panama;;America/Pangnirtung;;America/Paramaribo;;America/Phoenix;;America/Port-au-Prince;;America/Port_of_Spain;;America/Porto_Velho;;America/Puerto_Rico;;America/Punta_Arenas;;America/Rainy_River;;America/Rankin_Inlet;;America/Recife;;America/Regina;;America/Resolute;;America/Rio_Branco;;America/Santarem;;America/Santiago;;America/Santo_Domingo;;America/Sao_Paulo;;America/Scoresbysund;;America/Sitka;;America/St_Johns;;America/Swift_Current;;America/Tegucigalpa;;America/Thule;;America/Thunder_Bay;;America/Tijuana;;America/Toronto;;America/Vancouver;;America/Whitehorse;;America/Winnipeg;;America/Yakutat;;America/Yellowknife;;Antarctica/Casey;;Antarctica/Davis;;Antarctica/DumontDUrville;;Antarctica/Macquarie;;Antarctica/Mawson;;Antarctica/Palmer;;Antarctica/Rothera;;Antarctica/Syowa;;Antarctica/Troll;;Antarctica/Vostok;;Asia/Almaty;;Asia/Amman;;Asia/Anadyr;;Asia/Aqtau;;Asia/Aqtobe;;Asia/Ashgabat;;Asia/Atyrau;;Asia/Baghdad;;Asia/Baku;;Asia/Bangkok;;Asia/Barnaul;;Asia/Beirut;;Asia/Bishkek;;Asia/Brunei;;Asia/Chita;;Asia/Choibalsan;;Asia/Colombo;;Asia/Damascus;;Asia/Dhaka;;Asia/Dili;;Asia/Dubai;;Asia/Dushanbe;;Asia/Famagusta;;Asia/Gaza;;Asia/Hebron;;Asia/Ho_Chi_Minh;;Asia/Hong_Kong;;Asia/Hovd;;Asia/Irkutsk;;Asia/Jakarta;;Asia/Jayapura;;Asia/Jerusalem;;Asia/Kabul;;Asia/Kamchatka;;Asia/Karachi;;Asia/Kathmandu;;Asia/Khandyga;;Asia/Kolkata;;Asia/Krasnoyarsk;;Asia/Kuala_Lumpur;;Asia/Kuching;;Asia/Macau;;Asia/Magadan;;Asia/Makassar;;Asia/Manila;;Asia/Nicosia;;Asia/Novokuznetsk;;Asia/Novosibirsk;;Asia/Omsk;;Asia/Oral;;Asia/Pontianak;;Asia/Pyongyang;;Asia/Qatar;;Asia/Qostanay;;Asia/Qyzylorda;;Asia/Riah;;Asia/Sakhalin;;Asia/Samarkand;;Asia/Seoul;;Asia/Shanghai;;Asia/Singapore;;Asia/Srednekolymsk;;Asia/Taipei;;Asia/Tashkent;;Asia/Tbilisi;;Asia/Tehran;;Asia/Thimphu;;Asia/Tokyo;;Asia/Tomsk;;Asia/Ulaanbaatar;;Asia/Urumqi;;Asia/Ust-Nera;;Asia/Vladivostok;;Asia/Yakutsk;;Asia/Yangon;;Asia/Yekaterinburg;;Asia/Yerevan;;Atlantic/Azores;;Atlantic/Bermuda;;Atlantic/Canary;;Atlantic/Cape_Verde;;Atlantic/Faroe;;Atlantic/Madeira;;Atlantic/Reykjavik;;Atlantic/South_Georgia;;Atlantic/Stanley;;Australia/Adelaide;;Australia/Brisbane;;Australia/Broken_Hill;;Australia/Darwin;;Australia/Eucla;;Australia/Hobart;;Australia/Lindeman;;Australia/Lord_Howe;;Australia/Melbourne;;Australia/Perth;;Australia/Sydney;;Europe/Amsterdam;;Europe/Andorra;;Europe/Astrakhan;;Europe/Athens;;Europe/Belgrade;;Europe/Berlin;;Europe/Brussels;;Europe/Bucharest;;Europe/Budapest;;Europe/Chisinau;;Europe/Copenhagen;;Europe/Dublin;;Europe/Gibraltar;;Europe/Helsinki;;Europe/Istanbul;;Europe/Kaliningrad;;Europe/Kiev;;Europe/Kirov;;Europe/Lisbon;;Europe/London;;Europe/Luxembourg;;Europe/Madrid;;Europe/Malta;;Europe/Minsk;;Europe/Monaco;;Europe/Moscow;;Europe/Oslo;;Europe/Paris;;Europe/Prague;;Europe/Riga;;Europe/Rome;;Europe/Samara;;Europe/Saratov;;Europe/Simferopol;;Europe/Sofia;;Europe/Stockholm;;Europe/Tallinn;;Europe/Tirane;;Europe/Ulyanovsk;;Europe/Uzhgorod;;Europe/Vienna;;Europe/Vilnius;;Europe/Volgograd;;Europe/Warsaw;;Europe/Zaporozhye;;Europe/Zurich;;Indian/Chagos;;Indian/Christmas;;Indian/Cocos;;Indian/Kerguelen;;Indian/Mahe;;Indian/Maldives;;Indian/Mauritius;;Indian/Reunion;;Pacific/Apia;;Pacific/Auckland;;Pacific/Bougainville;;Pacific/Chatham;;Pacific/Chuuk;;Pacific/Easter;;Pacific/Efate;;Pacific/Enderbury;;Pacific/Fakaofo;;Pacific/Fiji;;Pacific/Funafuti;;Pacific/Galapagos;;Pacific/Gambier;;Pacific/Guadalcanal;;Pacific/Guam;;Pacific/Honolulu;;Pacific/Kiritimati;;Pacific/Kosrae;;Pacific/Kwajalein;;Pacific/Majuro;;Pacific/Marquesas;;Pacific/Nauru;;Pacific/Niue;;Pacific/Norfolk;;Pacific/Noumea;;Pacific/Pago_Pago;;Pacific/Palau;;Pacific/Pitcairn;;Pacific/Pohnpei;;Pacific/Port_Moresby;;Pacific/Rarotonga;;Pacific/Tahiti;;Pacific/Tarawa;;Pacific/Tongatapu;;Pacific/Wake;;Pacific/Wallis;;UTC">World time zones</option>
+    </optgroup>
+
+    <optgroup label="Address Types">
+        <option value="Home;;Office;;Billing;;Shipping">Address Types</option>
+    </optgroup>
+</select>
                             </div>
                         </div>
                         <div class="form-group">
@@ -1820,34 +1926,43 @@
                         <p style="font-size: 0.9em; color: var(--secondary-color);">
                             An options list displays a drop down menu containing items from the 'List values' box. Users can select an item from that drop down menu to be stored as the field value.
                         </p>
-                    </div>
-                </div>
-            </div>
+</div>    
+        
+        </div>
+</fieldset>
 
-            <div id="tab-field-format" class="tab-pane">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label>Format this field as</label>
-                            <select id="fld-format-as" name="fld-format-as">
-                                <option value="default" selected>No special formatting (default)</option>
-                                <option value="US Currency">US Currency (example: $21,345.67)</option>
-                                <option value="Euro Currency">Euro Currency (example: €21,345.67)</option>
-                                <option value="UK Currency">UK Currency (example: £21,345.67)</option>
-                                <option value="US Short Date/Time">US Short Date/Time (example: 3/28/2008 5:42PM)</option>
-                                <option value="UK Short Date/Time">UK Short Date/Time (example: 28/3/2008 5:42PM)</option>
-                                <option value="US Long Date/Time">US Long Date/Time (example: March 28th, 2008 5:42PM)</option>
-                                <option value="UK Long Date/Time">UK Long Date/Time (example: 28th March 2008 5:42PM)</option>
-                                <option value="Thousands separator, no decimals">Thousands separator, no decimals (example: 21,345)</option>
-                                <option value="Thousands separator, 2 decimals">Thousands separator, 2 decimals (example: 21,345.67)</option>
-                                <option value="Thousands separator, 3 decimals">Thousands separator, 3 decimals (example: 21,345.678)</option>
-                                <option value="Phone numbers">Phone numbers (example: 123-456-7890)</option>
-                                <option value="Canadian Postal Code">Canadian Postal Code (example: M2H-1G1)</option>
-                                <option value="12-hour time format">12-hour time format (example: 05:42 PM instead of 17:42)</option>
-                                <option value="European Short Date/Time">European Short Date/Time (example: 2008-03-28 13:00)</option>
-                                <option value="">Points for thousands and comma for decimals, 2 decimals (example: 21.345,67)</option>
-                            </select>
-                        </div>
+    <fieldset>
+        <legend>Application View Options</legend>
+        <div class="checkbox-group">
+            <label class="checkbox-label"><input type="checkbox" id="fld-hide-in-tv" name="fld-hide-in-tv"> Hide in table view</label>
+        <label class="checkbox-label">
+            <input type="checkbox" id="fld-editable-in-tv" name="fld-editable-in-tv"> Editable in table view
+        </label>
+            <label class="checkbox-label"><input type="checkbox" id="fld-hide-in-dv" name="fld-hide-in-dv"> Hide in detail view</label>
+            <label class="checkbox-label"><input type="checkbox" id="fld-show-sum" name="fld-show-sum"> Show column sum</label>
+        <label class="checkbox-label">
+            <input type="checkbox" id="fld-allow-sorting" name="fld-allow-sorting" checked> Enable sorting
+        </label>
+        <label class="checkbox-label">
+            <input type="checkbox" id="fld-enable-global-filter" name="fld-enable-global-filter"> Enable global filter
+        </label>
+        <label class="checkbox-label">
+            <input type="checkbox" id="fld-enable-individual-filter" name="fld-enable-individual-filter"> Enable individual filter
+        </label>
+        <label class="checkbox-label">
+            <input type="checkbox" id="fld-enable-range-filter" name="fld-enable-range-filter"> Enable range filter
+        </label>
+            <div class="form-group mt-1">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="fld-enable-column-width" name="fld-enable-column-width"> Column width (pixels)
+                    <input type="number" id="fld-column-width" name="fld-column-width" value="150" style="width: 80px; margin-left: 10px;">
+                </label>
+            </div>
+        </div>
+    </fieldset>
+</div>
+
+
                     </div>
                 </div>
             </div>
