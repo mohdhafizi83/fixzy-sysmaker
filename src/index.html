@@ -336,65 +336,24 @@
     </div>
 </div>
 
-                <div id="tab-localization" class="tab-pane">
-                    <div class="card">
-                        <div class="card-body">
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label for="app-date-preview">Date/time preview</label>
-                                    <input type="text" id="app-date-preview" name="app-date-preview" value="12/31/2022 10:15 PM" disabled>
-                                </div>
-                                <div class="form-group">
-                                    <label for="app-date-order">Date order</label>
-                                    <select id="app-date-order" name="app-date-order">
-                                        <option value="mdy">Month, day, year</option>
-                                        <option value="ymd">Year, month, day</option>
-                                        <option value="dmy" selected>Day, month, year</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="app-separator">Separator</label>
-                                    <select id="app-separator" name="app-separator">
-                                        <option value="/">Slash /</option>
-                                        <option value="-">Hyphen -</option>
-                                        <option value=" ">Space</option>
-                                        <option value=".">Point .</option>
-                                        <option value=",">Comma ,</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="app-char-encoding">Character encoding</label>
-                                    <select id="app-char-encoding" name="app-char-encoding">
-                                        <option>4-Byte Unicode UTF-8</option>
-                                        <option>US Ascii / Western</option>
-                                        <option>3-Byte Unicode UTF-8</option>
-                                        <option>Arabic (Windows)</option>
-                                        <option>Baltic (ISO)</option>
-                                        <option>Baltic (Windows)</option>
-                                        <option>Central European (ISO)</option>
-                                        <option>Central European (Windows)</option>
-                                        <option>Chinese - Simplified (GB2312)</option>
-                                        <option>Chinese - Simplified (HZ)</option>
-                                        <option>Chinese - Traditional (BIG5)</option>
-                                        <option>Cyrillic (KOI8-R)</option>
-                                        <option>Cyrillic (KOI8-U)</option>
-                                        <option>Cyrillic (Windows)</option>
-                                        <option>Greek (ISO)</option>
-                                        <option>Greek (Windows)</option>
-                                        <option>Japanese (EUC)</option>
-                                        <option>Japanese (JIS)</option>
-                                        <option>Japanese (Shift-JIS)</option>
-                                        <option>Korean (ISO)</option>
-                                        <option>Korean (KSC5601)</option>
-                                        <option>Hebrew (DOS)</option>
-                                        <option>Hebrew (ISO-Logical)</option>
-                                        <option>Hebrew (ISO-Visual)</option>
-                                        <option>Thai</option>
-                                        <option>Turkish (ISO)</option>
-                                        <option>Turkish (Windows)</option>
-                                        <option>Vietnamese</option>
-                                    </select>
-                                </div>
+<div id="tab-localization" class="tab-pane">
+    <div class="card">
+        <div class="card-body">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="app-date-preview">Date/time preview</label>
+                    <input type="text" id="app-date-preview" name="app-date-preview" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="app-date-format">Date format</label>
+                    <select id="app-date-format" name="app-date-format">
+                        </select>
+                </div>
+                <div class="form-group">
+                    <label for="app-time-format">Time format</label>
+                    <select id="app-time-format" name="app-time-format">
+                        </select>
+                </div>
                                 <div class="form-group">
                                     <label for="app-language-select">Language</label>
                                     <select id="app-language-select" name="app-language-select">
@@ -817,21 +776,11 @@
                                         </optgroup>
                                     </select>
                                 </div>
-                            </div>
 
-                            <div class="form-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="app-use-24hr-format" name="app-use-24hr-format"> Use 24hr time format
-                                </label>
-                                <label class="checkbox-label mt-1">
-                                    <input type="checkbox" id="app-enforce_mysql_encoding" name="app-enforce_mysql_encoding"> Don't enforce MySQL encoding
-                                </label>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-
+            </div>
+        </div>
+    </div>
+</div>
                 <div id="tab-theme" class="tab-pane">
                     <div class="card">
                         <div class="card-body">
@@ -1594,6 +1543,15 @@
                                         <label class="checkbox-label"><input type="checkbox" id="fld-allow-image-uploads" name="fld-allow-image-uploads"> Allow users to upload images</label>
                                     </div>
                                     <div class="form-group">
+                                        <label for="fld-image-storage-provider">Storage provider</label>
+                                        <select id="fld-image-storage-provider" name="fld-image-storage-provider">
+                                            <option value="local">Current Server</option>
+                                            <option value="s3">AWS S3</option>
+                                            <option value="gsc">Google Cloud Storage</option>
+                                            <option value="spaces">DigitalOcean Spaces</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
                                         <label for="fld-max-file-size">Maximum acceptable file size (KB)</label>
 <div class="input-group" style="max-width: 200px;">
     <input type="number" id="fld-max-file-size" name="fld-max-file-size" value="250">
@@ -1609,28 +1567,42 @@
                                     <div class="form-group">
                                         <label class="checkbox-label"><input type="checkbox" id="fld-dont-rename-image" name="fld-dont-rename-image" disabled> Don't rename uploaded files</label>
                                     </div>
-                                    <div id="image-options-tabs" class="tabs-container hidden mt-2">
-                                        <div class="tabs-nav">
-                                            <button class="tab-link active" data-tab="tab-image-tv" id="fld-image-tab-tv" name="fld-image-tab-tv">Table List</button>
-                                            <button class="tab-link" data-tab="tab-image-dv" id="fld-image-tab-dv" name="fld-image-tab-dv">Record Form</button>
-                                        </div>
-                                        <div class="tabs-content">
-                                            <div id="tab-image-tv" class="tab-pane active">
-                                                <div class="form-group"><label>Thumbnail size</label>
-                                                    <div class="input-group" style="gap: 0.25rem; align-items: center;"><input type="number" value="50" style="max-width: 70px;" id="fld-tv-thumb-width" name="fld-tv-thumb-width"><span>x</span><input type="number" value="50" style="max-width: 70px;" id="fld-tv-thumb-height" name="fld-tv-thumb-height"><span>pixels</span></div>
-                                                </div>
-                                                <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="fld-tv-enable-zooming" name="fld-tv-enable-zooming"> Enable zooming</label></div>
-                                                <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="fld-tv-show-full-size" name="fld-tv-show-full-size"> Show full-size image (no thumbnail)</label></div>
-                                            </div>
-                                            <div id="tab-image-dv" class="tab-pane">
-                                                <div class="form-group"><label>Thumbnail size</label>
-                                                    <div class="input-group" style="gap: 0.25rem; align-items: center;"><input type="number" value="250" style="max-width: 70px;" id="fld-dv-thumb-width" name="fld-dv-thumb-width"><span>x</span><input type="number" value="250" style="max-width: 70px;" id="fld-dv-thumb-height" name="fld-dv-thumb-height"><span>pixels</span></div>
-                                                </div>
-                                                <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="fld-dv-enable-zooming" name="fld-dv-enable-zooming"> Enable zooming</label></div>
-                                                <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="fld-dv-show-full-size" name="fld-dv-show-full-size"> Show full-size image (no thumbnail)</label></div>
-                                            </div>
-                                        </div>
-                                    </div>
+<div id="image-options-tabs" class="tabs-container hidden mt-2">
+    <div class="tabs-nav">
+        <button class="tab-link active" data-tab="tab-image-tv" id="fld-image-tab-tv" name="fld-image-tab-tv">Table List</button>
+        <button class="tab-link" data-tab="tab-image-dv" id="fld-image-tab-dv" name="fld-image-tab-dv">Record Form</button>
+    </div>
+    <div class="tabs-content">
+        <div id="tab-image-tv" class="tab-pane active">
+            <div class="form-group">
+                <label for="fld-tv-thumb-shape">Shape style</label>
+                <select id="fld-tv-thumb-shape" name="fld-tv-thumb-shape">
+                    <option value="square">Square</option>
+                    <option value="circular">Circular</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Thumbnail size</label>
+                <div class="input-group" style="gap: 0.25rem; align-items: center;"><input type="number" value="50" style="max-width: 70px;" id="fld-tv-thumb-width" name="fld-tv-thumb-width"><span>x</span><input type="number" value="50" style="max-width: 70px;" id="fld-tv-thumb-height" name="fld-tv-thumb-height"><span>pixels</span></div>
+            </div>
+            <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="fld-tv-enable-zooming" name="fld-tv-enable-zooming"> Enable zooming</label></div>
+            <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="fld-tv-show-full-size" name="fld-tv-show-full-size"> Show full-size image (no thumbnail)</label></div>
+        </div>
+        <div id="tab-image-dv" class="tab-pane">
+            <div class="form-group">
+                <label for="fld-dv-thumb-shape">Shape style</label>
+                <select id="fld-dv-thumb-shape" name="fld-dv-thumb-shape">
+                    <option value="square">Square</option>
+                    <option value="circular">Circular</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Thumbnail size</label>
+                <div class="input-group" style="gap: 0.25rem; align-items: center;"><input type="number" value="250" style="max-width: 70px;" id="fld-dv-thumb-width" name="fld-dv-thumb-width"><span>x</span><input type="number" value="250" style="max-width: 70px;" id="fld-dv-thumb-height" name="fld-dv-thumb-height"><span>pixels</span></div>
+            </div>
+            <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="fld-dv-enable-zooming" name="fld-dv-enable-zooming"> Enable zooming</label></div>
+            <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="fld-dv-show-full-size" name="fld-dv-show-full-size"> Show full-size image (no thumbnail)</label></div>
+        </div>
+    </div>
+</div>
                                 </div>
                             </div>
 
@@ -1640,6 +1612,15 @@
                                 </div>
                                 <div class="media-options-body">
                                     <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="fld-allow-file-uploads" name="fld-allow-file-uploads"> Allow users to upload these file types</label></div>
+                                    <div class="form-group">
+                                        <label for="fld-file-storage-provider">Storage provider</label>
+                                        <select id="fld-file-storage-provider" name="fld-file-storage-provider">
+                                            <option value="local">Current Server</option>
+                                            <option value="s3">AWS S3</option>
+                                            <option value="gsc">Google Cloud Storage</option>
+                                            <option value="spaces">DigitalOcean Spaces</option>
+                                        </select>
+                                    </div>
                                     <div class="form-group">
                                         <div class="input-group"><select id="fld-file-types" name="fld-file-types" disabled><option value="images">jpg, jpeg, gif, png, webp</option><option value="docs">csv, xls, xlsx, xlsm, ods</option><option value="txt, doc, docx, docm, odt, pdf, rtf">txt, doc, docx, docm, odt, pdf, rtf</option><option value="video">mov, avi, swf, asf, wmv, mpg, mpeg, mp4, flv</option><option value="audio">mp3, wav, mid, midi, wma</option><option value="archieve">zip, rar, gz, tar, iso</option><option value="pdf">ppt, pptx, pptm, pdf, ppsx, ppsm, pps, odp</option></select><span style="color: red; align-self: center; margin-left: 0.5rem; font-weight: bold;">Danger!</span></div>
                                     </div>
@@ -1793,25 +1774,29 @@
         <label class="checkbox-label">
             <input type="checkbox" id="fld-editable-in-tv" name="fld-editable-in-tv"> Editable in 'Table List'
         </label>
-        <label class="checkbox-label">
+        <label class="checkbox-label" id="fld-allow-sorting-group">
             <input type="checkbox" id="fld-allow-sorting" name="fld-allow-sorting" checked> Enable sorting
         </label>
-        <label class="checkbox-label">
+        <label class="checkbox-label" id="fld-enable-global-filter-group">
             <input type="checkbox" id="fld-enable-global-filter" name="fld-enable-global-filter"> Enable global filter
         </label>
-        <label class="checkbox-label">
+        <label class="checkbox-label" id="fld-enable-individual-filter-group">
             <input type="checkbox" id="fld-enable-individual-filter" name="fld-enable-individual-filter"> Enable individual filter
         </label>
-        <label class="checkbox-label">
+        <label class="checkbox-label" id="fld-enable-range-filter-group">
             <input type="checkbox" id="fld-enable-range-filter" name="fld-enable-range-filter"> Enable range filter
         </label>
-        <div class="form-group hidden" id="date-time-format-group" style="margin-top: 1rem;">
-            <label for="fld-tv-date-time-format">Date Time Format</label>
-            <div class="input-group">
-                <input type="text" id="fld-tv-date-time-format" name="fld-tv-date-time-format" value="M j, Y H:i:s">
-                <a href="https://www.php.net/manual/en/datetime.format.php" target="_blank" class="btn">PHP Format</a>
-            </div>
-        </div>
+<div class="form-group hidden" id="date-time-format-group" style="margin-top: 1rem;">
+    <label>Date Time Format</label>
+    <div class="radio-group-horizontal" style="margin-top: 0.5rem;">
+        <label class="radio-label">
+            <input type="radio" name="fld-tv-date-time-format" value="date_only"> Date only
+        </label>
+        <label class="radio-label">
+            <input type="radio" name="fld-tv-date-time-format" value="date_and_time" checked> Date and Time
+        </label>
+    </div>
+</div>
                 <div class="form-group hidden" id="currency-code-group" style="margin-top: 1rem;">
             <label for="fld-tv-currency-code">Currency code</label>
             <div class="input-group">
@@ -1819,12 +1804,14 @@
                 <a href="https://en.wikipedia.org/wiki/ISO_4217#List_of_currency_codes" target="_blank" class="btn">ISO 4217</a>
             </div>
         </div>
-            <label class="checkbox-label"><input type="checkbox" id="fld-show-sum" name="fld-show-sum"> Show column sum</label>
+            <label class="checkbox-label" id="fld-show-sum-group"><input type="checkbox" id="fld-show-sum" name="fld-show-sum"> Show column sum</label>
             
         <hr style="margin: 1rem 0;">
         
         <label class="checkbox-label"><input type="checkbox" id="fld-tv-wrap-header" name="fld-tv-wrap-header"> Enable wrap column header</label>
-        <label class="checkbox-label"><input type="checkbox" id="fld-tv-wrap-text" name="fld-tv-wrap-text"> Enable wrap text</label>
+        <label class="checkbox-label" id="fld-tv-wrap-text-group">
+            <input type="checkbox" id="fld-tv-wrap-text" name="fld-tv-wrap-text"> Enable wrap text
+        </label>
         <label class="checkbox-label"><input type="checkbox" id="fld-tv-enable-toggle" name="fld-tv-enable-toggle"> Enable Toggled Hidden By Default</label>
         <label class="checkbox-label"><input type="checkbox" id="fld-tv-description-tooltips" name="fld-tv-description-tooltips"> Enable description tooltips</label>
 
@@ -1836,11 +1823,11 @@
                 <option value="right">Right</option>
             </select>
         </div>
-        <div class="form-group">
+        <div class="form-group" id="fld-tv-text-limit-group">
             <label for="fld-tv-text-limit">Text limit</label>
             <input type="number" id="fld-tv-text-limit" name="fld-tv-text-limit" value="50" style="max-width: 100px;">
         </div>
-        <div class="form-group">
+        <div class="form-group" id="fld-tv-text-size-group">
             <label for="fld-tv-text-size">Text Size</label>
             <select id="fld-tv-text-size" name="fld-tv-text-size">
                 <option value="ExtraSmall">Extra Small</option>
@@ -1849,7 +1836,7 @@
                 <option value="Large">Large</option>
             </select>
         </div>
-        <div class="form-group">
+        <div class="form-group" id="fld-tv-font-weight-group">
             <label for="fld-tv-font-weight">Font weight</label>
             <select id="fld-tv-font-weight" name="fld-tv-font-weight">
                 <option value="Thin">Thin</option>
@@ -1863,7 +1850,8 @@
                 <option value="Black">Black</option>
             </select>
         </div>
-        <div class="form-group">
+        
+        <div class="form-group" id="fld-tv-text-color-group">
             <label for="fld-tv-text-color">Text color</label>
             <select id="fld-tv-text-color" name="fld-tv-text-color">
                 <option value=""></option>
@@ -1875,14 +1863,14 @@
                 <option value="danger">Danger</option>
             </select>
         </div>
-        <div class="form-group">
+        <div class="form-group" id="fld-tv-icon-group">
             <label for="fld-tv-icon">Icon</label>
             <div class="input-group">
                 <input type="text" id="fld-tv-icon" name="fld-tv-icon" placeholder="e.g., check-circle">
                 <a href="https://heroicons.com/" target="_blank" class="btn">Heroicons</a>
             </div>
         </div>
-        <div class="form-group">
+        <div class="form-group" id="fld-tv-icon-color-group">
             <label for="fld-tv-icon-color">Icon color</label>
             <select id="fld-tv-icon-color" name="fld-tv-icon-color">
                 <option value=""></option>
@@ -1909,9 +1897,10 @@
             <div class="radio-group" style="flex-direction: column; gap: 0.75rem; align-items: flex-start;">
                 <label><input type="radio" name="fld-display-type" value="text_input" checked> Text Input (Default)</label>
                 <label><input type="radio" name="fld-display-type" value="text_area"> Text Area</label>
-                <label><input type="radio" name="fld-display-type" value="rich_html"> Rich (HTML) Area</label>
-                <label><input type="radio" name="fld-display-type" value="check_box"> Check Box (select 1 or 0)</label>
-                <label><input type="radio" name="fld-display-type" value="options_list"> Options list</label>
+                <label><input type="radio" name="fld-display-type" value="rich_html"> Text Editor</label>
+                <label><input type="radio" name="fld-display-type" value="check_box"> Check Box</label>
+                <label><input type="radio" name="fld-display-type" value="options_list"> Options List</label>
+                <label><input type="radio" name="fld-display-type" value="repeater"> Repeater</label>
             </div>
         </div>
         

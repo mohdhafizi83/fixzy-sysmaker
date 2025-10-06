@@ -577,9 +577,6 @@ Action::make('show<<CHILD_TABLE_NAME_SINGULAR>>')
 "
 -----------
 
-22.2. Jika tv_text_size bukan 'Normal', gantikan <<IMPORT_COLUMN_TEXT_SIZE>> dengan "use Filament\Support\Enums\TextSize;".
-22.3. Jika tv_font_weight bukan 'Regular', gantikan <<IMPORT_FONTWEIGHT_COLUMN_TEXT>> dengan "use Filament\Support\Enums\FontWeight;".
-
 22. Seterusnya kita akan membuat kod untuk column. Ia melibatkan kesemua fields yang terdapat didalam table ini. Loop semua field dan bina kod berdasarkan jenis dan ketetapan seperti yang dinyatakan.
 
 Jenis 1: Jika field media_type = 'link' atau 'upload' atau 'image' dan hide_in_tv = 0 dan editable_in_tv = 0. Gunakan kod dibawah.
@@ -597,28 +594,89 @@ Jenis 1: Jika field media_type = 'link' atau 'upload' atau 'image' dan hide_in_t
 1.10. Jika tv_enable_toggle = 1, gantikan <<TOGGLE_TYPE>> dengan "->toggleable(isToggledHiddenByDefault: true)".
 1.11. Jika tv_enable_toggle = 0, gantikan <<TOGGLE_TYPE>> dengan "->toggleable()".
 1.12. Jika tv_description_tooltips = 1, gantikan <<COLUMN_TOOLTIPS>> dengan "->tooltip('<<COLUMN_DESCRIPTION>>')". Gantikan <<COLUMN_DESCRIPTION>> dengan description.
-1.13. Jika tv_font_weight bukan 'Regular', gantikan <<FONTWEIGHT_COLUMN_TEXT>> dengan "->weight(FontWeight::<<FONTWEIGHT_VALUE>>)". Gantikan <<FONTWEIGHT_VALUE>> dengan tv_font_weight.
+1.13. Jika tv_font_weight bukan 'Regular', gantikan <<FONTWEIGHT_COLUMN_TEXT>> dengan "->weight(FontWeight::<<FONTWEIGHT_VALUE>>)". Gantikan <<FONTWEIGHT_VALUE>> dengan tv_font_weight. gantikan <<IMPORT_FONTWEIGHT_COLUMN_TEXT>> dengan "use Filament\Support\Enums\FontWeight;".
 1.14. Jika tv_text_limit bukan null/empty, gantikan <<LIMIT_COLUMN_TEXT>> dengan "->limit(<<TEXT_LIMIT_VALUE>>, end: ' (more)')". Gantikan <<TEXT_LIMIT_VALUE>> dengan tv_text_limit.
 1.15. Jika tv_alignment = 'center', gantikan <<ALIGN_COLUMN_TEXT>> dengan "->alignCenter()".
 1.15. Jika tv_alignment = 'right', gantikan <<ALIGN_COLUMN_TEXT>> dengan "->alignEnd()".
 1.16. Jika tv_text_color bukan null/empty, gantikan <<COLOR_COLUMN_TEXT>> dengan "->color('<<COLOR_VALUE>>')". Gantikan <<COLOR_VALUE>> dengan tv_text_color.
 1.17. Jika tv_icon bukan null/empty, gantikan <<ICON_COLUMN_TEXT>> dengan "->icon('heroicon-o-<<ICON_VALUE>>')". Gantikan <<ICON_VALUE>> dengan tv_icon.
 1.18. Jika tv_icon_color bukan null/empty, gantikan <<COLORICON_COLUMN_TEXT>> dengan "->iconColor('<<ICONCOLOR_VALUE>>')". Gantikan <<ICONCOLOR_VALUE>> dengan tv_icon_color.
-1.19. Jika tv_text_size bukan 'Normal', gantikan <<COLUMN_TEXT_SIZE>> dengan "->size(TextSize::<<TEXT_SIZE>>)". Gantikan <<TEXT_SIZE>> dengan tv_text_size.
-1.20. Jika data_type ialah 'DATE' atau 'DATETIME' atau 'TIMESTAMP' dan tv_date_time_format bukan null/empty, gantikan <<DATETIME_FIELD>> dengan "->dateTime('<<DATETIME_FORMAT>>')". Gantikan <<DATETIME_FORMAT>> dengan tv_date_time_format.
-1.21. Jika data_type ialah 'DATE' atau 'DATETIME' atau 'TIMESTAMP' dan tv_date_time_format ialah null/empty, gantikan <<DATETIME_FIELD>> dengan "->dateTime()".
+1.19. Jika tv_text_size bukan 'Normal', gantikan <<COLUMN_TEXT_SIZE>> dengan "->size(TextSize::<<TEXT_SIZE>>)". Gantikan <<TEXT_SIZE>> dengan tv_text_size. gantikan <<IMPORT_COLUMN_TEXT_SIZE>> dengan "use Filament\Support\Enums\TextSize;".
+1.20. Jika data_type ialah 'DATE' atau 'DATETIME' atau 'TIMESTAMP', gantikan <<DATETIME_FIELD>> dengan "->dateTime('<<DATETIME_FORMAT>>')". Jika tv_date_time_format = date_only, gantikan <<DATETIME_FORMAT>> dengan PHP date format date_format. Contoh jika date_format = '31/12/2025' maka PHP date format ialah 'd/m/Y'. Jika tv_date_time_format = date_and_time, gantikan <<DATETIME_FORMAT>> dengan PHP date format date_format<space>time_format. Contoh jika date_format = '31/12/2025' dan time_format = '11:59:59 PM' maka PHP date format ialah 'd/m/Y h:i:s A'.
 1.22. Jika data_type ialah numeric types dan tv_currency_code adalah null/empty, gantikan <<NUMERIC_FIELD>> dengan "->numeric()".
 1.23. Jika data_type ialah numeric types dan tv_currency_code bukan null/empty, gantikan <<NUMERIC_FIELD>> dengan "->money('<<CURRENCY_CODE>>')". Gantikan <<CURRENCY_CODE>> dengan tv_currency_code. 
 1.24. Jika display_type=rich_html, gantikan <<HTML_FIELD>> dengan "->html()".
 1.25 Jika field ini ialah foreignkey dan lookup_caption_2 adalah null/empty, gantikan <<FIELD_NAME>> dengan lookupparenttable.lookupcaption. lookupparenttable ialah camelCase lookup_parent_table, dan lookupcaption ialah lookup_caption_1.
 1.25 Jika field ini ialah foreignkey dan lookup_caption_2 bukan null/empty, gantikan <<FIELD_NAME>> dengan lookupparenttable.lookupcaption. lookupparenttable ialah camelCase lookup_parent_table, dan lookupcaption ialah snake_case gabungan lookup_caption_1 dan lookup_caption_2. Contoh jika lookup_caption_1 = pelajar_baru, lookup_caption_2 = pelajar_lama maka lookupcaption = pelajar_baru_pelajar_lama.
+1.26. Jika display_type = options_list dan senarai list kurang daripada 7, gantikan <<OPTIONLIST_BADGE>> dengan kod dibawah. Gantikan <<LIST_1>> dengan senarai didalam options_list_values yang dipisahkan oleh ;; (double semi-colons). Ulang sehingga selesai. Gantikan <<RANDOM_COLOR>> dengan salah satu dari gray, info, primary, warning, success, danger tanpa berulang.
+"
+    ->badge()
+    ->color(fn (string $state): string => match ($state) {
+        '<<LIST_1>>' => '<<RANDOM_COLOR>>',
+        })
+"
+
+1.27 Jika display_type = 'check_box' dan data_type = BOOLEAN, gantikan <<BOOLEAN_TYPE>> dengan "->boolean()".
+1.28 Jika media_type = 'upload', gantikan <<SHOW_UPLOAD_FILE>> dengan kod dibawah. Jika tv_icon bukan null/empty, gantikan <<ICON_UPLOAD_VALUE>> dengan tv_icon. Jika tv_icon ialah null/empty, gantikan <<ICON_UPLOAD_VALUE>> dengan "document-arrow-down". Gantikan "<<MODEL_NAME>>" dengan PascalCase table_name dan <<FIELD_NAME>> dengan field_name.
+"
+->icon(fn ($state): ?string => $state ? 'heroicon-o-<<ICON_UPLOAD_VALUE>>' : null)
+->url(fn (?<<MODEL_NAME>> $record) => $record?-><<FIELD_NAME>> ? Storage::disk('public')->url($record-><<FIELD_NAME>>) : null, shouldOpenInNewTab: true)
+"
+1.29 Jika media_type = 'upload', gantikan <<FILE_STORAGE_DISK>> dengan "->disk('<<FILE_STORAGE_PROVIDER>>')". Gantikan <<FILE_STORAGE_PROVIDER>> dengan "file_storage_provider";
+
+1.29 Jika media_type = 'image' dan tv_thumb_shape = square, gantikan <<SHOW_IMAGE_TABLE>> dengan "->square()".
+1.30 Jika media_type = 'image' dan tv_thumb_shape = circular, gantikan <<SHOW_IMAGE_TABLE>> dengan "->circular()".
+1.31 Jika media_type = 'image' dan enable_zooming = 1, gantikan <<IMAGE_ZOOM>>dengan kod dibawah. Gantikan <<TITLE_CASE_FIELD_NAME>> dengan Title Case field_name, gantikan <<FIELD_NAME>> dengan field_name dan gantikan "<<MODEL_NAME>>" dengan PascalCase table_name.
+
+"
+->action(
+    Action::make('Show full image')
+        ->modalHeading(false)
+        ->modalFooter(null)
+        ->modalContent(fn (<<MODEL_NAME>> $record): HtmlString => new HtmlString(
+            $record-><<FIELD_NAME>>
+                ? '<img src="' . Storage::url($record-><<FIELD_NAME>>) . '" alt="<<TITLE_CASE_FIELD_NAME>>" style="width: 100%;">'
+                : '<p class="text-center">Tiada imej dimuat naik.</p>'
+        ))
+)
+"
+
+
+1.32 Jika media_type = 'image', gantikan <<IMAGE_STORAGE_DISK>> dengan "->disk('<<IMAGE_STORAGE_PROVIDER>>')". Gantikan <<IMAGE_STORAGE_PROVIDER>> dengan "image_storage_provider";
+
+1.29 Jika media_type = 'image' dan tv_thumb_height bukan null/empty, gantikan <<IMAGE_TABLE_HEIGHT>> dengan "->imageHeight(<<TV_THUMB_HEIGHT>>)". Gantikan <<TV_THUMB_HEIGHT>> dengan tv_thumb_height.
+1.29 Jika media_type = 'image' dan tv_thumb_width bukan null/empty, gantikan <<IMAGE_TABLE_WIDTH>> dengan "->imageWidth(<<TV_THUMB_WIDTH>>)". Gantikan <<TV_THUMB_WIDTH>> dengan tv_thumb_width.
+1.33 Jika data_type = JSON, gantikan <<JSON_REPEATER_SHOW>> dengan kod dibawah. Gantikan <<FIELD_NAME>> dengan field_name.
+"
+->formatStateUsing(function (?array $state): ?string {
+    if (blank($state)) {
+        return null;
+    }
+    if (isset($state['<<FIELD_NAME>>'])) {
+        return $state['<<FIELD_NAME>>'];
+    }
+    if (is_array($state) && isset($state[0])) {
+        return array_column($state, '<<FIELD_NAME>>');
+    }
+    return '';
+})
+"
+
+
 
 "
 <<ELEMENT_CONTROLLER>>::make('<<FIELD_NAME>>')
     <<FIELD_LABEL>>
+    <<IMAGE_TABLE_HEIGHT>>
+    <<IMAGE_TABLE_WIDTH>>
     <<OPTIONLIST_BADGE>>
+    <<JSON_REPEATER_SHOW>>
     <<DATETIME_FIELD>>
     <<NUMERIC_FIELD>>
+    <<BOOLEAN_TYPE>>
+    <<IMAGE_STORAGE_DISK>>
+    <<FILE_STORAGE_DISK>>
+    <<SHOW_UPLOAD_FILE>>
     <<ALLOW_SORTING>>
     <<TOGGLE_TYPE>>
     <<WRAP_COLUMN_HEADER>>
@@ -631,31 +689,6 @@ Jenis 1: Jika field media_type = 'link' atau 'upload' atau 'image' dan hide_in_t
     <<ICON_COLUMN_TEXT>>
     <<COLORICON_COLUMN_TEXT>>
     <<SEARCHABLE>>,
-"
-
-1.26. Jika display_type = options_list dan senarai list kurang daripada 7, gantikan <<OPTIONLIST_BADGE>> dengan kod dibawah. Gantikan <<LIST_1>> dengan senarai didalam options_list_values yang dipisahkan oleh ;; (double semi-colons). Ulang sehingga selesai. Gantikan <<RANDOM_COLOR>> dengan salah satu dari gray, info, primary, warning, success, danger tanpa berulang.
-"
-    ->badge()
-    ->color(fn (string $state): string => match ($state) {
-        '<<LIST_1>>' => '<<RANDOM_COLOR>>',
-        })
------------
-"
-
-1.26 Jika display_type = 'check_box' dan data_type = BOOLEAN, gantikan <<BOOLEAN_TYPE>> dengan "->boolean()".
-1.27 Jika media_type = 'upload', gantikan <<SHOW_UPLOAD_FILE>> dengan kod dibawah. Jika tv_icon bukan null/empty, gantikan <<ICON_UPLOAD_VALUE>> dengan tv_icon. Jika tv_icon ialah null/empty, gantikan <<ICON_UPLOAD_VALUE>> dengan "document-arrow-down". Gantikan "<<MODEL_NAME>>" dengan PascalCase table_name dan <<FIELD_NAME>> dengan field_name.
- 
-"
-->icon(fn ($state): ?string => $state ? 'heroicon-o-<<ICON_UPLOAD_VALUE>>' : null)
-->url(fn (?<<MODEL_NAME>> $record) => $record?-><<FIELD_NAME>> ? Storage::disk('public')->url($record-><<FIELD_NAME>>) : null, shouldOpenInNewTab: true)
-"
-
-    
-"
-IconColumn::make('surat_tawaran')
-    ->label('Surat Tawaran')
-    <<BOOLEAN_TYPE>>
-    <<SHOW_UPLOAD_FILE>>
 "
 
 

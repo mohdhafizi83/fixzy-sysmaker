@@ -1858,8 +1858,6 @@ function toFlatCase(str) {
  * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.
  * @param {string} basePath - Laluan asas ke folder 'generated'.
  */
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: main.js
-
 async function generateFilamentModels(fullSchema, basePath) {
     try {
         const projectSettings = fullSchema.project;
@@ -1913,8 +1911,19 @@ async function generateFilamentModels(fullSchema, basePath) {
                 .join(',');
             modelContent = modelContent.replace('<<ARRAY_EDITABLE_BYUSER_FIELDS>>', fillableFields ? `${fillableFields}\n    ` : '');
 
-            let relationshipFunctions = [];
+            // ▼▼▼ PENAMBAHAN BAHARU DI SINI ▼▼▼
+            // Logik baharu untuk Laravel Casts
+            const jsonFields = Object.values(tableData.fields).filter(field => field.data_type === 'JSON');
+            if (jsonFields.length > 0) {
+                const castLines = jsonFields.map(field => `\n        '${field.field_name}' => 'array',`).join('');
+                const castsProperty = `
+    protected $casts = [${castLines}
+    ];`;
+                modelContent = modelContent.replace('<<MODEL_CASTS>>', castsProperty);
+            }
+            // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
 
+            let relationshipFunctions = [];
             relationships.filter(r => r.parent_table_name === tableName).forEach(rel => {
                 const childClassName = toSingularPascalCase(rel.child_table_name);
                 const foreignKey = rel.fk_child_field;
@@ -1954,10 +1963,8 @@ async function generateFilamentModels(fullSchema, basePath) {
 
             modelContent = modelContent.replace('<<RELATIONSHIP_FUNCTIONS>>', relationshipFunctions.join(''));
 
-            // ▼▼▼ PENAMBAHAN BAHARU DI SINI ▼▼▼
             let accessorFunctions = [];
             const uniqueAccessors = new Set(); 
-
             const childRelations = relationships.filter(r => r.parent_table_name === tableName);
 
             for (const rel of childRelations) {
@@ -1993,9 +2000,8 @@ async function generateFilamentModels(fullSchema, basePath) {
             }
             
             modelContent = modelContent.replace('<<COMBINE_FIELDS_VALUE>>', accessorFunctions.join('\n'));
-            // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
-
-// Bersihkan placeholder yang tidak digunakan dan baris kosong yang terhasil
+            
+            // Bersihkan placeholder yang tidak digunakan dan baris kosong yang terhasil
             modelContent = modelContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, ''); // Buang placeholder pada baris sendiri
             modelContent = modelContent.replace(/<<.*?>>/g, ''); // Buang placeholder dalam baris (inline)
 

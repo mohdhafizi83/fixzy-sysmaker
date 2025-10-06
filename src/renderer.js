@@ -51,8 +51,7 @@ import {
     initializeConstraintsTabHandlers,
     initializeIndexCheckboxHandler,
     initializeDisplayTypeRules,
-    initializeMediaDependencies,
-    initializeLookupFieldDependencies
+    initializeWrapTextRule
 } from './js/uiHandlers.js';
 import { initializeWorkflowBuilder } from './js/workflowBuilder.js';
 
@@ -465,8 +464,7 @@ window.addEventListener('beforeunload', (event) => {
     initializeModalHandlers();
     initializeMediaTabHandlers();
     initializeDisplayTypeRules();
-    initializeMediaDependencies();
-    initializeLookupFieldDependencies();
+
     initializeOptionsListHandlers();
     updateActionButtonsState();
 	initializeLocalizationHandlers();
@@ -510,6 +508,7 @@ window.addEventListener('beforeunload', (event) => {
 	initializeLookupFieldSaveHandler();	
 	
 	initializeCustomViews();
+    initializeWrapTextRule();
 	
     // Setup Event Listeners
     const newProjectBtn = document.getElementById('new-project-btn');
