@@ -1,0 +1,60 @@
+<?php
+
+namespace App\Filament\Resources\<<TABLE_NAME_PLURAL>>\Pages;
+
+use App\Filament\Resources\<<TABLE_NAME_PLURAL>>\<<TABLE_NAME_SINGULAR>>Resource;
+use App\Filament\Actions\PrintAction;
+use Filament\Actions\ActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\ReplicateAction;
+use Filament\Actions\Action;
+use Filament\Resources\Pages\EditRecord;
+<<IMPORT_CLOSE_IFRAME>>
+
+class Edit<<TABLE_NAME_SINGULAR>> extends EditRecord
+{
+    protected static string $resource = <<TABLE_NAME_SINGULAR>>Resource::class;
+
+    protected function getHeaderActions(): array
+    {
+        $nextRecord = static::getResource()::getModel()::where('<<PRIMARY_KEY>>', '>', $this->record-><<PRIMARY_KEY>>)->orderBy('<<PRIMARY_KEY>>', 'asc')->first();   
+        return [
+
+        $this->getCancelFormAction()
+        ->visible(! session('is_in_iframe')),
+        $this->getSaveFormAction()
+            ->formId('form'),
+            Action::make('next record')
+                ->color('gray')
+                ->icon('heroicon-o-chevron-double-right')
+                ->iconPosition('after')
+                ->url(fn (): string => $nextRecord ? static::getResource()::getUrl('edit', ['record' => $nextRecord]) : '#')
+                ->visible(! session('is_in_iframe'))
+                ->hidden(!$nextRecord),
+            ActionGroup::make([
+                PrintAction::make()->label('Print')
+                ->visible(! session('is_in_iframe')),
+                ReplicateAction::make()
+                    ->label('Save As Copy')
+                    ->mutateRecordDataUsing(function (array $data): array {
+                        // Kosongkan medan unik untuk mengelakkan ralat pangkalan data
+                        <<UNIQUE_EMPTY>>;
+                        
+                        // Secara pilihan, tambah penanda pada nama untuk menunjukkan ia adalah salinan
+                        $data['<<FIRST_STRING_FIELD>>'] = ($data['<<FIRST_STRING_FIELD>>'] ?? '') . ' (Copy)';
+                        
+                        return $data;
+                    })
+                    ->visible(! session('is_in_iframe')),
+                DeleteAction::make(),
+            ]),
+        ];
+    }
+    
+<<IFRAME_PARENT_SETUP>><<REFRESH_CLOSE_IFRAME>>
+
+    protected function getFormActions(): array
+    {
+        return [];
+    }
+}

@@ -1,0 +1,91 @@
+<?php
+
+namespace App\Filament\Resources\<<MODEL_NAME_PLURAL>>;
+
+use App\Filament\Resources\<<MODEL_NAME_PLURAL>>\Pages\Create<<MODEL_NAME>>;
+use App\Filament\Resources\<<MODEL_NAME_PLURAL>>\Pages\Edit<<MODEL_NAME>>;
+use App\Filament\Resources\<<MODEL_NAME_PLURAL>>\Pages\List<<MODEL_NAME_PLURAL>>;
+use App\Filament\Resources\<<MODEL_NAME_PLURAL>>\Schemas\<<MODEL_NAME>>Form;
+use App\Filament\Resources\<<MODEL_NAME_PLURAL>>\Tables\<<MODEL_NAME_PLURAL>>Table;
+use App\Models\<<MODEL_NAME>>;
+use BackedEnum;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Table;
+<<IMPORT_SHOW_COUNT_IN_TV>>
+<<IMPORT_PRINTACTION>>
+
+<<IMPORT_IMPORTDATA>>
+<<IMPORT_EXPORTDATA>>
+
+<<IMPORT_RELATIONMANAGERS>>
+
+use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+
+class <<MODEL_NAME>>Resource extends Resource
+{
+    protected static ?string $model = <<MODEL_NAME>>::class;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    <<SHORTCUT_MENU_ORDER>>
+    
+    <<FUNCTION_SHOW_COUNT_IN_TV>>
+
+    public static function form(Schema $schema): Schema
+    {
+        return <<MODEL_NAME>>Form::configure($schema);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return <<MODEL_NAME_PLURAL>>Table::configure($table)
+		        ->headerActions([
+<<IMPORT_ACTION>>
+<<EXPORT_ACTION>>
+			<<PRINT_ACTION>>
+        ]);
+    }
+
+    public static function getRelations(): array
+    {
+        $relations = [
+            <<RELATION_RELATIONMANAGERS>>
+        ];
+		
+
+    // Hanya tambah AuditsRelationManager jika pengguna boleh melihatnya
+    <<RELATIONS_AUDIT>>
+	
+	return $relations;
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => List<<MODEL_NAME_PLURAL>>::route('/'),
+            'create' => Create<<MODEL_NAME>>::route('/create'),
+            'edit' => Edit<<MODEL_NAME>>::route('/{record}/edit'),
+        ];
+    }
+	
+    // 1. Set the URL
+    protected static ?string $slug = '<<MODEL_NAME_FLATCASE>>';
+
+    // 2. Set the label for a single record
+    public static function getModelLabel(): string
+    {
+        return '<<MODEL_NAME>>';
+    }
+
+    // 3. Set the label for multiple records (main resource page title)
+    public static function getPluralModelLabel(): string
+    {
+        return '<<MENU_NAME>>';
+    }
+	
+    <<FUNCTION_GETNAVIGATIONGROUP>>
+
+    <<FUNCTION_GETNAVIGATIONSORT>>
+}

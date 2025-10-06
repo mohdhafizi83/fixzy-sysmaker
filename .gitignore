@@ -4,7 +4,6 @@
 package-lock.json
 package-lock.json
 /assets
-/src/templates
 /bin/php-8.4.12
 bin/composer.phar
 others/CMD-go-here.bat
