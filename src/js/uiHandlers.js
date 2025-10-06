@@ -2684,10 +2684,9 @@ export function initializeMediaTabHandlers() {
             allPanels.forEach(panel => panel.classList.add('hidden'));
 
             // 2. Tentukan ID panel yang sepadan
-            const radioValue = radio.value; // cth: "link", "image", "upload"
+            const radioValue = radio.value;
             let targetPanelId;
 
-            // Kendalikan kes khas untuk 'File upload'
             if (radioValue === 'upload') {
                 targetPanelId = 'file-upload-options-panel';
             } else {
@@ -2699,6 +2698,19 @@ export function initializeMediaTabHandlers() {
             if (targetPanel) {
                 targetPanel.classList.remove('hidden');
             }
+
+            // ▼▼▼ MULA LOGIK BAHARU UNTUK IKON AUTO ▼▼▼
+            const iconInput = document.getElementById('fld-tv-icon');
+            if (iconInput) {
+                if (radioValue === 'upload') {
+                    iconInput.value = 'document-arrow-down';
+                } else {
+                    iconInput.value = '';
+                }
+                // Cetuskan event 'input' untuk memaklumkan SaveManager tentang perubahan
+                iconInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
         });
     });
 }
@@ -4302,8 +4314,41 @@ function applyDataTypeRules() {
     if (!dataTypeSelect) return;
 
     const selectedType = dataTypeSelect.value.toUpperCase();
+    
+    // ▼▼▼ MULA BLOK LOGIK BAHARU UNTUK BOOLEAN / CHECKBOX ▼▼▼
+    const displayTypeRadios = document.querySelectorAll('input[name="fld-display-type"]');
+    const checkBoxRadio = document.querySelector('input[name="fld-display-type"][value="check_box"]');
 
-    const rangeFilterCheckbox = document.getElementById('fld-enable-range-filter');
+    if (checkBoxRadio) {
+        if (selectedType === 'BOOLEAN') {
+            // Jika jenis data ialah BOOLEAN...
+            checkBoxRadio.checked = true; // 1. Paksa pilihan kepada 'Check Box'
+            // 2. Nyahaktifkan semua pilihan 'Display As' yang lain
+            displayTypeRadios.forEach(radio => {
+                if (radio.value !== 'check_box') {
+                    radio.disabled = true;
+                }
+            });
+        } else {
+            // Jika jenis data BUKAN BOOLEAN...
+            checkBoxRadio.disabled = true; // 1. Nyahaktifkan pilihan 'Check Box'
+            // 2. Jika 'Check Box' sedang dipilih, tukar kembali ke pilihan lalai
+            if (checkBoxRadio.checked) {
+                const defaultRadio = document.querySelector('input[name="fld-display-type"][value="text_input"]');
+                if (defaultRadio) {
+                    defaultRadio.checked = true;
+                }
+            }
+            // 3. Aktifkan semula semua pilihan lain
+            displayTypeRadios.forEach(radio => {
+                if (radio.value !== 'check_box') {
+                    radio.disabled = false;
+                }
+            });
+        }
+    }
+    // ▲▲▲ TAMAT BLOK LOGIK BAHARU ▲▲▲
+
     const dateTypes = ['DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR'];
     const isDateType = dateTypes.includes(selectedType);
 
@@ -4315,20 +4360,19 @@ function applyDataTypeRules() {
         currencyCodeGroup.classList.toggle('hidden', !isNumericType);
     }
     
+    const rangeFilterCheckbox = document.getElementById('fld-enable-range-filter');
     if (rangeFilterCheckbox) {
         rangeFilterCheckbox.disabled = !isDateType;
         if (!isDateType) {
             rangeFilterCheckbox.checked = false;
         }
     }
-    
+
     const dateTimeFormatGroup = document.getElementById('date-time-format-group');
     if (dateTimeFormatGroup) {
-        // Paparkan kumpulan ini HANYA jika jenis data adalah berkaitan tarikh/masa
         dateTimeFormatGroup.classList.toggle('hidden', !isDateType);
     }
 
-    // ▼▼▼ MULA KAWASAN PEMBETULAN ▼▼▼
     const elements = {
 		length: document.getElementById('fld-length'),
         precision: document.getElementById('fld-precision'),
@@ -4340,7 +4384,6 @@ function applyDataTypeRules() {
         mediaRadios: document.querySelectorAll('input[name="fld-media-type"]'),
         behaviorOptions: document.querySelectorAll('#fld-media-link-behavior option[value="web_link"], #fld-media-link-behavior option[value="email_link"]'),
 		dbPropertiesFieldset: document.querySelector('#tab-field-general .fieldset-grid fieldset:nth-child(1)'),
-        // Rujukan kepada 'formBehaviorFieldset' telah dibuang kerana ia tidak lagi relevan di sini
         defaultValue: document.getElementById('fld-default-value')
     };
 
@@ -4352,14 +4395,11 @@ function applyDataTypeRules() {
         }
     });
     
-    // Pastikan kita hanya menyentuh fieldset yang masih wujud
     if (elements.dbPropertiesFieldset) {
         elements.dbPropertiesFieldset.classList.remove('fieldset-disabled');
     }
-    // Baris untuk 'formBehaviorFieldset.classList.remove' telah dibuang
-    // ▲▲▲ TAMAT KAWASAN PEMBETULAN ▲▲▲
 	
-    const typesWithoutLength = ['TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT', 'DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'BLOB', 'TINYBLOB', 'MEDIUMBLOB', 'LONGBLOB'];
+    const typesWithoutLength = ['TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT', 'DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'BLOB', 'TINYBLOB', 'MEDIUMBLOB', 'LONGBLOB', 'BOOLEAN'];
     if (typesWithoutLength.includes(selectedType)) {
         if (elements.length) {
             elements.length.disabled = true;
@@ -4374,7 +4414,7 @@ function applyDataTypeRules() {
         }
     }
 	
-    const numericAndDate = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'FLOAT', 'DOUBLE', 'DECIMAL', 'DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR'];
+    const numericAndDate = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'FLOAT', 'DOUBLE', 'DECIMAL', 'DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR', 'BOOLEAN'];
     const integerOnly = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'];
     const floatOnly = ['FLOAT', 'DOUBLE', 'DECIMAL'];
     const dateOnly = ['DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR'];
@@ -4385,7 +4425,7 @@ function applyDataTypeRules() {
         elements.mediaRadios.forEach(radio => { if (radio.value !== 'link') radio.disabled = true; });
         elements.behaviorOptions.forEach(opt => opt.hidden = true);
     }
-    if (integerOnly.includes(selectedType)) {
+    if (integerOnly.includes(selectedType) || selectedType === 'BOOLEAN') {
         if (elements.binary) elements.binary.disabled = true;
         if (elements.precision) elements.precision.disabled = true;
     }

@@ -1858,45 +1858,39 @@ function toFlatCase(str) {
  * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.
  * @param {string} basePath - Laluan asas ke folder 'generated'.
  */
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: main.js
+
 async function generateFilamentModels(fullSchema, basePath) {
     try {
         const projectSettings = fullSchema.project;
         const tables = fullSchema.database.table;
         const relationships = fullSchema.database.relationships;
 
-        // Tentukan laluan templat dan pastikan ia wujud
         const templatePath = path.join(__dirname, 'templates/php/filament/app/Models/Model.template');
         if (!fs.existsSync(templatePath)) {
             throw new Error(`Template file not found at: ${templatePath}`);
         }
         const templateContent = fs.readFileSync(templatePath, 'utf8');
 
-        // Tentukan laluan output dan cipta folder jika belum wujud
         const modelsPath = path.join(basePath, 'app', 'Models');
         fs.mkdirSync(modelsPath, { recursive: true });
 
-        // Mula proses untuk setiap jadual
         for (const tableName in tables) {
             if (tableName === 'users') {
-                continue; // Langkau jadual 'users'
+                continue; 
             }
 
             const tableData = tables[tableName];
             let modelContent = templateContent;
             
-            // 1. & 2. Handle HasFactory Trait (untuk Fake Data Seeder)
             if (projectSettings.module_fake_data === 1) {
                 modelContent = modelContent.replace('<<IMPORT_FACTORY>>', 'use Illuminate\\Database\\Eloquent\\Factories\\HasFactory;');
                 modelContent = modelContent.replace('<<TRAIT_FACTORY>>', 'use HasFactory;');
             }
-
-            // 3. & 4. Handle Soft Deletes
             if (projectSettings.data_delete_type === 'soft') {
                 modelContent = modelContent.replace('<<IMPORT_SOFTDELETE>>', 'use Illuminate\\Database\\Eloquent\\SoftDeletes;');
                 modelContent = modelContent.replace('<<TRAIT_SOFTDELETE>>', 'use SoftDeletes;');
             }
-
-            // 5, 6, & 7. Handle Auditing
             if (projectSettings.module_log_audit === 1) {
                 const importAudit = `use OwenIt\\Auditing\\Contracts\\Auditable;\nuse OwenIt\\Auditing\\Auditable as AuditableTrait;`;
                 modelContent = modelContent.replace('<<IMPORT_AUDIT>>', importAudit);
@@ -1904,18 +1898,14 @@ async function generateFilamentModels(fullSchema, basePath) {
                 modelContent = modelContent.replace('<<TRAIT_AUDIT>>', 'use AuditableTrait;');
             }
             
-            // 8. Ganti Nama Kelas
             const className = toSingularPascalCase(tableName);
             modelContent = modelContent.replace(/<<CLASS_NAME>>/g, className);
 
-            // 9. Ganti Nama Jadual
             modelContent = modelContent.replace('<<TABLE_NAME>>', tableName);
 
-            // 10. Ganti Kunci Primer
             const primaryKeyField = Object.values(tableData.fields).find(f => f.primary_key === 1);
             modelContent = modelContent.replace('<<PRIMARY_KEY>>', primaryKeyField ? primaryKeyField.field_name : 'id');
 
-            // 11. Ganti Senarai Boleh Isi ($fillable)
             const excludedFields = ['created_at', 'updated_at', 'deleted_at', primaryKeyField?.field_name];
             const fillableFields = Object.values(tableData.fields)
                 .filter(field => !excludedFields.includes(field.field_name) && field.read_only !== 1)
@@ -1923,25 +1913,23 @@ async function generateFilamentModels(fullSchema, basePath) {
                 .join(',');
             modelContent = modelContent.replace('<<ARRAY_EDITABLE_BYUSER_FIELDS>>', fillableFields ? `${fillableFields}\n    ` : '');
 
-            // 12. Ganti Fungsi Hubungan (Eloquent Relationships)
             let relationshipFunctions = [];
 
-            // Mencari hubungan di mana jadual ini adalah PARENT (hasOne / hasMany)
             relationships.filter(r => r.parent_table_name === tableName).forEach(rel => {
                 const childClassName = toSingularPascalCase(rel.child_table_name);
                 const foreignKey = rel.fk_child_field;
                 const localKey = rel.parent_field;
 
                 if (rel.relationship_type === 'one-to-one') {
-                    const functionName = toSingularCamelCase(rel.child_table_name); // Singular
+                    const functionName = toSingularCamelCase(rel.child_table_name); 
                     relationshipFunctions.push(`
     public function ${functionName}()
     {
         return $this->hasOne(${childClassName}::class, '${foreignKey}', '${localKey}');
     }
 `);
-                } else { // Lalai kepada 'one-to-many'
-                    const functionName = toPluralCamelCase(rel.child_table_name); // Plural
+                } else {
+                    const functionName = toPluralCamelCase(rel.child_table_name); 
                     relationshipFunctions.push(`
     public function ${functionName}()
     {
@@ -1951,12 +1939,11 @@ async function generateFilamentModels(fullSchema, basePath) {
                 }
             });
 
-            // Mencari hubungan di mana jadual ini adalah CHILD (belongsTo)
             relationships.filter(r => r.child_table_name === tableName).forEach(rel => {
                 const parentClassName = toSingularPascalCase(rel.parent_table_name);
-                const functionName = toSingularCamelCase(rel.parent_table_name); // Singular
-                const foreignKey = rel.fk_child_field;// Kunci di jadual SEMASA
-                const ownerKey = rel.parent_field;// Kunci di jadual INDUK
+                const functionName = toSingularCamelCase(rel.parent_table_name); 
+                const foreignKey = rel.fk_child_field;
+                const ownerKey = rel.parent_field;
                 relationshipFunctions.push(`
     public function ${functionName}()
     {
@@ -1966,9 +1953,52 @@ async function generateFilamentModels(fullSchema, basePath) {
             });
 
             modelContent = modelContent.replace('<<RELATIONSHIP_FUNCTIONS>>', relationshipFunctions.join(''));
-            modelContent = modelContent.replace(/<<.*?>>/g, '');
 
-            // DIPERBAIKI: Nama fail juga kini singular
+            // ▼▼▼ PENAMBAHAN BAHARU DI SINI ▼▼▼
+            let accessorFunctions = [];
+            const uniqueAccessors = new Set(); 
+
+            const childRelations = relationships.filter(r => r.parent_table_name === tableName);
+
+            for (const rel of childRelations) {
+                const childTable = tables[rel.child_table_name];
+                if (!childTable) continue;
+
+                const fkField = childTable.fields[rel.fk_child_field];
+                if (!fkField) continue;
+
+                if (fkField.lookup_caption_1 && fkField.lookup_caption_2) {
+                    const firstField = fkField.lookup_caption_1;
+                    const secondField = fkField.lookup_caption_2;
+                    const separator = fkField.lookup_separator || ' ';
+
+                    const accessorKey = `${firstField}|${secondField}`;
+                    if (uniqueAccessors.has(accessorKey)) {
+                        continue; 
+                    }
+                    uniqueAccessors.add(accessorKey);
+
+                    const lookupCaption = toPascalCase(firstField) + toPascalCase(secondField);
+                    
+                    const accessorCode = `
+    /**
+     * Combine multiple fields value for child lookups.
+     */
+    public function get${lookupCaption}Attribute(): string
+    {
+        return "{$this->${firstField}}${separator}({$this->${secondField}})";
+    }`;
+                    accessorFunctions.push(accessorCode);
+                }
+            }
+            
+            modelContent = modelContent.replace('<<COMBINE_FIELDS_VALUE>>', accessorFunctions.join('\n'));
+            // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
+
+// Bersihkan placeholder yang tidak digunakan dan baris kosong yang terhasil
+            modelContent = modelContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, ''); // Buang placeholder pada baris sendiri
+            modelContent = modelContent.replace(/<<.*?>>/g, ''); // Buang placeholder dalam baris (inline)
+
             const outputFilePath = path.join(modelsPath, `${className}.php`);
             fs.writeFileSync(outputFilePath, modelContent);
             console.log(`Model generated: ${outputFilePath}`);
@@ -2069,7 +2099,9 @@ async function generateFilamentUserModel(fullSchema, basePath) {
         });
 
         userModelContent = userModelContent.replace('<<RELATIONSHIP_FUNCTIONS>>', relationshipFunctions.join(''));
-        userModelContent = userModelContent.replace(/<<.*?>>/g, '');
+// Bersihkan placeholder yang tidak digunakan dan baris kosong yang terhasil
+        userModelContent = userModelContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, ''); // Buang placeholder pada baris sendiri
+        userModelContent = userModelContent.replace(/<<.*?>>/g, ''); // Buang placeholder dalam baris (inline)
 
         // 11. Jana fail output
         const outputFilePath = path.join(basePath, 'app', 'Models', 'User.php');
@@ -2219,7 +2251,9 @@ async function generateFilamentResources(fullSchema, basePath) {
                 resourceContent = resourceContent.replace('<<MENU_NAME>>', menuItem.item_label);
             }
 
-            resourceContent = resourceContent.replace(/<<.*?>>/g, '');
+// Bersihkan placeholder yang tidak digunakan dan baris kosong yang terhasil
+            resourceContent = resourceContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, ''); // Buang placeholder pada baris sendiri
+            resourceContent = resourceContent.replace(/<<.*?>>/g, ''); // Buang placeholder dalam baris (inline)
 
             const resourceFolder = toPluralPascalCase(tableName); // Nama folder kekal plural
             const resourceClassName = `${modelName}Resource`;
@@ -2384,7 +2418,9 @@ async function generateFilamentListPages(fullSchema, basePath) {
             }
 
             // Bersihkan placeholder yang tidak digunakan
-            listContent = listContent.replace(/<<.*?>>/g, '');
+// Bersihkan placeholder yang tidak digunakan dan baris kosong yang terhasil
+            listContent = listContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, ''); // Buang placeholder pada baris sendiri
+            listContent = listContent.replace(/<<.*?>>/g, ''); // Buang placeholder dalam baris (inline)
 
             // 11. Jana fail output
             const resourceFolder = modelNamePlural;
@@ -2434,8 +2470,9 @@ async function generateFilamentCreatePages(fullSchema, basePath) {
             const modelNamePlural = toPluralPascalCase(tableName);
             createContent = createContent.replace(/<<TABLE_NAME_PLURAL>>/g, modelNamePlural);
 
-            // Bersihkan placeholder lain jika ada (sebagai langkah keselamatan)
-            createContent = createContent.replace(/<<.*?>>/g, '');
+// Bersihkan placeholder yang tidak digunakan dan baris kosong yang terhasil
+            createContent = createContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, ''); // Buang placeholder pada baris sendiri
+            createContent = createContent.replace(/<<.*?>>/g, ''); // Buang placeholder dalam baris (inline)
 
             // 3. Jana fail output dalam folder yang betul
             const resourceFolder = modelNamePlural;
@@ -2552,8 +2589,9 @@ async function generateFilamentEditPages(fullSchema, basePath) {
                 editContent = editContent.replace('<<REFRESH_CLOSE_IFRAME>>', refreshIframeCode);
             }
 
-            // Bersihkan placeholder yang tidak digunakan
-            editContent = editContent.replace(/<<.*?>>/g, '');
+// Bersihkan placeholder yang tidak digunakan dan baris kosong yang terhasil
+            editContent = editContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, ''); // Buang placeholder pada baris sendiri
+            editContent = editContent.replace(/<<.*?>>/g, ''); // Buang placeholder dalam baris (inline)
 
             // 8. Jana fail output
             const resourceFolder = modelNamePlural;
@@ -2615,8 +2653,9 @@ async function generateFilamentRelationManagers(fullSchema, basePath) {
             // 4. Gantikan <<CHILD_TABLE_NAME_SINGULAR>>
             managerContent = managerContent.replace(/<<CHILD_TABLE_NAME_SINGULAR>>/g, childTableSingular);
 
-            // Bersihkan placeholder lain jika ada
-            managerContent = managerContent.replace(/<<.*?>>/g, '');
+// Bersihkan placeholder yang tidak digunakan dan baris kosong yang terhasil
+            managerContent = managerContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, ''); // Buang placeholder pada baris sendiri
+            managerContent = managerContent.replace(/<<.*?>>/g, ''); // Buang placeholder dalam baris (inline)
 
             // 5. Jana fail output
             const resourceFolder = parentTablePlural;

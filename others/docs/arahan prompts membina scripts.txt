@@ -50,7 +50,17 @@ Jika tidak, gantikan dengan empty.
 10. Ganti <<RELATIONSHIP_FUNCTIONS>> dengan  Eloquent Relationship Methods seperti yang terdapat di table parent_child_relationships.  Jika tidak, gantikan dengan empty.
 Kenal pasti one-to-one (foreignkey = unique), one-to-many, many-to-many dan relation lain untuk setiap Model.
 
-11. Jana output di folder AppData.../generated/filament/app/Models dengan nama PascalCase table_name dengan extension php. Contoh table_name = pelajar_sekolah, fail terjana akan bernama PelajarSekolah.php
+11. Jika parent table mempunyai satu atau lebih child table dan lookup_caption_2  bukan null/empty pada child table, gantikan <<COMBINE_FIELDS_VALUE>> dengan kod dibawah. Gantikan <<LOOKUP_CAPTION>> dengan gabungan PascalCase lookup_caption_1 dengan PascalCase lookup_caption_2. Contoh jika lookup_caption_1 = pelajar_baru, lookup_caption_2 = pelajar_lama maka <<LOOKUP_CAPTION>> akan digantikan dengan PelajarBaruPelajarLama. Gantikan <<FIRST_FIELD>> dengan lookup_caption_2, <<SECOND_FIELD>> dengan lookup_caption_2 dan <<SEPERATOR>> dengan lookup_separator. Jika tidak, gantikan dengan empty.
+
+    /**
+     * COmbine multiple fields value.
+     */
+    public function get<<LOOKUP_CAPTION>>Attribute(): string
+    {
+        return "{$this-><<FIRST_FIELD>>}<<SEPERATOR>>({$this-><<SECOND_FIELD>>})";
+    }
+
+12. Jana output di folder AppData.../generated/filament/app/Models dengan nama PascalCase table_name dengan extension php. Contoh table_name = pelajar_sekolah, fail terjana akan bernama PelajarSekolah.php
 
 Sebelum menyediakan kod, terangkan semula kepada saya tugasan ini bagi memastikan anda memahami tugasan.
 
@@ -566,15 +576,18 @@ Action::make('show<<CHILD_TABLE_NAME_SINGULAR>>')
 )
 "
 -----------
-22.1. Jika tv_icon bukan null/empty, gantikan <<IMPORT_ICON_COLUMN_TEXT>> dengan "use Filament\Support\Icons\Heroicon;".
+
 22.2. Jika tv_text_size bukan 'Normal', gantikan <<IMPORT_COLUMN_TEXT_SIZE>> dengan "use Filament\Support\Enums\TextSize;".
 22.3. Jika tv_font_weight bukan 'Regular', gantikan <<IMPORT_FONTWEIGHT_COLUMN_TEXT>> dengan "use Filament\Support\Enums\FontWeight;".
 
 22. Seterusnya kita akan membuat kod untuk column. Ia melibatkan kesemua fields yang terdapat didalam table ini. Loop semua field dan bina kod berdasarkan jenis dan ketetapan seperti yang dinyatakan.
 
-Jenis 1: Jika field media_type = 'link' dan hide_in_tv = 0 dan editable_in_tv = 0 dan bukan foreignkey dan display_type bukan 'options_list' atau 'check_box'. Gunakan kod dibawah. 
+Jenis 1: Jika field media_type = 'link' atau 'upload' atau 'image' dan hide_in_tv = 0 dan editable_in_tv = 0. Gunakan kod dibawah.
+1.1. Jika media_type = 'link', gantikan <<ELEMENT_CONTROLLER>> dengan "TextColumn";
+1.1. Jika media_type = 'upload' atau data_type = BOOLEAN, gantikan <<ELEMENT_CONTROLLER>> dengan "IconColumn";
+1.1. Jika media_type = 'image', gantikan <<ELEMENT_CONTROLLER>> dengan "ImageColumn";
 1.1. Gantikan <<FIELD_NAME>> dengan field_name. 
-1.2. Gantikan <<FIELD_LABEL>> dengan "->label('<<FIELD_NAME_TITLECASE>>')" dan gantikan <<FIELD_NAME_TITLECASE>> dengan 1.3. Title case field_name. Contoh table_name = bas_sekolah, Title case ialah 'Bas sekolah'. 
+1.2. Gantikan <<FIELD_LABEL>> dengan "->label('<<FIELD_NAME_TITLECASE>>')" dan gantikan <<FIELD_NAME_TITLECASE>> dengan Title case field_name. Contoh table_name = bas_sekolah, Title case ialah 'Bas sekolah'. 
 1.4. Jika allow_sorting = 1, gantikan <<ALLOW_SORTING>> dengan "->sortable()". 
 1.5. Jika enable_global_filter = 1 dan enable_individual_filter = 0, ganti <<SEARCHABLE>> dengan "->searchable()". 
 1.6. Jika enable_global_filter = 0 dan enable_individual_filter = 1, ganti <<SEARCHABLE>> dengan "->searchable(isIndividual: true, isGlobal: false)". 
@@ -589,7 +602,7 @@ Jenis 1: Jika field media_type = 'link' dan hide_in_tv = 0 dan editable_in_tv = 
 1.15. Jika tv_alignment = 'center', gantikan <<ALIGN_COLUMN_TEXT>> dengan "->alignCenter()".
 1.15. Jika tv_alignment = 'right', gantikan <<ALIGN_COLUMN_TEXT>> dengan "->alignEnd()".
 1.16. Jika tv_text_color bukan null/empty, gantikan <<COLOR_COLUMN_TEXT>> dengan "->color('<<COLOR_VALUE>>')". Gantikan <<COLOR_VALUE>> dengan tv_text_color.
-1.17. Jika tv_icon bukan null/empty, gantikan <<ICON_COLUMN_TEXT>> dengan "->icon(Heroicon::<<ICON_VALUE>>)". Gantikan <<ICON_VALUE>> dengan tv_icon.
+1.17. Jika tv_icon bukan null/empty, gantikan <<ICON_COLUMN_TEXT>> dengan "->icon('heroicon-o-<<ICON_VALUE>>')". Gantikan <<ICON_VALUE>> dengan tv_icon.
 1.18. Jika tv_icon_color bukan null/empty, gantikan <<COLORICON_COLUMN_TEXT>> dengan "->iconColor('<<ICONCOLOR_VALUE>>')". Gantikan <<ICONCOLOR_VALUE>> dengan tv_icon_color.
 1.19. Jika tv_text_size bukan 'Normal', gantikan <<COLUMN_TEXT_SIZE>> dengan "->size(TextSize::<<TEXT_SIZE>>)". Gantikan <<TEXT_SIZE>> dengan tv_text_size.
 1.20. Jika data_type ialah 'DATE' atau 'DATETIME' atau 'TIMESTAMP' dan tv_date_time_format bukan null/empty, gantikan <<DATETIME_FIELD>> dengan "->dateTime('<<DATETIME_FORMAT>>')". Gantikan <<DATETIME_FORMAT>> dengan tv_date_time_format.
@@ -597,9 +610,13 @@ Jenis 1: Jika field media_type = 'link' dan hide_in_tv = 0 dan editable_in_tv = 
 1.22. Jika data_type ialah numeric types dan tv_currency_code adalah null/empty, gantikan <<NUMERIC_FIELD>> dengan "->numeric()".
 1.23. Jika data_type ialah numeric types dan tv_currency_code bukan null/empty, gantikan <<NUMERIC_FIELD>> dengan "->money('<<CURRENCY_CODE>>')". Gantikan <<CURRENCY_CODE>> dengan tv_currency_code. 
 1.24. Jika display_type=rich_html, gantikan <<HTML_FIELD>> dengan "->html()".
+1.25 Jika field ini ialah foreignkey dan lookup_caption_2 adalah null/empty, gantikan <<FIELD_NAME>> dengan lookupparenttable.lookupcaption. lookupparenttable ialah camelCase lookup_parent_table, dan lookupcaption ialah lookup_caption_1.
+1.25 Jika field ini ialah foreignkey dan lookup_caption_2 bukan null/empty, gantikan <<FIELD_NAME>> dengan lookupparenttable.lookupcaption. lookupparenttable ialah camelCase lookup_parent_table, dan lookupcaption ialah snake_case gabungan lookup_caption_1 dan lookup_caption_2. Contoh jika lookup_caption_1 = pelajar_baru, lookup_caption_2 = pelajar_lama maka lookupcaption = pelajar_baru_pelajar_lama.
+
 "
-TextColumn::make('<<FIELD_NAME>>')
+<<ELEMENT_CONTROLLER>>::make('<<FIELD_NAME>>')
     <<FIELD_LABEL>>
+    <<OPTIONLIST_BADGE>>
     <<DATETIME_FIELD>>
     <<NUMERIC_FIELD>>
     <<ALLOW_SORTING>>
@@ -615,7 +632,32 @@ TextColumn::make('<<FIELD_NAME>>')
     <<COLORICON_COLUMN_TEXT>>
     <<SEARCHABLE>>,
 "
+
+1.26. Jika display_type = options_list dan senarai list kurang daripada 7, gantikan <<OPTIONLIST_BADGE>> dengan kod dibawah. Gantikan <<LIST_1>> dengan senarai didalam options_list_values yang dipisahkan oleh ;; (double semi-colons). Ulang sehingga selesai. Gantikan <<RANDOM_COLOR>> dengan salah satu dari gray, info, primary, warning, success, danger tanpa berulang.
+"
+    ->badge()
+    ->color(fn (string $state): string => match ($state) {
+        '<<LIST_1>>' => '<<RANDOM_COLOR>>',
+        })
 -----------
+"
+
+1.26 Jika display_type = 'check_box' dan data_type = BOOLEAN, gantikan <<BOOLEAN_TYPE>> dengan "->boolean()".
+1.27 Jika media_type = 'upload', gantikan <<SHOW_UPLOAD_FILE>> dengan kod dibawah. Jika tv_icon bukan null/empty, gantikan <<ICON_UPLOAD_VALUE>> dengan tv_icon. Jika tv_icon ialah null/empty, gantikan <<ICON_UPLOAD_VALUE>> dengan "document-arrow-down". Gantikan "<<MODEL_NAME>>" dengan PascalCase table_name dan <<FIELD_NAME>> dengan field_name.
+ 
+"
+->icon(fn ($state): ?string => $state ? 'heroicon-o-<<ICON_UPLOAD_VALUE>>' : null)
+->url(fn (?<<MODEL_NAME>> $record) => $record?-><<FIELD_NAME>> ? Storage::disk('public')->url($record-><<FIELD_NAME>>) : null, shouldOpenInNewTab: true)
+"
+
+    
+"
+IconColumn::make('surat_tawaran')
+    ->label('Surat Tawaran')
+    <<BOOLEAN_TYPE>>
+    <<SHOW_UPLOAD_FILE>>
+"
+
 
 23. Seterusnya kita akan membuat kod untuk filter date range. Filter melibatkan fields jenis date sahaja. Loop semua fields untuk table ini, jika enable_range_filter = 1 dan data_type ialah 'DATE' atau 'DATETIME' atau 'TIMESTAMP', gantikan <<DATE_RANGE_FILTER>> dengan kod dibawah. Gantikan <<DATE_FIELD_NAME>> dengan field_name jenis date/time berkenaan. Jika tidak, gantikan dengan empty.
 "
