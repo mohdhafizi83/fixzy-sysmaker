@@ -618,40 +618,39 @@ ipcMain.handle('table:create', async (event, projectId) => {
         const nextOrder = (maxOrderResult ? (maxOrderResult.max_order || 0) : 0) + 1;
 
         const transaction = db.transaction(() => {
-            // 1. Cipta jadual (Logik asal tidak berubah)
             const info = db.prepare(
                 'INSERT INTO tables (project_id, table_name, table_view_title, table_order) VALUES (?, ?, ?, ?)'
             ).run(projectId, newName, newName, nextOrder);
             const tableId = info.lastInsertRowid;
 
-            // ▼▼▼ MULA KOD BAHARU UNTUK MENAMBAH MEDAN STANDARD ▼▼▼
+            // ▼▼▼ PERUBAHAN DI SINI ▼▼▼
+            // Tambah `hide_in_tv` pada senarai lajur
             const insertFieldStmt = db.prepare(`
-                INSERT INTO fields (table_id, field_name, caption, data_type, length, primary_key, auto_increment, unsigned, read_only, field_order)
-                VALUES (@table_id, @field_name, @caption, @data_type, @length, @primary_key, @auto_increment, @unsigned, @read_only, @field_order)
+                INSERT INTO fields (table_id, field_name, caption, data_type, length, primary_key, auto_increment, unsigned, read_only, field_order, hide_in_tv)
+                VALUES (@table_id, @field_name, @caption, @data_type, @length, @primary_key, @auto_increment, @unsigned, @read_only, @field_order, @hide_in_tv)
             `);
 
-            // 1a. Cipta medan 'id' sebagai Primary Key
+            // 1a. Cipta medan 'id' dan tetapkan hide_in_tv = 1
             insertFieldStmt.run({
                 table_id: tableId, field_name: 'id', caption: 'ID', data_type: 'INT',
-                length: 11, primary_key: 1, auto_increment: 1, unsigned: 1, read_only: 1, field_order: 0
+                length: 11, primary_key: 1, auto_increment: 1, unsigned: 1, read_only: 1, field_order: 0, hide_in_tv: 1
             });
 
-            // 1b. Cipta medan cap masa (timestamps)
             const timestamps = [
                 { name: 'created_at', caption: 'Created At', order: 1 },
                 { name: 'updated_at', caption: 'Updated At', order: 2 },
                 { name: 'deleted_at', caption: 'Deleted At', order: 3 }
             ];
 
+            // 1b. Cipta medan cap masa dan tetapkan hide_in_tv = 1
             for (const ts of timestamps) {
                 insertFieldStmt.run({
                     table_id: tableId, field_name: ts.name, caption: ts.caption, data_type: 'DATETIME',
-                    length: null, primary_key: 0, auto_increment: 0, unsigned: 0, read_only: 0, field_order: ts.order
+                    length: null, primary_key: 0, auto_increment: 0, unsigned: 0, read_only: 0, field_order: ts.order, hide_in_tv: 1
                 });
             }
-            // ▲▲▲ TAMAT KOD BAHARU ▲▲▲
-
-            // 2. Cipta item menu yang sepadan (Logik asal tidak berubah)
+            // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+            
             const maxMenuOrderResult = db.prepare(
                 'SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL'
             ).get(projectId);
@@ -1073,6 +1072,13 @@ function importSchema(sql, projectId, dialect) {
                         if (type === "unique key" || type === "unique") { fieldData.unique = 1; }
                         if (type === "not null") { fieldData.required = 1; }
                     });
+                    
+                    // Tetapkan hide_in_tv = 1 secara lalai untuk medan tertentu
+                    const protectedFields = ['created_at', 'updated_at', 'deleted_at'];
+                    if (fieldData.primary_key === 1 || protectedFields.includes(fieldName)) {
+                        fieldData.hide_in_tv = 1;
+                    }
+                    
                     fieldDataMap.set(fieldName, fieldData);
                 } else {
                     tableLevelRules.push(definition);
@@ -2487,7 +2493,7 @@ async function generateFilamentListPages(fullSchema, basePath) {
  */
 async function generateFilamentCreatePages(fullSchema, basePath) {
     try {
-        const tables = fullSchema.database.table;
+        const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
 
         const templatePath = path.join(__dirname, 'templates/php/filament/app/Filament/Resources/PagesCreate.template');
         if (!fs.existsSync(templatePath)) {
@@ -2502,19 +2508,40 @@ async function generateFilamentCreatePages(fullSchema, basePath) {
 
             let createContent = templateContent;
 
-            // 1. Gantikan Nama Singular
             const modelNameSingular = toSingularPascalCase(tableName);
             createContent = createContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);
 
-            // 2. Gantikan Nama Plural
             const modelNamePlural = toPluralPascalCase(tableName);
             createContent = createContent.replace(/<<TABLE_NAME_PLURAL>>/g, modelNamePlural);
 
-// Bersihkan placeholder yang tidak digunakan dan baris kosong yang terhasil
-            createContent = createContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, ''); // Buang placeholder pada baris sendiri
-            createContent = createContent.replace(/<<.*?>>/g, ''); // Buang placeholder dalam baris (inline)
+            // ▼▼▼ PENAMBAHBAIKAN BERMULA DI SINI ▼▼▼
+            // Semak jika jadual ini adalah 'child' dalam konteks paparan modal (show_count_in_tv)
+            const isChildInIframeContext = relationships.some(r => 
+                r.child_table_name === tableName && r.show_count_in_tv === 1
+            );
 
-            // 3. Jana fail output dalam folder yang betul
+            if (isChildInIframeContext) {
+                const iframeLayoutCode = `
+    /**
+     * This method will select the layout dynamically.
+     */
+    public function getLayout(): string
+    {
+        if (session('is_in_iframe')) {
+            return 'filament.layouts.custom-iframe-layout';
+        }
+        
+        return parent::getLayout();
+    }
+`;
+                createContent = createContent.replace('<<IFRAME_LAYOUT>>', iframeLayoutCode);
+            }
+            // ▲▲▲ PENAMBAHBAIKAN TAMAT ▲▲▲
+
+            // Bersihkan placeholder yang tidak digunakan dan baris kosong
+            createContent = createContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
+            createContent = createContent.replace(/<<.*?>>/g, '');
+
             const resourceFolder = modelNamePlural;
             const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'Pages');
             fs.mkdirSync(outputFolderPath, { recursive: true });
@@ -2539,8 +2566,7 @@ async function generateFilamentCreatePages(fullSchema, basePath) {
  */
 async function generateFilamentEditPages(fullSchema, basePath) {
     try {
-        const tables = fullSchema.database.table;
-        const relationships = fullSchema.database.relationships;
+        const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
 
         const templatePath = path.join(__dirname, 'templates/php/filament/app/Filament/Resources/PagesEdit.template');
         if (!fs.existsSync(templatePath)) {
@@ -2555,31 +2581,26 @@ async function generateFilamentEditPages(fullSchema, basePath) {
             const tableData = tables[tableName];
             let editContent = templateContent;
 
-            // 1. Gantikan Nama Singular
             const modelNameSingular = toSingularPascalCase(tableName);
             editContent = editContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);
 
-            // 2. Gantikan Nama Plural
             const modelNamePlural = toPluralPascalCase(tableName);
             editContent = editContent.replace(/<<TABLE_NAME_PLURAL>>/g, modelNamePlural);
             
-            // 3. Gantikan Primary Key
             const primaryKeyField = Object.values(tableData.fields).find(f => f.primary_key === 1);
             editContent = editContent.replace(/<<PRIMARY_KEY>>/g, primaryKeyField ? primaryKeyField.field_name : 'id');
 
-            // 4. Handle Unique Fields for Replication
             const uniqueFields = Object.values(tableData.fields).filter(f => f.unique === 1);
             if (uniqueFields.length > 0) {
                 const uniqueEmptyLines = uniqueFields.map(f => `        $data['${f.field_name}'] = '';`).join('\n');
                 editContent = editContent.replace('<<UNIQUE_EMPTY>>', uniqueEmptyLines);
             }
 
-            // 5. Gantikan dengan medan string pertama
             const stringTypes = ['VARCHAR', 'CHAR', 'TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT'];
             const firstStringField = Object.values(tableData.fields).find(f => stringTypes.includes(f.data_type.toUpperCase()));
             editContent = editContent.replace('<<FIRST_STRING_FIELD>>', firstStringField ? firstStringField.field_name : '');
             
-            // 6. Setup Iframe jika ia adalah PARENT table
+            // Logik sedia ada untuk PARENT table
             const isParentTable = relationships.some(r => r.parent_table_name === tableName);
             if(isParentTable) {
                 const iframeParentCode = `
@@ -2603,7 +2624,31 @@ async function generateFilamentEditPages(fullSchema, basePath) {
                 editContent = editContent.replace('<<IFRAME_PARENT_SETUP>>', iframeParentCode);
             }
 
-            // 6 & 7. Setup Iframe jika ia adalah CHILD table
+            // ▼▼▼ PENAMBAHBAIKAN BERMULA DI SINI ▼▼▼
+            // Tambah iframe layout untuk CHILD tables yang dibuka dari modal
+            const isChildInIframeContext = relationships.some(r => 
+                r.child_table_name === tableName && r.show_count_in_tv === 1
+            );
+
+            if (isChildInIframeContext) {
+                const iframeLayoutCode = `
+    /**
+     * This method will select the layout dynamically.
+     */
+    public function getLayout(): string
+    {
+        if (session('is_in_iframe')) {
+            return 'filament.layouts.custom-iframe-layout';
+        }
+        
+        return parent::getLayout();
+    }
+`;
+                editContent = editContent.replace('<<IFRAME_CHILD_LAYOUT>>', iframeLayoutCode);
+            }
+            // ▲▲▲ PENAMBAHBAIKAN TAMAT ▲▲▲
+
+            // Logik sedia ada untuk CHILD table (refresh on close)
             const isChildTable = relationships.some(r => r.child_table_name === tableName);
             if (isChildTable) {
                 editContent = editContent.replace('<<IMPORT_CLOSE_IFRAME>>', 'use Filament\\Support\\Facades\\FilamentView;\nuse Illuminate\\Contracts\\View\\View;');
@@ -2629,11 +2674,9 @@ async function generateFilamentEditPages(fullSchema, basePath) {
                 editContent = editContent.replace('<<REFRESH_CLOSE_IFRAME>>', refreshIframeCode);
             }
 
-// Bersihkan placeholder yang tidak digunakan dan baris kosong yang terhasil
-            editContent = editContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, ''); // Buang placeholder pada baris sendiri
-            editContent = editContent.replace(/<<.*?>>/g, ''); // Buang placeholder dalam baris (inline)
+            editContent = editContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
+            editContent = editContent.replace(/<<.*?>>/g, '');
 
-            // 8. Jana fail output
             const resourceFolder = modelNamePlural;
             const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'Pages');
             fs.mkdirSync(outputFolderPath, { recursive: true });
@@ -2650,12 +2693,6 @@ async function generateFilamentEditPages(fullSchema, basePath) {
         return { success: false, message: error.message };
     }
 }
-
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: main.js
-
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: main.js
-
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: main.js
 
 /**
  * [VERSI AKHIR LENGKAP] Menjana fail ...Table.php Laravel Filament untuk setiap resource.

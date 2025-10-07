@@ -51,7 +51,9 @@ class Edit<<TABLE_NAME_SINGULAR>> extends EditRecord
         ];
     }
     
-<<IFRAME_PARENT_SETUP>><<REFRESH_CLOSE_IFRAME>>
+<<IFRAME_PARENT_SETUP>>
+<<REFRESH_CLOSE_IFRAME>>
+<<IFRAME_CHILD_LAYOUT>>
 
     protected function getFormActions(): array
     {
