@@ -1858,25 +1858,33 @@ function toTitleCase(str) {
     return str.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
 }
 
-// ADD THIS NEW HELPER FUNCTION IN: main.js
+// FIND AND REPLACE THIS ENTIRE HELPER FUNCTION IN: main.js
 
 function convertDateFormatToPhp(formatString) {
-    if (!formatString) return 'd/m/Y';
-    // Ini adalah pemetaan ringkas, boleh diperluas jika perlu
-    const replacements = {
-        'dmy': 'd/m/Y', 'mdy': 'm/d/Y', 'ymd': 'Y/m/d',
-        '/': '/', '-': '-', '.': '.', ' ': ' ',
-        '12': 'h:i:s A', '24': 'H:i:s'
-        // Tambah pemetaan lain jika ada format yang berbeza
-    };
-    // Cuba padankan format umum dahulu
-    if (replacements[formatString]) return replacements[formatString];
-    
-    // Jika tidak, cuba bina secara manual (logik ringkas)
-    let phpFormat = formatString;
-    phpFormat = phpFormat.replace(/DD/g, 'd').replace(/MM/g, 'm').replace(/YYYY/g, 'Y');
-    phpFormat = phpFormat.replace(/hh/g, 'h').replace(/HH/g, 'H').replace(/mm/g, 'i').replace(/ss/g, 's').replace(/A/g, 'A');
-    return phpFormat;
+    if (!formatString) return 'd/m/Y'; // Lalai yang selamat
+
+    // Normalkan tahun dalam rentetan input supaya padanan tidak bergantung pada tahun semasa
+    const normalizedFormat = formatString.replace(/\d{4}/, '9999');
+
+    switch (normalizedFormat) {
+        // Format Tarikh
+        case '31/12/9999': return 'd/m/Y';
+        case '12/31/9999': return 'm/d/Y';
+        case '9999-12-31': return 'Y-m-d';
+        case '31 December 9999': return 'd F Y';
+        case '31 Dec 9999': return 'd M Y';
+        case 'December 31, 9999': return 'F d, Y';
+        case 'Dec 31, 9999': return 'M d, Y';
+
+        // Format Masa
+        case '11:59 PM': return 'h:i A';
+        case '11:59:59 PM': return 'h:i:s A';
+        case '23:59': return 'H:i';
+        case '23:59:59': return 'H:i:s';
+
+        // Jika tiada padanan, kembalikan format lalai yang komprehensif
+        default: return 'd/m/Y H:i:s';
+    }
 }
 
 /**
@@ -2654,6 +2662,8 @@ async function generateFilamentEditPages(fullSchema, basePath) {
  * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.
  * @param {string} basePath - Laluan asas ke folder 'generated'.
  */
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: main.js
+
 async function generateFilamentTablesTable(fullSchema, basePath) {
     try {
         const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
@@ -2669,7 +2679,7 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
             let tableContent = templateContent;
             const tableData = tables[tableName];
             
-            // --- FASA 1: KERANGKA UTAMA ---
+            // --- FASA 1: KERANGKA UTAMA (KOD ANDA YANG TELAH DIPERBAIKI) ---
             
             const modelNameSingular = toSingularPascalCase(tableName);
             const modelNamePlural = toPluralPascalCase(tableName);
@@ -2753,7 +2763,6 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                 if (fkRelationship) {
                     const parentCamel = toSingularCamelCase(fkRelationship.parent_table_name);
                     if(field.lookup_caption_1 && field.lookup_caption_2) {
-                        // Untuk carian dot notation, accessor di Model diperlukan. Kita guna nama gabungan.
                         const combined = `${field.lookup_caption_1}_${field.lookup_caption_2}`;
                         fieldName = `${parentCamel}.${combined}`;
                     } else if (field.lookup_caption_1) {
@@ -2768,36 +2777,79 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                 let lines = [`${controller}::make('${fieldName}')`];
                 lines.push(`->label('${toTitleCase(field.caption || field.field_name)}')`);
                 
-                if (field.allow_sorting === 1 && controller === 'TextColumn') lines.push('->sortable()');
+                // === Logik Khusus Mengikut Jenis Lajur ===
+
+                if (controller === 'ImageColumn') {
+                    if (field.tv_thumb_shape === 'circular') lines.push('->circular()');
+                    else lines.push('->square()');
+
+                    if (field.tv_thumb_width) lines.push(`->imageWidth(${field.tv_thumb_width})`);
+                    if (field.tv_thumb_height) lines.push(`->imageHeight(${field.tv_thumb_height})`);
+                    if (field.image_storage_provider) lines.push(`->disk('${field.image_storage_provider}')`);
+
+                    if (field.tv_enable_zooming === 1) {
+                        const zoomAction = `->action(
+                    Action::make('Show full image')
+                        ->modalHeading(false)->modalFooter(null)
+                        ->modalContent(fn (${modelNameSingular} \$record): HtmlString => new HtmlString(
+                            \$record->${field.field_name}
+                                ? '<img src="' . Storage::url(\$record->${field.field_name}) . '" alt="${toTitleCase(field.caption || field.field_name)}" style="width: 100%;">'
+                                : '<p class="text-center">No image uploaded.</p>'
+                        ))
+                )`;
+                        lines.push(zoomAction);
+                    }
+                }
+                else if (controller === 'IconColumn') {
+                    if (field.media_type === 'upload') {
+                        const iconValue = field.tv_icon || 'document-arrow-down';
+                        const storageProvider = field.file_storage_provider || 'public';
+                        
+                        lines.push(`->icon(fn ($state): ?string => $state ? 'heroicon-o-${iconValue}' : null)`);
+                        lines.push(`->url(fn (?${modelNameSingular} \$record) => \$record?->${field.field_name} ? Storage::disk('${storageProvider}')->url(\$record->${field.field_name}) : null, shouldOpenInNewTab: true)`);
+                        
+                        if (field.tv_icon_color) {
+                            lines.push(`->color('${field.tv_icon_color}')`);
+                        }
+
+                    } else { 
+                        if (field.display_type === 'check_box' && field.data_type === 'BOOLEAN') {
+                            lines.push('->boolean()');
+                        }
+                        if (field.tv_icon) lines.push(`->icon('heroicon-o-${field.tv_icon}')`);
+                        if (field.tv_icon_color) lines.push(`->iconColor('${field.tv_icon_color}')`);
+                    }
+                }
+                else { // TextColumn
+                    if (field.allow_sorting === 1) lines.push('->sortable()');
+                    if (field.tv_wrap_text === 1) lines.push('->wrap()');
+                    if (field.tv_font_weight && field.tv_font_weight !== 'Regular') lines.push(`->weight(FontWeight::${field.tv_font_weight})`);
+                    if (field.tv_text_limit) lines.push(`->limit(${field.tv_text_limit}, end: ' (more)')`);
+                    if (field.tv_text_color) lines.push(`->color('${field.tv_text_color}')`);
+                    if(field.tv_text_size && field.tv_text_size !== 'Normal') lines.push(`->size(TextSize::${field.tv_text_size})`);
+                }
+
+                // === Logik Umum & Format Data ===
+                
                 if (field.enable_global_filter === 1 && !field.enable_individual_filter) lines.push('->searchable()');
                 if (!field.enable_global_filter && field.enable_individual_filter === 1) lines.push('->searchable(isIndividual: true, isGlobal: false)');
                 if (field.enable_global_filter === 1 && field.enable_individual_filter === 1) lines.push('->searchable(isIndividual: true)');
-                
+
                 if (field.tv_wrap_header === 1) lines.push('->wrapHeader()');
-                if (field.tv_wrap_text === 1 && controller === 'TextColumn') lines.push('->wrap()');
                 
                 if (field.tv_enable_toggle === 1) lines.push('->toggleable(isToggledHiddenByDefault: true)');
                 else lines.push('->toggleable()');
 
                 if (field.tv_description_tooltips === 1 && field.description) lines.push(`->tooltip('${field.description.replace(/'/g, "\\'")}')`);
                 
-                if (field.tv_font_weight && field.tv_font_weight !== 'Regular') lines.push(`->weight(FontWeight::${field.tv_font_weight})`);
-                if (field.tv_text_limit && controller === 'TextColumn') lines.push(`->limit(${field.tv_text_limit}, end: ' (more)')`);
-                
                 if (field.tv_alignment === 'center') lines.push('->alignCenter()');
                 else if (field.tv_alignment === 'right') lines.push('->alignEnd()');
                 
-                if (field.tv_text_color && controller === 'TextColumn') lines.push(`->color('${field.tv_text_color}')`);
-                if (field.tv_icon && controller !== 'ImageColumn') lines.push(`->icon('heroicon-o-${field.tv_icon}')`);
-                if (field.tv_icon_color && controller !== 'ImageColumn') lines.push(`->iconColor('${field.tv_icon_color}')`);
-                
-                if(field.tv_text_size && field.tv_text_size !== 'Normal' && controller === 'TextColumn') lines.push(`->size(TextSize::${field.tv_text_size})`);
-
                 const dateTypes = ['DATE', 'DATETIME', 'TIMESTAMP'];
                 if(dateTypes.includes(field.data_type)){
-                    const dateFormat = convertDateFormatToPhp(projectSettings.date_order);
-                    const timeFormat = projectSettings.use_24hr_format ? ' H:i:s' : ' h:i:s A';
-                    const format = field.data_type === 'DATE' ? dateFormat : dateFormat + timeFormat;
+                    const dateFormat = convertDateFormatToPhp(projectSettings.date_format);
+                    const timeFormat = convertDateFormatToPhp(projectSettings.time_format);
+                    const format = field.data_type === 'DATE' ? dateFormat : `${dateFormat} ${timeFormat}`;
                     lines.push(`->dateTime('${format}')`);
                 }
                 
@@ -2808,9 +2860,7 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                 }
 
                 if(field.display_type === 'rich_html') lines.push(`->html()`);
-                if(field.display_type === 'check_box' && field.data_type === 'BOOLEAN') lines.push(`->boolean()`);
-
-                // Logik untuk Badge
+                
                 if (field.display_type === 'options_list' && field.options_list_values) {
                     const options = field.options_list_values.split(';;');
                     if (options.length < 7) {
@@ -2819,9 +2869,30 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                         lines.push(`->badge()->color(fn (string $state): string => match ($state) {\n${matchArms}\n        })`);
                     }
                 }
+
+                // ▼▼▼ PENAMBAHBAIKAN UNTUK 'JSON' BERMULA DI SINI ▼▼▼
+                if (field.data_type === 'JSON') {
+                    const jsonFormatter = `->formatStateUsing(function (?array \$state): ?string {
+                    if (blank(\$state)) {
+                        return null;
+                    }
+                    // Cuba dapatkan kunci yang sama dengan nama lajur (untuk objek JSON tunggal)
+                    if (isset(\$state['${field.field_name}'])) {
+                        return \$state['${field.field_name}'];
+                    }
+                    // Jika ia adalah array of objects (cth: dari Repeater), cuba gabungkan nilai-nilai
+                    if (is_array(\$state) && isset(\$state[0]['${field.field_name}'])) {
+                        return implode(', ', array_column(\$state, '${field.field_name}'));
+                    }
+                    return ''; // Kembalikan string kosong jika format tidak dikenali
+                })`;
+                    lines.push(jsonFormatter);
+                }
+                // ▲▲▲ PENAMBAHBAIKAN TAMAT ▲▲▲
                 
                 columnsCode.push(lines.join('\n                    '));
             }
+            
             tableContent = tableContent.replace('<<ALL_COLUMNS>>', columnsCode.join(',\n                '));
 
             // --- FASA 3: PEMBERSIHAN ---
@@ -2861,7 +2932,6 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
         return { success: false, message: error.message };
     }
 }
-
 /**
  * Menjana fail RelationManager Laravel Filament untuk setiap hubungan one-to-many.
  * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.

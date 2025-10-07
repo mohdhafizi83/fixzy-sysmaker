@@ -204,7 +204,7 @@ Proses generate laravel filament fail resources:
 - Copy content fail PagesList.template di 'src/templates/php/filament/app/Filament/Resources'
 - Bandingkan dengan fungsi utama yang menyimpan keseluruhan maklumat dari database untuk proses seterusnya.
 
-Replace content Resource.template seperti berikut:
+Replace content PagesList.template seperti berikut:
 
 1. Gantikan <<TABLE_NAME_SINGULAR>> dengan singular PascalCase table_name. Contoh table_name = pelajar_sekolah, singular PascalCase ialah PelajarSekolah.
 
@@ -495,32 +495,28 @@ BulkActionGroup::make([
     DeleteBulkAction::make(),
 ]),
 "
-dan gantikan <<IMPORT_MASS_DELETE>> dengan kod dibawah.
-"
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-"
 
-5. Jika show_edit_button = 1 dan enable_detail_view = 1 dan dv_separate_page = 0, gantikan <<ACTION_EDIT_BUTTON>> dengan "EditAction::make()," dan gantikan <<DISABLED_ROW_INTERACTION>> dengan "->recordUrl(null)" dan gantikan <<IMPORT_EDIT_ACTION>> dengan "use Filament\Actions\EditAction;". Jika tidak, gantikan dengan empty.
+5. Jika show_edit_button = 1 dan enable_detail_view = 1 dan dv_separate_page = 0, gantikan <<ACTION_EDIT_BUTTON>> dengan "EditAction::make()," dan gantikan <<DISABLED_ROW_INTERACTION>> dengan "->recordUrl(null)". Jika tidak, gantikan dengan empty.
 
-6. Jika show_edit_button = 1 dan enable_detail_view = 1 dan dv_separate_page = 1, gantikan <<DISABLED_ROW_INTERACTION>> dengan "->recordUrl(null)"  dan gantikan <<IMPORT_EDIT_ACTION>> dengan "use Filament\Actions\EditAction;" dan gantikan <<ACTION_EDIT_BUTTON>> dengan kod dibawah. Jika tidak, gantikan dengan empty.
+6. Jika show_edit_button = 1 dan enable_detail_view = 1 dan dv_separate_page = 1, gantikan <<DISABLED_ROW_INTERACTION>> dengan "->recordUrl(null)" dan gantikan <<ACTION_EDIT_BUTTON>> dengan kod dibawah. Jika tidak, gantikan dengan empty.
 "
 EditAction::make()
 ->openUrlInNewTab(),
 "
+
 7. Jika pagination_type = 'simple', gantikan <<PAGINATION_TYPE>> dengan "->paginationMode(PaginationMode::Simple)". Jika tidak, gantikan dengan empty.
 
 8. Jika pagination_type = 'extreme', gantikan <<PAGINATION_TYPE>> dengan "->extremePaginationLinks()". Jika tidak, gantikan dengan empty.
 
 9. Gantikan <<ADD_DESCRIPTION>> dengan table_description. Jika tidak, gantikan dengan empty.
  
-10. Jika show_delete_button = 1, gantikan <<ACTION_DELETE_BUTTON>> dengan "DeleteAction::make()," dan gantikan <<IMPORT_DELETE_ACTION>> dengan "use Filament\Actions\DeleteAction;". Jika tidak, gantikan dengan empty.
+10. Jika show_delete_button = 1, gantikan <<ACTION_DELETE_BUTTON>> dengan "DeleteAction::make(),". Jika tidak, gantikan dengan empty.
 
-11. Jika allow_restore_delete = 1 dan data_delete_type = 'soft', gantikan <<ACTION_RESTORE_BUTTON>> dengan "RestoreAction::make()," dan gantikan <<IMPORT_RESTORE_ACTION>> dengan "use Filament\Actions\RestoreAction;". Jika tidak, gantikan dengan empty.
+11. Jika allow_restore_delete = 1 dan data_delete_type = 'soft', gantikan <<ACTION_RESTORE_BUTTON>> dengan "RestoreAction::make(),". Jika tidak, gantikan dengan empty.
 
-12. Jika allow_force_delete = 1 dan data_delete_type = 'soft', gantikan <<ACTION_FORCEDELETE_BUTTON>> dengan "ForceDeleteAction::make()," dan gantikan <<IMPORT_FORCEDELETE_ACTION>> dengan "use Filament\Actions\ForceDeleteAction;". Jika tidak, gantikan dengan empty.
+12. Jika allow_force_delete = 1 dan data_delete_type = 'soft', gantikan <<ACTION_FORCEDELETE_BUTTON>> dengan "ForceDeleteAction::make(),". Jika tidak, gantikan dengan empty.
 
-13. Jika dan data_delete_type = 'soft' dan allow_restore_delete = 1 atau allow_force_delete = 1, gantikan <<TRASHED_FILTER>> dengan "TrashedFilter::make()," dan gantikan <<IMPORT_TRASHEDFILTER>> dengan "use Filament\Tables\Filters\TrashedFilter;". Jika tidak, gantikan dengan empty.
+13. Jika dan data_delete_type = 'soft' dan allow_restore_delete = 1 atau allow_force_delete = 1, gantikan <<TRASHED_FILTER>> dengan "TrashedFilter::make(),". Jika tidak, gantikan dengan empty.
 
 14. Jika allow_pagination = 0, gantikan <<DISABLED_PAGINATION>> dengan "->paginated(false)". Jika tidak, gantikan dengan empty.
 
@@ -528,22 +524,7 @@ EditAction::make()
 
 16. Jika enable_detail_view = 0, gantikan <<DISABLED_DETAILVIEW>> dengan "->recordUrl(null)". Jika tidak, gantikan dengan empty.
 
-17. Jika terdapat show_count_in_tv = 1 dimana-mana child table untuk parent table ini, gantikan "<<IMPORT_ACTION>>" dengan kod dibawah. Jika tidak, gantikan dengan empty.
-"
-use Filament\Actions\Action;
-use Illuminate\Contracts\View\View;
-"
-
-18. Loop semua fields untuk table ini, jika terdapat mana-mana field dengan media_type = 'image', gantikan <<IMPORT_IMAGE>> dengan "use Filament\Tables\Columns\ImageColumn;". Jika tidak, gantikan dengan empty.
-
-18. Loop semua fields untuk table ini, jika terdapat mana-mana field dengan media_type = 'upload' atau data_type = BOOLEAN, gantikan <<IMPORT_ICON>> dengan "use Filament\Tables\Columns\IconColumn;".
-
-19. Loop semua fields untuk table ini, jika terdapat mana-mana field dengan media_type = 'upload', gantikan <<IMPORT_UPLOAD>> dengan kod dibawah. Jika tidak, gantikan dengan empty.
-"
-use Illuminate\Support\Facades\Storage;
-"
-
-20. Loop child table untuk table ini dan jika child table show_count_in_tv = 1, gantikan <<SHOW_COUNT_IN_TV>> dengan kod dibawah.  Ulang jika terdapat child table lain dengan show_count_in_tv = 1. Jika tidak, gantikan dengan empty. Ganti <<CHILD_TABLE_NAME_SINGULAR>> dengan singular PascalCase child table_name. Gantikan <<TABLE_NAME_SINGULAR>> dengan singular PascalCase table_name (parent table). Gantikan <<CHILD_TABLE_PLURAL_SNAKE_CASE>> dengan plural snake_case child table_name. Contoh table_name = bas_sekolah, plural snake_case ialah bas_sekolahs. Ganti <<CHILD_TABLE_NAME_TITLE>> dengan Title case. Contoh child table_name = bas_sekolah, Title case ialah 'Bas sekolah'. Ganti <<CHILD_TABLE_NAME_FRASA>> dengan frasa biasa. Contoh child table_name = bas_sekolah, frasa biasa ialah 'bas sekolah'. Gantikan <<FIRST_STRING_FIELD>> dengan parent table (table ini) field_name pertama berjenis string (bukan url, bukan email, bukan path, bukan long text) dan <<FIRST_STRING_FIELD_TITLE>> dengan field yang sama dengan format Title case. Gantikan <<FOREIGNKEY>> dengan foreignkey child table untuk parent table (table ini). Gantikan <<PRIMARY_KEY>> dengan primary key parent table (table ini).
+17. Loop child table untuk table ini dan jika child table show_count_in_tv = 1, gantikan <<SHOW_COUNT_IN_TV>> dengan kod dibawah.  Ulang jika terdapat child table lain dengan show_count_in_tv = 1. Jika tidak, gantikan dengan empty. Ganti <<CHILD_TABLE_NAME_SINGULAR>> dengan singular PascalCase child table_name. Gantikan <<TABLE_NAME_SINGULAR>> dengan singular PascalCase table_name (parent table). Gantikan <<CHILD_TABLE_PLURAL_SNAKE_CASE>> dengan plural snake_case child table_name. Contoh table_name = bas_sekolah, plural snake_case ialah bas_sekolahs. Ganti <<CHILD_TABLE_NAME_TITLE>> dengan Title case. Contoh child table_name = bas_sekolah, Title case ialah 'Bas sekolah'. Ganti <<CHILD_TABLE_NAME_FRASA>> dengan frasa biasa. Contoh child table_name = bas_sekolah, frasa biasa ialah 'bas sekolah'. Gantikan <<FIRST_STRING_FIELD>> dengan parent table (table ini) field_name pertama berjenis string (bukan url, bukan email, bukan path, bukan long text) dan <<FIRST_STRING_FIELD_TITLE>> dengan field yang sama dengan format Title case. Gantikan <<FOREIGNKEY>> dengan foreignkey child table untuk parent table (table ini). Gantikan <<PRIMARY_KEY>> dengan primary key parent table (table ini).
 "
 Action::make('show<<CHILD_TABLE_NAME_SINGULAR>>')
     ->label(fn (<<TABLE_NAME_SINGULAR>> $record): string => '<<CHILD_TABLE_NAME_TITLE>>: ' . $record-><<CHILD_TABLE_PLURAL_SNAKE_CASE>>_count)
@@ -569,7 +550,7 @@ Action::make('show<<CHILD_TABLE_NAME_SINGULAR>>')
     ),
 "
 
-21. Jika allow_print_view = 1, gantikan <<SHOW_ALL_FOR_PRINT>> dengan kod dibawah. Jika tidak, gantikan dengan empty.
+18. Jika allow_print_view = 1, gantikan <<SHOW_ALL_FOR_PRINT>> dengan kod dibawah. Jika tidak, gantikan dengan empty.
 "
 ->when(
     (bool) request()->query('print'),
@@ -577,32 +558,63 @@ Action::make('show<<CHILD_TABLE_NAME_SINGULAR>>')
 )
 "
 -----------
+PENTING: Seterusnya ini proses looping melibatkan kesemua fields yang terdapat didalam table ini. Gunakan kod dibawah sebagai base untuk setiap fields.
 
-22. Seterusnya kita akan membuat kod untuk column. Ia melibatkan kesemua fields yang terdapat didalam table ini. Loop semua field dan bina kod berdasarkan jenis dan ketetapan seperti yang dinyatakan.
+"
+<<ELEMENT_CONTROLLER>>::make('<<FIELD_NAME>>')
+    <<FIELD_LABEL>>
+    <<IMAGE_TABLE_HEIGHT>>
+    <<IMAGE_TABLE_WIDTH>>
+    <<OPTIONLIST_BADGE>>
+    <<JSON_REPEATER_SHOW>>
+    <<DATETIME_FIELD>>
+    <<NUMERIC_FIELD>>
+    <<BOOLEAN_TYPE>>
+    <<IMAGE_STORAGE_DISK>>
+    <<FILE_STORAGE_DISK>>
+    <<SHOW_UPLOAD_FILE>>
+    <<ALLOW_SORTING>>
+    <<TOGGLE_TYPE>>
+    <<WRAP_COLUMN_HEADER>>
+    <<WRAP_COLUMN_TEXT>>
+    <<COLUMN_TOOLTIPS>>
+    <<FONTWEIGHT_COLUMN_TEXT>>
+    <<LIMIT_COLUMN_TEXT>>
+    <<ALIGN_COLUMN_TEXT>>
+    <<COLOR_COLUMN_TEXT>>
+    <<ICON_COLUMN_TEXT>>
+    <<COLORICON_COLUMN_TEXT>>
+    <<IMAGE_ZOOM>>
+    <<MAP_ICON>>
+    <<YOUTUBE_ICON>>
+    <<SEARCHABLE>>,
+"
+
+19. Seterusnya kita akan membuat kod untuk column. Ia melibatkan kesemua fields yang terdapat didalam table ini. Loop semua field dan bina kod berdasarkan jenis dan ketetapan seperti yang dinyatakan.
 
 Jenis 1: Jika field media_type = 'link' atau 'upload' atau 'image' dan hide_in_tv = 0 dan editable_in_tv = 0. Gunakan kod dibawah.
 1.1. Jika media_type = 'link', gantikan <<ELEMENT_CONTROLLER>> dengan "TextColumn";
-1.1. Jika media_type = 'upload' atau data_type = BOOLEAN, gantikan <<ELEMENT_CONTROLLER>> dengan "IconColumn";
+1.1. Jika media_type = 'upload' atau 'gmap' atau 'youtube' atau data_type = BOOLEAN, gantikan <<ELEMENT_CONTROLLER>> dengan "IconColumn";
 1.1. Jika media_type = 'image', gantikan <<ELEMENT_CONTROLLER>> dengan "ImageColumn";
 1.1. Gantikan <<FIELD_NAME>> dengan field_name. 
 1.2. Gantikan <<FIELD_LABEL>> dengan "->label('<<FIELD_NAME_TITLECASE>>')" dan gantikan <<FIELD_NAME_TITLECASE>> dengan Title case field_name. Contoh table_name = bas_sekolah, Title case ialah 'Bas sekolah'. 
-1.4. Jika allow_sorting = 1, gantikan <<ALLOW_SORTING>> dengan "->sortable()". 
-1.5. Jika enable_global_filter = 1 dan enable_individual_filter = 0, ganti <<SEARCHABLE>> dengan "->searchable()". 
-1.6. Jika enable_global_filter = 0 dan enable_individual_filter = 1, ganti <<SEARCHABLE>> dengan "->searchable(isIndividual: true, isGlobal: false)". 
-1.7. Jika enable_global_filter = 1 dan enable_individual_filter = 1, ganti <<SEARCHABLE>> dengan "->searchable(isIndividual: true)".
+1.4. Jika media_type = 'link' dan allow_sorting = 1, gantikan <<ALLOW_SORTING>> dengan "->sortable()". 
+1.5. Jika media_type = 'link' dan enable_global_filter = 1 dan enable_individual_filter = 0, ganti <<SEARCHABLE>> dengan "->searchable()". 
+1.6. Jika media_type = 'link' dan enable_global_filter = 0 dan enable_individual_filter = 1, ganti <<SEARCHABLE>> dengan "->searchable(isIndividual: true, isGlobal: false)". 
+1.7. Jika media_type = 'link' dan enable_global_filter = 1 dan enable_individual_filter = 1, ganti <<SEARCHABLE>> dengan "->searchable(isIndividual: true)".
 1.8. Jika tv_wrap_header = 1, gantikan <<WRAP_COLUMN_HEADER>> dengan "->wrapHeader()".
-1.9. Jika tv_wrap_text = 1, gantikan <<WRAP_COLUMN_TEXT>> dengan "->wrap()".
+1.9. Jika media_type = 'link' dan tv_wrap_text = 1, gantikan <<WRAP_COLUMN_TEXT>> dengan "->wrap()".
 1.10. Jika tv_enable_toggle = 1, gantikan <<TOGGLE_TYPE>> dengan "->toggleable(isToggledHiddenByDefault: true)".
 1.11. Jika tv_enable_toggle = 0, gantikan <<TOGGLE_TYPE>> dengan "->toggleable()".
 1.12. Jika tv_description_tooltips = 1, gantikan <<COLUMN_TOOLTIPS>> dengan "->tooltip('<<COLUMN_DESCRIPTION>>')". Gantikan <<COLUMN_DESCRIPTION>> dengan description.
-1.13. Jika tv_font_weight bukan 'Regular', gantikan <<FONTWEIGHT_COLUMN_TEXT>> dengan "->weight(FontWeight::<<FONTWEIGHT_VALUE>>)". Gantikan <<FONTWEIGHT_VALUE>> dengan tv_font_weight. gantikan <<IMPORT_FONTWEIGHT_COLUMN_TEXT>> dengan "use Filament\Support\Enums\FontWeight;".
-1.14. Jika tv_text_limit bukan null/empty, gantikan <<LIMIT_COLUMN_TEXT>> dengan "->limit(<<TEXT_LIMIT_VALUE>>, end: ' (more)')". Gantikan <<TEXT_LIMIT_VALUE>> dengan tv_text_limit.
+1.13. Jika tv_font_weight bukan 'Regular', gantikan <<FONTWEIGHT_COLUMN_TEXT>> dengan "->weight(FontWeight::<<FONTWEIGHT_VALUE>>)". Gantikan <<FONTWEIGHT_VALUE>> dengan tv_font_weight.
+1.14. Jika media_type = 'link' dan tv_text_limit bukan null/empty, gantikan <<LIMIT_COLUMN_TEXT>> dengan "->limit(<<TEXT_LIMIT_VALUE>>, end: ' (more)')". Gantikan <<TEXT_LIMIT_VALUE>> dengan tv_text_limit.
 1.15. Jika tv_alignment = 'center', gantikan <<ALIGN_COLUMN_TEXT>> dengan "->alignCenter()".
 1.15. Jika tv_alignment = 'right', gantikan <<ALIGN_COLUMN_TEXT>> dengan "->alignEnd()".
-1.16. Jika tv_text_color bukan null/empty, gantikan <<COLOR_COLUMN_TEXT>> dengan "->color('<<COLOR_VALUE>>')". Gantikan <<COLOR_VALUE>> dengan tv_text_color.
-1.17. Jika tv_icon bukan null/empty, gantikan <<ICON_COLUMN_TEXT>> dengan "->icon('heroicon-o-<<ICON_VALUE>>')". Gantikan <<ICON_VALUE>> dengan tv_icon.
-1.18. Jika tv_icon_color bukan null/empty, gantikan <<COLORICON_COLUMN_TEXT>> dengan "->iconColor('<<ICONCOLOR_VALUE>>')". Gantikan <<ICONCOLOR_VALUE>> dengan tv_icon_color.
-1.19. Jika tv_text_size bukan 'Normal', gantikan <<COLUMN_TEXT_SIZE>> dengan "->size(TextSize::<<TEXT_SIZE>>)". Gantikan <<TEXT_SIZE>> dengan tv_text_size. gantikan <<IMPORT_COLUMN_TEXT_SIZE>> dengan "use Filament\Support\Enums\TextSize;".
+1.16. Jika media_type = 'link' dan tv_text_color bukan null/empty, gantikan <<COLOR_COLUMN_TEXT>> dengan "->color('<<COLOR_VALUE>>')". Gantikan <<COLOR_VALUE>> dengan tv_text_color.
+1.17. Jika media_type bukan 'image' dan tv_icon bukan null/empty, gantikan <<ICON_COLUMN_TEXT>> dengan "->icon('heroicon-o-<<ICON_VALUE>>')". Gantikan <<ICON_VALUE>> dengan tv_icon.
+1.18. Jika media_type bukan 'image' dan tv_icon_color bukan null/empty, gantikan <<COLORICON_COLUMN_TEXT>> dengan "->iconColor('<<ICONCOLOR_VALUE>>')". Gantikan <<ICONCOLOR_VALUE>> dengan tv_icon_color.
+1.19. Jika media_type = 'link' dan tv_text_size bukan 'Normal', gantikan <<COLUMN_TEXT_SIZE>> dengan "->size(TextSize::<<TEXT_SIZE>>)". Gantikan <<TEXT_SIZE>> dengan tv_text_size.
 1.20. Jika data_type ialah 'DATE' atau 'DATETIME' atau 'TIMESTAMP', gantikan <<DATETIME_FIELD>> dengan "->dateTime('<<DATETIME_FORMAT>>')". Jika tv_date_time_format = date_only, gantikan <<DATETIME_FORMAT>> dengan PHP date format date_format. Contoh jika date_format = '31/12/2025' maka PHP date format ialah 'd/m/Y'. Jika tv_date_time_format = date_and_time, gantikan <<DATETIME_FORMAT>> dengan PHP date format date_format<space>time_format. Contoh jika date_format = '31/12/2025' dan time_format = '11:59:59 PM' maka PHP date format ialah 'd/m/Y h:i:s A'.
 1.22. Jika data_type ialah numeric types dan tv_currency_code adalah null/empty, gantikan <<NUMERIC_FIELD>> dengan "->numeric()".
 1.23. Jika data_type ialah numeric types dan tv_currency_code bukan null/empty, gantikan <<NUMERIC_FIELD>> dengan "->money('<<CURRENCY_CODE>>')". Gantikan <<CURRENCY_CODE>> dengan tv_currency_code. 
@@ -618,16 +630,16 @@ Jenis 1: Jika field media_type = 'link' atau 'upload' atau 'image' dan hide_in_t
 "
 
 1.27 Jika display_type = 'check_box' dan data_type = BOOLEAN, gantikan <<BOOLEAN_TYPE>> dengan "->boolean()".
-1.28 Jika media_type = 'upload', gantikan <<SHOW_UPLOAD_FILE>> dengan kod dibawah. Jika tv_icon bukan null/empty, gantikan <<ICON_UPLOAD_VALUE>> dengan tv_icon. Jika tv_icon ialah null/empty, gantikan <<ICON_UPLOAD_VALUE>> dengan "document-arrow-down". Gantikan "<<MODEL_NAME>>" dengan PascalCase table_name dan <<FIELD_NAME>> dengan field_name.
+
+1.28 Jika media_type = 'upload', gantikan <<SHOW_UPLOAD_FILE>> dengan kod dibawah. Jika tv_icon bukan null/empty, gantikan <<ICON_UPLOAD_VALUE>> dengan tv_icon. Jika tv_icon ialah null/empty, gantikan <<ICON_UPLOAD_VALUE>> dengan "document-arrow-down". Gantikan "<<MODEL_NAME>>" dengan PascalCase table_name dan <<FIELD_NAME>> dengan field_name. Gantikan <<FILE_STORAGE_PROVIDER>> dengan "file_storage_provider".
 "
 ->icon(fn ($state): ?string => $state ? 'heroicon-o-<<ICON_UPLOAD_VALUE>>' : null)
-->url(fn (?<<MODEL_NAME>> $record) => $record?-><<FIELD_NAME>> ? Storage::disk('public')->url($record-><<FIELD_NAME>>) : null, shouldOpenInNewTab: true)
+->url(fn (?<<MODEL_NAME>> $record) => $record?-><<FIELD_NAME>> ? Storage::disk('<<FILE_STORAGE_PROVIDER>>')->url($record-><<FIELD_NAME>>) : null, shouldOpenInNewTab: true)
 "
-1.29 Jika media_type = 'upload', gantikan <<FILE_STORAGE_DISK>> dengan "->disk('<<FILE_STORAGE_PROVIDER>>')". Gantikan <<FILE_STORAGE_PROVIDER>> dengan "file_storage_provider";
 
 1.29 Jika media_type = 'image' dan tv_thumb_shape = square, gantikan <<SHOW_IMAGE_TABLE>> dengan "->square()".
 1.30 Jika media_type = 'image' dan tv_thumb_shape = circular, gantikan <<SHOW_IMAGE_TABLE>> dengan "->circular()".
-Jika media_type = 'image' dan enable_zooming = 1, gantikan <<IMPORT_HTMLSTRING>> dengan "use Illuminate\Support\HtmlString;".
+
 1.31 Jika media_type = 'image' dan enable_zooming = 1, gantikan <<IMAGE_ZOOM>> dengan kod dibawah. Gantikan <<TITLE_CASE_FIELD_NAME>> dengan Title Case field_name, gantikan <<FIELD_NAME>> dengan field_name dan gantikan "<<MODEL_NAME>>" dengan PascalCase table_name.
 
 "
@@ -694,36 +706,7 @@ Jika media_type = 'image' dan enable_zooming = 1, gantikan <<IMPORT_HTMLSTRING>>
 )
 "
 
-"
-<<ELEMENT_CONTROLLER>>::make('<<FIELD_NAME>>')
-    <<FIELD_LABEL>>
-    <<IMAGE_TABLE_HEIGHT>>
-    <<IMAGE_TABLE_WIDTH>>
-    <<OPTIONLIST_BADGE>>
-    <<JSON_REPEATER_SHOW>>
-    <<DATETIME_FIELD>>
-    <<NUMERIC_FIELD>>
-    <<BOOLEAN_TYPE>>
-    <<IMAGE_STORAGE_DISK>>
-    <<FILE_STORAGE_DISK>>
-    <<SHOW_UPLOAD_FILE>>
-    <<ALLOW_SORTING>>
-    <<TOGGLE_TYPE>>
-    <<WRAP_COLUMN_HEADER>>
-    <<WRAP_COLUMN_TEXT>>
-    <<COLUMN_TOOLTIPS>>
-    <<FONTWEIGHT_COLUMN_TEXT>>
-    <<LIMIT_COLUMN_TEXT>>
-    <<ALIGN_COLUMN_TEXT>>
-    <<COLOR_COLUMN_TEXT>>
-    <<ICON_COLUMN_TEXT>>
-    <<COLORICON_COLUMN_TEXT>>
-    <<IMAGE_ZOOM>>
-    <<MAP_ICON>>
-    <<YOUTUBE_ICON>>
-    <<SEARCHABLE>>,
-"
-
+Gantikan <<ALL_COLUMNS>> dengan kesemua janaan setiap fields diatas.
 
 23. Seterusnya kita akan membuat kod untuk filter date range. Filter melibatkan fields jenis date sahaja. Loop semua fields untuk table ini, jika enable_range_filter = 1 dan data_type ialah 'DATE' atau 'DATETIME' atau 'TIMESTAMP', gantikan <<DATE_RANGE_FILTER>> dengan kod dibawah. Gantikan <<DATE_FIELD_NAME>> dengan field_name jenis date/time berkenaan. Jika tidak, gantikan dengan empty.
 "
@@ -749,4 +732,6 @@ Filter::make('Date Range')
     })
 "
 
-24. Jana output di folder 'AppData.../generated/filament/app/Filament/Resources/<<RESOURCE_FOLDER>>/RelationManagers' dengan nama singular PascalCase table_name value dengan extension php. Contoh table_name = pelajar_sekolah, fail terjana akan bernama PelajarSekolahRelationManager.php. <<RESOURCE_FOLDER>> pula ialah plural PascalCase table_name value. Path Fail sepatutnya 'AppData.../generated/filament/app/Filament/Resources/PelajarSekolahs/RelationManagers/PelajarSekolahRelationManager.php'
+Buang kesemua import yang tidak digunakan didalam script ini selepas semua selesai di jana.
+
+24. Jana output di folder 'AppData.../generated/filament/app/Filament/Resources/<<RESOURCE_FOLDER>>/Tables' dengan nama plural PascalCase table_name value dengan extension php. Contoh table_name = pelajar_sekolah, fail terjana akan bernama PelajarSekolahsTable.php. <<RESOURCE_FOLDER>> pula ialah plural PascalCase table_name value. Path Fail sepatutnya 'AppData.../generated/filament/app/Filament/Resources/PelajarSekolahs/Tables/PelajarSekolahsTable.php'

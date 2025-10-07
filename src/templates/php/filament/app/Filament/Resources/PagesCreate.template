@@ -19,6 +19,8 @@ class Create<<TABLE_NAME_SINGULAR>> extends CreateRecord
             $this->getCancelFormAction(),
         ];
     }
+    
+    <<IFRAME_LAYOUT>>
 
     protected function getFormActions(): array
     {
