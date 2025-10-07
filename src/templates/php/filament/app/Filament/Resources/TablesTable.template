@@ -5,20 +5,29 @@ namespace App\Filament\Resources\<<TABLE_NAME_PLURAL>>\Tables;
 <<IMPORT_RESOURCES>>
 
 use App\Models\<<TABLE_NAME_SINGULAR>>;
-<<IMPORT_ACTION>>
-<<IMPORT_MASS_DELETE>>
-<<IMPORT_DELETE_ACTION>>
-<<IMPORT_EDIT_ACTION>>
-<<IMPORT_FORCEDELETE_ACTION>>
-<<IMPORT_RESTORE_ACTION>>
-<<IMPORT_TRASHEDFILTER>>
-<<IMPORT_IMAGE>>
-<<IMPORT_UPLOAD>>
-<<IMPORT_ICON_COLUMN_TEXT>>
-<<IMPORT_COLUMN_TEXT_SIZE>>
-<<IMPORT_FONTWEIGHT_COLUMN_TEXT>>
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\RestoreAction;
 use Filament\Tables\Table;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TrashedFilter;
+use Filament\Tables\Columns\Summarizers\Sum;
+use Filament\Tables\Columns\Summarizers\Average;
+use Filament\Tables\Columns\Summarizers\Range;
+use Filament\Tables\Columns\Summarizers\Count;
+use Filament\Support\Icons\Heroicon;
+use Filament\Support\Enums\TextSize;
+use Filament\Support\Enums\FontWeight;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Contracts\View\View;
 
 
 class <<TABLE_NAME_PLURAL>>Table
@@ -33,37 +42,7 @@ class <<TABLE_NAME_PLURAL>>Table
             <<DISABLED_ROW_INTERACTION>>
             ->description('<<ADD_DESCRIPTION>>')
             ->columns([
-                ImageColumn::make('gambar_profil')
-                    ->label('Gambar Profil')
-                    ->disk('public')
-                    ->circular(),
-                TextColumn::make('nama_penuh')
-                    ->sortable()
-                    ->searchable(isIndividual: true, isGlobal: false), // individual only
-                TextColumn::make('no_matrik')
-                    ->sortable()
-                    ->searchable(isIndividual: true),// individual & global
-                TextColumn::make('email')
-                    ->label('Email address')
-                    ->sortable()
-                    ->searchable(),//global only
-                TextColumn::make('tarikh_daftar')
-                    ->date()
-                    ->sortable()
-                    ->searchable(),
-                IconColumn::make('surat_tawaran')
-                    ->label('Surat Tawaran')
-                    ->icon(fn ($state): ?string => $state ? 'heroicon-o-document-arrow-down' : null)
-                    ->color('primary')
-                    ->url(fn (?<<TABLE_NAME_SINGULAR>> $record) => $record?->surat_tawaran ? Storage::disk('public')->url($record->surat_tawaran) : null, shouldOpenInNewTab: true),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                <<ALL_COLUMNS>>
             ])
             <<SHOW_ALL_FOR_PRINT>>
             ->filters([

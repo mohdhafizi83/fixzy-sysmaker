@@ -536,9 +536,10 @@ use Illuminate\Contracts\View\View;
 
 18. Loop semua fields untuk table ini, jika terdapat mana-mana field dengan media_type = 'image', gantikan <<IMPORT_IMAGE>> dengan "use Filament\Tables\Columns\ImageColumn;". Jika tidak, gantikan dengan empty.
 
+18. Loop semua fields untuk table ini, jika terdapat mana-mana field dengan media_type = 'upload' atau data_type = BOOLEAN, gantikan <<IMPORT_ICON>> dengan "use Filament\Tables\Columns\IconColumn;".
+
 19. Loop semua fields untuk table ini, jika terdapat mana-mana field dengan media_type = 'upload', gantikan <<IMPORT_UPLOAD>> dengan kod dibawah. Jika tidak, gantikan dengan empty.
 "
-use Filament\Tables\Columns\IconColumn;
 use Illuminate\Support\Facades\Storage;
 "
 
@@ -626,7 +627,8 @@ Jenis 1: Jika field media_type = 'link' atau 'upload' atau 'image' dan hide_in_t
 
 1.29 Jika media_type = 'image' dan tv_thumb_shape = square, gantikan <<SHOW_IMAGE_TABLE>> dengan "->square()".
 1.30 Jika media_type = 'image' dan tv_thumb_shape = circular, gantikan <<SHOW_IMAGE_TABLE>> dengan "->circular()".
-1.31 Jika media_type = 'image' dan enable_zooming = 1, gantikan <<IMAGE_ZOOM>>dengan kod dibawah. Gantikan <<TITLE_CASE_FIELD_NAME>> dengan Title Case field_name, gantikan <<FIELD_NAME>> dengan field_name dan gantikan "<<MODEL_NAME>>" dengan PascalCase table_name.
+Jika media_type = 'image' dan enable_zooming = 1, gantikan <<IMPORT_HTMLSTRING>> dengan "use Illuminate\Support\HtmlString;".
+1.31 Jika media_type = 'image' dan enable_zooming = 1, gantikan <<IMAGE_ZOOM>> dengan kod dibawah. Gantikan <<TITLE_CASE_FIELD_NAME>> dengan Title Case field_name, gantikan <<FIELD_NAME>> dengan field_name dan gantikan "<<MODEL_NAME>>" dengan PascalCase table_name.
 
 "
 ->action(
@@ -636,7 +638,7 @@ Jenis 1: Jika field media_type = 'link' atau 'upload' atau 'image' dan hide_in_t
         ->modalContent(fn (<<MODEL_NAME>> $record): HtmlString => new HtmlString(
             $record-><<FIELD_NAME>>
                 ? '<img src="' . Storage::url($record-><<FIELD_NAME>>) . '" alt="<<TITLE_CASE_FIELD_NAME>>" style="width: 100%;">'
-                : '<p class="text-center">Tiada imej dimuat naik.</p>'
+                : '<p class="text-center">No image uploaded.</p>'
         ))
 )
 "
@@ -662,7 +664,35 @@ Jenis 1: Jika field media_type = 'link' atau 'upload' atau 'image' dan hide_in_t
 })
 "
 
+1.34 Jika media_type = 'gmap', gantikan <<MAP_ICON>> dengan kod dibawah. Gantikan <<FIELD_NAME>> dengan field_name dan gantikan "<<MODEL_NAME>>" dengan PascalCase table_name.
 
+"
+        ->modalContent(function (<<MODEL_NAME>> $record): HtmlString {
+            if (blank($record-><<FIELD_NAME>>)) {
+                return new HtmlString('<p class="text-center">No map link provided.</p>');
+            }
+            $iframeCode = $record-><<FIELD_NAME>>;
+            $responsiveIframeCode = str_replace('width="600"', 'width="100%"', $iframeCode);
+            $responsiveIframeCode = str_replace('height="450"', 'height="450px"', $responsiveIframeCode);
+            return new HtmlString($responsiveIframeCode);
+        })
+)
+"
+
+1.35 Jika media_type = 'youtube', gantikan <<YOUTUBE_ICON>> dengan kod dibawah. Gantikan <<FIELD_NAME>> dengan field_name dan gantikan "<<MODEL_NAME>>" dengan PascalCase table_name.
+
+"
+->action(
+    Action::make('Show Video')
+        ->modalHeading(false)
+        ->modalFooter(null)
+        ->modalContent(fn (<<MODEL_NAME>> $record): HtmlString => new HtmlString(
+            $record-><<FIELD_NAME>>
+                ? '<iframe src="' . e($record-><<FIELD_NAME>>) . '" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
+                : '<p class="text-center">No video link provided.</p>'
+        ))
+)
+"
 
 "
 <<ELEMENT_CONTROLLER>>::make('<<FIELD_NAME>>')
@@ -688,6 +718,9 @@ Jenis 1: Jika field media_type = 'link' atau 'upload' atau 'image' dan hide_in_t
     <<COLOR_COLUMN_TEXT>>
     <<ICON_COLUMN_TEXT>>
     <<COLORICON_COLUMN_TEXT>>
+    <<IMAGE_ZOOM>>
+    <<MAP_ICON>>
+    <<YOUTUBE_ICON>>
     <<SEARCHABLE>>,
 "
 

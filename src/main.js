@@ -1853,6 +1853,32 @@ function toFlatCase(str) {
     return str.replace(/[-_]/g, '').toLowerCase();
 }
 
+function toTitleCase(str) {
+    if (!str) return '';
+    return str.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+}
+
+// ADD THIS NEW HELPER FUNCTION IN: main.js
+
+function convertDateFormatToPhp(formatString) {
+    if (!formatString) return 'd/m/Y';
+    // Ini adalah pemetaan ringkas, boleh diperluas jika perlu
+    const replacements = {
+        'dmy': 'd/m/Y', 'mdy': 'm/d/Y', 'ymd': 'Y/m/d',
+        '/': '/', '-': '-', '.': '.', ' ': ' ',
+        '12': 'h:i:s A', '24': 'H:i:s'
+        // Tambah pemetaan lain jika ada format yang berbeza
+    };
+    // Cuba padankan format umum dahulu
+    if (replacements[formatString]) return replacements[formatString];
+    
+    // Jika tidak, cuba bina secara manual (logik ringkas)
+    let phpFormat = formatString;
+    phpFormat = phpFormat.replace(/DD/g, 'd').replace(/MM/g, 'm').replace(/YYYY/g, 'Y');
+    phpFormat = phpFormat.replace(/hh/g, 'h').replace(/HH/g, 'H').replace(/mm/g, 'i').replace(/ss/g, 's').replace(/A/g, 'A');
+    return phpFormat;
+}
+
 /**
  * Menjana fail Model Laravel Filament berdasarkan skema pangkalan data.
  * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.
@@ -2617,6 +2643,225 @@ async function generateFilamentEditPages(fullSchema, basePath) {
     }
 }
 
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: main.js
+
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: main.js
+
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: main.js
+
+/**
+ * [VERSI AKHIR LENGKAP] Menjana fail ...Table.php Laravel Filament untuk setiap resource.
+ * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.
+ * @param {string} basePath - Laluan asas ke folder 'generated'.
+ */
+async function generateFilamentTablesTable(fullSchema, basePath) {
+    try {
+        const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
+
+        const templatePath = path.join(__dirname, 'templates/php/filament/app/Filament/Resources/TablesTable.template');
+        if (!fs.existsSync(templatePath)) throw new Error(`Template file not found at: ${templatePath}`);
+        
+        const templateContent = fs.readFileSync(templatePath, 'utf8');
+
+        for (const tableName in tables) {
+            if (tableName === 'users') continue;
+
+            let tableContent = templateContent;
+            const tableData = tables[tableName];
+            
+            // --- FASA 1: KERANGKA UTAMA ---
+            
+            const modelNameSingular = toSingularPascalCase(tableName);
+            const modelNamePlural = toPluralPascalCase(tableName);
+            tableContent = tableContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);
+            tableContent = tableContent.replace(/<<TABLE_NAME_PLURAL>>/g, modelNamePlural);
+
+            const childrenWithCount = relationships.filter(r => r.parent_table_name === tableName && r.show_count_in_tv === 1);
+            if (childrenWithCount.length > 0) {
+                const childImports = childrenWithCount.map(r => {
+                    const childSingular = toSingularPascalCase(r.child_table_name);
+                    const childResourceFolder = toPluralPascalCase(r.child_table_name);
+                    return `use App\\Filament\\Resources\\${childResourceFolder}\\${childSingular}Resource;`;
+                }).join('\n');
+                tableContent = tableContent.replace('<<IMPORT_RESOURCES>>', childImports);
+            }
+
+            if (tableData.allow_mass_delete === 1) tableContent = tableContent.replace('<<ACTION_MASS_DELETE>>', 'BulkActionGroup::make([\n                DeleteBulkAction::make(),\n            ]),');
+            if (tableData.show_edit_button === 1 && tableData.enable_detail_view === 1) {
+                tableContent = tableContent.replace('<<DISABLED_ROW_INTERACTION>>', '->recordUrl(null)');
+                if (tableData.dv_separate_page === 1) tableContent = tableContent.replace('<<ACTION_EDIT_BUTTON>>', 'EditAction::make()->openUrlInNewTab(),');
+                else tableContent = tableContent.replace('<<ACTION_EDIT_BUTTON>>', 'EditAction::make(),');
+            }
+            if (tableData.pagination_type === 'simple') tableContent = tableContent.replace('<<PAGINATION_TYPE>>', '->paginationMode(\'simple\')');
+            else if (tableData.pagination_type === 'extreme') tableContent = tableContent.replace('<<PAGINATION_TYPE>>', '->extremePaginationLinks()');
+            tableContent = tableContent.replace('<<ADD_DESCRIPTION>>', tableData.table_description || '');
+            if (tableData.show_delete_button === 1) tableContent = tableContent.replace('<<ACTION_DELETE_BUTTON>>', 'DeleteAction::make(),');
+            if (projectSettings.data_delete_type === 'soft') {
+                if (tableData.allow_restore_delete === 1) tableContent = tableContent.replace('<<ACTION_RESTORE_BUTTON>>', 'RestoreAction::make(),');
+                if (tableData.allow_force_delete === 1) tableContent = tableContent.replace('<<ACTION_FORCEDELETE_BUTTON>>', 'ForceDeleteAction::make(),');
+                if (tableData.allow_restore_delete === 1 || tableData.allow_force_delete === 1) tableContent = tableContent.replace('<<TRASHED_FILTER>>', 'TrashedFilter::make(),');
+            }
+            if (tableData.allow_pagination === 0) tableContent = tableContent.replace('<<DISABLED_PAGINATION>>', '->paginated(false)');
+            if (tableData.dv_separate_page === 1) tableContent = tableContent.replace('<<OPEN_TO_NEW_TAB>>', '->openRecordUrlInNewTab()');
+            if (tableData.enable_detail_view === 0) tableContent = tableContent.replace('<<DISABLED_DETAILVIEW>>', '->recordUrl(null)');
+            if (childrenWithCount.length > 0) {
+                const primaryKeyField = Object.values(tableData.fields).find(f => f.primary_key === 1);
+                const stringTypes = ['VARCHAR', 'CHAR', 'TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT'];
+                const firstStringField = Object.values(tableData.fields).find(f => stringTypes.includes(f.data_type.toUpperCase()));
+                const modalTitleField = firstStringField || primaryKeyField;
+
+                if (modalTitleField) {
+                    const showCountActions = childrenWithCount.map(r => {
+                        const childSingular = toSingularPascalCase(r.child_table_name);
+                        const childPluralSnake = pluralize.plural(r.child_table_name);
+                        return `
+                Action::make('show${childSingular}')
+                    ->label(fn (${modelNameSingular} \$record): string => '${toTitleCase(r.child_table_name)}: ' . \$record->${childPluralSnake}_count)
+                    ->button()->outlined()->color('info')
+                    ->tooltip('Show total of ${r.child_table_name.replace(/_/g, ' ')}')
+                    ->visible(fn (${modelNameSingular} \$record): bool => \$record->${childPluralSnake}_count > 0)
+                    ->modalHeading(fn (${modelNameSingular} \$record) => '${toTitleCase(modalTitleField.field_name)}: ' . \$record->${modalTitleField.field_name})
+                    ->modalSubmitAction(false)->modalCancelAction(false)->modalWidth('6xl')
+                    ->modalContent(fn (${modelNameSingular} \$record): View =>
+                        view('filament.components.modal-iframe', ['src' => ${childSingular}Resource::getUrl('index', ['${r.fk_child_field}' => \$record->${primaryKeyField ? primaryKeyField.field_name : 'id'}, 'iframe' => 1])])
+                    ),`;
+                    }).join('');
+                    tableContent = tableContent.replace('<<SHOW_COUNT_IN_TV>>', showCountActions);
+                }
+            }
+            if (tableData.allow_print_view === 1) tableContent = tableContent.replace('<<SHOW_ALL_FOR_PRINT>>', `->when((bool) request()->query('print'), fn (Table \$table) => \$table->paginated(false),)`);
+            
+            // --- FASA 2: PENJANAAN LAJUR JADUAL ---
+            const columnsCode = [];
+            const visibleFields = Object.values(tableData.fields)
+                .filter(field => field.hide_in_tv !== 1)
+                .sort((a, b) => (a.field_order ?? 999) - (b.field_order ?? 999));
+
+            for (const field of visibleFields) {
+                if (field.editable_in_tv === 1) {
+                    // Logik untuk lajur boleh edit akan ditambah di sini pada masa hadapan
+                    continue;
+                }
+
+                let controller;
+                if (field.media_type === 'image') controller = 'ImageColumn';
+                else if (['upload', 'gmap', 'youtube'].includes(field.media_type) || field.data_type === 'BOOLEAN') controller = 'IconColumn';
+                else controller = 'TextColumn';
+                
+                let fieldName;
+                const fkRelationship = relationships.find(r => r.child_table_name === tableName && r.fk_child_field === field.field_name);
+                if (fkRelationship) {
+                    const parentCamel = toSingularCamelCase(fkRelationship.parent_table_name);
+                    if(field.lookup_caption_1 && field.lookup_caption_2) {
+                        // Untuk carian dot notation, accessor di Model diperlukan. Kita guna nama gabungan.
+                        const combined = `${field.lookup_caption_1}_${field.lookup_caption_2}`;
+                        fieldName = `${parentCamel}.${combined}`;
+                    } else if (field.lookup_caption_1) {
+                        fieldName = `${parentCamel}.${field.lookup_caption_1}`;
+                    } else {
+                         fieldName = field.field_name;
+                    }
+                } else {
+                    fieldName = field.field_name;
+                }
+                
+                let lines = [`${controller}::make('${fieldName}')`];
+                lines.push(`->label('${toTitleCase(field.caption || field.field_name)}')`);
+                
+                if (field.allow_sorting === 1 && controller === 'TextColumn') lines.push('->sortable()');
+                if (field.enable_global_filter === 1 && !field.enable_individual_filter) lines.push('->searchable()');
+                if (!field.enable_global_filter && field.enable_individual_filter === 1) lines.push('->searchable(isIndividual: true, isGlobal: false)');
+                if (field.enable_global_filter === 1 && field.enable_individual_filter === 1) lines.push('->searchable(isIndividual: true)');
+                
+                if (field.tv_wrap_header === 1) lines.push('->wrapHeader()');
+                if (field.tv_wrap_text === 1 && controller === 'TextColumn') lines.push('->wrap()');
+                
+                if (field.tv_enable_toggle === 1) lines.push('->toggleable(isToggledHiddenByDefault: true)');
+                else lines.push('->toggleable()');
+
+                if (field.tv_description_tooltips === 1 && field.description) lines.push(`->tooltip('${field.description.replace(/'/g, "\\'")}')`);
+                
+                if (field.tv_font_weight && field.tv_font_weight !== 'Regular') lines.push(`->weight(FontWeight::${field.tv_font_weight})`);
+                if (field.tv_text_limit && controller === 'TextColumn') lines.push(`->limit(${field.tv_text_limit}, end: ' (more)')`);
+                
+                if (field.tv_alignment === 'center') lines.push('->alignCenter()');
+                else if (field.tv_alignment === 'right') lines.push('->alignEnd()');
+                
+                if (field.tv_text_color && controller === 'TextColumn') lines.push(`->color('${field.tv_text_color}')`);
+                if (field.tv_icon && controller !== 'ImageColumn') lines.push(`->icon('heroicon-o-${field.tv_icon}')`);
+                if (field.tv_icon_color && controller !== 'ImageColumn') lines.push(`->iconColor('${field.tv_icon_color}')`);
+                
+                if(field.tv_text_size && field.tv_text_size !== 'Normal' && controller === 'TextColumn') lines.push(`->size(TextSize::${field.tv_text_size})`);
+
+                const dateTypes = ['DATE', 'DATETIME', 'TIMESTAMP'];
+                if(dateTypes.includes(field.data_type)){
+                    const dateFormat = convertDateFormatToPhp(projectSettings.date_order);
+                    const timeFormat = projectSettings.use_24hr_format ? ' H:i:s' : ' h:i:s A';
+                    const format = field.data_type === 'DATE' ? dateFormat : dateFormat + timeFormat;
+                    lines.push(`->dateTime('${format}')`);
+                }
+                
+                const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
+                if(numericTypes.includes(field.data_type)){
+                    if(field.tv_currency_code) lines.push(`->money('${field.tv_currency_code}')`);
+                    else lines.push(`->numeric()`);
+                }
+
+                if(field.display_type === 'rich_html') lines.push(`->html()`);
+                if(field.display_type === 'check_box' && field.data_type === 'BOOLEAN') lines.push(`->boolean()`);
+
+                // Logik untuk Badge
+                if (field.display_type === 'options_list' && field.options_list_values) {
+                    const options = field.options_list_values.split(';;');
+                    if (options.length < 7) {
+                        const colors = ['gray', 'info', 'primary', 'warning', 'success', 'danger'];
+                        const matchArms = options.map((opt, i) => `        '${opt}' => '${colors[i % colors.length]}',`).join('\n');
+                        lines.push(`->badge()->color(fn (string $state): string => match ($state) {\n${matchArms}\n        })`);
+                    }
+                }
+                
+                columnsCode.push(lines.join('\n                    '));
+            }
+            tableContent = tableContent.replace('<<ALL_COLUMNS>>', columnsCode.join(',\n                '));
+
+            // --- FASA 3: PEMBERSIHAN ---
+            
+            tableContent = tableContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
+            tableContent = tableContent.replace(/<<.*?>>/g, '');
+
+            const allUseStatements = tableContent.match(/use (.*?);/g) || [];
+            let finalContent = tableContent;
+            for (const useStmt of allUseStatements) {
+                const match = useStmt.match(/use (?:.*\\)?(\w+)(?: as \w+)?;$/);
+                if (match) {
+                    const className = match[1];
+                    const regex = new RegExp(`\\b${className}\\b`, 'g');
+                    const occurrences = (finalContent.match(regex) || []).length;
+                    if (occurrences <= 1) { 
+                        finalContent = finalContent.replace(useStmt + '\n', '');
+                    }
+                }
+            }
+            tableContent = finalContent;
+
+            // Jana fail output
+            const resourceFolder = modelNamePlural;
+            const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'Tables');
+            fs.mkdirSync(outputFolderPath, { recursive: true });
+            const outputFileName = `${modelNamePlural}Table.php`;
+            const outputFilePath = path.join(outputFolderPath, outputFileName);
+            fs.writeFileSync(outputFilePath, tableContent);
+            console.log(`Table Class generated (Final): ${outputFilePath}`);
+        }
+        
+        return { success: true, message: 'Filament Table Classes (Final) generated successfully.' };
+
+    } catch (error) {
+        console.error('Failed to generate Filament Table Classes:', error);
+        return { success: false, message: error.message };
+    }
+}
+
 /**
  * Menjana fail RelationManager Laravel Filament untuk setiap hubungan one-to-many.
  * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.
@@ -2683,6 +2928,8 @@ async function generateFilamentRelationManagers(fullSchema, basePath) {
     }
 }
 
+// FIND AND REPLACE THIS ENTIRE HANDLER IN: main.js
+
 ipcMain.handle('generate-app', async () => {
     const win = BrowserWindow.getFocusedWindow();
     try {
@@ -2701,34 +2948,18 @@ ipcMain.handle('generate-app', async () => {
         const generatedAppPath = getGeneratedFolderPath();
         const filamentPath = path.join(generatedAppPath, 'filament_app');
 
-        // 1. Panggil fungsi penjana untuk Models
-        const modelResult = await generateFilamentModels(fullSchema, filamentPath);
-        if (!modelResult.success) throw new Error(`Model generation failed: ${modelResult.message}`);
-
-        // 2. Panggil fungsi penjana KHAS untuk model User
-        const userModelResult = await generateFilamentUserModel(fullSchema, filamentPath);
-        if (!userModelResult.success) throw new Error(`User Model generation failed: ${userModelResult.message}`);
-
-        // 3. Panggil fungsi penjana untuk Filament Resources
-        const resourceResult = await generateFilamentResources(fullSchema, filamentPath);
-        if (!resourceResult.success) throw new Error(`Filament Resource generation failed: ${resourceResult.message}`);
-
-        // 4. Panggil fungsi penjana untuk Filament List Pages
-        const listPageResult = await generateFilamentListPages(fullSchema, filamentPath);
-        if (!listPageResult.success) throw new Error(`Filament List Page generation failed: ${listPageResult.message}`);
-
-        // 5. Panggil fungsi penjana untuk Filament Create Pages
-        const createPageResult = await generateFilamentCreatePages(fullSchema, filamentPath);
-        if (!createPageResult.success) throw new Error(`Filament Create Page generation failed: ${createPageResult.message}`);
-
-        // 6. Panggil fungsi penjana untuk Filament Edit Pages
-        const editPageResult = await generateFilamentEditPages(fullSchema, filamentPath);
-        if (!editPageResult.success) throw new Error(`Filament Edit Page generation failed: ${editPageResult.message}`);
+        // Panggil semua fungsi penjana yang sedia ada...
+        await generateFilamentModels(fullSchema, filamentPath);
+        await generateFilamentUserModel(fullSchema, filamentPath);
+        await generateFilamentResources(fullSchema, filamentPath);
+        await generateFilamentListPages(fullSchema, filamentPath);
+        await generateFilamentCreatePages(fullSchema, filamentPath);
+        await generateFilamentEditPages(fullSchema, filamentPath);
+        await generateFilamentRelationManagers(fullSchema, filamentPath);
 
         // ▼▼▼ PENAMBAHAN BAHARU DI SINI ▼▼▼
-        // 7. Panggil fungsi penjana untuk Filament Relation Managers
-        const relationManagerResult = await generateFilamentRelationManagers(fullSchema, filamentPath);
-        if (!relationManagerResult.success) throw new Error(`Filament Relation Manager generation failed: ${relationManagerResult.message}`);
+        const tableClassResult = await generateFilamentTablesTable(fullSchema, filamentPath);
+        if (!tableClassResult.success) throw new Error(`Filament Table Class generation failed: ${tableClassResult.message}`);
         // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
         
         console.log(`All files generated successfully in: ${filamentPath}`);
