@@ -1078,7 +1078,9 @@ function importSchema(sql, projectId, dialect) {
                     if (fieldData.primary_key === 1 || protectedFields.includes(fieldName)) {
                         fieldData.hide_in_tv = 1;
                     }
-                    
+                    if (normalizedDataType === 'TEXT' || normalizedDataType === 'LONGTEXT') {
+                        fieldData.tv_wrap_text = 1;
+                    }   
                     fieldDataMap.set(fieldName, fieldData);
                 } else {
                     tableLevelRules.push(definition);
@@ -1898,152 +1900,124 @@ function convertDateFormatToPhp(formatString) {
  * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.
  * @param {string} basePath - Laluan asas ke folder 'generated'.
  */
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: main.js
+
 async function generateFilamentModels(fullSchema, basePath) {
     try {
-        const projectSettings = fullSchema.project;
-        const tables = fullSchema.database.table;
-        const relationships = fullSchema.database.relationships;
+        const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
 
         const templatePath = path.join(__dirname, 'templates/php/filament/app/Models/Model.template');
-        if (!fs.existsSync(templatePath)) {
-            throw new Error(`Template file not found at: ${templatePath}`);
-        }
+        if (!fs.existsSync(templatePath)) throw new Error(`Template file not found at: ${templatePath}`);
+        
         const templateContent = fs.readFileSync(templatePath, 'utf8');
 
         const modelsPath = path.join(basePath, 'app', 'Models');
         fs.mkdirSync(modelsPath, { recursive: true });
 
         for (const tableName in tables) {
-            if (tableName === 'users') {
-                continue; 
-            }
+            if (tableName === 'users') continue;
 
             const tableData = tables[tableName];
             let modelContent = templateContent;
             
-            if (projectSettings.module_fake_data === 1) {
-                modelContent = modelContent.replace('<<IMPORT_FACTORY>>', 'use Illuminate\\Database\\Eloquent\\Factories\\HasFactory;');
-                modelContent = modelContent.replace('<<TRAIT_FACTORY>>', 'use HasFactory;');
-            }
-            if (projectSettings.data_delete_type === 'soft') {
-                modelContent = modelContent.replace('<<IMPORT_SOFTDELETE>>', 'use Illuminate\\Database\\Eloquent\\SoftDeletes;');
-                modelContent = modelContent.replace('<<TRAIT_SOFTDELETE>>', 'use SoftDeletes;');
-            }
+            if (projectSettings.module_fake_data === 1) modelContent = modelContent.replace('<<IMPORT_FACTORY>>', 'use Illuminate\\Database\\Eloquent\\Factories\\HasFactory;').replace('<<TRAIT_FACTORY>>', 'use HasFactory;');
+            if (projectSettings.data_delete_type === 'soft') modelContent = modelContent.replace('<<IMPORT_SOFTDELETE>>', 'use Illuminate\\Database\\Eloquent\\SoftDeletes;').replace('<<TRAIT_SOFTDELETE>>', 'use SoftDeletes;');
             if (projectSettings.module_log_audit === 1) {
                 const importAudit = `use OwenIt\\Auditing\\Contracts\\Auditable;\nuse OwenIt\\Auditing\\Auditable as AuditableTrait;`;
-                modelContent = modelContent.replace('<<IMPORT_AUDIT>>', importAudit);
-                modelContent = modelContent.replace('<<CLASS_IMPLEMENTS_AUDIT>>', 'implements Auditable');
-                modelContent = modelContent.replace('<<TRAIT_AUDIT>>', 'use AuditableTrait;');
+                modelContent = modelContent.replace('<<IMPORT_AUDIT>>', importAudit).replace('<<CLASS_IMPLEMENTS_AUDIT>>', 'implements Auditable').replace('<<TRAIT_AUDIT>>', 'use AuditableTrait;');
             }
             
             const className = toSingularPascalCase(tableName);
             modelContent = modelContent.replace(/<<CLASS_NAME>>/g, className);
-
             modelContent = modelContent.replace('<<TABLE_NAME>>', tableName);
 
             const primaryKeyField = Object.values(tableData.fields).find(f => f.primary_key === 1);
             modelContent = modelContent.replace('<<PRIMARY_KEY>>', primaryKeyField ? primaryKeyField.field_name : 'id');
 
             const excludedFields = ['created_at', 'updated_at', 'deleted_at', primaryKeyField?.field_name];
-            const fillableFields = Object.values(tableData.fields)
-                .filter(field => !excludedFields.includes(field.field_name) && field.read_only !== 1)
-                .map(field => `\n        '${field.field_name}'`)
-                .join(',');
+            const fillableFields = Object.values(tableData.fields).filter(field => !excludedFields.includes(field.field_name) && field.read_only !== 1).map(field => `\n        '${field.field_name}'`).join(',');
             modelContent = modelContent.replace('<<ARRAY_EDITABLE_BYUSER_FIELDS>>', fillableFields ? `${fillableFields}\n    ` : '');
 
-            // ▼▼▼ PENAMBAHAN BAHARU DI SINI ▼▼▼
-            // Logik baharu untuk Laravel Casts
             const jsonFields = Object.values(tableData.fields).filter(field => field.data_type === 'JSON');
             if (jsonFields.length > 0) {
                 const castLines = jsonFields.map(field => `\n        '${field.field_name}' => 'array',`).join('');
-                const castsProperty = `
-    protected $casts = [${castLines}
-    ];`;
+                const castsProperty = `\n    protected \$casts = [${castLines}\n    ];`;
                 modelContent = modelContent.replace('<<MODEL_CASTS>>', castsProperty);
             }
-            // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
 
             let relationshipFunctions = [];
             relationships.filter(r => r.parent_table_name === tableName).forEach(rel => {
                 const childClassName = toSingularPascalCase(rel.child_table_name);
                 const foreignKey = rel.fk_child_field;
                 const localKey = rel.parent_field;
-
                 if (rel.relationship_type === 'one-to-one') {
                     const functionName = toSingularCamelCase(rel.child_table_name); 
-                    relationshipFunctions.push(`
-    public function ${functionName}()
-    {
-        return $this->hasOne(${childClassName}::class, '${foreignKey}', '${localKey}');
-    }
-`);
+                    relationshipFunctions.push(`\n    public function ${functionName}()\n    {\n        return \$this->hasOne(${childClassName}::class, '${foreignKey}', '${localKey}');\n    }`);
                 } else {
                     const functionName = toPluralCamelCase(rel.child_table_name); 
-                    relationshipFunctions.push(`
-    public function ${functionName}()
-    {
-        return $this->hasMany(${childClassName}::class, '${foreignKey}', '${localKey}');
-    }
-`);
+                    relationshipFunctions.push(`\n    public function ${functionName}()\n    {\n        return \$this->hasMany(${childClassName}::class, '${foreignKey}', '${localKey}');\n    }`);
                 }
             });
-
             relationships.filter(r => r.child_table_name === tableName).forEach(rel => {
                 const parentClassName = toSingularPascalCase(rel.parent_table_name);
                 const functionName = toSingularCamelCase(rel.parent_table_name); 
                 const foreignKey = rel.fk_child_field;
                 const ownerKey = rel.parent_field;
-                relationshipFunctions.push(`
-    public function ${functionName}()
-    {
-        return $this->belongsTo(${parentClassName}::class, '${foreignKey}', '${ownerKey}');
-    }
-`);
+                relationshipFunctions.push(`\n    public function ${functionName}()\n    {\n        return \$this->belongsTo(${parentClassName}::class, '${foreignKey}', '${ownerKey}');\n    }`);
             });
-
             modelContent = modelContent.replace('<<RELATIONSHIP_FUNCTIONS>>', relationshipFunctions.join(''));
-
+            
             let accessorFunctions = [];
-            const uniqueAccessors = new Set(); 
+            const uniqueAccessors = new Set();
             const childRelations = relationships.filter(r => r.parent_table_name === tableName);
-
             for (const rel of childRelations) {
                 const childTable = tables[rel.child_table_name];
                 if (!childTable) continue;
-
                 const fkField = childTable.fields[rel.fk_child_field];
                 if (!fkField) continue;
-
                 if (fkField.lookup_caption_1 && fkField.lookup_caption_2) {
                     const firstField = fkField.lookup_caption_1;
                     const secondField = fkField.lookup_caption_2;
                     const separator = fkField.lookup_separator || ' ';
-
                     const accessorKey = `${firstField}|${secondField}`;
-                    if (uniqueAccessors.has(accessorKey)) {
-                        continue; 
-                    }
+                    if (uniqueAccessors.has(accessorKey)) continue;
                     uniqueAccessors.add(accessorKey);
-
                     const lookupCaption = toPascalCase(firstField) + toPascalCase(secondField);
-                    
-                    const accessorCode = `
-    /**
-     * Combine multiple fields value for child lookups.
-     */
-    public function get${lookupCaption}Attribute(): string
-    {
-        return "{$this->${firstField}}${separator}({$this->${secondField}})";
-    }`;
+                    const accessorCode = `\n    public function get${lookupCaption}Attribute(): string\n    {\n        return "{\$this->${firstField}}${separator}({\$this->${secondField}})";\n    }`;
                     accessorFunctions.push(accessorCode);
                 }
             }
-            
             modelContent = modelContent.replace('<<COMBINE_FIELDS_VALUE>>', accessorFunctions.join('\n'));
             
-            // Bersihkan placeholder yang tidak digunakan dan baris kosong yang terhasil
-            modelContent = modelContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, ''); // Buang placeholder pada baris sendiri
-            modelContent = modelContent.replace(/<<.*?>>/g, ''); // Buang placeholder dalam baris (inline)
+            // ▼▼▼ PENAMBAHAN BAHARU HANYA DI SINI ▼▼▼
+            let helperMethods = [];
+            const hasYoutubeField = Object.values(tableData.fields).some(field => field.media_type === 'youtube');
+
+            if (hasYoutubeField) {
+                const youtubeHelper = `
+    public function getCleanYoutubeUrl(string \$fieldName): string
+    {
+        \$url = \$this->{\$fieldName};
+        if (blank(\$url)) {
+            return '';
+        }
+
+        preg_match('/(?:v=|\\/v\\/|watch\\?v=|youtu\\.be\\/|embed\\/)([a-zA-Z0-9_-]{11})/', \$url, \$matches);
+
+        if (isset(\$matches[1])) {
+            return 'https://www.youtube.com/embed/' . \$matches[1];
+        }
+
+        return \$url; // Fallback to original URL if no ID found
+    }
+`;
+                helperMethods.push(youtubeHelper);
+            }
+            modelContent = modelContent.replace('<<HELPER_METHODS>>', helperMethods.join('\n'));
+            // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
+
+            modelContent = modelContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
+            modelContent = modelContent.replace(/<<.*?>>/g, '');
 
             const outputFilePath = path.join(modelsPath, `${className}.php`);
             fs.writeFileSync(outputFilePath, modelContent);
@@ -2051,7 +2025,6 @@ async function generateFilamentModels(fullSchema, basePath) {
         }
         
         return { success: true, message: 'Models generated successfully.' };
-
     } catch (error) {
         console.error('Failed to generate Filament Models:', error);
         return { success: false, message: error.message };
@@ -2699,8 +2672,6 @@ async function generateFilamentEditPages(fullSchema, basePath) {
  * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.
  * @param {string} basePath - Laluan asas ke folder 'generated'.
  */
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: main.js
-
 async function generateFilamentTablesTable(fullSchema, basePath) {
     try {
         const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
@@ -2819,11 +2790,9 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                 if (controller === 'ImageColumn') {
                     if (field.tv_thumb_shape === 'circular') lines.push('->circular()');
                     else lines.push('->square()');
-
                     if (field.tv_thumb_width) lines.push(`->imageWidth(${field.tv_thumb_width})`);
                     if (field.tv_thumb_height) lines.push(`->imageHeight(${field.tv_thumb_height})`);
                     if (field.image_storage_provider) lines.push(`->disk('${field.image_storage_provider}')`);
-
                     if (field.tv_enable_zooming === 1) {
                         const zoomAction = `->action(
                     Action::make('Show full image')
@@ -2841,20 +2810,52 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                     if (field.media_type === 'upload') {
                         const iconValue = field.tv_icon || 'document-arrow-down';
                         const storageProvider = field.file_storage_provider || 'public';
-                        
                         lines.push(`->icon(fn ($state): ?string => $state ? 'heroicon-o-${iconValue}' : null)`);
                         lines.push(`->url(fn (?${modelNameSingular} \$record) => \$record?->${field.field_name} ? Storage::disk('${storageProvider}')->url(\$record->${field.field_name}) : null, shouldOpenInNewTab: true)`);
-                        
-                        if (field.tv_icon_color) {
-                            lines.push(`->color('${field.tv_icon_color}')`);
-                        }
-
-                    } else { 
+                        if (field.tv_icon_color) lines.push(`->color('${field.tv_icon_color}')`);
+                    } 
+                    // ▼▼▼ PENAMBAHBAIKAN UNTUK 'GMAP' & 'YOUTUBE' BERMULA DI SINI ▼▼▼
+                    else if (field.media_type === 'gmap') {
+                        if (field.tv_icon) lines.push(`->icon('heroicon-o-${field.tv_icon}')`);
+                        if (field.tv_icon_color) lines.push(`->color('${field.tv_icon_color}')`);
+                        const mapAction = `->action(
+                    Action::make('Show Google Map')
+                        ->modalHeading(false)
+                        ->modalFooter(null)
+                        ->modalContent(function (${modelNameSingular} \$record): HtmlString {
+                            if (blank(\$record->${field.field_name})) {
+                                return new HtmlString('<p class="text-center">No map link provided.</p>');
+                            }
+                            \$iframeCode = \$record->${field.field_name};
+                            \$responsiveIframeCode = str_replace('width="600"', 'width="100%"', \$iframeCode);
+                            \$responsiveIframeCode = str_replace('height="450"', 'height="450px"', \$responsiveIframeCode);
+                            return new HtmlString(\$responsiveIframeCode);
+                        })
+                )`;
+                        lines.push(mapAction);
+                    } 
+                    else if (field.media_type === 'youtube') {
+                        if (field.tv_icon) lines.push(`->icon('heroicon-o-${field.tv_icon}')`);
+                        if (field.tv_icon_color) lines.push(`->color('${field.tv_icon_color}')`);
+                        const youtubeAction = `->action(
+                    Action::make('Show Youtube Video')
+                        ->modalHeading(false)
+                        ->modalFooter(null)
+                        ->modalContent(fn (${modelNameSingular} \$record): HtmlString => new HtmlString(
+                            \$record->${field.field_name}
+                                ? '<iframe src="' . e(\$record->getCleanYoutubeUrl('${field.field_name}')) . '" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
+                                : '<p class="text-center">No video link provided.</p>'
+                        ))
+                )`;
+                        lines.push(youtubeAction);
+                    } 
+                    // ▲▲▲ PENAMBAHBAIKAN TAMAT ▲▲▲
+                    else { // Ini adalah untuk kes IconColumn yang lain (cth: BOOLEAN)
                         if (field.display_type === 'check_box' && field.data_type === 'BOOLEAN') {
                             lines.push('->boolean()');
                         }
                         if (field.tv_icon) lines.push(`->icon('heroicon-o-${field.tv_icon}')`);
-                        if (field.tv_icon_color) lines.push(`->iconColor('${field.tv_icon_color}')`);
+                        if (field.tv_icon_color) lines.push(`->color('${field.tv_icon_color}')`);
                     }
                 }
                 else { // TextColumn
@@ -2866,7 +2867,7 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                     if(field.tv_text_size && field.tv_text_size !== 'Normal') lines.push(`->size(TextSize::${field.tv_text_size})`);
                 }
 
-                // === Logik Umum & Format Data ===
+                // === Logik Umum & Format Data (Sama untuk semua jenis lajur) ===
                 
                 if (field.enable_global_filter === 1 && !field.enable_individual_filter) lines.push('->searchable()');
                 if (!field.enable_global_filter && field.enable_individual_filter === 1) lines.push('->searchable(isIndividual: true, isGlobal: false)');
@@ -2906,26 +2907,22 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                         lines.push(`->badge()->color(fn (string $state): string => match ($state) {\n${matchArms}\n        })`);
                     }
                 }
-
-                // ▼▼▼ PENAMBAHBAIKAN UNTUK 'JSON' BERMULA DI SINI ▼▼▼
+                
                 if (field.data_type === 'JSON') {
                     const jsonFormatter = `->formatStateUsing(function (?array \$state): ?string {
                     if (blank(\$state)) {
                         return null;
                     }
-                    // Cuba dapatkan kunci yang sama dengan nama lajur (untuk objek JSON tunggal)
                     if (isset(\$state['${field.field_name}'])) {
                         return \$state['${field.field_name}'];
                     }
-                    // Jika ia adalah array of objects (cth: dari Repeater), cuba gabungkan nilai-nilai
                     if (is_array(\$state) && isset(\$state[0]['${field.field_name}'])) {
                         return implode(', ', array_column(\$state, '${field.field_name}'));
                     }
-                    return ''; // Kembalikan string kosong jika format tidak dikenali
+                    return '';
                 })`;
                     lines.push(jsonFormatter);
                 }
-                // ▲▲▲ PENAMBAHBAIKAN TAMAT ▲▲▲
                 
                 columnsCode.push(lines.join('\n                    '));
             }
@@ -2969,6 +2966,7 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
         return { success: false, message: error.message };
     }
 }
+
 /**
  * Menjana fail RelationManager Laravel Filament untuk setiap hubungan one-to-many.
  * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.

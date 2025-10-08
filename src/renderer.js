@@ -51,7 +51,9 @@ import {
     initializeConstraintsTabHandlers,
     initializeIndexCheckboxHandler,
     initializeDisplayTypeRules,
-    initializeWrapTextRule
+    initializeWrapTextRule,
+    initializeMediaTypeDefaultRules,
+    initializeDataTypeDefaultRules
 } from './js/uiHandlers.js';
 import { initializeWorkflowBuilder } from './js/workflowBuilder.js';
 
@@ -149,7 +151,9 @@ export const SaveManager = {
                 // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
 
                 } else {
-                    this.clearQueue();
+                // Muat semula data di latar belakang untuk memastikan jsonData sentiasa terkini.
+                await loadProjectData(activeProject, { refreshMode: 'dataOnly' });
+                this.clearQueue();
                 }
 
                 if (activeElementId) {
@@ -509,7 +513,9 @@ window.addEventListener('beforeunload', (event) => {
 	
 	initializeCustomViews();
     initializeWrapTextRule();
-	
+    initializeMediaTypeDefaultRules();
+    initializeDataTypeDefaultRules(); 
+    
     // Setup Event Listeners
     const newProjectBtn = document.getElementById('new-project-btn');
     const saveNewProjectBtn = document.getElementById('save-new-project-btn');

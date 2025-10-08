@@ -679,6 +679,10 @@ Jenis 1: Jika field media_type = 'link' atau 'upload' atau 'image' dan hide_in_t
 1.34 Jika media_type = 'gmap', gantikan <<MAP_ICON>> dengan kod dibawah. Gantikan <<FIELD_NAME>> dengan field_name dan gantikan "<<MODEL_NAME>>" dengan PascalCase table_name.
 
 "
+->action(
+    Action::make('Show Google Map')
+        ->modalHeading(false)
+        ->modalFooter(null)
         ->modalContent(function (<<MODEL_NAME>> $record): HtmlString {
             if (blank($record-><<FIELD_NAME>>)) {
                 return new HtmlString('<p class="text-center">No map link provided.</p>');
@@ -695,7 +699,7 @@ Jenis 1: Jika field media_type = 'link' atau 'upload' atau 'image' dan hide_in_t
 
 "
 ->action(
-    Action::make('Show Video')
+    Action::make('Show Youtube Video')
         ->modalHeading(false)
         ->modalFooter(null)
         ->modalContent(fn (<<MODEL_NAME>> $record): HtmlString => new HtmlString(

@@ -2697,7 +2697,7 @@ export function initializeMediaTabHandlers() {
                 if (radio.value === 'upload') {
                     iconToSet = 'document-arrow-down';
                 } else if (radio.value === 'gmap') {
-                    iconToSet = 'map';
+                    iconToSet = 'map-pin';
                 } else if (radio.value === 'youtube') {
                     iconToSet = 'video-camera';
                 }
@@ -6505,6 +6505,61 @@ export function initializeWrapTextRule() {
                 title: "Validation Rule",
                 message: "The 'Enable wrap text' option must remain checked for the JSON data type to ensure readability in table view."
             });
+        }
+    });
+}
+
+// ADD THESE TWO NEW FUNCTIONS in src/js/uiHandlers.js
+
+/**
+ * Menetapkan nilai lalai secara automatik apabila pengguna menukar 'media_type'.
+ */
+export function initializeMediaTypeDefaultRules() {
+    const mediaRadios = document.querySelectorAll('input[name="fld-media-type"]');
+    if (!mediaRadios.length) return;
+
+    mediaRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            const selectedValue = radio.value;
+            
+            if (selectedValue === 'youtube' || selectedValue === 'gmap') {
+                const alignmentSelect = document.getElementById('fld-tv-alignment');
+                const iconColorSelect = document.getElementById('fld-tv-icon-color');
+                const descriptionTextarea = document.getElementById('fld-description');
+
+                if (alignmentSelect) {
+                    alignmentSelect.value = 'center';
+                    alignmentSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                if (iconColorSelect) {
+                    iconColorSelect.value = 'danger';
+                    iconColorSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                if (descriptionTextarea) {
+                    descriptionTextarea.value = 'Show youtube video/google maps location';
+                    descriptionTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+        });
+    });
+}
+
+/**
+ * Menetapkan nilai lalai secara automatik apabila pengguna menukar 'data_type'.
+ */
+export function initializeDataTypeDefaultRules() {
+    const dataTypeSelect = document.getElementById('fld-data-type');
+    if (!dataTypeSelect) return;
+
+    dataTypeSelect.addEventListener('change', () => {
+        const selectedType = dataTypeSelect.value.toUpperCase();
+        
+        if (selectedType === 'TEXT' || selectedType === 'LONGTEXT') {
+            const wrapTextCheckbox = document.getElementById('fld-tv-wrap-text');
+            if (wrapTextCheckbox && !wrapTextCheckbox.checked) {
+                wrapTextCheckbox.checked = true;
+                wrapTextCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+            }
         }
     });
 }
