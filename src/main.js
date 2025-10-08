@@ -1905,12 +1905,9 @@ function convertDateFormatToPhp(formatString) {
 async function generateFilamentModels(fullSchema, basePath) {
     try {
         const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
-
         const templatePath = path.join(__dirname, 'templates/php/filament/app/Models/Model.template');
         if (!fs.existsSync(templatePath)) throw new Error(`Template file not found at: ${templatePath}`);
-        
         const templateContent = fs.readFileSync(templatePath, 'utf8');
-
         const modelsPath = path.join(basePath, 'app', 'Models');
         fs.mkdirSync(modelsPath, { recursive: true });
 
@@ -1920,24 +1917,21 @@ async function generateFilamentModels(fullSchema, basePath) {
             const tableData = tables[tableName];
             let modelContent = templateContent;
             
+            // ... (logik sedia ada untuk traits, classname, fillable, casts tidak berubah) ...
             if (projectSettings.module_fake_data === 1) modelContent = modelContent.replace('<<IMPORT_FACTORY>>', 'use Illuminate\\Database\\Eloquent\\Factories\\HasFactory;').replace('<<TRAIT_FACTORY>>', 'use HasFactory;');
             if (projectSettings.data_delete_type === 'soft') modelContent = modelContent.replace('<<IMPORT_SOFTDELETE>>', 'use Illuminate\\Database\\Eloquent\\SoftDeletes;').replace('<<TRAIT_SOFTDELETE>>', 'use SoftDeletes;');
             if (projectSettings.module_log_audit === 1) {
                 const importAudit = `use OwenIt\\Auditing\\Contracts\\Auditable;\nuse OwenIt\\Auditing\\Auditable as AuditableTrait;`;
                 modelContent = modelContent.replace('<<IMPORT_AUDIT>>', importAudit).replace('<<CLASS_IMPLEMENTS_AUDIT>>', 'implements Auditable').replace('<<TRAIT_AUDIT>>', 'use AuditableTrait;');
             }
-            
             const className = toSingularPascalCase(tableName);
             modelContent = modelContent.replace(/<<CLASS_NAME>>/g, className);
             modelContent = modelContent.replace('<<TABLE_NAME>>', tableName);
-
             const primaryKeyField = Object.values(tableData.fields).find(f => f.primary_key === 1);
             modelContent = modelContent.replace('<<PRIMARY_KEY>>', primaryKeyField ? primaryKeyField.field_name : 'id');
-
             const excludedFields = ['created_at', 'updated_at', 'deleted_at', primaryKeyField?.field_name];
             const fillableFields = Object.values(tableData.fields).filter(field => !excludedFields.includes(field.field_name) && field.read_only !== 1).map(field => `\n        '${field.field_name}'`).join(',');
             modelContent = modelContent.replace('<<ARRAY_EDITABLE_BYUSER_FIELDS>>', fillableFields ? `${fillableFields}\n    ` : '');
-
             const jsonFields = Object.values(tableData.fields).filter(field => field.data_type === 'JSON');
             if (jsonFields.length > 0) {
                 const castLines = jsonFields.map(field => `\n        '${field.field_name}' => 'array',`).join('');
@@ -1945,28 +1939,56 @@ async function generateFilamentModels(fullSchema, basePath) {
                 modelContent = modelContent.replace('<<MODEL_CASTS>>', castsProperty);
             }
 
+            // ▼▼▼ BLOK HUBUNGAN YANG DIUBAH SUAI ▼▼▼
             let relationshipFunctions = [];
+
+            // Hubungan ke JADUAL LAIN (PARENT)
             relationships.filter(r => r.parent_table_name === tableName).forEach(rel => {
                 const childClassName = toSingularPascalCase(rel.child_table_name);
                 const foreignKey = rel.fk_child_field;
                 const localKey = rel.parent_field;
+                let functionName;
+
+                if (rel.parent_table_name === rel.child_table_name) {
+                    // KES KHAS: Hubungan kepada diri sendiri (Induk ke Anak)
+                    functionName = 'children'; // Guna nama 'children'
+                } else {
+                    // Kes biasa
+                    functionName = toPluralCamelCase(rel.child_table_name);
+                }
+
                 if (rel.relationship_type === 'one-to-one') {
-                    const functionName = toSingularCamelCase(rel.child_table_name); 
+                    if (rel.parent_table_name === rel.child_table_name) functionName = 'child'; // Singular untuk one-to-one
+                    else functionName = toSingularCamelCase(rel.child_table_name);
+                    
                     relationshipFunctions.push(`\n    public function ${functionName}()\n    {\n        return \$this->hasOne(${childClassName}::class, '${foreignKey}', '${localKey}');\n    }`);
                 } else {
-                    const functionName = toPluralCamelCase(rel.child_table_name); 
                     relationshipFunctions.push(`\n    public function ${functionName}()\n    {\n        return \$this->hasMany(${childClassName}::class, '${foreignKey}', '${localKey}');\n    }`);
                 }
             });
+
+            // Hubungan ke JADUAL LAIN (CHILD)
             relationships.filter(r => r.child_table_name === tableName).forEach(rel => {
                 const parentClassName = toSingularPascalCase(rel.parent_table_name);
-                const functionName = toSingularCamelCase(rel.parent_table_name); 
                 const foreignKey = rel.fk_child_field;
                 const ownerKey = rel.parent_field;
+                let functionName;
+
+                if (rel.parent_table_name === rel.child_table_name) {
+                    // KES KHAS: Hubungan kepada diri sendiri (Anak ke Induk)
+                    functionName = 'parent'; // Guna nama 'parent'
+                } else {
+                    // Kes biasa
+                    functionName = toSingularCamelCase(rel.parent_table_name);
+                }
+                
                 relationshipFunctions.push(`\n    public function ${functionName}()\n    {\n        return \$this->belongsTo(${parentClassName}::class, '${foreignKey}', '${ownerKey}');\n    }`);
             });
+            // ▲▲▲ TAMAT BLOK UBAH SUAI ▲▲▲
+
             modelContent = modelContent.replace('<<RELATIONSHIP_FUNCTIONS>>', relationshipFunctions.join(''));
             
+            // ... (logik accessor & helper methods dikekalkan) ...
             let accessorFunctions = [];
             const uniqueAccessors = new Set();
             const childRelations = relationships.filter(r => r.parent_table_name === tableName);
@@ -1988,33 +2010,13 @@ async function generateFilamentModels(fullSchema, basePath) {
                 }
             }
             modelContent = modelContent.replace('<<COMBINE_FIELDS_VALUE>>', accessorFunctions.join('\n'));
-            
-            // ▼▼▼ PENAMBAHAN BAHARU HANYA DI SINI ▼▼▼
             let helperMethods = [];
             const hasYoutubeField = Object.values(tableData.fields).some(field => field.media_type === 'youtube');
-
             if (hasYoutubeField) {
-                const youtubeHelper = `
-    public function getCleanYoutubeUrl(string \$fieldName): string
-    {
-        \$url = \$this->{\$fieldName};
-        if (blank(\$url)) {
-            return '';
-        }
-
-        preg_match('/(?:v=|\\/v\\/|watch\\?v=|youtu\\.be\\/|embed\\/)([a-zA-Z0-9_-]{11})/', \$url, \$matches);
-
-        if (isset(\$matches[1])) {
-            return 'https://www.youtube.com/embed/' . \$matches[1];
-        }
-
-        return \$url; // Fallback to original URL if no ID found
-    }
-`;
+                const youtubeHelper = `\n    public function getCleanYoutubeUrl(string \$fieldName): string\n    {\n        \$url = \$this->{\$fieldName};\n        if (blank(\$url)) {\n            return '';\n        }\n\n        preg_match('/(?:v=|\\/v\\/|watch\\?v=|youtu\\.be\\/|embed\\/)([a-zA-Z0-9_-]{11})/', \$url, \$matches);\n\n        if (isset(\$matches[1])) {\n            return 'https://www.youtube.com/embed/' . \$matches[1];\n        }\n\n        return \$url;\n    }\n`;
                 helperMethods.push(youtubeHelper);
             }
             modelContent = modelContent.replace('<<HELPER_METHODS>>', helperMethods.join('\n'));
-            // ▲▲▲ TAMAT PENAMBAHAN ▲▲▲
 
             modelContent = modelContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
             modelContent = modelContent.replace(/<<.*?>>/g, '');
@@ -2687,7 +2689,7 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
             let tableContent = templateContent;
             const tableData = tables[tableName];
             
-            // --- FASA 1: KERANGKA UTAMA (KOD ANDA YANG TELAH DIPERBAIKI) ---
+            // --- FASA 1: KERANGKA UTAMA ---
             
             const modelNameSingular = toSingularPascalCase(tableName);
             const modelNamePlural = toPluralPascalCase(tableName);
@@ -2702,6 +2704,13 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                     return `use App\\Filament\\Resources\\${childResourceFolder}\\${childSingular}Resource;`;
                 }).join('\n');
                 tableContent = tableContent.replace('<<IMPORT_RESOURCES>>', childImports);
+
+                const childPluralCamelNames = childrenWithCount.map(r => {
+                    const relName = r.parent_table_name === r.child_table_name ? 'children' : toPluralCamelCase(r.child_table_name);
+                    return `'${relName}'`;
+                }).join(', ');
+                const withCountFunction = `\n    public static function getEloquentQuery(): Builder\n    {\n        return parent::getEloquentQuery()->withCount([${childPluralCamelNames}]);\n    }`;
+                tableContent = tableContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', withCountFunction);
             }
 
             if (tableData.allow_mass_delete === 1) tableContent = tableContent.replace('<<ACTION_MASS_DELETE>>', 'BulkActionGroup::make([\n                DeleteBulkAction::make(),\n            ]),');
@@ -2727,17 +2736,16 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                 const stringTypes = ['VARCHAR', 'CHAR', 'TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT'];
                 const firstStringField = Object.values(tableData.fields).find(f => stringTypes.includes(f.data_type.toUpperCase()));
                 const modalTitleField = firstStringField || primaryKeyField;
-
                 if (modalTitleField) {
                     const showCountActions = childrenWithCount.map(r => {
                         const childSingular = toSingularPascalCase(r.child_table_name);
-                        const childPluralSnake = pluralize.plural(r.child_table_name);
+                        const countAttribute = r.parent_table_name === r.child_table_name ? 'children_count' : `${pluralize.plural(r.child_table_name)}_count`;
                         return `
                 Action::make('show${childSingular}')
-                    ->label(fn (${modelNameSingular} \$record): string => '${toTitleCase(r.child_table_name)}: ' . \$record->${childPluralSnake}_count)
+                    ->label(fn (${modelNameSingular} \$record): string => '${toTitleCase(r.child_table_name)}: ' . \$record->${countAttribute})
                     ->button()->outlined()->color('info')
                     ->tooltip('Show total of ${r.child_table_name.replace(/_/g, ' ')}')
-                    ->visible(fn (${modelNameSingular} \$record): bool => \$record->${childPluralSnake}_count > 0)
+                    ->visible(fn (${modelNameSingular} \$record): bool => \$record->${countAttribute} > 0)
                     ->modalHeading(fn (${modelNameSingular} \$record) => '${toTitleCase(modalTitleField.field_name)}: ' . \$record->${modalTitleField.field_name})
                     ->modalSubmitAction(false)->modalCancelAction(false)->modalWidth('6xl')
                     ->modalContent(fn (${modelNameSingular} \$record): View =>
@@ -2756,9 +2764,7 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                 .sort((a, b) => (a.field_order ?? 999) - (b.field_order ?? 999));
 
             for (const field of visibleFields) {
-                if (field.editable_in_tv === 1) {
-                    continue;
-                }
+                if (field.editable_in_tv === 1) continue;
 
                 let controller;
                 if (field.media_type === 'image') controller = 'ImageColumn';
@@ -2768,7 +2774,7 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                 let fieldName;
                 const fkRelationship = relationships.find(r => r.child_table_name === tableName && r.fk_child_field === field.field_name);
                 if (fkRelationship) {
-                    const parentCamel = toSingularCamelCase(fkRelationship.parent_table_name);
+                    const parentCamel = fkRelationship.parent_table_name === fkRelationship.child_table_name ? 'parent' : toSingularCamelCase(fkRelationship.parent_table_name);
                     if(field.lookup_caption_1 && field.lookup_caption_2) {
                         const combined = `${field.lookup_caption_1}_${field.lookup_caption_2}`;
                         fieldName = `${parentCamel}.${combined}`;
@@ -2784,8 +2790,6 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                 let lines = [`${controller}::make('${fieldName}')`];
                 lines.push(`->label('${toTitleCase(field.caption || field.field_name)}')`);
                 
-                // === Logik Khusus Mengikut Jenis Lajur ===
-
                 if (controller === 'ImageColumn') {
                     if (field.tv_thumb_shape === 'circular') lines.push('->circular()'); else lines.push('->square()');
                     if (field.tv_thumb_width) lines.push(`->imageWidth(${field.tv_thumb_width})`);
@@ -2827,11 +2831,14 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                 if (!field.enable_global_filter && field.enable_individual_filter === 1) lines.push('->searchable(isIndividual: true, isGlobal: false)');
                 if (field.enable_global_filter === 1 && field.enable_individual_filter === 1) lines.push('->searchable(isIndividual: true)');
                 if (field.tv_wrap_header === 1) lines.push('->wrapHeader()');
-                if (field.tv_enable_toggle === 1) lines.push('->toggleable(isToggledHiddenByDefault: true)'); else lines.push('->toggleable()');
+                if (field.tv_enable_toggle === 1) lines.push('->toggleable(isToggledHiddenByDefault: true)');
+                else lines.push('->toggleable()');
                 if (field.tv_description_tooltips === 1 && field.description) lines.push(`->tooltip('${field.description.replace(/'/g, "\\'")}')`);
                 if (field.tv_alignment === 'center') lines.push('->alignCenter()'); else if (field.tv_alignment === 'right') lines.push('->alignEnd()');
                 
                 const dateTypes = ['DATE', 'DATETIME', 'TIMESTAMP'];
+                const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
+
                 if(dateTypes.includes(field.data_type)){
                     const dateFormat = convertDateFormatToPhp(projectSettings.date_format);
                     const timeFormat = convertDateFormatToPhp(projectSettings.time_format);
@@ -2839,9 +2846,9 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                     lines.push(`->dateTime('${format}')`);
                 }
                 
-                const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
                 if(numericTypes.includes(field.data_type)){
-                    if(field.tv_currency_code) lines.push(`->money('${field.tv_currency_code}')`); else lines.push(`->numeric()`);
+                    if(field.tv_currency_code) lines.push(`->money('${field.tv_currency_code}')`);
+                    else lines.push(`->numeric()`);
                 }
 
                 if(field.display_type === 'rich_html') lines.push(`->html()`);
@@ -2865,9 +2872,7 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                     lines.push(jsonFormatter);
                 }
 
-                // ▼▼▼ PENAMBAHBAIKAN UNTUK 'SUMMARIES' BERMULA DI SINI ▼▼▼
                 const hasSummary = field.show_sum === 1 || field.show_avg_summary === 1 || field.show_count_summary === 1 || field.show_range_summary === 1;
-
                 if (hasSummary) {
                     let summaryLines = [];
                     if (field.show_sum === 1) summaryLines.push('Sum::make()');
@@ -2878,32 +2883,24 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                     }
                     if (field.show_range_summary === 1) {
                         const stringTypes = ['VARCHAR', 'CHAR', 'TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT'];
-                        if (numericTypes.includes(field.data_type)) {
-                            summaryLines.push('Range::make()');
-                        } else if (dateTypes.includes(field.data_type)) {
-                            summaryLines.push('Range::make()->minimalDateTimeDifference()');
-                        } else if (stringTypes.includes(field.data_type)) {
-                            if (!lines.some(line => line.includes('->sortable()'))) {
-                                lines.push('->sortable()'); // Diperlukan untuk textual range
-                            }
+                        if (numericTypes.includes(field.data_type)) summaryLines.push('Range::make()');
+                        else if (dateTypes.includes(field.data_type)) summaryLines.push('Range::make()->minimalDateTimeDifference()');
+                        else if (stringTypes.includes(field.data_type)) {
+                            if (!lines.some(line => line.includes('->sortable()'))) lines.push('->sortable()');
                             summaryLines.push('Range::make()->minimalTextualDifference()');
                         }
                     }
-                    
                     if(summaryLines.length > 0) {
-                        const summaryBlock = `->summarize([\n                        ${summaryLines.join(',\n                        ')}\n                    ])`;
-                        lines.push(summaryBlock);
+                        lines.push(`->summarize([\n                        ${summaryLines.join(',\n                        ')}\n                    ])`);
                     }
                 }
-                // ▲▲▲ PENAMBAHBAIKAN TAMAT ▲▲▲
                 
                 columnsCode.push(lines.join('\n                    '));
             }
-            
+
             tableContent = tableContent.replace('<<ALL_COLUMNS>>', columnsCode.join(',\n                '));
 
             // --- FASA 3: PEMBERSIHAN ---
-            
             tableContent = tableContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
             tableContent = tableContent.replace(/<<.*?>>/g, '');
 
@@ -2922,7 +2919,6 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
             }
             tableContent = finalContent;
 
-            // Jana fail output
             const resourceFolder = modelNamePlural;
             const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'Tables');
             fs.mkdirSync(outputFolderPath, { recursive: true });
@@ -2933,12 +2929,13 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
         }
         
         return { success: true, message: 'Filament Table Classes (Final) generated successfully.' };
-
     } catch (error) {
         console.error('Failed to generate Filament Table Classes:', error);
         return { success: false, message: error.message };
     }
 }
+
+// FIND AND REPLACE THIS ENTIRE FUNCTION IN: main.js
 
 /**
  * Menjana fail RelationManager Laravel Filament untuk setiap hubungan one-to-many.
@@ -2947,7 +2944,7 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
  */
 async function generateFilamentRelationManagers(fullSchema, basePath) {
     try {
-        const relationships = fullSchema.database.relationships;
+        const { database: { relationships } } = fullSchema;
 
         const templatePath = path.join(__dirname, 'templates/php/filament/app/Filament/Resources/RelationManagers.template');
         if (!fs.existsSync(templatePath)) {
@@ -2967,26 +2964,24 @@ async function generateFilamentRelationManagers(fullSchema, basePath) {
             // Sediakan semua variasi nama yang diperlukan
             const parentTablePlural = toPluralPascalCase(rel.parent_table_name);
             const childTablePlural = toPluralPascalCase(rel.child_table_name);
-            const childTablePluralCamel = toPluralCamelCase(rel.child_table_name);
             const childTableSingular = toSingularPascalCase(rel.child_table_name);
-
-            // 1. Gantikan <<TABLE_NAME_PLURAL>> (Parent)
+            
+            // Tentukan nama fungsi hubungan yang betul
+            const relationshipName = rel.parent_table_name === rel.child_table_name
+                ? 'children' // Guna 'children' untuk hubungan kepada diri sendiri
+                : toPluralCamelCase(rel.child_table_name); // Guna nama biasa untuk hubungan lain
+            
+            // Lakukan penggantian placeholder
             managerContent = managerContent.replace(/<<TABLE_NAME_PLURAL>>/g, parentTablePlural);
-            
-            // 2. Gantikan <<CHILD_TABLE_NAME_PLURAL>>
             managerContent = managerContent.replace(/<<CHILD_TABLE_NAME_PLURAL>>/g, childTablePlural);
-            
-            // 3. Gantikan <<CHILD_TABLE_NAME_PLURAL_CAMEL>>
-            managerContent = managerContent.replace(/<<CHILD_TABLE_NAME_PLURAL_CAMEL>>/g, childTablePluralCamel);
-
-            // 4. Gantikan <<CHILD_TABLE_NAME_SINGULAR>>
+            managerContent = managerContent.replace(/<<CHILD_TABLE_NAME_PLURAL_CAMEL>>/g, relationshipName);
             managerContent = managerContent.replace(/<<CHILD_TABLE_NAME_SINGULAR>>/g, childTableSingular);
 
-// Bersihkan placeholder yang tidak digunakan dan baris kosong yang terhasil
-            managerContent = managerContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, ''); // Buang placeholder pada baris sendiri
-            managerContent = managerContent.replace(/<<.*?>>/g, ''); // Buang placeholder dalam baris (inline)
+            // Bersihkan placeholder yang tidak digunakan dan baris kosong
+            managerContent = managerContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
+            managerContent = managerContent.replace(/<<.*?>>/g, '');
 
-            // 5. Jana fail output
+            // Jana fail output
             const resourceFolder = parentTablePlural;
             const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'RelationManagers');
             fs.mkdirSync(outputFolderPath, { recursive: true });
@@ -3005,8 +3000,6 @@ async function generateFilamentRelationManagers(fullSchema, basePath) {
         return { success: false, message: error.message };
     }
 }
-
-// FIND AND REPLACE THIS ENTIRE HANDLER IN: main.js
 
 ipcMain.handle('generate-app', async () => {
     const win = BrowserWindow.getFocusedWindow();

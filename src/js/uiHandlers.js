@@ -3418,12 +3418,21 @@ export function populateTableSettings(tableName) {
 }
 
 /**
- * Mengisi dropdown 'Parent table' dengan semua jadual lain dalam projek.
- * @param {string} currentTableName - Nama jadual semasa, untuk dikecualikan.
+ * Mengisi dropdown 'Parent table' dengan semua jadual lain dalam projek,
+ * termasuk opsyen untuk rujukan-kendiri (self-referencing).
+ * @param {string} currentTableName - Nama jadual semasa, untuk dikecualikan dan ditambah sebagai rujukan-kendiri.
  */
 function populateParentTableDropdown(currentTableName) {
     const parentTableSelect = document.getElementById('fld-lookup-parent-table');
     parentTableSelect.innerHTML = '<option value=""></option>'; // Kosongkan dan tambah opsyen lalai
+
+    // ▼▼▼ KOD BAHARU DI SINI ▼▼▼
+    // Tambah opsyen untuk rujukan-kendiri (self-referencing)
+    const selfOption = document.createElement('option');
+    selfOption.value = currentTableName;
+    selfOption.textContent = `${currentTableName} (self-referencing relationship)`;
+    parentTableSelect.appendChild(selfOption);
+    // ▲▲▲ TAMAT KOD BAHARU ▲▲▲
 
     const otherTables = allTableNames.filter(name => name !== currentTableName);
     otherTables.forEach(tableName => {
