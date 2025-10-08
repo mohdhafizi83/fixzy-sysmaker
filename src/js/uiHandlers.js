@@ -3469,6 +3469,9 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-unique', fieldData.unique);
     setElementValue('fld-is-indexed', fieldData.is_indexed);
     setElementValue('fld-show-sum', fieldData.show_sum);
+    setElementValue('fld-show-avg-summary', fieldData.show_avg_summary);
+    setElementValue('fld-show-count-summary', fieldData.show_count_summary);
+    setElementValue('fld-show-range-summary', fieldData.show_range_summary);
     setElementValue('fld-allow-sorting', fieldData.allow_sorting);
     setElementValue('fld-unsigned', fieldData.unsigned);
     setElementValue('fld-binary', fieldData.binary);
@@ -3513,6 +3516,9 @@ export function populateFieldSettings(tableName, fieldName) {
             individualFilter: document.getElementById('fld-enable-individual-filter-group'),
             rangeFilter: document.getElementById('fld-enable-range-filter-group'),
             showSum: document.getElementById('fld-show-sum-group'),
+            showAvg: document.getElementById('fld-show-avg-summary-group'),
+            showCount: document.getElementById('fld-show-count-summary-group'),
+            showRange: document.getElementById('fld-show-range-summary-group'),
             wrapText: document.getElementById('fld-tv-wrap-text-group'),
             textLimit: document.getElementById('fld-tv-text-limit-group'),
             textSize: document.getElementById('fld-tv-text-size-group'),
@@ -3530,7 +3536,7 @@ export function populateFieldSettings(tableName, fieldName) {
 
         const otherElementsToHide = [
             elementsToControl.allowSorting, elementsToControl.globalFilter, elementsToControl.individualFilter,
-            elementsToControl.rangeFilter, elementsToControl.showSum, elementsToControl.wrapText,
+            elementsToControl.rangeFilter, elementsToControl.showSum, elementsToControl.showAvg, elementsToControl.showCount, elementsToControl.showRange, elementsToControl.wrapText,
             elementsToControl.textLimit, elementsToControl.textSize, elementsToControl.fontWeight, elementsToControl.textColor
         ];
         otherElementsToHide.forEach(el => {
@@ -4346,197 +4352,175 @@ export function initializeHomepageMenuHandlers() {
 }
 
 // Fungsi ini akan dipanggil dari populateFieldSettings juga, jadi kita letakkan di luar
+// js/uiHandlers.js
+
 function applyDataTypeRules() {
     const dataTypeSelect = document.getElementById('fld-data-type');
     if (!dataTypeSelect) return;
 
     const selectedType = dataTypeSelect.value.toUpperCase();
-    
-    const displayTypeRadios = document.querySelectorAll('input[name="fld-display-type"]');
-    const checkBoxRadio = document.querySelector('input[name="fld-display-type"][value="check_box"]');
-    const repeaterRadio = document.querySelector('input[name="fld-display-type"][value="repeater"]');
 
-    if (checkBoxRadio && repeaterRadio) {
-        if (selectedType === 'BOOLEAN') {
-            if (!checkBoxRadio.checked) {
-                checkBoxRadio.checked = true;
-                checkBoxRadio.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-            displayTypeRadios.forEach(radio => { radio.disabled = radio.value !== 'check_box'; });
-        } else if (selectedType === 'JSON') {
-            if (!repeaterRadio.checked) {
-                repeaterRadio.checked = true;
-                repeaterRadio.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-            displayTypeRadios.forEach(radio => { radio.disabled = radio.value !== 'repeater'; });
-        } else {
-            displayTypeRadios.forEach(radio => { radio.disabled = false; });
-            checkBoxRadio.disabled = true;
-            repeaterRadio.disabled = true;
-            if (checkBoxRadio.checked || repeaterRadio.checked) {
-                const defaultRadio = document.querySelector('input[name="fld-display-type"][value="text_input"]');
-                if (defaultRadio) {
-                    defaultRadio.checked = true;
-                    defaultRadio.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-            }
-        }
-    }
-    
-    // ▼▼▼ PERUBAHAN DI SINI ▼▼▼
-    const wrapTextCheckbox = document.getElementById('fld-tv-wrap-text');
-    if (wrapTextCheckbox) {
-        if (selectedType === 'JSON') {
-            // Hanya pastikan ia ditanda, tetapi JANGAN disable
-            if (!wrapTextCheckbox.checked) {
-                wrapTextCheckbox.checked = true;
-                wrapTextCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-        }
-        // Pastikan ia sentiasa aktif untuk jenis data lain
-        wrapTextCheckbox.disabled = false; 
-    }
-    // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
-
-    const dateTypes = ['DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR'];
-    const isDateType = dateTypes.includes(selectedType);
-    const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
-    const isNumericType = numericTypes.includes(selectedType);
-
-    const dateTimeFormatGroup = document.getElementById('date-time-format-group');
-    const dateOnlyRadio = document.querySelector('input[name="fld-tv-date-time-format"][value="date_only"]');
-    const dateAndTimeRadio = document.querySelector('input[name="fld-tv-date-time-format"][value="date_and_time"]');
-    if (dateTimeFormatGroup && dateOnlyRadio && dateAndTimeRadio) {
-        dateTimeFormatGroup.classList.toggle('hidden', !isDateType);
-        if (isDateType) {
-            if (selectedType === 'DATE') {
-                dateOnlyRadio.checked = true;
-                dateAndTimeRadio.disabled = true;
-                dateOnlyRadio.disabled = false;
-            } else {
-                dateAndTimeRadio.disabled = false;
-                dateOnlyRadio.disabled = false;
-            }
-        }
-    }
-    const rangeFilterCheckbox = document.getElementById('fld-enable-range-filter');
-    if (rangeFilterCheckbox) {
-        rangeFilterCheckbox.disabled = !isDateType;
-        if (!isDateType) rangeFilterCheckbox.checked = false;
-    }
-    const currencyCodeGroup = document.getElementById('currency-code-group');
-    if (currencyCodeGroup) {
-        currencyCodeGroup.classList.toggle('hidden', !isNumericType);
-    }
-    
-    // --- Peraturan-peraturan lain (tidak berubah) ---
+    // 1. Kumpulkan semua rujukan elemen DOM di satu tempat
     const elements = {
-		length: document.getElementById('fld-length'),
+        length: document.getElementById('fld-length'),
         precision: document.getElementById('fld-precision'),
         autoIncrement: document.getElementById('fld-auto-increment'),
         unsigned: document.getElementById('fld-unsigned'),
         zeroFill: document.getElementById('fld-zero-fill'),
-        showSum: document.getElementById('fld-show-sum'),
         binary: document.getElementById('fld-binary'),
+        defaultValue: document.getElementById('fld-default-value'),
+        dbPropertiesFieldset: document.querySelector('#tab-field-general .fieldset-grid fieldset:nth-child(1)'),
         mediaRadios: document.querySelectorAll('input[name="fld-media-type"]'),
         behaviorOptions: document.querySelectorAll('#fld-media-link-behavior option[value="web_link"], #fld-media-link-behavior option[value="email_link"]'),
-		dbPropertiesFieldset: document.querySelector('#tab-field-general .fieldset-grid fieldset:nth-child(1)'),
-        defaultValue: document.getElementById('fld-default-value')
+        
+        // Checkbox Ringkasan
+        showSum: document.getElementById('fld-show-sum'),
+        showAvg: document.getElementById('fld-show-avg-summary'),
+        showCount: document.getElementById('fld-show-count-summary'),
+        showRange: document.getElementById('fld-show-range-summary'),
+        
+        // Elemen UI Lain
+        displayTypeRadios: document.querySelectorAll('input[name="fld-display-type"]'),
+        checkBoxRadio: document.querySelector('input[name="fld-display-type"][value="check_box"]'),
+        repeaterRadio: document.querySelector('input[name="fld-display-type"][value="repeater"]'),
+        wrapTextCheckbox: document.getElementById('fld-tv-wrap-text'),
+        dateTimeFormatGroup: document.getElementById('date-time-format-group'),
+        dateOnlyRadio: document.querySelector('input[name="fld-tv-date-time-format"][value="date_only"]'),
+        dateAndTimeRadio: document.querySelector('input[name="fld-tv-date-time-format"][value="date_and_time"]'),
+        rangeFilterCheckbox: document.getElementById('fld-enable-range-filter'),
+        currencyCodeGroup: document.getElementById('currency-code-group'),
+        multiSelectRadio: document.querySelector('input[name="fld-options-display"][value="multi"]'),
+        dropdownRadio: document.querySelector('input[name="fld-options-display"][value="dropdown"]'),
     };
 
+    // 2. Definisikan semua kategori jenis data di bahagian atas
+    const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
+    const integerTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'];
+    const floatTypes = ['DECIMAL', 'FLOAT', 'DOUBLE'];
+    const textTypes = ['CHAR', 'VARCHAR', 'TINYTEXT', 'TEXT', 'MEDIUMTEXT', 'LONGTEXT'];
+    const dateTypes = ['DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR'];
+    const binaryTypes = ['CHAR', 'VARCHAR', 'TINYBLOB', 'BLOB', 'MEDIUMBLOB', 'LONGBLOB'];
+    const typesWithoutLength = ['TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT', 'DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'BLOB', 'TINYBLOB', 'MEDIUMBLOB', 'LONGBLOB', 'BOOLEAN', 'JSON'];
+    
+    // 3. Buat pembolehubah boolean untuk semakan yang mudah
+    const isNumeric = numericTypes.includes(selectedType);
+    const isText = textTypes.includes(selectedType);
+    const isDate = dateTypes.includes(selectedType);
+    const isBoolean = selectedType === 'BOOLEAN';
+    const isIntegerOnly = integerTypes.includes(selectedType);
+    const isFloatOnly = floatTypes.includes(selectedType);
+
+    // 4. Reset keadaan: Aktifkan semua elemen dahulu
     Object.values(elements).forEach(el => {
-        if (el && el.forEach) {
-            el.forEach(item => { item.disabled = false; item.hidden = false; });
-        } else if (el) {
+        if (el && el.forEach) { // Untuk NodeList seperti radio buttons
+            el.forEach(item => { if(item) item.disabled = false; });
+        } else if (el) { // Untuk elemen tunggal
             el.disabled = false;
         }
     });
-    
     if (elements.dbPropertiesFieldset) {
         elements.dbPropertiesFieldset.classList.remove('fieldset-disabled');
     }
-	
-    const typesWithoutLength = ['TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT', 'DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'BLOB', 'TINYBLOB', 'MEDIUMBLOB', 'LONGBLOB', 'BOOLEAN', 'JSON'];
-    if (typesWithoutLength.includes(selectedType)) {
-        if (elements.length) {
-            elements.length.disabled = true;
-            elements.length.value = '';
+
+    // 5. Laksanakan semua peraturan logik secara berasingan
+
+    // PERATURAN BARU ANDA: Logik untuk Checkbox Ringkasan
+    if (elements.showSum) elements.showSum.disabled = !isNumeric;
+    if (elements.showAvg) elements.showAvg.disabled = !isNumeric;
+    if (elements.showCount) elements.showCount.disabled = !(isNumeric || isText || isBoolean);
+    if (elements.showRange) elements.showRange.disabled = !(isNumeric || isText || isDate);
+
+    // Peraturan untuk "Display As" (Checkbox/Repeater)
+    if (elements.checkBoxRadio && elements.repeaterRadio) {
+        if (isBoolean) {
+            if (!elements.checkBoxRadio.checked) elements.checkBoxRadio.checked = true;
+            elements.displayTypeRadios.forEach(radio => { radio.disabled = radio.value !== 'check_box'; });
+        } else if (selectedType === 'JSON') {
+            if (!elements.repeaterRadio.checked) elements.repeaterRadio.checked = true;
+            elements.displayTypeRadios.forEach(radio => { radio.disabled = radio.value !== 'repeater'; });
+        } else {
+            elements.checkBoxRadio.disabled = true;
+            elements.repeaterRadio.disabled = true;
+            if (elements.checkBoxRadio.checked || elements.repeaterRadio.checked) {
+                const defaultRadio = document.querySelector('input[name="fld-display-type"][value="text_input"]');
+                if (defaultRadio) defaultRadio.checked = true;
+            }
         }
     }
 
+    // Peraturan untuk "Wrap Text"
+    if (elements.wrapTextCheckbox) {
+        if (selectedType === 'JSON' && !elements.wrapTextCheckbox.checked) {
+            elements.wrapTextCheckbox.checked = true;
+        }
+    }
+
+    // Peraturan untuk Format Tarikh/Masa
+    if (elements.dateTimeFormatGroup && elements.dateOnlyRadio && elements.dateAndTimeRadio) {
+        elements.dateTimeFormatGroup.classList.toggle('hidden', !isDate);
+        if (isDate) {
+            elements.dateAndTimeRadio.disabled = (selectedType === 'DATE');
+            if (selectedType === 'DATE') elements.dateOnlyRadio.checked = true;
+        }
+    }
+
+    // Peraturan untuk Penapis Julat (Range Filter)
+    if (elements.rangeFilterCheckbox) {
+        elements.rangeFilterCheckbox.disabled = !isDate;
+        if (!isDate) elements.rangeFilterCheckbox.checked = false;
+    }
+
+    // Peraturan untuk Kod Mata Wang
+    if (elements.currencyCodeGroup) {
+        elements.currencyCodeGroup.classList.toggle('hidden', !isNumeric);
+    }
+    
+    // Peraturan untuk Length & Precision
+    if (elements.length && typesWithoutLength.includes(selectedType)) {
+        elements.length.disabled = true;
+        elements.length.value = '';
+    }
+    if (elements.precision) {
+        elements.precision.disabled = !isFloatOnly;
+    }
+
+    // Peraturan untuk Auto Increment
     if (elements.autoIncrement && elements.defaultValue) {
         if (elements.autoIncrement.checked) {
             elements.defaultValue.disabled = true;
             elements.defaultValue.value = '';
         }
+        elements.autoIncrement.disabled = !isIntegerOnly;
     }
-	
-    const numericAndDate = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'FLOAT', 'DOUBLE', 'DECIMAL', 'DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR', 'BOOLEAN'];
-    const integerOnly = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'];
-    const floatOnly = ['FLOAT', 'DOUBLE', 'DECIMAL'];
-    const dateOnly = ['DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR'];
-    const binaryString = ['CHAR', 'VARCHAR', 'TINYBLOB', 'BLOB', 'MEDIUMBLOB', 'LONGBLOB'];
-    const textOnly = ['TINYTEXT', 'TEXT', 'MEDIUMTEXT', 'LONGTEXT'];
 
-    if (numericAndDate.includes(selectedType) || selectedType === 'JSON') {
+    // Peraturan untuk Unsigned, Zero Fill, Binary
+    if(elements.unsigned) elements.unsigned.disabled = !isNumeric;
+    if(elements.zeroFill) elements.zeroFill.disabled = !isIntegerOnly;
+    if(elements.binary) elements.binary.disabled = !binaryTypes.includes(selectedType);
+    
+    // Peraturan untuk Media
+    if ([...numericTypes, ...dateTypes, 'JSON', 'BOOLEAN'].includes(selectedType)) {
         elements.mediaRadios.forEach(radio => { if (radio.value !== 'link') radio.disabled = true; });
         elements.behaviorOptions.forEach(opt => opt.hidden = true);
     }
-    if (integerOnly.includes(selectedType) || selectedType === 'BOOLEAN') {
-        if (elements.binary) elements.binary.disabled = true;
-        if (elements.precision) elements.precision.disabled = true;
+
+    // Peraturan untuk Fieldset
+    if (['TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT', 'BLOB', 'TINYBLOB', 'MEDIUMBLOB', 'LONGBLOB', 'JSON'].includes(selectedType)) {
+        if (elements.dbPropertiesFieldset) elements.dbPropertiesFieldset.classList.add('fieldset-disabled');
     }
-    if (floatOnly.includes(selectedType)) {
-        if (elements.binary) elements.binary.disabled = true;
-        if (elements.autoIncrement) elements.autoIncrement.disabled = true;
-        if (elements.precision) elements.precision.disabled = false;
-    }
-    if (dateOnly.includes(selectedType)) {
-        if (elements.autoIncrement) elements.autoIncrement.disabled = true;
-        if (elements.unsigned) elements.unsigned.disabled = true;
-        if (elements.zeroFill) elements.zeroFill.disabled = true;
-        if (elements.showSum) elements.showSum.disabled = true;
-        if (elements.binary) elements.binary.disabled = true;
-        if (elements.precision) elements.precision.disabled = true;
-    }
-    if (binaryString.includes(selectedType) || textOnly.includes(selectedType) || selectedType === 'JSON') {
-        if (elements.autoIncrement) elements.autoIncrement.disabled = true;
-        if (elements.unsigned) elements.unsigned.disabled = true;
-        if (elements.zeroFill) elements.zeroFill.disabled = true;
-        if (elements.showSum) elements.showSum.disabled = true;
-        if (elements.precision) elements.precision.disabled = true;
-    }
-     if (binaryString.includes(selectedType)) {
-         if (elements.binary) elements.binary.disabled = true;
-     }
-	 
-    if (selectedType === 'VARCHAR') {
-        if (!elements.length.value) elements.length.value = 255;
-    }
-    if (selectedType === 'INT') {
-        elements.unsigned.checked = true;
-    }
+
+    // Peraturan untuk Nilai Lalai (Auto-set)
+    if (selectedType === 'VARCHAR' && !elements.length.value) elements.length.value = 255;
+    if (selectedType === 'INT') elements.unsigned.checked = true;
     if (selectedType === 'DECIMAL') {
         if (!elements.length.value) elements.length.value = 10;
         if (!elements.precision.value) elements.precision.value = 2;
     }
-	
-    if (textOnly.includes(selectedType) || binaryString.includes(selectedType) || selectedType === 'JSON') {
-        if(selectedType !== 'CHAR' && selectedType !== 'VARCHAR') {
-             if (elements.dbPropertiesFieldset) elements.dbPropertiesFieldset.classList.add('fieldset-disabled');
-        }
-    }
-	
-    const multiSelectRadio = document.querySelector('input[name="fld-options-display"][value="multi"]');
-    const dropdownRadio = document.querySelector('input[name="fld-options-display"][value="dropdown"]');
 
-    if (multiSelectRadio && multiSelectRadio.checked) {
-        const currentDataType = document.getElementById('fld-data-type').value.toUpperCase();
-        const allowedTypes = ['TEXT', 'BLOB'];
-        const isAllowed = allowedTypes.some(type => currentDataType.includes(type));
-
-        if (!isAllowed) {
-            dropdownRadio.checked = true;
+    // Peraturan untuk Multi-select
+    if (elements.multiSelectRadio && elements.multiSelectRadio.checked) {
+        if (!['TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT', 'BLOB', 'TINYBLOB', 'MEDIUMBLOB', 'LONGBLOB'].includes(selectedType)) {
+            if(elements.dropdownRadio) elements.dropdownRadio.checked = true;
         }
     }
 }

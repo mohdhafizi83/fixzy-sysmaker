@@ -565,6 +565,7 @@ PENTING: Seterusnya ini proses looping melibatkan kesemua fields yang terdapat d
     <<FIELD_LABEL>>
     <<IMAGE_TABLE_HEIGHT>>
     <<IMAGE_TABLE_WIDTH>>
+    <<SHOW_SUMMARIES>>
     <<OPTIONLIST_BADGE>>
     <<JSON_REPEATER_SHOW>>
     <<DATETIME_FIELD>>
@@ -709,6 +710,18 @@ Jenis 1: Jika field media_type = 'link' atau 'upload' atau 'image' dan hide_in_t
         ))
 )
 "
+
+1.35 Seterunya ialah untuk generate kod summary bagi setiap field. Jika show_sum = 1 atau show_avg_summary = 1 atau show_count_summary = 1 atau show_range_summary = 1, gantikan <<SHOW_SUMMARIES>> dengan kod dibawah. Jika show_sum = 1, gantikan <<SHOW_SUM_SUMMARY>> dengan "Sum::make()". Jika show_avg_summary = 1, gantikan <<SHOW_AVG_SUMMARY>> dengan "Average::make()". Jika show_count_summary = 1 dan data_type = BOOLEAN, gantikan <<SHOW_COUNT_SUMMARY>> dengan "Count::make()->icons()". Jika show_count_summary = 1 dan data_type bukan BOOLEAN, gantikan <<SHOW_COUNT_SUMMARY>> dengan "Count::make()". Jika show_range_summary = 1 dan data_type jenis numeric, gantikan <<SHOW_RANGE_SUMMARY>> dengan "Range::make()". Jika show_range_summary = 1 dan data_type = date time, gantikan <<SHOW_RANGE_SUMMARY>> dengan "Range::make()->minimalDateTimeDifference()". Jika show_range_summary = 1 dan data_type = string text, gantikan <<SHOW_RANGE_SUMMARY>> dengan "Range::make()->minimalTextualDifference()".
+"
+    ->summarize([
+        <<SHOW_SUM_SUMMARY>>
+        <<SHOW_AVG_SUMMARY>>
+        <<SHOW_COUNT_SUMMARY>>
+        <<SHOW_RANGE_SUMMARY>>
+    ])
+"
+
+
 
 Gantikan <<ALL_COLUMNS>> dengan kesemua janaan setiap fields diatas.
 

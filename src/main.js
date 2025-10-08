@@ -2757,7 +2757,6 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
 
             for (const field of visibleFields) {
                 if (field.editable_in_tv === 1) {
-                    // Logik untuk lajur boleh edit akan ditambah di sini pada masa hadapan
                     continue;
                 }
 
@@ -2788,77 +2787,34 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                 // === Logik Khusus Mengikut Jenis Lajur ===
 
                 if (controller === 'ImageColumn') {
-                    if (field.tv_thumb_shape === 'circular') lines.push('->circular()');
-                    else lines.push('->square()');
+                    if (field.tv_thumb_shape === 'circular') lines.push('->circular()'); else lines.push('->square()');
                     if (field.tv_thumb_width) lines.push(`->imageWidth(${field.tv_thumb_width})`);
                     if (field.tv_thumb_height) lines.push(`->imageHeight(${field.tv_thumb_height})`);
                     if (field.image_storage_provider) lines.push(`->disk('${field.image_storage_provider}')`);
                     if (field.tv_enable_zooming === 1) {
-                        const zoomAction = `->action(
-                    Action::make('Show full image')
-                        ->modalHeading(false)->modalFooter(null)
-                        ->modalContent(fn (${modelNameSingular} \$record): HtmlString => new HtmlString(
-                            \$record->${field.field_name}
-                                ? '<img src="' . Storage::url(\$record->${field.field_name}) . '" alt="${toTitleCase(field.caption || field.field_name)}" style="width: 100%;">'
-                                : '<p class="text-center">No image uploaded.</p>'
-                        ))
-                )`;
-                        lines.push(zoomAction);
+                        lines.push(`->action(\n                    Action::make('Show full image')\n                        ->modalHeading(false)->modalFooter(null)\n                        ->modalContent(fn (${modelNameSingular} \$record): HtmlString => new HtmlString(\n                            \$record->${field.field_name}\n                                ? '<img src="' . Storage::url(\$record->${field.field_name}) . '" alt="${toTitleCase(field.caption || field.field_name)}" style="width: 100%;">'\n                                : '<p class="text-center">No image uploaded.</p>'\n                        ))\n                )`);
                     }
-                }
-                else if (controller === 'IconColumn') {
+                } else if (controller === 'IconColumn') {
                     if (field.media_type === 'upload') {
                         const iconValue = field.tv_icon || 'document-arrow-down';
                         const storageProvider = field.file_storage_provider || 'public';
-                        lines.push(`->icon(fn ($state): ?string => $state ? 'heroicon-o-${iconValue}' : null)`);
+                        lines.push(`->icon(fn (\$state): ?string => \$state ? 'heroicon-o-${iconValue}' : null)`);
                         lines.push(`->url(fn (?${modelNameSingular} \$record) => \$record?->${field.field_name} ? Storage::disk('${storageProvider}')->url(\$record->${field.field_name}) : null, shouldOpenInNewTab: true)`);
                         if (field.tv_icon_color) lines.push(`->color('${field.tv_icon_color}')`);
-                    } 
-                    // ▼▼▼ PENAMBAHBAIKAN UNTUK 'GMAP' & 'YOUTUBE' BERMULA DI SINI ▼▼▼
-                    else if (field.media_type === 'gmap') {
+                    } else if (field.media_type === 'gmap') {
                         if (field.tv_icon) lines.push(`->icon('heroicon-o-${field.tv_icon}')`);
                         if (field.tv_icon_color) lines.push(`->color('${field.tv_icon_color}')`);
-                        const mapAction = `->action(
-                    Action::make('Show Google Map')
-                        ->modalHeading(false)
-                        ->modalFooter(null)
-                        ->modalContent(function (${modelNameSingular} \$record): HtmlString {
-                            if (blank(\$record->${field.field_name})) {
-                                return new HtmlString('<p class="text-center">No map link provided.</p>');
-                            }
-                            \$iframeCode = \$record->${field.field_name};
-                            \$responsiveIframeCode = str_replace('width="600"', 'width="100%"', \$iframeCode);
-                            \$responsiveIframeCode = str_replace('height="450"', 'height="450px"', \$responsiveIframeCode);
-                            return new HtmlString(\$responsiveIframeCode);
-                        })
-                )`;
-                        lines.push(mapAction);
-                    } 
-                    else if (field.media_type === 'youtube') {
+                        lines.push(`->action(\n                    Action::make('Show Google Map')\n                        ->modalHeading(false)->modalFooter(null)\n                        ->modalContent(function (${modelNameSingular} \$record): HtmlString {\n                            if (blank(\$record->${field.field_name})) { return new HtmlString('<p class="text-center">No map link provided.</p>'); }\n                            \$iframeCode = \$record->${field.field_name};\n                            \$responsiveIframeCode = str_replace('width="600"', 'width="100%"', \$iframeCode);\n                            \$responsiveIframeCode = str_replace('height="450"', 'height="450px"', \$responsiveIframeCode);\n                            return new HtmlString(\$responsiveIframeCode);\n                        })\n                )`);
+                    } else if (field.media_type === 'youtube') {
                         if (field.tv_icon) lines.push(`->icon('heroicon-o-${field.tv_icon}')`);
                         if (field.tv_icon_color) lines.push(`->color('${field.tv_icon_color}')`);
-                        const youtubeAction = `->action(
-                    Action::make('Show Youtube Video')
-                        ->modalHeading(false)
-                        ->modalFooter(null)
-                        ->modalContent(fn (${modelNameSingular} \$record): HtmlString => new HtmlString(
-                            \$record->${field.field_name}
-                                ? '<iframe src="' . e(\$record->getCleanYoutubeUrl('${field.field_name}')) . '" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
-                                : '<p class="text-center">No video link provided.</p>'
-                        ))
-                )`;
-                        lines.push(youtubeAction);
-                    } 
-                    // ▲▲▲ PENAMBAHBAIKAN TAMAT ▲▲▲
-                    else { // Ini adalah untuk kes IconColumn yang lain (cth: BOOLEAN)
-                        if (field.display_type === 'check_box' && field.data_type === 'BOOLEAN') {
-                            lines.push('->boolean()');
-                        }
+                        lines.push(`->action(\n                    Action::make('Show Youtube Video')\n                        ->modalHeading(false)->modalFooter(null)\n                        ->modalContent(fn (${modelNameSingular} \$record): HtmlString => new HtmlString(\n                            \$record->${field.field_name}\n                                ? '<iframe src="' . e(\$record->getCleanYoutubeUrl('${field.field_name}')) . '" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'\n                                : '<p class="text-center">No video link provided.</p>'\n                        ))\n                )`);
+                    } else { 
+                        if (field.display_type === 'check_box' && field.data_type === 'BOOLEAN') lines.push('->boolean()');
                         if (field.tv_icon) lines.push(`->icon('heroicon-o-${field.tv_icon}')`);
                         if (field.tv_icon_color) lines.push(`->color('${field.tv_icon_color}')`);
                     }
-                }
-                else { // TextColumn
+                } else { // TextColumn
                     if (field.allow_sorting === 1) lines.push('->sortable()');
                     if (field.tv_wrap_text === 1) lines.push('->wrap()');
                     if (field.tv_font_weight && field.tv_font_weight !== 'Regular') lines.push(`->weight(FontWeight::${field.tv_font_weight})`);
@@ -2867,21 +2823,13 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                     if(field.tv_text_size && field.tv_text_size !== 'Normal') lines.push(`->size(TextSize::${field.tv_text_size})`);
                 }
 
-                // === Logik Umum & Format Data (Sama untuk semua jenis lajur) ===
-                
                 if (field.enable_global_filter === 1 && !field.enable_individual_filter) lines.push('->searchable()');
                 if (!field.enable_global_filter && field.enable_individual_filter === 1) lines.push('->searchable(isIndividual: true, isGlobal: false)');
                 if (field.enable_global_filter === 1 && field.enable_individual_filter === 1) lines.push('->searchable(isIndividual: true)');
-
                 if (field.tv_wrap_header === 1) lines.push('->wrapHeader()');
-                
-                if (field.tv_enable_toggle === 1) lines.push('->toggleable(isToggledHiddenByDefault: true)');
-                else lines.push('->toggleable()');
-
+                if (field.tv_enable_toggle === 1) lines.push('->toggleable(isToggledHiddenByDefault: true)'); else lines.push('->toggleable()');
                 if (field.tv_description_tooltips === 1 && field.description) lines.push(`->tooltip('${field.description.replace(/'/g, "\\'")}')`);
-                
-                if (field.tv_alignment === 'center') lines.push('->alignCenter()');
-                else if (field.tv_alignment === 'right') lines.push('->alignEnd()');
+                if (field.tv_alignment === 'center') lines.push('->alignCenter()'); else if (field.tv_alignment === 'right') lines.push('->alignEnd()');
                 
                 const dateTypes = ['DATE', 'DATETIME', 'TIMESTAMP'];
                 if(dateTypes.includes(field.data_type)){
@@ -2893,8 +2841,7 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                 
                 const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
                 if(numericTypes.includes(field.data_type)){
-                    if(field.tv_currency_code) lines.push(`->money('${field.tv_currency_code}')`);
-                    else lines.push(`->numeric()`);
+                    if(field.tv_currency_code) lines.push(`->money('${field.tv_currency_code}')`); else lines.push(`->numeric()`);
                 }
 
                 if(field.display_type === 'rich_html') lines.push(`->html()`);
@@ -2904,25 +2851,51 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                     if (options.length < 7) {
                         const colors = ['gray', 'info', 'primary', 'warning', 'success', 'danger'];
                         const matchArms = options.map((opt, i) => `        '${opt}' => '${colors[i % colors.length]}',`).join('\n');
-                        lines.push(`->badge()->color(fn (string $state): string => match ($state) {\n${matchArms}\n        })`);
+                        lines.push(`->badge()->color(fn (string \$state): string => match (\$state) {\n${matchArms}\n        })`);
                     }
                 }
                 
                 if (field.data_type === 'JSON') {
                     const jsonFormatter = `->formatStateUsing(function (?array \$state): ?string {
-                    if (blank(\$state)) {
-                        return null;
-                    }
-                    if (isset(\$state['${field.field_name}'])) {
-                        return \$state['${field.field_name}'];
-                    }
-                    if (is_array(\$state) && isset(\$state[0]['${field.field_name}'])) {
-                        return implode(', ', array_column(\$state, '${field.field_name}'));
-                    }
+                    if (blank(\$state)) { return null; }
+                    if (isset(\$state['${field.field_name}'])) { return \$state['${field.field_name}']; }
+                    if (is_array(\$state) && isset(\$state[0]['${field.field_name}'])) { return implode(', ', array_column(\$state, '${field.field_name}')); }
                     return '';
                 })`;
                     lines.push(jsonFormatter);
                 }
+
+                // ▼▼▼ PENAMBAHBAIKAN UNTUK 'SUMMARIES' BERMULA DI SINI ▼▼▼
+                const hasSummary = field.show_sum === 1 || field.show_avg_summary === 1 || field.show_count_summary === 1 || field.show_range_summary === 1;
+
+                if (hasSummary) {
+                    let summaryLines = [];
+                    if (field.show_sum === 1) summaryLines.push('Sum::make()');
+                    if (field.show_avg_summary === 1) summaryLines.push('Average::make()');
+                    if (field.show_count_summary === 1) {
+                        if (field.data_type === 'BOOLEAN') summaryLines.push('Count::make()->icons()');
+                        else summaryLines.push('Count::make()');
+                    }
+                    if (field.show_range_summary === 1) {
+                        const stringTypes = ['VARCHAR', 'CHAR', 'TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT'];
+                        if (numericTypes.includes(field.data_type)) {
+                            summaryLines.push('Range::make()');
+                        } else if (dateTypes.includes(field.data_type)) {
+                            summaryLines.push('Range::make()->minimalDateTimeDifference()');
+                        } else if (stringTypes.includes(field.data_type)) {
+                            if (!lines.some(line => line.includes('->sortable()'))) {
+                                lines.push('->sortable()'); // Diperlukan untuk textual range
+                            }
+                            summaryLines.push('Range::make()->minimalTextualDifference()');
+                        }
+                    }
+                    
+                    if(summaryLines.length > 0) {
+                        const summaryBlock = `->summarize([\n                        ${summaryLines.join(',\n                        ')}\n                    ])`;
+                        lines.push(summaryBlock);
+                    }
+                }
+                // ▲▲▲ PENAMBAHBAIKAN TAMAT ▲▲▲
                 
                 columnsCode.push(lines.join('\n                    '));
             }
