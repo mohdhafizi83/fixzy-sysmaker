@@ -1180,8 +1180,26 @@
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-dv-separate-page" name="tbl-dv-separate-page"> Display 'Record Form' in a separate page</label>
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-dv-hide-save-as-copy" name="tbl-dv-hide-save-as-copy"> Hide "Save As Copy"</label>
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-dv-sticky-buttons" name="tbl-dv-sticky-buttons" checked> Keep action buttons visible while scrolling</label>
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-dv-allow-add-from-homepage" name="tbl-dv-allow-add-from-homepage"> Allow adding new records from homepage</label>
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-dv-allow-add-from-homepage" name="tbl-dv-allow-add-from-homepage"> Allow adding new records from homepage</label>                                      
                                     </div>
+                                    
+<div class="form-group mt-2" style="border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+    <label>Grid layout of the form ('Record Form')</label>
+    <div class="radio-group-horizontal mt-1">
+        <label>
+            <input type="radio" name="tbl-column-grid-type" id="tbl-column-grid-dynamic" value="dynamic" checked>
+            Dynamic column grid
+        </label>
+        <label>
+            <input type="radio" name="tbl-column-grid-type" id="tbl-column-grid-static" value="static">
+            Static column grid
+        </label>
+    </div>
+    <div class="form-group mt-1" id="tbl-static-grid-columns-group" style="margin-left: 2rem;">
+        <label for="tbl-static-grid-columns">Number of grids</label>
+        <input type="number" id="tbl-static-grid-columns" name="tbl-static-grid-columns" value="2" min="1" max="4" style="max-width: 100px;">
+    </div>
+</div>
                                 </div>
                             </div>
                         </div>

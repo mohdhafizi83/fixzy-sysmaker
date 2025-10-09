@@ -472,7 +472,7 @@ Replace content RelationManagers.template seperti berikut:
 
 Seterusnya, bantu saya untuk bina script php laravel filament seperti dibawah. Pastikan fungsi ini independent atau fungsi baru:
 -----------------------------------------------------------------------
-6.Membina laravel filament fail Table (tidak termasuk jadual users)
+7.Membina laravel filament fail Table (tidak termasuk jadual users)
 -----------------------------------------------------------------------
 Proses generate laravel filament fail resources:
 - Copy content fail TablesTable.template di 'src/templates/php/filament/app/Filament/Resources'
@@ -752,3 +752,22 @@ Filter::make('Date Range')
 Buang kesemua import yang tidak digunakan didalam script ini selepas semua selesai di jana.
 
 24. Jana output di folder 'AppData.../generated/filament/app/Filament/Resources/<<RESOURCE_FOLDER>>/Tables' dengan nama plural PascalCase table_name value dengan extension php. Contoh table_name = pelajar_sekolah, fail terjana akan bernama PelajarSekolahsTable.php. <<RESOURCE_FOLDER>> pula ialah plural PascalCase table_name value. Path Fail sepatutnya 'AppData.../generated/filament/app/Filament/Resources/PelajarSekolahs/Tables/PelajarSekolahsTable.php'
+
+Seterusnya, bantu saya untuk bina script php laravel filament seperti dibawah. Pastikan fungsi ini independent atau fungsi baru:
+-----------------------------------------------------------------------
+8.Membina laravel filament fail Form (tidak termasuk jadual users)
+-----------------------------------------------------------------------
+Proses generate laravel filament fail resources:
+- Copy content fail SchemasForm.template di 'src/templates/php/filament/app/Filament/Resources'
+- Bandingkan dengan fungsi utama yang menyimpan keseluruhan maklumat dari database untuk proses seterusnya.
+
+Replace content SchemasForm.template seperti berikut:
+
+1. Gantikan <<TABLE_NAME_PLURAL>> dengan plural PascalCase parent table (table ini) table_name. Contoh parent table table_name = pelajar_sekolah, plural PascalCase ialah PelajarSekolahs.
+
+2. Gantikan <<TABLE_NAME_SINGULAR>> dengan singular PascalCase table_name. Contoh table_name = pelajar_sekolah, singular PascalCase ialah PelajarSekolah.
+
+3. Loop child table untuk table ini dan jika child table lookup_link_behavior bukan 'disable', gantikan <<IMPORT_RESOURCES>> dengan kod dibawah.  Ulang jika terdapat child table lain dengan lookup_link_behavior bukan 'disable'. Ganti <<CHILD_TABLE_NAME_PLURAL>> dengan plural PascalCase dan <<CHILD_TABLE_NAME_SINGULAR>> dengan singular PascalCase.
+"
+use App\Filament\Resources\<<CHILD_TABLE_NAME_PLURAL>>\<<CHILD_TABLE_NAME_SINGULAR>>Resource;
+"

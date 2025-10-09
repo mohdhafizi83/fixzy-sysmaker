@@ -47,6 +47,7 @@ import {
 	showImportErrorGuide,
 	initializeCustomViews,
 	populateParentChildTab,
+    initializeColumnGridHandlers,
     initializeUniqueFieldHandler,
     initializeConstraintsTabHandlers,
     initializeIndexCheckboxHandler,
@@ -512,6 +513,7 @@ window.addEventListener('beforeunload', (event) => {
 	initializeLookupFieldSaveHandler();	
 	
 	initializeCustomViews();
+    initializeColumnGridHandlers();
     initializeWrapTextRule();
     initializeMediaTypeDefaultRules();
     initializeDataTypeDefaultRules(); 

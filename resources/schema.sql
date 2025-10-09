@@ -82,6 +82,8 @@ CREATE TABLE tables (
     dv_hide_save_as_copy         INTEGER DEFAULT 0,
     dv_sticky_buttons            INTEGER DEFAULT 1,
     dv_allow_add_from_homepage   INTEGER DEFAULT 0,
+    column_grid_type             TEXT DEFAULT 'dynamic',
+    static_grid_columns          INTEGER DEFAULT 2,
     table_hook_workflow          TEXT,
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );

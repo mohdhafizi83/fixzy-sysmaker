@@ -1,0 +1,213 @@
+<?php
+namespace App\Filament\Resources\<<TABLE_NAME_PLURAL>>\Schemas;
+
+<<IMPORT_RESOURCES>>
+
+use Illuminate\Contracts\View\View;
+use Illuminate\Support\HtmlString;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Section;
+use Filament\Actions\Action;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Textarea;
+
+class <<TABLE_NAME_SINGULAR>>Form
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema->components([
+            Section::make("Kursus Information")
+                ->columns([
+                    "default" => 1,
+                    "md" => 2,
+                    //'xl' => 3,
+                ])
+                ->schema([
+                    Select::make("pelajar_id")
+                        ->relationship("pelajar", "nama_penuh")
+                        ->searchable()
+                        ->required()
+                        ->suffixActions([
+                            Action::make("view_pelajar")
+                                ->icon("heroicon-o-eye")
+                                ->modalContent(
+                                    fn(Get $get): ?View => $get("pelajar_id")
+                                        ? view(
+                                            "filament.components.modal-iframe",
+                                            [
+                                                "src" =>
+                                                    PelajarResource::getUrl(
+                                                        "edit",
+                                                        [
+                                                            "record" => $get(
+                                                                "pelajar_id"
+                                                            ),
+                                                        ]
+                                                    ) . "?iframe=1",
+                                            ]
+                                        )
+                                        : null
+                                )
+                                ->modalWidth("6xl")
+                                ->modalSubmitAction(false)
+                                // PADAM BARIS ->modalCancelAction(true)
+                                ->hidden(
+                                    fn(Get $get): bool => !$get("pelajar_id")
+                                ),
+
+                            Action::make("create_pelajar")
+                                ->icon("heroicon-o-plus")
+                                ->modalContent(
+                                    fn(): View => view(
+                                        "filament.components.modal-iframe",
+                                        [
+                                            "src" =>
+                                                PelajarResource::getUrl(
+                                                    "create"
+                                                ) . "?iframe=1",
+                                        ]
+                                    )
+                                )
+                                ->modalWidth("6xl")
+                                ->modalSubmitAction(false),
+                            // PADAM BARIS ->modalCancelAction(true)
+                        ]),
+
+                    Select::make("kursus_id")
+                        ->relationship("kursus", "nama_kursus")
+                        ->searchable()
+                        ->required()
+                        ->suffixActions([
+                            Action::make("view_kursus")
+                                ->icon("heroicon-o-eye")
+                                ->modalContent(
+                                    fn(Get $get): ?View => $get("kursus_id")
+                                        ? view(
+                                            "filament.components.modal-iframe",
+                                            [
+                                                "src" =>
+                                                    KursusResource::getUrl(
+                                                        "edit",
+                                                        [
+                                                            "record" => $get(
+                                                                "kursus_id"
+                                                            ),
+                                                        ]
+                                                    ) . "?iframe=1",
+                                            ]
+                                        )
+                                        : null
+                                )
+                                ->modalWidth("6xl")
+                                ->modalSubmitAction(false)
+                                // PADAM BARIS ->modalCancelAction(true)
+                                ->hidden(
+                                    fn(Get $get): bool => !$get("kursus_id")
+                                ),
+
+                            Action::make("create_kursus")
+                                ->icon("heroicon-o-plus")
+                                ->modalContent(
+                                    fn(): View => view(
+                                        "filament.components.modal-iframe",
+                                        [
+                                            "src" =>
+                                                KursusResource::getUrl(
+                                                    "create"
+                                                ) . "?iframe=1",
+                                        ]
+                                    )
+                                )
+                                ->modalWidth("6xl")
+                                ->modalSubmitAction(false),
+                            // PADAM BARIS ->modalCancelAction(true)
+                        ]),
+
+                    DateTimePicker::make("tarikh_pendaftaran")->required(),
+                    TextInput::make("gred"),
+                    TextInput::make("status")
+                        ->required()
+                        ->default("Pending"),
+                ])
+                ->columnSpanFull(),
+        ]);
+    }
+}
+
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Section::make('Kursus Information')
+    ->columns([
+        'default' => 1,
+        'md' => 2,
+        //'xl' => 3,
+    ])
+                    ->schema([            
+            
+            
+            
+            
+				Select::make('pelajar_id')
+					->relationship('pelajar', 'nama_penuh')->searchable()->required()
+                    ->suffixActions([
+                        Action::make('view_pelajar')
+                            ->icon('heroicon-o-eye')
+                            ->modalContent(fn (Get $get): ?View => $get('pelajar_id') ? view('filament.components.modal-iframe', ['src' => PelajarResource::getUrl('edit', ['record' => $get('pelajar_id')]) . '?iframe=1']) : null)
+                            ->modalWidth('6xl')
+                            ->modalSubmitAction(false)
+                            // PADAM BARIS ->modalCancelAction(true)
+                            ->hidden(fn (Get $get): bool => !$get('pelajar_id')),
+
+                        Action::make('create_pelajar')
+                            ->icon('heroicon-o-plus')
+                            ->modalContent(fn (): View => view('filament.components.modal-iframe', ['src' => PelajarResource::getUrl('create') . '?iframe=1']))
+                            ->modalWidth('6xl')
+                            ->modalSubmitAction(false),
+                            // PADAM BARIS ->modalCancelAction(true)
+                    ]),
+
+                Select::make('kursus_id')
+					->relationship('kursus', 'nama_kursus')->searchable()->required()
+                    ->suffixActions([
+                        Action::make('view_kursus')
+                            ->icon('heroicon-o-eye')
+                            ->modalContent(fn (Get $get): ?View => $get('kursus_id') ? view('filament.components.modal-iframe', ['src' => KursusResource::getUrl('edit', ['record' => $get('kursus_id')]) . '?iframe=1']) : null)
+                            ->modalWidth('6xl')
+                            ->modalSubmitAction(false)
+                            // PADAM BARIS ->modalCancelAction(true)
+                            ->hidden(fn (Get $get): bool => !$get('kursus_id')),
+                        
+                        Action::make('create_kursus')
+                            ->icon('heroicon-o-plus')
+                            ->modalContent(fn (): View => view('filament.components.modal-iframe', ['src' => KursusResource::getUrl('create') . '?iframe=1']))
+                            ->modalWidth('6xl')
+                            ->modalSubmitAction(false),
+                            // PADAM BARIS ->modalCancelAction(true)
+                    ]),
+                
+                DateTimePicker::make('tarikh_pendaftaran')->required(),
+                TextInput::make('gred'),
+                TextInput::make('status')->required()->default('Pending'),
+                
+                
+                
+                
+                
+                
+                
+                
+])->columnSpanFull()                
+            ]);
+    }
+}

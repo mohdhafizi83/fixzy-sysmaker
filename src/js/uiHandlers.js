@@ -2203,8 +2203,6 @@ export function initializeProjectSaveHandlers() {
     }
 }
 
-// GANTIKAN FUNGSI SEDIA ADA INI DALAM: uiHandlers.js
-
 export function initializeTableSaveHandlers() {
     const form = document.getElementById('table-settings-page');
     if (!form) return;
@@ -2215,27 +2213,36 @@ export function initializeTableSaveHandlers() {
 
         const input = event.target;
 
-        // ▼▼▼ PENAMBAHBAIKAN: Guard Clause ▼▼▼
-        // Hanya proses event dari elemen yang mempunyai ID bermula dengan 'tbl-'
-        if (!input.id || !input.id.startsWith('tbl-')) {
+        // ▼▼▼ KEMAS KINI BAHARU ▼▼▼
+        // Hentikan jika ia adalah radio button yang tidak ditanda (untuk mengelak simpanan berganda)
+        if (input.type === 'radio' && !input.checked) {
             return;
         }
-        // ▲▲▲ TAMAT PENAMBAHBAIKAN ▲▲▲
+        // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
+
+        // Hanya proses event dari elemen yang mempunyai ID atau Nama bermula dengan 'tbl-'
+        if (!((input.id && input.id.startsWith('tbl-')) || (input.name && input.name.startsWith('tbl-')))) {
+            return;
+        }
 
         const tableName = document.querySelector('#table-settings-page .table-name').textContent;
         const tableData = jsonData.database.table[tableName];
         if (!tableData) return;
         const tableId = tableData.table_id;
         
-        let key = input.id.replace('tbl-', '').replace(/-/g, '_');
+        // ▼▼▼ KEMAS KINI UTAMA ▼▼▼
+        // Guna 'name' untuk radio button (yang betul), dan 'id' untuk elemen lain.
+        let key = (input.type === 'radio' && input.name)
+            ? input.name.replace('tbl-', '').replace(/-/g, '_')
+            : input.id.replace('tbl-', '').replace(/-/g, '_');
+        // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
+
         if (input.id === 'tbl-hook-logic') {
             key = 'table_hook_workflow';
         }
         const value = (input.type === 'checkbox') ? (input.checked ? 1 : 0) : input.value;
         const dataToSave = { [key]: value };
 
-        // Untuk perubahan selain nama jadual, backend memerlukan nama jadual semasa
-        // untuk konteks. Ralat "Missing named parameter 'table_name'" menunjukkan perkara ini.
         if (key !== 'table_name') {
             dataToSave.table_name = tableName;
         }
@@ -2251,7 +2258,6 @@ export function initializeTableSaveHandlers() {
     });
 }
 
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
 
 export function initializeFieldSaveHandlers() {
     const form = document.getElementById('field-settings-page');
@@ -3400,6 +3406,16 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-dv-hide-save-as-copy', tableData.dv_hide_save_as_copy);
     setElementValue('tbl-dv-sticky-buttons', tableData.dv_sticky_buttons);
     setElementValue('tbl-dv-allow-add-from-homepage', tableData.dv_allow_add_from_homepage);
+    
+    setRadioValue('tbl-column-grid-type', tableData.column_grid_type || 'dynamic');
+    setElementValue('tbl-static-grid-columns', tableData.static_grid_columns);
+    
+    // Cetuskan event untuk memastikan keadaan disabled/enabled adalah betul semasa dimuatkan
+    const gridRadios = document.querySelectorAll('input[name="tbl-column-grid-type"]');
+    if (gridRadios.length > 0) {
+        gridRadios[0].dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    
     setElementValue('tbl-hook-logic', tableData.table_hook_workflow); // Populate workflow data
 	
     const tvClassesInput = document.getElementById('tbl-table-view-classes-input');
@@ -3507,7 +3523,7 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-tv-icon-color', fieldData.tv_icon_color);
 
     setElementValue('fld-lookup-parent-table', fieldData.lookup_parent_table);
-
+    populateParentCaptionDropdowns(fieldData.lookup_parent_table);
     const parentTableSelect = document.getElementById('fld-lookup-parent-table');
 
     const updateAllFieldDependencies = () => {
@@ -6557,3 +6573,24 @@ export function initializeDataTypeDefaultRules() {
     });
 }
 
+export function initializeColumnGridHandlers() {
+    const radioGroup = document.querySelectorAll('input[name="tbl-column-grid-type"]');
+    const staticColumnsGroup = document.getElementById('tbl-static-grid-columns-group');
+
+    if (radioGroup.length === 0 || !staticColumnsGroup) return;
+
+    const toggleStaticInput = () => {
+        const staticRadio = document.getElementById('tbl-column-grid-static');
+        if (staticRadio) {
+            staticColumnsGroup.style.opacity = staticRadio.checked ? '1' : '0.5';
+            staticColumnsGroup.querySelector('input').disabled = !staticRadio.checked;
+        }
+    };
+
+    radioGroup.forEach(radio => {
+        radio.addEventListener('change', toggleStaticInput);
+    });
+
+    // Panggil sekali untuk tetapan awal
+    toggleStaticInput();
+}
