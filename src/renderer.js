@@ -49,6 +49,7 @@ import {
 	populateParentChildTab,
     initializeColumnGridHandlers,
     initializeUniqueFieldHandler,
+    initializeValidationInputHandlers,
     initializeConstraintsTabHandlers,
     initializeIndexCheckboxHandler,
     initializeDisplayTypeRules,
@@ -501,6 +502,7 @@ window.addEventListener('beforeunload', (event) => {
     initializeCalculationBuilder();
 	initializeAlgorithmBuilder();
 	initializeUniqueFieldHandler();
+    initializeValidationInputHandlers();
     initializeConstraintsTabHandlers();
     initializeIndexCheckboxHandler();
 	

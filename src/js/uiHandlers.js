@@ -1,3 +1,40 @@
+// ... (baris terakhir 'import' anda)
+
+// ▼▼▼ TAMBAH KESELURUHAN BLOK KOD INI ▼▼▼
+
+/**
+ * Helper function to set the value of various form elements.
+ * It can handle regular inputs, checkboxes, radios, and multi-select dropdowns.
+ * @param {string} id - The ID of the element to update.
+ * @param {any} value - The value to set.
+ */
+const setElementValue = (id, value) => {
+    const element = document.getElementById(id);
+    if (element) {
+        if (element.type === 'checkbox' || element.type === 'radio') {
+            element.checked = !!value;
+        } else if (element.multiple) {
+            // Mengendalikan dropdown multi-select
+            if (typeof value === 'string' && value) {
+                const selectedValues = new Set(value.split(','));
+                for (const option of element.options) {
+                    option.selected = selectedValues.has(option.value);
+                }
+            } else {
+                // Nyahpilih semua jika tiada nilai
+                for (const option of element.options) {
+                    option.selected = false;
+                }
+            }
+        } else {
+            // Mengendalikan semua elemen lain
+            element.value = value || '';
+        }
+    }
+};
+
+// ▲▲▲ TAMAT BLOK TAMBAHAN ▲▲▲
+
 /**
  * Membuka Query Builder dalam mod 'general'.
  * Fungsi ini boleh dieksport dan dipanggil dari mana-mana, terutamanya dari Algorithm Builder.
@@ -2268,11 +2305,18 @@ export function initializeFieldSaveHandlers() {
         if (!tableName || !fieldName || !jsonData.database.table[tableName] || !jsonData.database.table[tableName].fields[fieldName]) return;
         const fieldId = jsonData.database.table[tableName].fields[fieldName].field_id;
         const input = event.target;
-        const key = (input.name && input.type === 'radio') ? input.name.replace('fld-', '').replace(/-/g, '_') : input.id.replace('fld-', '').replace(/-/g, '_');
+const key = (input.name && input.type === 'radio') ? input.name.replace('fld-', '').replace(/-/g, '_') : input.id.replace('fld-', '').replace(/-/g, '_');
         let value;
-        if (input.type === 'checkbox') value = input.checked ? 1 : 0;
-        else if (input.type === 'radio') { if (!input.checked) return; value = input.value; }
-        else value = input.value;
+        if (input.type === 'checkbox') {
+            value = input.checked ? 1 : 0;
+        } else if (input.type === 'radio') {
+            if (!input.checked) return;
+            value = input.value;
+        } else if (input.multiple) { // <-- Logik baharu untuk multi-select
+            value = Array.from(input.selectedOptions).map(opt => opt.value).join(',');
+        } else { // <-- Logik asal untuk input lain
+            value = input.value;
+        }
         SaveManager.addToQueue('fields', fieldId, { [key]: value });
     };
     form.querySelectorAll('input, select, textarea').forEach(input => {
@@ -2397,18 +2441,6 @@ export function showCustomDialog({ title, message, onOk, onCancel, showCancelBut
         modal.classList.remove('hidden');
     });
 }
-
-// (Pastikan helper ini wujud di skop yang boleh diakses)
-const setElementValue = (id, value) => {
-    const element = document.getElementById(id);
-    if (element) {
-        if (element.type === 'checkbox' || element.type === 'radio') {
-            element.checked = !!value;
-        } else {
-            element.value = value || '';
-        }
-    }
-};
 
 const setRadioValue = (name, value) => {
     const selector = `input[name="${name}"][value="${value}"]`;
@@ -3460,7 +3492,10 @@ function populateParentTableDropdown(currentTableName) {
 }
 
 export function populateFieldSettings(tableName, fieldName) {
-	
+
+    const maxLengthInput = document.getElementById('fld-max-length');
+    if (maxLengthInput) maxLengthInput.dataset.userModified = 'false';
+    	
     const allFieldPageControls = document.querySelectorAll(
         '#field-settings-page input, #field-settings-page select, #field-settings-page textarea, #field-settings-page button'
     );
@@ -3481,12 +3516,38 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-description', fieldData.description);
     setElementValue('fld-data-type', fieldData.data_type);
     setElementValue('fld-length', fieldData.length);
+    
+    const lengthInput = document.getElementById('fld-length');
+    if (lengthInput) {
+        lengthInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    
 	setElementValue('fld-precision', fieldData.precision);
     setElementValue('fld-max-chars-in-tv', fieldData.max_chars_in_tv);
     setElementValue('fld-alignment', fieldData.alignment);
     setElementValue('fld-default-value', fieldData.default_value);
     
     setElementValue('fld-read-only', fieldData.read_only);
+    
+    setElementValue('fld-helper-text', fieldData.helper_text);
+    setElementValue('fld-placeholder', fieldData.placeholder);
+    setElementValue('fld-min-length', fieldData.min_length);
+    // Jika max_length tiada nilai (cth: selepas import SQL), guna nilai length sebagai lalai.
+    // Jika ada, guna nilai yang disimpan.
+    const maxLengthValue = (fieldData.max_length === null || fieldData.max_length === undefined) 
+                           ? fieldData.length 
+                           : fieldData.max_length;
+    setElementValue('fld-max-length', maxLengthValue);
+    setElementValue('fld-min-value', fieldData.min_value);
+    setElementValue('fld-max-value', fieldData.max_value);
+    setElementValue('fld-off-autocomplete', fieldData.off_autocomplete);
+    setElementValue('fld-column-span-full', fieldData.column_span_full);
+    
+    setElementValue('fld-prefix', fieldData.prefix);
+    setElementValue('fld-suffix', fieldData.suffix);
+    setElementValue('fld-suffix-icon', fieldData.suffix_icon);
+    setElementValue('fld-suffix-icon-color', fieldData.suffix_icon_color);
+    
     setElementValue('fld-primary-key', fieldData.primary_key);
     setElementValue('fld-zero-fill', fieldData.zero_fill);
     setElementValue('fld-required', fieldData.required);
@@ -3661,6 +3722,16 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-lookup-separator', fieldData.lookup_separator);
     setElementValue('fld-lookup-caption-2', fieldData.lookup_caption_2);
     setRadioValue('fld-lookup-display-as', fieldData.lookup_display_as);
+    
+    setElementValue('fld-lookup-searchable', fieldData.lookup_searchable);
+    setElementValue('fld-lookup-preload', fieldData.lookup_preload);
+
+    // Cetuskan event 'change' untuk menjalankan logik tunjuk/sembunyi
+    const displayAsRadios = document.querySelectorAll('input[name="fld-lookup-display-as"]');
+    if (displayAsRadios.length > 0) {
+        displayAsRadios[0].dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    
     setElementValue('fld-lookup-inherit-permissions', fieldData.lookup_inherit_permissions);
     setElementValue('fld-lookup-link-behavior', fieldData.lookup_link_behavior);
     setElementValue('fld-lookup-custom-query-hidden', fieldData.lookup_custom_query);
@@ -3700,6 +3771,15 @@ export function populateFieldSettings(tableName, fieldName) {
         }
     }
     setElementValue('fld-format-as', fieldData.format_as);
+    
+    setElementValue('fld-format-mask', fieldData.format_mask);
+    
+    // Cetuskan event 'change' untuk memastikan 'Mask' dipaparkan dengan betul semasa data dimuatkan
+    const formatAsSelect = document.getElementById('fld-format-as');
+    if (formatAsSelect) {
+        formatAsSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    
     setElementValue('fld-calculated-enable', fieldData.calculated_enable);
     setElementValue('fld-calculated-query', fieldData.calculated_query);
 	setElementValue('fld-algorithm-enable', fieldData.algorithm_enable);
@@ -3708,6 +3788,7 @@ export function populateFieldSettings(tableName, fieldName) {
 	if (algorithmEnableCheckbox) {
 		algorithmEnableCheckbox.dispatchEvent(new Event('change'));
 	}
+    
 	applyDataTypeRules();
     setTimeout(() => {
         const queryTextarea = document.getElementById('fld-calculated-query');
@@ -3751,45 +3832,49 @@ function populateParentCaptionDropdowns(parentTableName) {
     }
 }
 
+// GANTIKAN FUNGSI SEDIA ADA INI DALAM uiHandlers.js
 export function initializeLookupFieldHandlers() {
     const parentTableSelect = document.getElementById('fld-lookup-parent-table');
     const caption1Select = document.getElementById('fld-lookup-caption-1');
+    const displayAsRadios = document.querySelectorAll('input[name="fld-lookup-display-as"]');
+    const dropdownOptions = document.getElementById('fld-lookup-dropdown-options');
 
-    if (parentTableSelect && caption1Select) {
-        parentTableSelect.addEventListener('change', () => {
-            const selectedTable = parentTableSelect.value;
-            
-            // 1. Isi dropdown caption dengan semua medan seperti biasa
-            populateParentCaptionDropdowns(selectedTable);
+    if (!parentTableSelect || !caption1Select || !displayAsRadios.length || !dropdownOptions) return;
 
-            // ▼▼▼ LOGIK BAHARU YANG LEBIH PINTAR ▼▼▼
-            if (selectedTable && jsonData.database.table[selectedTable]) {
-                const parentFields = jsonData.database.table[selectedTable].fields;
-                const fieldNames = Object.keys(parentFields);
-                const integerTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'];
-
-                let defaultCaptionField = null;
-
-                // 1. Cuba cari medan BUKAN integer yang pertama
-                const firstNonIntegerField = fieldNames.find(name => 
-                    !integerTypes.includes(parentFields[name].data_type.toUpperCase())
-                );
-
-                if (firstNonIntegerField) {
-                    defaultCaptionField = firstNonIntegerField;
-                } else if (fieldNames.length > 1) {
-                    // 2. Jika tiada, kembali kepada logik lama (pilih medan kedua)
-                    defaultCaptionField = fieldNames[1];
-                }
-
-                // Tetapkan nilai dropdown jika medan lalai ditemui
-                if (defaultCaptionField) {
-                    caption1Select.value = defaultCaptionField;
-                }
+    // Logik sedia ada untuk mengisi 'Parent Caption'
+    parentTableSelect.addEventListener('change', () => {
+        const selectedTable = parentTableSelect.value;
+        populateParentCaptionDropdowns(selectedTable);
+        
+        if (selectedTable && jsonData.database.table[selectedTable]) {
+            const parentFields = jsonData.database.table[selectedTable].fields;
+            const fieldNames = Object.keys(parentFields);
+            const integerTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'];
+            let defaultCaptionField = null;
+            const firstNonIntegerField = fieldNames.find(name => !integerTypes.includes(parentFields[name].data_type.toUpperCase()));
+            if (firstNonIntegerField) {
+                defaultCaptionField = firstNonIntegerField;
+            } else if (fieldNames.length > 1) {
+                defaultCaptionField = fieldNames[1];
             }
-            // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
-        });
-    }
+            if (defaultCaptionField) {
+                caption1Select.value = defaultCaptionField;
+            }
+        }
+    });
+
+    // ▼▼▼ LOGIK BAHARU UNTUK VISIBILITY CHECKBOX ▼▼▼
+    const toggleDropdownOptions = () => {
+        const selectedRadio = document.querySelector('input[name="fld-lookup-display-as"]:checked');
+        if (selectedRadio) {
+            dropdownOptions.classList.toggle('hidden', selectedRadio.value !== 'dropdown');
+        }
+    };
+
+    displayAsRadios.forEach(radio => {
+        radio.addEventListener('change', toggleDropdownOptions);
+    });
+    // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
 }
 
 export function populateMenuManagement(unifiedMenu) {
@@ -4389,6 +4474,11 @@ function applyDataTypeRules() {
     const elements = {
         length: document.getElementById('fld-length'),
         precision: document.getElementById('fld-precision'),
+        
+        minValueGroup: document.getElementById('fld-min-value-group'),
+        maxValueGroup: document.getElementById('fld-max-value-group'),
+        columnSpanFullGroup: document.getElementById('fld-column-span-full-group'),
+        textInputAddonsGroup: document.getElementById('fld-text-input-addons-group'),
         autoIncrement: document.getElementById('fld-auto-increment'),
         unsigned: document.getElementById('fld-unsigned'),
         zeroFill: document.getElementById('fld-zero-fill'),
@@ -4432,6 +4522,15 @@ function applyDataTypeRules() {
     const isText = textTypes.includes(selectedType);
     const isDate = dateTypes.includes(selectedType);
     const isBoolean = selectedType === 'BOOLEAN';
+    
+    // Sembunyikan/papar 'Min/Max value' berdasarkan jenis data numerik
+    if (elements.minValueGroup) {
+        elements.minValueGroup.classList.toggle('hidden', !isNumeric);
+    }
+    if (elements.maxValueGroup) {
+        elements.maxValueGroup.classList.toggle('hidden', !isNumeric);
+    }
+    
     const isIntegerOnly = integerTypes.includes(selectedType);
     const isFloatOnly = floatTypes.includes(selectedType);
 
@@ -4463,9 +4562,36 @@ function applyDataTypeRules() {
         } else if (selectedType === 'JSON') {
             if (!elements.repeaterRadio.checked) elements.repeaterRadio.checked = true;
             elements.displayTypeRadios.forEach(radio => { radio.disabled = radio.value !== 'repeater'; });
+        } else if (selectedType === 'TEXT' || selectedType === 'LONGTEXT') {
+            const textAreaRadio = document.querySelector('input[name="fld-display-type"][value="text_area"]');
+            const richHtmlRadio = document.querySelector('input[name="fld-display-type"][value="rich_html"]');
+            
+            // Jika pilihan semasa bukan salah satu yang dibenarkan, setkan 'Text Area' sebagai lalai
+            if (!textAreaRadio.checked && !richHtmlRadio.checked) {
+                textAreaRadio.checked = true;
+            }
+
+            // Nyahaktifkan semua radio kecuali 'Text Area' dan 'Text Editor'
+            elements.displayTypeRadios.forEach(radio => {
+                radio.disabled = !(radio.value === 'text_area' || radio.value === 'rich_html');
+            });  
+        } else if (isDate) {
+            const datetimeInputRadio = document.querySelector('input[name="fld-display-type"][value="datetime_input"]');
+            if (datetimeInputRadio) {
+                datetimeInputRadio.checked = true; // Tetapkan sebagai lalai untuk jenis tarikh
+                // Nyahaktifkan semua radio lain
+                elements.displayTypeRadios.forEach(radio => {
+                    radio.disabled = radio.value !== 'datetime_input';
+                });
+            }
+            
         } else {
             elements.checkBoxRadio.disabled = true;
             elements.repeaterRadio.disabled = true;
+            
+            const datetimeInputRadio = document.querySelector('input[name="fld-display-type"][value="datetime_input"]');
+            if (datetimeInputRadio) datetimeInputRadio.disabled = true;
+            
             if (elements.checkBoxRadio.checked || elements.repeaterRadio.checked) {
                 const defaultRadio = document.querySelector('input[name="fld-display-type"][value="text_input"]');
                 if (defaultRadio) defaultRadio.checked = true;
@@ -4548,6 +4674,43 @@ function applyDataTypeRules() {
             if(elements.dropdownRadio) elements.dropdownRadio.checked = true;
         }
     }
+    
+        // Selepas semua logik pemilihan radio selesai, kita tentukan apa yang patut dipaparkan.
+        const finalSelectedRadio = document.querySelector('input[name="fld-display-type"]:checked');
+        if (finalSelectedRadio) {
+            const finalValue = finalSelectedRadio.value;
+            
+// Logik untuk 'Formatted Inputs'
+        const formatAsGroup = document.getElementById('format-as-group');
+        if (formatAsGroup) {
+            // ▼▼▼ MULA KEMAS KINI ▼▼▼
+            const selectedMediaRadio = document.querySelector('input[name="fld-media-type"]:checked');
+            const selectedMediaType = selectedMediaRadio ? selectedMediaRadio.value : 'link';
+            
+            const parentTableSelect = document.getElementById('fld-lookup-parent-table');
+            const isForeignKey = parentTableSelect ? parentTableSelect.value !== '' : false;
+
+            // Sembunyikan jika (display_type bukan 'text_input') ATAU (media_type bukan 'link') ATAU (ia adalah foreign key)
+            formatAsGroup.classList.toggle('hidden', finalValue !== 'text_input' || selectedMediaType !== 'link' || isForeignKey);
+            // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
+        }
+
+            // Logik untuk 'Options List' (diletakkan di sini juga untuk pemusatan)
+            const optionsListGroup = document.getElementById('options-list-settings-group');
+            if (optionsListGroup) {
+                optionsListGroup.classList.toggle('hidden', finalValue !== 'options_list');
+            }
+            
+            // Logik untuk 'Column span full'
+            if (elements.columnSpanFullGroup) {
+                const isVisible = (finalValue === 'text_area' || finalValue === 'rich_html');
+                elements.columnSpanFullGroup.classList.toggle('hidden', !isVisible);
+            }
+            
+            if (elements.textInputAddonsGroup) {
+                elements.textInputAddonsGroup.classList.toggle('hidden', finalValue !== 'text_input');
+            }
+        }
 }
 
 export function initializeDataTypeRules() {
@@ -4698,27 +4861,29 @@ export function initializeRealtimeValidation() {
 
 export function initializeOptionsListRules() {
     const multiSelectRadio = document.querySelector('input[name="fld-options-display"][value="multi"]');
+    const checkboxesRadio = document.querySelector('input[name="fld-options-display"][value="checkboxes"]');
     const dropdownRadio = document.querySelector('input[name="fld-options-display"][value="dropdown"]');
     const dataTypeSelect = document.getElementById('fld-data-type');
 
-    if (!multiSelectRadio || !dataTypeSelect || !dropdownRadio) return;
+    if (!multiSelectRadio || !checkboxesRadio || !dataTypeSelect || !dropdownRadio) return;
 
-    multiSelectRadio.addEventListener('click', (event) => {
+    const checkCompatibility = (event) => {
         const currentDataType = dataTypeSelect.value.toUpperCase();
         
-        // Senarai jenis data yang dibenarkan (keluarga TEXT dan BLOB)
-        const allowedTypes = ['TEXT', 'BLOB'];
-
-        // Semak jika jenis data semasa adalah salah satu dari yang dibenarkan
+        // Senarai jenis data yang dibenarkan untuk pelbagai pilihan
+        const allowedTypes = ['TEXT', 'LONGTEXT'];
         const isAllowed = allowedTypes.some(type => currentDataType.includes(type));
+
         if (!isAllowed) {
             event.preventDefault();
-            const message = "Multiple-selection list box can only work with Text or Blob data types.\n\n" +
-                          "Please change the data type of the field first.";
+            const message = "Multiple-choice options (list box or checkboxes) can only work with Text or Longtext data types.\n\nPlease change the data type of the field first.";
             showCustomDialog({ title: "Warning!", message: message });
             dropdownRadio.checked = true;
         }
-    });
+    };
+
+    multiSelectRadio.addEventListener('click', checkCompatibility);
+    checkboxesRadio.addEventListener('click', checkCompatibility);
 }
 
 export function initializeCalculatedFieldRules() {
@@ -6469,31 +6634,28 @@ export function initializeConstraintsTabHandlers() {
  * Handles the logic for the 'Display As' radio button group.
  * It shows or hides the detailed 'Options list' settings based on the selection.
  */
+// GANTIKAN KESELURUHAN FUNGSI INI DALAM uiHandlers.js
 export function initializeDisplayTypeRules() {
     const displayTypeRadios = document.querySelectorAll('input[name="fld-display-type"]');
-    const optionsListGroup = document.getElementById('options-list-settings-group');
-    // ▼▼▼ TAMBAH RUJUKAN BAHARU DI SINI ▼▼▼
-    const formatAsGroup = document.getElementById('format-as-group');
+    const formatAsSelect = document.getElementById('fld-format-as');
+    const formatMaskGroup = document.getElementById('format-mask-group');
 
-    if (displayTypeRadios.length === 0 || !optionsListGroup || !formatAsGroup) return;
+    if (displayTypeRadios.length === 0 || !formatAsSelect || !formatMaskGroup) return;
 
-    const toggleOptionsVisibility = () => {
-        const selectedRadio = document.querySelector('input[name="fld-display-type"]:checked');
-        if (!selectedRadio) return;
-
-        const selectedValue = selectedRadio.value;
-
-        // Logik untuk 'Options list'
-        optionsListGroup.classList.toggle('hidden', selectedValue !== 'options_list');
-        
-        // ▼▼▼ TAMBAH LOGIK BAHARU DI SINI ▼▼▼
-        // Logik untuk 'Format this field as'
-        formatAsGroup.classList.toggle('hidden', selectedValue !== 'text_input');
+    // Fungsi untuk mengawal textbox 'Mask' kekal sama
+    const toggleMaskVisibility = () => {
+        formatMaskGroup.classList.toggle('hidden', formatAsSelect.value !== 'custom');
     };
 
+    // ▼▼▼ PEMBETULAN UTAMA DI SINI ▼▼▼
+    // Apabila mana-mana radio 'display_type' ditukar, panggil fungsi 'applyDataTypeRules'
+    // Fungsi ini kini menjadi pusat kawalan untuk semua peraturan berkaitan jenis data
     displayTypeRadios.forEach(radio => {
-        radio.addEventListener('change', toggleOptionsVisibility);
+        radio.addEventListener('change', applyDataTypeRules);
     });
+    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
+
+    formatAsSelect.addEventListener('change', toggleMaskVisibility);
 }
 
 /**
@@ -6593,4 +6755,18 @@ export function initializeColumnGridHandlers() {
 
     // Panggil sekali untuk tetapan awal
     toggleStaticInput();
+}
+
+export function initializeValidationInputHandlers() {
+    const lengthInput = document.getElementById('fld-length');
+    const maxLengthInput = document.getElementById('fld-max-length');
+
+    if (!lengthInput || !maxLengthInput) return;
+
+    // Fungsi ini kini hanya menyalin nilai dari 'Length' ke 'Max length'
+    const syncLengthValue = () => {
+        maxLengthInput.value = lengthInput.value;
+    };
+
+    lengthInput.addEventListener('input', syncLengthValue);
 }

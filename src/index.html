@@ -1639,9 +1639,70 @@
                                             <option value="spaces">DigitalOcean Spaces</option>
                                         </select>
                                     </div>
-                                    <div class="form-group">
-                                        <div class="input-group"><select id="fld-file-types" name="fld-file-types" disabled><option value="images">jpg, jpeg, gif, png, webp</option><option value="docs">csv, xls, xlsx, xlsm, ods</option><option value="txt, doc, docx, docm, odt, pdf, rtf">txt, doc, docx, docm, odt, pdf, rtf</option><option value="video">mov, avi, swf, asf, wmv, mpg, mpeg, mp4, flv</option><option value="audio">mp3, wav, mid, midi, wma</option><option value="archieve">zip, rar, gz, tar, iso</option><option value="pdf">ppt, pptx, pptm, pdf, ppsx, ppsm, pps, odp</option></select><span style="color: red; align-self: center; margin-left: 0.5rem; font-weight: bold;">Danger!</span></div>
-                                    </div>
+<div class="form-group">
+    <div class="input-group">
+        <select id="fld-file-types" name="fld-file-types" multiple style="height: 250px;" disabled title="Allowed file types">
+            <optgroup label="Images">
+                <option value="image/jpeg">jpg (JPEG image)</option>
+                <option value="image/jpeg">jpeg (JPEG image)</option>
+                <option value="image/gif">gif (GIF image)</option>
+                <option value="image/png">png (PNG image)</option>
+                <option value="image/webp">webp (WEBP image)</option>
+            </optgroup>
+            <optgroup label="Spreadsheets">
+                <option value="text/csv">csv (Comma-separated values)</option>
+                <option value="application/vnd.ms-excel">xls (Excel 97-2003 spreadsheet)</option>
+                <option value="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">xlsx (Excel spreadsheet)</option>
+                <option value="application/vnd.ms-excel.sheet.macroEnabled.12">xlsm (Excel macro-enabled spreadsheet)</option>
+                <option value="application/vnd.oasis.opendocument.spreadsheet">ods (OpenDocument spreadsheet)</option>
+            </optgroup>
+            <optgroup label="Documents">
+                <option value="text/plain">txt (Plain text)</option>
+                <option value="application/msword">doc (Word 97-2003 document)</option>
+                <option value="application/vnd.openxmlformats-officedocument.wordprocessingml.document">docx (Word document)</option>
+                <option value="application/vnd.ms-word.document.macroEnabled.12">docm (Word macro-enabled document)</option>
+                <option value="application/vnd.oasis.opendocument.text">odt (OpenDocument text)</option>
+                <option value="application/pdf">pdf (Portable Document Format)</option>
+                <option value="application/rtf">rtf (Rich Text Format)</option>
+            </optgroup>
+            <optgroup label="Presentations">
+                <option value="application/vnd.ms-powerpoint">ppt (PowerPoint 97-2003)</option>
+                <option value="application/vnd.openxmlformats-officedocument.presentationml.presentation">pptx (PowerPoint presentation)</option>
+                <option value="application/vnd.ms-powerpoint.presentation.macroEnabled.12">pptm (PowerPoint macro-enabled)</option>
+                <option value="application/vnd.ms-powerpoint">pps (PowerPoint 97-2003 show)</option>
+                <option value="application/vnd.openxmlformats-officedocument.presentationml.slideshow">ppsx (PowerPoint show)</option>
+                <option value="application/vnd.ms-powerpoint.slideshow.macroEnabled.12">ppsm (PowerPoint macro-enabled show)</option>
+                <option value="application/vnd.oasis.opendocument.presentation">odp (OpenDocument presentation)</option>
+            </optgroup>
+            <optgroup label="Video">
+                <option value="video/quicktime">mov (QuickTime movie)</option>
+                <option value="video/x-msvideo">avi (AVI video)</option>
+                <option value="application/x-shockwave-flash">swf (Shockwave Flash)</option>
+                <option value="video/x-ms-asf">asf (Advanced Systems Format)</option>
+                <option value="video/x-ms-wmv">wmv (Windows Media Video)</option>
+                <option value="video/mpeg">mpg (MPEG video)</option>
+                <option value="video/mpeg">mpeg (MPEG video)</option>
+                <option value="video/mp4">mp4 (MPEG-4 video)</option>
+                <option value="video/x-flv">flv (Flash video)</option>
+            </optgroup>
+            <optgroup label="Audio">
+                <option value="audio/mpeg">mp3 (MP3 audio)</option>
+                <option value="audio/wav">wav (WAV audio)</option>
+                <option value="audio/midi">mid (MIDI audio)</option>
+                <option value="audio/midi">midi (MIDI audio)</option>
+                <option value="audio/x-ms-wma">wma (Windows Media Audio)</option>
+            </optgroup>
+            <optgroup label="Archives">
+                <option value="application/zip">zip (ZIP archive)</option>
+                <option value="application/vnd.rar">rar (RAR archive)</option>
+                <option value="application/gzip">gz (GZIP archive)</option>
+                <option value="application/x-tar">tar (TAR archive)</option>
+                <option value="application/x-iso9660-image">iso (ISO disk image)</option>
+            </optgroup>
+        </select>
+    </div>
+    <p class="helper-text" style="margin-top: 0.5rem;">Use Ctrl/Cmd + Click to select multiple file types.</p>
+</div>
                                     <div class="form-group"><label for="fld-file-max-size">Maximum acceptable file size (KB)</label>
 <div class="input-group" style="max-width: 200px;">
     <input type="number" id="fld-file-max-size" name="fld-file-max-size" value="1024" disabled>
@@ -1748,7 +1809,7 @@
     </div>
 </div>
 
-    <div class="form-group radio-group-horizontal">
+<div class="form-group radio-group-horizontal">
         <label class="radio-label">
             <input type="radio" name="fld-lookup-display-as" value="dropdown" checked> Show as Dropdown
         </label>
@@ -1760,6 +1821,14 @@
         </label>
     </div>
 
+    <div class="form-group mt-1" id="fld-lookup-dropdown-options" style="margin-left: 1.5rem;">
+        <label class="checkbox-label" style="margin-right: 2rem;">
+            <input type="checkbox" id="fld-lookup-searchable" name="fld-lookup-searchable" checked> Searchable
+        </label>
+        <label class="checkbox-label">
+            <input type="checkbox" id="fld-lookup-preload" name="fld-lookup-preload" checked> Preload
+        </label>
+    </div>
     <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
 
     <div class="form-group">
@@ -1916,12 +1985,41 @@
     <div class="checkbox-group">
        <label class="checkbox-label"><input type="checkbox" id="fld-hide-in-dv" name="fld-hide-in-dv"> Hide in 'Record Form'</label>
         <label class="checkbox-label"><input type="checkbox" id="fld-required" name="fld-required"> Required</label>
-        <label class="checkbox-label"><input type="checkbox" id="fld-read-only" name="fld-read-only"> Read Only</label>
+<label class="checkbox-label"><input type="checkbox" id="fld-read-only" name="fld-read-only"> Read Only</label>
         
+        <div class="form-group" style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+            <label for="fld-helper-text">Helper Text</label>
+            <input type="text" id="fld-helper-text" name="fld-helper-text" placeholder="e.g., Please enter your full name as per I.C.">
+        </div>
+
+        <div class="form-group">
+            <label for="fld-placeholder">Placeholder</label>
+            <input type="text" id="fld-placeholder" name="fld-placeholder" placeholder="e.g., John Doe">
+        </div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label for="fld-min-length">Min length</label>
+                <input type="number" id="fld-min-length" name="fld-min-length" placeholder="no limit">
+            </div>
+            <div class="form-group">
+                <label for="fld-max-length">Max length</label>
+                <input type="number" id="fld-max-length" name="fld-max-length" readonly>
+            </div>
+            <div class="form-group" id="fld-min-value-group">
+                <label for="fld-min-value">Min value</label>
+                <input type="number" id="fld-min-value" name="fld-min-value" placeholder="no limit">
+            </div>
+            <div class="form-group" id="fld-max-value-group">
+                <label for="fld-max-value">Max value</label>
+                <input type="number" id="fld-max-value" name="fld-max-value" placeholder="no limit">
+            </div>
+            </div>
         <div class="form-group" style="margin-top: 0.75rem;" id="display-as-group">
             <label style="margin-bottom: 0.75rem;">Display As</label>
             <div class="radio-group" style="flex-direction: column; gap: 0.75rem; align-items: flex-start;">
                 <label><input type="radio" name="fld-display-type" value="text_input" checked> Text Input (Default)</label>
+                <label><input type="radio" name="fld-display-type" value="datetime_input"> Datetime Input</label>
                 <label><input type="radio" name="fld-display-type" value="text_area"> Text Area</label>
                 <label><input type="radio" name="fld-display-type" value="rich_html"> Text Editor</label>
                 <label><input type="radio" name="fld-display-type" value="check_box"> Check Box</label>
@@ -1931,38 +2029,66 @@
         </div>
         
         <div class="form-group hidden" id="format-as-group" style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
-<label for="fld-format-as">Format this field as</label>
+        
+ <label for="fld-format-as">Formatted Inputs</label>
 <select id="fld-format-as" name="fld-format-as">
-    <option value="default" selected>No special formatting (default)</option>
-
-    <optgroup label="Currency Formats">
-        <option value="US Currency">US Currency (example: $21,345.67)</option>
-        <option value="Euro Currency">Euro Currency (example: €21,345.67)</option>
-        <option value="UK Currency">UK Currency (example: £21,345.67)</option>
-    </optgroup>
-
-    <optgroup label="Date/Time Formats">
-        <option value="US Short Date/Time">US Short Date/Time (example: 3/28/2008 5:42PM)</option>
-        <option value="UK Short Date/Time">UK Short Date/Time (example: 28/3/2008 5:42PM)</option>
-        <option value="US Long Date/Time">US Long Date/Time (example: March 28th, 2008 5:42PM)</option>
-        <option value="UK Long Date/Time">UK Long Date/Time (example: 28th March 2008 5:42PM)</option>
-        <option value="European Short Date/Time">European Short Date/Time (example: 2008-03-28 13:00)</option>
-        <option value="12-hour time format">12-hour time format (example: 05:42 PM instead of 17:42)</option>
-    </optgroup>
-
-    <optgroup label="Numeric Formats">
-        <option value="Thousands separator, no decimals">Thousands separator, no decimals (example: 21,345)</option>
-        <option value="Thousands separator, 2 decimals">Thousands separator, 2 decimals (example: 21,345.67)</option>
-        <option value="Thousands separator, 3 decimals">Thousands separator, 3 decimals (example: 21,345.678)</option>
-        <option value="">Points for thousands and comma for decimals, 2 decimals (example: 21.345,67)</option>
-    </optgroup>
-
-    <optgroup label="Other Formats">
-        <option value="Phone numbers">Phone numbers (example: 123-456-7890)</option>
-        <option value="Canadian Postal Code">Canadian Postal Code (example: M2H-1G1)</option>
-    </optgroup>
+    <option value="default" selected>Free text (default)</option>
+    <option value="email">Email</option>
+    <option value="password">Password</option>
+    <option value="tel">Telephone</option>
+    <option value="url">URL</option>
+    <option value="custom">Custom Mask</option>
 </select>
+<div class="form-group mt-1 hidden" id="format-mask-group">
+    <label for="fld-format-mask">Mask</label>
+    <input type="text" id="fld-format-mask" name="fld-format-mask" placeholder="Example: (999) 999-9999">
+</div>       
+    <div class="form-group mt-1">
+        <label class="checkbox-label">
+            <input type="checkbox" id="fld-off-autocomplete" name="fld-off-autocomplete"> Off Autocomplete
+        </label>
+    </div>
 </div>
+
+    <div id="fld-text-input-addons-group">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+            <div class="form-group">
+                <label for="fld-prefix">Prefix</label>
+                <input type="text" id="fld-prefix" name="fld-prefix" placeholder="e.g., https://">
+            </div>
+            <div class="form-group">
+                <label for="fld-suffix">Suffix</label>
+                <input type="text" id="fld-suffix" name="fld-suffix" placeholder="e.g., .com">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="fld-suffix-icon">Suffix icon</label>
+            <div class="input-group">
+                <input type="text" id="fld-suffix-icon" name="fld-suffix-icon" placeholder="e.g., calendar">
+                <a href="https://heroicons.com/" target="_blank" class="btn">Heroicons</a>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="fld-suffix-icon-color">Suffix icon color</label>
+            <select id="fld-suffix-icon-color" name="fld-suffix-icon-color">
+                <option value=""></option>
+                <option value="gray">Gray</option>
+                <option value="info">Info</option>
+                <option value="primary">Primary</option>
+                <option value="warning">Warning</option>
+                <option value="success">Success</option>
+                <option value="danger">Danger</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="form-group mt-1 hidden" id="fld-column-span-full-group">
+        <label class="checkbox-label">
+            <input type="checkbox" id="fld-column-span-full" name="fld-column-span-full"> Column span full
+        </label>
+    </div>
         
 <div id="options-list-settings-group" class="hidden">
                         <div class="form-group">
@@ -2039,8 +2165,9 @@
                             <label>Display the options list as:</label>
                             <div class="radio-group">
                                 <label><input type="radio" name="fld-options-display" id="fld-fld-options-display-dropdown" value="dropdown" checked> Drop-down list</label>
-                                <label><input type="radio" name="fld-options-display" id="fld-fld-options-display-multi" value="multi"> Multiple-choice list box</label>
                                 <label><input type="radio" name="fld-options-display" id="fld-fld-options-display-radios" value="radios"> Radio buttons</label>
+                                <label><input type="radio" name="fld-options-display" id="fld-fld-options-display-multi" value="multi"> Multiple-choice list box</label>
+                                <label><input type="radio" name="fld-options-display" id="fld-fld-options-display-checkboxes" value="checkboxes"> Multiple-choice Checkboxes</label>
                             </div>
                         </div>
                         <p style="font-size: 0.9em; color: var(--secondary-color);">

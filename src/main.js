@@ -2303,8 +2303,7 @@ async function generateFilamentResources(fullSchema, basePath) {
  */
 async function generateFilamentListPages(fullSchema, basePath) {
     try {
-        const tables = fullSchema.database.table;
-        const relationships = fullSchema.database.relationships;
+        const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
 
         const templatePath = path.join(__dirname, 'templates/php/filament/app/Filament/Resources/PagesList.template');
         if (!fs.existsSync(templatePath)) {
@@ -2314,65 +2313,60 @@ async function generateFilamentListPages(fullSchema, basePath) {
 
         for (const tableName in tables) {
             if (tableName === 'users') {
-                continue; // Langkau jadual 'users'
+                continue; 
             }
 
             const tableData = tables[tableName];
             let listContent = templateContent;
 
-            // 1. & 2. Gantikan Nama Singular dan Plural
             const modelNameSingular = toSingularPascalCase(tableName);
             const modelNamePlural = toPluralPascalCase(tableName);
             listContent = listContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);
             listContent = listContent.replace(/<<TABLE_NAME_PLURAL>>/g, modelNamePlural);
 
-            // 3. Ganti Title
             listContent = listContent.replace('<<TABLE_VIEW_TITLE>>', tableData.table_view_title || modelNamePlural);
             
-            // Semak jika jadual ini adalah 'child' kepada mana-mana jadual lain
-            const parentRelations = relationships.filter(r => r.child_table_name === tableName);
-            const isChildTable = parentRelations.length > 0;
+            // Logik yang betul: cari hubungan di mana jadual ini adalah anak DAN parent mempunyai tetapan 'show_count_in_tv'
+            const parentRelationForIframe = relationships.find(r => r.child_table_name === tableName && r.show_count_in_tv === 1);
+            const needsIframeLogic = !!parentRelationForIframe;
 
-            if (isChildTable) {
-                const foreignKeys = parentRelations.map(r => r.fk_child_field);
+            if (needsIframeLogic) {
+                const foreignKey = parentRelationForIframe.fk_child_field;
 
-                // 4. Create Action (untuk child table)
-                const urlParams = foreignKeys.map(fk => `'${fk}' => request()->query('${fk}')`).join(',\n                    ');
                 const createActionCode = `CreateAction::make()
     ->when(
         session('is_in_iframe'),
         fn (CreateAction $action) => $action->url(fn (): string => static::getResource()::getUrl('create', [
-                    ${urlParams}
+                    '${foreignKey}' => request()->query('${foreignKey}')
                 ]))
     )`;
                 listContent = listContent.replace('<<CREATE_ACTION>>', createActionCode);
                 
-                // 7. Import Builder
                 listContent = listContent.replace('<<IMPORT_BUILDER>>', 'use Illuminate\\Database\\Eloquent\\Builder;');
 
-                // 8. Filter Query
-                const whereClauses = foreignKeys.map(fk => `
-        if ($fkValue = request()->query('${fk}')) {
-            $query->where('${fk}', $fkValue);
-        }`).join('');
                 const filterQueryCode = `
     protected function getTableQuery(): Builder
     {
         $query = parent::getTableQuery();
-        ${whereClauses}
+        
+        if ($fkValue = request()->query('${foreignKey}')) {
+            $query->where('${foreignKey}', $fkValue);
+        }
         return $query;
     }`;
                 listContent = listContent.replace('<<FILTER_QUERY>>', filterQueryCode);
-
-                // 9. Iframe Setup
+                
                 const iframeSetupCode = `
     public function mount(): void
     {
         parent::mount();
+
         if (request()->has('iframe')) {
             session(['is_in_iframe' => true]);
+            session(['foreignkey' => '${foreignKey}']);
         } else {
             session()->forget('is_in_iframe');
+            session()->forget('foreignkey');
         }
     }
     
@@ -2386,11 +2380,10 @@ async function generateFilamentListPages(fullSchema, basePath) {
                 listContent = listContent.replace('<<IFRAME_SETUP>>', iframeSetupCode);
 
             } else {
-                // 5. Create Action (untuk parent table / standalone table)
+                // Jika bukan dalam konteks iframe, guna CreateAction biasa
                 listContent = listContent.replace('<<CREATE_ACTION>>', 'CreateAction::make(),');
             }
 
-            // 6. Vertical Action Button CSS (jika jadual ini adalah parent)
             const hasChildWithCount = relationships.some(r => r.parent_table_name === tableName && r.show_count_in_tv === 1);
             if (hasChildWithCount) {
                 const cssCode = `
@@ -2410,7 +2403,6 @@ async function generateFilamentListPages(fullSchema, basePath) {
                 listContent = listContent.replace('<<VERTICAL_ACTION_BUTTON_CSS>>', cssCode);
             }
 
-            // 10. Print Action CSS
             if (tableData.allow_print_view === 1) {
                 const printCssCode = `
         if ((bool) request()->query('print')) {
@@ -2438,12 +2430,9 @@ async function generateFilamentListPages(fullSchema, basePath) {
                 listContent = listContent.replace('<<PRINT_ACTION_CSS>>', printCssCode);
             }
 
-            // Bersihkan placeholder yang tidak digunakan
-// Bersihkan placeholder yang tidak digunakan dan baris kosong yang terhasil
-            listContent = listContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, ''); // Buang placeholder pada baris sendiri
-            listContent = listContent.replace(/<<.*?>>/g, ''); // Buang placeholder dalam baris (inline)
+            listContent = listContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
+            listContent = listContent.replace(/<<.*?>>/g, '');
 
-            // 11. Jana fail output
             const resourceFolder = modelNamePlural;
             const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'Pages');
             fs.mkdirSync(outputFolderPath, { recursive: true });
@@ -2468,7 +2457,7 @@ async function generateFilamentListPages(fullSchema, basePath) {
  */
 async function generateFilamentCreatePages(fullSchema, basePath) {
     try {
-        const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
+        const { database: { table: tables, relationships } } = fullSchema;
 
         const templatePath = path.join(__dirname, 'templates/php/filament/app/Filament/Resources/PagesCreate.template');
         if (!fs.existsSync(templatePath)) {
@@ -2481,6 +2470,7 @@ async function generateFilamentCreatePages(fullSchema, basePath) {
                 continue; // Langkau jadual 'users'
             }
 
+            const tableData = tables[tableName]; // Dapatkan data untuk jadual semasa
             let createContent = templateContent;
 
             const modelNameSingular = toSingularPascalCase(tableName);
@@ -2488,18 +2478,19 @@ async function generateFilamentCreatePages(fullSchema, basePath) {
 
             const modelNamePlural = toPluralPascalCase(tableName);
             createContent = createContent.replace(/<<TABLE_NAME_PLURAL>>/g, modelNamePlural);
+            
+            // ▼▼▼ PENAMBAHBAIKAN UNTUK GRID COLUMNS BERMULA DI SINI ▼▼▼
+            if (tableData && tableData.column_grid_type === 'dynamic') {
+                createContent = createContent.replace('<<GRIDCOLUMN_VAR>>', 'public int $gridColumns = 2;');
+            }
+            // ▲▲▲ PENAMBAHBAIKAN TAMAT ▲▲▲
 
-            // ▼▼▼ PENAMBAHBAIKAN BERMULA DI SINI ▼▼▼
-            // Semak jika jadual ini adalah 'child' dalam konteks paparan modal (show_count_in_tv)
             const isChildInIframeContext = relationships.some(r => 
                 r.child_table_name === tableName && r.show_count_in_tv === 1
             );
 
             if (isChildInIframeContext) {
                 const iframeLayoutCode = `
-    /**
-     * This method will select the layout dynamically.
-     */
     public function getLayout(): string
     {
         if (session('is_in_iframe')) {
@@ -2511,7 +2502,6 @@ async function generateFilamentCreatePages(fullSchema, basePath) {
 `;
                 createContent = createContent.replace('<<IFRAME_LAYOUT>>', iframeLayoutCode);
             }
-            // ▲▲▲ PENAMBAHBAIKAN TAMAT ▲▲▲
 
             // Bersihkan placeholder yang tidak digunakan dan baris kosong
             createContent = createContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
@@ -2541,7 +2531,7 @@ async function generateFilamentCreatePages(fullSchema, basePath) {
  */
 async function generateFilamentEditPages(fullSchema, basePath) {
     try {
-        const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
+        const { database: { table: tables, relationships } } = fullSchema;
 
         const templatePath = path.join(__dirname, 'templates/php/filament/app/Filament/Resources/PagesEdit.template');
         if (!fs.existsSync(templatePath)) {
@@ -2551,7 +2541,7 @@ async function generateFilamentEditPages(fullSchema, basePath) {
 
         for (const tableName in tables) {
             if (tableName === 'users') {
-                continue; // Langkau jadual 'users'
+                continue;
             }
             const tableData = tables[tableName];
             let editContent = templateContent;
@@ -2575,7 +2565,12 @@ async function generateFilamentEditPages(fullSchema, basePath) {
             const firstStringField = Object.values(tableData.fields).find(f => stringTypes.includes(f.data_type.toUpperCase()));
             editContent = editContent.replace('<<FIRST_STRING_FIELD>>', firstStringField ? firstStringField.field_name : '');
             
-            // Logik sedia ada untuk PARENT table
+            // ▼▼▼ PENAMBAHBAIKAN UNTUK GRID COLUMNS BERMULA DI SINI ▼▼▼
+            if (tableData && tableData.column_grid_type === 'dynamic') {
+                editContent = editContent.replace('<<GRIDCOLUMN_VAR>>', '    public int $gridColumns = 2;');
+            }
+            // ▲▲▲ PENAMBAHBAIKAN TAMAT ▲▲▲
+            
             const isParentTable = relationships.some(r => r.parent_table_name === tableName);
             if(isParentTable) {
                 const iframeParentCode = `
@@ -2599,17 +2594,12 @@ async function generateFilamentEditPages(fullSchema, basePath) {
                 editContent = editContent.replace('<<IFRAME_PARENT_SETUP>>', iframeParentCode);
             }
 
-            // ▼▼▼ PENAMBAHBAIKAN BERMULA DI SINI ▼▼▼
-            // Tambah iframe layout untuk CHILD tables yang dibuka dari modal
             const isChildInIframeContext = relationships.some(r => 
                 r.child_table_name === tableName && r.show_count_in_tv === 1
             );
 
             if (isChildInIframeContext) {
                 const iframeLayoutCode = `
-    /**
-     * This method will select the layout dynamically.
-     */
     public function getLayout(): string
     {
         if (session('is_in_iframe')) {
@@ -2621,9 +2611,7 @@ async function generateFilamentEditPages(fullSchema, basePath) {
 `;
                 editContent = editContent.replace('<<IFRAME_CHILD_LAYOUT>>', iframeLayoutCode);
             }
-            // ▲▲▲ PENAMBAHBAIKAN TAMAT ▲▲▲
 
-            // Logik sedia ada untuk CHILD table (refresh on close)
             const isChildTable = relationships.some(r => r.child_table_name === tableName);
             if (isChildTable) {
                 editContent = editContent.replace('<<IMPORT_CLOSE_IFRAME>>', 'use Filament\\Support\\Facades\\FilamentView;\nuse Illuminate\\Contracts\\View\\View;');

@@ -15,7 +15,7 @@ class Edit<<TABLE_NAME_SINGULAR>> extends EditRecord
 {
     protected static string $resource = <<TABLE_NAME_SINGULAR>>Resource::class;
     
-    public int $gridColumns = 2;
+    <<GRIDCOLUMN_VAR>>
     
     protected function getHeaderActions(): array
     {
