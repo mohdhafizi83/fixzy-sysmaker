@@ -3876,3 +3876,16 @@ input.is-invalid:focus {
 .no-scroll {
     overflow-y: hidden;
 }
+
+/* ADD THIS CSS AT THE END OF THE FILE */
+
+/* ================================================================== */
+/* == STYLES FOR 2-COLUMN OPTIONS GRID                           == */
+/* ================================================================== */
+
+.options-grid-2-col {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Cipta 2 lajur dengan lebar yang sama */
+    gap: 1rem 1.5rem; /* Jarak antara baris dan lajur */
+    align-items: start; /* Jajarkan item ke bahagian atas sel grid */
+}

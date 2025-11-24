@@ -900,13 +900,16 @@ use App\Filament\Resources\<<CHILD_TABLE_NAME_PLURAL>>\<<CHILD_TABLE_NAME_SINGUL
 
 7.30 Gantikan <<IS_CAPTION>> "->label('<<CAPTION_VALUE>>')". Gantikan <<CAPTION_VALUE>> dengan caption.
 
-7.31 Jika display_type = 'options_list' dan options_display = 'dropdown' atau 'radios' atau 'checkboxes', gantikan <<OPTIONS_LIST_DROPDOWN>> dengan kod dibawah. Gantikan <<ARRAY_OPTIONS_LIST_VALUES>> dengan options_list_values dalam format array. Contoh options_list_values = 'aa,bb,cc,dd', <<ARRAY_OPTIONS_LIST_VALUES>> akan digantikan 'aa' => 'Aa', 'bb' => 'Bb', 'cc' => 'Cc', 'dd' => 'Dd'
+7.31 Jika display_type = 'options_list' dan data_type bukan BOOLEAN, gantikan <<OPTIONS_LIST_DROPDOWN>> dengan kod dibawah. Gantikan <<ARRAY_OPTIONS_LIST_VALUES>> dengan options_list_values dalam format array. Contoh options_list_values = 'aa,bb,cc,dd', <<ARRAY_OPTIONS_LIST_VALUES>> akan digantikan 'aa' => 'Aa', 'bb' => 'Bb', 'cc' => 'Cc', 'dd' => 'Dd'. Jika options_display = 'multi', gantikan <<IS_MULTIPLE>> dengan "->multiple()".
 
 "
+<<IS_MULTIPLE>>
 ->options([
     <<ARRAY_OPTIONS_LIST_VALUES>>
 ])
 "
+
+7.31 Jika display_type = 'options_list' dan data_type = 'BOOLEAN', gantikan <<OPTIONS_LIST_DROPDOWN>> dengan "->boolean('<<IS_TRUE>>', '<<IS_FALSE>>')". Gantikan <<IS_TRUE>> dengan boolean_label_true dan <<IS_FALSE>> dengan boolean_label_false.
 
 7.32 Jika lookup_parent_table bukan empty/null dan bukan self-referencing relationships, gantikan <<IS_RELATIONSHIP_NORMAL>> dengan "->relationship('<<LOOKUP_PARENT_TABLE>>', '<<LOOKUP_CAPTION_1>>')". Gantikan <<LOOKUP_PARENT_TABLE>> dengan camelCase lookup_parent_table, dan <<LOOKUP_CAPTION_1>> dengan lookup_caption_1.
 
@@ -970,20 +973,72 @@ FileUpload::make('<<FIELD_NAME>>')
 
 7.44 Gunakan kod dibawah sebagai base untuk setiap fields jika media_type = 'upload'.
 7.44.1 Gantikan <<FIELD_NAME>> dengan field_name. 
-7.44.2 Gantikan <<FIELD_LABEL>> dengan "->label('<<FIELD_NAME_TITLECASE>>')" dan gantikan <<FIELD_NAME_TITLECASE>> dengan Title case field_name. Contoh table_name = bas_sekolah, Title case ialah 'Bas sekolah'.
+7.44.2 Gantikan <<FIELD_NAME_TITLECASE>> dengan Title case field_name. Contoh table_name = bas_sekolah, Title case ialah 'Bas sekolah'.
 7.43.3 Gantikan <<FILE_STORAGE_DISK>> dengan "->disk('<<FILE_STORAGE_PROVIDER>>')". Gantikan <<FILE_STORAGE_PROVIDER>> dengan "file_storage_provider".
 7.43.4 Gantikan <<KEBAB_FIELD_NAME>> dengan kebab-case field_name. Contoh field_name = 'fail_saya', kebab-case ialah 'fail-saya'.
 7.43.5 Gantikan <<ARRAY_FILES_TYPE>> dengan file_types dalam format array. Contoh options_list_values = 'image/jpeg,image/jpeg,application/pdf', <<ARRAY_FILES_TYPE>> akan digantikan 'image/jpeg', 'image/jpeg', 'application/pdf'
 
 "
 FileUpload::make('<<FIELD_NAME>>')
-    ->label('<<FIELD_LABEL>>')
+    ->label('<<FIELD_NAME_TITLECASE>>')
     ->directory('<<KEBAB_FIELD_NAME>>')
     <<FILE_STORAGE_DISK>>
     ->acceptedFileTypes([<<ARRAY_FILES_TYPE>>])
     ->downloadable()
     ->openable(),
 "
+
+7.45 Gunakan kod dibawah sebagai base untuk setiap fields jika display_type = 'repeater_simple'.
+7.45.1 Gantikan <<FIELD_NAME>> dengan field_name. 
+7.45.2 Gantikan <<FIELD_NAME_TITLECASE>> dengan Title case field_name. Contoh table_name = bas_sekolah, Title case ialah 'Bas sekolah'.
+7.45.3 Jika repeater_simple_display_as = text_input, gantikan <<ELEMENT_TYPE>> dengan "TextInput". Jika repeater_simple_display_as = dropdown_list, gantikan <<ELEMENT_TYPE>> dengan "Select". 
+7.45.4 Jika repeater_simple_display_as = text_input, gantikan:
+- <<IS_ELEMENT>> dengan "->email()" jika repeater_simple_format_as = 'email'
+- <<IS_ELEMENT>> dengan "->url()" jika repeater_simple_format_as = 'url'
+- <<IS_ELEMENT>> dengan "->password()->revealable()" jika repeater_simple_format_as = 'password'
+- <<IS_ELEMENT>> dengan "->tel()->telRegex('/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\.\/0-9]*$/')" jika repeater_simple_format_as = 'tel'
+7.45.5 Jika repeater_simple_required = 1, gantikan <<IS_REQUIRED>> dengan "->required()".
+7.45.6 Jika repeater_simple_display_as = dropdown_list, gantikan <<OPTIONS_LIST_DROPDOWN>> dengan kod dibawah. Gantikan <<ARRAY_OPTIONS_LIST_VALUES>> dengan repeater_simple_list_values dalam format array. Contoh repeater_simple_list_values = 'aa,bb,cc,dd', <<ARRAY_OPTIONS_LIST_VALUES>> akan digantikan 'aa' => 'Aa', 'bb' => 'Bb', 'cc' => 'Cc', 'dd' => 'Dd'
+
+"
+->options([
+    <<ARRAY_OPTIONS_LIST_VALUES>>
+])
+"
+
+"
+Repeater::make('<<FIELD_NAME>>')
+    ->label('<<FIELD_NAME_TITLECASE>>')
+    ->simple(
+        <<ELEMENT_TYPE>>::make('<<FIELD_NAME>>')<<IS_ELEMENT>><<IS_REQUIRED>><<OPTIONS_LIST_DROPDOWN>>->unique(ignoreRecord: true),
+    ),
+    ->reorderable(false),
+"
+
+7.46 Gunakan kod dibawah sebagai base untuk setiap fields jika display_type = 'repeater'.
+7.46.1 Gantikan <<FIELD_NAME>> dengan field_name. 
+7.46.2 Gantikan <<FIELD_NAME_TITLECASE>> dengan Title case field_name. Contoh table_name = bas_sekolah, Title case ialah 'Bas sekolah'.
+7.46.3 Jika repeater_1_display_as = text_input, gantikan <<ELEMENT_TYPE>> dengan "TextInput". Jika repeater_1_display_as = dropdown_list, gantikan <<ELEMENT_TYPE>> dengan "Select". 
+7.46.4 Jika repeater_1_display_as = text_input, gantikan:
+- <<IS_ELEMENT>> dengan "->email()" jika repeater_1_format_as = 'email'
+- <<IS_ELEMENT>> dengan "->url()" jika repeater_1_format_as = 'url'
+- <<IS_ELEMENT>> dengan "->password()->revealable()" jika repeater_1_format_as = 'password'
+- <<IS_ELEMENT>> dengan "->tel()->telRegex('/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\.\/0-9]*$/')" jika repeater_1_format_as = 'tel'
+7.46.5 Jika repeater_1_required = 1, gantikan <<IS_REQUIRED>> dengan "->required()".
+7.46.6 Jika repeater_1_display_as = dropdown_list, gantikan <<OPTIONS_LIST_DROPDOWN>> dengan kod dibawah. Gantikan <<ARRAY_OPTIONS_LIST_VALUES>> dengan repeater_1_list_values dalam format array. Contoh repeater_1_list_values = 'aa,bb,cc,dd', <<ARRAY_OPTIONS_LIST_VALUES>> akan digantikan 'aa' => 'Aa', 'bb' => 'Bb', 'cc' => 'Cc', 'dd' => 'Dd'
+7.46.7 ulang proses yang sama untuk repeater_2_display_as, repeater_2_required,repeater_2_format_as, repeater_2_list_values dan repeater_3_display_as, repeater_3_required,repeater_3_format_as, repeater_3_list_values. Gantikan ulangan ini pada <<ELEMENT_2>> dan <<ELEMENT_3>>.
+
+"
+Repeater::make('<<FIELD_NAME>>')
+    ->label('<<FIELD_NAME_TITLECASE>>')
+    ->schema([
+        <<ELEMENT_TYPE>>::make('<<FIELD_NAME>>')<<IS_ELEMENT>><<IS_REQUIRED>><<OPTIONS_LIST_DROPDOWN>>->unique(ignoreRecord: true),
+        <<ELEMENT_2>>
+        <<ELEMENT_3>>
+    ])
+    ->reorderable(false),
+"
+
 8. Gantikan <<ALL_COLUMNS_FORM>> dengan kesemua janaan setiap fields diatas.
 9. Buang kesemua import yang tidak digunakan didalam script ini selepas semua selesai di jana.
 

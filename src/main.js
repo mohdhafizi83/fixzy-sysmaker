@@ -1932,9 +1932,23 @@ async function generateFilamentModels(fullSchema, basePath) {
             const excludedFields = ['created_at', 'updated_at', 'deleted_at', primaryKeyField?.field_name];
             const fillableFields = Object.values(tableData.fields).filter(field => !excludedFields.includes(field.field_name) && field.read_only !== 1).map(field => `\n        '${field.field_name}'`).join(',');
             modelContent = modelContent.replace('<<ARRAY_EDITABLE_BYUSER_FIELDS>>', fillableFields ? `${fillableFields}\n    ` : '');
-            const jsonFields = Object.values(tableData.fields).filter(field => field.data_type === 'JSON');
-            if (jsonFields.length > 0) {
-                const castLines = jsonFields.map(field => `\n        '${field.field_name}' => 'array',`).join('');
+            
+            const castableFields = Object.values(tableData.fields).filter(field => 
+                field.data_type === 'JSON' || 
+                (field.data_type === 'BOOLEAN' && field.display_type === 'check_box')
+            );
+            
+            if (castableFields.length > 0) {
+                const castLines = castableFields.map(field => {
+                    let castType = '';
+                    if (field.data_type === 'JSON') {
+                        castType = 'array';
+                    } else if (field.data_type === 'BOOLEAN' && field.display_type === 'check_box') {
+                        castType = 'boolean';
+                    }
+                    return `\n        '${field.field_name}' => '${castType}',`;
+                }).join('');
+
                 const castsProperty = `\n    protected \$casts = [${castLines}\n    ];`;
                 modelContent = modelContent.replace('<<MODEL_CASTS>>', castsProperty);
             }

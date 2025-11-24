@@ -1849,252 +1849,348 @@
     <input type="hidden" id="fld-lookup-custom-query-hidden">
 </div>
 </div>
-            <div id="tab-field-options" class="tab-pane">
-                <div class="card">
-                    <div class="card-body">
-                   
-<div class="fieldset-grid">
-    <fieldset>
-        <legend>Table List: Content Display & Options</legend>
-        <div class="checkbox-group">
-            <label class="checkbox-label"><input type="checkbox" id="fld-hide-in-tv" name="fld-hide-in-tv"> Hide in 'Table List'</label>
-        <label class="checkbox-label">
-            <input type="checkbox" id="fld-editable-in-tv" name="fld-editable-in-tv"> Editable in 'Table List'
-        </label>
-        <label class="checkbox-label" id="fld-allow-sorting-group">
-            <input type="checkbox" id="fld-allow-sorting" name="fld-allow-sorting" checked> Enable sorting
-        </label>
-        <label class="checkbox-label" id="fld-enable-global-filter-group">
-            <input type="checkbox" id="fld-enable-global-filter" name="fld-enable-global-filter"> Enable global filter
-        </label>
-        <label class="checkbox-label" id="fld-enable-individual-filter-group">
-            <input type="checkbox" id="fld-enable-individual-filter" name="fld-enable-individual-filter"> Enable individual filter
-        </label>
-        <label class="checkbox-label" id="fld-enable-range-filter-group">
-            <input type="checkbox" id="fld-enable-range-filter" name="fld-enable-range-filter"> Enable range filter
-        </label>
-<div class="form-group hidden" id="date-time-format-group" style="margin-top: 1rem;">
-    <label>Date Time Format</label>
-    <div class="radio-group-horizontal" style="margin-top: 0.5rem;">
-        <label class="radio-label">
-            <input type="radio" name="fld-tv-date-time-format" value="date_only"> Date only
-        </label>
-        <label class="radio-label">
-            <input type="radio" name="fld-tv-date-time-format" value="date_and_time" checked> Date and Time
-        </label>
-    </div>
-</div>
-                <div class="form-group hidden" id="currency-code-group" style="margin-top: 1rem;">
-            <label for="fld-tv-currency-code">Currency code</label>
-            <div class="input-group">
-                <input type="text" id="fld-tv-currency-code" name="fld-tv-currency-code" placeholder="e.g., MYR" maxlength="3">
-                <a href="https://en.wikipedia.org/wiki/ISO_4217#List_of_currency_codes" target="_blank" class="btn">ISO 4217</a>
-            </div>
-        </div>
-            <label class="checkbox-label" id="fld-show-sum-group"><input type="checkbox" id="fld-show-sum" name="fld-show-sum"> Show sum summary</label>
-        <label class="checkbox-label" id="fld-show-avg-summary-group">
-            <input type="checkbox" id="fld-show-avg-summary" name="fld-show-avg-summary"> Show average summary
-        </label>
-        <label class="checkbox-label" id="fld-show-count-summary-group">
-            <input type="checkbox" id="fld-show-count-summary" name="fld-show-count-summary"> Show count summary
-        </label>
-        <label class="checkbox-label" id="fld-show-range-summary-group">
-            <input type="checkbox" id="fld-show-range-summary" name="fld-show-range-summary"> Show range summary
-        </label>
-        
-        <label class="checkbox-label"><input type="checkbox" id="fld-tv-wrap-header" name="fld-tv-wrap-header"> Enable wrap column header</label>
-        <label class="checkbox-label" id="fld-tv-wrap-text-group">
-            <input type="checkbox" id="fld-tv-wrap-text" name="fld-tv-wrap-text"> Enable wrap text
-        </label>
-        <label class="checkbox-label"><input type="checkbox" id="fld-tv-enable-toggle" name="fld-tv-enable-toggle"> Enable Toggled Hidden By Default</label>
-        <label class="checkbox-label"><input type="checkbox" id="fld-tv-description-tooltips" name="fld-tv-description-tooltips"> Enable description tooltips</label>
+<div id="tab-field-options" class="tab-pane">
+    <div class="card">
+        <div class="card-body">
+            <div class="tabs-container">
+                <div class="tabs-nav">
+                    <button class="tab-link active" data-tab="tab-tv-options">'Table List' Options</button>
+                    <button class="tab-link" data-tab="tab-dv-options">'Record Form' Options</button>
+                </div>
+                <div class="tabs-content">
+                    <div id="tab-tv-options" class="tab-pane active">
+                        <fieldset>
+                            <legend>Table List: Content Display & Options</legend>
+                            <div class="options-grid-2-col">
+                                <label class="checkbox-label"><input type="checkbox" id="fld-hide-in-tv" name="fld-hide-in-tv"> Hide in 'Table List'</label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="fld-editable-in-tv" name="fld-editable-in-tv"> Editable in 'Table List'
+                                </label>
+                                <label class="checkbox-label" id="fld-allow-sorting-group">
+                                    <input type="checkbox" id="fld-allow-sorting" name="fld-allow-sorting" checked> Enable sorting
+                                </label>
+                                <label class="checkbox-label" id="fld-enable-global-filter-group">
+                                    <input type="checkbox" id="fld-enable-global-filter" name="fld-enable-global-filter"> Enable global filter
+                                </label>
+                                <label class="checkbox-label" id="fld-enable-individual-filter-group">
+                                    <input type="checkbox" id="fld-enable-individual-filter" name="fld-enable-individual-filter"> Enable individual filter
+                                </label>
+                                <label class="checkbox-label" id="fld-enable-range-filter-group">
+                                    <input type="checkbox" id="fld-enable-range-filter" name="fld-enable-range-filter"> Enable range filter
+                                </label>
+                                <label class="checkbox-label" id="fld-show-sum-group"><input type="checkbox" id="fld-show-sum" name="fld-show-sum"> Show sum summary</label>
+                                <label class="checkbox-label" id="fld-show-avg-summary-group">
+                                    <input type="checkbox" id="fld-show-avg-summary" name="fld-show-avg-summary"> Show average summary
+                                </label>
+                                <label class="checkbox-label" id="fld-show-count-summary-group">
+                                    <input type="checkbox" id="fld-show-count-summary" name="fld-show-count-summary"> Show count summary
+                                </label>
+                                <label class="checkbox-label" id="fld-show-range-summary-group">
+                                    <input type="checkbox" id="fld-show-range-summary" name="fld-show-range-summary"> Show range summary
+                                </label>
+                                <label class="checkbox-label"><input type="checkbox" id="fld-tv-wrap-header" name="fld-tv-wrap-header"> Enable wrap column header</label>
+                                <label class="checkbox-label" id="fld-tv-wrap-text-group">
+                                    <input type="checkbox" id="fld-tv-wrap-text" name="fld-tv-wrap-text"> Enable wrap text
+                                </label>
+                                <label class="checkbox-label"><input type="checkbox" id="fld-tv-enable-toggle" name="fld-tv-enable-toggle"> Enable Toggled Hidden By Default</label>
+                                <label class="checkbox-label"><input type="checkbox" id="fld-tv-description-tooltips" name="fld-tv-description-tooltips"> Enable description tooltips</label>
+                                <div class="form-group hidden" id="date-time-format-group">
+                                    <label>Date Time Format</label>
+                                    <div class="radio-group-horizontal">
+                                        <label class="radio-label">
+                                            <input type="radio" name="fld-tv-date-time-format" value="date_only"> Date only
+                                        </label>
+                                        <label class="radio-label">
+                                            <input type="radio" name="fld-tv-date-time-format" value="date_and_time" checked> Date and Time
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="form-group hidden" id="currency-code-group">
+                                    <label for="fld-tv-currency-code">Currency code</label>
+                                    <div class="input-group">
+                                        <input type="text" id="fld-tv-currency-code" name="fld-tv-currency-code" placeholder="e.g., MYR" maxlength="3">
+                                        <a href="https://en.wikipedia.org/wiki/ISO_4217#List_of_currency_codes" target="_blank" class="btn">ISO 4217</a>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="fld-tv-alignment">Alignment</label>
+                                    <select id="fld-tv-alignment" name="fld-tv-alignment">
+                                        <option value="left">Left</option>
+                                        <option value="center">Center</option>
+                                        <option value="right">Right</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="fld-tv-text-limit-group">
+                                    <label for="fld-tv-text-limit">Text limit</label>
+                                    <input type="number" id="fld-tv-text-limit" name="fld-tv-text-limit" value="50" style="max-width: 100px;">
+                                </div>
+                                <div class="form-group" id="fld-tv-text-size-group">
+                                    <label for="fld-tv-text-size">Text Size</label>
+                                    <select id="fld-tv-text-size" name="fld-tv-text-size">
+                                        <option value="ExtraSmall">Extra Small</option>
+                                        <option value="Normal" selected>Normal</option>
+                                        <option value="Medium">Medium</option>
+                                        <option value="Large">Large</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="fld-tv-font-weight-group">
+                                    <label for="fld-tv-font-weight">Font weight</label>
+                                    <select id="fld-tv-font-weight" name="fld-tv-font-weight">
+                                        <option value="Thin">Thin</option>
+                                        <option value="ExtraLight">Extra Light</option>
+                                        <option value="Light">Light</option>
+                                        <option value="Regular" selected>Regular</option>
+                                        <option value="Medium">Medium</option>
+                                        <option value="SemiBold">Semi Bold</option>
+                                        <option value="Bold">Bold</option>
+                                        <option value="ExtraBold">Extra Bold</option>
+                                        <option value="Black">Black</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="fld-tv-text-color-group">
+                                    <label for="fld-tv-text-color">Text color</label>
+                                    <select id="fld-tv-text-color" name="fld-tv-text-color">
+                                        <option value=""></option>
+                                        <option value="gray">Gray</option>
+                                        <option value="info">Info</option>
+                                        <option value="primary">Primary</option>
+                                        <option value="warning">Warning</option>
+                                        <option value="success">Success</option>
+                                        <option value="danger">Danger</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="fld-tv-icon-group">
+                                    <label for="fld-tv-icon">Icon</label>
+                                    <div class="input-group">
+                                        <input type="text" id="fld-tv-icon" name="fld-tv-icon" placeholder="e.g., check-circle">
+                                        <a href="https://heroicons.com/" target="_blank" class="btn">Heroicons</a>
+                                    </div>
+                                </div>
+                                <div class="form-group" id="fld-tv-icon-color-group">
+                                    <label for="fld-tv-icon-color">Icon color</label>
+                                    <select id="fld-tv-icon-color" name="fld-tv-icon-color">
+                                        <option value=""></option>
+                                        <option value="gray">Gray</option>
+                                        <option value="info">Info</option>
+                                        <option value="primary">Primary</option>
+                                        <option value="warning">Warning</option>
+                                        <option value="success">Success</option>
+                                        <option value="danger">Danger</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+                    <div id="tab-dv-options" class="tab-pane">
+                        <fieldset>
+                            <legend>Record Form: Element Display & Behavior</legend>
+                            <div class="options-grid-2-col">
+                                <label class="checkbox-label"><input type="checkbox" id="fld-hide-in-dv" name="fld-hide-in-dv"> Hide in 'Record Form'</label>
+                                <label class="checkbox-label"><input type="checkbox" id="fld-required" name="fld-required"> Required</label>
+                                <label class="checkbox-label"><input type="checkbox" id="fld-read-only" name="fld-read-only"> Read Only</label>
+                                <div class="form-group" style="grid-column: 1 / -1; margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                                    <label for="fld-helper-text">Helper Text</label>
+                                    <input type="text" id="fld-helper-text" name="fld-helper-text" placeholder="e.g., Please enter your full name as per I.C.">
+                                </div>
+                                <div class="form-group" style="grid-column: 1 / -1;">
+                                    <label for="fld-placeholder">Placeholder</label>
+                                    <input type="text" id="fld-placeholder" name="fld-placeholder" placeholder="e.g., John Doe">
+                                </div>
+                                <div class="form-group">
+                                    <label for="fld-min-length">Min length</label>
+                                    <input type="number" id="fld-min-length" name="fld-min-length" placeholder="no limit">
+                                </div>
+                                <div class="form-group">
+                                    <label for="fld-max-length">Max length</label>
+                                    <input type="number" id="fld-max-length" name="fld-max-length" readonly>
+                                </div>
+                                <div class="form-group" id="fld-min-value-group">
+                                    <label for="fld-min-value">Min value</label>
+                                    <input type="number" id="fld-min-value" name="fld-min-value" placeholder="no limit">
+                                </div>
+                                <div class="form-group" id="fld-max-value-group">
+                                    <label for="fld-max-value">Max value</label>
+                                    <input type="number" id="fld-max-value" name="fld-max-value" placeholder="no limit">
+                                </div>
+                                <div class="form-group" id="display-as-group">
+                                    <label style="margin-bottom: 0.75rem;">Display As</label>
+                                    <div class="radio-group" style="flex-direction: column; gap: 0.75rem; align-items: flex-start;">
+                                        <label><input type="radio" name="fld-display-type" value="text_input" checked> Text Input (Default)</label>
+                                        <label><input type="radio" name="fld-display-type" value="datetime_input"> Datetime Input</label>
+                                        <label><input type="radio" name="fld-display-type" value="text_area"> Text Area</label>
+                                        <label><input type="radio" name="fld-display-type" value="rich_html"> Text Editor</label>
+                                        <label><input type="radio" name="fld-display-type" value="check_box"> Check Box</label>
+                                        <label><input type="radio" name="fld-display-type" value="options_list"> Options List</label>
+                                        <label><input type="radio" name="fld-display-type" value="repeater"> Repeater - Standard</label>
+                                        <label><input type="radio" name="fld-display-type" value="repeater_simple"> Repeater - Simple</label>
+                                    </div>
+                                </div>
 
-        <div class="form-group" style="margin-top: 1rem;">
-            <label for="fld-tv-alignment">Alignment</label>
-            <select id="fld-tv-alignment" name="fld-tv-alignment">
-                <option value="left">Left</option>
-                <option value="center">Center</option>
-                <option value="right">Right</option>
-            </select>
-        </div>
-        <div class="form-group" id="fld-tv-text-limit-group">
-            <label for="fld-tv-text-limit">Text limit</label>
-            <input type="number" id="fld-tv-text-limit" name="fld-tv-text-limit" value="50" style="max-width: 100px;">
-        </div>
-        <div class="form-group" id="fld-tv-text-size-group">
-            <label for="fld-tv-text-size">Text Size</label>
-            <select id="fld-tv-text-size" name="fld-tv-text-size">
-                <option value="ExtraSmall">Extra Small</option>
-                <option value="Normal" selected>Normal</option>
-                <option value="Medium">Medium</option>
-                <option value="Large">Large</option>
-            </select>
-        </div>
-        <div class="form-group" id="fld-tv-font-weight-group">
-            <label for="fld-tv-font-weight">Font weight</label>
-            <select id="fld-tv-font-weight" name="fld-tv-font-weight">
-                <option value="Thin">Thin</option>
-                <option value="ExtraLight">Extra Light</option>
-                <option value="Light">Light</option>
-                <option value="Regular" selected>Regular</option>
-                <option value="Medium">Medium</option>
-                <option value="SemiBold">Semi Bold</option>
-                <option value="Bold">Bold</option>
-                <option value="ExtraBold">Extra Bold</option>
-                <option value="Black">Black</option>
-            </select>
-        </div>
-        
-        <div class="form-group" id="fld-tv-text-color-group">
-            <label for="fld-tv-text-color">Text color</label>
-            <select id="fld-tv-text-color" name="fld-tv-text-color">
-                <option value=""></option>
-                <option value="gray">Gray</option>
-                <option value="info">Info</option>
-                <option value="primary">Primary</option>
-                <option value="warning">Warning</option>
-                <option value="success">Success</option>
-                <option value="danger">Danger</option>
-            </select>
-        </div>
-        <div class="form-group" id="fld-tv-icon-group">
-            <label for="fld-tv-icon">Icon</label>
-            <div class="input-group">
-                <input type="text" id="fld-tv-icon" name="fld-tv-icon" placeholder="e.g., check-circle">
-                <a href="https://heroicons.com/" target="_blank" class="btn">Heroicons</a>
+<div class="form-group" style="margin-top: 0.75rem;" id="display-as-group">
             </div>
-        </div>
-        <div class="form-group" id="fld-tv-icon-color-group">
-            <label for="fld-tv-icon-color">Icon color</label>
-            <select id="fld-tv-icon-color" name="fld-tv-icon-color">
-                <option value=""></option>
-                <option value="gray">Gray</option>
-                <option value="info">Info</option>
-                <option value="primary">Primary</option>
-                <option value="warning">Warning</option>
-                <option value="success">Success</option>
-                <option value="danger">Danger</option>
-            </select>
-        </div>
-        
-        </div>
-    </fieldset>
 
-<fieldset>
-    <legend>Record Form:  Element Display & Behavior</legend>
-    <div class="checkbox-group">
-       <label class="checkbox-label"><input type="checkbox" id="fld-hide-in-dv" name="fld-hide-in-dv"> Hide in 'Record Form'</label>
-        <label class="checkbox-label"><input type="checkbox" id="fld-required" name="fld-required"> Required</label>
-<label class="checkbox-label"><input type="checkbox" id="fld-read-only" name="fld-read-only"> Read Only</label>
-        
-        <div class="form-group" style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
-            <label for="fld-helper-text">Helper Text</label>
-            <input type="text" id="fld-helper-text" name="fld-helper-text" placeholder="e.g., Please enter your full name as per I.C.">
+<div id="fld-repeater-options-group" class="form-group hidden" style="border-top: 1px solid var(--border-color); margin-top: 1rem; padding-top: 1rem;">
+            <fieldset>
+                <legend>Repeater Element 1</legend>
+                <div class="form-group">
+                    <label for="fld-repeater-1-display-as">Display As</label>
+                    <select id="fld-repeater-1-display-as" name="fld-repeater-1-display-as">
+                        <option value="" selected></option>
+                        <option value="text_input">Text input</option>
+                        <option value="dropdown_list">Dropdown list</option>
+                    </select>
+                </div>
+                <div class="form-group hidden" id="fld-repeater-1-format-as-group">
+                    <label for="fld-repeater-1-format-as">Formatted Inputs</label>
+                    <select id="fld-repeater-1-format-as" name="fld-repeater-1-format-as">
+                        <option value="default" selected>Free text</option>
+                        <option value="email">Email</option>
+                        <option value="password">Password</option>
+                        <option value="tel">Telephone</option>
+                        <option value="url">URL</option>
+                    </select>
+                </div>
+                <div class="form-group hidden" id="fld-repeater-1-list-values-group">
+                    <label for="fld-repeater-1-list-values">List values (separated by comma ,)</label>
+                    <input type="text" id="fld-repeater-1-list-values" name="fld-repeater-1-list-values">
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="fld-repeater-1-required" name="fld-repeater-1-required"> Required
+                    </label>
+                </div> 
+            </fieldset>
+            <fieldset style="margin-top: 1rem;">
+                <legend>Repeater Element 2</legend>
+                <div class="form-group">
+                    <label for="fld-repeater-2-display-as">Display As</label>
+                    <select id="fld-repeater-2-display-as" name="fld-repeater-2-display-as">
+                        <option value="" selected></option>
+                        <option value="text_input">Text input</option>
+                        <option value="dropdown_list">Dropdown list</option>
+                    </select>
+                </div>
+                <div class="form-group hidden" id="fld-repeater-2-format-as-group">
+                    <label for="fld-repeater-2-format-as">Formatted Inputs</label>
+                    <select id="fld-repeater-2-format-as" name="fld-repeater-2-format-as">
+                        <option value="default" selected>Free text</option>
+                        <option value="email">Email</option>
+                        <option value="password">Password</option>
+                        <option value="tel">Telephone</option>
+                        <option value="url">URL</option>
+                    </select>
+                </div>
+                <div class="form-group hidden" id="fld-repeater-2-list-values-group">
+                    <label for="fld-repeater-2-list-values">List values (separated by comma ,)</label>
+                    <input type="text" id="fld-repeater-2-list-values" name="fld-repeater-2-list-values">
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="fld-repeater-2-required" name="fld-repeater-2-required"> Required
+                    </label>
+                </div>
+            </fieldset>
+            <fieldset style="margin-top: 1rem;">
+                <legend>Repeater Element 3</legend>
+                <div class="form-group">
+                    <label for="fld-repeater-3-display-as">Display As</label>
+                    <select id="fld-repeater-3-display-as" name="fld-repeater-3-display-as">
+                        <option value="" selected></option>
+                        <option value="text_input">Text input</option>
+                        <option value="dropdown_list">Dropdown list</option>
+                    </select>
+                </div>
+                <div class="form-group hidden" id="fld-repeater-3-format-as-group">
+                    <label for="fld-repeater-3-format-as">Formatted Inputs</label>
+                    <select id="fld-repeater-3-format-as" name="fld-repeater-3-format-as">
+                        <option value="default" selected>Free text</option>
+                        <option value="email">Email</option>
+                        <option value="password">Password</option>
+                        <option value="tel">Telephone</option>
+                        <option value="url">URL</option>
+                    </select>
+                </div>
+                <div class="form-group hidden" id="fld-repeater-3-list-values-group">
+                    <label for="fld-repeater-3-list-values">List values (separated by comma ,)</label>
+                    <input type="text" id="fld-repeater-3-list-values" name="fld-repeater-3-list-values">
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="fld-repeater-3-required" name="fld-repeater-3-required"> Required
+                    </label>
+                </div>
+            </fieldset>
         </div>
-
-        <div class="form-group">
-            <label for="fld-placeholder">Placeholder</label>
-            <input type="text" id="fld-placeholder" name="fld-placeholder" placeholder="e.g., John Doe">
+<div id="fld-repeater-simple-options-group" class="form-group hidden" style="border-top: 1px solid var(--border-color); margin-top: 1rem; padding-top: 1rem;">
+            <fieldset>
+                <legend>Repeater Element</legend>
+                <div class="form-group">
+                    <label for="fld-repeater-simple-display-as">Display As</label>
+                    <select id="fld-repeater-simple-display-as" name="fld-repeater-simple-display-as">
+                    <option value="" selected></option>
+                        <option value="text_input">Text input</option>
+                        <option value="dropdown_list">Dropdown list</option>
+                    </select>
+                </div>
+                <div class="form-group hidden" id="fld-repeater-simple-format-as-group">
+                    <label for="fld-repeater-simple-format-as">Formatted Inputs</label>
+                    <select id="fld-repeater-simple-format-as" name="fld-repeater-simple-format-as">
+                        <option value="default" selected>Free text</option>
+                        <option value="email">Email</option>
+                        <option value="password">Password</option>
+                        <option value="tel">Telephone</option>
+                        <option value="url">URL</option>
+                    </select>
+                </div>
+                <div class="form-group hidden" id="fld-repeater-simple-list-values-group">
+                    <label for="fld-repeater-simple-list-values">List values (separated by comma ,)</label>
+                    <input type="text" id="fld-repeater-simple-list-values" name="fld-repeater-simple-list-values">
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="fld-repeater-simple-required" name="fld-repeater-simple-required"> Required
+                    </label>
+                </div>
+            </fieldset>
         </div>
-
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-                <label for="fld-min-length">Min length</label>
-                <input type="number" id="fld-min-length" name="fld-min-length" placeholder="no limit">
-            </div>
-            <div class="form-group">
-                <label for="fld-max-length">Max length</label>
-                <input type="number" id="fld-max-length" name="fld-max-length" readonly>
-            </div>
-            <div class="form-group" id="fld-min-value-group">
-                <label for="fld-min-value">Min value</label>
-                <input type="number" id="fld-min-value" name="fld-min-value" placeholder="no limit">
-            </div>
-            <div class="form-group" id="fld-max-value-group">
-                <label for="fld-max-value">Max value</label>
-                <input type="number" id="fld-max-value" name="fld-max-value" placeholder="no limit">
-            </div>
-            </div>
-        <div class="form-group" style="margin-top: 0.75rem;" id="display-as-group">
-            <label style="margin-bottom: 0.75rem;">Display As</label>
-            <div class="radio-group" style="flex-direction: column; gap: 0.75rem; align-items: flex-start;">
-                <label><input type="radio" name="fld-display-type" value="text_input" checked> Text Input (Default)</label>
-                <label><input type="radio" name="fld-display-type" value="datetime_input"> Datetime Input</label>
-                <label><input type="radio" name="fld-display-type" value="text_area"> Text Area</label>
-                <label><input type="radio" name="fld-display-type" value="rich_html"> Text Editor</label>
-                <label><input type="radio" name="fld-display-type" value="check_box"> Check Box</label>
-                <label><input type="radio" name="fld-display-type" value="options_list"> Options List</label>
-                <label><input type="radio" name="fld-display-type" value="repeater"> Repeater</label>
-            </div>
-        </div>
-        
-        <div class="form-group hidden" id="format-as-group" style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
-        
- <label for="fld-format-as">Formatted Inputs</label>
-<select id="fld-format-as" name="fld-format-as">
-    <option value="default" selected>Free text (default)</option>
-    <option value="email">Email</option>
-    <option value="password">Password</option>
-    <option value="tel">Telephone</option>
-    <option value="url">URL</option>
-    <option value="custom">Custom Mask</option>
-</select>
-<div class="form-group mt-1 hidden" id="format-mask-group">
-    <label for="fld-format-mask">Mask</label>
-    <input type="text" id="fld-format-mask" name="fld-format-mask" placeholder="Example: (999) 999-9999">
-</div>       
-    <div class="form-group mt-1">
-        <label class="checkbox-label">
-            <input type="checkbox" id="fld-off-autocomplete" name="fld-off-autocomplete"> Off Autocomplete
-        </label>
-    </div>
-</div>
-
-    <div id="fld-text-input-addons-group">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
-            <div class="form-group">
-                <label for="fld-prefix">Prefix</label>
-                <input type="text" id="fld-prefix" name="fld-prefix" placeholder="e.g., https://">
-            </div>
-            <div class="form-group">
-                <label for="fld-suffix">Suffix</label>
-                <input type="text" id="fld-suffix" name="fld-suffix" placeholder="e.g., .com">
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label for="fld-suffix-icon">Suffix icon</label>
-            <div class="input-group">
-                <input type="text" id="fld-suffix-icon" name="fld-suffix-icon" placeholder="e.g., calendar">
-                <a href="https://heroicons.com/" target="_blank" class="btn">Heroicons</a>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label for="fld-suffix-icon-color">Suffix icon color</label>
-            <select id="fld-suffix-icon-color" name="fld-suffix-icon-color">
-                <option value=""></option>
-                <option value="gray">Gray</option>
-                <option value="info">Info</option>
-                <option value="primary">Primary</option>
-                <option value="warning">Warning</option>
-                <option value="success">Success</option>
-                <option value="danger">Danger</option>
-            </select>
-        </div>
-    </div>
-    
-    <div class="form-group mt-1 hidden" id="fld-column-span-full-group">
-        <label class="checkbox-label">
-            <input type="checkbox" id="fld-column-span-full" name="fld-column-span-full"> Column span full
-        </label>
-    </div>
-        
-<div id="options-list-settings-group" class="hidden">
-                        <div class="form-group">
-                            <label>List values (separated by double semi-colons ;;)</label>
-                            <div class="input-group">
-                                <input type="text" style="flex-grow: 1;" id="fld-options-list-values" name="fld-options-list-values">
+                                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                    <div class="form-group hidden" id="format-as-group">
+                                        <label for="fld-format-as">Formatted Inputs</label>
+                                        <select id="fld-format-as" name="fld-format-as">
+                                            <option value="default" selected>Free text (default)</option>
+                                            <option value="email">Email</option>
+                                            <option value="password">Password</option>
+                                            <option value="tel">Telephone</option>
+                                            <option value="url">URL</option>
+                                            <option value="custom">Custom Mask</option>
+                                        </select>
+                                        <div class="form-group mt-1 hidden" id="format-mask-group">
+                                            <label for="fld-format-mask">Mask</label>
+                                            <input type="text" id="fld-format-mask" name="fld-format-mask" placeholder="Example: (999) 999-9999">
+                                        </div>
+                                        <div class="form-group mt-1">
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" id="fld-off-autocomplete" name="fld-off-autocomplete"> Off Autocomplete
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div id="fld-text-input-addons-group">
+                                        <div class="form-group">
+                                            <label for="fld-prefix">Prefix</label>
+                                            <input type="text" id="fld-prefix" name="fld-prefix" placeholder="e.g., https://">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="fld-suffix">Suffix</label>
+                                            <input type="text" id="fld-suffix" name="fld-suffix" placeholder="e.g., .com">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="options-list-settings-group" class="hidden" style="grid-column: 1 / -1;">
+                                <div id="fld-standard-list-values-group">
+                                    <div class="form-group">
+                                        <label>List values (separated by double semi-colons ;;)</label>
+                                        <div class="input-group">
+                                            <input type="text" style="flex-grow: 1;" id="fld-options-list-values" name="fld-options-list-values">
 <select class="btn" style="max-width: 150px;" id="options-quick-list" name="options-quick-list">
     <option value="" selected>Quick List!</option>
     <option value="Yes;;No">Yes/No</option>
@@ -2159,31 +2255,43 @@
         <option value="Home;;Office;;Billing;;Shipping">Address Types</option>
     </optgroup>
 </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Display the options list as:</label>
-                            <div class="radio-group">
-                                <label><input type="radio" name="fld-options-display" id="fld-fld-options-display-dropdown" value="dropdown" checked> Drop-down list</label>
-                                <label><input type="radio" name="fld-options-display" id="fld-fld-options-display-radios" value="radios"> Radio buttons</label>
-                                <label><input type="radio" name="fld-options-display" id="fld-fld-options-display-multi" value="multi"> Multiple-choice list box</label>
-                                <label><input type="radio" name="fld-options-display" id="fld-fld-options-display-checkboxes" value="checkboxes"> Multiple-choice Checkboxes</label>
-                            </div>
-                        </div>
-                        <p style="font-size: 0.9em; color: var(--secondary-color);">
-                            An options list displays a drop down menu containing items from the 'List values' box. Users can select an item from that drop down menu to be stored as the field value.
-                        </p>
-</div>    
-        
+                                        </div>
+                                    </div>
+                                </div>
+                                
+    <div id="fld-boolean-labels-group" class="hidden">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label for="fld-boolean-label-true">Label if TRUE</label>
+                <input type="text" id="fld-boolean-label-true" name="fld-boolean-label-true" value="Yes">
+            </div>
+            <div class="form-group">
+                <label for="fld-boolean-label-false">Label if FALSE</label>
+                <input type="text" id="fld-boolean-label-false" name="fld-boolean-label-false" value="No">
+            </div>
         </div>
-</fieldset>
-</div>
-
-
+    </div>
+                                    <div class="form-group">
+                                        <label>Display the options list as:</label>
+                                        <div class="radio-group">
+                                            <label><input type="radio" name="fld-options-display" value="dropdown" checked> Drop-down list</label>
+                                            <label><input type="radio" name="fld-options-display" value="radios"> Radio buttons</label>
+                                            <label><input type="radio" name="fld-options-display" value="multi"> Multiple-choice list box</label>
+                                            <label><input type="radio" name="fld-options-display" value="checkboxes"> Multiple-choice Checkboxes</label>
+                                        </div>
+                                    </div>
+                                    <p style="font-size: 0.9em; color: var(--secondary-color);">
+                                        An options list displays a drop down menu containing items from the 'List values' box. Users can select an item from that drop down menu to be stored as the field value.
+                                    </p>
+                                </div>
+                            </div>
+                        </fieldset>
                     </div>
                 </div>
             </div>
-
+        </div>
+    </div>
+</div>
 <div id="tab-field-calculated" class="tab-pane">
     <div class="card">
         <div class="card-body">

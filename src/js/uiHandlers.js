@@ -3735,6 +3735,10 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-lookup-inherit-permissions', fieldData.lookup_inherit_permissions);
     setElementValue('fld-lookup-link-behavior', fieldData.lookup_link_behavior);
     setElementValue('fld-lookup-custom-query-hidden', fieldData.lookup_custom_query);
+    
+    setElementValue('fld-boolean-label-true', fieldData.boolean_label_true);
+    setElementValue('fld-boolean-label-false', fieldData.boolean_label_false);
+    
     if (parentTableSelect && !parentTableSelect.value) {
         const relationship = jsonData.database.relationships.find(rel => rel.child_table_name === tableName && rel.fk_child_field === fieldName);
         if (relationship) {
@@ -3773,6 +3777,27 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-format-as', fieldData.format_as);
     
     setElementValue('fld-format-mask', fieldData.format_mask);
+    
+    // Isi data untuk Repeater-Simple
+    setElementValue('fld-repeater-simple-display-as', fieldData.repeater_simple_display_as);
+    setElementValue('fld-repeater-simple-format-as', fieldData.repeater_simple_format_as);
+    setElementValue('fld-repeater-simple-list-values', fieldData.repeater_simple_list_values);
+    
+    // Isi data untuk Repeater (3 set)
+    for (let i = 1; i <= 3; i++) {
+        setElementValue(`fld-repeater-${i}-display-as`, fieldData[`repeater_${i}_display_as`]);
+        setElementValue(`fld-repeater-${i}-format-as`, fieldData[`repeater_${i}_format_as`]);
+        setElementValue(`fld-repeater-${i}-list-values`, fieldData[`repeater_${i}_list_values`]);
+        setElementValue(`fld-repeater-${i}-required`, fieldData[`repeater_${i}_required`]);
+    }
+
+    setElementValue('fld-repeater-simple-required', fieldData.repeater_simple_required);
+
+    // Cetuskan event untuk memastikan visibility bersarang adalah betul semasa data dimuatkan
+    document.getElementById('fld-repeater-simple-display-as')?.dispatchEvent(new Event('change'));
+    for (let i = 1; i <= 3; i++) {
+        document.getElementById(`fld-repeater-${i}-display-as`)?.dispatchEvent(new Event('change'));
+    }
     
     // Cetuskan event 'change' untuk memastikan 'Mask' dipaparkan dengan betul semasa data dimuatkan
     const formatAsSelect = document.getElementById('fld-format-as');
@@ -4479,6 +4504,10 @@ function applyDataTypeRules() {
         maxValueGroup: document.getElementById('fld-max-value-group'),
         columnSpanFullGroup: document.getElementById('fld-column-span-full-group'),
         textInputAddonsGroup: document.getElementById('fld-text-input-addons-group'),
+        
+        repeaterOptionsGroup: document.getElementById('fld-repeater-options-group'),
+        repeaterSimpleOptionsGroup: document.getElementById('fld-repeater-simple-options-group'),
+        
         autoIncrement: document.getElementById('fld-auto-increment'),
         unsigned: document.getElementById('fld-unsigned'),
         zeroFill: document.getElementById('fld-zero-fill'),
@@ -4556,12 +4585,37 @@ function applyDataTypeRules() {
 
     // Peraturan untuk "Display As" (Checkbox/Repeater)
     if (elements.checkBoxRadio && elements.repeaterRadio) {
-        if (isBoolean) {
-            if (!elements.checkBoxRadio.checked) elements.checkBoxRadio.checked = true;
-            elements.displayTypeRadios.forEach(radio => { radio.disabled = radio.value !== 'check_box'; });
-        } else if (selectedType === 'JSON') {
-            if (!elements.repeaterRadio.checked) elements.repeaterRadio.checked = true;
-            elements.displayTypeRadios.forEach(radio => { radio.disabled = radio.value !== 'repeater'; });
+    if (isBoolean) {
+        // ▼▼▼ MULA KOD BAHARU ▼▼▼
+        if (!elements.checkBoxRadio.checked && !document.querySelector('input[name="fld-display-type"][value="options_list"]').checked) {
+            elements.checkBoxRadio.checked = true;
+        }
+        elements.displayTypeRadios.forEach(radio => {
+            radio.disabled = !(radio.value === 'check_box' || radio.value === 'options_list');
+        });
+
+        // Logik untuk tunjuk/sembunyi elemen di dalam Options List
+        document.getElementById('fld-standard-list-values-group')?.classList.add('hidden');
+        document.getElementById('fld-boolean-labels-group')?.classList.remove('hidden');
+        document.getElementById('fld-options-display-multi-label')?.classList.add('hidden');
+        document.getElementById('fld-options-display-checkboxes-label')?.classList.add('hidden');
+        // ▲▲▲ TAMAT KOD BAHARU ▲▲▲
+
+    } else if (selectedType === 'JSON') {
+            const repeaterRadio = document.querySelector('input[name="fld-display-type"][value="repeater"]');
+            const repeaterSimpleRadio = document.querySelector('input[name="fld-display-type"][value="repeater_simple"]');
+            
+            // ▼▼▼ PERUBAHAN DI SINI ▼▼▼
+            // Jika tiada pilihan repeater yang aktif, setkan 'Repeater - Simple' sebagai lalai
+            if (repeaterRadio && repeaterSimpleRadio && !repeaterRadio.checked && !repeaterSimpleRadio.checked) {
+                repeaterSimpleRadio.checked = true; 
+            }
+            // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+
+            // Nyahaktifkan semua radio KECUALI dua jenis repeater
+            elements.displayTypeRadios.forEach(radio => {
+                radio.disabled = !(radio.value === 'repeater' || radio.value === 'repeater_simple');
+            });
         } else if (selectedType === 'TEXT' || selectedType === 'LONGTEXT') {
             const textAreaRadio = document.querySelector('input[name="fld-display-type"][value="text_area"]');
             const richHtmlRadio = document.querySelector('input[name="fld-display-type"][value="rich_html"]');
@@ -4586,13 +4640,25 @@ function applyDataTypeRules() {
             }
             
         } else {
-            elements.checkBoxRadio.disabled = true;
-            elements.repeaterRadio.disabled = true;
-            
+            // ▼▼▼ TAMBAH KOD DI BAWAH INI ▼▼▼
+            document.getElementById('fld-standard-list-values-group')?.classList.remove('hidden');
+            document.getElementById('fld-boolean-labels-group')?.classList.add('hidden');
+            document.getElementById('fld-options-display-multi-label')?.classList.remove('hidden');
+            document.getElementById('fld-options-display-checkboxes-label')?.classList.remove('hidden');
+            // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
+            const currentlyChecked = document.querySelector('input[name="fld-display-type"]:checked');
+            const disallowedValues = ['check_box', 'repeater', 'repeater_simple', 'datetime_input']; // <-- TAMBAH 'repeater_simple' DI SINI
+
+            // Nyahaktifkan radio butang khas
+            if (elements.checkBoxRadio) elements.checkBoxRadio.disabled = true;
+            if (elements.repeaterRadio) elements.repeaterRadio.disabled = true;
+            const repeaterSimpleRadio = document.querySelector('input[name="fld-display-type"][value="repeater_simple"]'); // <-- TAMBAH BARIS INI
+            if (repeaterSimpleRadio) repeaterSimpleRadio.disabled = true; // <-- TAMBAH BARIS INI
             const datetimeInputRadio = document.querySelector('input[name="fld-display-type"][value="datetime_input"]');
             if (datetimeInputRadio) datetimeInputRadio.disabled = true;
-            
-            if (elements.checkBoxRadio.checked || elements.repeaterRadio.checked) {
+
+            // Jika radio yang sedang dipilih kini tidak dibenarkan, reset kepada lalai
+            if (currentlyChecked && disallowedValues.includes(currentlyChecked.value)) {
                 const defaultRadio = document.querySelector('input[name="fld-display-type"][value="text_input"]');
                 if (defaultRadio) defaultRadio.checked = true;
             }
@@ -4710,6 +4776,15 @@ function applyDataTypeRules() {
             if (elements.textInputAddonsGroup) {
                 elements.textInputAddonsGroup.classList.toggle('hidden', finalValue !== 'text_input');
             }
+            
+            // Logik untuk kumpulan Repeater
+            if (elements.repeaterOptionsGroup) {
+                elements.repeaterOptionsGroup.classList.toggle('hidden', finalValue !== 'repeater');
+            }
+            if (elements.repeaterSimpleOptionsGroup) {
+                elements.repeaterSimpleOptionsGroup.classList.toggle('hidden', finalValue !== 'repeater_simple');
+            }
+            
         }
 }
 
@@ -6769,4 +6844,29 @@ export function initializeValidationInputHandlers() {
     };
 
     lengthInput.addEventListener('input', syncLengthValue);
+}
+
+export function initializeRepeaterHandlers() {
+    const setupRepeaterLogic = (index) => {
+        const suffix = index ? `-${index}` : '-simple';
+        const displayAsSelect = document.getElementById(`fld-repeater${suffix}-display-as`);
+        const formatAsGroup = document.getElementById(`fld-repeater${suffix}-format-as-group`);
+        const listValuesGroup = document.getElementById(`fld-repeater${suffix}-list-values-group`);
+
+        if (!displayAsSelect || !formatAsGroup || !listValuesGroup) return;
+
+        const toggleVisibility = () => {
+            const selected = displayAsSelect.value;
+            formatAsGroup.classList.toggle('hidden', selected !== 'text_input');
+            listValuesGroup.classList.toggle('hidden', selected !== 'dropdown_list');
+        };
+
+        displayAsSelect.addEventListener('change', toggleVisibility);
+    };
+
+    // Pasang logik untuk Repeater-Simple dan 3 set Repeater
+    setupRepeaterLogic(null); // Untuk -simple
+    setupRepeaterLogic(1);
+    setupRepeaterLogic(2);
+    setupRepeaterLogic(3);
 }

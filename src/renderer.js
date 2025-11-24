@@ -51,6 +51,7 @@ import {
     initializeUniqueFieldHandler,
     initializeValidationInputHandlers,
     initializeConstraintsTabHandlers,
+    initializeRepeaterHandlers,
     initializeIndexCheckboxHandler,
     initializeDisplayTypeRules,
     initializeWrapTextRule,
@@ -504,6 +505,7 @@ window.addEventListener('beforeunload', (event) => {
 	initializeUniqueFieldHandler();
     initializeValidationInputHandlers();
     initializeConstraintsTabHandlers();
+    initializeRepeaterHandlers();
     initializeIndexCheckboxHandler();
 	
 	
