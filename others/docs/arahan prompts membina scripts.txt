@@ -1056,4 +1056,4 @@ Repeater::make('<<FIELD_NAME>>')
 8. Gantikan <<ALL_COLUMNS_FORM>> dengan kesemua janaan setiap fields diatas.
 9. Buang kesemua import yang tidak digunakan didalam script ini selepas semua selesai di jana.
 
-9. Jana output di folder 'AppData.../generated/filament/app/Filament/Resources/<<RESOURCE_FOLDER>>/Schemas' dengan nama singular PascalCase table_name value dengan extension php. Contoh table_name = pelajar_sekolah, fail terjana akan bernama PelajarSekolahForm.php. <<RESOURCE_FOLDER>> pula ialah plural PascalCase table_name value. Path Fail sepatutnya 'AppData.../generated/filament/app/Filament/Resources/PelajarSekolahs/Schemas/PelajarSekolahForm.php'
+10. Jana output di folder 'AppData.../generated/filament/app/Filament/Resources/<<RESOURCE_FOLDER>>/Schemas' dengan nama singular PascalCase table_name value dengan extension php. Contoh table_name = pelajar_sekolah, fail terjana akan bernama PelajarSekolahForm.php. <<RESOURCE_FOLDER>> pula ialah plural PascalCase table_name value. Path Fail sepatutnya 'AppData.../generated/filament/app/Filament/Resources/PelajarSekolahs/Schemas/PelajarSekolahForm.php'
