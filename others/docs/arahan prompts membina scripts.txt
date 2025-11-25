@@ -955,7 +955,7 @@ use App\Filament\Resources\<<CHILD_TABLE_NAME_PLURAL>>\<<CHILD_TABLE_NAME_SINGUL
 
 7.43 Gunakan kod dibawah sebagai base untuk setiap fields jika media_type = 'image'.
 7.43.1 Gantikan <<FIELD_NAME>> dengan field_name. 
-7.43.2 Gantikan <<FIELD_LABEL>> dengan "->label('<<FIELD_NAME_TITLECASE>>')" dan gantikan <<FIELD_NAME_TITLECASE>> dengan Title case field_name. Contoh table_name = bas_sekolah, Title case ialah 'Bas sekolah'.
+7.43.2 Gantikan <<FIELD_LABEL>> dengan "->label('<<CAPTION_VALUE>>')". Gantikan <<CAPTION_VALUE>> dengan caption.
 7.43.3 Gantikan <<IMAGE_STORAGE_DISK>> dengan "->disk('<<IMAGE_STORAGE_PROVIDER>>')". Gantikan <<IMAGE_STORAGE_PROVIDER>> dengan "image_storage_provider".
 7.43.4 Gantikan <<KEBAB_FIELD_NAME>> dengan kebab-case field_name. Contoh field_name = 'gambar_saya', kebab-case ialah 'gambar-saya'.
 7.43.5 Jika dv-thumb-shape = 'circular', gantikan <<IMAGE_SHARP>> dengan "->avatar()->circleCropper()"
@@ -973,14 +973,14 @@ FileUpload::make('<<FIELD_NAME>>')
 
 7.44 Gunakan kod dibawah sebagai base untuk setiap fields jika media_type = 'upload'.
 7.44.1 Gantikan <<FIELD_NAME>> dengan field_name. 
-7.44.2 Gantikan <<FIELD_NAME_TITLECASE>> dengan Title case field_name. Contoh table_name = bas_sekolah, Title case ialah 'Bas sekolah'.
-7.43.3 Gantikan <<FILE_STORAGE_DISK>> dengan "->disk('<<FILE_STORAGE_PROVIDER>>')". Gantikan <<FILE_STORAGE_PROVIDER>> dengan "file_storage_provider".
-7.43.4 Gantikan <<KEBAB_FIELD_NAME>> dengan kebab-case field_name. Contoh field_name = 'fail_saya', kebab-case ialah 'fail-saya'.
-7.43.5 Gantikan <<ARRAY_FILES_TYPE>> dengan file_types dalam format array. Contoh options_list_values = 'image/jpeg,image/jpeg,application/pdf', <<ARRAY_FILES_TYPE>> akan digantikan 'image/jpeg', 'image/jpeg', 'application/pdf'
+7.44.2 Gantikan <<CAPTION_VALUE>> dengan caption.
+7.44.3 Gantikan <<FILE_STORAGE_DISK>> dengan "->disk('<<FILE_STORAGE_PROVIDER>>')". Gantikan <<FILE_STORAGE_PROVIDER>> dengan "file_storage_provider".
+7.44.4 Gantikan <<KEBAB_FIELD_NAME>> dengan kebab-case field_name. Contoh field_name = 'fail_saya', kebab-case ialah 'fail-saya'.
+7.44.5 Gantikan <<ARRAY_FILES_TYPE>> dengan file_types dalam format array. Contoh options_list_values = 'image/jpeg,image/jpeg,application/pdf', <<ARRAY_FILES_TYPE>> akan digantikan 'image/jpeg', 'image/jpeg', 'application/pdf'
 
 "
 FileUpload::make('<<FIELD_NAME>>')
-    ->label('<<FIELD_NAME_TITLECASE>>')
+    ->label('<<CAPTION_VALUE>>')
     ->directory('<<KEBAB_FIELD_NAME>>')
     <<FILE_STORAGE_DISK>>
     ->acceptedFileTypes([<<ARRAY_FILES_TYPE>>])
@@ -988,17 +988,31 @@ FileUpload::make('<<FIELD_NAME>>')
     ->openable(),
 "
 
-7.45 Gunakan kod dibawah sebagai base untuk setiap fields jika display_type = 'repeater_simple'.
+7.45 Gunakan kod dibawah sebagai base untuk setiap fields jika media_type = 'gmap' atau 'youtube'.
 7.45.1 Gantikan <<FIELD_NAME>> dengan field_name. 
-7.45.2 Gantikan <<FIELD_NAME_TITLECASE>> dengan Title case field_name. Contoh table_name = bas_sekolah, Title case ialah 'Bas sekolah'.
-7.45.3 Jika repeater_simple_display_as = text_input, gantikan <<ELEMENT_TYPE>> dengan "TextInput". Jika repeater_simple_display_as = dropdown_list, gantikan <<ELEMENT_TYPE>> dengan "Select". 
-7.45.4 Jika repeater_simple_display_as = text_input, gantikan:
+7.45.2 Gantikan <<CAPTION_VALUE>> dengan caption.
+7.45.3 Jika media_type = 'gmap', gantikan <<IS_TYPE>> dengan 'map'. Jika media_type = 'youtube', gantikan <<IS_TYPE>> dengan 'video'.
+
+"
+TextInput::make('<<FIELD_NAME>>')
+    ->label('<<CAPTION_VALUE>>')
+    ->columnSpanFull(),
+ViewField::make('<<FIELD_NAME>>')
+    ->view('filament.forms.components.<<IS_TYPE>>-viewer')
+    ->columnSpanFull(),
+"
+
+7.46 Gunakan kod dibawah sebagai base untuk setiap fields jika display_type = 'repeater_simple'.
+7.46.1 Gantikan <<FIELD_NAME>> dengan field_name. 
+7.46.2 Gantikan <<CAPTION_VALUE>> dengan caption.
+7.46.3 Jika repeater_simple_display_as = text_input, gantikan <<ELEMENT_TYPE>> dengan "TextInput". Jika repeater_simple_display_as = dropdown_list, gantikan <<ELEMENT_TYPE>> dengan "Select". 
+7.46.4 Jika repeater_simple_display_as = text_input, gantikan:
 - <<IS_ELEMENT>> dengan "->email()" jika repeater_simple_format_as = 'email'
 - <<IS_ELEMENT>> dengan "->url()" jika repeater_simple_format_as = 'url'
 - <<IS_ELEMENT>> dengan "->password()->revealable()" jika repeater_simple_format_as = 'password'
 - <<IS_ELEMENT>> dengan "->tel()->telRegex('/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\.\/0-9]*$/')" jika repeater_simple_format_as = 'tel'
-7.45.5 Jika repeater_simple_required = 1, gantikan <<IS_REQUIRED>> dengan "->required()".
-7.45.6 Jika repeater_simple_display_as = dropdown_list, gantikan <<OPTIONS_LIST_DROPDOWN>> dengan kod dibawah. Gantikan <<ARRAY_OPTIONS_LIST_VALUES>> dengan repeater_simple_list_values dalam format array. Contoh repeater_simple_list_values = 'aa,bb,cc,dd', <<ARRAY_OPTIONS_LIST_VALUES>> akan digantikan 'aa' => 'Aa', 'bb' => 'Bb', 'cc' => 'Cc', 'dd' => 'Dd'
+7.46.5 Jika repeater_simple_required = 1, gantikan <<IS_REQUIRED>> dengan "->required()".
+7.46.6 Jika repeater_simple_display_as = dropdown_list, gantikan <<OPTIONS_LIST_DROPDOWN>> dengan kod dibawah. Gantikan <<ARRAY_OPTIONS_LIST_VALUES>> dengan repeater_simple_list_values dalam format array. Contoh repeater_simple_list_values = 'aa,bb,cc,dd', <<ARRAY_OPTIONS_LIST_VALUES>> akan digantikan 'aa' => 'Aa', 'bb' => 'Bb', 'cc' => 'Cc', 'dd' => 'Dd'
 
 "
 ->options([
@@ -1008,29 +1022,29 @@ FileUpload::make('<<FIELD_NAME>>')
 
 "
 Repeater::make('<<FIELD_NAME>>')
-    ->label('<<FIELD_NAME_TITLECASE>>')
+    ->label('<<CAPTION_VALUE>>')
     ->simple(
         <<ELEMENT_TYPE>>::make('<<FIELD_NAME>>')<<IS_ELEMENT>><<IS_REQUIRED>><<OPTIONS_LIST_DROPDOWN>>->unique(ignoreRecord: true),
     ),
     ->reorderable(false),
 "
 
-7.46 Gunakan kod dibawah sebagai base untuk setiap fields jika display_type = 'repeater'.
-7.46.1 Gantikan <<FIELD_NAME>> dengan field_name. 
-7.46.2 Gantikan <<FIELD_NAME_TITLECASE>> dengan Title case field_name. Contoh table_name = bas_sekolah, Title case ialah 'Bas sekolah'.
-7.46.3 Jika repeater_1_display_as = text_input, gantikan <<ELEMENT_TYPE>> dengan "TextInput". Jika repeater_1_display_as = dropdown_list, gantikan <<ELEMENT_TYPE>> dengan "Select". 
-7.46.4 Jika repeater_1_display_as = text_input, gantikan:
+7.47 Gunakan kod dibawah sebagai base untuk setiap fields jika display_type = 'repeater'.
+7.47.1 Gantikan <<FIELD_NAME>> dengan field_name. 
+7.47.2 Gantikan <<CAPTION_VALUE>> dengan caption.
+7.47.3 Jika repeater_1_display_as = text_input, gantikan <<ELEMENT_TYPE>> dengan "TextInput". Jika repeater_1_display_as = dropdown_list, gantikan <<ELEMENT_TYPE>> dengan "Select". 
+7.47.4 Jika repeater_1_display_as = text_input, gantikan:
 - <<IS_ELEMENT>> dengan "->email()" jika repeater_1_format_as = 'email'
 - <<IS_ELEMENT>> dengan "->url()" jika repeater_1_format_as = 'url'
 - <<IS_ELEMENT>> dengan "->password()->revealable()" jika repeater_1_format_as = 'password'
 - <<IS_ELEMENT>> dengan "->tel()->telRegex('/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\.\/0-9]*$/')" jika repeater_1_format_as = 'tel'
-7.46.5 Jika repeater_1_required = 1, gantikan <<IS_REQUIRED>> dengan "->required()".
-7.46.6 Jika repeater_1_display_as = dropdown_list, gantikan <<OPTIONS_LIST_DROPDOWN>> dengan kod dibawah. Gantikan <<ARRAY_OPTIONS_LIST_VALUES>> dengan repeater_1_list_values dalam format array. Contoh repeater_1_list_values = 'aa,bb,cc,dd', <<ARRAY_OPTIONS_LIST_VALUES>> akan digantikan 'aa' => 'Aa', 'bb' => 'Bb', 'cc' => 'Cc', 'dd' => 'Dd'
-7.46.7 ulang proses yang sama untuk repeater_2_display_as, repeater_2_required,repeater_2_format_as, repeater_2_list_values dan repeater_3_display_as, repeater_3_required,repeater_3_format_as, repeater_3_list_values. Gantikan ulangan ini pada <<ELEMENT_2>> dan <<ELEMENT_3>>.
+7.47.5 Jika repeater_1_required = 1, gantikan <<IS_REQUIRED>> dengan "->required()".
+7.47.6 Jika repeater_1_display_as = dropdown_list, gantikan <<OPTIONS_LIST_DROPDOWN>> dengan kod dibawah. Gantikan <<ARRAY_OPTIONS_LIST_VALUES>> dengan repeater_1_list_values dalam format array. Contoh repeater_1_list_values = 'aa,bb,cc,dd', <<ARRAY_OPTIONS_LIST_VALUES>> akan digantikan 'aa' => 'Aa', 'bb' => 'Bb', 'cc' => 'Cc', 'dd' => 'Dd'
+7.47.7 ulang proses yang sama untuk repeater_2_display_as, repeater_2_required,repeater_2_format_as, repeater_2_list_values dan repeater_3_display_as, repeater_3_required,repeater_3_format_as, repeater_3_list_values. Gantikan ulangan ini pada <<ELEMENT_2>> dan <<ELEMENT_3>>.
 
 "
 Repeater::make('<<FIELD_NAME>>')
-    ->label('<<FIELD_NAME_TITLECASE>>')
+    ->label('<<CAPTION_VALUE>>')
     ->schema([
         <<ELEMENT_TYPE>>::make('<<FIELD_NAME>>')<<IS_ELEMENT>><<IS_REQUIRED>><<OPTIONS_LIST_DROPDOWN>>->unique(ignoreRecord: true),
         <<ELEMENT_2>>
