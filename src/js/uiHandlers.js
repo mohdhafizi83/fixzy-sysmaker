@@ -3833,17 +3833,22 @@ export function populateFieldSettings(tableName, fieldName) {
  * dari jadual induk yang dipilih.
  * @param {string} parentTableName - Nama jadual induk yang dipilih.
  */
-function populateParentCaptionDropdowns(parentTableName) {
+// Gantikan fungsi populateParentCaptionDropdowns sedia ada dengan yang ini
+function populateParentCaptionDropdowns(tableName) {
     const caption1Select = document.getElementById('fld-lookup-caption-1');
     const caption2Select = document.getElementById('fld-lookup-caption-2');
 
-    // Kosongkan kedua-dua dropdown
-    caption1Select.innerHTML = '<option value=""></option>';
-    caption2Select.innerHTML = '<option value=""></option>';
+    if (!caption1Select || !caption2Select) return;
 
-    if (parentTableName && jsonData.database.table[parentTableName]) {
-        const parentFields = Object.keys(jsonData.database.table[parentTableName].fields);
-        parentFields.forEach(fieldName => {
+    // UBAH DI SINI: Kosongkan terus (innerHTML = '') tanpa menambah option default/empty
+    caption1Select.innerHTML = '';
+    caption2Select.innerHTML = '';
+
+    if (tableName && jsonData && jsonData.database && jsonData.database.table[tableName]) {
+        const fields = jsonData.database.table[tableName].fields;
+        
+        // Populate senarai field
+        Object.keys(fields).forEach(fieldName => {
             const option1 = document.createElement('option');
             option1.value = fieldName;
             option1.textContent = fieldName;
