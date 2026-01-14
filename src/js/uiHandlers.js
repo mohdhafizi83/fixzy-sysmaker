@@ -3553,6 +3553,7 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-required', fieldData.required);
     setElementValue('fld-auto-increment', fieldData.auto_increment);
     setElementValue('fld-unique', fieldData.unique);
+    setElementValue('fld-not-null', fieldData.not_null);
     setElementValue('fld-is-indexed', fieldData.is_indexed);
     setElementValue('fld-show-sum', fieldData.show_sum);
     setElementValue('fld-show-avg-summary', fieldData.show_avg_summary);

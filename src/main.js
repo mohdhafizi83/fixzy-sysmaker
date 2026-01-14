@@ -999,7 +999,9 @@ function importSchema(sql, projectId, dialect) {
         const insertConstraintStmt = db.prepare('INSERT INTO table_constraints (table_id, constraint_name, constraint_type, columns) VALUES (?, ?, ?, ?)');
         const getMaxMenuOrderStmt = db.prepare('SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL');
         const insertMenuItemStmt = db.prepare('INSERT INTO menu_items (project_id, table_id, item_label, item_url, item_order, menu_group_id) VALUES (?, ?, ?, ?, ?, NULL)');
-        const insertFieldStmt = db.prepare(`INSERT INTO fields (table_id, field_name, data_type, length, precision, required, auto_increment, unsigned, zero_fill, primary_key, "unique", is_indexed, read_only, default_value, caption, field_order) VALUES (@table_id, @field_name, @data_type, @length, @precision, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @is_indexed, @read_only, @default_value, @caption, @field_order)`);
+        // Dalam fungsi importSchema
+        const insertFieldStmt = db.prepare(`INSERT INTO fields (table_id, field_name, data_type, length, precision, required, auto_increment, unsigned, zero_fill, primary_key, "unique", not_null, is_indexed, read_only, default_value, caption, field_order) VALUES (@table_id, @field_name, @data_type, @length, @precision, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @not_null, @is_indexed, @read_only, @default_value, @caption, @field_order)`);
+
         
         const foreignKeysToProcess = [];
 
@@ -1046,15 +1048,25 @@ function importSchema(sql, projectId, dialect) {
                         field_name: fieldName,
                         caption: caption,
                         field_order: index,
-                        data_type: normalizedDataType, // Guna jenis data yang telah dinormalkan
+                        data_type: normalizedDataType,
                         length: definition.definition.length || null,
                         precision: definition.definition.scale || null,
                         required: 0, auto_increment: 0, unsigned: 0, zero_fill: 0, primary_key: 0, "unique": 0,
+                        not_null: 0, // <--- TAMBAH INI
                         is_indexed: 0, read_only: 0, default_value: null,
                     };
                     
                     if (definition.auto_increment || definition.autoincrement || isSerial) fieldData.auto_increment = 1;
-                    if (definition.nullable?.type === "not null" && !fieldData.auto_increment) fieldData.required = 1;
+                    const isNotNull = 
+                        (definition.nullable?.type && definition.nullable.type.toLowerCase() === "not null") || 
+                        (definition.nullable?.value && definition.nullable.value.toLowerCase() === "not null") ||
+                        (Array.isArray(definition.nullable) && definition.nullable.includes("not null"));
+
+                    if (isNotNull) {
+                        fieldData.not_null = 1;
+                        // Jika bukan auto_increment, kita anggap ia required (wajib diisi dalam borang)
+                        if (!fieldData.auto_increment) fieldData.required = 1;
+                    }
                     if (definition.unsigned) fieldData.unsigned = 1;
                     if (definition.zerofill) fieldData.zero_fill = 1;
                     if (definition.default_val) {
@@ -1070,7 +1082,10 @@ function importSchema(sql, projectId, dialect) {
                         const type = constraint.definition.constraint_type.toLowerCase();
                         if (type === "primary key") { fieldData.primary_key = 1; fieldData.read_only = 1; }
                         if (type === "unique key" || type === "unique") { fieldData.unique = 1; }
-                        if (type === "not null") { fieldData.required = 1; }
+                        if (type === "not null") { 
+                                fieldData.required = 1; 
+                                fieldData.not_null = 1; // <--- Tambah ini
+                            }
                     });
                     
                     // Tetapkan hide_in_tv = 1 secara lalai untuk medan tertentu
@@ -1104,7 +1119,40 @@ function importSchema(sql, projectId, dialect) {
                     else if (columns.length > 1) { insertConstraintStmt.run(tableId, constraintName, 'INDEX', JSON.stringify(columns)); }
                 } else if (ruleType === "foreign key") {
                     const ref = rule.reference_definition;
-                    if (ref) { foreignKeysToProcess.push({ childTableName: tableName, parentTableName: ref.table[0].table, fkChildField: columns[0], parentField: getFieldNameFromAST(ref.definition[0]), }); }
+                    if (ref) { 
+                        // Ekstrak ON DELETE dan ON UPDATE dari AST
+                        let onDelete = 'NO ACTION';
+                        let onUpdate = 'NO ACTION';
+
+                if (ref.on_action) {
+                            ref.on_action.forEach(action => {
+                                const type = action.type.toLowerCase();
+                                
+                                // PEMBETULAN: Semak jenis data 'value' sebelum guna .toUpperCase()
+                                let valStr = 'NO ACTION';
+                                if (typeof action.value === 'string') {
+                                    valStr = action.value;
+                                } else if (action.value && typeof action.value === 'object' && action.value.value) {
+                                    // Kadang-kadang parser bungkus dalam objek { type: 'origin', value: 'CASCADE' }
+                                    valStr = action.value.value;
+                                }
+
+                                const value = valStr.toUpperCase();
+
+                                if (type === 'on delete') onDelete = value;
+                                if (type === 'on update') onUpdate = value;
+                            });
+                        }
+
+                        foreignKeysToProcess.push({ 
+                            childTableName: tableName, 
+                            parentTableName: ref.table[0].table, 
+                            fkChildField: columns[0], 
+                            parentField: getFieldNameFromAST(ref.definition[0]),
+                            onDelete: onDelete, // Simpan data ini
+                            onUpdate: onUpdate  // Simpan data ini
+                        }); 
+                    }
                 }
             });
             
@@ -1163,6 +1211,7 @@ function importSchema(sql, projectId, dialect) {
                 }
             }
         }
+        
         for (const fk of foreignKeysToProcess) {
             const childTableId = tableMap[fk.childTableName];
             const parentTableId = tableMap[fk.parentTableName];
@@ -1171,7 +1220,7 @@ function importSchema(sql, projectId, dialect) {
                 const isUnique = childField ? childField.unique === 1 : false;
                 const relationshipType = isUnique ? 'one-to-one' : 'one-to-many';
                 const tabTitle = toTitleCase(fk.childTableName);
-                db.prepare(`INSERT INTO parent_child_relationships (parent_table_id, child_table_id, fk_child_field, parent_field, tab_title, relationship_type) VALUES (?, ?, ?, ?, ?, ?)`).run(parentTableId, childTableId, fk.fkChildField, fk.parentField, tabTitle, relationshipType);
+                db.prepare(`INSERT INTO parent_child_relationships (parent_table_id, child_table_id, fk_child_field, parent_field, tab_title, relationship_type, on_delete, on_update) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(parentTableId, childTableId, fk.fkChildField, fk.parentField, tabTitle, relationshipType, fk.onDelete, fk.onUpdate);
                 relationshipsCreated++;
                 let captionField = '';
                 const parentFields = db.prepare('SELECT field_name, primary_key, data_type FROM fields WHERE table_id = ? ORDER BY field_order').all(parentTableId);
@@ -1637,9 +1686,10 @@ ipcMain.handle('relationship:update', async (event, data) => {
         //console.log(`--- RELATIONSHIP UPDATE: ID Sasaran: ${relationship_id} ---`, fieldsToUpdate);
 
         const allowedColumns = [
-            'show_tab', 'show_icon', 'autoclose_modal', 'tab_title', 'copy_records',
-            'show_link_above', 'show_count_in_tv', 'allow_add_from_tv'
-        ];
+                    'show_tab', 'show_icon', 'autoclose_modal', 'tab_title', 'copy_records',
+                    'show_link_above', 'show_count_in_tv', 'allow_add_from_tv',
+                    'on_delete', 'on_update' // <--- TAMBAH DUA MEDAN INI
+                ];
 
         const setClause = Object.keys(fieldsToUpdate)
             .filter(key => allowedColumns.includes(key))
@@ -3403,6 +3453,351 @@ ViewField::make('${field.field_name}')
 }
 
 /**
+ * Menjana fail migrasi Laravel berdasarkan skema projek.
+ * @param {object} fullSchema - Objek skema lengkap dari FiziSysMaker (mengandungi tables & relationships).
+ * @param {string} projectPath - Laluan root projek Laravel yang dijana.
+ */
+async function generateLaravelMigrations(fullSchema, outputBasePath) {
+    try {
+        const { database: { table: tables, relationships } } = fullSchema;
+        const migrationsPath = path.join(outputBasePath, 'database', 'migrations');
+
+        if (!fs.existsSync(migrationsPath)) {
+            fs.mkdirSync(migrationsPath, { recursive: true });
+        }
+
+        let now = new Date();
+        let sequence = 0;
+
+        // ==================================================================================
+        // FASA 1: CREATE TABLES (Struktur Asas Sahaja - TANPA Foreign Key Constraints)
+        // ==================================================================================
+        for (const tableName in tables) {
+            // Skip jadual sistem Laravel
+            if (['migrations', 'jobs', 'failed_jobs', 'sessions', 'password_reset_tokens', 'cache', 'users'].includes(tableName)) continue;
+
+            const tableData = tables[tableName];
+            sequence++;
+            
+            const timestamp = getFormattedTimestamp(now, sequence);
+            const fileName = `${timestamp}_create_${tableName}_table.php`;
+            
+            // Cari Primary Key
+            const fieldsArr = Object.values(tableData.fields);
+            const pkField = fieldsArr.find(f => f.primary_key === 1);
+            
+            // Senarai medan yang perlu DIABAIKAN dalam loop biasa
+            const ignoredFields = ['created_at', 'updated_at', 'deleted_at'];
+            if (pkField) ignoredFields.push(pkField.field_name);
+
+            // Filter dan susun medan
+            const regularFields = fieldsArr
+                .filter(f => !ignoredFields.includes(f.field_name))
+                .sort((a, b) => (a.field_order || 999) - (b.field_order || 999));
+
+            let content = `<?php
+
+use Illuminate\\Database\\Migrations\\Migration;
+use Illuminate\\Database\\Schema\\Blueprint;
+use Illuminate\\Support\\Facades\\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('${tableName}', function (Blueprint $table) {
+`;
+
+            // 1. PRIMARY KEY
+            if (pkField) {
+                if (['INT', 'INTEGER', 'BIGINT', 'MEDIUMINT', 'SMALLINT', 'TINYINT'].includes(pkField.data_type.toUpperCase())) {
+                    if (pkField.field_name === 'id') {
+                        content += `            $table->id();\n`;
+                    } else {
+                        content += `            $table->id('${pkField.field_name}');\n`;
+                    }
+                } else {
+                    content += `            $table->string('${pkField.field_name}')->primary();\n`;
+                }
+            }
+
+            // 2. MEDAN BIASA (Regular Fields)
+            regularFields.forEach(field => {
+                const isForeignKey = relationships.some(r => r.child_table_name === tableName && r.fk_child_field === field.field_name);
+                let line = '';
+                const upperType = field.data_type ? field.data_type.toUpperCase() : 'VARCHAR';
+
+                // --- JENIS DATA ---
+                if (isForeignKey && ['INT', 'INTEGER', 'BIGINT'].includes(upperType)) {
+                    // Kita guna foreignId tetapi JANGAN letak 'constrained' di sini (Fasa 1)
+                    line = `            $table->foreignId('${field.field_name}')`;
+                } else if (['VARCHAR', 'STRING', 'CHAR'].includes(upperType)) {
+                    const method = upperType === 'CHAR' ? 'char' : 'string';
+                    const lengthParam = (field.length && parseInt(field.length) > 0) ? `, ${field.length}` : '';
+                    line = `            $table->${method}('${field.field_name}'${lengthParam})`;
+                } else {
+                    line = `            ${getFieldDefinitionForMigration(field)}`;
+                }
+
+                // --- NULLABLE / NOT NULL LOGIC (Dikekalkan) ---
+                if (field.not_null !== undefined && field.not_null !== null) {
+                    // Jika not_null == 0, tambah nullable(). Jika 1, biarkan default (Not Null).
+                    if (Number(field.not_null) === 0) {
+                        line += `->nullable()`;
+                    }
+                } else {
+                    // Fallback untuk projek lama
+                    if (field.is_nullable === 1) line += `->nullable()`;
+                }
+
+                // --- DEFAULT VALUE ---
+                if (field.default_value !== null && field.default_value !== undefined && field.default_value !== '') {
+                    const defVal = field.default_value;
+                    if (defVal.toUpperCase() !== 'NULL') {
+                        if (defVal.toUpperCase() === 'CURRENT_TIMESTAMP') {
+                            line += `->useCurrent()`;
+                        } else if (field.data_type.toUpperCase() === 'BOOLEAN') {
+                            const boolVal = (defVal === 'true' || defVal === '1') ? 1 : 0;
+                            line += `->default(${boolVal})`;
+                        } else if (!isNaN(defVal) && ['INT','DECIMAL','FLOAT','DOUBLE'].some(t => field.data_type.toUpperCase().includes(t))) {
+                            line += `->default(${defVal})`;
+                        } else {
+                            line += `->default('${defVal}')`;
+                        }
+                    }
+                }
+
+                // --- UNIQUE ---
+                if (field.is_unique === 1 || field.unique === 1) line += `->unique()`;
+
+                content += `${line};\n`;
+            });
+            
+// ============================================================
+            // PENAMBAHAN MULA: Indeks Unik Komposit (Table Constraints)
+            // ============================================================
+            if (tableData.constraints && tableData.constraints.length > 0) {
+                tableData.constraints.forEach(constraint => {
+                    // Hanya proses jika jenis adalah UNIQUE
+                    if (constraint.constraint_type === 'UNIQUE') {
+                        try {
+                            // Tukar string JSON '["col1","col2"]' kepada array sebenar
+                            const columns = JSON.parse(constraint.columns);
+                            
+                            if (Array.isArray(columns) && columns.length > 0) {
+                                // Format array PHP: ['pelajar_id', 'kursus_id']
+                                const columnsPhp = "['" + columns.join("', '") + "']";
+                                
+                                let line = `            $table->unique(${columnsPhp}`;
+                                
+                                // Tambah nama constraint jika ada (Optional, tapi digalakkan)
+                                if (constraint.constraint_name) {
+                                    line += `, '${constraint.constraint_name}'`;
+                                }
+                                
+                                line += `);\n`;
+                                content += line;
+                            }
+                        } catch (error) {
+                            console.warn(`Gagal memproses constraint untuk jadual ${tableName}:`, error);
+                        }
+                    }
+                    // Nota: Anda juga boleh tambah logik untuk Composite Primary Key di sini jika perlu
+                });
+            }
+            // ============================================================
+            // PENAMBAHAN TAMAT
+            // ============================================================
+
+            // 3. TIMESTAMPS & SOFT DELETES
+            content += `            $table->timestamps();\n`;
+            if (tableData.soft_deletes === 1 || fieldsArr.some(f => f.field_name === 'deleted_at')) {
+                content += `            $table->softDeletes();\n`;
+            }
+
+            content += `        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('${tableName}');
+    }
+};`;
+
+            fs.writeFileSync(path.join(migrationsPath, fileName), content);
+        }
+
+        // ==================================================================================
+        // FASA 2: FOREIGN KEYS (Dilakukan dalam fail berasingan untuk elak Circular Dependency)
+        // ==================================================================================
+        // Kita tambah senggang masa (20 saat) supaya migrasi ini dijalankan selepas semua jadual siap
+        sequence += 20; 
+
+        for (const tableName in tables) {
+            if (tableName === 'users') continue;
+
+            const childRels = relationships.filter(r => r.child_table_name === tableName);
+            if (childRels.length === 0) continue;
+
+            sequence++;
+            const timestamp = getFormattedTimestamp(now, sequence);
+            const fileName = `${timestamp}_add_foreign_keys_to_${tableName}_table.php`;
+
+            let content = `<?php
+
+use Illuminate\\Database\\Migrations\\Migration;
+use Illuminate\\Database\\Schema\\Blueprint;
+use Illuminate\\Support\\Facades\\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('${tableName}', function (Blueprint $table) {
+`;
+            childRels.forEach(rel => {
+                const fk = rel.fk_child_field;
+                const parentTable = rel.parent_table_name;
+                const parentKey = 'id'; // Default Laravel assumption
+
+                // Ambil nilai on_delete/on_update dari DB atau default ke 'NO ACTION'
+                const onDelete = rel.on_delete && rel.on_delete.toLowerCase() !== 'no action' ? rel.on_delete.toLowerCase() : null;
+                const onUpdate = rel.on_update && rel.on_update.toLowerCase() !== 'no action' ? rel.on_update.toLowerCase() : null;
+
+                // Membina sintaks Foreign Key
+                let line = `            $table->foreign(['${fk}'])->references(['${parentKey}'])->on('${parentTable}')`;
+                
+                if (onUpdate) line += `->onUpdate('${onUpdate}')`;
+                if (onDelete) line += `->onDelete('${onDelete}')`; 
+                
+                content += `${line};\n`;
+            });
+
+            content += `        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('${tableName}', function (Blueprint $table) {
+`;
+            // Drop Foreign Keys semasa Rollback
+            childRels.forEach(rel => {
+                content += `            $table->dropForeign(['${rel.fk_child_field}']);\n`;
+            });
+
+            content += `        });
+    }
+};`;
+            fs.writeFileSync(path.join(migrationsPath, fileName), content);
+        }
+
+        return { success: true, message: 'Migrations generated successfully (2-Phase Safe Mode).' };
+
+    } catch (error) {
+        console.error('Migration Error:', error);
+        return { success: false, message: error.message };
+    }
+}
+// ==========================================
+// Helper Functions
+// ==========================================
+
+function getFieldDefinition(field) {
+    const name = field.field_name;
+    let def = '';
+
+    // 1. Primary Key
+    if (field.primary_key === 1) {
+        if (field.data_type.includes('INT')) return `$table->id('${name}');`;
+        return `$table->string('${name}')->primary();`;
+    }
+
+    // 2. Map Data Type
+    const typeMap = {
+        'VARCHAR': 'string', 'CHAR': 'char', 'TEXT': 'text', 'MEDIUMTEXT': 'mediumText', 'LONGTEXT': 'longText',
+        'INT': 'integer', 'INTEGER': 'integer', 'BIGINT': 'bigInteger', 'TINYINT': 'tinyInteger', 'SMALLINT': 'smallInteger',
+        'DECIMAL': 'decimal', 'FLOAT': 'float', 'DOUBLE': 'double',
+        'DATE': 'date', 'DATETIME': 'dateTime', 'TIMESTAMP': 'timestamp', 'TIME': 'time',
+        'BOOLEAN': 'boolean', 'JSON': 'json', 'ENUM': 'enum'
+    };
+    
+    // Kendalian khas TINYINT(1) -> boolean
+    let laravelType = typeMap[field.data_type.toUpperCase()] || 'string';
+    if (field.data_type.toUpperCase() === 'TINYINT' && field.max_length == 1) laravelType = 'boolean';
+
+    // Bina baris kod
+    if (laravelType === 'enum') {
+        const opts = field.options_list_values ? field.options_list_values.split(';;').map(o => `'${o}'`).join(', ') : '';
+        def = `$table->enum('${name}', [${opts}])`;
+    } 
+    else if (laravelType === 'decimal') {
+        def = `$table->decimal('${name}', 10, 2)`;
+    }
+    else {
+        def = `$table->${laravelType}('${name}')`;
+    }
+
+    // 3. Modifiers
+    if (field.is_nullable === 1) def += '->nullable()';
+    if (field.is_unique === 1 || field.unique === 1) def += '->unique()';
+    
+    // Default Value
+    if (field.default_value !== null && field.default_value !== '') {
+        if (field.default_value === 'CURRENT_TIMESTAMP') def += '->useCurrent()';
+        else if (field.data_type === 'BOOLEAN') def += `->default(${field.default_value === 'true' ? 1 : 0})`;
+        else if (['INT','DECIMAL','FLOAT'].some(t => field.data_type.includes(t))) def += `->default(${field.default_value})`;
+        else def += `->default('${field.default_value}')`;
+    }
+
+    return def + ';';
+}
+// ==========================================
+// Helper Functions (Perlu ada dalam skop yang sama atau diimport)
+// ==========================================
+
+// Menjana timestamp YYYY_MM_DD_HHMMSS + offset saat
+function getFormattedTimestamp(date, offsetSeconds) {
+    const d = new Date(date.getTime() + (offsetSeconds * 1000));
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}_${pad(d.getMonth() + 1)}_${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+}
+
+function getFieldDefinitionForMigration(field) {
+    const name = field.field_name;
+    const type = field.data_type.toUpperCase();
+    const length = field.max_length;
+
+    // Pemetaan Jenis Data
+    if (type === 'INT' || type === 'INTEGER') return `$table->integer('${name}')`;
+    if (type === 'BIGINT') return `$table->bigInteger('${name}')`;
+    if (type === 'TINYINT') return (length == 1) ? `$table->boolean('${name}')` : `$table->tinyInteger('${name}')`;
+    if (type === 'SMALLINT') return `$table->smallInteger('${name}')`;
+    if (type === 'VARCHAR') return `$table->string('${name}', ${length || 255})`;
+    if (type === 'CHAR') return `$table->char('${name}', ${length || 255})`;
+    if (type === 'TEXT') return `$table->text('${name}')`;
+    if (type === 'MEDIUMTEXT') return `$table->mediumText('${name}')`;
+    if (type === 'LONGTEXT') return `$table->longText('${name}')`;
+    if (type === 'DATE') return `$table->date('${name}')`;
+    if (type === 'DATETIME') return `$table->dateTime('${name}')`;
+    if (type === 'TIMESTAMP') return `$table->timestamp('${name}')`;
+    if (type === 'TIME') return `$table->time('${name}')`;
+    if (type === 'DECIMAL') return `$table->decimal('${name}', 10, 2)`; // Default precision
+    if (type === 'FLOAT') return `$table->float('${name}')`;
+    if (type === 'DOUBLE') return `$table->double('${name}')`;
+    if (type === 'BOOLEAN') return `$table->boolean('${name}')`;
+    if (type === 'JSON') return `$table->json('${name}')`;
+    
+    if (type === 'ENUM') {
+        const opts = field.options_list_values 
+            ? field.options_list_values.split(';;').map(o => `'${o}'`).join(', ')
+            : '';
+        return `$table->enum('${name}', [${opts}])`;
+    }
+
+    return `$table->string('${name}')`; // Fallback
+}
+
+/**
  * Menjana fail RelationManager Laravel Filament untuk setiap hubungan one-to-many.
  * @param {object} fullSchema - Objek penuh dari getFullProjectSchema.
  * @param {string} basePath - Laluan asas ke folder 'generated'.
@@ -3466,6 +3861,8 @@ async function generateFilamentRelationManagers(fullSchema, basePath) {
     }
 }
 
+// Di dalam src/main.js
+
 ipcMain.handle('generate-app', async () => {
     const win = BrowserWindow.getFocusedWindow();
     try {
@@ -3499,6 +3896,12 @@ ipcMain.handle('generate-app', async () => {
         const formSchemaResult = await generateFilamentSchemasForm(fullSchema, filamentPath);
         if (!formSchemaResult.success) throw new Error(`Filament Form Schema generation failed: ${formSchemaResult.message}`);
         
+        // ▼▼▼ TAMBAHAN BARU DI SINI: Generate Migrations ▼▼▼
+        // Menggunakan fullSchema dan filamentPath yang SAMA seperti fungsi lain
+        const migrationResult = await generateLaravelMigrations(fullSchema, filamentPath);
+        if (!migrationResult.success) throw new Error(`Laravel Migration generation failed: ${migrationResult.message}`);
+        // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
+
         console.log(`All files generated successfully in: ${filamentPath}`);
 
         return { 

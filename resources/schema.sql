@@ -115,6 +115,7 @@ CREATE TABLE fields (
     display_type                 TEXT DEFAULT 'text_input',
     auto_increment               INTEGER DEFAULT 0,
     "unique"                     INTEGER DEFAULT 0,
+    not_null                     INTEGER DEFAULT 0,
     is_indexed                   INTEGER DEFAULT 0,
     show_sum                     INTEGER DEFAULT 0,
     show_avg_summary             INTEGER DEFAULT 0,
@@ -244,6 +245,8 @@ CREATE TABLE parent_child_relationships (
     show_link_above   INTEGER DEFAULT 1,
     show_count_in_tv  INTEGER DEFAULT 0,
     allow_add_from_tv INTEGER DEFAULT 0,
+    on_delete         TEXT DEFAULT 'NO ACTION', -- Tambah ini (CASCADE, SET NULL, RESTRICT, NO ACTION)
+    on_update         TEXT DEFAULT 'NO ACTION', -- Tambah ini
     FOREIGN KEY (parent_table_id) REFERENCES tables(table_id) ON DELETE CASCADE,
     FOREIGN KEY (child_table_id) REFERENCES tables(table_id) ON DELETE CASCADE
 );
