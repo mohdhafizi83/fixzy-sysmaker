@@ -3698,6 +3698,279 @@ return new class extends Migration
         return { success: false, message: error.message };
     }
 }
+
+/**
+ * Menjana fail Factory Laravel untuk setiap jadual.
+ * @param {object} fullSchema 
+ * @param {string} basePath 
+ */
+async function generateLaravelFactories(fullSchema, basePath) {
+    try {
+        const { database: { table: tables, relationships } } = fullSchema;
+        const factoriesPath = path.join(basePath, 'database', 'factories');
+        
+        if (!fs.existsSync(factoriesPath)) {
+            fs.mkdirSync(factoriesPath, { recursive: true });
+        }
+
+        for (const tableName in tables) {
+            // Kita skip 'users' kerana Laravel sudah ada UserFactory, 
+            // ATAU anda boleh overwrite jika mahu. Di sini kita skip.
+            if (tableName === 'users') continue;
+
+            const tableData = tables[tableName];
+            const modelName = toSingularPascalCase(tableName);
+            const className = `${modelName}Factory`;
+            
+            // Tentukan medan yang perlu diisi
+            // Kita ABAIKAN: Primary Key, Foreign Keys, Timestamps
+            const columns = [];
+            const fieldsArr = Object.values(tableData.fields);
+            
+            fieldsArr.forEach(field => {
+                // 1. Skip PK & Timestamps
+                if (field.primary_key === 1) return;
+                if (['created_at', 'updated_at', 'deleted_at'].includes(field.field_name)) return;
+
+                // 2. Skip Foreign Keys (Seeder akan handle perhubungan)
+                // Kita semak jika medan ini wujud dalam relationship sebagai 'fk_child_field'
+                const isForeignKey = relationships.some(r => r.child_table_name === tableName && r.fk_child_field === field.field_name);
+                if (isForeignKey) {
+                    columns.push(`            // '${field.field_name}' => ... (Diuruskan oleh Seeder/Relationship)`);
+                    return;
+                }
+
+                // 3. Dapatkan Faker definition
+                const fakerLine = getFakerFormatter(field);
+                columns.push(`            '${field.field_name}' => ${fakerLine},`);
+            });
+
+            // Template Factory
+            const content = `<?php
+
+namespace Database\\Factories;
+
+use Illuminate\\Database\\Eloquent\\Factories\\Factory;
+use App\\Models\\${modelName};
+
+/**
+ * @extends \\Illuminate\\Database\\Eloquent\\Factories\\Factory<\\App\\Models\\${modelName}>
+ */
+class ${className} extends Factory
+{
+    protected $model = ${modelName}::class;
+
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+${columns.join('\n')}
+        ];
+    }
+}
+`;
+            fs.writeFileSync(path.join(factoriesPath, `${className}.php`), content);
+        }
+
+        return { success: true, message: 'Factories generated successfully.' };
+
+    } catch (error) {
+        console.error('Factory Generation Error:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+/**
+ * Menjana fail DatabaseSeeder.php yang bijak & selamat daripada ralat 'Duplicate Entry'.
+ * @param {object} fullSchema 
+ * @param {string} basePath 
+ */
+async function generateLaravelDatabaseSeeder(fullSchema, basePath) {
+    try {
+        const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
+        const seedersPath = path.join(basePath, 'database', 'seeders');
+        
+        if (!fs.existsSync(seedersPath)) {
+            fs.mkdirSync(seedersPath, { recursive: true });
+        }
+
+        // 1. Topological Sort (Kekalkan logik urutan jadual)
+        let tableNames = Object.keys(tables).filter(t => t !== 'users'); 
+        let sortedTables = [];
+        let visited = new Set();
+        let tempVisited = new Set();
+
+        const visit = (table) => {
+            if (tempVisited.has(table)) return; 
+            if (visited.has(table)) return;
+            tempVisited.add(table);
+            const parents = relationships
+                .filter(r => r.child_table_name === table && r.parent_table_name !== table) 
+                .map(r => r.parent_table_name);
+            parents.forEach(parent => { if (tableNames.includes(parent)) visit(parent); });
+            tempVisited.delete(table);
+            visited.add(table);
+            sortedTables.push(table);
+        };
+        tableNames.forEach(table => visit(table));
+
+        // 2. Bina Kod Seeder
+        let importStatements = [`use App\\Models\\User;`];
+        let runContent = [];
+
+        // A. Cipta User Test
+        runContent.push(`        // 1. Create Test User`);
+        runContent.push(`        User::factory()->create([
+            'name' => 'Test User',
+            'email' => 'admin@admin.com',
+            'password' => bcrypt('password'),
+        ]);`);
+
+        // B. Loop melalui jadual
+        sortedTables.forEach(tableName => {
+            const modelName = toSingularPascalCase(tableName);
+            importStatements.push(`use App\\Models\\${modelName};`);
+
+            const tableData = tables[tableName];
+            const myRelationships = relationships.filter(r => r.child_table_name === tableName);
+            
+            // --- ANALISIS KEKANGAN (CONSTRAINTS) ---
+            
+            // 1. Adakah ia One-to-One? (Semak jika FK adalah unik)
+            const oneToOneRel = myRelationships.find(rel => {
+                const field = tableData.fields[rel.fk_child_field];
+                return field && (field.unique === 1 || field.is_unique === 1);
+            });
+
+            // 2. Adakah ia Many-to-Many dengan Unique Constraint? (Semak table_constraints)
+            let compositeUniqueRel = null;
+            if (tableData.constraints) {
+                const uniqueConstraint = tableData.constraints.find(c => c.constraint_type === 'UNIQUE');
+                if (uniqueConstraint) {
+                    try {
+                        const cols = JSON.parse(uniqueConstraint.columns);
+                        // Jika constraint melibatkan 2 FK, kita anggap ia junction table
+                        const fks = myRelationships.filter(r => cols.includes(r.fk_child_field));
+                        if (fks.length >= 2) {
+                            compositeUniqueRel = {
+                                constraint_cols: cols,
+                                relationships: fks
+                            };
+                        }
+                    } catch (e) {}
+                }
+            }
+
+            // --- JANA KOD PHP BERDASARKAN SENARIO ---
+
+            runContent.push(`\n        // Seed: ${tableName}`);
+
+            if (oneToOneRel) {
+                // SENARIO 1: One-to-One (Elak duplicate parent ID)
+                // Logik: Ambil parent yang BELUM ada child ini, dan create child untuk mereka.
+                const parentModel = toSingularPascalCase(oneToOneRel.parent_table_name);
+                const method = toSingularCamelCase(tableName); // e.g., profilPelajar
+                
+                // Gunakan doesntHave() untuk cari parent yang "kosong"
+                // Nota: Kita perlu tahu nama relationship function dalam model Parent.
+                // Tekaan selamat: nama model child (singular/plural)
+                
+                runContent.push(`        // One-to-One: Hanya cipta untuk parent yang belum ada rekod ini`);
+                runContent.push(`        $parents = ${parentModel}::doesntHave('${method}')->take(20)->get();`);
+                runContent.push(`        foreach($parents as $parent) {`);
+                runContent.push(`            ${modelName}::factory()->create(['${oneToOneRel.fk_child_field}' => $parent->id]);`);
+                runContent.push(`        }`);
+
+            } else if (compositeUniqueRel) {
+                // SENARIO 2: Many-to-Many / Composite Unique (Elak pasangan berulang)
+                // Logik: Loop parent pertama, assign parent kedua secara rawak tetapi unik.
+                
+                const relA = compositeUniqueRel.relationships[0]; // FK 1 (cth: pelajar_id)
+                const relB = compositeUniqueRel.relationships[1]; // FK 2 (cth: kursus_id)
+                
+                const modelA = toSingularPascalCase(relA.parent_table_name);
+                const modelB = toSingularPascalCase(relB.parent_table_name);
+                
+                runContent.push(`        // Composite Unique: Pastikan tiada pasangan berulang`);
+                runContent.push(`        $listA = ${modelA}::all();`);
+                runContent.push(`        $listB = ${modelB}::pluck('id');`);
+                runContent.push(``);
+                runContent.push(`        foreach($listA as $itemA) {`);
+                runContent.push(`            // Ambil 1-3 item rawak dari list B untuk setiap item A`);
+                runContent.push(`            $randomB = $listB->random(min(3, $listB->count()));`);
+                runContent.push(`            foreach($randomB as $idB) {`);
+                runContent.push(`                try {`);
+                runContent.push(`                    ${modelName}::factory()->create([`);
+                runContent.push(`                        '${relA.fk_child_field}' => $itemA->id,`);
+                runContent.push(`                        '${relB.fk_child_field}' => $idB`);
+                runContent.push(`                    ]);`);
+                runContent.push(`                } catch (\\Exception $e) { continue; }`);
+                runContent.push(`            }`);
+                runContent.push(`        }`);
+
+            } else {
+                // SENARIO 3: Biasa (Random Pick selamat)
+                if (myRelationships.length === 0) {
+                    runContent.push(`        ${modelName}::factory(10)->create();`);
+                } else {
+                    let overrides = [];
+                    myRelationships.forEach(rel => {
+                        const parentModel = toSingularPascalCase(rel.parent_table_name);
+                        const fkField = rel.fk_child_field;
+                        if (rel.parent_table_name === 'users') {
+                            overrides.push(`            '${fkField}' => 1`); 
+                        } else if (rel.parent_table_name !== tableName) {
+                            overrides.push(`            '${fkField}' => ${parentModel}::inRandomOrder()->first()?->id ?? null`); 
+                        }
+                    });
+                    
+                    if (overrides.length > 0) {
+                        runContent.push(`        ${modelName}::factory(20)->create([\n${overrides.join(',\n')}\n        ]);`);
+                    } else {
+                        runContent.push(`        ${modelName}::factory(20)->create();`);
+                    }
+                }
+            }
+        });
+
+        // C. Shield Seeder
+        if (projectSettings.module_authorization === 1) {
+            runContent.push(`\n        // Filament Shield Security`);
+            runContent.push(`        $this->call(ShieldSeeder::class);`);
+        }
+
+        const content = `<?php
+
+namespace Database\\Seeders;
+
+use Illuminate\\Database\\Seeder;
+${importStatements.join('\n')}
+
+class DatabaseSeeder extends Seeder
+{
+    /**
+     * Seed the application's database.
+     */
+    public function run(): void
+    {
+${runContent.join('\n')}
+    }
+}
+`;
+        fs.writeFileSync(path.join(seedersPath, 'DatabaseSeeder.php'), content);
+
+        return { success: true, message: 'DatabaseSeeder generated successfully.' };
+
+    } catch (error) {
+        console.error('Seeder Generation Error:', error);
+        return { success: false, message: error.message };
+    }
+}
+
 // ==========================================
 // Helper Functions
 // ==========================================
@@ -3795,6 +4068,47 @@ function getFieldDefinitionForMigration(field) {
     }
 
     return `$table->string('${name}')`; // Fallback
+}
+
+/**
+ * Meneka format Faker berdasarkan nama medan dan jenis data.
+ */
+function getFakerFormatter(field) {
+    const name = field.field_name.toLowerCase();
+    const type = field.data_type.toUpperCase();
+    const unique = (field.unique === 1 || field.is_unique === 1) ? '->unique()' : '';
+
+    // 1. Tekaan berdasarkan Nama Medan (Name-based Guessing)
+    if (name.includes('email')) return `fake()${unique}->safeEmail()`;
+    if (name.includes('phone') || name.includes('tel')) return `fake()${unique}->phoneNumber()`;
+    if (name.includes('name') || name.includes('nama')) return `fake()${unique}->name()`;
+    if (name.includes('address') || name.includes('alamat')) return `fake()->address()`;
+    if (name.includes('city') || name.includes('bandar')) return `fake()->city()`;
+    if (name.includes('state') || name.includes('negeri')) return `fake()->state()`;
+    if (name.includes('postcode') || name.includes('poskod')) return `fake()->postcode()`;
+    if (name.includes('country') || name.includes('negara')) return `fake()->country()`;
+    if (name.includes('company') || name.includes('syarikat')) return `fake()->company()`;
+    if (name.includes('job') || name.includes('jawatan')) return `fake()->jobTitle()`;
+    if (name.includes('title') || name.includes('tajuk')) return `fake()->sentence(4)`;
+    if (name.includes('description') || name.includes('deskripsi')) return `fake()->paragraph()`;
+    if (name.includes('password') || name.includes('kata_laluan')) return `'password'`; // static password for dev
+    if (name.includes('url') || name.includes('link')) return `fake()->url()`;
+    if (name.includes('ic_no') || name.includes('mykad')) return `fake()${unique}->numerify('######-##-####')`;
+    if (name.includes('matrik') || name.includes('matric')) return `fake()${unique}->bothify('??#####')`;
+    if (name.includes('slug')) return `fake()${unique}->slug()`;
+    
+    // 2. Tekaan berdasarkan Jenis Data (Type-based Guessing)
+    if (type === 'BOOLEAN' || type === 'TINYINT') return `fake()->boolean()`;
+    if (type === 'DATE') return `fake()->date()`;
+    if (type === 'DATETIME' || type === 'TIMESTAMP') return `fake()->dateTimeThisYear()`;
+    if (type === 'TIME') return `fake()->time()`;
+    if (type.includes('INT')) return `fake()->randomNumber()`; // INT, BIGINT, etc
+    if (type === 'DECIMAL' || type === 'FLOAT' || type === 'DOUBLE') return `fake()->randomFloat(2, 10, 1000)`;
+    if (type === 'TEXT' || type === 'LONGTEXT') return `fake()->text()`;
+    if (type === 'JSON') return `['key' => 'value']`;
+
+    // 3. Fallback
+    return `fake()->word()`;
 }
 
 /**
@@ -3901,6 +4215,14 @@ ipcMain.handle('generate-app', async () => {
         const migrationResult = await generateLaravelMigrations(fullSchema, filamentPath);
         if (!migrationResult.success) throw new Error(`Laravel Migration generation failed: ${migrationResult.message}`);
         // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
+// ▼▼▼ TAMBAHAN BAHARU: Factory & Seeder ▼▼▼
+        const factoryResult = await generateLaravelFactories(fullSchema, filamentPath);
+        if (!factoryResult.success) throw new Error(`Factory generation failed: ${factoryResult.message}`);
+
+        const seederResult = await generateLaravelDatabaseSeeder(fullSchema, filamentPath);
+        if (!seederResult.success) throw new Error(`Seeder generation failed: ${seederResult.message}`);
+        // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
+        
 
         console.log(`All files generated successfully in: ${filamentPath}`);
 
