@@ -2395,7 +2395,6 @@ export async function populateProjectDropdown() {
     });
 }
 
-// FIND AND REPLACE this entire function in your src/js/uiHandlers.js file
 // This new version supports both new Promise-based calls and old callback-based calls.
 
 export function showCustomDialog({ title, message, onOk, onCancel, showCancelButton = false }) {
