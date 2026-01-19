@@ -643,14 +643,24 @@ const generateAppBtn = document.getElementById('app-generate_app');
                 loadingOverlay.classList.remove('loading-overlay-hidden');
             }
             try {
+                // Panggil backend
                 const result = await window.electronAPI.generateApp();
+                
                 if (result.success) {
+                    // Papar dialog kejayaan yang ringkas
+                    // Pastikan guna 'result.folderPath' untuk elak 'undefined'
                     showCustomDialog({
                         title: "Success",
-                        message: `Aplikasi berjaya dijana! Fail ujian 'fail_baru.php' telah dicipta di:\n\n${result.path}`
+                        message: `Aplikasi berjaya dijana!\n\nLokasi fail:\n${result.folderPath}`
                     });
-                    window.electronAPI.openFolder(result.folderPath);
+
+                    // Buka folder secara automatik
+                    if (result.folderPath) {
+                        window.electronAPI.openFolder(result.folderPath);
+                    }
+
                 } else {
+                    // Papar ralat jika gagal
                     showCustomDialog({
                         title: "Error",
                         message: `Gagal menjana aplikasi: ${result.message}`
@@ -658,7 +668,10 @@ const generateAppBtn = document.getElementById('app-generate_app');
                 }
             } catch (error) {
                 console.error("Ralat IPC semasa menjana aplikasi:", error);
-                // ...
+                showCustomDialog({
+                    title: "System Error",
+                    message: `Ralat tidak dijangka: ${error.message}`
+                });
             } finally {
                 if (loadingOverlay) {
                     loadingOverlay.classList.add('loading-overlay-hidden');

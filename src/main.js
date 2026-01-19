@@ -18,7 +18,9 @@ const {
     toSingularPascalCase,
     toSingularCamelCase,
     toPluralPascalCase,
-    toPluralCamelCase
+    toPluralCamelCase,
+    getFilesRecursive,
+    runStep
 } = require('./utils');
 
 const { 
@@ -1254,67 +1256,130 @@ ipcMain.handle('project:get-initial-status', async (event, projectId) => {
 ipcMain.handle('generate-app', async () => {
     const win = BrowserWindow.getFocusedWindow();
     try {
-        const activeProject = await db.prepare("SELECT * FROM projects WHERE is_active = 1 LIMIT 1").get();
-        if (!activeProject) {
-            throw new Error("No active project found.");
+        // 1. Dapatkan Projek Aktif
+        const activeProject = db.prepare("SELECT * FROM projects WHERE is_active = 1 LIMIT 1").get();
+        if (!activeProject) throw new Error("Tiada projek aktif dijumpai.");
+
+        const projectId = activeProject.project_id;
+        
+        // Dapatkan Schema Penuh
+        const fullSchema = await getFullProjectSchema(projectId);
+        if (!fullSchema) throw new Error("Gagal mendapatkan schema projek penuh.");
+
+        // Tentukan Stack Pilihan (Berdasarkan HTML <select> anda)
+        // Default ke 'core_php' ikut schema, tapi kita handle fallback ke laravel jika perlu
+        const selectedStack = activeProject.stack_base || 'core_php';
+        
+        console.log(`Memulakan janaan untuk Project ID: ${projectId} | Stack: ${selectedStack}`);
+        win?.webContents.send('show-overlay', { message: `Menjana aplikasi (${selectedStack})...` });
+
+        // 2. Tentukan Folder Sementara (Staging Area)
+        const tempBasePath = getGeneratedFolderPath(); 
+        // Nama folder staging unik untuk elak konflik
+        const stagingFolderName = `${activeProject.app_title.replace(/[^a-zA-Z0-9_-]/g, '_')}_staging`;
+        const stagingPath = path.join(tempBasePath, stagingFolderName);
+
+        // Bersihkan folder staging (Reset)
+        if (fs.existsSync(stagingPath)) {
+            fs.rmSync(stagingPath, { recursive: true, force: true });
+        }
+        fs.mkdirSync(stagingPath, { recursive: true });
+
+        // 3. SUIS LOGIK GENERATOR (Dispatcher)
+        let generateResult;
+
+        switch (selectedStack) {
+            case 'laravel_filament':
+                // Panggil Orchestrator Laravel Filament
+                generateResult = await generateLaravelFilamentStack(fullSchema, stagingPath);
+                break;
+
+            case 'laravel_backpack':
+                generateResult = { success: false, message: "Generator Laravel Backpack belum tersedia." };
+                break;
+            
+            case 'core_php':
+                generateResult = { success: false, message: "Generator Core PHP sedang dalam pembangunan." };
+                break;
+
+            case 'ci4':
+            case 'ci3':
+                generateResult = { success: false, message: "Generator CodeIgniter akan datang." };
+                break;
+            
+            case 'django':
+            case 'flask':
+                generateResult = { success: false, message: "Generator Python belum tersedia." };
+                break;
+
+            // ... Tambah case lain berdasarkan HTML anda (aspnet_core, ror, java_spring, mean, dll) ...
+
+            default:
+                // Fallback keselamatan
+                console.warn(`Stack '${selectedStack}' tidak dikenali. Mencuba Laravel Filament sebagai default.`);
+                generateResult = await generateLaravelFilamentStack(fullSchema, stagingPath);
+                break;
         }
 
-        const fullSchema = await getFullProjectSchema(activeProject.project_id);
-        if (!fullSchema) {
-            throw new Error("Failed to retrieve the full project schema.");
+        // Jika janaan GAGAL di peringkat staging, berhenti di sini.
+        if (!generateResult.success) {
+            throw new Error(generateResult.message);
         }
+
+        // 4. LOGIK PEMINDAHAN KE DOC_ROOT (Deployment)
+        let finalPath = stagingPath; 
         
-        win?.webContents.send('show-overlay', { message: 'Generating application files...' });
+        // Baca setting doc_root
+        const docRootSetting = db.prepare("SELECT setting_value FROM fizisys_settings WHERE setting_name = 'doc_root'").get();
 
-        const generatedAppPath = getGeneratedFolderPath();
-        const filamentPath = path.join(generatedAppPath, 'filament_app');
+        if (docRootSetting && docRootSetting.setting_value && docRootSetting.setting_value.trim() !== '') {
+            const docRoot = docRootSetting.setting_value;
+            // Sanitasi nama folder projek
+            const appFolderName = activeProject.app_title.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
+            const destinationPath = path.join(docRoot, appFolderName);
 
-        // Panggil semua fungsi penjana yang sedia ada...
-        await generateFilamentModels(fullSchema, filamentPath);
-        await generateFilamentUserModel(fullSchema, filamentPath);
-        await generateFilamentResources(fullSchema, filamentPath);
-        await generateFilamentListPages(fullSchema, filamentPath);
-        await generateFilamentCreatePages(fullSchema, filamentPath);
-        await generateFilamentEditPages(fullSchema, filamentPath);
-        await generateFilamentRelationManagers(fullSchema, filamentPath);
+            console.log(`Memindahkan fail ke Doc Root: ${destinationPath}`);
+            win?.webContents.send('show-overlay', { message: 'Memindahkan fail ke folder pelayan...' });
 
-        const tableClassResult = await generateFilamentTablesTable(fullSchema, filamentPath);
-        if (!tableClassResult.success) throw new Error(`Filament Table Class generation failed: ${tableClassResult.message}`);
-        
-        const formSchemaResult = await generateFilamentSchemasForm(fullSchema, filamentPath);
-        if (!formSchemaResult.success) throw new Error(`Filament Form Schema generation failed: ${formSchemaResult.message}`);
-        
-        // ▼▼▼ TAMBAHAN BARU DI SINI: Generate Migrations ▼▼▼
-        // Menggunakan fullSchema dan filamentPath yang SAMA seperti fungsi lain
-        const migrationResult = await generateLaravelMigrations(fullSchema, filamentPath);
-        if (!migrationResult.success) throw new Error(`Laravel Migration generation failed: ${migrationResult.message}`);
-        // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
-// ▼▼▼ TAMBAHAN BAHARU: Factory & Seeder ▼▼▼
-        const factoryResult = await generateLaravelFactories(fullSchema, filamentPath);
-        if (!factoryResult.success) throw new Error(`Factory generation failed: ${factoryResult.message}`);
+            try {
+                if (!fs.existsSync(destinationPath)) {
+                    fs.mkdirSync(destinationPath, { recursive: true });
+                }
+                
+                // Salin dari Staging ke Doc Root (Overwrite)
+                fs.cpSync(stagingPath, destinationPath, { recursive: true, force: true });
+                
+                // Set finalPath ke lokasi sebenar untuk dibuka oleh frontend
+                finalPath = destinationPath;
 
-        const seederResult = await generateLaravelDatabaseSeeder(fullSchema, filamentPath);
-        if (!seederResult.success) throw new Error(`Seeder generation failed: ${seederResult.message}`);
-        // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
-        
-
-        console.log(`All files generated successfully in: ${filamentPath}`);
+            } catch (moveError) {
+                console.error("Gagal memindahkan fail:", moveError);
+                // Jangan throw error di sini, supaya user masih boleh akses fail di folder temp
+                dialog.showErrorBox("Amaran Pemindahan", `Aplikasi berjaya dijana tetapi gagal disalin ke Doc Root.\nSila semak permission folder.\nLokasi fail: ${stagingPath}`);
+            }
+        }
 
         return { 
             success: true, 
-            message: 'Application files generated successfully!',
-            folderPath: filamentPath 
+            message: 'Aplikasi berjaya dijana!',
+            folderPath: finalPath // Ini penting untuk butang "Open Folder" di frontend
         };
+
     } catch (error) {
-        console.error('Gagal menjana aplikasi:', error);
+        console.error('Ralat Proses Janaan:', error);
         return { success: false, message: error.message };
     } finally {
         win?.webContents.send('hide-overlay');
     }
 });
 
-ipcMain.on('open-folder', (event, path) => {
-    shell.openPath(path);
+// Handler untuk membuka folder (biasanya dipanggil selepas generate berjaya)
+ipcMain.on('open-folder', (event, folderPath) => {
+    if (folderPath && fs.existsSync(folderPath)) {
+        shell.openPath(folderPath);
+    } else {
+        console.error(`Gagal membuka folder: ${folderPath} tidak wujud.`);
+    }
 });
 
 ipcMain.handle('run-composer', async (event, projectPath) => {
@@ -1951,6 +2016,60 @@ function importSchema(sql, projectId, dialect) {
         console.error("SQL PARSING FAILED! The script may contain syntax incompatible with the parser for the selected dialect.");
         console.error("Full parser error:", error);
         return { success: false, message: `SQL Parsing Error: ${error.message}. Please check the console for more details.` };
+    }
+}
+
+/**
+ * ORCHESTRATOR: Menguruskan urutan penjanaan penuh untuk stack Laravel Filament.
+ */
+async function generateLaravelFilamentStack(fullSchema, outputDir) {
+    try {
+        console.log("Memulakan Orchestrator Laravel Filament...");
+        
+        // Pastikan folder wujud
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+        }
+
+        // FASA 1: DATABASE & MODELS
+        // Urutan: Migrations -> Models -> Factories -> Seeders
+        const migrationResult = await generateLaravelMigrations(fullSchema, outputDir);
+        if (!migrationResult.success) throw new Error(`Migrations: ${migrationResult.message}`);
+
+        const modelResult = await generateFilamentModels(fullSchema, outputDir);
+        if (!modelResult.success) throw new Error(`Models: ${modelResult.message}`);
+
+        const userModelResult = await generateFilamentUserModel(fullSchema, outputDir);
+        if (!userModelResult.success) throw new Error(`User Model: ${userModelResult.message}`);
+
+        const factoryResult = await generateLaravelFactories(fullSchema, outputDir);
+        if (!factoryResult.success) throw new Error(`Factories: ${factoryResult.message}`);
+
+        const seederResult = await generateLaravelDatabaseSeeder(fullSchema, outputDir);
+        if (!seederResult.success) throw new Error(`Seeders: ${seederResult.message}`);
+
+        // FASA 2: FILAMENT RESOURCES
+        // Urutan: Resources -> Pages -> Relation Managers
+        const resourceResult = await generateFilamentResources(fullSchema, outputDir);
+        if (!resourceResult.success) throw new Error(`Resources: ${resourceResult.message}`);
+
+        await generateFilamentListPages(fullSchema, outputDir);
+        await generateFilamentCreatePages(fullSchema, outputDir);
+        await generateFilamentEditPages(fullSchema, outputDir);
+        await generateFilamentRelationManagers(fullSchema, outputDir);
+
+        // FASA 3: UI COMPONENTS (Injections)
+        // Borang & Jadual
+        const tableResult = await generateFilamentTablesTable(fullSchema, outputDir);
+        if (!tableResult.success) throw new Error(`Tables: ${tableResult.message}`);
+
+        const formResult = await generateFilamentSchemasForm(fullSchema, outputDir);
+        if (!formResult.success) throw new Error(`Forms: ${formResult.message}`);
+
+        return { success: true };
+
+    } catch (error) {
+        return { success: false, message: error.message };
     }
 }
 

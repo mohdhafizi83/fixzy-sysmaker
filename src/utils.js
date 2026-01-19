@@ -1,4 +1,6 @@
 const pluralize = require('pluralize');
+const fs = require('fs');
+const path = require('path');
 
 function convertDateFormatToPhp(formatString) {
     if (!formatString) return 'd/m/Y'; // Lalai yang selamat
@@ -180,6 +182,31 @@ function getFakerFormatter(field) {
     return `fake()->word()`;
 }
 
+async function runStep(name, promise) {
+    console.log(`  > Menjana ${name}...`);
+    const result = await promise;
+    if (!result.success) {
+        throw new Error(`Gagal menjana ${name}: ${result.message}`);
+    }
+}
+
+function getFilesRecursive(dir, fileList = [], relativePath = '') {
+    const files = fs.readdirSync(dir);
+    files.forEach(file => {
+        const filePath = path.join(dir, file);
+        const relPath = path.join(relativePath, file);
+        const stat = fs.statSync(filePath);
+        if (stat.isDirectory()) {
+            if (file !== 'vendor' && file !== 'node_modules' && file !== '.git') { // Skip folder berat
+                getFilesRecursive(filePath, fileList, relPath);
+            }
+        } else {
+            fileList.push(relPath);
+        }
+    });
+    return fileList;
+}
+
 // Eksport semua fungsi ini supaya boleh digunakan oleh fail lain
 module.exports = {
     convertDateFormatToPhp,
@@ -193,5 +220,7 @@ module.exports = {
     toSingularPascalCase,
     toSingularCamelCase,
     getFieldDefinitionForMigration,
-    getFakerFormatter
+    getFakerFormatter,
+    getFilesRecursive,
+    runStep
 };
