@@ -47,7 +47,7 @@ const {
     generateLaravelDatabaseSeeder 
 } = require('./generators/laravelDatabaseGenerator');
 
-const { deployApp, updateApp } = require('./handlers/deploymentHandler');
+const { deployApp, updateApp } = require('./deploymentHandler');
 
 // Tentukan laluan ke pangkalan data
 const dbPath = path.join(app.getPath("userData"), "FiziSysMaker.db");

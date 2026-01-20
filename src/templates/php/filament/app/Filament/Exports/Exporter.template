@@ -2,28 +2,20 @@
 
 namespace App\Filament\Exports;
 
-use App\Models\Pelajar;
+use App\Models\<<MODEL_NAME>>;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
 use Illuminate\Support\Number;
 
-class PelajarExporter extends Exporter
+class <<MODEL_NAME>>Exporter extends Exporter
 {
-    protected static ?string $model = Pelajar::class;
+    protected static ?string $model = <<MODEL_NAME>>::class;
 
     public static function getColumns(): array
     {
         return [
-            ExportColumn::make('id_pelajar'),
-            ExportColumn::make('nama_penuh'),
-            ExportColumn::make('no_matrik'),
-            ExportColumn::make('email'),
-            ExportColumn::make('tarikh_daftar'),
-            ExportColumn::make('gambar_profil'),
-            ExportColumn::make('created_at'),
-            ExportColumn::make('updated_at'),
-            ExportColumn::make('deleted_at'),
+            <<EXPORTCOLUMN>>
         ];
     }
 
