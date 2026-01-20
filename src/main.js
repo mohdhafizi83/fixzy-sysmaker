@@ -47,6 +47,8 @@ const {
     generateLaravelDatabaseSeeder 
 } = require('./generators/laravelDatabaseGenerator');
 
+const { deployApp, updateApp } = require('./handlers/deploymentHandler');
+
 // Tentukan laluan ke pangkalan data
 const dbPath = path.join(app.getPath("userData"), "FiziSysMaker.db");
 const dbExists = fs.existsSync(dbPath);
@@ -1253,47 +1255,157 @@ ipcMain.handle('project:get-initial-status', async (event, projectId) => {
   }
 });
 
-ipcMain.handle('generate-app', async () => {
-    const win = BrowserWindow.getFocusedWindow();
+//ipcMain.handle('generate-app', async () => {
+//    const win = BrowserWindow.getFocusedWindow();
+//    try {
+//        // 1. Dapatkan Projek Aktif
+//        const activeProject = db.prepare("SELECT * FROM projects WHERE is_active = 1 LIMIT 1").get();
+//        if (!activeProject) throw new Error("Tiada projek aktif dijumpai.");
+//
+//        const projectId = activeProject.project_id;
+//        
+//        // Dapatkan Schema Penuh
+//        const fullSchema = await getFullProjectSchema(projectId);
+//        if (!fullSchema) throw new Error("Gagal mendapatkan schema projek penuh.");
+//
+//        // Tentukan Stack Pilihan (Berdasarkan HTML <select> anda)
+//        // Default ke 'core_php' ikut schema, tapi kita handle fallback ke laravel jika perlu
+//        const selectedStack = activeProject.stack_base || 'core_php';
+//        
+//        console.log(`Memulakan janaan untuk Project ID: ${projectId} | Stack: ${selectedStack}`);
+//        win?.webContents.send('show-overlay', { message: `Menjana aplikasi (${selectedStack})...` });
+//
+//        // 2. Tentukan Folder Sementara (Staging Area)
+//        const tempBasePath = getGeneratedFolderPath(); 
+//        // Nama folder staging unik untuk elak konflik
+//        const stagingFolderName = `${activeProject.app_title.replace(/[^a-zA-Z0-9_-]/g, '_')}_staging`;
+//        const stagingPath = path.join(tempBasePath, stagingFolderName);
+//
+//        // Bersihkan folder staging (Reset)
+//        if (fs.existsSync(stagingPath)) {
+//            fs.rmSync(stagingPath, { recursive: true, force: true });
+//        }
+//        fs.mkdirSync(stagingPath, { recursive: true });
+//
+//        // 3. SUIS LOGIK GENERATOR (Dispatcher)
+//        let generateResult;
+//
+//        switch (selectedStack) {
+//            case 'laravel_filament':
+//                // Panggil Orchestrator Laravel Filament
+//                generateResult = await generateLaravelFilamentStack(fullSchema, stagingPath);
+//                break;
+//
+//            case 'laravel_backpack':
+//                generateResult = { success: false, message: "Generator Laravel Backpack belum tersedia." };
+//                break;
+//            
+//            case 'core_php':
+//                generateResult = { success: false, message: "Generator Core PHP sedang dalam pembangunan." };
+//                break;
+//
+//            case 'ci4':
+//            case 'ci3':
+//                generateResult = { success: false, message: "Generator CodeIgniter akan datang." };
+//                break;
+//            
+//            case 'django':
+//            case 'flask':
+//                generateResult = { success: false, message: "Generator Python belum tersedia." };
+//                break;
+//
+//            // ... Tambah case lain berdasarkan HTML anda (aspnet_core, ror, java_spring, mean, dll) ...
+//
+//            default:
+//                // Fallback keselamatan
+//                console.warn(`Stack '${selectedStack}' tidak dikenali. Mencuba Laravel Filament sebagai default.`);
+//                generateResult = await generateLaravelFilamentStack(fullSchema, stagingPath);
+//                break;
+//        }
+//
+//        // Jika janaan GAGAL di peringkat staging, berhenti di sini.
+//        if (!generateResult.success) {
+//            throw new Error(generateResult.message);
+//        }
+//
+//        // 4. LOGIK PEMINDAHAN KE DOC_ROOT (Deployment)
+//        let finalPath = stagingPath; 
+//        
+//        // Baca setting doc_root
+//        const docRootSetting = db.prepare("SELECT setting_value FROM fizisys_settings WHERE setting_name = 'doc_root'").get();
+//
+//        if (docRootSetting && docRootSetting.setting_value && docRootSetting.setting_value.trim() !== '') {
+//            const docRoot = docRootSetting.setting_value;
+//            // Sanitasi nama folder projek
+//            const appFolderName = activeProject.app_title.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
+//            const destinationPath = path.join(docRoot, appFolderName);
+//
+//            console.log(`Memindahkan fail ke Doc Root: ${destinationPath}`);
+//            win?.webContents.send('show-overlay', { message: 'Memindahkan fail ke folder pelayan...' });
+//
+//            try {
+//                if (!fs.existsSync(destinationPath)) {
+//                    fs.mkdirSync(destinationPath, { recursive: true });
+//                }
+//                
+//                // Salin dari Staging ke Doc Root (Overwrite)
+//                fs.cpSync(stagingPath, destinationPath, { recursive: true, force: true });
+//                
+//                // Set finalPath ke lokasi sebenar untuk dibuka oleh frontend
+//                finalPath = destinationPath;
+//
+//            } catch (moveError) {
+//                console.error("Gagal memindahkan fail:", moveError);
+//                // Jangan throw error di sini, supaya user masih boleh akses fail di folder temp
+//                dialog.showErrorBox("Amaran Pemindahan", `Aplikasi berjaya dijana tetapi gagal disalin ke Doc Root.\nSila semak permission folder.\nLokasi fail: ${stagingPath}`);
+//            }
+//        }
+//
+//        return { 
+//            success: true, 
+//            message: 'Aplikasi berjaya dijana!',
+//            folderPath: finalPath // Ini penting untuk butang "Open Folder" di frontend
+//        };
+//
+//    } catch (error) {
+//        console.error('Ralat Proses Janaan:', error);
+//        return { success: false, message: error.message };
+//    } finally {
+//        win?.webContents.send('hide-overlay');
+//    }
+//});
+
+ipcMain.handle('generate-app', async (event) => { // Perhatikan 'event' ditambah di sini
+    const win = BrowserWindow.fromWebContents(event.sender);
     try {
-        // 1. Dapatkan Projek Aktif
+        // 1. Dapatkan Data Projek & Schema
         const activeProject = db.prepare("SELECT * FROM projects WHERE is_active = 1 LIMIT 1").get();
         if (!activeProject) throw new Error("Tiada projek aktif dijumpai.");
 
-        const projectId = activeProject.project_id;
-        
-        // Dapatkan Schema Penuh
-        const fullSchema = await getFullProjectSchema(projectId);
+        const fullSchema = await getFullProjectSchema(activeProject.project_id);
         if (!fullSchema) throw new Error("Gagal mendapatkan schema projek penuh.");
 
-        // Tentukan Stack Pilihan (Berdasarkan HTML <select> anda)
-        // Default ke 'core_php' ikut schema, tapi kita handle fallback ke laravel jika perlu
         const selectedStack = activeProject.stack_base || 'core_php';
-        
-        console.log(`Memulakan janaan untuk Project ID: ${projectId} | Stack: ${selectedStack}`);
-        win?.webContents.send('show-overlay', { message: `Menjana aplikasi (${selectedStack})...` });
 
-        // 2. Tentukan Folder Sementara (Staging Area)
+        win?.webContents.send('show-overlay', { message: `Menjana fail aplikasi (${selectedStack})...` });
+
+        // 2. FASA 1: JANA SCRIPT KE FOLDER STAGING (AppData)
         const tempBasePath = getGeneratedFolderPath(); 
-        // Nama folder staging unik untuk elak konflik
         const stagingFolderName = `${activeProject.app_title.replace(/[^a-zA-Z0-9_-]/g, '_')}_staging`;
         const stagingPath = path.join(tempBasePath, stagingFolderName);
 
-        // Bersihkan folder staging (Reset)
+        // Bersihkan folder staging
         if (fs.existsSync(stagingPath)) {
             fs.rmSync(stagingPath, { recursive: true, force: true });
         }
         fs.mkdirSync(stagingPath, { recursive: true });
 
-        // 3. SUIS LOGIK GENERATOR (Dispatcher)
+        // Jalankan Generator berdasarkan Stack
         let generateResult;
-
         switch (selectedStack) {
             case 'laravel_filament':
-                // Panggil Orchestrator Laravel Filament
                 generateResult = await generateLaravelFilamentStack(fullSchema, stagingPath);
                 break;
-
             case 'laravel_backpack':
                 generateResult = { success: false, message: "Generator Laravel Backpack belum tersedia." };
                 break;
@@ -1310,63 +1422,97 @@ ipcMain.handle('generate-app', async () => {
             case 'django':
             case 'flask':
                 generateResult = { success: false, message: "Generator Python belum tersedia." };
-                break;
-
-            // ... Tambah case lain berdasarkan HTML anda (aspnet_core, ror, java_spring, mean, dll) ...
-
-            default:
-                // Fallback keselamatan
-                console.warn(`Stack '${selectedStack}' tidak dikenali. Mencuba Laravel Filament sebagai default.`);
+                break;            default:
+                console.warn(`Stack '${selectedStack}' belum disokong sepenuhnya. Menggunakan Laravel Filament.`);
                 generateResult = await generateLaravelFilamentStack(fullSchema, stagingPath);
                 break;
         }
 
-        // Jika janaan GAGAL di peringkat staging, berhenti di sini.
         if (!generateResult.success) {
-            throw new Error(generateResult.message);
+            throw new Error(`Ralat Janaan: ${generateResult.message}`);
         }
 
-        // 4. LOGIK PEMINDAHAN KE DOC_ROOT (Deployment)
-        let finalPath = stagingPath; 
+        // 3. FASA 2: TENTUKAN LOKASI PROJEK SEBENAR (DOC_ROOT)
+        // Dapatkan tetapan global
+        const settings = db.prepare("SELECT setting_name, setting_value FROM fizisys_settings").all();
+        const config = settings.reduce((acc, curr) => ({ ...acc, [curr.setting_name]: curr.setting_value }), {});
+
+        const docRoot = config.doc_root;
         
-        // Baca setting doc_root
-        const docRootSetting = db.prepare("SELECT setting_value FROM fizisys_settings WHERE setting_name = 'doc_root'").get();
+        // Jika doc_root tidak ditetapkan, kita hanya mampu bagi folder staging sahaja
+        if (!docRoot || docRoot.trim() === '') {
+            return { 
+                success: true, 
+                message: 'Aplikasi berjaya dijana di folder sementara (Doc Root tidak ditetapkan).',
+                folderPath: stagingPath 
+            };
+        }
 
-        if (docRootSetting && docRootSetting.setting_value && docRootSetting.setting_value.trim() !== '') {
-            const docRoot = docRootSetting.setting_value;
-            // Sanitasi nama folder projek
-            const appFolderName = activeProject.app_title.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
-            const destinationPath = path.join(docRoot, appFolderName);
+        // Tentukan path destinasi
+        const appFolderName = activeProject.app_title.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
+        const destinationPath = path.join(docRoot, appFolderName);
+        
+        let finalActionMessage = "";
 
-            console.log(`Memindahkan fail ke Doc Root: ${destinationPath}`);
-            win?.webContents.send('show-overlay', { message: 'Memindahkan fail ke folder pelayan...' });
+        // 4. FASA 3: SEMAK KEWUJUDAN PROJEK & LAKSANAKAN FUNGSI
+        if (fs.existsSync(destinationPath)) {
+            // ========================================================
+            // KES A: FOLDER WUJUD -> JALANKAN UPDATE
+            // ========================================================
+            console.log(`Projek dikesan di ${destinationPath}. Menjalankan fungsi UPDATE...`);
+            win?.webContents.send('show-overlay', { message: 'Mengemaskini aplikasi sedia ada...' });
 
-            try {
-                if (!fs.existsSync(destinationPath)) {
-                    fs.mkdirSync(destinationPath, { recursive: true });
+            const updateConfig = {
+                projectPath: destinationPath,
+                generatedPath: stagingPath
+            };
+
+            // Panggil fungsi dari deploymentHandler.js
+            // Kita hantar 'event' supaya ia boleh hantar log ke UI
+            const updateResult = await updateApp(event, updateConfig);
+            
+            if (!updateResult.success) throw new Error(updateResult.message);
+            finalActionMessage = "Aplikasi berjaya dikemaskini!";
+
+        } else {
+            // ========================================================
+            // KES B: FOLDER TIADA -> JALANKAN DEPLOY
+            // ========================================================
+            console.log(`Projek belum wujud di ${destinationPath}. Menjalankan fungsi DEPLOY...`);
+            win?.webContents.send('show-overlay', { message: 'Memulakan pemasangan baru (Deploy)...' });
+
+            // Sediakan konfigurasi Deploy
+            const dbName = `db_${appFolderName}`;
+            const dbUser = `user_${appFolderName.substring(0, 10)}`; // Hadkan panjang user
+            const dbPass = 'password123'; // IDEALNYA: Generate random password atau ambil dari setting
+
+            const deployConfig = {
+                gitRepoUrl: config.git_repo_url || 'https://github.com/laravel/laravel.git', // Default jika tiada setting
+                projectPath: destinationPath,
+                generatedPath: stagingPath,
+                dbConfig: {
+                    host: 'localhost',
+                    user: dbUser,
+                    password: dbPass,
+                    dbName: dbName,
+                    rootPassword: config.db_root_password || '' // PENTING: Perlu ada untuk create DB
                 }
-                
-                // Salin dari Staging ke Doc Root (Overwrite)
-                fs.cpSync(stagingPath, destinationPath, { recursive: true, force: true });
-                
-                // Set finalPath ke lokasi sebenar untuk dibuka oleh frontend
-                finalPath = destinationPath;
+            };
 
-            } catch (moveError) {
-                console.error("Gagal memindahkan fail:", moveError);
-                // Jangan throw error di sini, supaya user masih boleh akses fail di folder temp
-                dialog.showErrorBox("Amaran Pemindahan", `Aplikasi berjaya dijana tetapi gagal disalin ke Doc Root.\nSila semak permission folder.\nLokasi fail: ${stagingPath}`);
-            }
+            const deployResult = await deployApp(event, deployConfig);
+
+            if (!deployResult.success) throw new Error(deployResult.message);
+            finalActionMessage = "Aplikasi baru berjaya dipasang!";
         }
 
         return { 
             success: true, 
-            message: 'Aplikasi berjaya dijana!',
-            folderPath: finalPath // Ini penting untuk butang "Open Folder" di frontend
+            message: finalActionMessage,
+            folderPath: destinationPath 
         };
 
     } catch (error) {
-        console.error('Ralat Proses Janaan:', error);
+        console.error('Ralat Generate App:', error);
         return { success: false, message: error.message };
     } finally {
         win?.webContents.send('hide-overlay');
@@ -1469,6 +1615,9 @@ ipcMain.handle('field:update-index', async (event, { field_id, is_indexed }) => 
         return { success: false, message: error.message };
     }
 });
+
+ipcMain.handle('app:deploy', deployApp);
+ipcMain.handle('app:update', updateApp);
 
 async function getFullProjectSchema(projectId) {
   try {
