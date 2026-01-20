@@ -48,6 +48,7 @@ const {
 } = require('./generators/laravelDatabaseGenerator');
 
 const { deployApp, updateApp } = require('./deploymentHandler');
+const { generateDeploymentGuidePage } = require('./generators/laravelDocsGenerator');
 
 // Tentukan laluan ke pangkalan data
 const dbPath = path.join(app.getPath("userData"), "FiziSysMaker.db");
@@ -2214,6 +2215,9 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
 
         const formResult = await generateFilamentSchemasForm(fullSchema, outputDir);
         if (!formResult.success) throw new Error(`Forms: ${formResult.message}`);
+        
+        const guideResult = await generateDeploymentGuidePage(fullSchema, outputDir);
+        if (!guideResult.success) throw new Error(`Guide: ${guideResult.message}`);
 
         return { success: true };
 
