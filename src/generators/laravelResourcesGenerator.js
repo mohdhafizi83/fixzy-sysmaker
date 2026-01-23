@@ -444,7 +444,8 @@ async function generateFilamentResources(fullSchema, basePath) {
 
             if (tableData.allow_csv_export === 1) {
                 const importExport = `use App\\Filament\\Exports\\${modelName}Exporter;\nuse Filament\\Actions\\ExportAction;`;
-                const exportAction = `ExportAction::make()->exporter(${modelName}Exporter::class),`;
+                const exportAction = `ExportAction::make()->exporter(${modelName}Exporter::class)
+                ->enableVisibleTableColumnsByDefault(),`;
                 resourceContent = resourceContent.replace('<<IMPORT_EXPORTDATA>>', importExport);
                 resourceContent = resourceContent.replace('<<EXPORT_ACTION>>', exportAction);
             }

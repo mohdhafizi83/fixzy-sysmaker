@@ -1057,3 +1057,61 @@ Repeater::make('<<FIELD_NAME>>')
 9. Buang kesemua import yang tidak digunakan didalam script ini selepas semua selesai di jana.
 
 10. Jana output di folder 'AppData.../generated/filament/app/Filament/Resources/<<RESOURCE_FOLDER>>/Schemas' dengan nama singular PascalCase table_name value dengan extension php. Contoh table_name = pelajar_sekolah, fail terjana akan bernama PelajarSekolahForm.php. <<RESOURCE_FOLDER>> pula ialah plural PascalCase table_name value. Path Fail sepatutnya 'AppData.../generated/filament/app/Filament/Resources/PelajarSekolahs/Schemas/PelajarSekolahForm.php'
+
+Seterusnya, bantu saya untuk bina script php laravel filament seperti dibawah. Pastikan fungsi ini independent atau fungsi baru:
+------------------------
+9.Membina AdminPanelProvider
+------------------------
+
+Proses generate AdminPanelProvider.php:
+- Copy content fail AdminPanelProvider.template di src/templates/php/filament/app/Providers/Filament 
+- Bandingkan dengan fungsi utama yang menyimpan keseluruhan maklumat dari database untuk proses seterusnya.
+
+Replace content AdminPanelProvider.template seperti berikut:
+
+1. Jika module_log_audit = 1, gantikan "<<IMPORT_AUDITSRELATIONMANAGER>>" dengan 
+"
+use Livewire\Livewire;
+use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+".
+Jika tidak, gantikan dengan empty.
+
+2. Loop menu_groups satu persatu dengan order by group_order dan gantikan "<<NAVIGATIONGROUP>>" dengan "NavigationGroup::make()->label('<<GROUP_NAME>>'),". Gantikan "<<GROUP_NAME>>" dengan value column group_name. Jika tidak, gantikan dengan empty.
+
+3. Jika module_authorization = 1, gantikan "<<FILAMENTSHIELDPLUGIN>>" dengan "FilamentShieldPlugin::make(),". Jika tidak, gantikan dengan empty.
+
+4. Jika menu_orientation = top, gantikan "<<TOPNAVIGATION>>" dengan "->topNavigation()". Jika tidak, gantikan dengan empty.
+
+5. Jika module_log_audit = 1, gantikan "<<AUDITSRELATIONMANAGER>>" dengan "Livewire::component('tapp.filament-auditing.relation-managers.audits-relation-manager', AuditsRelationManager::class);". Jika tidak, gantikan dengan empty.
+
+6. Jana output di folder AppData.../generated/filament/app/Providers/Filament dengan nama AdminPanelProvider.php
+
+Sebelum menyediakan kod, terangkan semula kepada saya tugasan ini bagi memastikan anda memahami tugasan.
+
+Seterusnya, bantu saya untuk bina script php laravel filament seperti dibawah. Pastikan fungsi ini independent atau fungsi baru:
+-----------------------------------------------------------------
+10.Membina filament exporter script
+-----------------------------------------------------------------
+Proses generate laravel filament exporter script:
+- Copy content fail Exporter.template di src/templates/php/filament/app/Filament/Exports 
+- Bandingkan dengan fungsi utama yang menyimpan keseluruhan maklumat dari database untuk proses seterusnya.
+
+Replace content Exporter.template seperti berikut:
+
+1. Gantikan "<<MODEL_NAME>>" dengan PascalCase table_name value. Contoh table_name = pelajar_sekolah, gantikan <<MODEL_NAME>> dengan PelajarSekolah.
+
+2. Seterusnya kita akan membuat kod untuk column. Ia melibatkan kesemua fields yang terdapat didalam table ini. Loop semua field dan bina kod berdasarkan jenis dan ketetapan seperti yang dinyatakan.
+
+2.1. Jika field ini ialah foreignkey dan lookup_caption_2 adalah null/empty, gantikan "<<EXPORTCOLUMN>>" dengan "ExportColumn::make('<<FIELD_NAME>>')," . Gantikan <<FIELD_NAME>> dengan lookupparenttable.lookupcaption yang mana lookupparenttable ialah camelCase lookup_parent_table, dan lookupcaption ialah lookup_caption_1. 
+
+2.2. Jika field ini ialah foreignkey dan lookup_caption_2 bukan null/empty, gantikan "<<EXPORTCOLUMN>>" dengan "ExportColumn::make('<<FIELD_NAME>>'),". Gantikan <<FIELD_NAME>> dengan lookupparenttable.lookupcaption yang mana lookupparenttable ialah camelCase lookup_parent_table, dan lookupcaption ialah snake_case gabungan lookup_caption_1 dan lookup_caption_2. Contoh jika lookup_caption_1 = pelajar_baru, lookup_caption_2 = pelajar_lama maka lookupcaption = pelajar_baru_pelajar_lama.
+
+2.3. Jika tv_text_limit bukan null/empty, gantikan "<<EXPORTCOLUMN>>" dengan "ExportColumn::make('<<FIELD_NAME>>')->limit(<<TEXT_LIMIT_VALUE>>),". Gantikan <<FIELD_NAME>> dengan field_name dan gantikan <<TEXT_LIMIT_VALUE>> dengan tv_text_limit.
+
+2.4. Jika data_type = JSON, gantikan "<<EXPORTCOLUMN>>" dengan "ExportColumn::make('<<FIELD_NAME>>')->listAsJson(),". Gantikan <<FIELD_NAME>> dengan field_name.
+
+2.5. Untuk fields lain, gantikan "<<EXPORTCOLUMN>>" dengan "ExportColumn::make('<<FIELD_NAME>>'),". Gantikan <<FIELD_NAME>> dengan field_name.
+
+3. Ganti <<FRASE_MODEL_NAME>> dengan frasa biasa table_name. Contoh table_name = bas_sekolah, frasa biasa ialah 'bas sekolah'.
+
+4. Jana output di folder 'AppData.../generated/filament/app/Filament/Exports' dengan nama singular PascalCase table_name value dengan extension php. Contoh table_name = pelajar_sekolah, fail terjana akan bernama PelajarSekolahExporter.php. Path Fail sepatutnya 'AppData.../generated/filament/app/Filament/Exports/PelajarSekolahExporter.php'

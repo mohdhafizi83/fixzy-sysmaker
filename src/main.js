@@ -1488,7 +1488,7 @@ ipcMain.handle('generate-app', async (event) => { // Perhatikan 'event' ditambah
             const dbPass = 'password123'; // IDEALNYA: Generate random password atau ambil dari setting
 
             const deployConfig = {
-                gitRepoUrl: config.git_repo_url || 'https://github.com/laravel/laravel.git', // Default jika tiada setting
+                gitRepoUrl: config.git_repo_url || 'https://github.com/mohdhafizi83/FiziSysMaker-Laravel-Filament-Boilerplate.git', // Default jika tiada setting
                 projectPath: destinationPath,
                 generatedPath: stagingPath,
                 dbConfig: {
