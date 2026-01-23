@@ -22,7 +22,8 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filament\Navigation\NavigationGroup;
-<<IMPORT_AUDITSRELATIONMANAGER>>
+use Livewire\Livewire;
+use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
 
 
 class AdminPanelProvider extends PanelProvider
@@ -49,7 +50,9 @@ class AdminPanelProvider extends PanelProvider
                 FilamentInfoWidget::class,
             ])
             ->navigationGroups([
-                <<NAVIGATIONGROUP>>
+                                NavigationGroup::make()->label('User Management'),
+                NavigationGroup::make()->label('System Settings'),
+                NavigationGroup::make()->label('Reports'),
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -63,7 +66,7 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->plugins([
-                <<FILAMENTSHIELDPLUGIN>>
+                                FilamentShieldPlugin::make(),
             ])
             ->authMiddleware([
                 Authenticate::class,
@@ -73,7 +76,7 @@ class AdminPanelProvider extends PanelProvider
                 fn () => Blade::render('@vite("resources/css/filament/admin/theme.css")'),
             )
             ->sidebarCollapsibleOnDesktop()
-			<<TOPNAVIGATION>>;
+			            ->topNavigation();
     }
 	
     /**
@@ -81,6 +84,6 @@ class AdminPanelProvider extends PanelProvider
      */
     public function boot(): void
     {
-        <<AUDITSRELATIONMANAGER>>
+                Livewire::component('tapp.filament-auditing.relation-managers.audits-relation-manager', AuditsRelationManager::class);
     }
 }

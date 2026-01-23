@@ -48,6 +48,9 @@ const {
 } = require('./generators/laravelDatabaseGenerator');
 
 const { deployApp, updateApp } = require('./deploymentHandler');
+
+const { generateAdminPanelProvider } = require('./generators/laravelAdminPanelGenerator');
+
 const { generateDeploymentGuidePage } = require('./generators/laravelDocsGenerator');
 
 // Tentukan laluan ke pangkalan data
@@ -2215,6 +2218,9 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
 
         const formResult = await generateFilamentSchemasForm(fullSchema, outputDir);
         if (!formResult.success) throw new Error(`Forms: ${formResult.message}`);
+        
+        const adminPanelResult = await generateAdminPanelProvider(fullSchema, outputDir);
+        if (!adminPanelResult.success) throw new Error(`AdminPanelProvider: ${adminPanelResult.message}`);
         
         const guideResult = await generateDeploymentGuidePage(fullSchema, outputDir);
         if (!guideResult.success) throw new Error(`Guide: ${guideResult.message}`);
