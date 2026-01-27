@@ -33,6 +33,9 @@ saveCustomMenuItem: (data) => ipcRenderer.invoke('menu:save-custom-item', data),
 updateIndividualMenuOrder: (data) => ipcRenderer.invoke('menu:update-individual-order', data),
   updateMenuOrder: (data) => ipcRenderer.invoke('menu:update-order', data),
   getAllSettings: () => ipcRenderer.invoke('settings:get-all'),
+// --- VALIDATION HANDLERS ---
+  getFieldValidations: (columnId) => ipcRenderer.invoke('get-field-validations', columnId),
+  saveFieldValidations: (data) => ipcRenderer.invoke('save-field-validations', data),
   getFullSchema: (projectId) => ipcRenderer.invoke('project:get-full-schema', projectId),
   // Fungsi sedia ada
   getTablesByProject: (projectId) => ipcRenderer.invoke('tables:get-by-project', projectId),

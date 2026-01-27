@@ -1,7 +1,44 @@
-// ... (baris terakhir 'import' anda)
-
-// ▼▼▼ TAMBAH KESELURUHAN BLOK KOD INI ▼▼▼
-
+// Konfigurasi Jenis Validation
+const VALIDATION_RULES_CONFIG = [
+    {
+        type: 'active_url',
+        label: 'Active URL',
+        desc: 'The field must have a valid A or AAAA record.',
+        inputs: 'none' 
+    },
+    {
+        type: 'after',
+        label: 'After (Date)',
+        desc: 'Value must be after a given date/field.',
+        inputs: 'dropdown_date' // Dropdown of date fields
+    },
+    {
+        type: 'prohibited_if',
+        label: 'Prohibited If',
+        desc: 'Field must be empty if other field has specific value.',
+        inputs: 'dropdown_field_text' // Dropdown field + Textbox value
+    },
+    {
+        type: 'not_in',
+        label: 'Not In (List)',
+        desc: 'Field must not be in the given list.',
+        inputs: 'textbox', // Textbox for comma separated values
+        placeholder: 'e.g: admin,root,system'
+    },
+    // Anda boleh tambah rule lain di sini ikut format sama
+    {
+        type: 'required',
+        label: 'Required',
+        desc: 'Field must not be empty.',
+        inputs: 'none'
+    },
+    {
+        type: 'email',
+        label: 'Email',
+        desc: 'Field must be a valid email address.',
+        inputs: 'none'
+    }
+];
 /**
  * Helper function to set the value of various form elements.
  * It can handle regular inputs, checkboxes, radios, and multi-select dropdowns.
@@ -32,8 +69,6 @@ const setElementValue = (id, value) => {
         }
     }
 };
-
-// ▲▲▲ TAMAT BLOK TAMBAHAN ▲▲▲
 
 /**
  * Membuka Query Builder dalam mod 'general'.
@@ -3522,7 +3557,6 @@ export function populateFieldSettings(tableName, fieldName) {
     }
     
 	setElementValue('fld-precision', fieldData.precision);
-    setElementValue('fld-max-chars-in-tv', fieldData.max_chars_in_tv);
     setElementValue('fld-alignment', fieldData.alignment);
     setElementValue('fld-default-value', fieldData.default_value);
     
@@ -3825,6 +3859,17 @@ export function populateFieldSettings(tableName, fieldName) {
     if (behaviorSelect) {
         behaviorSelect.dispatchEvent(new Event('change'));
     }
+    
+// ▼▼▼ PEMBETULAN DI SINI ▼▼▼
+    // Panggil fungsi loadValidationTab dengan tableName (bukan tableId)
+    const currentTableData = jsonData.database.table[tableName];
+    const currentFieldData = currentTableData?.fields[fieldName];
+
+    if (currentTableData && currentFieldData) {
+        // Hantar columnId dan tableName
+        loadValidationTab(currentFieldData.field_id, tableName); 
+    }
+    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
 }
 
 
@@ -6875,3 +6920,232 @@ export function initializeRepeaterHandlers() {
     setupRepeaterLogic(2);
     setupRepeaterLogic(3);
 }
+
+// Function untuk Load Tab Validation (Versi Auto-Save & Tanpa jQuery)
+async function loadValidationTab(columnId, tableName) {
+    const container = document.getElementById('validationRulesContainer');
+    if (!container) return;
+    
+    // Tunjuk spinner loading
+    container.innerHTML = '<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Loading rules...</div>';
+
+    try {
+        // 1. Dapatkan Data dari Database
+        const existingValidations = await window.electronAPI.getFieldValidations(columnId);
+        
+        // 2. Dapatkan Senarai Column (untuk dropdown)
+        const tableData = jsonData.database.table[tableName];
+        const allCols = [];
+        const dateCols = [];
+
+        if (tableData && tableData.fields) {
+            Object.values(tableData.fields).forEach(field => {
+                if (field.field_id !== columnId) {
+                    allCols.push({ column_name: field.field_name });
+                    if (['DATE', 'DATETIME', 'TIMESTAMP'].includes(field.data_type.toUpperCase())) {
+                        dateCols.push({ column_name: field.field_name });
+                    }
+                }
+            });
+        }
+
+        // 3. Bina HTML (Tanpa Inline Event Handlers untuk elak isu CSP)
+        let html = '<div class="accordion" id="accordionValidation">';
+        
+        VALIDATION_RULES_CONFIG.forEach((rule, index) => {
+            const savedRule = existingValidations.find(v => v.rule_type === rule.type);
+            const isChecked = savedRule ? 'checked' : '';
+            const val1 = savedRule ? savedRule.rule_value_1 : '';
+            const val2 = savedRule ? savedRule.rule_value_2 : '';
+
+            const inputHtml = renderValidationInputs(rule, allCols, dateCols, val1, val2);
+
+            html += `
+            <div class="card mb-2" style="border: 1px solid #dee2e6;">
+                <div class="card-header p-2 d-flex align-items-center" id="heading${index}" style="background-color: #f8f9fa;">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input validation-checkbox" 
+                            id="val_check_${rule.type}" 
+                            data-type="${rule.type}" 
+                            ${isChecked}>
+                        <label class="custom-control-label font-weight-bold" for="val_check_${rule.type}" style="cursor:pointer;">
+                            ${rule.label}
+                        </label>
+                    </div>
+                    <small class="text-muted ml-auto">${rule.desc}</small>
+                </div>
+
+                <div id="collapse_${rule.type}" class="collapse ${isChecked ? 'show' : ''}" style="background: #fff;">
+                    <div class="card-body p-2 pl-4">
+                        ${inputHtml}
+                    </div>
+                </div>
+            </div>
+            `;
+        });
+
+        html += '</div>';
+        
+        // Tambah status indikator (untuk tunjuk "Saving...")
+        html += `<div id="val-save-status" class="text-right mt-2 text-muted small" style="min-height:20px;"></div>`;
+
+        container.innerHTML = html;
+
+        // 4. PASANG EVENT LISTENERS UNTUK AUTO-SAVE
+        
+        // Helper function untuk trigger save
+        const triggerAutoSave = async () => {
+            const statusEl = document.getElementById('val-save-status');
+            if (statusEl) statusEl.innerHTML = '<span class="text-info"><i class="fas fa-sync fa-spin"></i> Saving...</span>';
+            
+            await window.saveValidationData(columnId);
+            
+            if (statusEl) {
+                statusEl.innerHTML = '<span class="text-success"><i class="fas fa-check"></i> Saved</span>';
+                setTimeout(() => { if(statusEl) statusEl.innerHTML = ''; }, 2000);
+            }
+        };
+
+        // A. Listener untuk Checkbox (Klik = Toggle UI + Save)
+        const checkboxes = container.querySelectorAll('.validation-checkbox');
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', async (e) => {
+                const type = e.target.getAttribute('data-type');
+                
+                // 1. Toggle UI (Buka/Tutup accordion)
+                window.toggleValidationInputs(type);
+                
+                // 2. Simpan ke Database
+                await triggerAutoSave();
+            });
+        });
+
+        // B. Listener untuk Inputs (Ubah Nilai = Save)
+        // Kita guna 'change' supaya save berlaku bila user selesai edit (blur/enter)
+        const inputs = container.querySelectorAll('.val-input-1, .val-input-2, select');
+        inputs.forEach(input => {
+            input.addEventListener('change', async () => {
+                await triggerAutoSave();
+            });
+        });
+
+    } catch (error) {
+        console.error("Error loading validations:", error);
+        container.innerHTML = `<div class="text-danger p-3">Error loading rules: ${error.message}</div>`;
+    }
+}
+
+// Jadikan fungsi ini global supaya boleh dipanggil dari onclick=""
+window.saveValidationData = async function(columnId) {
+    const validationsToSave = [];
+    const checkboxes = document.querySelectorAll('.validation-checkbox:checked');
+
+    checkboxes.forEach(cb => {
+        const type = cb.getAttribute('data-type');
+        // Cari input dalam collapse div yang berkaitan
+        const collapseDiv = document.getElementById(`collapse_${type}`);
+        const input1 = collapseDiv.querySelector(`.val-input-1`);
+        const input2 = collapseDiv.querySelector(`.val-input-2`);
+
+        validationsToSave.push({
+            rule_type: type,
+            value1: input1 ? input1.value : null,
+            value2: input2 ? input2.value : null
+        });
+    });
+
+    try {
+        // Guna fungsi spesifik yang baru ditambah dalam preload.js
+        await window.electronAPI.saveFieldValidations({
+            columnId: columnId,
+            validations: validationsToSave
+        });
+        
+        // Tunjuk feedback kejayaan (Guna showCustomDialog sedia ada)
+        // Jika import { showCustomDialog } tidak available di skop global, guna alert biasa
+        alert('Validation rules saved successfully!'); 
+    } catch (err) {
+        console.error('Failed to save validations', err);
+        alert('Error saving validation rules: ' + err.message);
+    }
+};
+
+// Helper untuk bina Input HTML berdasarkan Config
+function renderValidationInputs(rule, allCols, dateCols, savedVal1, savedVal2) {
+    if (rule.inputs === 'none') return '';
+
+    let inputHtml = '';
+
+    if (rule.inputs === 'dropdown_date') {
+        inputHtml += `<select class="form-control form-control-sm val-input-1" data-rule="${rule.type}">
+            <option value="">-- Select Date Field --</option>
+            ${dateCols.map(c => `<option value="${c.column_name}" ${c.column_name === savedVal1 ? 'selected' : ''}>${c.column_name}</option>`).join('')}
+        </select>`;
+    } 
+    else if (rule.inputs === 'dropdown_field_text') {
+        inputHtml += `<div class="row">
+            <div class="col-6">
+                <select class="form-control form-control-sm val-input-1" data-rule="${rule.type}">
+                    <option value="">-- Select Field --</option>
+                    ${allCols.map(c => `<option value="${c.column_name}" ${c.column_name === savedVal1 ? 'selected' : ''}>${c.column_name}</option>`).join('')}
+                </select>
+            </div>
+            <div class="col-6">
+                <input type="text" class="form-control form-control-sm val-input-2" data-rule="${rule.type}" placeholder="Value" value="${savedVal2}">
+            </div>
+        </div>`;
+    }
+    else if (rule.inputs === 'textbox') {
+        inputHtml += `<input type="text" class="form-control form-control-sm val-input-1" data-rule="${rule.type}" placeholder="${rule.placeholder || ''}" value="${savedVal1}">`;
+    }
+
+    return inputHtml;
+}
+
+// --- HELPER FUNCTIONS ---
+
+// 1. Toggle UI (Vanilla JS - Fix error '$ is not defined')
+window.toggleValidationInputs = function(ruleType) {
+    const checkbox = document.getElementById(`val_check_${ruleType}`);
+    const collapseDiv = document.getElementById(`collapse_${ruleType}`);
+    
+    if (checkbox && collapseDiv) {
+        if (checkbox.checked) {
+            collapseDiv.classList.add('show'); // Ganti .collapse('show')
+        } else {
+            collapseDiv.classList.remove('show'); // Ganti .collapse('hide')
+        }
+    }
+};
+
+// 2. Fungsi Simpan ke Database
+window.saveValidationData = async function(columnId) {
+    const validationsToSave = [];
+    // Cari semua checkbox yang DITANDA sahaja
+    const checkboxes = document.querySelectorAll('.validation-checkbox:checked');
+
+    checkboxes.forEach(cb => {
+        const type = cb.getAttribute('data-type');
+        const collapseDiv = document.getElementById(`collapse_${type}`);
+        
+        // Ambil nilai input jika wujud
+        const input1 = collapseDiv ? collapseDiv.querySelector(`.val-input-1`) : null;
+        const input2 = collapseDiv ? collapseDiv.querySelector(`.val-input-2`) : null;
+
+        validationsToSave.push({
+            rule_type: type,
+            value1: input1 ? input1.value : null,
+            value2: input2 ? input2.value : null
+        });
+    });
+
+    try {
+        await window.electronAPI.saveFieldValidations({
+            columnId: columnId,
+            validations: validationsToSave
+        });
+        console.log('Validation saved.');
+    } catch (err) {
+        console.error('Failed to save validations', err);
+    }
+};

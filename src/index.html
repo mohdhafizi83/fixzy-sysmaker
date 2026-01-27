@@ -1440,10 +1440,6 @@
         <label for="fld-precision">Precision</label>
         <input type="number" id="fld-precision" name="fld-precision">
     </div>
-    <div class="form-group">
-        <label for="fld-max-chars-in-tv">Max characters in 'Table List'</label>
-        <input type="number" id="fld-max-chars-in-tv" name="fld-max-chars-in-tv">
-    </div>
 </div>
                                 <div class="form-group">
                                     <label>Alignment</label>
@@ -1859,6 +1855,7 @@
                 <div class="tabs-nav">
                     <button class="tab-link active" data-tab="tab-tv-options">'Table List' Options</button>
                     <button class="tab-link" data-tab="tab-dv-options">'Record Form' Options</button>
+                    <button class="tab-link" data-tab="tab-dv-validation">Form & Data Validations</button>
                 </div>
                 <div class="tabs-content">
                     <div id="tab-tv-options" class="tab-pane active">
@@ -2290,6 +2287,15 @@
                             </div>
                         </fieldset>
                     </div>
+                    
+<div id="tab-dv-validation" class="tab-pane">
+    <fieldset>
+        <legend>Validation Rules</legend>
+        <div id="validationRulesContainer">
+        </div>
+    </fieldset>
+</div>                    
+                    
                 </div>
             </div>
         </div>

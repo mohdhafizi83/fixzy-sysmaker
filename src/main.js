@@ -47,11 +47,15 @@ const {
     generateLaravelDatabaseSeeder 
 } = require('./generators/laravelDatabaseGenerator');
 
-const { deployApp, updateApp } = require('./deploymentHandler');
+const { generateFilamentExports } = require('./generators/laravelExportsGenerator');
+
+const { generateFilamentImporters } = require('./generators/laravelImportersGenerator');
 
 const { generateAdminPanelProvider } = require('./generators/laravelAdminPanelGenerator');
 
 const { generateDeploymentGuidePage } = require('./generators/laravelDocsGenerator');
+
+const { deployApp, updateApp } = require('./deploymentHandler');
 
 // Tentukan laluan ke pangkalan data
 const dbPath = path.join(app.getPath("userData"), "FiziSysMaker.db");
@@ -984,7 +988,7 @@ ipcMain.handle('field:update', async (event, data) => {
         // Senarai lajur yang dibenarkan untuk dikemas kini dalam jadual 'fields'
         const allowedColumns = [
 		    'field_name',
-            'caption', 'description', 'data_type', 'length', 'precision', 'max_chars_in_tv', 'alignment',
+            'caption', 'description', 'data_type', 'length', 'precision', 'alignment',
             'default_value', 'read_only', 'primary_key', 'zero_fill', 'required', 'rich_html',
             'auto_increment', 'unique', 'show_sum', 'text_area', 'unsigned', 'no_filter', 'binary',
             'check_box', 'hide_in_tv', 'hide_in_dv', 'enable_column_width', 'column_width',
@@ -1623,6 +1627,50 @@ ipcMain.handle('field:update-index', async (event, { field_id, is_indexed }) => 
 ipcMain.handle('app:deploy', deployApp);
 ipcMain.handle('app:update', updateApp);
 
+// =================================================================
+// ▼▼▼ VALIDATION HANDLERS (BETTER-SQLITE3 COMPATIBLE) ▼▼▼
+// =================================================================
+
+// Load validations untuk column tertentu
+ipcMain.handle('get-field-validations', (event, columnId) => {
+    try {
+        // Guna .all() untuk better-sqlite3
+        return db.prepare("SELECT * FROM field_validations WHERE column_id = ?").all(columnId);
+    } catch (error) {
+        console.error("Gagal mendapatkan validasi:", error);
+        return [];
+    }
+});
+
+// Save validations (Padam lama, insert baru untuk update pukal)
+ipcMain.handle('save-field-validations', (event, { columnId, validations }) => {
+    try {
+        // Guna Transaction untuk better-sqlite3 (lebih laju & selamat)
+        const saveTransaction = db.transaction(() => {
+            // 1. Padam rekod lama
+            db.prepare("DELETE FROM field_validations WHERE column_id = ?").run(columnId);
+
+            // 2. Masukkan rekod baru jika ada
+            if (validations && validations.length > 0) {
+                const insertStmt = db.prepare(
+                    "INSERT INTO field_validations (column_id, rule_type, rule_value_1, rule_value_2, is_active) VALUES (?, ?, ?, ?, 1)"
+                );
+                
+                for (const v of validations) {
+                    insertStmt.run(columnId, v.rule_type, v.value1, v.value2);
+                }
+            }
+        });
+
+        saveTransaction();
+        return { success: true };
+
+    } catch (error) {
+        console.error("Gagal menyimpan validasi:", error);
+        return { success: false, message: error.message };
+    }
+});
+
 async function getFullProjectSchema(projectId) {
   try {
     const project = db
@@ -2218,6 +2266,12 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
 
         const formResult = await generateFilamentSchemasForm(fullSchema, outputDir);
         if (!formResult.success) throw new Error(`Forms: ${formResult.message}`);
+        
+        const exportResult = await generateFilamentExports(fullSchema, outputDir);
+        if (!exportResult.success) throw new Error(`Exports: ${exportResult.message}`);
+        
+        const importResult = await generateFilamentImporters(fullSchema, outputDir);
+        if (!importResult.success) throw new Error(`Imports: ${importResult.message}`);
         
         const adminPanelResult = await generateAdminPanelProvider(fullSchema, outputDir);
         if (!adminPanelResult.success) throw new Error(`AdminPanelProvider: ${adminPanelResult.message}`);

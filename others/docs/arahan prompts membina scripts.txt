@@ -1115,3 +1115,56 @@ Replace content Exporter.template seperti berikut:
 3. Ganti <<FRASE_MODEL_NAME>> dengan frasa biasa table_name. Contoh table_name = bas_sekolah, frasa biasa ialah 'bas sekolah'.
 
 4. Jana output di folder 'AppData.../generated/filament/app/Filament/Exports' dengan nama singular PascalCase table_name value dengan extension php. Contoh table_name = pelajar_sekolah, fail terjana akan bernama PelajarSekolahExporter.php. Path Fail sepatutnya 'AppData.../generated/filament/app/Filament/Exports/PelajarSekolahExporter.php'
+
+Seterusnya, bantu saya untuk bina script php laravel filament seperti dibawah. Pastikan fungsi ini independent atau fungsi baru:
+-----------------------------------------------------------------
+11.Membina filament Importer script [Fasa Pertama]
+-----------------------------------------------------------------
+Proses generate laravel filament Importer script dalam fasa pertama:
+- Copy content fail Importer.template di src/templates/php/filament/app/Filament/Imports 
+- Bandingkan dengan fungsi utama yang menyimpan keseluruhan maklumat dari database untuk proses seterusnya.
+
+Replace content Importer.template seperti berikut:
+
+1. Gantikan "<<MODEL_NAME>>" dengan PascalCase table_name value. Contoh table_name = pelajar_sekolah, gantikan <<MODEL_NAME>> dengan PelajarSekolah.
+
+2. Jika ini ialah child table, cari kesemua relationship di dalam parent_child_relationships. Gantikan "<<RELATIONSHIP_MODEL_NAME>>" dengan "use App\Models\<<PARENT_TABLE>>;" untuk setiap relationship.
+
+3. Seterusnya kita akan fokus pada janaan ImportColumn untuk setiap fields dalam table ini. Loop setiap fields:
+
+3.1 Jika field bukan foreignkey iaitu lookup_parent_table ialah empty/null, gantikan "<<COLUMN_OR_RELATIONSHIP_NAME>>" dengan field_name dan <<CAPTION_VALUE>> dengan caption.
+
+3.2 Jika field ialah foreignkey iaitu lookup_parent_table bukan empty/null, gantikan "<<COLUMN_OR_RELATIONSHIP_NAME>>" dengan camelCase lookup_parent_table dan <<CAPTION_VALUE>> dengan lookup_caption_1.
+
+3.3 Jika field ialah foreignkey iaitu lookup_parent_table bukan empty/null, gantikan "<<RELATIONSHIP>>" dengan "->relationship(resolveUsing: ['<<REFERENCE_FIELD>>'])". Gantikan <<REFERENCE_FIELD>> dengan lookup_caption_1.
+
+3.4 Jika data_type ialah numeric types, gantikan <<IS_NUMERIC>> dengan ->numeric().
+
+3.5 Jika display_type = 'text_input' dan data_type = 'DECIMAL', gantikan <<IS_NUMERIC>> dengan ->numeric().
+
+3.6 Jika display_type = 'text_input' dan data_type = 'INT' atau 'BIGINT', gantikan <<IS_INTEGER>> dengan "->integer()".
+
+3.7 Jika display_type = 'check_box' dan data_type = BOOLEAN, gantikan <<BOOLEAN_TYPE>> dengan "->boolean()".
+
+3.8 Jika data_type = JSON, gantikan <<JSON_LIST_TO_ARRAY>> dengan "->multiple(',')".
+
+3.9 Jika field helper_text bukan empty/null, gantikan "<<HELPER_TEXT>>" dengan "->helperText('<<HELPER_TEXT_VALUE>>')". Gantikan "<<HELPER_TEXT_VALUE>>" dengan field helper_text value.
+
+3.10 Seterusnya kita akan fokus penjanaan rule array dalam ImportColumn. Kod asas rule ialah "->rules(<<ARRAY_LIST>>)". Jika salah satu dari kondisi dibawah ialah true, maka kod rule perlu ditambah pada ImportColumn:
+3.10.1 Jika field required = 1, masukkan "required" dalam senarai array.
+3.10.2 Jika display_type = 'text_input' dan data_type = 'INT' atau 'BIGINT', masukkan "integer" dalam senarai array.
+3.10.3 Masukkan "min:<<MIN_LENGTH>>" dalam senarai array, dan gantikan <<MIN_LENGTH>> dengan field min_length value. Jika min_length ialah null/empty, gantikan <<MIN_LENGTH>> dengan 0.
+3.10.4 Masukkan "max:<<MAX_LENGTH>>" dalam senarai array, dan gantikan <<MAX_LENGTH>> dengan field max_length value. Jika max_length ialah null/empty, gantikan <<MAX_LENGTH>> dengan 255.
+3.10.5 Jika data_type = JSON, masukkan "array" dalam senarai array.
+3.10.6 Jika field format_as = email, masukkan "email" dalam senarai array. 
+3.10.7 Jika data_type = date, masukkan "date" dalam senarai array.
+3.10.8 Jika data_type = datetime, masukkan "datetime" dalam senarai array.
+3.10.9 Berikutnya data akan diambil dari table field_validations. String akan dibina menggunakan format ini: <<RULE_TYPE>><<RULE_VALUE_1>><<RULE_VALUE_2>>. Jika rule_type bukan null/empty, gantikan "<<RULE_TYPE>>" dengan rule_type value. Jika rule_value_1 bukan null/empty, gantikan "<<RULE_VALUE_1>>" dengan ": + rule_value_1 value". Jika rule_value_2 bukan null/empty, gantikan "<<RULE_VALUE_2>>" dengan ", + rule_value_1 value". Contoh:- between:5,10
+
+Seterusnya gantikan <<ARRAY_LIST>> dengan senarai array yang telah dikumpulkan. Gantikan <<RULES>>  pada template dengan "->rules(<<ARRAY_LIST>>)".
+
+3.11 Bina 2 dummy data berdasarkan data_type dan karakter field. Susun dummy data dalam format array seperti ini ['dummy_2', 'dummy_2']. Kemudian gantikan <<DUMMY_DATA>> dengan array list dummy data tersebut.
+
+3. Ganti <<FRASE_MODEL_NAME>> dengan frasa biasa table_name. Contoh table_name = bas_sekolah, frasa biasa ialah 'bas sekolah'.
+
+4. Jana output di folder 'AppData.../generated/filament/app/Filament/Imports' dengan nama singular PascalCase table_name value dengan extension php. Contoh table_name = pelajar_sekolah, fail terjana akan bernama PelajarSekolahImporter.php. Path Fail sepatutnya 'AppData.../generated/filament/app/Filament/Imports/PelajarSekolahImporter.php'

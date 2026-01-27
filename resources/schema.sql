@@ -99,7 +99,6 @@ CREATE TABLE fields (
     data_type                    TEXT,
     length                       INTEGER,
     precision                    INTEGER,
-    max_chars_in_tv              INTEGER DEFAULT 50,
     alignment                    TEXT DEFAULT 'left',
     default_value                TEXT,
     read_only                    INTEGER DEFAULT 0,
@@ -337,3 +336,14 @@ INSERT INTO fizisys_settings (setting_name, setting_value) VALUES
 ('max_entries', '150'),
 ('project_no_trim', '0'),
 ('lock_core_components', '1');
+
+-- TABEL BARU: Menyimpan peraturan validasi untuk setiap column
+CREATE TABLE IF NOT EXISTS field_validations (
+    validation_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    column_id INTEGER NOT NULL,
+    rule_type TEXT NOT NULL, -- Contoh: 'active_url', 'after', 'prohibited_if', 'not_in'
+    rule_value_1 TEXT,       -- Parameter 1 (Contoh: nama field rujukan)
+    rule_value_2 TEXT,       -- Parameter 2 (Contoh: nilai rujukan)
+    is_active INTEGER DEFAULT 0,
+    FOREIGN KEY (column_id) REFERENCES fields(field_id) ON DELETE CASCADE
+);
