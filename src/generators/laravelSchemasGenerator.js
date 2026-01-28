@@ -145,6 +145,7 @@ async function generateFilamentSchemasForm(fullSchema, basePath) {
     <<PARENT_FIELDS_CAPTION>>
     <<IS_RELATIONSHIP_SELF_REF>>
     <<LINK_TO_PARENT_RECORD>>
+    <<MULTIPLE_VALIDATION>>
     ->trim(),`;
 
                     let elementType = 'TextInput'; 
@@ -287,12 +288,75 @@ async function generateFilamentSchemasForm(fullSchema, basePath) {
                         if (field.suffix_icon_color) fieldCode = fieldCode.replace('<<SUFFIX_COLORICON_TEXT>>', `->suffixIconColor('${field.suffix_icon_color}')`);
                     }
 
-                    // ▼▼▼ PENAMBAHBAIKAN BAHARU DI SINI ▼▼▼
                     // Jika element ialah Select, buang ->integer()
                     if (elementType === 'Select') {
                         fieldCode = fieldCode.replace('->integer()', '');
                     }
-                    // ▲▲▲ TAMAT PENAMBAHBAIKAN ▲▲▲
+
+                    // ▼▼▼ LOGIK BAHARU: MULTIPLE VALIDATION RULES ▼▼▼
+                    let multiValCode = '';
+                    if (field.validations && Array.isArray(field.validations)) {
+                        field.validations.forEach(val => {
+                            const type = val.rule_type;
+                            const v1 = val.rule_value_1;
+                            const v2 = val.rule_value_2;
+
+                            // Helper untuk convert comma-separated values kepada array string PHP: ['a', 'b']
+                            const toPhpArray = (str) => {
+                                if (!str) return "[]";
+                                const items = str.split(',').map(s => `'${s.trim()}'`).join(', ');
+                                return `[${items}]`;
+                            };
+
+                            if (type === 'string') multiValCode += "->string()";
+                            else if (type === 'alpha') multiValCode += "->alpha()";
+                            else if (type === 'alpha_dash') multiValCode += "->alphaDash()";
+                            else if (type === 'alpha_num') multiValCode += "->alphaNum()";
+                            else if (type === 'ascii') multiValCode += "->ascii()";
+                            else if (type === 'active_url') multiValCode += "->activeUrl()";
+                            else if (type === 'ip') multiValCode += "->ip()";
+                            else if (type === 'ipv4') multiValCode += "->ipv4()";
+                            else if (type === 'ipv6') multiValCode += "->ipv6()";
+                            else if (type === 'mac_address') multiValCode += "->macAddress()";
+                            else if (type === 'hex_color') multiValCode += "->hexColor()";
+                            else if (type === 'json') multiValCode += "->json()";
+                            else if (type === 'ulid') multiValCode += "->ulid()";
+                            else if (type === 'uuid') multiValCode += "->uuid()";
+                            else if (type === 'same') multiValCode += `->same('${v1}')`;
+                            else if (type === 'different') multiValCode += `->different('${v1}')`;
+                            else if (type === 'gt') multiValCode += `->gt('${v1}')`;
+                            else if (type === 'gte') multiValCode += `->gte('${v1}')`;
+                            else if (type === 'lt') multiValCode += `->lt('${v1}')`;
+                            else if (type === 'lte') multiValCode += `->lte('${v1}')`;
+                            else if (type === 'after') multiValCode += `->after('${v1}')`;
+                            else if (type === 'after_or_equal') multiValCode += `->afterOrEqual('${v1}')`;
+                            else if (type === 'before') multiValCode += `->before('${v1}')`;
+                            else if (type === 'before_or_equal') multiValCode += `->beforeOrEqual('${v1}')`;
+                            else if (type === 'in') multiValCode += `->in(${toPhpArray(v1)})`;
+                            else if (type === 'not_in') multiValCode += `->notIn(${toPhpArray(v1)})`;
+                            else if (type === 'starts_with') multiValCode += `->startsWith(${toPhpArray(v1)})`;
+                            else if (type === 'doesnt_start_with') multiValCode += `->doesntStartWith(${toPhpArray(v1)})`;
+                            else if (type === 'ends_with') multiValCode += `->endsWith(${toPhpArray(v1)})`;
+                            else if (type === 'doesnt_end_with') multiValCode += `->doesntEndWith(${toPhpArray(v1)})`;
+                            else if (type === 'regex') multiValCode += `->regex('${v1}')`;
+                            else if (type === 'not_regex') multiValCode += `->notRegex('${v1}')`;
+                            else if (type === 'multiple_of') multiValCode += `->multipleOf('${v1}')`;
+                            else if (type === 'required_if') multiValCode += `->requiredIf('${v1}', '${v2}')`;
+                            else if (type === 'required_unless') multiValCode += `->requiredUnless('${v1}', '${v2}')`;
+                            else if (type === 'required_with') multiValCode += `->requiredWith('${v1}')`;
+                            else if (type === 'required_with_all') multiValCode += `->requiredWithAll('${v1}')`;
+                            else if (type === 'required_without') multiValCode += `->requiredWithout('${v1}')`; 
+                            else if (type === 'required_without_all') multiValCode += `->requiredWithoutAll('${v1}')`;
+                            else if (type === 'required_if_accepted') multiValCode += `->requiredIfAccepted('${v1}')`;
+                            else if (type === 'prohibited') multiValCode += "->prohibited()";
+                            else if (type === 'prohibited_if') multiValCode += `->prohibitedIf('${v1}', '${v2}')`;
+                            else if (type === 'prohibited_unless') multiValCode += `->prohibitedUnless('${v1}', '${v2}')`;
+                            else if (type === 'prohibits') multiValCode += `->prohibits(${toPhpArray(v1)})`;
+                            else if (type === 'exists') multiValCode += "->exists()";
+                        });
+                    }
+                    fieldCode = fieldCode.replace('<<MULTIPLE_VALIDATION>>', multiValCode);
+                    // ▲▲▲ TAMAT LOGIK MULTIPLE VALIDATION ▲▲▲
 
                     fieldCode = fieldCode.replace(/<<.*?>>/g, '');
                     fieldCode = fieldCode.replace(/^\s*[\r\n]/gm, '');

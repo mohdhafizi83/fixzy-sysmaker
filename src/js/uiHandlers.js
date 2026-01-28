@@ -1,44 +1,3 @@
-// Konfigurasi Jenis Validation
-const VALIDATION_RULES_CONFIG = [
-    {
-        type: 'active_url',
-        label: 'Active URL',
-        desc: 'The field must have a valid A or AAAA record.',
-        inputs: 'none' 
-    },
-    {
-        type: 'after',
-        label: 'After (Date)',
-        desc: 'Value must be after a given date/field.',
-        inputs: 'dropdown_date' // Dropdown of date fields
-    },
-    {
-        type: 'prohibited_if',
-        label: 'Prohibited If',
-        desc: 'Field must be empty if other field has specific value.',
-        inputs: 'dropdown_field_text' // Dropdown field + Textbox value
-    },
-    {
-        type: 'not_in',
-        label: 'Not In (List)',
-        desc: 'Field must not be in the given list.',
-        inputs: 'textbox', // Textbox for comma separated values
-        placeholder: 'e.g: admin,root,system'
-    },
-    // Anda boleh tambah rule lain di sini ikut format sama
-    {
-        type: 'required',
-        label: 'Required',
-        desc: 'Field must not be empty.',
-        inputs: 'none'
-    },
-    {
-        type: 'email',
-        label: 'Email',
-        desc: 'Field must be a valid email address.',
-        inputs: 'none'
-    }
-];
 /**
  * Helper function to set the value of various form elements.
  * It can handle regular inputs, checkboxes, radios, and multi-select dropdowns.
@@ -6952,7 +6911,7 @@ async function loadValidationTab(columnId, tableName) {
         // 3. Bina HTML (Tanpa Inline Event Handlers untuk elak isu CSP)
         let html = '<div class="accordion" id="accordionValidation">';
         
-        VALIDATION_RULES_CONFIG.forEach((rule, index) => {
+        window.VALIDATION_RULES_CONFIG.forEach((rule, index) => {
             const savedRule = existingValidations.find(v => v.rule_type === rule.type);
             const isChecked = savedRule ? 'checked' : '';
             const val1 = savedRule ? savedRule.rule_value_1 : '';
@@ -7076,12 +7035,21 @@ function renderValidationInputs(rule, allCols, dateCols, savedVal1, savedVal2) {
 
     let inputHtml = '';
 
+    // 1. Dropdown Date (Hanya column tarikh)
     if (rule.inputs === 'dropdown_date') {
         inputHtml += `<select class="form-control form-control-sm val-input-1" data-rule="${rule.type}">
             <option value="">-- Select Date Field --</option>
             ${dateCols.map(c => `<option value="${c.column_name}" ${c.column_name === savedVal1 ? 'selected' : ''}>${c.column_name}</option>`).join('')}
         </select>`;
     } 
+    // 2. Dropdown Field (Semua column) - INI YANG DITAMBAH
+    else if (rule.inputs === 'dropdown_field') {
+        inputHtml += `<select class="form-control form-control-sm val-input-1" data-rule="${rule.type}">
+            <option value="">-- Select Field --</option>
+            ${allCols.map(c => `<option value="${c.column_name}" ${c.column_name === savedVal1 ? 'selected' : ''}>${c.column_name}</option>`).join('')}
+        </select>`;
+    }
+    // 3. Dropdown Field + Textbox (cth: required_if)
     else if (rule.inputs === 'dropdown_field_text') {
         inputHtml += `<div class="row">
             <div class="col-6">
@@ -7095,6 +7063,7 @@ function renderValidationInputs(rule, allCols, dateCols, savedVal1, savedVal2) {
             </div>
         </div>`;
     }
+    // 4. Textbox biasa
     else if (rule.inputs === 'textbox') {
         inputHtml += `<input type="text" class="form-control form-control-sm val-input-1" data-rule="${rule.type}" placeholder="${rule.placeholder || ''}" value="${savedVal1}">`;
     }

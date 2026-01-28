@@ -1056,6 +1056,56 @@ Repeater::make('<<FIELD_NAME>>')
 8. Gantikan <<ALL_COLUMNS_FORM>> dengan kesemua janaan setiap fields diatas.
 9. Buang kesemua import yang tidak digunakan didalam script ini selepas semua selesai di jana.
 
+#####
+Bantu saya untuk tambah janaan function generateFilamentSchemasForm berdasarkan kondisi-kondisi berikut. Kesemua kod tambahan ini ketika pemprosesan medan. Kumpulan kesemua kod yang dijana dari kondisi dibawah dan gantikan <<MULTIPLE_VALIDATION>> dengannya. Jangan mengubah atau membuang kod sedia ada yang tiada kaitan dengan tugasan ini.
+
+Jika field.rule_type = 'string', tambah "->string()" pada komponen. 
+Jika field.rule_type = 'alpha', tambah "->alpha()" pada komponen. 
+Jika field.rule_type = 'alpha_dash',tambah "->alphaDash()" pada komponen.
+Jika field.rule_type = 'alpha_num',tambah "->alphaNum()" pada komponen.
+Jika field.rule_type = 'ascii',tambah "->ascii()" pada komponen.
+Jika field.rule_type = 'active_url',tambah "->activeUrl()" pada komponen.
+Jika field.rule_type = 'ip',tambah "->ip()" pada komponen.
+Jika field.rule_type = 'ipv4',tambah "->ipv4()" pada komponen.
+Jika field.rule_type = 'ipv6',tambah "->ipv6()" pada komponen.
+Jika field.rule_type = 'mac_address',tambah "->macAddress()" pada komponen.
+Jika field.rule_type = 'hex_color',tambah "->hexColor()" pada komponen.
+Jika field.rule_type = 'json',tambah "->json()" pada komponen.
+Jika field.rule_type = 'ulid',tambah "->ulid()" pada komponen.
+Jika field.rule_type = 'uuid',tambah "->uuid()" pada komponen.
+Jika field.rule_type = 'same',tambah "->same('<<DROPDOWN_FIELD>>')" pada komponen. Gantikan <<DROPDOWN_FIELD>> dengan field.rule_value_1
+Jika field.rule_type = 'different',tambah "->different('<<DROPDOWN_FIELD>>')" pada komponen. Gantikan <<DROPDOWN_FIELD>> dengan field.rule_value_1
+Jika field.rule_type = 'gt',tambah "->gt('<<DROPDOWN_FIELD>>')" pada komponen. Gantikan <<DROPDOWN_FIELD>> dengan field.rule_value_1
+Jika field.rule_type = 'gte',tambah "->gte('<<DROPDOWN_FIELD>>')" pada komponen. Gantikan <<DROPDOWN_FIELD>> dengan field.rule_value_1
+Jika field.rule_type = 'lt',tambah "->lt('<<DROPDOWN_FIELD>>')" pada komponen. Gantikan <<DROPDOWN_FIELD>> dengan field.rule_value_1
+Jika field.rule_type = 'lte',tambah "->lte('<<DROPDOWN_FIELD>>')" pada komponen. Gantikan <<DROPDOWN_FIELD>> dengan field.rule_value_1
+Jika field.rule_type = 'after',tambah "->after('<<DROPDOWN_DATE>>')" pada komponen. Gantikan <<DROPDOWN_DATE>> dengan field.rule_value_1
+Jika field.rule_type = 'after_or_equal',tambah "->afterOrEqual('<<DROPDOWN_DATE>>')" pada komponen. Gantikan <<DROPDOWN_DATE>> dengan field.rule_value_1
+Jika field.rule_type = 'before',tambah "->before('<<DROPDOWN_DATE>>')" pada komponen. Gantikan <<DROPDOWN_DATE>> dengan field.rule_value_1
+Jika field.rule_type = 'before_or_equal',tambah "->beforeOrEqual('<<DROPDOWN_DATE>>')" pada komponen. Gantikan <<DROPDOWN_DATE>> dengan field.rule_value_1
+Jika field.rule_type = 'in',tambah "->in('[<<TEXTBOX>>'])" pada komponen. Gantikan <<TEXTBOX>> dengan field.rule_value_1 yang telah ditukar kepada array.
+Jika field.rule_type = 'not_in',tambah "->notIn('[<<TEXTBOX>>'])" pada komponen. Gantikan <<TEXTBOX>> dengan field.rule_value_1 yang telah ditukar kepada array.
+Jika field.rule_type = 'starts_with',tambah "->startsWith('[<<TEXTBOX>>'])" pada komponen. Gantikan <<TEXTBOX>> dengan field.rule_value_1 yang telah ditukar kepada array.
+Jika field.rule_type = 'doesnt_start_with',tambah "->doesntStartWith('[<<TEXTBOX>>'])" pada komponen. Gantikan <<TEXTBOX>> dengan field.rule_value_1 yang telah ditukar kepada array.
+Jika field.rule_type = 'ends_with',tambah "->endsWith('[<<TEXTBOX>>'])" pada komponen. Gantikan <<TEXTBOX>> dengan field.rule_value_1 yang telah ditukar kepada array.
+Jika field.rule_type = 'doesnt_end_with',tambah "->doesntEndWith('[<<TEXTBOX>>'])" pada komponen. Gantikan <<TEXTBOX>> dengan field.rule_value_1 yang telah ditukar kepada array.
+Jika field.rule_type = 'regex',tambah "->regex('<<TEXTBOX>>')" pada komponen. Gantikan <<TEXTBOX>> dengan field.rule_value_1
+Jika field.rule_type = 'not_regex',tambah "->notRegex('<<TEXTBOX>>')" pada komponen. Gantikan <<TEXTBOX>> dengan field.rule_value_1
+Jika field.rule_type = 'multiple_of',tambah "->multipleOf('<<TEXTBOX>>')" pada komponen. Gantikan <<TEXTBOX>> dengan field.rule_value_1
+Jika field.rule_type = 'required_if',tambah "->requiredIf('<<RULE_VALUE_1>>', '<<RULE_VALUE_2>>')" pada komponen. Gantikan <<RULE_VALUE_1>> dengan field.rule_value_1 dan <<RULE_VALUE_2>> dengan field.rule_value_2
+Jika field.rule_type = 'required_unless',tambah "->requiredUnless('<<RULE_VALUE_1>>', '<<RULE_VALUE_2>>')" pada komponen. Gantikan <<RULE_VALUE_1>> dengan field.rule_value_1 dan <<RULE_VALUE_2>> dengan field.rule_value_2
+Jika field.rule_type = 'required_with',tambah "->requiredWith('<<TEXTBOX>>')" pada komponen. Gantikan <<TEXTBOX>> dengan field.rule_value_1
+Jika field.rule_type = 'required_with_all',tambah "->requiredWithAll('<<TEXTBOX>>')" pada komponen. Gantikan <<TEXTBOX>> dengan field.rule_value_1
+Jika field.rule_type = 'required_without',tambah "->beforeOrEqual('<<TEXTBOX>>')" pada komponen. Gantikan <<TEXTBOX>> dengan field.rule_value_1
+Jika field.rule_type = 'required_without_all',tambah "->requiredWithout('<<TEXTBOX>>')" pada komponen. Gantikan <<TEXTBOX>> dengan field.rule_value_1
+Jika field.rule_type = 'required_if_accepted',tambah "->requiredIfAccepted('<<DROPDOWN_FIELD>>')" pada komponen. Gantikan <<DROPDOWN_FIELD>> dengan field.rule_value_1
+Jika field.rule_type = 'prohibited', tambah "->prohibited()" pada komponen.
+Jika field.rule_type = 'prohibited_if',tambah "->prohibitedIf('<<RULE_VALUE_1>>', '<<RULE_VALUE_2>>')" pada komponen. Gantikan <<RULE_VALUE_1>> dengan field.rule_value_1 dan <<RULE_VALUE_2>> dengan field.rule_value_2
+Jika field.rule_type = 'prohibited_unless',tambah "->prohibitedUnless('<<RULE_VALUE_1>>', '<<RULE_VALUE_2>>')" pada komponen. Gantikan <<RULE_VALUE_1>> dengan field.rule_value_1 dan <<RULE_VALUE_2>> dengan field.rule_value_2
+Jika field.rule_type = 'prohibits',tambah "->prohibits('[<<TEXTBOX>>'])" pada komponen. Gantikan <<TEXTBOX>> dengan field.rule_value_1 yang telah ditukar kepada array.
+Jika field.rule_type = 'exists',tambah "->exists()" pada komponen.
+#####
+
 10. Jana output di folder 'AppData.../generated/filament/app/Filament/Resources/<<RESOURCE_FOLDER>>/Schemas' dengan nama singular PascalCase table_name value dengan extension php. Contoh table_name = pelajar_sekolah, fail terjana akan bernama PelajarSekolahForm.php. <<RESOURCE_FOLDER>> pula ialah plural PascalCase table_name value. Path Fail sepatutnya 'AppData.../generated/filament/app/Filament/Resources/PelajarSekolahs/Schemas/PelajarSekolahForm.php'
 
 Seterusnya, bantu saya untuk bina script php laravel filament seperti dibawah. Pastikan fungsi ini independent atau fungsi baru:

@@ -1,3 +1,4 @@
+import { VALIDATION_RULES_CONFIG } from './js/validationRules.js';
 import { generateSidebarMenu, initializeSidebarInteractivity, initializeSidebarButtons, setActiveSidebarLink, focusOnSidebarField } from './js/sidebar.js';
 import { 
 	applyFontSize,
@@ -59,6 +60,8 @@ import {
     initializeDataTypeDefaultRules
 } from './js/uiHandlers.js';
 import { initializeWorkflowBuilder } from './js/workflowBuilder.js';
+
+window.VALIDATION_RULES_CONFIG = VALIDATION_RULES_CONFIG;
 
 export const SaveManager = {
     saveQueue: {
