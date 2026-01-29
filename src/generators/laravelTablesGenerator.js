@@ -8,7 +8,8 @@ const {
     toPluralCamelCase,
     toTitleCase,
     toSingularPascalCase,
-    toSingularCamelCase
+    toSingularCamelCase,
+    readTemplate
 } = require('../utils');
 
 /**
@@ -19,11 +20,8 @@ const {
 async function generateFilamentTablesTable(fullSchema, basePath) {
     try {
         const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
-
-        const templatePath = path.join(__dirname, '../templates/php/filament/app/Filament/Resources/TablesTable.template');
-        if (!fs.existsSync(templatePath)) throw new Error(`Template file not found at: ${templatePath}`);
         
-        const templateContent = fs.readFileSync(templatePath, 'utf8');
+        const templateContent = readTemplate('app/Filament/Resources/TablesTable.template');
 
         for (const tableName in tables) {
             if (tableName === 'users') continue;

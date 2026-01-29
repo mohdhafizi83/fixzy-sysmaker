@@ -124,37 +124,37 @@ export const VALIDATION_RULES_CONFIG = [
     {
         type: 'same',
         label: 'Same As',
-        desc: 'The field value must be the same as another field.',
+        desc: 'The field value must be the same as below field.',
         inputs: 'dropdown_field'
     },
     {
         type: 'different',
         label: 'Different',
-        desc: 'The field value must be different to another field.',
+        desc: 'The field value must be different to below field.',
         inputs: 'dropdown_field'
     },
     {
         type: 'gt',
         label: 'Greater Than (Field)',
-        desc: 'The field value must be greater than another field.',
+        desc: 'The field value must be greater than below field.',
         inputs: 'dropdown_field'
     },
     {
         type: 'gte',
         label: 'Greater Than or Equal (Field)',
-        desc: 'The field value must be greater than or equal to another field.',
+        desc: 'The field value must be greater than or equal to below field.',
         inputs: 'dropdown_field'
     },
     {
         type: 'lt',
         label: 'Less Than (Field)',
-        desc: 'The field value must be less than another field.',
+        desc: 'The field value must be less than below field.',
         inputs: 'dropdown_field'
     },
     {
         type: 'lte',
         label: 'Less Than or Equal (Field)',
-        desc: 'The field value must be less than or equal to another field.',
+        desc: 'The field value must be less than or equal to below field.',
         inputs: 'dropdown_field'
     },
 
@@ -162,25 +162,25 @@ export const VALIDATION_RULES_CONFIG = [
     {
         type: 'after',
         label: 'After (Date)',
-        desc: 'Value must be after a given date/field.',
+        desc: 'Value must be after a below date/field.',
         inputs: 'dropdown_date'
     },
     {
         type: 'after_or_equal',
         label: 'After or Equal (Date)',
-        desc: 'Value must be a date after or equal to the given date/field.',
+        desc: 'Value must be a date after or equal to the below date/field.',
         inputs: 'dropdown_date'
     },
     {
         type: 'before',
         label: 'Before (Date)',
-        desc: 'Value must be a date before a given date/field.',
+        desc: 'Value must be a date before a below date/field.',
         inputs: 'dropdown_date'
     },
     {
         type: 'before_or_equal',
         label: 'Before or Equal (Date)',
-        desc: 'Value must be a date before or equal to the given date/field.',
+        desc: 'Value must be a date before or equal to the below date/field.',
         inputs: 'dropdown_date'
     },
 
@@ -253,13 +253,13 @@ export const VALIDATION_RULES_CONFIG = [
     {
         type: 'required_if',
         label: 'Required If',
-        desc: 'Required only if the other field has specific value.',
+        desc: 'Required only if the below field has specific value.',
         inputs: 'dropdown_field_text'
     },
     {
         type: 'required_unless',
         label: 'Required Unless',
-        desc: 'Required unless the other field has specific value.',
+        desc: 'Required unless the below field has specific value.',
         inputs: 'dropdown_field_text'
     },
     {
@@ -293,7 +293,7 @@ export const VALIDATION_RULES_CONFIG = [
     {
         type: 'required_if_accepted',
         label: 'Required If Accepted',
-        desc: 'Required only if the other field is accepted (yes/on/1/true).',
+        desc: 'Required only if the below field is accepted (yes/on/1/true).',
         inputs: 'dropdown_field'
     },
     {
@@ -305,19 +305,19 @@ export const VALIDATION_RULES_CONFIG = [
     {
         type: 'prohibited_if',
         label: 'Prohibited If',
-        desc: 'Must be empty if other field has specific value.',
+        desc: 'Must be empty if below field has specific value.',
         inputs: 'dropdown_field_text'
     },
     {
         type: 'prohibited_unless',
         label: 'Prohibited Unless',
-        desc: 'Must be empty unless other field has specific value.',
+        desc: 'Must be empty unless below field has specific value.',
         inputs: 'dropdown_field_text'
     },
     {
         type: 'prohibits',
         label: 'Prohibits',
-        desc: 'If this field is present, other specified fields must be empty.',
+        desc: 'If this field is present, below specified fields must be empty.',
         inputs: 'textbox',
         placeholder: 'field1,field2'
     },

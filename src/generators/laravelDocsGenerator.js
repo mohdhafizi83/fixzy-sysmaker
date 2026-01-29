@@ -1,16 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
-/**
- * Fungsi helper mudah untuk baca template
- * (Anda boleh guna fungsi dari utils.js jika sudah ada)
- */
-function readTemplate(relativePath) {
-    // Sesuaikan laluan ini mengikut struktur folder projek electron anda
-    // __dirname merujuk kepada folder 'src/generators'
-    const templatePath = path.join(__dirname, '..', 'templates', 'php', 'filament', relativePath);
-    return fs.readFileSync(templatePath, 'utf8');
-}
+const { 
+    readTemplate
+} = require('../utils');
 
 async function generateDeploymentGuidePage(fullSchema, basePath) {
     try {

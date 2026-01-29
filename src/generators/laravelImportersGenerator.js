@@ -4,7 +4,8 @@ const {
     toPascalCase, 
     toCamelCase, 
     toSingularPascalCase, 
-    toTitleCase 
+    toTitleCase,
+    readTemplate    
 } = require('../utils');
 
 /**
@@ -17,14 +18,7 @@ async function generateFilamentImporters(fullSchema, outputDir) {
         const relationships = fullSchema.database.relationships;
         
         // Lokasi Template
-        const templatePath = path.join(__dirname, '../templates/php/filament/app/Filament/Imports/Importer.template');
-        
-        if (!fs.existsSync(templatePath)) {
-            console.error(`Template Importer tidak ditemui di: ${templatePath}`);
-            return { success: false, message: 'Template Importer missing.' };
-        }
-
-        const fullTemplateContent = fs.readFileSync(templatePath, 'utf8');
+        const fullTemplateContent = readTemplate('app/Filament/Imports/Importer.template');
 
         // EKSTRAK STRUKTUR IMPORT COLUMN DARI TEMPLATE
         const columnBlockRegex = /return\s*\[\s*([\s\S]*?)\s*\];/;

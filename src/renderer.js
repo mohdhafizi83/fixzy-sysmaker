@@ -50,9 +50,7 @@ import {
 	populateParentChildTab,
     initializeColumnGridHandlers,
     initializeUniqueFieldHandler,
-    initializeValidationInputHandlers,
     initializeConstraintsTabHandlers,
-    initializeRepeaterHandlers,
     initializeIndexCheckboxHandler,
     initializeDisplayTypeRules,
     initializeWrapTextRule,
@@ -61,7 +59,19 @@ import {
 } from './js/uiHandlers.js';
 import { initializeWorkflowBuilder } from './js/workflowBuilder.js';
 
+import { openGeneralQueryBuilder } from './js/features/queryBuilder.js';
+
+import { 
+    initializeValidationInputHandlers, 
+    toggleValidationInputs,
+    saveValidationData 
+} from './js/features/validation.js';
+
+import { initializeRepeaterHandlers } from './js/features/repeater.js';
+
 window.VALIDATION_RULES_CONFIG = VALIDATION_RULES_CONFIG;
+window.saveValidationData = saveValidationData;
+window.toggleValidationInputs = toggleValidationInputs;
 
 export const SaveManager = {
     saveQueue: {

@@ -8,7 +8,8 @@ const {
     getFormattedTimestamp,
     toSingularCamelCase,
     getFieldDefinitionForMigration,
-    getFakerFormatter
+    getFakerFormatter,
+    readTemplate
 } = require('../utils');
 
 /**
@@ -19,9 +20,8 @@ const {
 async function generateFilamentModels(fullSchema, basePath) {
     try {
         const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
-        const templatePath = path.join(__dirname, '../templates/php/filament/app/Models/Model.template');
-        if (!fs.existsSync(templatePath)) throw new Error(`Template file not found at: ${templatePath}`);
-        const templateContent = fs.readFileSync(templatePath, 'utf8');
+
+        const templateContent = readTemplate('app/Models/Model.template');
         const modelsPath = path.join(basePath, 'app', 'Models');
         fs.mkdirSync(modelsPath, { recursive: true });
 
@@ -179,11 +179,7 @@ async function generateFilamentUserModel(fullSchema, basePath) {
         }
 
         // Tentukan laluan templat dan pastikan ia wujud
-        const templatePath = path.join(__dirname, '../templates/php/filament/app/Models/User.template');
-        if (!fs.existsSync(templatePath)) {
-            throw new Error(`Template file not found at: ${templatePath}`);
-        }
-        const templateContent = fs.readFileSync(templatePath, 'utf8');
+        const templateContent = readTemplate('app/Models/User.template');
         let userModelContent = templateContent;
 
         // 1. & 2. Handle Soft Deletes

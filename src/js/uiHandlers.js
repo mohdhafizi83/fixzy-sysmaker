@@ -1,77 +1,4 @@
-/**
- * Helper function to set the value of various form elements.
- * It can handle regular inputs, checkboxes, radios, and multi-select dropdowns.
- * @param {string} id - The ID of the element to update.
- * @param {any} value - The value to set.
- */
-const setElementValue = (id, value) => {
-    const element = document.getElementById(id);
-    if (element) {
-        if (element.type === 'checkbox' || element.type === 'radio') {
-            element.checked = !!value;
-        } else if (element.multiple) {
-            // Mengendalikan dropdown multi-select
-            if (typeof value === 'string' && value) {
-                const selectedValues = new Set(value.split(','));
-                for (const option of element.options) {
-                    option.selected = selectedValues.has(option.value);
-                }
-            } else {
-                // Nyahpilih semua jika tiada nilai
-                for (const option of element.options) {
-                    option.selected = false;
-                }
-            }
-        } else {
-            // Mengendalikan semua elemen lain
-            element.value = value || '';
-        }
-    }
-};
-
-/**
- * Membuka Query Builder dalam mod 'general'.
- * Fungsi ini boleh dieksport dan dipanggil dari mana-mana, terutamanya dari Algorithm Builder.
- */
-export function openGeneralQueryBuilder(targetTextarea) {
-    let tableName;
-    const fieldPage = document.getElementById('field-settings-page');
-    const tablePage = document.getElementById('table-settings-page');
-
-    // Tentukan konteks jadual berdasarkan halaman yang sedang aktif
-    if (fieldPage && !fieldPage.classList.contains('hidden')) {
-        [tableName] = fieldPage.querySelector('.field-name')?.textContent.split('.') || [];
-    } else if (tablePage && !tablePage.classList.contains('hidden')) {
-        tableName = tablePage.querySelector('.table-name')?.textContent;
-    }
-
-    if (!tableName) {
-        showCustomDialog({ title: "Error", message: "Please select a table or a field first to open the Query Builder." });
-        return;
-    }
-
-    let initialState = null;
-    if (targetTextarea) {
-        const stateInput = targetTextarea.parentElement.querySelector('.query-builder-state');
-        if (stateInput) {
-            initialState = stateInput.value || null;
-        }
-    }
-
-    showConfigurableQueryBuilder({
-        mode: 'general',
-        tableName: tableName,
-        initialState: initialState,
-        onComplete: (sql, state) => {
-            if (targetTextarea) {
-                targetTextarea.value = sql;
-                const stateInput = targetTextarea.parentElement.querySelector('.query-builder-state');
-                if (stateInput) stateInput.value = state;
-                targetTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-        }
-    });
-}
+import { setElementValue } from './ui/formHelpers.js';
 
 /**
  * Fungsi Teras Boleh Guna Semula untuk mencipta Logic Builder.
@@ -6841,45 +6768,6 @@ export function initializeColumnGridHandlers() {
     toggleStaticInput();
 }
 
-export function initializeValidationInputHandlers() {
-    const lengthInput = document.getElementById('fld-length');
-    const maxLengthInput = document.getElementById('fld-max-length');
-
-    if (!lengthInput || !maxLengthInput) return;
-
-    // Fungsi ini kini hanya menyalin nilai dari 'Length' ke 'Max length'
-    const syncLengthValue = () => {
-        maxLengthInput.value = lengthInput.value;
-    };
-
-    lengthInput.addEventListener('input', syncLengthValue);
-}
-
-export function initializeRepeaterHandlers() {
-    const setupRepeaterLogic = (index) => {
-        const suffix = index ? `-${index}` : '-simple';
-        const displayAsSelect = document.getElementById(`fld-repeater${suffix}-display-as`);
-        const formatAsGroup = document.getElementById(`fld-repeater${suffix}-format-as-group`);
-        const listValuesGroup = document.getElementById(`fld-repeater${suffix}-list-values-group`);
-
-        if (!displayAsSelect || !formatAsGroup || !listValuesGroup) return;
-
-        const toggleVisibility = () => {
-            const selected = displayAsSelect.value;
-            formatAsGroup.classList.toggle('hidden', selected !== 'text_input');
-            listValuesGroup.classList.toggle('hidden', selected !== 'dropdown_list');
-        };
-
-        displayAsSelect.addEventListener('change', toggleVisibility);
-    };
-
-    // Pasang logik untuk Repeater-Simple dan 3 set Repeater
-    setupRepeaterLogic(null); // Untuk -simple
-    setupRepeaterLogic(1);
-    setupRepeaterLogic(2);
-    setupRepeaterLogic(3);
-}
-
 // Function untuk Load Tab Validation (Versi Auto-Save & Tanpa jQuery)
 async function loadValidationTab(columnId, tableName) {
     const container = document.getElementById('validationRulesContainer');
@@ -6994,41 +6882,6 @@ async function loadValidationTab(columnId, tableName) {
     }
 }
 
-// Jadikan fungsi ini global supaya boleh dipanggil dari onclick=""
-window.saveValidationData = async function(columnId) {
-    const validationsToSave = [];
-    const checkboxes = document.querySelectorAll('.validation-checkbox:checked');
-
-    checkboxes.forEach(cb => {
-        const type = cb.getAttribute('data-type');
-        // Cari input dalam collapse div yang berkaitan
-        const collapseDiv = document.getElementById(`collapse_${type}`);
-        const input1 = collapseDiv.querySelector(`.val-input-1`);
-        const input2 = collapseDiv.querySelector(`.val-input-2`);
-
-        validationsToSave.push({
-            rule_type: type,
-            value1: input1 ? input1.value : null,
-            value2: input2 ? input2.value : null
-        });
-    });
-
-    try {
-        // Guna fungsi spesifik yang baru ditambah dalam preload.js
-        await window.electronAPI.saveFieldValidations({
-            columnId: columnId,
-            validations: validationsToSave
-        });
-        
-        // Tunjuk feedback kejayaan (Guna showCustomDialog sedia ada)
-        // Jika import { showCustomDialog } tidak available di skop global, guna alert biasa
-        alert('Validation rules saved successfully!'); 
-    } catch (err) {
-        console.error('Failed to save validations', err);
-        alert('Error saving validation rules: ' + err.message);
-    }
-};
-
 // Helper untuk bina Input HTML berdasarkan Config
 function renderValidationInputs(rule, allCols, dateCols, savedVal1, savedVal2) {
     if (rule.inputs === 'none') return '';
@@ -7070,51 +6923,3 @@ function renderValidationInputs(rule, allCols, dateCols, savedVal1, savedVal2) {
 
     return inputHtml;
 }
-
-// --- HELPER FUNCTIONS ---
-
-// 1. Toggle UI (Vanilla JS - Fix error '$ is not defined')
-window.toggleValidationInputs = function(ruleType) {
-    const checkbox = document.getElementById(`val_check_${ruleType}`);
-    const collapseDiv = document.getElementById(`collapse_${ruleType}`);
-    
-    if (checkbox && collapseDiv) {
-        if (checkbox.checked) {
-            collapseDiv.classList.add('show'); // Ganti .collapse('show')
-        } else {
-            collapseDiv.classList.remove('show'); // Ganti .collapse('hide')
-        }
-    }
-};
-
-// 2. Fungsi Simpan ke Database
-window.saveValidationData = async function(columnId) {
-    const validationsToSave = [];
-    // Cari semua checkbox yang DITANDA sahaja
-    const checkboxes = document.querySelectorAll('.validation-checkbox:checked');
-
-    checkboxes.forEach(cb => {
-        const type = cb.getAttribute('data-type');
-        const collapseDiv = document.getElementById(`collapse_${type}`);
-        
-        // Ambil nilai input jika wujud
-        const input1 = collapseDiv ? collapseDiv.querySelector(`.val-input-1`) : null;
-        const input2 = collapseDiv ? collapseDiv.querySelector(`.val-input-2`) : null;
-
-        validationsToSave.push({
-            rule_type: type,
-            value1: input1 ? input1.value : null,
-            value2: input2 ? input2.value : null
-        });
-    });
-
-    try {
-        await window.electronAPI.saveFieldValidations({
-            columnId: columnId,
-            validations: validationsToSave
-        });
-        console.log('Validation saved.');
-    } catch (err) {
-        console.error('Failed to save validations', err);
-    }
-};

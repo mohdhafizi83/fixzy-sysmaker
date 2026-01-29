@@ -1,1 +1,0 @@
-node test_admin_provider.js

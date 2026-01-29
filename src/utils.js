@@ -42,12 +42,30 @@ function getFormattedTimestamp(date, sequence) {
 }
 
 /**
- * Menukar rentetan snake_case atau kebab-case kepada PascalCase.
- * Contoh: 'pelajar_sekolah' -> 'PelajarSekolah'
+ * Menukar rentetan snake_case, kebab-case, camelCase, PascalCase, pelik/type kepada PascalCase.
+ * Contoh: 'user_profile' -> 'UserProfile', 'user-profile' -> 'UserProfile', 'userProfile' -> 'UserProfile', 'UserProfile' -> 'UserProfile', 'UsErProfile' -> 'UsErProfile', 'USER_NAME' -> 'UserName',
  */
 function toPascalCase(str) {
     if (!str) return '';
-    return str.split(/[-_]/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
+
+    return str
+        // LANGKAH 1: Kendalikan camelCase
+        // Jika jumpa huruf kecil diikuti huruf besar (cth: rP dalam userProfile),
+        // letakkan jarak di tengahnya.
+        // userProfile -> user Profile
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+
+        // LANGKAH 2: Pecahkan ikut simbol (- _ atau jarak)
+        .split(/[-_\s]/)
+
+        // LANGKAH 3: Buang sisa kosong (jika ada double space/underscore)
+        .filter(word => word.length > 0)
+
+        // LANGKAH 4: Standardisasi (Huruf pertama Besar, baki Kecil)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+
+        // LANGKAH 5: Gabung semula
+        .join('');
 }
 
 /**
@@ -81,17 +99,39 @@ function toPluralCamelCase(str) {
 }
 
 /**
- * Menukar rentetan kepada flatcase (lowercase tanpa sempang atau garis bawah).
- * Contoh: 'pelajar_sekolah' -> 'pelajarsekolah'
+ * Menukar string kepada flatcase (cth: User Profile -> userprofile)
+ * Sesuai untuk kod ringkas, permission string, atau slug dalaman.
  */
 function toFlatCase(str) {
     if (!str) return '';
-    return str.replace(/[-_]/g, '').toLowerCase();
+    
+    // Ganti dash (-), underscore (_), DAN space (\s) dengan kosong
+    return str.replace(/[-_\s]/g, '').toLowerCase();
 }
 
+/**
+ * Menukar rentetan snake_case, kebab-case, camelCase, PascalCase kepada Title Case.
+ * Contoh: 'user_profile' -> 'User Profile', 'USER_PROFILE' -> 'User Profile', 'userProfile' -> 'User Profile', 'user-profile' -> 'User Profile'
+ */
 function toTitleCase(str) {
     if (!str) return '';
-    return str.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+    
+    return str
+        // 1. Pisahkan camelCase (firstName -> first Name)
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        
+        // 2. Gantikan underscore/dash dengan space
+        .replace(/[-_]/g, ' ')
+        
+        // 3. Pecahkan kepada perkataan, buang space berlebihan
+        .split(' ')
+        .filter(word => word.length > 0)
+        
+        // 4. Format: Huruf pertama Besar, baki Kecil
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        
+        // 5. Cantum semula dengan jarak
+        .join(' ');
 }
 
 function toSingularPascalCase(str) {
@@ -207,6 +247,15 @@ function getFilesRecursive(dir, fileList = [], relativePath = '') {
     return fileList;
 }
 
+// Fungsi helper untuk membaca template (konsisten dengan generator lain)
+function readTemplate(relativePath) {
+    const templatePath = path.join(__dirname, 'templates', 'php', 'filament', relativePath);
+        if (!fs.existsSync(templatePath)) {
+            throw new Error(`Template file not found at: ${templatePath}`);
+        }
+    return fs.readFileSync(templatePath, 'utf8');
+}
+
 // Eksport semua fungsi ini supaya boleh digunakan oleh fail lain
 module.exports = {
     convertDateFormatToPhp,
@@ -222,5 +271,6 @@ module.exports = {
     getFieldDefinitionForMigration,
     getFakerFormatter,
     getFilesRecursive,
-    runStep
+    runStep,
+    readTemplate
 };

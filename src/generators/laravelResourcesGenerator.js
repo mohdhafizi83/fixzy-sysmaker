@@ -6,7 +6,8 @@ const {
     toSingularPascalCase,
     toPluralPascalCase,
     toPluralCamelCase,
-    toFlatCase
+    toFlatCase,
+    readTemplate
 } = require('../utils');
 
 /**
@@ -18,11 +19,7 @@ async function generateFilamentListPages(fullSchema, basePath) {
     try {
         const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
 
-        const templatePath = path.join(__dirname, '../templates/php/filament/app/Filament/Resources/PagesList.template');
-        if (!fs.existsSync(templatePath)) {
-            throw new Error(`Template file not found at: ${templatePath}`);
-        }
-        const templateContent = fs.readFileSync(templatePath, 'utf8');
+        const templateContent = readTemplate('app/Filament/Resources/PagesList.template');
 
         for (const tableName in tables) {
             if (tableName === 'users') {
@@ -172,11 +169,7 @@ async function generateFilamentCreatePages(fullSchema, basePath) {
     try {
         const { database: { table: tables, relationships } } = fullSchema;
 
-        const templatePath = path.join(__dirname, '../templates/php/filament/app/Filament/Resources/PagesCreate.template');
-        if (!fs.existsSync(templatePath)) {
-            throw new Error(`Template file not found at: ${templatePath}`);
-        }
-        const templateContent = fs.readFileSync(templatePath, 'utf8');
+        const templateContent = readTemplate('app/Filament/Resources/PagesCreate.template');
 
         for (const tableName in tables) {
             if (tableName === 'users') {
@@ -246,11 +239,7 @@ async function generateFilamentEditPages(fullSchema, basePath) {
     try {
         const { database: { table: tables, relationships } } = fullSchema;
 
-        const templatePath = path.join(__dirname, '../templates/php/filament/app/Filament/Resources/PagesEdit.template');
-        if (!fs.existsSync(templatePath)) {
-            throw new Error(`Template file not found at: ${templatePath}`);
-        }
-        const templateContent = fs.readFileSync(templatePath, 'utf8');
+        const templateContent = readTemplate('app/Filament/Resources/PagesEdit.template');
 
         for (const tableName in tables) {
             if (tableName === 'users') {
@@ -384,11 +373,7 @@ async function generateFilamentResources(fullSchema, basePath) {
         const relationships = fullSchema.database.relationships;
         const unifiedMenu = fullSchema.database.unified_menu;
 
-        const templatePath = path.join(__dirname, '../templates/php/filament/app/Filament/Resources/Resource.template');
-        if (!fs.existsSync(templatePath)) {
-            throw new Error(`Template file not found at: ${templatePath}`);
-        }
-        const templateContent = fs.readFileSync(templatePath, 'utf8');
+        const templateContent = readTemplate('app/Filament/Resources/Resource.template');
 
         for (const tableName in tables) {
             if (tableName === 'users') {
@@ -537,11 +522,7 @@ async function generateFilamentRelationManagers(fullSchema, basePath) {
     try {
         const { database: { relationships } } = fullSchema;
 
-        const templatePath = path.join(__dirname, '../templates/php/filament/app/Filament/Resources/RelationManagers.template');
-        if (!fs.existsSync(templatePath)) {
-            throw new Error(`Template file not found at: ${templatePath}`);
-        }
-        const templateContent = fs.readFileSync(templatePath, 'utf8');
+        const templateContent = readTemplate('app/Filament/Resources/RelationManagers.template');
 
         // Loop melalui setiap hubungan yang wujud
         for (const rel of relationships) {

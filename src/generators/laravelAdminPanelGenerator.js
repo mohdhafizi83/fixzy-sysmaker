@@ -1,11 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
-// Fungsi helper untuk membaca template (konsisten dengan generator lain)
-function readTemplate(relativePath) {
-    const templatePath = path.join(__dirname, '..', 'templates', 'php', 'filament', relativePath);
-    return fs.readFileSync(templatePath, 'utf8');
-}
+const { 
+    readTemplate
+} = require('../utils');
 
 /**
  * Menjana AdminPanelProvider.php berdasarkan konfigurasi projek.
