@@ -1,5 +1,24 @@
 // js/ui/formHelpers.js
 
+/* export function setRadioValue(name, value) {
+    const selector = `input[name="${name}"][value="${value}"]`;
+    const element = document.querySelector(selector);
+    if (element) element.checked = true;
+}; */
+
+/**
+ * Helper untuk menetapkan nilai input Radio.
+ * @param {string} name - Nama attribute 'name' pada radio group.
+ * @param {any} value - Nilai yang hendak dipilih.
+ */
+export function setRadioValue(name, value) {
+    const radios = document.querySelectorAll(`input[name="${name}"]`);
+    radios.forEach(radio => {
+        // Bandingkan sebagai string untuk keselamatan
+        radio.checked = (radio.value === String(value));
+    });
+}
+
 /**
  * Helper function to set the value of various form elements.
  * It can handle regular inputs, checkboxes, radios, and multi-select dropdowns.

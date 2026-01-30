@@ -1,4 +1,4 @@
-import { setElementValue } from './ui/formHelpers.js';
+import { setElementValue, setRadioValue } from './ui/formHelpers.js';
 
 /**
  * Fungsi Teras Boleh Guna Semula untuk mencipta Logic Builder.
@@ -12,8 +12,6 @@ import { setElementValue } from './ui/formHelpers.js';
  * @param {string} [config.updateMode='live'] - Mod kemas kini ('live' atau 'manual').
  * @returns {object} Objek dengan kaedah untuk berinteraksi dengan builder.
  */
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
-
 function setupLogicBuilderCore(config) {
     const { palette, canvas, hiddenInput, validationRules, context, updateMode = 'live' } = config;
     const placeholder = canvas ? canvas.querySelector('.canvas-placeholder') : null;
@@ -1649,10 +1647,6 @@ case 'custom_query': {
  * @param {string} config.doneButtonId - ID of the done button.
  * @param {function} [config.onComplete] - Optional callback when 'Done' is clicked, receives the logic JSON.
  */
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
-
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
-
 export function openModalLogicBuilder(config) {
     const modal = document.getElementById(config.modalId);
     const modalBody = modal.querySelector('.modal-body');
@@ -1918,7 +1912,7 @@ import { allTableNames, jsonData, loadProjectData, activeProject, SaveManager, i
  * Mengemas kini imej di dalam kotak "Template preview" berdasarkan
  * pilihan semasa dropdown 'tbl-tv-template'.
  */
-function updateTableViewTemplatePreview() {
+export function updateTableViewTemplatePreview() {
     const templateSelect = document.getElementById('tbl-tv-template');
     const previewArea = document.querySelector('#tab-template .theme-preview-window');
 
@@ -2259,9 +2253,6 @@ function updateNestedMoveButtonStates(container) {
         if (downBtn) downBtn.disabled = (index === items.length - 1);
     });
 }
-// ▲▲▲ TAMAT FUNGSI BANTUAN BAHARU ▲▲▲
-
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
 
 export async function populateProjectDropdown() {
     const projectListContainer = document.getElementById('project-menu-list');
@@ -2361,18 +2352,6 @@ export function showCustomDialog({ title, message, onOk, onCancel, showCancelBut
         modal.classList.remove('hidden');
     });
 }
-
-const setRadioValue = (name, value) => {
-    const selector = `input[name="${name}"][value="${value}"]`;
-    const element = document.querySelector(selector);
-    if (element) element.checked = true;
-};
-
-
-
-
-
-
 
 // =================================================================
 // ▼▼▼ FUNGSI UNTUK MENGISI MODAL TETAPAN ▼▼▼
@@ -2487,7 +2466,7 @@ export function initializeTabSystems() {
 }
 
 // ▼▼▼ FUNGSI-FUNGSI YANG HILANG SEBELUM INI KINI TELAH DIKEMBALIKAN ▼▼▼
-function populateSortByDropdown(tableName, elementId = 'tbl-default-sort-by') {
+export function populateSortByDropdown(tableName, elementId = 'tbl-default-sort-by') {
     const sortByDropdown = document.getElementById(elementId);
     if (!sortByDropdown || !jsonData) return;
     
@@ -2507,7 +2486,7 @@ function populateSortByDropdown(tableName, elementId = 'tbl-default-sort-by') {
 
 // js/uiHandlers.js
 
-function populateFocusFieldDropdown(tableName) {
+export function populateFocusFieldDropdown(tableName) {
     const defaultFocusDropdown = document.getElementById('tbl-default-focus');
     if (!defaultFocusDropdown || !jsonData) return;
 
@@ -2667,23 +2646,6 @@ export function initializeMediaTabHandlers() {
             // ▲▲▲ TAMAT LOGIK YANG DIPERBAIKI ▲▲▲
         });
     });
-}
-
-/**
- * Memastikan tab Media mempunyai keadaan lalai yang bersih apabila dibuka.
- * Fungsi ini dipanggil dari sidebar.js apabila pengguna mengklik pada medan.
- */
-export function setupMediaTab(tableName, fieldName) {
-    // Isi dropdown 'The other field' untuk kedua-dua panel Link dan File
-    populateOtherFieldDropdown(tableName, fieldName);
-    populateFileOtherFieldDropdown(tableName, fieldName);
-
-    // Sembunyikan panel bersyarat secara lalai
-    const gmapDetails = document.getElementById('gmap-details');
-    const youtubeDetails = document.getElementById('youtube-details');
-    if (gmapDetails) gmapDetails.classList.add('hidden');
-    if (youtubeDetails) youtubeDetails.classList.add('hidden');
-
 }
 
 export function initializeOptionsListHandlers() {
@@ -2846,8 +2808,6 @@ export function initializeClassSelectorHandlers() {
     }
 }
 
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
-
 export function initializeAutoDefaultHandlers() {
     const autoDefaultBtn = document.getElementById('auto-default-btn');
     const autoDefaultModal = document.getElementById('auto-default-modal');
@@ -2920,7 +2880,7 @@ export function initializeLinkOptionsHandlers() {
     });
 }
 
-function populateOtherFieldDropdown(tableName, currentFieldName) {
+export function populateOtherFieldDropdown(tableName, currentFieldName) {
     const otherFieldSelect = document.getElementById('fld-media-link-other-field');
     if (!otherFieldSelect || !jsonData) return;
 
@@ -3009,7 +2969,7 @@ export function initializeImageOptionsHandlers() {
         toggleImageOptions();
     }
 }
-function populateFileOtherFieldDropdown(tableName, currentFieldName) {
+export function populateFileOtherFieldDropdown(tableName, currentFieldName) {
     const otherFieldSelect = document.getElementById('fld-file-other-field');
     if (!otherFieldSelect || !jsonData) return;
 
@@ -3112,92 +3072,6 @@ export function initializeMediaVisibilityHandlers() {
     }
 }
 
-export function populateParentChildTab(currentTableName) {
-    const childList = document.getElementById('child-table-list');
-    const listPanel = childList.parentElement; 
-    const optionsPanel = listPanel.nextElementSibling;
-    const optionsTitle = document.getElementById('selected-child-table-name');
-    const formElements = {
-        showTab: document.getElementById('parentchild-show-tab'),
-        showIcon: document.getElementById('parentchild-show-icon'),
-        autocloseModal: document.getElementById('parentchild-autoclose-modal'),
-        tabTitle: document.getElementById('parentchild-tab-title'),
-        copyRecords: document.getElementById('parentchild-copy-records'),
-        showLinkAbove: document.getElementById('parentchild-show-link-above'),
-        showCount: document.getElementById('parentchild-show-count-in-tv'),
-        allowAdd: document.getElementById('parentchild-allow-add-from-tv')
-    };
-    
-    if (!childList || !jsonData.database.relationships || !optionsPanel) return;
-
-    const children = jsonData.database.relationships.filter(
-        rel => rel.parent_table_name === currentTableName
-    );
-
-    childList.innerHTML = '';
-
-    if (children.length === 0) {
-        optionsPanel.classList.add('hidden');
-        const emptyMessage = `
-            <div class="empty-state-label" style="padding: 1rem; text-align: left;">
-                <p style="text-align: center; font-weight: 500;">This table has no child tables.</p>
-                <span style="display: block; text-align: center; margin-top: 0.5rem; font-size: 0.85em;">
-                    To create a relationship, select the foreign key field in the side menu and set the 'Parent table' in the 'Lookup field' tab.
-                </span>
-            </div>
-        `;
-        childList.innerHTML = emptyMessage;
-    } else {
-        optionsPanel.classList.remove('hidden');
-        Object.values(formElements).forEach(el => el.type === 'checkbox' ? el.checked = false : el.value = '');
-        optionsTitle.textContent = '...';
-
-        children.forEach(child => {
-            const li = document.createElement('li');
-            li.textContent = child.child_table_name;
-            li.dataset.childName = child.child_table_name; // Pastikan dataset ini wujud
-            childList.appendChild(li);
-        });
-        
-        const populateForm = (childName) => {
-            const relationData = children.find(c => c.child_table_name === childName);
-            if (!relationData) return;
-            optionsTitle.textContent = childName;
-            formElements.showTab.checked = relationData.show_tab === 1;
-            formElements.showIcon.checked = relationData.show_icon === 1;
-            formElements.autocloseModal.checked = relationData.autoclose_modal === 1;
-            formElements.tabTitle.value = relationData.tab_title || '';
-            formElements.copyRecords.checked = relationData.copy_records === 1;
-            formElements.showLinkAbove.checked = relationData.show_link_above === 1;
-            formElements.showCount.checked = relationData.show_count_in_tv === 1;
-            formElements.allowAdd.checked = relationData.allow_add_from_tv === 1;
-        };
-
-        // Elakkan menambah event listener berulang kali
-        const newChildList = childList.cloneNode(true);
-        childList.parentNode.replaceChild(newChildList, childList);
-
-        newChildList.addEventListener('click', (event) => {
-            if (event.target.tagName === 'LI') {
-                newChildList.querySelectorAll('li').forEach(li => li.classList.remove('active'));
-                event.target.classList.add('active');
-                populateForm(event.target.dataset.childName);
-            }
-        });
-
-        const itemToSelect = newChildList.querySelector(`li[data-child-name="${lastActiveChildTable}"]`);
-
-        if (itemToSelect) {
-            itemToSelect.click();
-        } else if (newChildList.firstChild && newChildList.firstChild.tagName === 'LI') {
-            newChildList.firstChild.click();
-        }
-        
-        // ▼▼▼ KEMAS KINI: Baris kod di bawah ini telah dibuang ▼▼▼
-        // setLastActiveChildTable(null); 
-        // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
-    }
-}
 
 export function populateMainDashboard(projectData) {
     if (!projectData) {
@@ -3276,121 +3150,13 @@ export function populateMainDashboard(projectData) {
     }
 }
 
-export function populateTableSettings(tableName) {
-
-    populateSortByDropdown(tableName);
-    populateFocusFieldDropdown(tableName);
-    populateRecordOwnerDropdown(tableName);
-	populateCustomViewsTab(tableName);
-    populateConstraintsTab(tableName);
-		
-    const tableData = jsonData.database.table[tableName];
-    if (!tableData) {
-        console.error(`Tiada data ditemui untuk jadual: ${tableName}`);
-        return;
-    }
-	
-    setElementValue('tbl-table-name', tableData.table_name);
-    // Tab: Table view -> General
-    setElementValue('tbl-table-view-title', tableData.table_view_title);
-    setElementValue('tbl-table-description', tableData.table_description);
-
-    // Tab: Table view -> Features
-    setElementValue('tbl-show-quick-search', tableData.show_quick_search);
-    setElementValue('tbl-allow-pagination', tableData.allow_pagination);
-    setRadioValue('tbl-pagination-type', tableData.pagination_type);
-    setElementValue('tbl-default-sort-by', tableData.default_sort_by);
-    setElementValue('tbl-sort-descending', tableData.sort_descending);
-    setElementValue('tbl-allow-csv-export', tableData.allow_csv_export);
-    setElementValue('tbl-allow-csv-import', tableData.allow_csv_import);
-    setElementValue('tbl-allow-print-view', tableData.allow_print_view);
-    setElementValue('tbl-allow-mass-delete', tableData.allow_mass_delete);
-    
-    setElementValue('tbl-show-edit-button', tableData.show_edit_button);
-    setElementValue('tbl-show-delete-button', tableData.show_delete_button);
-    setElementValue('tbl-allow-restore-delete', tableData.allow_restore_delete);
-    setElementValue('tbl-allow-force-delete', tableData.allow_force_delete);
-
-    // Logik untuk menyahaktifkan ciri soft-delete jika projek menggunakan hard-delete
-    const isHardDelete = activeProject.data_delete_type === 'hard';
-    const restoreCheckbox = document.getElementById('tbl-allow-restore-delete');
-    const forceDeleteCheckbox = document.getElementById('tbl-allow-force-delete');
-
-    if (restoreCheckbox) restoreCheckbox.disabled = isHardDelete;
-    if (forceDeleteCheckbox) forceDeleteCheckbox.disabled = isHardDelete;
-    
-    const paginationCheckbox = document.getElementById('tbl-allow-pagination');
-    const recordsPerPageGroup = document.getElementById('records-per-page-group');
-
-    if (paginationCheckbox && recordsPerPageGroup) {
-        const toggleVisibility = () => {
-            recordsPerPageGroup.classList.toggle('hidden', !paginationCheckbox.checked);
-        };
-
-        // Pasang listener HANYA jika ia belum dipasang
-        if (!paginationCheckbox.dataset.listenerAttached) {
-            paginationCheckbox.addEventListener('change', toggleVisibility);
-            paginationCheckbox.dataset.listenerAttached = 'true';
-        }
-        
-        // Jalankan logik sekali untuk menetapkan keadaan awal yang betul
-        toggleVisibility();
-    }
-
-    // Tab: Table view -> Template
-    setElementValue('tbl-tv-template', tableData.tv_template);
-    setElementValue('tbl-hide-field-captions', tableData.hide_field_captions);
-    setElementValue('tbl-use-first-field-as-title', tableData.use_first_field_as_title);
-    setElementValue('tbl-table-view-classes-input', tableData.table_view_classes_input);
-    setElementValue('tbl-detail-view-classes-input', tableData.detail_view_classes_input);
-    
-    // Tab: Detail View -> General
-    setElementValue('tbl-detail-view-title', tableData.detail_view_title);
-    setElementValue('tbl-record-owner', tableData.record_owner);
-    setElementValue('tbl-default-focus', tableData.default_focus);
-    setElementValue('tbl-redirect-after-insert', tableData.redirect_after_insert);
-
-    // Tab: Detail View -> Permissions
-    setElementValue('tbl-enable-detail-view', tableData.enable_detail_view);
-    setElementValue('tbl-delete-with-children', tableData.delete_with_children);
-    setElementValue('tbl-dv-allow-print-view', tableData.dv_allow_print_view);
-    setElementValue('tbl-dv-separate-page', tableData.dv_separate_page);
-    setElementValue('tbl-dv-hide-save-as-copy', tableData.dv_hide_save_as_copy);
-    setElementValue('tbl-dv-sticky-buttons', tableData.dv_sticky_buttons);
-    setElementValue('tbl-dv-allow-add-from-homepage', tableData.dv_allow_add_from_homepage);
-    
-    setRadioValue('tbl-column-grid-type', tableData.column_grid_type || 'dynamic');
-    setElementValue('tbl-static-grid-columns', tableData.static_grid_columns);
-    
-    // Cetuskan event untuk memastikan keadaan disabled/enabled adalah betul semasa dimuatkan
-    const gridRadios = document.querySelectorAll('input[name="tbl-column-grid-type"]');
-    if (gridRadios.length > 0) {
-        gridRadios[0].dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    
-    setElementValue('tbl-hook-logic', tableData.table_hook_workflow); // Populate workflow data
-	
-    const tvClassesInput = document.getElementById('tbl-table-view-classes-input');
-    const tvClassesSelect = document.getElementById('table-view-classes-select');
-    if (tvClassesInput && tvClassesSelect) {
-        tvClassesSelect.value = tvClassesInput.value;
-    }
-
-    const dvClassesInput = document.getElementById('tbl-detail-view-classes-input');
-    const dvClassesSelect = document.getElementById('detail-view-classes-select');
-    if (dvClassesInput && dvClassesSelect) {
-        dvClassesSelect.value = dvClassesInput.value;
-	}
-	
-	updateTableViewTemplatePreview();
-}
 
 /**
  * Mengisi dropdown 'Parent table' dengan semua jadual lain dalam projek,
  * termasuk opsyen untuk rujukan-kendiri (self-referencing).
  * @param {string} currentTableName - Nama jadual semasa, untuk dikecualikan dan ditambah sebagai rujukan-kendiri.
  */
-function populateParentTableDropdown(currentTableName) {
+export function populateParentTableDropdown(currentTableName) {
     const parentTableSelect = document.getElementById('fld-lookup-parent-table');
     parentTableSelect.innerHTML = '<option value=""></option>'; // Kosongkan dan tambah opsyen lalai
 
@@ -3411,361 +3177,13 @@ function populateParentTableDropdown(currentTableName) {
     });
 }
 
-export function populateFieldSettings(tableName, fieldName) {
-
-    const maxLengthInput = document.getElementById('fld-max-length');
-    if (maxLengthInput) maxLengthInput.dataset.userModified = 'false';
-    	
-    const allFieldPageControls = document.querySelectorAll(
-        '#field-settings-page input, #field-settings-page select, #field-settings-page textarea, #field-settings-page button'
-    );
-    allFieldPageControls.forEach(control => {
-        control.disabled = false;
-    });
-	
-    const fieldData = jsonData.database.table[tableName]?.fields[fieldName];
-
-    if (!fieldData) {
-        console.error(`Tiada data ditemui untuk medan: ${tableName}.${fieldName}`);
-        return;
-    }
-    populateParentTableDropdown(tableName);
-	
-	setElementValue('fld-field-name', fieldData.field_name);
-    setElementValue('fld-caption', fieldData.caption);
-    setElementValue('fld-description', fieldData.description);
-    setElementValue('fld-data-type', fieldData.data_type);
-    setElementValue('fld-length', fieldData.length);
-    
-    const lengthInput = document.getElementById('fld-length');
-    if (lengthInput) {
-        lengthInput.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-    
-	setElementValue('fld-precision', fieldData.precision);
-    setElementValue('fld-alignment', fieldData.alignment);
-    setElementValue('fld-default-value', fieldData.default_value);
-    
-    setElementValue('fld-read-only', fieldData.read_only);
-    
-    setElementValue('fld-helper-text', fieldData.helper_text);
-    setElementValue('fld-placeholder', fieldData.placeholder);
-    setElementValue('fld-min-length', fieldData.min_length);
-    // Jika max_length tiada nilai (cth: selepas import SQL), guna nilai length sebagai lalai.
-    // Jika ada, guna nilai yang disimpan.
-    const maxLengthValue = (fieldData.max_length === null || fieldData.max_length === undefined) 
-                           ? fieldData.length 
-                           : fieldData.max_length;
-    setElementValue('fld-max-length', maxLengthValue);
-    setElementValue('fld-min-value', fieldData.min_value);
-    setElementValue('fld-max-value', fieldData.max_value);
-    setElementValue('fld-off-autocomplete', fieldData.off_autocomplete);
-    setElementValue('fld-column-span-full', fieldData.column_span_full);
-    
-    setElementValue('fld-prefix', fieldData.prefix);
-    setElementValue('fld-suffix', fieldData.suffix);
-    setElementValue('fld-suffix-icon', fieldData.suffix_icon);
-    setElementValue('fld-suffix-icon-color', fieldData.suffix_icon_color);
-    
-    setElementValue('fld-primary-key', fieldData.primary_key);
-    setElementValue('fld-zero-fill', fieldData.zero_fill);
-    setElementValue('fld-required', fieldData.required);
-    setElementValue('fld-auto-increment', fieldData.auto_increment);
-    setElementValue('fld-unique', fieldData.unique);
-    setElementValue('fld-not-null', fieldData.not_null);
-    setElementValue('fld-is-indexed', fieldData.is_indexed);
-    setElementValue('fld-show-sum', fieldData.show_sum);
-    setElementValue('fld-show-avg-summary', fieldData.show_avg_summary);
-    setElementValue('fld-show-count-summary', fieldData.show_count_summary);
-    setElementValue('fld-show-range-summary', fieldData.show_range_summary);
-    setElementValue('fld-allow-sorting', fieldData.allow_sorting);
-    setElementValue('fld-unsigned', fieldData.unsigned);
-    setElementValue('fld-binary', fieldData.binary);
-    setElementValue('fld-hide-in-tv', fieldData.hide_in_tv);
-    setElementValue('fld-editable-in-tv', fieldData.editable_in_tv);
-    setElementValue('fld-hide-in-dv', fieldData.hide_in_dv);
-    setElementValue('fld-enable-global-filter', fieldData.enable_global_filter);
-    setElementValue('fld-enable-individual-filter', fieldData.enable_individual_filter);
-    setElementValue('fld-enable-range-filter', fieldData.enable_range_filter);
-    setRadioValue('fld-display-type', fieldData.display_type || 'text_input');
-
-    setElementValue('fld-tv-wrap-header', fieldData.tv_wrap_header);
-    setElementValue('fld-tv-wrap-text', fieldData.tv_wrap_text);
-    setElementValue('fld-tv-enable-toggle', fieldData.tv_enable_toggle);
-    setElementValue('fld-tv-description-tooltips', fieldData.tv_description_tooltips);
-    setElementValue('fld-tv-text-limit', fieldData.tv_text_limit);
-    setElementValue('fld-tv-text-size', fieldData.tv_text_size);
-    setElementValue('fld-tv-font-weight', fieldData.tv_font_weight);
-    setElementValue('fld-tv-date-time-format', fieldData.tv_date_time_format);
-    setElementValue('fld-tv-currency-code', fieldData.tv_currency_code);
-    setElementValue('fld-tv-alignment', fieldData.tv_alignment);
-    setElementValue('fld-tv-text-color', fieldData.tv_text_color);
-    setElementValue('fld-tv-icon', fieldData.tv_icon);
-    setElementValue('fld-tv-icon-color', fieldData.tv_icon_color);
-
-    setElementValue('fld-lookup-parent-table', fieldData.lookup_parent_table);
-    populateParentCaptionDropdowns(fieldData.lookup_parent_table);
-    const parentTableSelect = document.getElementById('fld-lookup-parent-table');
-
-    const updateAllFieldDependencies = () => {
-        const isForeignKey = parentTableSelect.value !== '';
-        const mediaType = document.querySelector('input[name="fld-media-type"]:checked').value;
-        const isNotLinkType = mediaType !== 'link';
-        const isImageType = mediaType === 'image';
-
-        const elementsToControl = {
-            displayAsGroup: document.getElementById('display-as-group'),
-            optionsListSettings: document.getElementById('options-list-settings-group'),
-            formatAsGroup: document.getElementById('format-as-group'),
-            allowSorting: document.getElementById('fld-allow-sorting-group'),
-            globalFilter: document.getElementById('fld-enable-global-filter-group'),
-            individualFilter: document.getElementById('fld-enable-individual-filter-group'),
-            rangeFilter: document.getElementById('fld-enable-range-filter-group'),
-            showSum: document.getElementById('fld-show-sum-group'),
-            showAvg: document.getElementById('fld-show-avg-summary-group'),
-            showCount: document.getElementById('fld-show-count-summary-group'),
-            showRange: document.getElementById('fld-show-range-summary-group'),
-            wrapText: document.getElementById('fld-tv-wrap-text-group'),
-            textLimit: document.getElementById('fld-tv-text-limit-group'),
-            textSize: document.getElementById('fld-tv-text-size-group'),
-            fontWeight: document.getElementById('fld-tv-font-weight-group'),
-            textColor: document.getElementById('fld-tv-text-color-group'),
-            // ▼▼▼ TAMBAHAN BAHARU DI SINI ▼▼▼
-            iconGroup: document.getElementById('fld-tv-icon-group'),
-            iconColorGroup: document.getElementById('fld-tv-icon-color-group')
-        };
-
-        const shouldHideDisplayGroups = isForeignKey || isNotLinkType;
-        elementsToControl.displayAsGroup.classList.toggle('hidden', shouldHideDisplayGroups);
-        elementsToControl.optionsListSettings.classList.toggle('hidden', shouldHideDisplayGroups);
-        elementsToControl.formatAsGroup.classList.toggle('hidden', shouldHideDisplayGroups);
-
-        const otherElementsToHide = [
-            elementsToControl.allowSorting, elementsToControl.globalFilter, elementsToControl.individualFilter,
-            elementsToControl.rangeFilter, elementsToControl.showSum, elementsToControl.showAvg, elementsToControl.showCount, elementsToControl.showRange, elementsToControl.wrapText,
-            elementsToControl.textLimit, elementsToControl.textSize, elementsToControl.fontWeight, elementsToControl.textColor
-        ];
-        otherElementsToHide.forEach(el => {
-            if (el) el.classList.toggle('hidden', isNotLinkType);
-        });
-        
-        // ▼▼▼ PERUBAHAN DI SINI: Blok logik khas untuk 'Icon' dan 'Icon color' ▼▼▼
-        if (elementsToControl.iconGroup) {
-            elementsToControl.iconGroup.classList.toggle('hidden', isImageType);
-        }
-        if (elementsToControl.iconColorGroup) {
-            elementsToControl.iconColorGroup.classList.toggle('hidden', isImageType);
-        }
-        // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
-        
-        if (!shouldHideDisplayGroups) {
-            const selectedDisplayRadio = document.querySelector('input[name="fld-display-type"]:checked');
-            if (selectedDisplayRadio) {
-                const selectedDisplayValue = selectedDisplayRadio.value;
-                elementsToControl.formatAsGroup.classList.toggle('hidden', selectedDisplayValue !== 'text_input');
-                elementsToControl.optionsListSettings.classList.toggle('hidden', selectedDisplayValue !== 'options_list');
-            }
-        }
-    };
-
-    if (!parentTableSelect.dataset.listenerAttached) {
-        parentTableSelect.addEventListener('change', updateAllFieldDependencies);
-        parentTableSelect.dataset.listenerAttached = 'true';
-    }
-    const mediaRadios = document.querySelectorAll('input[name="fld-media-type"]');
-    if (mediaRadios.length > 0 && !mediaRadios[0].dataset.listenerAttached) {
-        mediaRadios.forEach(radio => {
-            radio.addEventListener('change', updateAllFieldDependencies);
-            radio.dataset.listenerAttached = 'true';
-        });
-    }
-    const displayTypeRadios = document.querySelectorAll('input[name="fld-display-type"]');
-    if (displayTypeRadios.length > 0 && !displayTypeRadios[0].dataset.listenerAttached) {
-        displayTypeRadios.forEach(radio => {
-            radio.addEventListener('change', updateAllFieldDependencies);
-            radio.dataset.listenerAttached = 'true';
-        });
-    }
-
-    const mediaType = fieldData.media_type || 'link';
-    setRadioValue('fld-media-type', mediaType);
-    
-    updateAllFieldDependencies();
-    
-    document.getElementById(`fld-media-${mediaType}`)?.dispatchEvent(new Event('click'));
-    setElementValue('fld-media-link-behavior', fieldData.media_link_behavior);
-    setElementValue('fld-media-link-display-as', fieldData.media_link_display_as);
-    setElementValue('fld-media-link-other-field', fieldData.media_link_other_field);
-    setElementValue('fld-allow-image-uploads', fieldData.allow_image_uploads);
-    
-    setElementValue('fld-image-storage-provider', fieldData.image_storage_provider);
-    
-    setElementValue('fld-max-file-size', fieldData.max_file_size);
-    setElementValue('fld-delete-image-server', fieldData.delete_image_server);
-    setElementValue('fld-dont-rename-image', fieldData.dont_rename_image);
-    setElementValue('fld-tv-thumb-shape', fieldData.tv_thumb_shape);
-    setElementValue('fld-dv-thumb-shape', fieldData.dv_thumb_shape);
-    setElementValue('fld-tv-thumb-width', fieldData.tv_thumb_width);
-    setElementValue('fld-tv-thumb-height', fieldData.tv_thumb_height);
-    setElementValue('fld-tv-enable-zooming', fieldData.tv_enable_zooming);
-    setElementValue('fld-tv-show-full-size', fieldData.tv_show_full_size);
-    setElementValue('fld-dv-thumb-width', fieldData.dv_thumb_width);
-    setElementValue('fld-dv-thumb-height', fieldData.dv_thumb_height);
-    setElementValue('fld-dv-enable-zooming', fieldData.dv_enable_zooming);
-    setElementValue('fld-dv-show-full-size', fieldData.dv_show_full_size);
-    document.getElementById('fld-allow-image-uploads')?.dispatchEvent(new Event('change'));
-    setElementValue('fld-allow-file-uploads', fieldData.allow_file_uploads);
-    
-    setElementValue('fld-file-storage-provider', fieldData.file_storage_provider);
-
-    setElementValue('fld-file-types', fieldData.file_types);
-    setElementValue('fld-file-max-size', fieldData.file_max_size);
-    setElementValue('fld-delete-file-server', fieldData.delete_file_server);
-    setElementValue('fld-dont-rename-file', fieldData.dont_rename_file);
-    setElementValue('fld-file-behavior', fieldData.file_behavior);
-    setElementValue('fld-file-display-as', fieldData.file_display_as);
-    setElementValue('fld-file-other-field', fieldData.file_other_field);
-    document.getElementById('fld-allow-file-uploads')?.dispatchEvent(new Event('change'));
-    setElementValue('fld-display-gmap', fieldData.display_gmap);
-    setRadioValue('fld-gmap-type', fieldData.gmap_type);
-    setElementValue('fld-gmap-tv-width', fieldData.gmap_tv_width);
-    setElementValue('fld-gmap-tv-height', fieldData.gmap_tv_height);
-    setElementValue('fld-gmap-dv-height', fieldData.gmap_dv_height);
-    document.getElementById('fld-display-gmap')?.dispatchEvent(new Event('change'));
-    setElementValue('fld-accept-video-url', fieldData.accept_video_url);
-    setElementValue('fld-youtube-tv-width', fieldData.youtube_tv_width);
-    setElementValue('fld-youtube-tv-height', fieldData.youtube_tv_height);
-    setElementValue('fld-youtube-dv-width', fieldData.youtube_dv_width);
-    setElementValue('fld-youtube-dv-height', fieldData.youtube_dv_height);
-    document.getElementById('fld-accept-video-url')?.dispatchEvent(new Event('change'));
-    setElementValue('fld-lookup-caption-1', fieldData.lookup_caption_1);
-    setElementValue('fld-lookup-separator', fieldData.lookup_separator);
-    setElementValue('fld-lookup-caption-2', fieldData.lookup_caption_2);
-    setRadioValue('fld-lookup-display-as', fieldData.lookup_display_as);
-    
-    setElementValue('fld-lookup-searchable', fieldData.lookup_searchable);
-    setElementValue('fld-lookup-preload', fieldData.lookup_preload);
-
-    // Cetuskan event 'change' untuk menjalankan logik tunjuk/sembunyi
-    const displayAsRadios = document.querySelectorAll('input[name="fld-lookup-display-as"]');
-    if (displayAsRadios.length > 0) {
-        displayAsRadios[0].dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    
-    setElementValue('fld-lookup-inherit-permissions', fieldData.lookup_inherit_permissions);
-    setElementValue('fld-lookup-link-behavior', fieldData.lookup_link_behavior);
-    setElementValue('fld-lookup-custom-query-hidden', fieldData.lookup_custom_query);
-    
-    setElementValue('fld-boolean-label-true', fieldData.boolean_label_true);
-    setElementValue('fld-boolean-label-false', fieldData.boolean_label_false);
-    
-    if (parentTableSelect && !parentTableSelect.value) {
-        const relationship = jsonData.database.relationships.find(rel => rel.child_table_name === tableName && rel.fk_child_field === fieldName);
-        if (relationship) {
-            const parentTable = relationship.parent_table_name;
-            const parentPKField = relationship.parent_field;
-            setElementValue('fld-lookup-parent-table', parentTable);
-            parentTableSelect.dispatchEvent(new Event('change'));
-            const parentTableFields = jsonData.database.table[parentTable]?.fields;
-            if (parentTableFields) {
-                const fieldNames = Object.keys(parentTableFields);
-                const pkIndex = fieldNames.indexOf(parentPKField);
-                if (pkIndex > -1 && pkIndex < fieldNames.length - 1) {
-                    const nextFieldName = fieldNames[pkIndex + 1];
-                    setElementValue('fld-lookup-caption-1', nextFieldName);
-                }
-            }
-        }
-    }
-    setElementValue('fld-options-list-values', fieldData.options_list_values);
-    setRadioValue('fld-options-display', fieldData.options_display);
-    const quickListSelect = document.getElementById('options-quick-list');
-    if (quickListSelect) {
-        const currentValue = fieldData.options_list_values || '';
-        let matchFound = false;
-        for (const option of quickListSelect.options) {
-            if (option.value === currentValue) {
-                option.selected = true;
-                matchFound = true;
-                break;
-            }
-        }
-        if (!matchFound) {
-            quickListSelect.value = '';
-        }
-    }
-    setElementValue('fld-format-as', fieldData.format_as);
-    
-    setElementValue('fld-format-mask', fieldData.format_mask);
-    
-    // Isi data untuk Repeater-Simple
-    setElementValue('fld-repeater-simple-display-as', fieldData.repeater_simple_display_as);
-    setElementValue('fld-repeater-simple-format-as', fieldData.repeater_simple_format_as);
-    setElementValue('fld-repeater-simple-list-values', fieldData.repeater_simple_list_values);
-    
-    // Isi data untuk Repeater (3 set)
-    for (let i = 1; i <= 3; i++) {
-        setElementValue(`fld-repeater-${i}-display-as`, fieldData[`repeater_${i}_display_as`]);
-        setElementValue(`fld-repeater-${i}-format-as`, fieldData[`repeater_${i}_format_as`]);
-        setElementValue(`fld-repeater-${i}-list-values`, fieldData[`repeater_${i}_list_values`]);
-        setElementValue(`fld-repeater-${i}-required`, fieldData[`repeater_${i}_required`]);
-    }
-
-    setElementValue('fld-repeater-simple-required', fieldData.repeater_simple_required);
-
-    // Cetuskan event untuk memastikan visibility bersarang adalah betul semasa data dimuatkan
-    document.getElementById('fld-repeater-simple-display-as')?.dispatchEvent(new Event('change'));
-    for (let i = 1; i <= 3; i++) {
-        document.getElementById(`fld-repeater-${i}-display-as`)?.dispatchEvent(new Event('change'));
-    }
-    
-    // Cetuskan event 'change' untuk memastikan 'Mask' dipaparkan dengan betul semasa data dimuatkan
-    const formatAsSelect = document.getElementById('fld-format-as');
-    if (formatAsSelect) {
-        formatAsSelect.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    
-    setElementValue('fld-calculated-enable', fieldData.calculated_enable);
-    setElementValue('fld-calculated-query', fieldData.calculated_query);
-	setElementValue('fld-algorithm-enable', fieldData.algorithm_enable);
-	setElementValue('fld-algorithm-logic', fieldData.algorithm_logic);
-	const algorithmEnableCheckbox = document.getElementById('fld-algorithm-enable');
-	if (algorithmEnableCheckbox) {
-		algorithmEnableCheckbox.dispatchEvent(new Event('change'));
-	}
-    
-	applyDataTypeRules();
-    setTimeout(() => {
-        const queryTextarea = document.getElementById('fld-calculated-query');
-        if (queryTextarea) {
-            queryTextarea.disabled = false;
-        }
-    }, 50);
-    const behaviorSelect = document.getElementById('fld-media-link-behavior');
-    if (behaviorSelect) {
-        behaviorSelect.dispatchEvent(new Event('change'));
-    }
-    
-// ▼▼▼ PEMBETULAN DI SINI ▼▼▼
-    // Panggil fungsi loadValidationTab dengan tableName (bukan tableId)
-    const currentTableData = jsonData.database.table[tableName];
-    const currentFieldData = currentTableData?.fields[fieldName];
-
-    if (currentTableData && currentFieldData) {
-        // Hantar columnId dan tableName
-        loadValidationTab(currentFieldData.field_id, tableName); 
-    }
-    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
-}
-
 
 /**
  * Mengisi dropdown Parent Caption (Part 1 & 2) dengan senarai medan
  * dari jadual induk yang dipilih.
  * @param {string} parentTableName - Nama jadual induk yang dipilih.
  */
-// Gantikan fungsi populateParentCaptionDropdowns sedia ada dengan yang ini
-function populateParentCaptionDropdowns(tableName) {
+export function populateParentCaptionDropdowns(tableName) {
     const caption1Select = document.getElementById('fld-lookup-caption-1');
     const caption2Select = document.getElementById('fld-lookup-caption-2');
 
@@ -3955,9 +3373,6 @@ export function initializeMenuManagementHandlers() {
     const addGroupBtn = document.getElementById('app-add_menu_group');
     const addCustomMenuBtn = document.getElementById('app-add_custom_menu');
     const unifiedMenuList = document.getElementById('unified-menu-list');
-
-
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
 
 function openCustomMenuModal(itemEl = null) {
     const modal = document.getElementById('custom-menu-modal');
@@ -4425,7 +3840,7 @@ export function initializeHomepageMenuHandlers() {
 // Fungsi ini akan dipanggil dari populateFieldSettings juga, jadi kita letakkan di luar
 // js/uiHandlers.js
 
-function applyDataTypeRules() {
+export function applyDataTypeRules() {
     const dataTypeSelect = document.getElementById('fld-data-type');
     if (!dataTypeSelect) return;
 
@@ -4762,7 +4177,7 @@ export function initializeDataTypeRules() {
 
 // js/uiHandlers.js
 
-function populateRecordOwnerDropdown(tableName) {
+export function populateRecordOwnerDropdown(tableName) {
     const recordOwnerDropdown = document.getElementById('tbl-record-owner');
     if (!recordOwnerDropdown || !jsonData) return;
 
@@ -5607,8 +5022,6 @@ function moveFields(sourceSelector, destinationSelector) {
     const itemsToMove = source.querySelectorAll('li.selected');
     itemsToMove.forEach(item => { item.classList.remove('selected'); destination.appendChild(item); });
 }
-
-// FIND AND REPLACE THIS ENTIRE FUNCTION IN: uiHandlers.js
 
 function addRuleOrGroup(button, type) {
     // ▼▼▼ MULA PEMBETULAN: Selector 'closest' dan 'querySelector' telah diperluas ▼▼▼
@@ -6520,7 +5933,7 @@ export function initializeIndexCheckboxHandler() {
  * Mengisi kandungan tab "Constraints" dengan senarai kekangan sedia ada.
  * @param {string} tableName - Nama jadual semasa.
  */
-function populateConstraintsTab(tableName) {
+export function populateConstraintsTab(tableName) {
     const container = document.getElementById('constraints-list-container');
     if (!container) return;
 
@@ -6769,7 +6182,7 @@ export function initializeColumnGridHandlers() {
 }
 
 // Function untuk Load Tab Validation (Versi Auto-Save & Tanpa jQuery)
-async function loadValidationTab(columnId, tableName) {
+export async function loadValidationTab(columnId, tableName) {
     const container = document.getElementById('validationRulesContainer');
     if (!container) return;
     

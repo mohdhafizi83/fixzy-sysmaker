@@ -1,15 +1,14 @@
 import { showPage } from './pageManager.js';
 // Import fungsi dari uiHandlers.js
-import { 
-populateFieldSettings, 
-populateTableSettings, 
+import {   
 populateMainDashboard,
-updateActionButtonsState,
-setupMediaTab, 
-populateParentChildTab,
+updateActionButtonsState, 
 showCustomDialog,
 applyFormLock 
   } from './uiHandlers.js'; 
+  
+import { populateTableSettings, populateParentChildTab } from './pages/tableSettings.js';
+import { populateFieldSettings, setupMediaTab } from './pages/fieldSettings.js';
 import { jsonData, activeProject, loadProjectData, isCoreLockingEnabled   } from '../renderer.js';
 
 // KOD PENUH: Gantikan keseluruhan fungsi sedia ada dengan yang ini.
