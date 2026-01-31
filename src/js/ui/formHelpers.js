@@ -63,3 +63,15 @@ export function getElementValue(id) {
     } 
     return element.value;
 }
+
+/**
+ * Mengaplikasikan saiz fon pada elemen akar (<html>).
+ * Dipindahkan dari uiHandlers.js untuk mengelakkan circular dependency.
+ * @param {string} size - Pilihan saiz ('small', 'medium', 'large').
+ */
+export function applyFontSize(size) {
+    let fontSizeValue = '16px';
+    if (size === 'small') fontSizeValue = '14px';
+    else if (size === 'large') fontSizeValue = '18px';
+    document.documentElement.style.fontSize = fontSizeValue;
+}

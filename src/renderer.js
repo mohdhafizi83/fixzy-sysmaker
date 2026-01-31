@@ -1,11 +1,7 @@
 import { VALIDATION_RULES_CONFIG } from './js/validationRules.js';
 import { generateSidebarMenu, initializeSidebarInteractivity, initializeSidebarButtons, setActiveSidebarLink, focusOnSidebarField } from './js/sidebar.js';
 import { 
-	applyFontSize,
-	showCustomDialog,
-    updateActionButtonsState, 
-    initializeTabSystems, 
-    initializeModalHandlers, 
+    updateActionButtonsState,  
     initializeMediaTabHandlers,
     initializeOptionsListHandlers,
     initializeLocalizationHandlers,
@@ -18,7 +14,6 @@ import {
     initializeImageOptionsHandlers,
     initializeFileUploadOptionsHandlers,
     initializeMediaVisibilityHandlers,
-	populateMainDashboard,
     initializeLookupFieldHandlers,
     populateMenuManagement,
     initializeAdvancedLookupHandlers,
@@ -31,7 +26,6 @@ import {
     initializeCalculatedFieldRules,
 	initializeTemplatePreviewHandlers,
     populateProjectDropdown,
-    initializeProjectSaveHandlers,
     initializeTableSaveHandlers,
     initializeFieldSaveHandlers,
     initializeRelationshipSaveHandlers,
@@ -79,9 +73,16 @@ import {
     setupMediaTab 
 } from './js/pages/fieldSettings.js';
 
+import { showCustomDialog, initializeModalHandlers } from './js/ui/modalHandlers.js';
+import { initializeTabSystems } from './js/ui/tabHandlers.js';
+import { populateMainDashboard, initializeProjectSaveHandlers } from './js/pages/dashboard.js';
+
+import { setElementValue, setRadioValue, applyFontSize } from './js/ui/formHelpers.js';
+
 window.VALIDATION_RULES_CONFIG = VALIDATION_RULES_CONFIG;
 window.saveValidationData = saveValidationData;
 window.toggleValidationInputs = toggleValidationInputs;
+window.showCustomDialog = showCustomDialog;
 
 export const SaveManager = {
     saveQueue: {

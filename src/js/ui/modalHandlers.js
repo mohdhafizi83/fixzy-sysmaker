@@ -1,0 +1,215 @@
+// js/ui/modalHandlers.js
+
+import { setIsCoreLockingEnabled } from '../../renderer.js';
+import { applyFontSize } from './formHelpers.js';
+
+/**
+ * Memaparkan dialog tersuai (Alert/Confirm).
+ * Menyokong Promise (await) dan Callback lama.
+ */
+export function showCustomDialog({ title, message, onOk, onCancel, showCancelButton = false }) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('custom-alert-modal');
+        const titleEl = document.getElementById('custom-alert-title');
+        const messageEl = document.getElementById('custom-alert-message');
+        const okBtn = document.getElementById('custom-alert-ok-btn');
+        const cancelBtn = document.getElementById('custom-alert-cancel-btn');
+        const closeBtn = document.getElementById('custom-alert-close');
+
+        titleEl.textContent = title || 'Notification';
+        messageEl.textContent = message;
+        cancelBtn.style.display = showCancelButton ? 'inline-block' : 'none';
+
+        // Clone buttons to ensure old event listeners are removed
+        const newOkBtn = okBtn.cloneNode(true);
+        okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        const newCloseBtn = closeBtn.cloneNode(true);
+        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+
+        const closeModalAndResolve = (result) => {
+            modal.classList.add('hidden');
+            
+            // 1. Resolve the promise for new asynchronous code
+            resolve(result);
+
+            // 2. Execute old callbacks for backward compatibility
+            if (result && typeof onOk === 'function') {
+                onOk();
+            }
+            if (!result && typeof onCancel === 'function') {
+                onCancel();
+            }
+        };
+
+        newOkBtn.addEventListener('click', () => closeModalAndResolve(true), { once: true });
+        newCancelBtn.addEventListener('click', () => closeModalAndResolve(false), { once: true });
+        newCloseBtn.addEventListener('click', () => closeModalAndResolve(false), { once: true });
+
+        modal.classList.remove('hidden');
+    });
+}
+
+/**
+ * Menguruskan Modal Konfigurasi (Preferences).
+ */
+export function initializeModalHandlers() {
+    const configBtn = document.getElementById('config-btn');
+    const configModal = document.getElementById('config-modal');
+    const configModalClose = document.getElementById('config-modal-close');
+    const configModalCancel = document.getElementById('config-modal-cancel');
+    const configModalOk = document.getElementById('config-modal-ok');
+    
+    // Logik checkbox lock core components
+    const lockCoreCheckbox = document.getElementById('fizisys-lock-core-components');
+    if (lockCoreCheckbox) {
+        lockCoreCheckbox.addEventListener('click', () => {
+            if (!lockCoreCheckbox.checked) {
+                showCustomDialog({
+                    title: "Are you sure?",
+                    message: "This is highly discouraged and there is no guarantee the final generated application will work properly.",
+                    showCancelButton: true,
+                    onOk: () => { /* User agreed */ },
+                    onCancel: () => { lockCoreCheckbox.checked = true; }
+                });
+            }
+        });
+    }
+
+    const gatherFizisysSettings = () => {
+        const settings = {};
+        const settingIds = [
+            'check-updates', 'autosave-interval', 'show-begin-box', 'doc-root',
+            'base-url', 'field-default-type', 'field-default-length', 'table-suggest-icon',
+            'table-allow-csv', 'table-dv-separate-page', 'table-hide-save-as-copy',
+            'table-allow-add-from-homepage', 'table-show-record-count', 'project-encoding',
+            'project-rtl', 'project-doxygen', 'project-hide-footer', 'max-entries', 'project-no-trim',
+            'lock-core-components'
+        ];
+
+        settingIds.forEach(id => {
+            const element = document.getElementById(`fizisys-${id}`);
+            if (element) {
+                const settingKey = id.replace(/-/g, '_');
+                if (element.type === 'checkbox') {
+                    settings[settingKey] = element.checked ? '1' : '0';
+                } else {
+                    settings[settingKey] = element.value;
+                }
+            }
+        });
+        
+        const fontSize = document.querySelector('input[name="fizisys-font-size"]:checked');
+        if (fontSize) {
+            settings.font_size = fontSize.value;
+        }
+        
+        return settings;
+    };
+    
+    // Fungsi bantuan dalaman untuk populate settings (asalnya populateSettingsModal)
+    const populateSettingsModalInternal = async () => {
+        const settings = await window.electronAPI.getAllSettings();
+        if (!settings) return;
+
+        const setValue = (id, value) => {
+            const element = document.getElementById(id);
+            if (element) {
+                if (element.type === 'checkbox') element.checked = value === '1';
+                else element.value = value;
+            }
+        };
+        
+        // Loop ringkas untuk mengisi data (boleh rujuk kod asal untuk senarai penuh jika perlu)
+        // Saya ringkaskan di sini untuk keterbacaan, anda boleh copy paste logik penuh dari uiHandlers.js
+        const settingIds = [
+            'check-updates', 'autosave-interval', 'show-begin-box', 'lock-core-components',
+            'doc-root', 'base-url', 'field-default-type', 'field-default-length', 
+            'table-suggest-icon', 'table-allow-csv', 'table-dv-separate-page', 
+            'table-hide-save-as-copy', 'table-allow-add-from-homepage', 'table-show-record-count',
+            'project-encoding', 'project-rtl', 'project-doxygen', 'project-hide-footer', 
+            'max-entries', 'project-no-trim'
+        ];
+        
+        settingIds.forEach(id => setValue(`fizisys-${id}`, settings[id.replace(/-/g, '_')]));
+
+        const fontSizeRadio = document.querySelector(`input[name="fizisys-font-size"][value="${settings.font_size}"]`);
+        if (fontSizeRadio) fontSizeRadio.checked = true;
+    };
+    
+    if (configBtn) {
+        configBtn.addEventListener('click', async () => {
+            await populateSettingsModalInternal();
+            configModal?.classList.remove('hidden');
+        });
+    }
+
+    const closeModal = () => configModal?.classList.add('hidden');
+
+    if (configModalClose) configModalClose.addEventListener('click', closeModal);
+    if (configModalCancel) configModalCancel.addEventListener('click', closeModal);
+
+    if (configModalOk) {
+        configModalOk.addEventListener('click', async () => {
+            const settingsData = gatherFizisysSettings();
+            const result = await window.electronAPI.saveAllSettings(settingsData);
+            
+            if (result.success) {
+                applyFontSize(settingsData.font_size); 
+                setIsCoreLockingEnabled(settingsData.lock_core_components === '1');
+                showCustomDialog({ title: "Success", message: "Preferences have been saved." });
+            } else {
+                showCustomDialog({ title: "Error", message: `Failed to save preferences: ${result.message}` });
+            }
+            
+            closeModal();
+        });
+    }
+}
+
+async function populateSettingsModal() {
+    const settings = await window.electronAPI.getAllSettings();
+    if (!settings) {
+        console.error("Tidak dapat memuatkan tetapan.");
+        return;
+    }
+
+    const setValue = (id, value) => {
+        const element = document.getElementById(id);
+        if (element) {
+            if (element.type === 'checkbox') {
+                element.checked = value === '1';
+            } else {
+                element.value = value;
+            }
+        }
+    };
+    
+    // General
+    setValue('fizisys-check-updates', settings.check_updates);
+    setValue('fizisys-autosave-interval', settings.autosave_interval);
+    setValue('fizisys-show-begin-box', settings.show_begin_box);
+	setValue('fizisys-lock-core-components', settings.lock_core_components);
+    const fontSizeRadio = document.querySelector(`input[name="fizisys-font-size"][value="${settings.font_size}"]`);
+    if (fontSizeRadio) fontSizeRadio.checked = true;
+    setValue('fizisys-doc-root', settings.doc_root);
+    setValue('fizisys-base-url', settings.base_url);
+    // Field defaults
+    setValue('fizisys-field-default-type', settings.field_default_type);
+    setValue('fizisys-field-default-length', settings.field_default_length);
+    // Table defaults
+    setValue('fizisys-table-suggest-icon', settings.table_suggest_icon);
+    setValue('fizisys-table-allow-csv', settings.table_allow_csv);
+    setValue('fizisys-table-dv-separate-page', settings.table_dv_separate_page);
+    setValue('fizisys-table-hide-save-as-copy', settings.table_hide_save_as_copy);
+    setValue('fizisys-table-allow-add-from-homepage', settings.table_allow_add_from_homepage);
+    setValue('fizisys-table-show-record-count', settings.table_show_record_count);
+    // Project defaults
+    setValue('fizisys-project-encoding', settings.project_encoding);
+    setValue('fizisys-project-rtl', settings.project_rtl);
+    setValue('fizisys-project-doxygen', settings.project_doxygen);
+    setValue('fizisys-project-hide-footer', settings.project_hide_footer);
+    setValue('fizisys-max-entries', settings.max_entries);
+    setValue('fizisys-project-no-trim', settings.project_no_trim);
+}

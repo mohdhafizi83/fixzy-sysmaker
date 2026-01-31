@@ -1,4 +1,5 @@
 import { setElementValue, setRadioValue } from './ui/formHelpers.js';
+import { allTableNames, jsonData, loadProjectData, activeProject, SaveManager, isAutoSaveEnabled, isPopulatingData, lastActiveChildTable, setLastActiveChildTable, setAwaitingMenuGroupSave, setIsCoreLockingEnabled  } from '../renderer.js';
 
 /**
  * Fungsi Teras Boleh Guna Semula untuk mencipta Logic Builder.
@@ -1622,18 +1623,7 @@ case 'custom_query': {
     };
 }
 
-/**
- * Mencipta Logic Builder yang berfungsi di dalam modal.
- * @param {object} config - Objek konfigurasi untuk builder.
- * @param {string} config.triggerButtonId - ID butang untuk membuka modal.
- * @param {string} config.modalId - ID elemen modal.
- * @param {string} config.targetInputId - ID input tersembunyi untuk menyimpan output JSON.
- * @param {object} config.validationRules - Tatabahasa (grammar) untuk pengesahan susunan.
- * @param {function} config.getContext - Fungsi untuk mendapatkan data konteks semasa.
- * @param {string} config.closeButtonId - ID butang untuk menutup modal (ikon X).
- * @param {string} config.cancelButtonId - ID butang untuk membatalkan dan menutup modal.
- * @param {string} config.doneButtonId - ID butang untuk menyimpan dan menutup modal.
- */
+
 /**
  * Opens the Logic Builder modal with a given configuration.
  * This is the core, reusable function for showing the builder.
@@ -1826,17 +1816,6 @@ export function configureNewProjectModal(scenario) {
     }
 }
 
-/**
- * Mengaplikasikan saiz fon pada elemen akar (<html>) aplikasi.
- * @param {string} size - Pilihan saiz ('small', 'medium', 'large').
- */
-export function applyFontSize(size) {
-    let fontSizeValue = '16px';
-    if (size === 'small') fontSizeValue = '14px';
-    else if (size === 'large') fontSizeValue = '18px';
-    document.documentElement.style.fontSize = fontSizeValue;
-}
-
 export function initializeStackSelectorHandlers() {
     const baseStackSelect = document.getElementById('app-stack_base');
     const detailGroups = document.querySelectorAll('.stack-detail-group');
@@ -1906,7 +1885,7 @@ export function initializeStackSelectorHandlers() {
     }
 }
 
-import { allTableNames, jsonData, loadProjectData, activeProject, SaveManager, isAutoSaveEnabled, isPopulatingData, lastActiveChildTable, setLastActiveChildTable, setAwaitingMenuGroupSave, setIsCoreLockingEnabled  } from '../renderer.js';
+
 
 /**
  * Mengemas kini imej di dalam kotak "Template preview" berdasarkan
@@ -2054,7 +2033,6 @@ export function initializeLookupFieldSaveHandler() {
     });
 }
 
-// GANTIKAN FUNGSI SEDIA ADA INI DALAM: uiHandlers.js
 
 export function initializeRelationshipSaveHandlers() {
     const form = document.getElementById('tab-detail-parent-child');
@@ -2092,67 +2070,6 @@ export function initializeRelationshipSaveHandlers() {
             input.addEventListener('input', handleInputChange);
         }
     });
-}
-
-// GANTIKAN FUNGSI SEDIA ADA INI DALAM: uiHandlers.js
-
-export function initializeProjectSaveHandlers() {
-    const form = document.getElementById('main-dashboard-page');
-    // 'app-title' berada di luar 'main-dashboard-page', jadi kita perlu sasarkannya secara berasingan
-    const header = document.querySelector('.main-header'); 
-    if (!form || !header) return;
-
-    const handleInputChange = (event) => {
-        if (isPopulatingData) return;
-        if (!isAutoSaveEnabled) return;
-
-        const input = event.target;
-        let key = (input.type === 'radio')
-            ? input.name.replace('app-', '').replace(/-/g, '_')
-            : input.id.replace('app-', '').replace(/-/g, '_');
-        
-        // ▼▼▼ PENAMBAHBAIKAN: KES KHAS UNTUK 'app-title' DAN HOOKS ▼▼▼
-        if (key === 'title') {
-            key = 'app_title';
-        } else if (input.id === 'app-hook-logic') {
-            key = 'project_hook_workflow';
-        }
-        // ▲▲▲ TAMAT PENAMBAHBAIKAN ▲▲▲
-        
-        let value;
-        if (input.type === 'checkbox') {
-            value = input.checked ? 1 : 0;
-        } else if (input.type === 'radio') {
-            if (!input.checked) return;
-            value = input.value;
-        } else {
-            value = input.value;
-        }
-
-        const dataToSave = { [key]: value };
-        
-        // Guna project_id dari activeProject yang sudah ada dalam memori
-        SaveManager.addToQueue('project', activeProject.project_id, dataToSave);
-    };
-
-    // Pasang event listener pada semua elemen borang di papan pemuka utama DAN di header
-    header.querySelectorAll('input, select').forEach(input => {
-        if (input.id === 'app-title') {
-            input.addEventListener('input', handleInputChange);
-        } else {
-            input.addEventListener('change', handleInputChange);
-        }
-    });
-
-    form.querySelectorAll('input, select').forEach(input => {
-        input.addEventListener('change', handleInputChange);
-    });
-
-    // Specifically listen for the 'input' event on the hook logic field
-    const projectHookInput = document.getElementById('app-hook-logic');
-    if (projectHookInput) {
-        projectHookInput.addEventListener('input', handleInputChange);
-    }
 }
 
 export function initializeTableSaveHandlers() {
@@ -2242,7 +2159,7 @@ const key = (input.name && input.type === 'radio') ? input.name.replace('fld-', 
     });
 }
 
-// ▼▼▼ FUNGSI BANTUAN BAHARU: Mengemas kini keadaan butang naik/turun untuk item di dalam kumpulan ▼▼▼
+//FUNGSI BANTUAN BAHARU: Mengemas kini keadaan butang naik/turun untuk item di dalam kumpulan 
 function updateNestedMoveButtonStates(container) {
     if (!container) return;
     const items = container.querySelectorAll('.nested-menu-item');
@@ -2307,105 +2224,6 @@ export async function populateProjectDropdown() {
     });
 }
 
-// This new version supports both new Promise-based calls and old callback-based calls.
-
-export function showCustomDialog({ title, message, onOk, onCancel, showCancelButton = false }) {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('custom-alert-modal');
-        const titleEl = document.getElementById('custom-alert-title');
-        const messageEl = document.getElementById('custom-alert-message');
-        const okBtn = document.getElementById('custom-alert-ok-btn');
-        const cancelBtn = document.getElementById('custom-alert-cancel-btn');
-        const closeBtn = document.getElementById('custom-alert-close');
-
-        titleEl.textContent = title || 'Notification';
-        messageEl.textContent = message;
-        cancelBtn.style.display = showCancelButton ? 'inline-block' : 'none';
-
-        // Clone buttons to ensure old event listeners are removed
-        const newOkBtn = okBtn.cloneNode(true);
-        okBtn.parentNode.replaceChild(newOkBtn, okBtn);
-        const newCancelBtn = cancelBtn.cloneNode(true);
-        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-        const newCloseBtn = closeBtn.cloneNode(true);
-        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
-
-        const closeModalAndResolve = (result) => {
-            modal.classList.add('hidden');
-            
-            // 1. Resolve the promise for new asynchronous code
-            resolve(result);
-
-            // 2. Execute old callbacks for backward compatibility
-            if (result && typeof onOk === 'function') {
-                onOk();
-            }
-            if (!result && typeof onCancel === 'function') {
-                onCancel();
-            }
-        };
-
-        newOkBtn.addEventListener('click', () => closeModalAndResolve(true), { once: true });
-        newCancelBtn.addEventListener('click', () => closeModalAndResolve(false), { once: true });
-        newCloseBtn.addEventListener('click', () => closeModalAndResolve(false), { once: true });
-
-        modal.classList.remove('hidden');
-    });
-}
-
-// =================================================================
-// ▼▼▼ FUNGSI UNTUK MENGISI MODAL TETAPAN ▼▼▼
-// =================================================================
-async function populateSettingsModal() {
-    const settings = await window.electronAPI.getAllSettings();
-    if (!settings) {
-        console.error("Tidak dapat memuatkan tetapan.");
-        return;
-    }
-
-    const setValue = (id, value) => {
-        const element = document.getElementById(id);
-        if (element) {
-            if (element.type === 'checkbox') {
-                element.checked = value === '1';
-            } else {
-                element.value = value;
-            }
-        }
-    };
-    
-    // General
-    setValue('fizisys-check-updates', settings.check_updates);
-    setValue('fizisys-autosave-interval', settings.autosave_interval);
-    setValue('fizisys-show-begin-box', settings.show_begin_box);
-	setValue('fizisys-lock-core-components', settings.lock_core_components);
-    const fontSizeRadio = document.querySelector(`input[name="fizisys-font-size"][value="${settings.font_size}"]`);
-    if (fontSizeRadio) fontSizeRadio.checked = true;
-    setValue('fizisys-doc-root', settings.doc_root);
-    setValue('fizisys-base-url', settings.base_url);
-    // Field defaults
-    setValue('fizisys-field-default-type', settings.field_default_type);
-    setValue('fizisys-field-default-length', settings.field_default_length);
-    // Table defaults
-    setValue('fizisys-table-suggest-icon', settings.table_suggest_icon);
-    setValue('fizisys-table-allow-csv', settings.table_allow_csv);
-    setValue('fizisys-table-dv-separate-page', settings.table_dv_separate_page);
-    setValue('fizisys-table-hide-save-as-copy', settings.table_hide_save_as_copy);
-    setValue('fizisys-table-allow-add-from-homepage', settings.table_allow_add_from_homepage);
-    setValue('fizisys-table-show-record-count', settings.table_show_record_count);
-    // Project defaults
-    setValue('fizisys-project-encoding', settings.project_encoding);
-    setValue('fizisys-project-rtl', settings.project_rtl);
-    setValue('fizisys-project-doxygen', settings.project_doxygen);
-    setValue('fizisys-project-hide-footer', settings.project_hide_footer);
-    setValue('fizisys-max-entries', settings.max_entries);
-    setValue('fizisys-project-no-trim', settings.project_no_trim);
-}
-
-
-// =================================================================
-// ▼▼▼ FUNGSI-FUNGSI UI YANG DIEKSPORT ▼▼▼
-// =================================================================
 
 export function updateActionButtonsState() {
     const activeLink = document.querySelector('.sidebar .nav-list a.active');
@@ -2420,52 +2238,6 @@ export function updateActionButtonsState() {
     if (deleteBtn) deleteBtn.disabled = isDisabled;
 }
 
-export function initializeTabSystems() {
-    // Cari semua bekas tab dalam dokumen
-    const allTabContainers = document.querySelectorAll('.tabs-container');
-
-    allTabContainers.forEach(container => {
-        // :scope memastikan kita hanya memilih anak-anak terus dari bekas ini
-        const tabLinks = container.querySelectorAll(':scope > .tabs-nav > .tab-link');
-        
-        tabLinks.forEach(link => {
-            link.addEventListener('click', () => {
-                const tabId = link.dataset.tab;
-                const contentContainer = container.querySelector(':scope > .tabs-content');
-                const targetPane = contentContainer.querySelector(`#${tabId}`);
-
-                // Nyahaktifkan semua link dan pane pada tahap yang sama
-                link.closest('.tabs-nav').querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
-                contentContainer.querySelectorAll(':scope > .tab-pane').forEach(p => p.classList.remove('active'));
-
-                // Aktifkan link yang diklik dan panel sasarannya
-                link.classList.add('active');
-                if (targetPane) {
-                    targetPane.classList.add('active');
-
-                    // ▼▼▼ KEMAS KINI UTAMA ADA DI SINI ▼▼▼
-                    // Selepas mengaktifkan panel utama, semak jika ia mempunyai sub-tab.
-                    const nestedTabs = targetPane.querySelector('.tabs-container');
-                    if (nestedTabs) {
-                        // Jika ada, cari pautan tab pertama dalam sub-tab itu.
-                        const firstSubTabLink = nestedTabs.querySelector('.tabs-nav .tab-link');
-                        if (firstSubTabLink) {
-                            // Cetuskan klik pada pautan sub-tab pertama untuk mengaktifkannya.
-                            firstSubTabLink.click();
-                        }
-                    }
-                }
-            });
-        });
-
-        // Pastikan tab pertama sentiasa aktif semasa permulaan
-        if (tabLinks.length > 0 && !container.querySelector('.tabs-nav > .tab-link.active')) {
-            tabLinks[0].click();
-        }
-    });
-}
-
-// ▼▼▼ FUNGSI-FUNGSI YANG HILANG SEBELUM INI KINI TELAH DIKEMBALIKAN ▼▼▼
 export function populateSortByDropdown(tableName, elementId = 'tbl-default-sort-by') {
     const sortByDropdown = document.getElementById(elementId);
     if (!sortByDropdown || !jsonData) return;
@@ -2484,7 +2256,6 @@ export function populateSortByDropdown(tableName, elementId = 'tbl-default-sort-
     }
 }
 
-// js/uiHandlers.js
 
 export function populateFocusFieldDropdown(tableName) {
     const defaultFocusDropdown = document.getElementById('tbl-default-focus');
@@ -2514,97 +2285,6 @@ export function populateFocusFieldDropdown(tableName) {
             option.value = fieldName;
             option.textContent = fieldName;
             defaultFocusDropdown.appendChild(option);
-        });
-    }
-}
-
-export function initializeModalHandlers() {
-    const configBtn = document.getElementById('config-btn');
-    const configModal = document.getElementById('config-modal');
-    const configModalClose = document.getElementById('config-modal-close');
-    const configModalCancel = document.getElementById('config-modal-cancel');
-    const configModalOk = document.getElementById('config-modal-ok');
-    
-    // ▼▼▼ MULA LOGIK PENGESAHAN BARU ▼▼▼
-    const lockCoreCheckbox = document.getElementById('fizisys-lock-core-components');
-    if (lockCoreCheckbox) {
-        lockCoreCheckbox.addEventListener('click', () => {
-            // Hanya jalankan logik ini jika pengguna sedang MENYAH-TANDA (unchecking)
-            if (!lockCoreCheckbox.checked) {
-                showCustomDialog({
-                    title: "Are you sure?",
-                    message: "This is highly discouraged and there is no guarantee the final generated application will work properly.",
-                    showCancelButton: true,
-                    onOk: () => {
-                        // Pengguna bersetuju, biarkan checkbox tidak ditanda. Tiada tindakan diperlukan.
-                    },
-                    onCancel: () => {
-                        // Pengguna membatalkan, paksa checkbox untuk ditanda semula.
-                        lockCoreCheckbox.checked = true;
-                    }
-                });
-            }
-        });
-    }
-    // ▲▲▲ TAMAT LOGIK PENGESAHAN BARU ▲▲▲
-
-    const gatherFizisysSettings = () => {
-        const settings = {};
-        const settingIds = [
-            'check-updates', 'autosave-interval', 'show-begin-box', 'doc-root',
-            'base-url', 'field-default-type', 'field-default-length', 'table-suggest-icon',
-            'table-allow-csv', 'table-dv-separate-page', 'table-hide-save-as-copy',
-            'table-allow-add-from-homepage', 'table-show-record-count', 'project-encoding',
-            'project-rtl', 'project-doxygen', 'project-hide-footer', 'max-entries', 'project-no-trim',
-            'lock-core-components'
-        ];
-
-        settingIds.forEach(id => {
-            const element = document.getElementById(`fizisys-${id}`);
-            if (element) {
-                const settingKey = id.replace(/-/g, '_');
-                if (element.type === 'checkbox') {
-                    settings[settingKey] = element.checked ? '1' : '0';
-                } else {
-                    settings[settingKey] = element.value;
-                }
-            }
-        });
-        
-        const fontSize = document.querySelector('input[name="fizisys-font-size"]:checked');
-        if (fontSize) {
-            settings.font_size = fontSize.value;
-        }
-        
-        return settings;
-    };
-    
-    if (configBtn) {
-        configBtn.addEventListener('click', async () => {
-            await populateSettingsModal();
-            configModal?.classList.remove('hidden');
-        });
-    }
-
-    const closeModal = () => configModal?.classList.add('hidden');
-
-    if (configModalClose) configModalClose.addEventListener('click', closeModal);
-    if (configModalCancel) configModalCancel.addEventListener('click', closeModal);
-
-    if (configModalOk) {
-        configModalOk.addEventListener('click', async () => {
-            const settingsData = gatherFizisysSettings();
-            const result = await window.electronAPI.saveAllSettings(settingsData);
-            
-            if (result.success) {
-                applyFontSize(settingsData.font_size); 
-                setIsCoreLockingEnabled(settingsData.lock_core_components === '1');
-                showCustomDialog({ title: "Success", message: "Preferences have been saved." });
-            } else {
-                showCustomDialog({ title: "Error", message: `Failed to save preferences: ${result.message}` });
-            }
-            
-            closeModal();
         });
     }
 }
@@ -3072,85 +2752,6 @@ export function initializeMediaVisibilityHandlers() {
     }
 }
 
-
-export function populateMainDashboard(projectData) {
-    if (!projectData) {
-        console.warn("Tiada data projek untuk dipaparkan di papan pemuka.");
-        return;
-    }
-
-    // Tab: Web Development Stack
-    setElementValue('app-stack_base', projectData.stack_base || 'core_php');
-    // Trigger change to show correct dependent fields
-    const stackSelect = document.getElementById('app-stack_base');
-    if (stackSelect) {
-        stackSelect.dispatchEvent(new Event('change'));
-    }
-    // Now set the values for the visible selects
-    const dbSelect = document.getElementById('app-stack-database');
-    const themeSelect = document.getElementById('app-stack-theme');
-    if(dbSelect) setElementValue('app-stack-database', projectData.stack_database);
-    if(themeSelect) setElementValue('app-stack-theme', projectData.stack_theme);
-	
-	setElementValue('app-module-auth-email-2fa', projectData.module_auth_email_2fa);
-    setElementValue('app-module-auth-email-captcha', projectData.module_auth_email_captcha);
-    setElementValue('app-module-auth-ldap', projectData.module_auth_ldap);
-    setElementValue('app-module-auth-google-sso', projectData.module_auth_google_sso);
-    setElementValue('app-module-authorization', projectData.module_authorization);
-    setElementValue('app-module-log-audit', projectData.module_log_audit);
-    setElementValue('app-module-fake-data', projectData.module_fake_data); // ADD THIS LINE
-	setRadioValue('app-data_delete_type', projectData.data_delete_type || 'hard');
-	
-    // Tab: Localization
-    setElementValue('app-title', projectData.app_title);
-    setElementValue('app-date-format', projectData.date_format);
-    setElementValue('app-time-format', projectData.time_format);
-    setElementValue('app-language-select', projectData.language_select);
-    setElementValue('app-timezone-select', projectData.timezone_select);
-
-    // PEMBETULAN: Kemas kini pratonton secara terus selepas memuatkan data
-    const dateFormatSelect = document.getElementById('app-date-format');
-    const timeFormatSelect = document.getElementById('app-time-format');
-    const previewInput = document.getElementById('app-date-preview');
-    if (dateFormatSelect && timeFormatSelect && previewInput) {
-        previewInput.value = `${dateFormatSelect.value} ${timeFormatSelect.value}`;
-    }
-    
-    // Tab: Theme
-    setElementValue('app-theme-select', projectData.theme_select);
-    setElementValue('app-use_3d_effects', projectData.use_3d_effects);
-    setElementValue('app-rtl', projectData.rtl);
-    setElementValue('app-compact', projectData.compact);
-    
-    // Tab: Menu management
-    setRadioValue('app-menu_orientation', projectData.menu_orientation);
-    setElementValue('app-menu_at_homepage', projectData.menu_at_homepage);
-    setElementValue('app-tables-per-row', projectData.tables_per_row);
-    setRadioValue('app-extra-wide', projectData.extra_wide);
-    setElementValue('app-panel-height', projectData.panel_height);
-    
-    // Tab: Security & technical
-    setElementValue('app-hide_login', projectData.hide_login);
-    setElementValue('app-allow_sql_tool', projectData.allow_sql_tool);
-    setElementValue('app-allow_server_status', projectData.allow_server_status);
-    setElementValue('app-admins_group_access', projectData.admins_group_access);
-    setElementValue('app-allow_table_view_sql', projectData.allow_table_view_sql);
-    setElementValue('app-copy_children_async', projectData.copy_children_async);
-    setElementValue('app-allow_pwa_install', projectData.allow_pwa_install);
-    setElementValue('app-url', projectData.url);
-    setElementValue('app-hook-logic', projectData.project_hook_workflow); // Populate workflow data
-    
-    // Cetuskan event untuk kemas kini pratonton yang bergantung pada nilai ini
-    document.getElementById('app-date-order')?.dispatchEvent(new Event('change'));
-    document.getElementById('app-theme-select')?.dispatchEvent(new Event('change'));
-	
-    const menuCheckbox = document.getElementById('app-menu_at_homepage');
-    if (menuCheckbox) {
-        menuCheckbox.dispatchEvent(new Event('change'));
-    }
-}
-
-
 /**
  * Mengisi dropdown 'Parent table' dengan semua jadual lain dalam projek,
  * termasuk opsyen untuk rujukan-kendiri (self-referencing).
@@ -3211,7 +2812,7 @@ export function populateParentCaptionDropdowns(tableName) {
     }
 }
 
-// GANTIKAN FUNGSI SEDIA ADA INI DALAM uiHandlers.js
+
 export function initializeLookupFieldHandlers() {
     const parentTableSelect = document.getElementById('fld-lookup-parent-table');
     const caption1Select = document.getElementById('fld-lookup-caption-1');
@@ -3837,8 +3438,7 @@ export function initializeHomepageMenuHandlers() {
     toggleOptionsVisibility();
 }
 
-// Fungsi ini akan dipanggil dari populateFieldSettings juga, jadi kita letakkan di luar
-// js/uiHandlers.js
+
 
 export function applyDataTypeRules() {
     const dataTypeSelect = document.getElementById('fld-data-type');
@@ -4175,7 +3775,6 @@ export function initializeDataTypeRules() {
     });
 }
 
-// js/uiHandlers.js
 
 export function populateRecordOwnerDropdown(tableName) {
     const recordOwnerDropdown = document.getElementById('tbl-record-owner');
@@ -4468,11 +4067,6 @@ export function initializeDatabasePropertiesHandlers() {
     });
 }
 
-// KOD PENUH: Padam semua fungsi builder lama dan gantikan dengan keseluruhan blok ini.
-
-// =================================================================
-// ▼▼▼ SISTEM QUERY BUILDER BOLEH LARAS YANG BAHARU ▼▼▼
-// =================================================================
 
 // --- FUNGSI-FUNGSI BANTUAN UNTUK BUILDER ---
 
@@ -4668,7 +4262,6 @@ export function initializeQueryBuilder() {
     });
 }
 
-// --- FUNGSI-FUNGSI BANTUAN UNTUK BUILDER ---
 
 /**
  * Mengimbas keadaan penapis (filter state) dan mengembalikan satu Set
@@ -4723,11 +4316,7 @@ function buildJoinClause(mainTable, tablesInFilters) {
     return joinClauses;
 }
 
-// =================================================================
-// ▼▼▼ SISTEM QUERY BUILDER BOLEH LARAS YANG BAHARU ▼▼▼
-// =================================================================
 
-// --- FUNGSI-FUNGSI BANTUAN UNTUK BUILDER ---
 
 function setupBuilderUI(tableName) {
     const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
@@ -5354,7 +4943,6 @@ export function showImportErrorGuide() {
     modal.classList.remove('hidden');
 }
 
-// ADD THIS ENTIRE CODE BLOCK AT THE END OF uiHandlers.js
 
 // ==================================================================
 // == CUSTOM VIEWS FEATURE LOGIC                                 ==
@@ -5531,8 +5119,6 @@ export function initializeCustomViews() {
     });
 }
 
-// js/uiHandlers.js
-// CARI DAN GANTI KESELURUHAN FUNGSI INI
 
 function initializeCustomViewModalLogic() {
     const modal = document.getElementById('custom-view-config-modal');
@@ -6052,13 +5638,12 @@ export function initializeConstraintsTabHandlers() {
     });
 }
 
-// ADD THIS NEW FUNCTION in src/js/uiHandlers.js
 
 /**
  * Handles the logic for the 'Display As' radio button group.
  * It shows or hides the detailed 'Options list' settings based on the selection.
  */
-// GANTIKAN KESELURUHAN FUNGSI INI DALAM uiHandlers.js
+
 export function initializeDisplayTypeRules() {
     const displayTypeRadios = document.querySelectorAll('input[name="fld-display-type"]');
     const formatAsSelect = document.getElementById('fld-format-as');
@@ -6104,7 +5689,6 @@ export function initializeWrapTextRule() {
     });
 }
 
-// ADD THESE TWO NEW FUNCTIONS in src/js/uiHandlers.js
 
 /**
  * Menetapkan nilai lalai secara automatik apabila pengguna menukar 'media_type'.

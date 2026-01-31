@@ -1,11 +1,12 @@
 import { showPage } from './pageManager.js';
 // Import fungsi dari uiHandlers.js
 import {   
-populateMainDashboard,
 updateActionButtonsState, 
-showCustomDialog,
 applyFormLock 
   } from './uiHandlers.js'; 
+  
+import { showCustomDialog } from './ui/modalHandlers.js';
+import { populateMainDashboard } from './pages/dashboard.js';
   
 import { populateTableSettings, populateParentChildTab } from './pages/tableSettings.js';
 import { populateFieldSettings, setupMediaTab } from './pages/fieldSettings.js';
