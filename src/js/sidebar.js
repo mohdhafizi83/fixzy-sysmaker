@@ -10,7 +10,8 @@ import { populateMainDashboard } from './pages/dashboard.js';
   
 import { populateTableSettings, populateParentChildTab } from './pages/tableSettings.js';
 import { populateFieldSettings, setupMediaTab } from './pages/fieldSettings.js';
-import { jsonData, activeProject, loadProjectData, isCoreLockingEnabled   } from '../renderer.js';
+import { appState } from './state.js'; 
+import { loadProjectData } from '../renderer.js'; 
 
 // KOD PENUH: Gantikan keseluruhan fungsi sedia ada dengan yang ini.
 export function focusOnSidebarField(tableName, fieldName) {
@@ -145,18 +146,18 @@ export function initializeSidebarButtons() {
 	
     if (newTableBtn) {
         newTableBtn.addEventListener('click', async () => {
-            if (!activeProject) {
+            if (!appState.activeProject) {
                 // Mungkin perlu paparkan notifikasi
                 console.error("Tiada projek aktif untuk menambah jadual.");
                 return;
             }
 
             // Panggil backend untuk cipta jadual
-            const newTable = await window.electronAPI.createTable(activeProject.project_id);
+            const newTable = await window.electronAPI.createTable(appState.activeProject.project_id);
 
             if (newTable) {
     // Muat semula data DAN hantar nama jadual baharu untuk dipilih
-    await loadProjectData(activeProject, newTable.table_name);
+    await loadProjectData(appState.activeProject, newTable.table_name);
             }
         });
     }
@@ -171,14 +172,14 @@ export function initializeSidebarButtons() {
 
             if (isFieldLink) {
                 // --- LOGIK PADAM MEDAN ---
-                const tableName = activeLink.closest('.has-submenu').querySelector('a > span').textContent.trim();
+                const tableName = activeLink.closest('.has-submenu').querySelector('a > span').textContent.trim(); 
                 const fieldName = activeLink.querySelector('span').textContent.trim();
-                const fieldObject = jsonData.database.table[tableName].fields[fieldName];
+                const fieldObject = appState.jsonData.database.table[tableName].fields[fieldName];
 
                 let message = `Are you sure you want to permanently delete the field '${fieldName}'?`;
                 
                 // Semak jika ia adalah foreign key
-                const relationship = jsonData.database.relationships.find(r => r.child_table_name === tableName && r.fk_child_field === fieldName);
+                const relationship = appState.jsonData.database.relationships.find(r => r.child_table_name === tableName && r.fk_child_field === fieldName);
                 if (relationship) {
                     message += `\n\nThis will also remove its parent/child relationship with the '${relationship.parent_table_name}' table.`;
                 }
@@ -196,7 +197,7 @@ export function initializeSidebarButtons() {
                         if (result.success) {
                             showCustomDialog({ title: "Success", message: `'${fieldName}' has been deleted.` });
             // Selepas memuat semula data, aktifkan jadual induk
-            await loadProjectData(activeProject);
+            await loadProjectData(appState.activeProject);
             setActiveSidebarLink(tableName);
                         } else {
                             showCustomDialog({ title: "Error", message: `Failed to delete field: ${result.message}` });
@@ -208,18 +209,18 @@ export function initializeSidebarButtons() {
             const tableNameToDelete = activeLink.querySelector('span').textContent.trim();
 
             // Semak jika jadual ini adalah induk kepada jadual lain
-            const childTables = jsonData.database.relationships
+            const childTables = appState.jsonData.database.relationships
                 .filter(r => r.parent_table_name === tableNameToDelete)
                 .map(r => r.child_table_name);
 
 const performDelete = async (tablesToDelete) => {
     const result = await window.electronAPI.deleteTables({
-        projectId: activeProject.project_id,
+        projectId: appState.activeProject.project_id,
         tableNamesToDelete: tablesToDelete
     });
     if (result.success) {
         showCustomDialog({ title: "Success", message: `${tablesToDelete.join(', ')} has been deleted.` });
-        await loadProjectData(activeProject);
+        await loadProjectData(appState.activeProject);
 
         // ▼▼▼ TAMBAHAN BAHARU DI SINI ▼▼▼
         // Cari pautan 'Project Setup' dan aktifkannya
@@ -282,17 +283,17 @@ const performDelete = async (tablesToDelete) => {
     if (newFieldBtn) {
         newFieldBtn.addEventListener('click', async () => {
             const activeLink = document.querySelector('.sidebar .nav-list a.active');
-            if (!activeLink || !activeProject) return;
+            if (!activeLink || !appState.activeProject) return;
 
             const tableLink = activeLink.closest('.has-submenu').querySelector('a');
             const tableName = tableLink.querySelector('span').textContent.trim();
-            const tableData = jsonData.database.table[tableName];
+            const tableData = appState.jsonData.database.table[tableName];
 
             if (tableData) {
                 const newField = await window.electronAPI.createField(tableData.table_id);
                 if (newField) {
                     // 1. Muat semula data dahulu
-                    await loadProjectData(activeProject);
+                    await loadProjectData(appState.activeProject);
                     // 2. Selepas UI dikemas kini, panggil fungsi fokus
                     focusOnSidebarField(tableName, newField.field_name);
                 }
@@ -304,7 +305,7 @@ const performDelete = async (tablesToDelete) => {
 
 export async function generateSidebarMenu() {
     try {
-        const tables = jsonData.database.table;
+        const tables = appState.jsonData.database.table;
         const menuListContainer = document.getElementById('table-menu-list');
         if (!menuListContainer) return;
         menuListContainer.innerHTML = '';
@@ -347,10 +348,9 @@ export function initializeSidebarInteractivity() {
     const sidebarList = document.querySelector('.sidebar .nav-list');
     if (!sidebarList) return;
 
-    // ▼▼▼ PERUBAHAN: Mesej baharu yang lebih terperinci ▼▼▼
+    // Mesej kunci (Lock Message)
     const fieldLockMessage = "This core system field cannot be modified.\n\nTo proceed, you can disable this protection in Configuration. This is highly discouraged and there is no guarantee the final generated application will work properly.";
     const tableLockMessage = "The 'users' table is a core system component and cannot be modified.\n\nTo proceed, you can disable this protection in Configuration. This is highly discouraged and there is no guarantee the final generated application will work properly.";
-    // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
 
     const closeAllSubmenus = (exceptThisLink = null) => {
         const allTableLinks = sidebarList.querySelectorAll('.has-submenu > a');
@@ -379,9 +379,10 @@ export function initializeSidebarInteractivity() {
             const fieldName = link.querySelector('span').textContent.trim();
             const protectedFields = ['id', 'created_at', 'updated_at', 'deleted_at'];
 
-            if (isCoreLockingEnabled && (tableName === 'users' || protectedFields.includes(fieldName))) {
+            // PEMBETULAN DI SINI: Guna appState.isCoreLockingEnabled
+            if (appState.isCoreLockingEnabled && (tableName === 'users' || protectedFields.includes(fieldName))) {
                 document.querySelector('.main-content').scrollTop = 0;
-                applyFormLock('field', true, fieldLockMessage); // <-- Guna mesej baharu
+                applyFormLock('field', true, fieldLockMessage); 
             } else {
                 applyFormLock('field', false);
             }
@@ -394,9 +395,10 @@ export function initializeSidebarInteractivity() {
         } else if (isTableLink) {
             const tableName = link.querySelector('span').textContent.trim();
             
-            if (isCoreLockingEnabled && tableName === 'users') {
+            // PEMBETULAN DI SINI: Guna appState.isCoreLockingEnabled
+            if (appState.isCoreLockingEnabled && tableName === 'users') {
                 document.querySelector('.main-content').scrollTop = 0;
-                applyFormLock('table', true, tableLockMessage); // <-- Guna mesej baharu
+                applyFormLock('table', true, tableLockMessage);
             } else {
                 applyFormLock('table', false);
             }
@@ -422,7 +424,7 @@ export function initializeSidebarInteractivity() {
             applyFormLock('field', false);
             
             showPage('main-dashboard');
-            populateMainDashboard(activeProject);
+            populateMainDashboard(appState.activeProject);
             closeAllSubmenus();
         }
     });

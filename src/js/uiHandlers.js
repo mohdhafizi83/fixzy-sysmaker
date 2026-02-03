@@ -1,5 +1,12 @@
 import { setElementValue, setRadioValue } from './ui/formHelpers.js';
-import { allTableNames, jsonData, loadProjectData, activeProject, SaveManager, isAutoSaveEnabled, isPopulatingData, lastActiveChildTable, setLastActiveChildTable, setAwaitingMenuGroupSave, setIsCoreLockingEnabled  } from '../renderer.js';
+import { resolveVariables } from './utils.js';
+import { loadProjectData, SaveManager } from '../renderer.js';
+import { 
+    appState, 
+    setAwaitingMenuGroupSave, 
+    setLastActiveChildTable, 
+    setIsCoreLockingEnabled 
+} from './state.js';
 
 /**
  * Fungsi Teras Boleh Guna Semula untuk mencipta Logic Builder.
@@ -47,7 +54,7 @@ function setupLogicBuilderCore(config) {
         const conditions = whereData.rules.map(rule => {
             if (!rule.field || !rule.operator) return null;
             
-            const fieldData = jsonData.database.table[tableName]?.fields[rule.field];
+            const fieldData = appState.jsonData.database.table[tableName]?.fields[rule.field];
             if (!fieldData) return null;
 
             if (rule.operator === 'IS NULL' || rule.operator === 'IS NOT NULL') {
@@ -94,7 +101,7 @@ function setupLogicBuilderCore(config) {
         joinRuleElements.forEach(select => tablesInvolved.add(select.value));
         
         tablesInvolved.forEach(tableName => {
-            const tableData = jsonData.database.table[tableName];
+            const tableData = appState.jsonData.database.table[tableName];
             if (tableData && tableData.fields) {
                 for (const fieldName in tableData.fields) {
                     const option = document.createElement('option');
@@ -120,7 +127,7 @@ function setupLogicBuilderCore(config) {
         }
 
         const { table: childTable, fields: selectedFields, filter: filterState } = itemData;
-        const relationship = jsonData.database.relationships.find(
+        const relationship = appState.jsonData.database.relationships.find(
             r => r.parent_table_name === parentTable && r.child_table_name === childTable
         );
         const fkField = relationship ? relationship.fk_child_field : 'unknown_fk';
@@ -169,7 +176,7 @@ function setupLogicBuilderCore(config) {
 
     const buildChildMathJoinClause = (childTable, filterState) => {
         if (!filterState || !filterState.rules) return '';
-        const allRelationships = jsonData.database.relationships;
+        const allRelationships = appState.jsonData.database.relationships;
         let joinClauses = '';
 
         const tablesToJoin = new Set();
@@ -206,11 +213,11 @@ function setupLogicBuilderCore(config) {
             if (rule.type === 'join_rule') {
                 tableName = rule.table;
                 fieldName = rule.field;
-                fieldData = jsonData.database.table[tableName]?.fields[fieldName];
+                fieldData = appState.jsonData.database.table[tableName]?.fields[fieldName];
             } else { // 'standard' rule
                 tableName = childTable;
                 fieldName = rule.field;
-                fieldData = jsonData.database.table[tableName]?.fields[fieldName];
+                fieldData = appState.jsonData.database.table[tableName]?.fields[fieldName];
             }
 
             if (!fieldData) return null;
@@ -291,7 +298,7 @@ const updateModalCanvasState = () => {
                     }
                 } else if (type === 'this_record_data') {
                     const activeTable = context.tableName;
-                    const fields = jsonData.database.table[activeTable].fields;
+                    const fields = appState.jsonData.database.table[activeTable].fields;
                     const selectedField = item.querySelector('.field-select')?.value;
                     const pkName = Object.keys(fields).find(f => fields[f].primary_key === 1) || 'id';
 
@@ -307,7 +314,7 @@ const updateModalCanvasState = () => {
                     itemData.aggregate = aggregate;
                     itemData.field = (aggregate === 'COUNT') ? '*' : field;
 
-                    const relationship = jsonData.database.relationships.find(
+                    const relationship = appState.jsonData.database.relationships.find(
                         r => r.parent_table_name === parentTable && r.child_table_name === childTable
                     );
                     const fkField = relationship ? relationship.fk_child_field : 'unknown_fk';
@@ -457,7 +464,7 @@ const updateModalCanvasState = () => {
         fieldSelect.innerHTML = '';
         
         tablesInvolved.forEach(tableName => {
-            const tableData = jsonData.database.table[tableName];
+            const tableData = appState.jsonData.database.table[tableName];
             if (tableData && tableData.fields) {
                 for (const fieldName in tableData.fields) {
                     if (numericTypes.includes(tableData.fields[fieldName].data_type.toUpperCase())) {
@@ -486,7 +493,7 @@ const updateModalCanvasState = () => {
 
                 const rulesList = container.querySelector('.child-math-rules-list');
                 const ruleTemplate = document.getElementById('where-clause-template');
-                const fields = Object.keys(jsonData.database.table[tableName]?.fields || {});
+                const fields = Object.keys(appState.jsonData.database.table[tableName]?.fields || {});
 
                 (whereData.rules || []).forEach(ruleData => {
                     const clone = ruleTemplate.content.cloneNode(true);
@@ -567,7 +574,7 @@ const updateModalCanvasState = () => {
 
                         // Bahagian untuk 'related_record_data'
                         if (itemData.type === 'related_record_data') {
-                             const rel = jsonData.database.relationships.find(r => r.parent_table_name === context.tableName && r.child_table_name === itemData.table);
+                             const rel = appState.jsonData.database.relationships.find(r => r.parent_table_name === context.tableName && r.child_table_name === itemData.table);
                              const fkField = rel ? rel.fk_child_field : '...';
                              const whereClause = newItem.querySelector('.where-clause');
                              if (whereClause) {
@@ -613,7 +620,7 @@ const updateModalCanvasState = () => {
                                         
                                         const childTable = itemData.table;
                                         const relatedTables = new Set();
-                                        jsonData.database.relationships.forEach(rel => {
+                                        appState.jsonData.database.relationships.forEach(rel => {
                                             if (rel.parent_table_name === childTable) relatedTables.add(rel.child_table_name);
                                             if (rel.child_table_name === childTable) relatedTables.add(rel.parent_table_name);
                                         });
@@ -626,7 +633,7 @@ const updateModalCanvasState = () => {
                                         
                                         const fieldDropdown = ruleEl.querySelector('.cqb-rule-field');
                                         fieldDropdown.innerHTML = '';
-                                        const fields = jsonData.database.table[ruleData.table]?.fields || {};
+                                        const fields = appState.jsonData.database.table[ruleData.table]?.fields || {};
                                         Object.keys(fields).forEach(fName => {
                                             fieldDropdown.innerHTML += `<option value="${fName}">${fName}</option>`;
                                         });
@@ -645,7 +652,7 @@ const updateModalCanvasState = () => {
                                         const clone = ruleTemplate.content.cloneNode(true);
                                         const ruleEl = clone.querySelector('.cqb-rule');
                                         const fieldDropdown = ruleEl.querySelector('.cqb-rule-field');
-                                        const childFields = jsonData.database.table[itemData.table]?.fields || {};
+                                        const childFields = appState.jsonData.database.table[itemData.table]?.fields || {};
                                         Object.keys(childFields).forEach(fName => {
                                             fieldDropdown.innerHTML += `<option value="${fName}">${fName}</option>`;
                                         });
@@ -698,7 +705,7 @@ const updateModalCanvasState = () => {
                     if (['insert_record', 'update_record', 'delete_record'].includes(itemData.type)) {
                         const tableSelect = newItem.querySelector('.table-select');
                         tableSelect.value = itemData.table;
-                        const fields = Object.keys(jsonData.database.table[itemData.table]?.fields || {});
+                        const fields = Object.keys(appState.jsonData.database.table[itemData.table]?.fields || {});
                         
                         if (itemData.type !== 'delete_record' && itemData.details) {
                             const list = newItem.querySelector('.field-value-list');
@@ -837,7 +844,7 @@ case 'custom_query': {
                 const fieldSelect = mainQueryContainer.querySelector('.field-select');
                 
                 const activeTable = config.context?.tableName || '';
-                const allOtherTables = Object.keys(jsonData.database.table).filter(t => t !== activeTable);
+                const allOtherTables = Object.keys(appState.jsonData.database.table).filter(t => t !== activeTable);
                 allOtherTables.forEach(tableName => {
                     const option = document.createElement('option');
                     option.value = tableName;
@@ -847,8 +854,8 @@ case 'custom_query': {
 
                 const populateFields = (tableName) => {
                     fieldSelect.innerHTML = '';
-                    if (jsonData.database.table[tableName]) {
-                        const fields = Object.keys(jsonData.database.table[tableName].fields);
+                    if (appState.jsonData.database.table[tableName]) {
+                        const fields = Object.keys(appState.jsonData.database.table[tableName].fields);
                         fields.forEach(fieldName => {
                             const option = document.createElement('option');
                             option.value = fieldName;
@@ -880,7 +887,7 @@ case 'custom_query': {
             }
             case 'this_record_data': {
                 const activeTable = context?.tableName || '';
-                const fields = jsonData.database.table[activeTable]?.fields || {};
+                const fields = appState.jsonData.database.table[activeTable]?.fields || {};
                 const fieldNames = Object.keys(fields);
                 const pkFieldName = fieldNames.find(f => fields[f].primary_key === 1) || 'id';
 
@@ -911,7 +918,7 @@ case 'custom_query': {
             }
             case 'calculate_related_record': {
                 const parentTable = context?.tableName || '';
-                const childRelationships = jsonData.database.relationships.filter(r => r.parent_table_name === parentTable);
+                const childRelationships = appState.jsonData.database.relationships.filter(r => r.parent_table_name === parentTable);
                 
                 itemContainer.classList.add('child-math-style');
                 const mainQueryContainer = document.createElement('div');
@@ -996,7 +1003,7 @@ case 'custom_query': {
             }
             case 'related_record_data': {
                 const parentTable = context?.tableName || '';
-                const childRelationships = jsonData.database.relationships.filter(r => r.parent_table_name === parentTable);
+                const childRelationships = appState.jsonData.database.relationships.filter(r => r.parent_table_name === parentTable);
 
                 itemContainer.classList.add('child-math-style'); 
 
@@ -1083,7 +1090,7 @@ case 'custom_query': {
                         [activeTable] = fieldNameElement.textContent.split('.');
                     }
                 }
-                const allTables = Object.keys(jsonData.database.table);
+                const allTables = Object.keys(appState.jsonData.database.table);
                 allTables.forEach(tableName => {
                     const option = document.createElement('option');
                     option.value = tableName;
@@ -1097,8 +1104,8 @@ case 'custom_query': {
                 fieldSelect.className = 'field-select';
                 const populateFields = (tableName) => {
                     fieldSelect.innerHTML = '';
-                    if (jsonData.database.table[tableName]) {
-                        const fields = Object.keys(jsonData.database.table[tableName].fields);
+                    if (appState.jsonData.database.table[tableName]) {
+                        const fields = Object.keys(appState.jsonData.database.table[tableName].fields);
                         fields.forEach(fieldName => {
                             const option = document.createElement('option');
                             option.value = fieldName;
@@ -1255,14 +1262,14 @@ case 'custom_query': {
                 const template = document.getElementById('db-action-insert-template');
                 itemContainer.appendChild(template.content.cloneNode(true));
                 const tableSelect = itemContainer.querySelector('.table-select');
-                Object.keys(jsonData.database.table).forEach(t => tableSelect.add(new Option(t, t)));
+                Object.keys(appState.jsonData.database.table).forEach(t => tableSelect.add(new Option(t, t)));
                 break;
             }
             case 'update_record': {
                 const template = document.getElementById('db-action-update-template');
                 itemContainer.appendChild(template.content.cloneNode(true));
                 const tableSelect = itemContainer.querySelector('.table-select');
-                Object.keys(jsonData.database.table).forEach(t => tableSelect.add(new Option(t, t)));
+                Object.keys(appState.jsonData.database.table).forEach(t => tableSelect.add(new Option(t, t)));
                 const uniqueId = `logic_${Date.now()}`;
                 itemContainer.querySelectorAll('input[type="radio"]').forEach(radio => radio.name = `cqb-logic-${uniqueId}`);
                 break;
@@ -1271,7 +1278,7 @@ case 'custom_query': {
                 const template = document.getElementById('db-action-delete-template');
                 itemContainer.appendChild(template.content.cloneNode(true));
                 const tableSelect = itemContainer.querySelector('.table-select');
-                Object.keys(jsonData.database.table).forEach(t => tableSelect.add(new Option(t, t)));
+                Object.keys(appState.jsonData.database.table).forEach(t => tableSelect.add(new Option(t, t)));
                 const uniqueId = `logic_${Date.now()}`;
                 itemContainer.querySelectorAll('input[type="radio"]').forEach(radio => radio.name = `cqb-logic-${uniqueId}`);
                 break;
@@ -1387,7 +1394,7 @@ case 'custom_query': {
                 const clone = ruleTemplate.content.cloneNode(true);
                 
                 const childTable = childMathItem.querySelector('.table-select').value;
-                const childFields = jsonData.database.table[childTable]?.fields || {};
+                const childFields = appState.jsonData.database.table[childTable]?.fields || {};
                 const fieldDropdown = clone.querySelector('.cqb-rule-field');
                 Object.keys(childFields).forEach(fName => {
                     fieldDropdown.innerHTML += `<option value="${fName}">${fName}</option>`;
@@ -1405,7 +1412,7 @@ case 'custom_query': {
 
                 const childTable = childMathItem.querySelector('.table-select').value;
                 const relatedTables = new Set();
-                jsonData.database.relationships.forEach(rel => {
+                appState.jsonData.database.relationships.forEach(rel => {
                     if (rel.parent_table_name === childTable) relatedTables.add(rel.child_table_name);
                     if (rel.child_table_name === childTable) relatedTables.add(rel.parent_table_name);
                 });
@@ -1417,7 +1424,7 @@ case 'custom_query': {
 
                 const populateJoinFields = (selectedTable) => {
                     fieldDropdown.innerHTML = '';
-                    const fields = jsonData.database.table[selectedTable]?.fields || {};
+                    const fields = appState.jsonData.database.table[selectedTable]?.fields || {};
                     Object.keys(fields).forEach(fName => {
                         fieldDropdown.innerHTML += `<option value="${fName}">${fName}</option>`;
                     });
@@ -1485,11 +1492,11 @@ case 'custom_query': {
                 const externalTableName = lookupItem.querySelector('.table-select').value;
                 const currentTableName = context.tableName;
 
-                Object.keys(jsonData.database.table[externalTableName].fields).forEach(f => {
+                Object.keys(appState.jsonData.database.table[externalTableName].fields).forEach(f => {
                     externalFieldSelect.innerHTML += `<option value="${f}">${f}</option>`;
                 });
 
-                Object.keys(jsonData.database.table[currentTableName].fields).forEach(f => {
+                Object.keys(appState.jsonData.database.table[currentTableName].fields).forEach(f => {
                     dynamicValueSelect.innerHTML += `<option value="##current_record.${f}##">${f}</option>`;
                 });
 
@@ -1517,11 +1524,11 @@ case 'custom_query': {
         if (e.target.matches('.add-field-btn, .add-field-btn *')) {
             const list = item.querySelector('.field-value-list');
             const table = item.querySelector('.table-select').value;
-            if (!table || !jsonData.database.table[table]) return;
+            if (!table || !appState.jsonData.database.table[table]) return;
 
             // BUG FIX #3: Prevent duplicate fields
             const usedFields = new Set(Array.from(list.querySelectorAll('.field-select')).map(sel => sel.value));
-            const availableFields = Object.keys(jsonData.database.table[table].fields).filter(f => !usedFields.has(f));
+            const availableFields = Object.keys(appState.jsonData.database.table[table].fields).filter(f => !usedFields.has(f));
 
             if (availableFields.length === 0) {
                 showCustomDialog({title: "Info", message: "All fields for this table have been added."});
@@ -1552,7 +1559,7 @@ case 'custom_query': {
             const ruleTemplate = document.getElementById('where-clause-template');
             const clone = ruleTemplate.content.cloneNode(true);
             const fieldDropdown = clone.querySelector('.cqb-rule-field');
-            const fields = Object.keys(jsonData.database.table[table]?.fields || {});
+            const fields = Object.keys(appState.jsonData.database.table[table]?.fields || {});
             fields.forEach(fName => fieldDropdown.add(new Option(fName, fName)));
             
             rulesList.appendChild(clone);
@@ -1597,9 +1604,9 @@ case 'custom_query': {
         const item = e.target.closest('.dropped-item[data-item-type$="_record"]');
         if (item && e.target.matches('.table-select')) {
             const table = e.target.value;
-            if (!table || !jsonData.database.table[table]) return;
+            if (!table || !appState.jsonData.database.table[table]) return;
 
-            const fields = Object.keys(jsonData.database.table[table].fields);
+            const fields = Object.keys(appState.jsonData.database.table[table].fields);
 
             if (item.querySelector('.field-value-list')) {
                 item.querySelector('.field-value-list').innerHTML = '';
@@ -2009,8 +2016,8 @@ export function initializeLookupFieldSaveHandler() {
     if (!parentTableSelect) return;
 
     parentTableSelect.addEventListener('change', () => {
-		if (isPopulatingData) return;
-		if (!isAutoSaveEnabled) return;
+		if (appState.isPopulatingData) return;
+		if (!appState.isAutoSaveEnabled) return;
         
         const parentTableName = parentTableSelect.value;
         const [childTableName, fk_child_field] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
@@ -2039,8 +2046,8 @@ export function initializeRelationshipSaveHandlers() {
     if (!form) return;
 
     const handleInputChange = (event) => {
-        if (isPopulatingData) return;
-        if (!isAutoSaveEnabled) return;
+        if (appState.isPopulatingData) return;
+        if (!appState.isAutoSaveEnabled) return;
 
         // Dapatkan ID hubungan (relationship) yang sedang aktif
         const parentTable = document.querySelector('#table-settings-page .table-name').textContent;
@@ -2048,7 +2055,7 @@ export function initializeRelationshipSaveHandlers() {
         if (!childTableElement) return; // Keluar jika tiada child table dipilih
         const childTable = childTableElement.dataset.childName;
 
-        const relationship = jsonData.database.relationships.find(
+        const relationship = appState.jsonData.database.relationships.find(
             r => r.parent_table_name === parentTable && r.child_table_name === childTable
         );
         if (!relationship) return; // Keluar jika hubungan tidak ditemui
@@ -2077,8 +2084,8 @@ export function initializeTableSaveHandlers() {
     if (!form) return;
 
     const handleInputChange = (event) => {
-        if (isPopulatingData) return;
-        if (!isAutoSaveEnabled) return;
+        if (appState.isPopulatingData) return;
+        if (!appState.isAutoSaveEnabled) return;
 
         const input = event.target;
 
@@ -2095,7 +2102,7 @@ export function initializeTableSaveHandlers() {
         }
 
         const tableName = document.querySelector('#table-settings-page .table-name').textContent;
-        const tableData = jsonData.database.table[tableName];
+        const tableData = appState.jsonData.database.table[tableName];
         if (!tableData) return;
         const tableId = tableData.table_id;
         
@@ -2132,10 +2139,10 @@ export function initializeFieldSaveHandlers() {
     const form = document.getElementById('field-settings-page');
     if (!form) return;
     const handleInputChange = (event) => {
-        if (isPopulatingData) return;
+        if (appState.isPopulatingData) return;
         const [tableName, fieldName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
-        if (!tableName || !fieldName || !jsonData.database.table[tableName] || !jsonData.database.table[tableName].fields[fieldName]) return;
-        const fieldId = jsonData.database.table[tableName].fields[fieldName].field_id;
+        if (!tableName || !fieldName || !appState.jsonData.database.table[tableName] || !appState.jsonData.database.table[tableName].fields[fieldName]) return;
+        const fieldId = appState.jsonData.database.table[tableName].fields[fieldName].field_id;
         const input = event.target;
 const key = (input.name && input.type === 'radio') ? input.name.replace('fld-', '').replace(/-/g, '_') : input.id.replace('fld-', '').replace(/-/g, '_');
         let value;
@@ -2240,12 +2247,12 @@ export function updateActionButtonsState() {
 
 export function populateSortByDropdown(tableName, elementId = 'tbl-default-sort-by') {
     const sortByDropdown = document.getElementById(elementId);
-    if (!sortByDropdown || !jsonData) return;
+    if (!sortByDropdown || !appState.jsonData) return;
     
     // Kosongkan senarai sedia ada
     sortByDropdown.innerHTML = (elementId === 'tbl-default-sort-by') ? '<option value="">None</option>' : '';
     
-    const table = jsonData.database.table[tableName];
+    const table = appState.jsonData.database.table[tableName];
     if (table && table.fields) {
         for (const fieldName in table.fields) {
             const option = document.createElement('option');
@@ -2259,11 +2266,11 @@ export function populateSortByDropdown(tableName, elementId = 'tbl-default-sort-
 
 export function populateFocusFieldDropdown(tableName) {
     const defaultFocusDropdown = document.getElementById('tbl-default-focus');
-    if (!defaultFocusDropdown || !jsonData) return;
+    if (!defaultFocusDropdown || !appState.jsonData) return;
 
     defaultFocusDropdown.innerHTML = ''; // Kosongkan senarai
 
-    const table = jsonData.database.table[tableName];
+    const table = appState.jsonData.database.table[tableName];
     if (table && table.fields) {
         // ▼▼▼ KEMAS KINI UTAMA DI SINI ▼▼▼
         // 1. Dapatkan semua nama medan
@@ -2562,12 +2569,12 @@ export function initializeLinkOptionsHandlers() {
 
 export function populateOtherFieldDropdown(tableName, currentFieldName) {
     const otherFieldSelect = document.getElementById('fld-media-link-other-field');
-    if (!otherFieldSelect || !jsonData) return;
+    if (!otherFieldSelect || !appState.jsonData) return;
 
     // Kosongkan senarai sedia ada
     otherFieldSelect.innerHTML = '';
 
-    const table = jsonData.database.table[tableName];
+    const table = appState.jsonData.database.table[tableName];
     if (table && table.fields) {
         // Dapatkan semua nama medan dan tapis keluar medan semasa
         const otherFields = Object.keys(table.fields).filter(f => f !== currentFieldName);
@@ -2651,10 +2658,10 @@ export function initializeImageOptionsHandlers() {
 }
 export function populateFileOtherFieldDropdown(tableName, currentFieldName) {
     const otherFieldSelect = document.getElementById('fld-file-other-field');
-    if (!otherFieldSelect || !jsonData) return;
+    if (!otherFieldSelect || !appState.jsonData) return;
 
     otherFieldSelect.innerHTML = '';
-    const table = jsonData.database.table[tableName];
+    const table = appState.jsonData.database.table[tableName];
     if (table && table.fields) {
         const otherFields = Object.keys(table.fields).filter(f => f !== currentFieldName);
         otherFields.forEach(fieldName => {
@@ -2769,7 +2776,7 @@ export function populateParentTableDropdown(currentTableName) {
     parentTableSelect.appendChild(selfOption);
     // ▲▲▲ TAMAT KOD BAHARU ▲▲▲
 
-    const otherTables = allTableNames.filter(name => name !== currentTableName);
+    const otherTables = appState.allTableNames.filter(name => name !== currentTableName);
     otherTables.forEach(tableName => {
         const option = document.createElement('option');
         option.value = tableName;
@@ -2794,8 +2801,8 @@ export function populateParentCaptionDropdowns(tableName) {
     caption1Select.innerHTML = '';
     caption2Select.innerHTML = '';
 
-    if (tableName && jsonData && jsonData.database && jsonData.database.table[tableName]) {
-        const fields = jsonData.database.table[tableName].fields;
+    if (tableName && appState.jsonData && appState.jsonData.database && appState.jsonData.database.table[tableName]) {
+        const fields = appState.jsonData.database.table[tableName].fields;
         
         // Populate senarai field
         Object.keys(fields).forEach(fieldName => {
@@ -2826,8 +2833,8 @@ export function initializeLookupFieldHandlers() {
         const selectedTable = parentTableSelect.value;
         populateParentCaptionDropdowns(selectedTable);
         
-        if (selectedTable && jsonData.database.table[selectedTable]) {
-            const parentFields = jsonData.database.table[selectedTable].fields;
+        if (selectedTable && appState.jsonData.database.table[selectedTable]) {
+            const parentFields = appState.jsonData.database.table[selectedTable].fields;
             const fieldNames = Object.keys(parentFields);
             const integerTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'];
             let defaultCaptionField = null;
@@ -3037,7 +3044,7 @@ function openCustomMenuModal(itemEl = null) {
 
     const getUsedIds = () => {
         const ids = { tableIds: new Set(), cvIds: new Set() };
-        jsonData.database.unified_menu.forEach(item => {
+        appState.jsonData.database.unified_menu.forEach(item => {
             const items = item.type === 'group' ? item.items : [item];
             items.forEach(i => {
                 if (i.table_id) ids.tableIds.add(i.table_id);
@@ -3048,11 +3055,11 @@ function openCustomMenuModal(itemEl = null) {
     };
     const { tableIds: usedTableIds, cvIds: usedCvIds } = getUsedIds();
 
-    const availableTables = Object.values(jsonData.database.table).filter(t => !usedTableIds.has(t.table_id));
+    const availableTables = Object.values(appState.jsonData.database.table).filter(t => !usedTableIds.has(t.table_id));
     elements.tableListUl.innerHTML = availableTables.length > 0 ? availableTables.filter(t => t && t.table_name).map(t => `<li data-table-name="${t.table_name}">${t.table_name}</li>`).join('') : '<li>No unassigned tables available.</li>';
 
     const availableCustomViews = [];
-    Object.values(jsonData.database.table).forEach(table => {
+    Object.values(appState.jsonData.database.table).forEach(table => {
         (table.custom_views || []).forEach(view => {
             if (!usedCvIds.has(view.custom_view_id)) {
                 availableCustomViews.push({ ...view, table_name: table.table_name });
@@ -3062,21 +3069,21 @@ function openCustomMenuModal(itemEl = null) {
     elements.cvListUl.innerHTML = availableCustomViews.length > 0 ? availableCustomViews.map(v => `<li data-cv-id="${v.custom_view_id}">${v.table_name} - ${v.view_name}</li>`).join('') : '<li>No unassigned Custom Views available.</li>';
     
     const allCustomViews = [];
-    Object.values(jsonData.database.table).forEach(table => {
+    Object.values(appState.jsonData.database.table).forEach(table => {
         (table.custom_views || []).forEach(view => {
             allCustomViews.push({ ...view, table_name: table.table_name });
         });
     });
 
     elements.groupSelect.innerHTML = '<option value="">None (Top Level)</option>';
-    jsonData.database.unified_menu.filter(item => item.type === 'group').forEach(group => { elements.groupSelect.innerHTML += `<option value="${group.id}">${group.name}</option>`; });
+    appState.jsonData.database.unified_menu.filter(item => item.type === 'group').forEach(group => { elements.groupSelect.innerHTML += `<option value="${group.id}">${group.name}</option>`; });
 
     if (itemEl) {
         elements.title.textContent = 'Edit Menu Item';
         elements.itemIdInput.value = itemEl.dataset.itemId;
         elements.radios.forEach(radio => radio.disabled = true);
         const itemType = itemEl.dataset.type;
-        const allItems = [...jsonData.database.unified_menu.flatMap(i => i.type === 'group' ? i.items : i)];
+        const allItems = [...appState.jsonData.database.unified_menu.flatMap(i => i.type === 'group' ? i.items : i)];
         
         // ▼▼▼ KOD CARIAN YANG TELAH DIPERBAIKI SEPENUHNYA ▼▼▼
         const itemIdToFind = parseInt(itemEl.dataset.itemId, 10);
@@ -3095,7 +3102,7 @@ function openCustomMenuModal(itemEl = null) {
 
             // ▼▼▼ BLOK DEBUGGING DITAMBAH DI SINI ▼▼▼
             console.log("--- DEBUGGING CUSTOM VIEW EDIT ---");
-            console.log("1. Data Item Menu (dari jsonData):", itemData);
+            console.log("1. Data Item Menu (dari appState.jsonData):", itemData);
             console.log("2. ID yang dicari:", itemData?.custom_view_id, "(Jenis:", typeof itemData?.custom_view_id, ")");
             console.log("3. Mencari di dalam senarai ini (allCustomViews):", allCustomViews);
             
@@ -3145,7 +3152,7 @@ function openCustomMenuModal(itemEl = null) {
     newOkBtn.addEventListener('click', async () => {
         const selectedType = modal.querySelector('input[name="menu-item-type"]:checked').value;
         const itemId = elements.itemIdInput.value || null;
-        let dataToSave = { project_id: activeProject.project_id, item_id: itemId, menu_group_id: elements.groupSelect.value || null };
+        let dataToSave = { project_id: appState.activeProject.project_id, item_id: itemId, menu_group_id: elements.groupSelect.value || null };
 
         if (selectedType === 'table') {
             const tableLabel = elements.tableLabelInput.value.trim();
@@ -3160,7 +3167,7 @@ function openCustomMenuModal(itemEl = null) {
             }
 
             if (!tableNameForSave) { showCustomDialog({ title: "Input Required", message: "Please select a table." }); return; }
-            const tableData = jsonData.database.table[tableNameForSave];
+            const tableData = appState.jsonData.database.table[tableNameForSave];
             if (!tableData) { showCustomDialog({ title: "Error", message: "Table data not found." }); return; }
             dataToSave = { ...dataToSave, label: tableLabel, url: `${tableNameForSave} Resource`, table_id: tableData.table_id, custom_view_id: null, show_record_count: elements.recordCountCheckbox.checked };
         
@@ -3191,7 +3198,7 @@ function openCustomMenuModal(itemEl = null) {
         }
 
         const result = await window.electronAPI.saveCustomMenuItem(dataToSave);
-        if (result.success) { closeModal(); await loadProjectData(activeProject); }
+        if (result.success) { closeModal(); await loadProjectData(appState.activeProject); }
         else { showCustomDialog({ title: "Error", message: `Failed to save menu item: ${result.message}` }); }
     }, { once: true });
     modal.classList.remove('hidden');
@@ -3219,7 +3226,7 @@ function openCustomMenuModal(itemEl = null) {
             return null;
         }).filter(Boolean);
         
-        const result = await window.electronAPI.saveUnifiedMenu({ projectId: activeProject.project_id, menuStructure: structure });
+        const result = await window.electronAPI.saveUnifiedMenu({ projectId: appState.activeProject.project_id, menuStructure: structure });
         if (!result.success) {
             showCustomDialog({ title: "Save Error", message: "Failed to save menu structure: " + result.message });
         }
@@ -3227,9 +3234,9 @@ function openCustomMenuModal(itemEl = null) {
     // Pengendali Acara untuk Butang
     addCustomMenuBtn.addEventListener('click', () => openCustomMenuModal());
     addGroupBtn.addEventListener('click', async () => {
-        const result = await window.electronAPI.menuCreateGroup({ projectId: activeProject.project_id, groupName: "New Group" });
+        const result = await window.electronAPI.menuCreateGroup({ projectId: appState.activeProject.project_id, groupName: "New Group" });
         if (result.success) {
-            await loadProjectData(activeProject);
+            await loadProjectData(appState.activeProject);
         } else {
             showCustomDialog({ title: "Error", message: "Failed to create new group: " + result.message });
         }
@@ -3251,8 +3258,8 @@ function openCustomMenuModal(itemEl = null) {
                 message: "Are you sure you want to delete this menu item?",
                 showCancelButton: true,
                 onOk: async () => {
-                    await window.electronAPI.saveCustomMenuItem({ item_id: nestedItem.dataset.itemId, project_id: activeProject.project_id, label: 'DELETE', url: 'DELETE' });
-                    await loadProjectData(activeProject);
+                    await window.electronAPI.saveCustomMenuItem({ item_id: nestedItem.dataset.itemId, project_id: appState.activeProject.project_id, label: 'DELETE', url: 'DELETE' });
+                    await loadProjectData(appState.activeProject);
                 }
             });
         }
@@ -3264,7 +3271,7 @@ function openCustomMenuModal(itemEl = null) {
                 showCancelButton: true,
                 onOk: async () => {
                     await window.electronAPI.menuDeleteGroup({ groupId: groupItem.dataset.groupId });
-                    await loadProjectData(activeProject);
+                    await loadProjectData(appState.activeProject);
                 }
             });
         } 
@@ -3274,8 +3281,8 @@ function openCustomMenuModal(itemEl = null) {
                 message: "Are you sure you want to delete this menu item?",
                 showCancelButton: true,
                 onOk: async () => {
-                    await window.electronAPI.saveCustomMenuItem({ item_id: customItem.dataset.itemId, project_id: activeProject.project_id, label: 'DELETE', url: 'DELETE' });
-                    await loadProjectData(activeProject);
+                    await window.electronAPI.saveCustomMenuItem({ item_id: customItem.dataset.itemId, project_id: appState.activeProject.project_id, label: 'DELETE', url: 'DELETE' });
+                    await loadProjectData(appState.activeProject);
                 }
             });
         } 
@@ -3376,7 +3383,7 @@ function generateDefaultLookupQuery() {
     }
 
     // Dapatkan Primary Key dari jadual induk
-    const parentTableData = jsonData.database.table[parentTable];
+    const parentTableData = appState.jsonData.database.table[parentTable];
     const pkField = Object.keys(parentTableData.fields).find(f => parentTableData.fields[f].primary_key) || 'id';
 
     return `SELECT \`${parentTable}\`.\`${pkField}\`, ${captionFields} FROM \`${parentTable}\` ORDER BY 2`;
@@ -3778,7 +3785,7 @@ export function initializeDataTypeRules() {
 
 export function populateRecordOwnerDropdown(tableName) {
     const recordOwnerDropdown = document.getElementById('tbl-record-owner');
-    if (!recordOwnerDropdown || !jsonData) return;
+    if (!recordOwnerDropdown || !appState.jsonData) return;
 
     // Kosongkan opsyen sedia ada
     recordOwnerDropdown.innerHTML = '';
@@ -3791,7 +3798,7 @@ export function populateRecordOwnerDropdown(tableName) {
 
     // ▼▼▼ LOGIK YANG DIPERBAIKI ▼▼▼
     // 2. Cari dan tambah semua medan kunci asing (foreign key) berdasarkan data hubungan
-    const relationships = jsonData.database.relationships || [];
+    const relationships = appState.jsonData.database.relationships || [];
     
     relationships.forEach(rel => {
         // Cari hubungan di mana jadual semasa adalah JADUAL ANAK (child)
@@ -4121,7 +4128,7 @@ export function showConfigurableQueryBuilder(config) {
     
     elements.title.textContent = config.mode === 'calculation' ? 'Calculation Builder' : 'Query Builder';
     if (config.mode === 'calculation') {
-        const tableData = jsonData.database.table[config.tableName];
+        const tableData = appState.jsonData.database.table[config.tableName];
         const pkField = Object.keys(tableData.fields).find(f => tableData.fields[f].primary_key);
         elements.mandatoryRuleText.textContent = `the calculation is linked to the current '${config.tableName}' record via its key ('${pkField || 'not found'}').`;
     }
@@ -4174,7 +4181,7 @@ export function initializeCalculationBuilder() {
              showCustomDialog({ title: "Error", message: "Please select a field first." });
              return;
         }
-        const fieldData = jsonData.database.table[tableName]?.fields[fieldName];
+        const fieldData = appState.jsonData.database.table[tableName]?.fields[fieldName];
         
         showConfigurableQueryBuilder({
             mode: 'calculation',
@@ -4251,9 +4258,9 @@ export function initializeQueryBuilder() {
         if (e.target.classList.contains('cqb-rule-table')) {
             const selectedTable = e.target.value;
             const fieldDropdown = e.target.closest('.cqb-rule').querySelector('.cqb-rule-field');
-            if (!fieldDropdown || !jsonData.database.table[selectedTable]) return;
+            if (!fieldDropdown || !appState.jsonData.database.table[selectedTable]) return;
             fieldDropdown.innerHTML = '';
-            const fields = Object.keys(jsonData.database.table[selectedTable].fields);
+            const fields = Object.keys(appState.jsonData.database.table[selectedTable].fields);
             fields.forEach(fieldName => {
                 const option = document.createElement('option'); option.value = fieldName; option.textContent = fieldName;
                 fieldDropdown.appendChild(option);
@@ -4294,7 +4301,7 @@ function getTablesFromFilters(filterState) {
  * @returns {string} String klausa JOIN yang lengkap, cth: "\nLEFT JOIN `customers` ON ..."
  */
 function buildJoinClause(mainTable, tablesInFilters) {
-    const allRelationships = jsonData.database.relationships;
+    const allRelationships = appState.jsonData.database.relationships;
     let joinClauses = '';
 
     tablesInFilters.forEach(tableToJoin => {
@@ -4320,7 +4327,7 @@ function buildJoinClause(mainTable, tablesInFilters) {
 
 function setupBuilderUI(tableName) {
     const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
-    const fields = jsonData.database.table[tableName].fields;
+    const fields = appState.jsonData.database.table[tableName].fields;
     
     const elements = {
         calcField: document.getElementById('cqb-calc-field'),
@@ -4427,7 +4434,7 @@ function populateBuilderFromState(jsonState, tableName, mode) {
 }
 
 function generateCalculationQuery(tableName, state) {
-    const pkField = Object.keys(jsonData.database.table[tableName].fields).find(f => jsonData.database.table[tableName].fields[f].primary_key === 1);
+    const pkField = Object.keys(appState.jsonData.database.table[tableName].fields).find(f => appState.jsonData.database.table[tableName].fields[f].primary_key === 1);
     if (!pkField) {
         showCustomDialog({title: "Error", message: `Could not find a primary key for table '${tableName}'.`});
         return '';
@@ -4486,7 +4493,7 @@ function generateGeneralQuery(tableName, state) {
 function createRuleElement(tableName, data = null) {
     const newRule = document.createElement('div');
     newRule.className = 'cqb-rule';
-    const relationships = jsonData.database.relationships || [];
+    const relationships = appState.jsonData.database.relationships || [];
     const relatedTables = new Set([tableName]);
     relationships.forEach(rel => {
         if (rel.parent_table_name === tableName) relatedTables.add(rel.child_table_name);
@@ -4494,7 +4501,7 @@ function createRuleElement(tableName, data = null) {
     });
     const tableOptions = Array.from(relatedTables).map(t => `<option value="${t}">${t}</option>`).join('');
     const initialTable = data ? data.table : tableName;
-    const fields = jsonData.database.table[initialTable]?.fields || {};
+    const fields = appState.jsonData.database.table[initialTable]?.fields || {};
     const fieldOptions = Object.keys(fields).map(f => `<option value="${f}">${f}</option>`).join('');
 
     const operators = [
@@ -4546,7 +4553,7 @@ function createRuleGroupElement() {
 function createSortElement(tableName, data = null) {
     const newSortRule = document.createElement('div');
     newSortRule.className = 'cqb-sort-rule';
-    const fields = Object.keys(jsonData.database.table[tableName]?.fields || {});
+    const fields = Object.keys(appState.jsonData.database.table[tableName]?.fields || {});
     const fieldOptions = fields.map(f => `<option value="${f}">${f}</option>`).join('');
     newSortRule.innerHTML = `<select class="cqb-sort-field">${fieldOptions}</select><select class="cqb-sort-direction"><option value="ASC">Ascending (A-Z)</option><option value="DESC">Descending (Z-A)</option></select><button class="cqb-delete-btn">&times;</button>`;
     if (data) {
@@ -4562,7 +4569,7 @@ function buildNestedWhereClause(filterState) {
     const conditions = filterState.rules.map(rule => {
         if (rule.type === 'rule') {
             const { table, field, operator, value } = rule;
-            const fieldData = jsonData.database.table[table]?.fields[field];
+            const fieldData = appState.jsonData.database.table[table]?.fields[field];
             if (!fieldData) return null; // Langkau jika maklumat medan tiada
 
             // Kendalikan operator yang tidak memerlukan nilai
@@ -4725,7 +4732,7 @@ export function openQueryHelperModal(options) {
         
         tablesToInclude.forEach(tableName => {
             if (!tableName) return;
-            const tableData = jsonData.database.table[tableName];
+            const tableData = appState.jsonData.database.table[tableName];
             if (tableData && tableData.fields) {
                 Object.keys(tableData.fields).forEach(fieldName => {
                     // Gunakan nama penuh (jadual.medan) sebagai pengenal pasti unik
@@ -4783,7 +4790,7 @@ export function openQueryHelperModal(options) {
         }
 
         // Isi senarai relationship
-        jsonData.database.relationships.forEach(rel => {
+        appState.jsonData.database.relationships.forEach(rel => {
             let relatedTable, relText;
             if (rel.parent_table_name === tableName) {
                 relatedTable = rel.child_table_name;
@@ -4884,7 +4891,7 @@ export function openQueryHelperModal(options) {
     elements.cancelBtn.addEventListener('click', closeModal);
 
     // 6. Logik Kontekstual Permulaan
-    const allTables = Object.keys(jsonData.database.table);
+    const allTables = Object.keys(appState.jsonData.database.table);
     elements.tableSelect.innerHTML = '<option value="">-- Select a table --</option>' + allTables.map(t => `<option value="${t}">${t}</option>`).join('');
     
     if (options.context.tableName) {
@@ -4956,7 +4963,7 @@ export function populateCustomViewsTab(tableName) {
     const container = document.getElementById('custom-views-list-container');
     if (!container) return;
 
-    const views = jsonData.database.table[tableName]?.custom_views || [];
+    const views = appState.jsonData.database.table[tableName]?.custom_views || [];
 
     if (views.length === 0) {
         container.innerHTML = `
@@ -5017,7 +5024,7 @@ function openCustomViewModal(tableName, viewData = null) {
     elements.menuIconInput.value = isEditing ? viewData.menu_icon : '';
     
     elements.ownerFieldSelect.innerHTML = '';
-    const fields = jsonData.database.table[tableName]?.fields || {};
+    const fields = appState.jsonData.database.table[tableName]?.fields || {};
     Object.keys(fields).forEach(fieldName => {
         elements.ownerFieldSelect.add(new Option(fieldName, fieldName));
     });
@@ -5092,7 +5099,7 @@ export function initializeCustomViews() {
         const editBtn = e.target.closest('.cv-edit-btn');
         if (editBtn) {
             const viewId = parseInt(editBtn.dataset.viewId, 10);
-            const viewData = jsonData.database.table[currentTableName]?.custom_views.find(v => v.custom_view_id === viewId);
+            const viewData = appState.jsonData.database.table[currentTableName]?.custom_views.find(v => v.custom_view_id === viewId);
             if (viewData) {
                 openCustomViewModal(currentTableName, viewData);
             }
@@ -5108,7 +5115,7 @@ export function initializeCustomViews() {
                 onOk: async () => {
                     const result = await window.electronAPI.deleteCustomView(viewId);
                     if (result.success) {
-                        await loadProjectData(activeProject);
+                        await loadProjectData(appState.activeProject);
                         populateCustomViewsTab(currentTableName);
                     } else {
                         showCustomDialog({ title: "Error", message: `Failed to delete view: ${result.message}`});
@@ -5229,7 +5236,7 @@ function initializeCustomViewModalLogic() {
         }));
         const dataToSave = {
             custom_view_id: document.getElementById('cv-view-id').value || null,
-            table_id: jsonData.database.table[tableName].table_id,
+            table_id: appState.jsonData.database.table[tableName].table_id,
             view_name: document.getElementById('cv-view-name').value.trim(),
             menu_icon: document.getElementById('cv-menu-icon').value.trim(),
             filter_rules: JSON.stringify(filterData),
@@ -5240,7 +5247,7 @@ function initializeCustomViewModalLogic() {
         const result = await window.electronAPI.saveCustomView(dataToSave);
         if (result.success) {
             closeModal();
-            await loadProjectData(activeProject);
+            await loadProjectData(appState.activeProject);
             populateCustomViewsTab(tableName);
         } else {
             showCustomDialog({ title: "Save Error", message: `Failed to save Custom View: ${result.message}` });
@@ -5259,8 +5266,8 @@ function populateAvailableFieldsTree(currentTableName) {
     const formLayoutPanel = document.getElementById('cv-form-layout-panel');
     listContainer.innerHTML = '';
 
-    const relationships = jsonData.database.relationships;
-    const allTables = jsonData.database.table;
+    const relationships = appState.jsonData.database.relationships;
+    const allTables = appState.jsonData.database.table;
     const fieldsInLayout = Array.from(formLayoutPanel.querySelectorAll('.form-field-item')).map(
         item => `${item.dataset.sourceTable}.${item.dataset.sourceName}`
     );
@@ -5415,16 +5422,16 @@ export function initializeUniqueFieldHandler() {
     });
 
     uniqueCheckbox.addEventListener('change', () => {
-        if (isPopulatingData) return;
+        if (appState.isPopulatingData) return;
 
         const [tableName, fieldName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
-        const tableData = jsonData.database.table[tableName];
+        const tableData = appState.jsonData.database.table[tableName];
         if (!tableData) return;
         
         const isNowChecked = uniqueCheckbox.checked;
 
         // Cari hubungan yang relevan
-        const relationship = jsonData.database.relationships.find(
+        const relationship = appState.jsonData.database.relationships.find(
             rel => rel.child_table_name === tableName && rel.fk_child_field === fieldName
         );
 
@@ -5502,10 +5509,10 @@ export function initializeIndexCheckboxHandler() {
     if (!indexCheckbox) return;
 
     indexCheckbox.addEventListener('change', () => {
-        if (isPopulatingData) return;
+        if (appState.isPopulatingData) return;
 
         const [tableName, fieldName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
-        const fieldData = jsonData.database.table[tableName]?.fields[fieldName];
+        const fieldData = appState.jsonData.database.table[tableName]?.fields[fieldName];
         if (!fieldData) return;
 
         window.electronAPI.updateFieldIndex({
@@ -5524,7 +5531,7 @@ export function populateConstraintsTab(tableName) {
     if (!container) return;
 
     // Now this includes both UNIQUE and INDEX types
-    const constraints = jsonData.database.table[tableName]?.constraints || [];
+    const constraints = appState.jsonData.database.table[tableName]?.constraints || [];
 
     if (constraints.length === 0) {
         container.innerHTML = `<div class="empty-state-label"><p>No composite rules defined for this table.</p><span>Use the field settings for individual rules.</span></div>`;
@@ -5574,7 +5581,7 @@ export function initializeConstraintsTabHandlers() {
 
         if (e.target.closest('#btn-add-constraint')) {
             elements.fieldsSelect.innerHTML = '';
-            const fields = jsonData.database.table[currentTableName]?.fields || {};
+            const fields = appState.jsonData.database.table[currentTableName]?.fields || {};
             for (const fieldName in fields) {
                 elements.fieldsSelect.add(new Option(fieldName, fieldName));
             }
@@ -5592,7 +5599,7 @@ export function initializeConstraintsTabHandlers() {
                 onOk: async () => {
                     const result = await window.electronAPI.deleteTableConstraint({ constraint_id: constraintId });
                     if (result.success) {
-                        await loadProjectData(activeProject);
+                        await loadProjectData(appState.activeProject);
                         populateConstraintsTab(currentTableName);
                     } else {
                         showCustomDialog({ title: "Error", message: `Failed to delete rule: ${result.message}` });
@@ -5620,7 +5627,7 @@ export function initializeConstraintsTabHandlers() {
         }
 
         const tableName = document.querySelector('#table-settings-page .table-name').textContent;
-        const tableId = jsonData.database.table[tableName]?.table_id;
+        const tableId = appState.jsonData.database.table[tableName]?.table_id;
         
         const result = await window.electronAPI.saveTableConstraint({
             table_id: tableId,
@@ -5630,7 +5637,7 @@ export function initializeConstraintsTabHandlers() {
 
         if (result.success) {
             closeModal();
-            await loadProjectData(activeProject);
+            await loadProjectData(appState.activeProject);
             populateConstraintsTab(tableName);
         } else {
             showCustomDialog({ title: "Error", message: `Failed to save rule: ${result.message}` });
@@ -5778,7 +5785,7 @@ export async function loadValidationTab(columnId, tableName) {
         const existingValidations = await window.electronAPI.getFieldValidations(columnId);
         
         // 2. Dapatkan Senarai Column (untuk dropdown)
-        const tableData = jsonData.database.table[tableName];
+        const tableData = appState.jsonData.database.table[tableName];
         const allCols = [];
         const dateCols = [];
 

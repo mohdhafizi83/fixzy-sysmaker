@@ -2,10 +2,8 @@
 
 // Import Helpers UI
 import { setElementValue, setRadioValue } from '../ui/formHelpers.js';
-
-// Import Dependencies Global dari Renderer
-// Pastikan path '../../renderer.js' adalah betul relatif dengan folder js/pages/
-import { activeProject, SaveManager, isPopulatingData, isAutoSaveEnabled } from '../../renderer.js';
+import { appState } from '../state.js';
+import { loadProjectData, SaveManager } from '../../renderer.js';
 
 export function populateMainDashboard(projectData) {
     if (!projectData) {
@@ -91,8 +89,8 @@ export function initializeProjectSaveHandlers() {
     if (!form || !header) return;
 
     const handleInputChange = (event) => {
-        if (isPopulatingData) return;
-        if (!isAutoSaveEnabled) return;
+        if (appState.isPopulatingData) return;
+        if (!appState.isAutoSaveEnabled) return;
 
         const input = event.target;
         let key = (input.type === 'radio')
@@ -116,7 +114,7 @@ export function initializeProjectSaveHandlers() {
         }
 
         // Guna SaveManager yang diimport
-        SaveManager.addToQueue('project', activeProject.project_id, { [key]: value });
+        SaveManager.addToQueue('project', appState.activeProject.project_id, { [key]: value });
     };
 
     // Pasang event listener

@@ -1,10 +1,8 @@
 // js/pages/tableSettings.js
 
 import { setElementValue, setRadioValue } from '../ui/formHelpers.js'; 
-
-// 2. Import Data Global & State
-import { jsonData, activeProject, lastActiveChildTable } from '../../renderer.js';
-
+import { appState, setLastActiveChildTable } from '../state.js';
+import { loadProjectData, SaveManager } from '../../renderer.js';
 import { 
     populateSortByDropdown,
     populateFocusFieldDropdown,
@@ -22,7 +20,7 @@ export function populateTableSettings(tableName) {
 	populateCustomViewsTab(tableName);
     populateConstraintsTab(tableName);
 		
-    const tableData = jsonData.database.table[tableName];
+    const tableData = appState.jsonData.database.table[tableName];
     if (!tableData) {
         console.error(`Tiada data ditemui untuk jadual: ${tableName}`);
         return;
@@ -50,7 +48,7 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-allow-force-delete', tableData.allow_force_delete);
 
     // Logik untuk menyahaktifkan ciri soft-delete jika projek menggunakan hard-delete
-    const isHardDelete = activeProject.data_delete_type === 'hard';
+    const isHardDelete = appState.activeProject.data_delete_type === 'hard';
     const restoreCheckbox = document.getElementById('tbl-allow-restore-delete');
     const forceDeleteCheckbox = document.getElementById('tbl-allow-force-delete');
 
@@ -139,9 +137,9 @@ export function populateParentChildTab(currentTableName) {
         allowAdd: document.getElementById('parentchild-allow-add-from-tv')
     };
     
-    if (!childList || !jsonData.database.relationships || !optionsPanel) return;
+    if (!childList || !appState.jsonData.database.relationships || !optionsPanel) return;
 
-    const children = jsonData.database.relationships.filter(
+    const children = appState.jsonData.database.relationships.filter(
         rel => rel.parent_table_name === currentTableName
     );
 
@@ -196,7 +194,7 @@ export function populateParentChildTab(currentTableName) {
             }
         });
 
-        const itemToSelect = newChildList.querySelector(`li[data-child-name="${lastActiveChildTable}"]`);
+        const itemToSelect = newChildList.querySelector(`li[data-child-name="${appState.lastActiveChildTable}"]`);
 
         if (itemToSelect) {
             itemToSelect.click();

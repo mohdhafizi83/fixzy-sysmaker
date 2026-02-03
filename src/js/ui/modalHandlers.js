@@ -1,6 +1,6 @@
 // js/ui/modalHandlers.js
 
-import { setIsCoreLockingEnabled } from '../../renderer.js';
+import { setIsCoreLockingEnabled } from '../state.js';
 import { applyFontSize } from './formHelpers.js';
 
 /**

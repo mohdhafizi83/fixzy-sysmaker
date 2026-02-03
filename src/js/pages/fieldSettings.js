@@ -1,7 +1,8 @@
 // js/pages/fieldSettings.js
 
 import { setElementValue, setRadioValue } from '../ui/formHelpers.js';
-import { jsonData } from '../../renderer.js'; 
+import { appState } from '../state.js';
+import { SaveManager } from '../../renderer.js';
 import { initializeValidationInputHandlers } from '../features/validation.js';
 import { 
     populateParentTableDropdown,
@@ -24,7 +25,7 @@ export function populateFieldSettings(tableName, fieldName) {
         control.disabled = false;
     });
 	
-    const fieldData = jsonData.database.table[tableName]?.fields[fieldName];
+    const fieldData = appState.jsonData.database.table[tableName]?.fields[fieldName];
 
     if (!fieldData) {
         console.error(`Tiada data ditemui untuk medan: ${tableName}.${fieldName}`);
@@ -261,13 +262,13 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-boolean-label-false', fieldData.boolean_label_false);
     
     if (parentTableSelect && !parentTableSelect.value) {
-        const relationship = jsonData.database.relationships.find(rel => rel.child_table_name === tableName && rel.fk_child_field === fieldName);
+        const relationship = appState.jsonData.database.relationships.find(rel => rel.child_table_name === tableName && rel.fk_child_field === fieldName);
         if (relationship) {
             const parentTable = relationship.parent_table_name;
             const parentPKField = relationship.parent_field;
             setElementValue('fld-lookup-parent-table', parentTable);
             parentTableSelect.dispatchEvent(new Event('change'));
-            const parentTableFields = jsonData.database.table[parentTable]?.fields;
+            const parentTableFields = appState.jsonData.database.table[parentTable]?.fields;
             if (parentTableFields) {
                 const fieldNames = Object.keys(parentTableFields);
                 const pkIndex = fieldNames.indexOf(parentPKField);
@@ -349,7 +350,7 @@ export function populateFieldSettings(tableName, fieldName) {
     
 // ▼▼▼ PEMBETULAN DI SINI ▼▼▼
     // Panggil fungsi loadValidationTab dengan tableName (bukan tableId)
-    const currentTableData = jsonData.database.table[tableName];
+    const currentTableData = appState.jsonData.database.table[tableName];
     const currentFieldData = currentTableData?.fields[fieldName];
 
     if (currentTableData && currentFieldData) {

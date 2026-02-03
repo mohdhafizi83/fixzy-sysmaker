@@ -1,7 +1,9 @@
 // FIND AND REPLACE THE ENTIRETY OF workflowBuilder.js WITH THIS CODE
 
 import { openModalLogicBuilder } from './uiHandlers.js';
-import { jsonData } from '../renderer.js';
+import { appState } from './state.js';
+import { resolveVariables } from './utils.js';
+import { SaveManager } from '../renderer.js';
 
 /**
  * Fungsi teras yang boleh diguna semula untuk menyediakan satu instans workflow builder.

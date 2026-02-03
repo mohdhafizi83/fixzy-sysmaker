@@ -79,6 +79,16 @@ import { populateMainDashboard, initializeProjectSaveHandlers } from './js/pages
 
 import { setElementValue, setRadioValue, applyFontSize } from './js/ui/formHelpers.js';
 
+import { 
+    appState, 
+    setAwaitingMenuGroupSave, 
+    setLastActiveChildTable, 
+    setIsCoreLockingEnabled,
+    setProjectData,
+    setActiveProject
+} from './js/state.js';
+import { resolveVariables } from './js/utils.js';
+
 window.VALIDATION_RULES_CONFIG = VALIDATION_RULES_CONFIG;
 window.saveValidationData = saveValidationData;
 window.toggleValidationInputs = toggleValidationInputs;
@@ -141,24 +151,24 @@ export const SaveManager = {
                     const fieldPage = document.getElementById('field-settings-page');
                     if (tablePage && !tablePage.classList.contains('hidden')) {
                         const originalTableName = tablePage.querySelector('.table-name')?.textContent;
-                        if (originalTableName && jsonData.database.table[originalTableName]) {
-                            const tableId = jsonData.database.table[originalTableName].table_id;
+                        if (originalTableName && appState.jsonData.database.table[originalTableName]) {
+                            const tableId = appState.jsonData.database.table[originalTableName].table_id;
                             tableToFocus = this.saveQueue.tables[tableId]?.table_name || originalTableName;
                         }
                     } else if (fieldPage && !fieldPage.classList.contains('hidden')) {
                         const nameParts = fieldPage.querySelector('.field-name')?.textContent.split('.');
                         const originalTableName = nameParts[0];
                         const originalFieldName = nameParts[1];
-                        if (originalTableName && originalFieldName && jsonData.database.table[originalTableName]?.fields[originalFieldName]) {
-                            const fieldId = jsonData.database.table[originalTableName].fields[originalFieldName].field_id;
+                        if (originalTableName && originalFieldName && appState.jsonData.database.table[originalTableName]?.fields[originalFieldName]) {
+                            const fieldId = appState.jsonData.database.table[originalTableName].fields[originalFieldName].field_id;
                             const fieldNameToFocus = this.saveQueue.fields[fieldId]?.field_name || originalFieldName;
-                            const tableId = jsonData.database.table[originalTableName].table_id;
+                            const tableId = appState.jsonData.database.table[originalTableName].table_id;
                             const tableNameToFocus = this.saveQueue.tables[tableId]?.table_name || originalTableName;
                             itemToSelect = { table: tableNameToFocus, field: fieldNameToFocus };
                         }
                     }
                     this.clearQueue();
-                    await loadProjectData(activeProject, { tableToSelect: tableToFocus, itemToSelect, refreshMode: 'sidebarOnly' });
+                    await loadProjectData(appState.activeProject, { tableToSelect: tableToFocus, itemToSelect, refreshMode: 'sidebarOnly' });
                 
                 // ▼▼▼ MULA LOGIK BAHARU: Kendalikan kemas kini Parent/Child Tab ▼▼▼
                 } else if (hasRelationshipChanges) {
@@ -169,7 +179,7 @@ export const SaveManager = {
                         setLastActiveChildTable(activeChildLi ? activeChildLi.dataset.childName : null);
                         
                         // Muat semula data di latar belakang
-                        await loadProjectData(activeProject, { refreshMode: 'dataOnly' });
+                        await loadProjectData(appState.activeProject, { refreshMode: 'dataOnly' });
                         
                         // Populate semula hanya tab Parent/Child
                         populateParentChildTab(currentTableName);
@@ -178,8 +188,8 @@ export const SaveManager = {
                 // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
 
                 } else {
-                // Muat semula data di latar belakang untuk memastikan jsonData sentiasa terkini.
-                await loadProjectData(activeProject, { refreshMode: 'dataOnly' });
+                // Muat semula data di latar belakang untuk memastikan appState.jsonData sentiasa terkini.
+                await loadProjectData(appState.activeProject, { refreshMode: 'dataOnly' });
                 this.clearQueue();
                 }
 
@@ -206,7 +216,7 @@ export const SaveManager = {
         } finally {
             this.isProcessing = false;
             
-            if (isAwaitingMenuGroupSave) {
+            if (appState.isAwaitingMenuGroupSave) {
                 document.getElementById('loading-overlay')?.classList.add('loading-overlay-hidden');
                 setAwaitingMenuGroupSave(false);
             }
@@ -243,14 +253,6 @@ export const SaveManager = {
     }
 };
 
-/**
- * Menetapkan nilai untuk pembolehubah global 'isCoreLockingEnabled'.
- * @param {boolean} value - Nilai baharu (true atau false).
- */
-export function setIsCoreLockingEnabled(value) {
-    isCoreLockingEnabled = value;
-}
-
 function showConfirmationDialog(title, message) {
     return new Promise((resolve) => {
         showCustomDialog({
@@ -262,31 +264,6 @@ function showConfirmationDialog(title, message) {
         });
     });
 }
-
-// Pembolehubah global untuk menyimpan data projek semasa dan pengurusan UI
-export let isCoreLockingEnabled = true;
-export let jsonData = null;
-export let allTableNames = [];
-export let activeProject = null;
-export let isAutoSaveEnabled = true;
-export let isPopulatingData = false;
-export let lastActiveChildTable = null;
-// =================================================================
-// ▼▼▼ FUNGSI UTAMA BAHARU UNTUK MEMUATKAN DATA PROJEK ▼▼▼
-// =================================================================
-export let isAwaitingMenuGroupSave = false;
-export function setAwaitingMenuGroupSave(value) {
-    isAwaitingMenuGroupSave = value;
-}
-/**
- * Menetapkan nama child table yang aktif.
- * @param {string | null} tableName - Nama jadual atau null untuk reset.
- */
-export function setLastActiveChildTable(tableName) {
-    lastActiveChildTable = tableName;
-}
-
-// KOD PENUH: Gantikan fungsi loadProjectData sedia ada dengan yang ini.
 
 export async function loadProjectData(project, options = {}) {
     const { tableToSelect = null, itemToSelect = null, refreshMode = 'full' } = options;
@@ -301,21 +278,21 @@ export async function loadProjectData(project, options = {}) {
     const data = await window.electronAPI.getFullSchema(project.project_id);
 
     if (data && data.project && data.database) {
-        isPopulatingData = true;
+        appState.isPopulatingData = true;
 
-        activeProject = data.project;
-        jsonData = data;
-        allTableNames = Object.keys(jsonData.database.table || {});
+        appState.activeProject = data.project;
+        appState.jsonData = data;
+        appState.allTableNames = Object.keys(appState.jsonData.database.table || {});
 
         if (refreshMode === 'dataOnly') {
-            isPopulatingData = false;
+            appState.isPopulatingData = false;
             return;
         }
         
         if (refreshMode === 'full') {
-            populateMainDashboard(activeProject);  
-            populateMenuManagement(jsonData.database.unified_menu);
-            document.getElementById('app-title').value = activeProject.app_title || 'Project Name';
+            populateMainDashboard(appState.activeProject);  
+            populateMenuManagement(appState.jsonData.database.unified_menu);
+            document.getElementById('app-title').value = appState.activeProject.app_title || 'Project Name';
         }
         
         await generateSidebarMenu();
@@ -335,7 +312,7 @@ export async function loadProjectData(project, options = {}) {
             // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
         }
 
-        isPopulatingData = false;
+        appState.isPopulatingData = false;
     } else {
         console.error("Gagal memuatkan data skema dari backend.");
     }
@@ -349,7 +326,7 @@ export async function loadProjectData(project, options = {}) {
 async function handleSqlImport(importFunction, dialect) {
     const overlay = document.getElementById('loading-overlay');
     try {
-        if (!activeProject) {
+        if (!appState.activeProject) {
             showCustomDialog({ title: "Error", message: "Please create or select a project first." });
             return;
         }
@@ -367,14 +344,14 @@ async function handleSqlImport(importFunction, dialect) {
             const dbValue = dialectToDbValueMap[dialect];
 
             if (dbValue) {
-                SaveManager.addToQueue('project', activeProject.project_id, {
+                SaveManager.addToQueue('project', appState.activeProject.project_id, {
                     stack_database: dbValue
                 });
                 await SaveManager.processQueue(); 
             }
 
             showCustomDialog({ title: "Success", message: result.message });
-            await loadProjectData(activeProject);
+            await loadProjectData(appState.activeProject);
         } else if (result.message !== "Import cancelled by user.") {
             // Hanya tunjukkan panduan ralat jika ia bukan pembatalan oleh pengguna
             console.error("Import Failed:", result.message);
@@ -483,8 +460,10 @@ window.addEventListener('beforeunload', (event) => {
         if (settings && settings.font_size) {
             applyFontSize(settings.font_size);
         }
+        // KOD BARU:
         if (settings && settings.lock_core_components) {
-            isCoreLockingEnabled = settings.lock_core_components === '1';
+            // Kita panggil fungsi setter yang diimport dari state.js
+            setIsCoreLockingEnabled(settings.lock_core_components === '1'); 
         }
     } catch (error) {
         console.error("Gagal memuatkan tetapan awal:", error);
@@ -638,11 +617,11 @@ if (importSqlImportBtn) {
         closeImportModal();
 
         if (mode === 'file') {
-            handleSqlImport(() => window.electronAPI.importSqlFile({ projectId: activeProject.project_id, dialect }), dialect);
+            handleSqlImport(() => window.electronAPI.importSqlFile({ projectId: appState.activeProject.project_id, dialect }), dialect);
         } else {
             const sqlText = document.getElementById('sql-paste-area').value;
             if (sqlText.trim()) {
-                handleSqlImport(() => window.electronAPI.importSqlText({ sql: sqlText, projectId: activeProject.project_id, dialect }), dialect);
+                handleSqlImport(() => window.electronAPI.importSqlText({ sql: sqlText, projectId: appState.activeProject.project_id, dialect }), dialect);
             } else {
                 if (overlay) overlay.classList.add('loading-overlay-hidden');
                 showCustomDialog({ title: "Input Required", message: "Please paste the SQL commands." });
@@ -733,48 +712,6 @@ const generateAppBtn = document.getElementById('app-generate_app');
     });
 });
 
-/**
- * Mencari dan menggantikan semua placeholder '##variable.nama##' dalam satu rentetan
- * dengan nilai sebenar daripada objek skop.
- * @param {string} configString - Rentetan JSON konfigurasi untuk blok Action atau Condition.
- * @param {object} variableScope - Objek yang menyimpan nilai-nilai pembolehubah, cth: { nama_anda: 'Ali', umur: 30 }.
- * @returns {string} Rentetan JSON baharu dengan semua pembolehubah telah digantikan.
- */
-function resolveVariables(configString, variableScope) {
-    if (!configString || !variableScope) {
-        return configString;
-    }
-
-    // Regular Expression untuk mencari corak ##variable.namaPembolehubah##
-    // (\w+) menangkap nama pembolehubah (hanya huruf, nombor, dan garis bawah)
-    const variableRegex = /##variable\.(\w+)##/g;
-
-    return configString.replace(variableRegex, (match, variableName) => {
-        // 'match' adalah keseluruhan rentetan, cth: "##variable.kuota_kursus##"
-        // 'variableName' adalah bahagian yang ditangkap, cth: "kuota_kursus"
-
-        // Semak jika pembolehubah wujud dalam skop kita
-        if (Object.prototype.hasOwnProperty.call(variableScope, variableName)) {
-            // Gantikan dengan nilai sebenar. 
-            // Kita JSON.stringify nilai itu untuk memastikan ia dimasukkan sebagai rentetan JSON yang sah,
-            // ini penting jika nilainya adalah objek atau rentetan yang mengandungi petikan.
-            // Kita buang petikan luar jika ia adalah rentetan mudah.
-            const value = variableScope[variableName];
-            if (typeof value === 'string') {
-                return value.replace(/'/g, "\\'"); // Escape single quotes for SQL safety
-            }
-            return value;
-        }
-
-        // Jika pembolehubah tidak ditemui, kembalikan placeholder asal supaya mudah dinyahtralat.
-        console.warn(`Pembolehubah tidak ditemui dalam skop: ${variableName}`);
-        return match;
-    });
-}
-
-// =================================================================
-// Generator functions will be put here
-// =================================================================
 async function finalizeGeneratedApp(pathKeProjekBaharu) {
   // Paparkan status kepada pengguna, cth: "Memasang dependensi..."
   
