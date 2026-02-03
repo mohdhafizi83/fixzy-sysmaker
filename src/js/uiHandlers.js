@@ -1,3 +1,4 @@
+export * from './handlers/fieldHandlers.js';
 import { setElementValue, setRadioValue } from './ui/formHelpers.js';
 import { resolveVariables } from './utils.js';
 import { SaveManager } from './saveManager.js';
@@ -8,7 +9,7 @@ import {
     setLastActiveChildTable, 
     setIsCoreLockingEnabled 
 } from './state.js';
-
+import { showCustomDialog } from './ui/modalHandlers.js';
 /**
  * Fungsi Teras Boleh Guna Semula untuk mencipta Logic Builder.
  * Ia menerima satu objek konfigurasi untuk menentukan kelakuannya.
@@ -1631,7 +1632,6 @@ case 'custom_query': {
     };
 }
 
-
 /**
  * Opens the Logic Builder modal with a given configuration.
  * This is the core, reusable function for showing the builder.
@@ -1893,8 +1893,6 @@ export function initializeStackSelectorHandlers() {
     }
 }
 
-
-
 /**
  * Mengemas kini imej di dalam kotak "Template preview" berdasarkan
  * pilihan semasa dropdown 'tbl-tv-template'.
@@ -2011,37 +2009,6 @@ export function initializeProjectHookBuilder() {
     // This functionality is now handled by the Workflow Builder in workflowBuilder.js
 }
 
-// KOD PENUH: Gantikan keseluruhan fungsi ini.
-export function initializeLookupFieldSaveHandler() {
-    const parentTableSelect = document.getElementById('fld-lookup-parent-table');
-    if (!parentTableSelect) return;
-
-    parentTableSelect.addEventListener('change', () => {
-		if (appState.isPopulatingData) return;
-		if (!appState.isAutoSaveEnabled) return;
-        
-        const parentTableName = parentTableSelect.value;
-        const [childTableName, fk_child_field] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
-        
-        // Jika jadual induk dipilih, lakukan 'upsert'.
-        // Jika pilihan dikosongkan, ia bermaksud memadam hubungan.
-        if (parentTableName) {
-            SaveManager.addToQueue('upsertRelationship', null, {
-                parentTableName,
-                childTableName,
-                fk_child_field
-            });
-        } else {
-            // Hantar tugasan untuk memadam hubungan.
-            SaveManager.addToQueue('deleteRelationship', null, {
-                childTableName,
-                fk_child_field
-            });
-        }
-    });
-}
-
-
 export function initializeRelationshipSaveHandlers() {
     const form = document.getElementById('tab-detail-parent-child');
     if (!form) return;
@@ -2079,8 +2046,6 @@ export function initializeRelationshipSaveHandlers() {
         }
     });
 }
-
-// src/js/uiHandlers.js (Versi Bersih)
 
 export function initializeTableSaveHandlers() {
     const container = document.getElementById('table-settings-page');
@@ -2138,60 +2103,6 @@ export function initializeTableSaveHandlers() {
 
             // Hantar
             SaveManager.addToQueue('table', tableData.table_id, { [key]: value });
-        });
-    });
-}
-
-export function initializeFieldSaveHandlers() {
-    const container = document.getElementById('field-settings-page');
-    if (!container) return;
-
-    ['change', 'focusout'].forEach(eventType => {
-        container.addEventListener(eventType, (e) => {
-            const input = e.target;
-
-            if (eventType === 'focusout' && !['text', 'textarea', 'number'].includes(input.type)) return;
-            if (eventType === 'change' && ['text', 'textarea', 'number'].includes(input.type)) return;
-            if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(input.tagName)) return;
-
-            if (appState.isPopulatingData) return;
-            if (!appState.isAutoSaveEnabled) return;
-
-            const titleEl = container.querySelector('.field-name');
-            if (!titleEl) return;
-            
-            const parts = titleEl.textContent.trim().split('.');
-            if (parts.length < 2) return;
-            
-            const tableName = parts[0];
-            const fieldName = parts[1];
-
-            const tableData = appState.jsonData.database.table[tableName];
-            if (!tableData || !tableData.fields[fieldName]) return;
-            
-            const fieldId = tableData.fields[fieldName].field_id;
-
-            let key = '';
-            if (input.type === 'radio') {
-                key = input.name.replace('fld-', '').replace(/-/g, '_');
-            } else {
-                key = input.id.replace('fld-', '').replace(/-/g, '_');
-            }
-
-            const keyMappings = {
-                // Tambah mapping field di sini jika perlu
-            };
-
-            if (keyMappings[key]) key = keyMappings[key];
-
-            let value;
-            if (input.type === 'checkbox') value = input.checked ? 1 : 0;
-            else if (input.type === 'radio') {
-                if (!input.checked) return;
-                value = input.value;
-            } else value = input.value;
-
-            SaveManager.addToQueue('field', fieldId, { [key]: value });
         });
     });
 }
@@ -2292,7 +2203,6 @@ export function populateSortByDropdown(tableName, elementId = 'tbl-default-sort-
     }
 }
 
-
 export function populateFocusFieldDropdown(tableName) {
     const defaultFocusDropdown = document.getElementById('tbl-default-focus');
     if (!defaultFocusDropdown || !appState.jsonData) return;
@@ -2321,61 +2231,6 @@ export function populateFocusFieldDropdown(tableName) {
             option.value = fieldName;
             option.textContent = fieldName;
             defaultFocusDropdown.appendChild(option);
-        });
-    }
-}
-
-export function initializeMediaTabHandlers() {
-    const mediaRadios = document.querySelectorAll('input[name="fld-media-type"]');
-    const allPanels = document.querySelectorAll('.media-options-panel');
-
-    if (mediaRadios.length === 0) return;
-
-    mediaRadios.forEach(radio => {
-        radio.addEventListener('click', () => {
-            // Logik sedia ada untuk menukar panel (tidak berubah)
-            allPanels.forEach(panel => panel.classList.add('hidden'));
-            const radioValue = radio.value;
-            let targetPanelId = (radioValue === 'upload') ? 'file-upload-options-panel' : `${radioValue}-options-panel`;
-            const targetPanel = document.getElementById(targetPanelId);
-            if (targetPanel) {
-                targetPanel.classList.remove('hidden');
-            }
-
-            // ▼▼▼ MULA LOGIK BAHARU YANG DIPERBAIKI ▼▼▼
-            const iconInput = document.getElementById('fld-tv-icon');
-            if (iconInput) {
-                let iconToSet = ''; // Secara lalai, kosongkan ikon
-
-                if (radio.value === 'upload') {
-                    iconToSet = 'document-arrow-down';
-                } else if (radio.value === 'gmap') {
-                    iconToSet = 'map-pin';
-                } else if (radio.value === 'youtube') {
-                    iconToSet = 'video-camera';
-                }
-                
-                // Kemas kini nilai input secara paksa dan maklumkan SaveManager
-                iconInput.value = iconToSet;
-                iconInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-            // ▲▲▲ TAMAT LOGIK YANG DIPERBAIKI ▲▲▲
-        });
-    });
-}
-
-export function initializeOptionsListHandlers() {
-    const quickListSelect = document.getElementById('options-quick-list');
-    const valuesInput = document.getElementById('fld-options-list-values');
-
-    if (quickListSelect && valuesInput) {
-        quickListSelect.addEventListener('change', () => {
-            // DIPERBAIKI: Buang syarat 'if' untuk memastikan ia sentiasa berjalan
-            // Tetapkan nilai textbox kepada nilai dropdown yang dipilih (termasuk nilai kosong)
-            valuesInput.value = quickListSelect.value;
-            
-            // Cetuskan acara 'input' secara manual untuk memaklumkan SaveManager
-            valuesInput.dispatchEvent(new Event('input', { bubbles: true }));
         });
     }
 }
@@ -2522,375 +2377,6 @@ export function initializeClassSelectorHandlers() {
             // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
         });
     }
-}
-
-export function initializeAutoDefaultHandlers() {
-    const autoDefaultBtn = document.getElementById('auto-default-btn');
-    const autoDefaultModal = document.getElementById('auto-default-modal');
-    const defaultValueInput = document.getElementById('fld-default-value');
-    
-    // Elemen di dalam modal
-    const selectValue = document.getElementById('auto-default-select');
-    const btnOk = document.getElementById('auto-default-ok');
-    const btnCancel = document.getElementById('auto-default-cancel');
-    const btnClose = document.getElementById('auto-default-close');
-
-    if (!autoDefaultBtn || !autoDefaultModal || !defaultValueInput || !selectValue || !btnOk || !btnCancel || !btnClose) {
-        console.warn("Auto-default handler elements not found. Skipping initialization.");
-        return;
-    }
-
-    const closeModal = () => autoDefaultModal.classList.add('hidden');
-
-    autoDefaultBtn.addEventListener('click', () => {
-        autoDefaultModal.classList.remove('hidden');
-    });
-
-    btnOk.addEventListener('click', () => {
-        // 1. Salin nilai dari dropdown modal ke textbox 'Default'
-        defaultValueInput.value = selectValue.value;
-
-        // 2. ▼▼▼ BARIS KOD TAMBAHAN (PEMBETULAN) ▼▼▼
-        // Cetuskan acara 'input' untuk memaklumkan SaveManager tentang perubahan
-        defaultValueInput.dispatchEvent(new Event('input', { bubbles: true }));
-
-        // 3. Tutup modal
-        closeModal();
-    });
-
-    btnCancel.addEventListener('click', closeModal);
-    btnClose.addEventListener('click', closeModal);
-}
-
-export function initializeLinkOptionsHandlers() {
-    const behaviorSelect = document.getElementById('fld-media-link-behavior');
-    const displayAsGroup = document.getElementById('link-display-as-group');
-    const displayAsSelect = document.getElementById('fld-media-link-display-as');
-    const otherFieldGroup = document.getElementById('link-other-field-group');
-
-    if (!behaviorSelect || !displayAsGroup || !displayAsSelect || !otherFieldGroup) {
-        console.warn("Link options handler elements not found. Skipping initialization.");
-        return;
-    }
-
-    // Listener untuk dropdown pertama: "Behavior..."
-    behaviorSelect.addEventListener('change', () => {
-        const value = behaviorSelect.value;
-        if (value === 'web_link' || value === 'email_link') {
-            displayAsGroup.classList.remove('hidden');
-        } else {
-            displayAsGroup.classList.add('hidden');
-        }
-        // Cetuskan 'change' pada dropdown kedua untuk memastikan keadaannya betul
-        displayAsSelect.dispatchEvent(new Event('change'));
-    });
-
-    // Listener untuk dropdown kedua: "Display the link..."
-    displayAsSelect.addEventListener('change', () => {
-        // Hanya paparkan jika dropdown pertama membenarkannya
-        if (!displayAsGroup.classList.contains('hidden') && displayAsSelect.value === 'other_field') {
-            otherFieldGroup.classList.remove('hidden');
-        } else {
-            otherFieldGroup.classList.add('hidden');
-        }
-    });
-}
-
-export function populateOtherFieldDropdown(tableName, currentFieldName) {
-    const otherFieldSelect = document.getElementById('fld-media-link-other-field');
-    if (!otherFieldSelect || !appState.jsonData) return;
-
-    // Kosongkan senarai sedia ada
-    otherFieldSelect.innerHTML = '';
-
-    const table = appState.jsonData.database.table[tableName];
-    if (table && table.fields) {
-        // Dapatkan semua nama medan dan tapis keluar medan semasa
-        const otherFields = Object.keys(table.fields).filter(f => f !== currentFieldName);
-
-        otherFields.forEach(fieldName => {
-            const option = document.createElement('option');
-            option.value = fieldName;
-            option.textContent = fieldName;
-            otherFieldSelect.appendChild(option);
-        });
-    }
-}
-
-export function initializeImageOptionsHandlers() {
-    const mainCheckbox = document.getElementById('fld-allow-image-uploads');
-    const imageOptionsTabs = document.getElementById('image-options-tabs');
-
-    const dependentControls = [
-        document.getElementById('fld-max-file-size'),
-        document.getElementById('fld-delete-image-server'),
-        document.getElementById('fld-dont-rename-image'),
-        document.getElementById('fld-tv-thumb-width'),
-        document.getElementById('fld-tv-thumb-height'),
-        document.getElementById('fld-tv-enable-zooming'),
-        document.getElementById('fld-tv-show-full-size'),
-        document.getElementById('fld-dv-thumb-width'),
-        document.getElementById('fld-dv-thumb-height'),
-        document.getElementById('fld-dv-enable-zooming'),
-        document.getElementById('fld-dv-show-full-size')
-    ];
-
-    const tvShowFullSize = document.getElementById('fld-tv-show-full-size');
-    const tvEnableZooming = document.getElementById('fld-tv-enable-zooming');
-    const dvShowFullSize = document.getElementById('fld-dv-show-full-size');
-    const dvEnableZooming = document.getElementById('fld-dv-enable-zooming');
-
-    const toggleImageOptions = () => {
-        const isEnabled = mainCheckbox.checked;
-        imageOptionsTabs.classList.toggle('hidden', !isEnabled);
-        dependentControls.forEach(control => {
-            if (control) control.disabled = !isEnabled;
-        });
-        if(isEnabled) {
-             handleZoomDependency();
-        }
-    };
-
-    // ▼▼▼ KEMAS KINI FUNGSI INI ▼▼▼
-    const handleZoomDependency = () => {
-        if (tvShowFullSize && tvEnableZooming) {
-            const isDisabled = tvShowFullSize.checked;
-            tvEnableZooming.disabled = isDisabled;
-            // Jika ia dinyahaktifkan, pastikan ia juga dinyah-tanda
-            if (isDisabled) {
-                tvEnableZooming.checked = false;
-            }
-        }
-        if (dvShowFullSize && dvEnableZooming) {
-            const isDisabled = dvShowFullSize.checked;
-            dvEnableZooming.disabled = isDisabled;
-            // Jika ia dinyahaktifkan, pastikan ia juga dinyah-tanda
-            if (isDisabled) {
-                dvEnableZooming.checked = false;
-            }
-        }
-    };
-
-    if (mainCheckbox) {
-        mainCheckbox.addEventListener('change', toggleImageOptions);
-    }
-    if (tvShowFullSize) {
-        tvShowFullSize.addEventListener('change', handleZoomDependency);
-    }
-    if (dvShowFullSize) {
-        dvShowFullSize.addEventListener('change', handleZoomDependency);
-    }
-    
-    if(mainCheckbox) {
-        toggleImageOptions();
-    }
-}
-export function populateFileOtherFieldDropdown(tableName, currentFieldName) {
-    const otherFieldSelect = document.getElementById('fld-file-other-field');
-    if (!otherFieldSelect || !appState.jsonData) return;
-
-    otherFieldSelect.innerHTML = '';
-    const table = appState.jsonData.database.table[tableName];
-    if (table && table.fields) {
-        const otherFields = Object.keys(table.fields).filter(f => f !== currentFieldName);
-        otherFields.forEach(fieldName => {
-            const option = document.createElement('option');
-            option.value = fieldName;
-            option.textContent = fieldName;
-            otherFieldSelect.appendChild(option);
-        });
-    }
-}
-
-export function initializeFileUploadOptionsHandlers() {
-    // --- Bahagian 1: Logik Checkbox Utama ---
-    const mainCheckbox = document.getElementById('fld-allow-file-uploads');
-    const dependentControls = [
-        document.getElementById('fld-file-types'),
-        document.getElementById('fld-file-max-size'),
-        document.getElementById('fld-delete-file-server'),
-        document.getElementById('fld-dont-rename-file'),
-        document.getElementById('fld-file-behavior'),
-        document.getElementById('fld-file-display-as'),
-        document.getElementById('fld-file-other-field')
-    ];
-
-    // --- Bahagian 2: Logik Dropdown Bersyarat ---
-    const behaviorSelect = document.getElementById('fld-file-behavior');
-    // Tetapkan 'Download link' sebagai nilai lalai
-    if (behaviorSelect) {
-        behaviorSelect.value = 'download_link';
-    }
-    const displayAsGroup = document.getElementById('fld-file-display-as-group');
-    const displayAsSelect = document.getElementById('fld-file-display-as');
-    const otherFieldGroup = document.getElementById('fld-file-other-field-group');
-
-    const toggleAllOptions = () => {
-        const isEnabled = mainCheckbox.checked;
-        dependentControls.forEach(control => {
-            if (control) control.disabled = !isEnabled;
-        });
-        // Cetuskan event pada dropdown untuk reset keadaan paparannya
-        if (behaviorSelect) behaviorSelect.dispatchEvent(new Event('change'));
-    };
-
-    if (mainCheckbox) {
-        mainCheckbox.addEventListener('change', toggleAllOptions);
-    }
-
-    // Pasang listener untuk dropdown bersyarat
-    if (behaviorSelect) {
-        behaviorSelect.addEventListener('change', () => {
-            if (behaviorSelect.value === 'download_link') {
-                displayAsGroup.classList.remove('hidden');
-            } else {
-                displayAsGroup.classList.add('hidden');
-            }
-            if (displayAsSelect) displayAsSelect.dispatchEvent(new Event('change'));
-        });
-    }
-
-    if (displayAsSelect) {
-        displayAsSelect.addEventListener('change', () => {
-            if (!displayAsGroup.classList.contains('hidden') && displayAsSelect.value === 'other_field') {
-                otherFieldGroup.classList.remove('hidden');
-            } else {
-                otherFieldGroup.classList.add('hidden');
-            }
-        });
-    }
-
-    // Tetapkan keadaan awal semasa muat
-    if (mainCheckbox) {
-        toggleAllOptions();
-    }
-}
-
-export function initializeMediaVisibilityHandlers() {
-    // --- Pengendali untuk Google Map ---
-    const gmapCheckbox = document.getElementById('fld-display-gmap');
-    const gmapDetails = document.getElementById('gmap-details');
-
-    if (gmapCheckbox && gmapDetails) {
-        gmapCheckbox.addEventListener('change', () => {
-            gmapDetails.classList.toggle('hidden', !gmapCheckbox.checked);
-        });
-    }
-
-    // --- Pengendali untuk YouTube Video ---
-    const youtubeCheckbox = document.getElementById('fld-accept-video-url');
-    const youtubeDetails = document.getElementById('youtube-details');
-
-    if (youtubeCheckbox && youtubeDetails) {
-        youtubeCheckbox.addEventListener('change', () => {
-            youtubeDetails.classList.toggle('hidden', !youtubeCheckbox.checked);
-        });
-    }
-}
-
-/**
- * Mengisi dropdown 'Parent table' dengan semua jadual lain dalam projek,
- * termasuk opsyen untuk rujukan-kendiri (self-referencing).
- * @param {string} currentTableName - Nama jadual semasa, untuk dikecualikan dan ditambah sebagai rujukan-kendiri.
- */
-export function populateParentTableDropdown(currentTableName) {
-    const parentTableSelect = document.getElementById('fld-lookup-parent-table');
-    parentTableSelect.innerHTML = '<option value=""></option>'; // Kosongkan dan tambah opsyen lalai
-
-    // ▼▼▼ KOD BAHARU DI SINI ▼▼▼
-    // Tambah opsyen untuk rujukan-kendiri (self-referencing)
-    const selfOption = document.createElement('option');
-    selfOption.value = currentTableName;
-    selfOption.textContent = `${currentTableName} (self-referencing relationship)`;
-    parentTableSelect.appendChild(selfOption);
-    // ▲▲▲ TAMAT KOD BAHARU ▲▲▲
-
-    const otherTables = appState.allTableNames.filter(name => name !== currentTableName);
-    otherTables.forEach(tableName => {
-        const option = document.createElement('option');
-        option.value = tableName;
-        option.textContent = tableName;
-        parentTableSelect.appendChild(option);
-    });
-}
-
-
-/**
- * Mengisi dropdown Parent Caption (Part 1 & 2) dengan senarai medan
- * dari jadual induk yang dipilih.
- * @param {string} parentTableName - Nama jadual induk yang dipilih.
- */
-export function populateParentCaptionDropdowns(tableName) {
-    const caption1Select = document.getElementById('fld-lookup-caption-1');
-    const caption2Select = document.getElementById('fld-lookup-caption-2');
-
-    if (!caption1Select || !caption2Select) return;
-
-    // UBAH DI SINI: Kosongkan terus (innerHTML = '') tanpa menambah option default/empty
-    caption1Select.innerHTML = '';
-    caption2Select.innerHTML = '';
-
-    if (tableName && appState.jsonData && appState.jsonData.database && appState.jsonData.database.table[tableName]) {
-        const fields = appState.jsonData.database.table[tableName].fields;
-        
-        // Populate senarai field
-        Object.keys(fields).forEach(fieldName => {
-            const option1 = document.createElement('option');
-            option1.value = fieldName;
-            option1.textContent = fieldName;
-            caption1Select.appendChild(option1);
-
-            const option2 = document.createElement('option');
-            option2.value = fieldName;
-            option2.textContent = fieldName;
-            caption2Select.appendChild(option2);
-        });
-    }
-}
-
-
-export function initializeLookupFieldHandlers() {
-    const parentTableSelect = document.getElementById('fld-lookup-parent-table');
-    const caption1Select = document.getElementById('fld-lookup-caption-1');
-    const displayAsRadios = document.querySelectorAll('input[name="fld-lookup-display-as"]');
-    const dropdownOptions = document.getElementById('fld-lookup-dropdown-options');
-
-    if (!parentTableSelect || !caption1Select || !displayAsRadios.length || !dropdownOptions) return;
-
-    // Logik sedia ada untuk mengisi 'Parent Caption'
-    parentTableSelect.addEventListener('change', () => {
-        const selectedTable = parentTableSelect.value;
-        populateParentCaptionDropdowns(selectedTable);
-        
-        if (selectedTable && appState.jsonData.database.table[selectedTable]) {
-            const parentFields = appState.jsonData.database.table[selectedTable].fields;
-            const fieldNames = Object.keys(parentFields);
-            const integerTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'];
-            let defaultCaptionField = null;
-            const firstNonIntegerField = fieldNames.find(name => !integerTypes.includes(parentFields[name].data_type.toUpperCase()));
-            if (firstNonIntegerField) {
-                defaultCaptionField = firstNonIntegerField;
-            } else if (fieldNames.length > 1) {
-                defaultCaptionField = fieldNames[1];
-            }
-            if (defaultCaptionField) {
-                caption1Select.value = defaultCaptionField;
-            }
-        }
-    });
-
-    // ▼▼▼ LOGIK BAHARU UNTUK VISIBILITY CHECKBOX ▼▼▼
-    const toggleDropdownOptions = () => {
-        const selectedRadio = document.querySelector('input[name="fld-lookup-display-as"]:checked');
-        if (selectedRadio) {
-            dropdownOptions.classList.toggle('hidden', selectedRadio.value !== 'dropdown');
-        }
-    };
-
-    displayAsRadios.forEach(radio => {
-        radio.addEventListener('change', toggleDropdownOptions);
-    });
-    // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
 }
 
 export function populateMenuManagement(unifiedMenu) {
@@ -3397,7 +2883,7 @@ function openCustomMenuModal(itemEl = null) {
     });
     // ▲▲▲ TAMAT SISTEM BAHARU ▲▲▲
 }
-// Fungsi bantuan untuk menjana query lalai
+
 function generateDefaultLookupQuery() {
     const parentTable = document.getElementById('fld-lookup-parent-table').value;
     const caption1 = document.getElementById('fld-lookup-caption-1').value;
@@ -3416,41 +2902,6 @@ function generateDefaultLookupQuery() {
     const pkField = Object.keys(parentTableData.fields).find(f => parentTableData.fields[f].primary_key) || 'id';
 
     return `SELECT \`${parentTable}\`.\`${pkField}\`, ${captionFields} FROM \`${parentTable}\` ORDER BY 2`;
-}
-
-export function initializeAdvancedLookupHandlers() {
-    const modal = document.getElementById('advanced-lookup-modal');
-    const openBtn = document.getElementById('fld-lookup-advanced-btn');
-    const closeBtn = document.getElementById('advanced-lookup-modal-close');
-    const okBtn = document.getElementById('advanced-lookup-ok-btn');
-    const cancelBtn = document.getElementById('advanced-lookup-cancel-btn');
-    const resetBtn = document.getElementById('advanced-lookup-reset-btn');
-    const queryTextarea = document.getElementById('fld-lookup-custom-query');
-    const hiddenQueryInput = document.getElementById('fld-lookup-custom-query-hidden');
-
-    const openModal = () => {
-        let currentQuery = hiddenQueryInput.value;
-        if (!currentQuery) {
-            currentQuery = generateDefaultLookupQuery();
-        }
-        queryTextarea.value = currentQuery;
-        modal.classList.remove('hidden');
-    };
-
-    const closeModal = () => modal.classList.add('hidden');
-
-    const saveAndClose = () => {
-        hiddenQueryInput.value = queryTextarea.value;
-        closeModal();
-    };
-
-    openBtn.addEventListener('click', openModal);
-    closeBtn.addEventListener('click', closeModal);
-    cancelBtn.addEventListener('click', closeModal);
-    okBtn.addEventListener('click', saveAndClose);
-    resetBtn.addEventListener('click', () => {
-        queryTextarea.value = generateDefaultLookupQuery();
-    });
 }
 
 export function initializeHomepageMenuHandlers() {
@@ -3473,344 +2924,6 @@ export function initializeHomepageMenuHandlers() {
     // Panggil sekali semasa muat untuk menetapkan keadaan awal yang betul
     toggleOptionsVisibility();
 }
-
-
-
-export function applyDataTypeRules() {
-    const dataTypeSelect = document.getElementById('fld-data-type');
-    if (!dataTypeSelect) return;
-
-    const selectedType = dataTypeSelect.value.toUpperCase();
-
-    // 1. Kumpulkan semua rujukan elemen DOM di satu tempat
-    const elements = {
-        length: document.getElementById('fld-length'),
-        precision: document.getElementById('fld-precision'),
-        
-        minValueGroup: document.getElementById('fld-min-value-group'),
-        maxValueGroup: document.getElementById('fld-max-value-group'),
-        columnSpanFullGroup: document.getElementById('fld-column-span-full-group'),
-        textInputAddonsGroup: document.getElementById('fld-text-input-addons-group'),
-        
-        repeaterOptionsGroup: document.getElementById('fld-repeater-options-group'),
-        repeaterSimpleOptionsGroup: document.getElementById('fld-repeater-simple-options-group'),
-        
-        autoIncrement: document.getElementById('fld-auto-increment'),
-        unsigned: document.getElementById('fld-unsigned'),
-        zeroFill: document.getElementById('fld-zero-fill'),
-        binary: document.getElementById('fld-binary'),
-        defaultValue: document.getElementById('fld-default-value'),
-        dbPropertiesFieldset: document.querySelector('#tab-field-general .fieldset-grid fieldset:nth-child(1)'),
-        mediaRadios: document.querySelectorAll('input[name="fld-media-type"]'),
-        behaviorOptions: document.querySelectorAll('#fld-media-link-behavior option[value="web_link"], #fld-media-link-behavior option[value="email_link"]'),
-        
-        // Checkbox Ringkasan
-        showSum: document.getElementById('fld-show-sum'),
-        showAvg: document.getElementById('fld-show-avg-summary'),
-        showCount: document.getElementById('fld-show-count-summary'),
-        showRange: document.getElementById('fld-show-range-summary'),
-        
-        // Elemen UI Lain
-        displayTypeRadios: document.querySelectorAll('input[name="fld-display-type"]'),
-        checkBoxRadio: document.querySelector('input[name="fld-display-type"][value="check_box"]'),
-        repeaterRadio: document.querySelector('input[name="fld-display-type"][value="repeater"]'),
-        wrapTextCheckbox: document.getElementById('fld-tv-wrap-text'),
-        dateTimeFormatGroup: document.getElementById('date-time-format-group'),
-        dateOnlyRadio: document.querySelector('input[name="fld-tv-date-time-format"][value="date_only"]'),
-        dateAndTimeRadio: document.querySelector('input[name="fld-tv-date-time-format"][value="date_and_time"]'),
-        rangeFilterCheckbox: document.getElementById('fld-enable-range-filter'),
-        currencyCodeGroup: document.getElementById('currency-code-group'),
-        multiSelectRadio: document.querySelector('input[name="fld-options-display"][value="multi"]'),
-        dropdownRadio: document.querySelector('input[name="fld-options-display"][value="dropdown"]'),
-    };
-
-    // 2. Definisikan semua kategori jenis data di bahagian atas
-    const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
-    const integerTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'];
-    const floatTypes = ['DECIMAL', 'FLOAT', 'DOUBLE'];
-    const textTypes = ['CHAR', 'VARCHAR', 'TINYTEXT', 'TEXT', 'MEDIUMTEXT', 'LONGTEXT'];
-    const dateTypes = ['DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR'];
-    const binaryTypes = ['CHAR', 'VARCHAR', 'TINYBLOB', 'BLOB', 'MEDIUMBLOB', 'LONGBLOB'];
-    const typesWithoutLength = ['TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT', 'DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'BLOB', 'TINYBLOB', 'MEDIUMBLOB', 'LONGBLOB', 'BOOLEAN', 'JSON'];
-    
-    // 3. Buat pembolehubah boolean untuk semakan yang mudah
-    const isNumeric = numericTypes.includes(selectedType);
-    const isText = textTypes.includes(selectedType);
-    const isDate = dateTypes.includes(selectedType);
-    const isBoolean = selectedType === 'BOOLEAN';
-    
-    // Sembunyikan/papar 'Min/Max value' berdasarkan jenis data numerik
-    if (elements.minValueGroup) {
-        elements.minValueGroup.classList.toggle('hidden', !isNumeric);
-    }
-    if (elements.maxValueGroup) {
-        elements.maxValueGroup.classList.toggle('hidden', !isNumeric);
-    }
-    
-    const isIntegerOnly = integerTypes.includes(selectedType);
-    const isFloatOnly = floatTypes.includes(selectedType);
-
-    // 4. Reset keadaan: Aktifkan semua elemen dahulu
-    Object.values(elements).forEach(el => {
-        if (el && el.forEach) { // Untuk NodeList seperti radio buttons
-            el.forEach(item => { if(item) item.disabled = false; });
-        } else if (el) { // Untuk elemen tunggal
-            el.disabled = false;
-        }
-    });
-    if (elements.dbPropertiesFieldset) {
-        elements.dbPropertiesFieldset.classList.remove('fieldset-disabled');
-    }
-
-    // 5. Laksanakan semua peraturan logik secara berasingan
-
-    // PERATURAN BARU ANDA: Logik untuk Checkbox Ringkasan
-    if (elements.showSum) elements.showSum.disabled = !isNumeric;
-    if (elements.showAvg) elements.showAvg.disabled = !isNumeric;
-    if (elements.showCount) elements.showCount.disabled = !(isNumeric || isText || isBoolean);
-    if (elements.showRange) elements.showRange.disabled = !(isNumeric || isText || isDate);
-
-    // Peraturan untuk "Display As" (Checkbox/Repeater)
-    if (elements.checkBoxRadio && elements.repeaterRadio) {
-    if (isBoolean) {
-        // ▼▼▼ MULA KOD BAHARU ▼▼▼
-        if (!elements.checkBoxRadio.checked && !document.querySelector('input[name="fld-display-type"][value="options_list"]').checked) {
-            elements.checkBoxRadio.checked = true;
-        }
-        elements.displayTypeRadios.forEach(radio => {
-            radio.disabled = !(radio.value === 'check_box' || radio.value === 'options_list');
-        });
-
-        // Logik untuk tunjuk/sembunyi elemen di dalam Options List
-        document.getElementById('fld-standard-list-values-group')?.classList.add('hidden');
-        document.getElementById('fld-boolean-labels-group')?.classList.remove('hidden');
-        document.getElementById('fld-options-display-multi-label')?.classList.add('hidden');
-        document.getElementById('fld-options-display-checkboxes-label')?.classList.add('hidden');
-        // ▲▲▲ TAMAT KOD BAHARU ▲▲▲
-
-    } else if (selectedType === 'JSON') {
-            const repeaterRadio = document.querySelector('input[name="fld-display-type"][value="repeater"]');
-            const repeaterSimpleRadio = document.querySelector('input[name="fld-display-type"][value="repeater_simple"]');
-            
-            // ▼▼▼ PERUBAHAN DI SINI ▼▼▼
-            // Jika tiada pilihan repeater yang aktif, setkan 'Repeater - Simple' sebagai lalai
-            if (repeaterRadio && repeaterSimpleRadio && !repeaterRadio.checked && !repeaterSimpleRadio.checked) {
-                repeaterSimpleRadio.checked = true; 
-            }
-            // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
-
-            // Nyahaktifkan semua radio KECUALI dua jenis repeater
-            elements.displayTypeRadios.forEach(radio => {
-                radio.disabled = !(radio.value === 'repeater' || radio.value === 'repeater_simple');
-            });
-        } else if (selectedType === 'TEXT' || selectedType === 'LONGTEXT') {
-            const textAreaRadio = document.querySelector('input[name="fld-display-type"][value="text_area"]');
-            const richHtmlRadio = document.querySelector('input[name="fld-display-type"][value="rich_html"]');
-            
-            // Jika pilihan semasa bukan salah satu yang dibenarkan, setkan 'Text Area' sebagai lalai
-            if (!textAreaRadio.checked && !richHtmlRadio.checked) {
-                textAreaRadio.checked = true;
-            }
-
-            // Nyahaktifkan semua radio kecuali 'Text Area' dan 'Text Editor'
-            elements.displayTypeRadios.forEach(radio => {
-                radio.disabled = !(radio.value === 'text_area' || radio.value === 'rich_html');
-            });  
-        } else if (isDate) {
-            const datetimeInputRadio = document.querySelector('input[name="fld-display-type"][value="datetime_input"]');
-            if (datetimeInputRadio) {
-                datetimeInputRadio.checked = true; // Tetapkan sebagai lalai untuk jenis tarikh
-                // Nyahaktifkan semua radio lain
-                elements.displayTypeRadios.forEach(radio => {
-                    radio.disabled = radio.value !== 'datetime_input';
-                });
-            }
-            
-        } else {
-            // ▼▼▼ TAMBAH KOD DI BAWAH INI ▼▼▼
-            document.getElementById('fld-standard-list-values-group')?.classList.remove('hidden');
-            document.getElementById('fld-boolean-labels-group')?.classList.add('hidden');
-            document.getElementById('fld-options-display-multi-label')?.classList.remove('hidden');
-            document.getElementById('fld-options-display-checkboxes-label')?.classList.remove('hidden');
-            // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
-            const currentlyChecked = document.querySelector('input[name="fld-display-type"]:checked');
-            const disallowedValues = ['check_box', 'repeater', 'repeater_simple', 'datetime_input']; // <-- TAMBAH 'repeater_simple' DI SINI
-
-            // Nyahaktifkan radio butang khas
-            if (elements.checkBoxRadio) elements.checkBoxRadio.disabled = true;
-            if (elements.repeaterRadio) elements.repeaterRadio.disabled = true;
-            const repeaterSimpleRadio = document.querySelector('input[name="fld-display-type"][value="repeater_simple"]'); // <-- TAMBAH BARIS INI
-            if (repeaterSimpleRadio) repeaterSimpleRadio.disabled = true; // <-- TAMBAH BARIS INI
-            const datetimeInputRadio = document.querySelector('input[name="fld-display-type"][value="datetime_input"]');
-            if (datetimeInputRadio) datetimeInputRadio.disabled = true;
-
-            // Jika radio yang sedang dipilih kini tidak dibenarkan, reset kepada lalai
-            if (currentlyChecked && disallowedValues.includes(currentlyChecked.value)) {
-                const defaultRadio = document.querySelector('input[name="fld-display-type"][value="text_input"]');
-                if (defaultRadio) defaultRadio.checked = true;
-            }
-        }
-    }
-
-    // Peraturan untuk "Wrap Text"
-    if (elements.wrapTextCheckbox) {
-        if (selectedType === 'JSON' && !elements.wrapTextCheckbox.checked) {
-            elements.wrapTextCheckbox.checked = true;
-        }
-    }
-
-    // Peraturan untuk Format Tarikh/Masa
-    if (elements.dateTimeFormatGroup && elements.dateOnlyRadio && elements.dateAndTimeRadio) {
-        elements.dateTimeFormatGroup.classList.toggle('hidden', !isDate);
-        if (isDate) {
-            elements.dateAndTimeRadio.disabled = (selectedType === 'DATE');
-            if (selectedType === 'DATE') elements.dateOnlyRadio.checked = true;
-        }
-    }
-
-    // Peraturan untuk Penapis Julat (Range Filter)
-    if (elements.rangeFilterCheckbox) {
-        elements.rangeFilterCheckbox.disabled = !isDate;
-        if (!isDate) elements.rangeFilterCheckbox.checked = false;
-    }
-
-    // Peraturan untuk Kod Mata Wang
-    if (elements.currencyCodeGroup) {
-        elements.currencyCodeGroup.classList.toggle('hidden', !isNumeric);
-    }
-    
-    // Peraturan untuk Length & Precision
-    if (elements.length && typesWithoutLength.includes(selectedType)) {
-        elements.length.disabled = true;
-        elements.length.value = '';
-    }
-    if (elements.precision) {
-        elements.precision.disabled = !isFloatOnly;
-    }
-
-    // Peraturan untuk Auto Increment
-    if (elements.autoIncrement && elements.defaultValue) {
-        if (elements.autoIncrement.checked) {
-            elements.defaultValue.disabled = true;
-            elements.defaultValue.value = '';
-        }
-        elements.autoIncrement.disabled = !isIntegerOnly;
-    }
-
-    // Peraturan untuk Unsigned, Zero Fill, Binary
-    if(elements.unsigned) elements.unsigned.disabled = !isNumeric;
-    if(elements.zeroFill) elements.zeroFill.disabled = !isIntegerOnly;
-    if(elements.binary) elements.binary.disabled = !binaryTypes.includes(selectedType);
-    
-    // Peraturan untuk Media
-    if ([...numericTypes, ...dateTypes, 'JSON', 'BOOLEAN'].includes(selectedType)) {
-        elements.mediaRadios.forEach(radio => { if (radio.value !== 'link') radio.disabled = true; });
-        elements.behaviorOptions.forEach(opt => opt.hidden = true);
-    }
-
-    // Peraturan untuk Fieldset
-    if (['TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT', 'BLOB', 'TINYBLOB', 'MEDIUMBLOB', 'LONGBLOB', 'JSON'].includes(selectedType)) {
-        if (elements.dbPropertiesFieldset) elements.dbPropertiesFieldset.classList.add('fieldset-disabled');
-    }
-
-    // Peraturan untuk Nilai Lalai (Auto-set)
-    if (selectedType === 'VARCHAR' && !elements.length.value) elements.length.value = 255;
-    if (selectedType === 'INT') elements.unsigned.checked = true;
-    if (selectedType === 'DECIMAL') {
-        if (!elements.length.value) elements.length.value = 10;
-        if (!elements.precision.value) elements.precision.value = 2;
-    }
-
-    // Peraturan untuk Multi-select
-    if (elements.multiSelectRadio && elements.multiSelectRadio.checked) {
-        if (!['TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT', 'BLOB', 'TINYBLOB', 'MEDIUMBLOB', 'LONGBLOB'].includes(selectedType)) {
-            if(elements.dropdownRadio) elements.dropdownRadio.checked = true;
-        }
-    }
-    
-        // Selepas semua logik pemilihan radio selesai, kita tentukan apa yang patut dipaparkan.
-        const finalSelectedRadio = document.querySelector('input[name="fld-display-type"]:checked');
-        if (finalSelectedRadio) {
-            const finalValue = finalSelectedRadio.value;
-            
-// Logik untuk 'Formatted Inputs'
-        const formatAsGroup = document.getElementById('format-as-group');
-        if (formatAsGroup) {
-            // ▼▼▼ MULA KEMAS KINI ▼▼▼
-            const selectedMediaRadio = document.querySelector('input[name="fld-media-type"]:checked');
-            const selectedMediaType = selectedMediaRadio ? selectedMediaRadio.value : 'link';
-            
-            const parentTableSelect = document.getElementById('fld-lookup-parent-table');
-            const isForeignKey = parentTableSelect ? parentTableSelect.value !== '' : false;
-
-            // Sembunyikan jika (display_type bukan 'text_input') ATAU (media_type bukan 'link') ATAU (ia adalah foreign key)
-            formatAsGroup.classList.toggle('hidden', finalValue !== 'text_input' || selectedMediaType !== 'link' || isForeignKey);
-            // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
-        }
-
-            // Logik untuk 'Options List' (diletakkan di sini juga untuk pemusatan)
-            const optionsListGroup = document.getElementById('options-list-settings-group');
-            if (optionsListGroup) {
-                optionsListGroup.classList.toggle('hidden', finalValue !== 'options_list');
-            }
-            
-            // Logik untuk 'Column span full'
-            if (elements.columnSpanFullGroup) {
-                const isVisible = (finalValue === 'text_area' || finalValue === 'rich_html');
-                elements.columnSpanFullGroup.classList.toggle('hidden', !isVisible);
-            }
-            
-            if (elements.textInputAddonsGroup) {
-                elements.textInputAddonsGroup.classList.toggle('hidden', finalValue !== 'text_input');
-            }
-            
-            // Logik untuk kumpulan Repeater
-            if (elements.repeaterOptionsGroup) {
-                elements.repeaterOptionsGroup.classList.toggle('hidden', finalValue !== 'repeater');
-            }
-            if (elements.repeaterSimpleOptionsGroup) {
-                elements.repeaterSimpleOptionsGroup.classList.toggle('hidden', finalValue !== 'repeater_simple');
-            }
-            
-        }
-}
-
-export function initializeDataTypeRules() {
-    const dataTypeSelect = document.getElementById('fld-data-type');
-    if (!dataTypeSelect) return;
-
-    let previousDataType = ''; // Pembolehubah untuk simpan nilai sebelumnya
-
-    dataTypeSelect.addEventListener('focus', () => {
-        // Simpan nilai semasa setiap kali dropdown difokuskan
-        previousDataType = dataTypeSelect.value;
-    });
-
-    dataTypeSelect.addEventListener('change', () => {
-        const autoIncrementCheckbox = document.getElementById('fld-auto-increment');
-        
-        // Semak jika Auto Increment aktif
-        if (autoIncrementCheckbox && autoIncrementCheckbox.checked) {
-            const newDataType = dataTypeSelect.value.toUpperCase();
-            const integerTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'];
-
-            // Jika jenis data baharu BUKAN jenis integer
-            if (!integerTypes.includes(newDataType)) {
-                showCustomDialog({
-                    title: "Validation Rule",
-                    message: "An 'Auto Increment' field must have an Integer data type (e.g., INT, BIGINT)."
-                });
-                // Kembalikan kepada nilai sebelumnya
-                dataTypeSelect.value = previousDataType;
-                return; // Hentikan proses
-            }
-        }
-        
-        // Jika lulus pengesahan, jalankan peraturan sedia ada
-        applyDataTypeRules();
-    });
-}
-
 
 export function populateRecordOwnerDropdown(tableName) {
     const recordOwnerDropdown = document.getElementById('tbl-record-owner');
@@ -3870,56 +2983,6 @@ export function initializeFormDisplayRules() {
     });
 }
 
-export function initializeRealtimeValidation() {
-    const numericInputs = [
-        document.getElementById('fld-length'),
-        document.getElementById('fld-precision')
-    ];
-
-    numericInputs.forEach(input => {
-        if (input) {
-            input.addEventListener('input', () => {
-                // Buang semua aksara yang bukan nombor
-                input.value = input.value.replace(/[^0-9]/g, '');
-            });
-        }
-    });
-
-    // 1. Dapatkan elemen input untuk nama jadual dan medan
-    const tableNameInput = document.getElementById('tbl-table-name');
-    const fieldNameInput = document.getElementById('fld-field-name');
-
-    // 2. Cipta fungsi bantuan untuk memasang logik validasi
-    const setupNameValidation = (inputElement) => {
-        if (!inputElement) return;
-
-        let previousValidValue = '';
-
-        // Simpan nilai sah terakhir apabila input difokuskan
-        inputElement.addEventListener('focus', () => {
-            previousValidValue = inputElement.value;
-        });
-
-        // Tapis aksara pada setiap ketikan
-        inputElement.addEventListener('input', () => {
-            // Hanya benarkan abjad dan garis bawah
-            inputElement.value = inputElement.value.replace(/[^a-zA-Z_]/g, '');
-        });
-
-        // Semak jika kosong apabila pengguna meninggalkan input
-        inputElement.addEventListener('blur', () => {
-            if (inputElement.value.trim() === '') {
-                // Kembalikan ke nilai sah sebelumnya jika kosong
-                inputElement.value = previousValidValue;
-            }
-        });
-    };
-
-    // 3. Pasang validasi pada kedua-dua input
-    setupNameValidation(tableNameInput);
-    setupNameValidation(fieldNameInput);
-}
-
 export function initializeOptionsListRules() {
     const multiSelectRadio = document.querySelector('input[name="fld-options-display"][value="multi"]');
     const checkboxesRadio = document.querySelector('input[name="fld-options-display"][value="checkboxes"]');
@@ -3946,165 +3009,6 @@ export function initializeOptionsListRules() {
     multiSelectRadio.addEventListener('click', checkCompatibility);
     checkboxesRadio.addEventListener('click', checkCompatibility);
 }
-
-export function initializeCalculatedFieldRules() {
-    const enableCheckbox = document.getElementById('fld-calculated-enable');
-
-    if (!enableCheckbox) return;
-
-    const validateConditions = () => {
-        const getEl = (id) => document.getElementById(id);
-        const getValue = (id) => getEl(id)?.value;
-        const isChecked = (id) => getEl(id)?.checked;
-        const errors = [];
-
-        if (!isChecked('fld-read-only')) errors.push("Field must be set as 'Read Only'.");
-        if (isChecked('fld-primary-key')) errors.push("Field cannot be a 'Primary Key'.");
-        if (isChecked('fld-required')) errors.push("Field cannot be 'Required'.");
-        if (isChecked('fld-text-area') || isChecked('fld-rich-html')) errors.push("Field cannot be a 'Text area' or 'Rich (HTML) area'.");
-        if (isChecked('fld-auto-increment')) errors.push("Field cannot be 'Auto Increment'.");
-        if (isChecked('fld-unique')) errors.push("Field cannot be 'Unique'.");
-        const mediaLinkBehavior = getValue('fld-media-link-behavior');
-        if (mediaLinkBehavior === 'web_link' || mediaLinkBehavior === 'email_link') errors.push("Field cannot be a 'Web/email link'.");
-        const mediaType = document.querySelector('input[name="fld-media-type"]:checked')?.value;
-        if (['image', 'upload'].includes(mediaType)) errors.push("Field cannot be an 'Image/file upload' type.");
-        if (['gmap', 'youtube'].includes(mediaType)) errors.push("Field cannot be a 'Map/video' type.");
-        if (getValue('fld-lookup-parent-table')) errors.push("Field cannot be a 'Lookup field'.");
-        if (getValue('fld-options-list-values')) errors.push("Field cannot be an 'Options list' field.");
-        if (getValue('fld-format-as') !== 'default') errors.push("Field cannot have a 'Data format' specified.");
-        if (getValue('fld-default-value')) errors.push("Field cannot have a 'Default value'.");
-
-        return errors;
-    };
-
-    enableCheckbox.addEventListener('click', (event) => {
-        if (enableCheckbox.checked) {
-            const validationErrors = validateConditions();
-            if (validationErrors.length > 0) {
-                event.preventDefault();
-                let alertMessage = "This field cannot be set as a calculated field for the following reasons:\n\n";
-                validationErrors.forEach(error => {
-                    alertMessage += `- ${error}\n`;
-                });
-                showCustomDialog({ title: "Validation Error", message: alertMessage });
-                enableCheckbox.checked = false;
-            }
-        }
-    });
-
-    const checkAndDisableCalculatedField = () => {
-        if (!enableCheckbox.checked) return;
-        const validationErrors = validateConditions();
-        if (validationErrors.length > 0) {
-            showCustomDialog({
-                title: "Validation Rule",
-                message: "Calculated field has been disabled for the following reason:\n\n" +
-                         `- ${validationErrors[0]}`
-            });
-            enableCheckbox.checked = false;
-        }
-    };
-
-    const conflictingElementIds = [
-        'fld-read-only', 'fld-primary-key', 'fld-required', 'fld-text-area',
-        'fld-rich-html', 'fld-auto-increment', 'fld-unique',
-        'fld-media-link-behavior', 'fld-lookup-parent-table',
-        'fld-options-list-values', 'fld-format-as', 'fld-default-value',
-        'fld-media-image', 'fld-media-upload', 'fld-media-gmap', 'fld-media-youtube'
-    ];
-
-    conflictingElementIds.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.addEventListener('change', checkAndDisableCalculatedField);
-        }
-    });
-    // Pastikan textarea sentiasa aktif (enabled) dari mula
-    //queryTextarea.disabled = false;
-}
-
-export function initializeDatabasePropertiesHandlers() {
-    const primaryKeyCheckbox = document.getElementById('fld-primary-key');
-    const autoIncrementCheckbox = document.getElementById('fld-auto-increment');
-    const requiredCheckbox = document.getElementById('fld-required');
-    const readOnlyCheckbox = document.getElementById('fld-read-only');
-
-    if (!primaryKeyCheckbox || !autoIncrementCheckbox || !requiredCheckbox || !readOnlyCheckbox) return;
-
-    // --- Listener untuk Auto Increment ---
-    autoIncrementCheckbox.addEventListener('change', () => {
-        if (autoIncrementCheckbox.checked) {
-            // Logik apabila MENANDA 'Auto Increment'
-            if (!primaryKeyCheckbox.checked) {
-                showCustomDialog({
-                    title: "Validation Rule",
-                    message: "'Auto Increment' can only be enabled for a 'Primary Key' field."
-                });
-                autoIncrementCheckbox.checked = false;
-                return;
-            }
-            requiredCheckbox.checked = false;
-            readOnlyCheckbox.checked = true;
-        } else {
-            // Logik apabila MENYAH-TANDA 'Auto Increment'
-            const message = "Warning: Disabling Auto Increment on a key field requires you to manage unique values manually, which can lead to data errors.\n\nAre you sure you want to disable it?";
-            showCustomDialog({
-                title: "Warning!",
-                message: message,
-                showCancelButton: true,
-                onCancel: () => {
-                    autoIncrementCheckbox.checked = true; // Tandakan semula jika batal
-                }
-            });
-        }
-    });
-
-    // --- Listener untuk Primary Key (Hanya untuk menyah-tanda) ---
-    primaryKeyCheckbox.addEventListener('change', () => {
-        if (!primaryKeyCheckbox.checked) {
-            const message = "Warning: Changing a Primary Key can affect table relationships and data integrity.\n\nAre you sure you want to proceed?";
-            showCustomDialog({
-                title: "Warning!",
-                message: message,
-                showCancelButton: true,
-                onCancel: () => {
-                    primaryKeyCheckbox.checked = true;
-                }
-            });
-        }
-    });
-    
-    // --- Listener untuk Required (Tidak berubah) ---
-    requiredCheckbox.addEventListener('change', () => {
-        if (requiredCheckbox.checked && autoIncrementCheckbox.checked) {
-            let message = "Changing this option will disable 'Auto Increment'.\n\n- Auto Increment: The value is provided automatically by the database.\n- Required: The value must be provided manually by the user.\n\n";
-            const isPrimaryKey = primaryKeyCheckbox.checked;
-            if (isPrimaryKey) {
-                message += "Recommendation: A Primary Key field should remain 'Auto Increment'.\n\n";
-            }
-            message += "Are you sure you want to switch to 'Required'?";
-            showCustomDialog({
-                title: "Confirmation", message: message, showCancelButton: true,
-                onOk: () => { autoIncrementCheckbox.checked = false; },
-                onCancel: () => { requiredCheckbox.checked = false; }
-            });
-        }
-    });
-
-    // --- Listener untuk Read Only (Tidak berubah) ---
-    readOnlyCheckbox.addEventListener('change', () => {
-        if (!readOnlyCheckbox.checked && autoIncrementCheckbox.checked) {
-            readOnlyCheckbox.checked = true;
-            showCustomDialog({
-                title: "Validation Rule",
-                message: "A field with 'Auto Increment' must remain 'Read Only'."
-            });
-        }
-    });
-}
-
-
-// --- FUNGSI-FUNGSI BANTUAN UNTUK BUILDER ---
 
 /**
  * Menguruskan kebergantungan UI dalam mod 'Advanced' Calculation Builder.
@@ -4298,7 +3202,6 @@ export function initializeQueryBuilder() {
     });
 }
 
-
 /**
  * Mengimbas keadaan penapis (filter state) dan mengembalikan satu Set
  * yang mengandungi semua nama jadual unik yang digunakan dalam peraturan.
@@ -4351,8 +3254,6 @@ function buildJoinClause(mainTable, tablesInFilters) {
 
     return joinClauses;
 }
-
-
 
 function setupBuilderUI(tableName) {
     const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
@@ -4979,11 +3880,6 @@ export function showImportErrorGuide() {
     modal.classList.remove('hidden');
 }
 
-
-// ==================================================================
-// == CUSTOM VIEWS FEATURE LOGIC                                 ==
-// ==================================================================
-
 /**
  * Mengisi kandungan tab "Custom Views" dengan senarai view yang telah dicipta.
  * @param {string} tableName - Nama jadual semasa.
@@ -5020,7 +3916,6 @@ export function populateCustomViewsTab(tableName) {
         </div>
     `).join('');
 }
-
 
 /**
  * Membuka dan menguruskan modal konfigurasi Custom View (untuk tambah/edit).
@@ -5154,7 +4049,6 @@ export function initializeCustomViews() {
         }
     });
 }
-
 
 function initializeCustomViewModalLogic() {
     const modal = document.getElementById('custom-view-config-modal');
@@ -5354,7 +4248,6 @@ function populateAvailableFieldsTree(currentTableName) {
     });
 }
 
-
 /**
  * Mengisi Form Builder dengan medan-medan sedia ada (untuk mod edit).
  * @param {Array} fields - Senarai objek medan dari viewData.
@@ -5438,117 +4331,6 @@ export function applyFormLock(pageType, isLocked, message = '') {
         overlay.classList.add('hidden');
         mainContent.classList.remove('no-scroll'); // <-- Buka skrol
     }
-}
-
-export function initializeUniqueFieldHandler() {
-    const uniqueCheckbox = document.getElementById('fld-unique');
-    if (!uniqueCheckbox) return;
-
-    let previousValue = uniqueCheckbox.checked;
-
-    uniqueCheckbox.addEventListener('focus', () => {
-        previousValue = uniqueCheckbox.checked;
-    });
-
-    uniqueCheckbox.addEventListener('change', () => {
-        if (appState.isPopulatingData) return;
-
-        const [tableName, fieldName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
-        const tableData = appState.jsonData.database.table[tableName];
-        if (!tableData) return;
-        
-        const isNowChecked = uniqueCheckbox.checked;
-
-        // Cari hubungan yang relevan
-        const relationship = appState.jsonData.database.relationships.find(
-            rel => rel.child_table_name === tableName && rel.fk_child_field === fieldName
-        );
-
-        // Cari semua kekangan UNIK yang melibatkan medan ini
-        const relevantConstraints = (tableData.constraints || []).filter(
-            c => c.constraint_type === 'UNIQUE' && JSON.parse(c.columns).includes(fieldName)
-        );
-
-        // Cari kekangan UNIK tunggal (bukan komposit) untuk medan ini
-        const singleUniqueConstraint = relevantConstraints.find(c => JSON.parse(c.columns).length === 1);
-
-        let action = 'doNothing';
-        let message = '';
-        let newType = '';
-
-        if (isNowChecked) { // Pengguna MENANDA kotak
-            if (singleUniqueConstraint) {
-                // Tiada tindakan, ia memang sudah unik secara individu
-                action = 'doNothing';
-            } else if (relevantConstraints.length > 0) {
-                // Ia sebahagian daripada kekangan komposit
-                action = 'revert';
-                message = `Medan ini sudah pun menjadi sebahagian daripada kekangan unik komposit. Menjadikannya unik secara individu mungkin tidak perlu.\n\nPerubahan dibatalkan.`;
-            } else if (relationship) {
-                // Ia adalah FK dan tidak unik, jadi kita boleh tukar ke 1-to-1
-                action = 'confirmAndUpdate';
-                newType = 'one-to-one';
-                message = `Anda pasti mahu menukar hubungan dengan jadual '${relationship.parent_table_name}' kepada 'one-to-one'?`;
-            }
-        } else { // Pengguna MEMBUANG TANDA kotak
-            if (singleUniqueConstraint && relationship) {
-                // Ia adalah FK dan unik secara individu, jadi kita boleh tukar ke 1-to-many
-                action = 'confirmAndUpdate';
-                newType = 'one-to-many';
-                message = `Anda pasti mahu menukar hubungan dengan jadual '${relationship.parent_table_name}' kepada 'one-to-many'?`;
-            } else if (relevantConstraints.length > 0) {
-                // Ia sebahagian daripada kekangan komposit, tanda tidak boleh dibuang
-                action = 'revert';
-                message = `Medan ini adalah sebahagian daripada kekangan unik komposit. Untuk membuang status uniknya, anda perlu mengubah suai definisi jadual.\n\nPerubahan dibatalkan.`;
-            }
-        }
-
-        // Laksanakan tindakan berdasarkan analisis
-        switch (action) {
-            case 'confirmAndUpdate':
-                showCustomDialog({
-                    title: "Pengesahan Perubahan Hubungan",
-                    message: message,
-                    showCancelButton: true,
-                    onOk: () => {
-                        SaveManager.addToQueue('relationships', relationship.relationship_id, {
-                            relationship_type: newType
-                        });
-                        previousValue = isNowChecked; // Sahkan perubahan
-                    },
-                    onCancel: () => {
-                        uniqueCheckbox.checked = previousValue; // Batal & kembalikan
-                    }
-                });
-                break;
-            case 'revert':
-                showCustomDialog({ title: "Makluman", message: message });
-                uniqueCheckbox.checked = previousValue; // Kembalikan secara automatik
-                break;
-            case 'doNothing':
-            default:
-                previousValue = isNowChecked; // Hanya kemas kini nilai untuk rujukan seterusnya
-                break;
-        }
-    });
-}
-
-export function initializeIndexCheckboxHandler() {
-    const indexCheckbox = document.getElementById('fld-is-indexed');
-    if (!indexCheckbox) return;
-
-    indexCheckbox.addEventListener('change', () => {
-        if (appState.isPopulatingData) return;
-
-        const [tableName, fieldName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
-        const fieldData = appState.jsonData.database.table[tableName]?.fields[fieldName];
-        if (!fieldData) return;
-
-        window.electronAPI.updateFieldIndex({
-            field_id: fieldData.field_id,
-            is_indexed: indexCheckbox.checked
-        });
-    });
 }
 
 /**
@@ -5670,111 +4452,6 @@ export function initializeConstraintsTabHandlers() {
             populateConstraintsTab(tableName);
         } else {
             showCustomDialog({ title: "Error", message: `Failed to save rule: ${result.message}` });
-        }
-    });
-}
-
-
-/**
- * Handles the logic for the 'Display As' radio button group.
- * It shows or hides the detailed 'Options list' settings based on the selection.
- */
-
-export function initializeDisplayTypeRules() {
-    const displayTypeRadios = document.querySelectorAll('input[name="fld-display-type"]');
-    const formatAsSelect = document.getElementById('fld-format-as');
-    const formatMaskGroup = document.getElementById('format-mask-group');
-
-    if (displayTypeRadios.length === 0 || !formatAsSelect || !formatMaskGroup) return;
-
-    // Fungsi untuk mengawal textbox 'Mask' kekal sama
-    const toggleMaskVisibility = () => {
-        formatMaskGroup.classList.toggle('hidden', formatAsSelect.value !== 'custom');
-    };
-
-    // ▼▼▼ PEMBETULAN UTAMA DI SINI ▼▼▼
-    // Apabila mana-mana radio 'display_type' ditukar, panggil fungsi 'applyDataTypeRules'
-    // Fungsi ini kini menjadi pusat kawalan untuk semua peraturan berkaitan jenis data
-    displayTypeRadios.forEach(radio => {
-        radio.addEventListener('change', applyDataTypeRules);
-    });
-    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
-
-    formatAsSelect.addEventListener('change', toggleMaskVisibility);
-}
-
-/**
- * Prevents 'Enable wrap text' from being unchecked if the data type is JSON.
- */
-export function initializeWrapTextRule() {
-    const wrapTextCheckbox = document.getElementById('fld-tv-wrap-text');
-    if (!wrapTextCheckbox) return;
-
-    wrapTextCheckbox.addEventListener('click', (event) => {
-        const dataTypeSelect = document.getElementById('fld-data-type');
-        const currentDataType = dataTypeSelect.value.toUpperCase();
-
-        // Check if the data type is JSON and the user is trying to uncheck the box
-        if (currentDataType === 'JSON' && !wrapTextCheckbox.checked) {
-            event.preventDefault(); // Batalkan tindakan uncheck
-            showCustomDialog({
-                title: "Validation Rule",
-                message: "The 'Enable wrap text' option must remain checked for the JSON data type to ensure readability in table view."
-            });
-        }
-    });
-}
-
-
-/**
- * Menetapkan nilai lalai secara automatik apabila pengguna menukar 'media_type'.
- */
-export function initializeMediaTypeDefaultRules() {
-    const mediaRadios = document.querySelectorAll('input[name="fld-media-type"]');
-    if (!mediaRadios.length) return;
-
-    mediaRadios.forEach(radio => {
-        radio.addEventListener('change', () => {
-            const selectedValue = radio.value;
-            
-            if (selectedValue === 'youtube' || selectedValue === 'gmap') {
-                const alignmentSelect = document.getElementById('fld-tv-alignment');
-                const iconColorSelect = document.getElementById('fld-tv-icon-color');
-                const descriptionTextarea = document.getElementById('fld-description');
-
-                if (alignmentSelect) {
-                    alignmentSelect.value = 'center';
-                    alignmentSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-                if (iconColorSelect) {
-                    iconColorSelect.value = 'danger';
-                    iconColorSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-                if (descriptionTextarea) {
-                    descriptionTextarea.value = 'Show youtube video/google maps location';
-                    descriptionTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-            }
-        });
-    });
-}
-
-/**
- * Menetapkan nilai lalai secara automatik apabila pengguna menukar 'data_type'.
- */
-export function initializeDataTypeDefaultRules() {
-    const dataTypeSelect = document.getElementById('fld-data-type');
-    if (!dataTypeSelect) return;
-
-    dataTypeSelect.addEventListener('change', () => {
-        const selectedType = dataTypeSelect.value.toUpperCase();
-        
-        if (selectedType === 'TEXT' || selectedType === 'LONGTEXT') {
-            const wrapTextCheckbox = document.getElementById('fld-tv-wrap-text');
-            if (wrapTextCheckbox && !wrapTextCheckbox.checked) {
-                wrapTextCheckbox.checked = true;
-                wrapTextCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
-            }
         }
     });
 }
