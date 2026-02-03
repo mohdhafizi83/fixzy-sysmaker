@@ -1,6 +1,7 @@
 import { setElementValue, setRadioValue } from './ui/formHelpers.js';
 import { resolveVariables } from './utils.js';
-import { loadProjectData, SaveManager } from '../renderer.js';
+import { SaveManager } from './saveManager.js';
+import { loadProjectData } from '../renderer.js';
 import { 
     appState, 
     setAwaitingMenuGroupSave, 
@@ -2079,94 +2080,122 @@ export function initializeRelationshipSaveHandlers() {
     });
 }
 
+// src/js/uiHandlers.js (Versi Bersih)
+
 export function initializeTableSaveHandlers() {
-    const form = document.getElementById('table-settings-page');
-    if (!form) return;
+    const container = document.getElementById('table-settings-page');
+    if (!container) return;
 
-    const handleInputChange = (event) => {
-        if (appState.isPopulatingData) return;
-        if (!appState.isAutoSaveEnabled) return;
+    ['change', 'focusout'].forEach(eventType => {
+        container.addEventListener(eventType, (e) => {
+            const input = e.target;
+            
+            // Tapis input
+            if (eventType === 'focusout' && !['text', 'textarea', 'number'].includes(input.type) && input.tagName !== 'TEXTAREA') return;
+            if (eventType === 'change' && ['text', 'textarea', 'number'].includes(input.type) && input.tagName !== 'TEXTAREA') return;
+            if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(input.tagName)) return;
+            if (input.type === 'search') return;
 
-        const input = event.target;
+            // Semakan State
+            if (appState.isPopulatingData) return;
+            if (!appState.isAutoSaveEnabled) return;
 
-        // ▼▼▼ KEMAS KINI BAHARU ▼▼▼
-        // Hentikan jika ia adalah radio button yang tidak ditanda (untuk mengelak simpanan berganda)
-        if (input.type === 'radio' && !input.checked) {
-            return;
-        }
-        // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
+            // Dapatkan Data
+            const tableNameEl = container.querySelector('.table-name');
+            const tableName = tableNameEl ? tableNameEl.textContent.trim() : null;
+            if (!tableName) return;
 
-        // Hanya proses event dari elemen yang mempunyai ID atau Nama bermula dengan 'tbl-'
-        if (!((input.id && input.id.startsWith('tbl-')) || (input.name && input.name.startsWith('tbl-')))) {
-            return;
-        }
+            const tableData = appState.jsonData.database.table[tableName];
+            if (!tableData) return;
 
-        const tableName = document.querySelector('#table-settings-page .table-name').textContent;
-        const tableData = appState.jsonData.database.table[tableName];
-        if (!tableData) return;
-        const tableId = tableData.table_id;
-        
-        // ▼▼▼ KEMAS KINI UTAMA ▼▼▼
-        // Guna 'name' untuk radio button (yang betul), dan 'id' untuk elemen lain.
-        let key = (input.type === 'radio' && input.name)
-            ? input.name.replace('tbl-', '').replace(/-/g, '_')
-            : input.id.replace('tbl-', '').replace(/-/g, '_');
-        // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
+            // Tentukan Key
+            let key = '';
+            if (input.type === 'radio') {
+                key = input.name.replace('tbl-', '').replace(/-/g, '_');
+            } else {
+                key = input.id.replace('tbl-', '').replace(/-/g, '_');
+            }
 
-        if (input.id === 'tbl-hook-logic') {
-            key = 'table_hook_workflow';
-        }
-        const value = (input.type === 'checkbox') ? (input.checked ? 1 : 0) : input.value;
-        const dataToSave = { [key]: value };
+            // Mapping Manual
+            const keyMappings = {
+                'hook_logic': 'table_hook_workflow',
+                'table_view_classes_input': 'table_view_classes_input',
+                'detail_view_classes_input': 'detail_view_classes_input',
+                'static_grid_columns': 'static_grid_columns',
+                'pagination_type': 'pagination_type', 
+                'column_grid_type': 'column_grid_type'
+            };
 
-        if (key !== 'table_name') {
-            dataToSave.table_name = tableName;
-        }
+            if (keyMappings[key]) key = keyMappings[key];
 
-        SaveManager.addToQueue('tables', tableId, dataToSave);
-    };
+            // Tentukan Value
+            let value;
+            if (input.type === 'checkbox') value = input.checked ? 1 : 0;
+            else if (input.type === 'radio') {
+                if (!input.checked) return;
+                value = input.value;
+            } else value = input.value;
 
-    form.querySelectorAll('input, select, textarea').forEach(input => {
-        input.addEventListener('change', handleInputChange);
-        if (input.type === 'text' || input.type === 'number' || input.tagName.toLowerCase() === 'textarea' || input.type === 'hidden') {
-            input.addEventListener('input', handleInputChange);
-        }
+            // Hantar
+            SaveManager.addToQueue('table', tableData.table_id, { [key]: value });
+        });
     });
 }
-
 
 export function initializeFieldSaveHandlers() {
-    const form = document.getElementById('field-settings-page');
-    if (!form) return;
-    const handleInputChange = (event) => {
-        if (appState.isPopulatingData) return;
-        const [tableName, fieldName] = document.querySelector('#field-settings-page .field-name').textContent.split('.');
-        if (!tableName || !fieldName || !appState.jsonData.database.table[tableName] || !appState.jsonData.database.table[tableName].fields[fieldName]) return;
-        const fieldId = appState.jsonData.database.table[tableName].fields[fieldName].field_id;
-        const input = event.target;
-const key = (input.name && input.type === 'radio') ? input.name.replace('fld-', '').replace(/-/g, '_') : input.id.replace('fld-', '').replace(/-/g, '_');
-        let value;
-        if (input.type === 'checkbox') {
-            value = input.checked ? 1 : 0;
-        } else if (input.type === 'radio') {
-            if (!input.checked) return;
-            value = input.value;
-        } else if (input.multiple) { // <-- Logik baharu untuk multi-select
-            value = Array.from(input.selectedOptions).map(opt => opt.value).join(',');
-        } else { // <-- Logik asal untuk input lain
-            value = input.value;
-        }
-        SaveManager.addToQueue('fields', fieldId, { [key]: value });
-    };
-    form.querySelectorAll('input, select, textarea').forEach(input => {
-        input.addEventListener('change', handleInputChange);
-        if (input.type === 'text' || input.type === 'number' || input.tagName.toLowerCase() === 'textarea' || input.type === 'hidden') {
-            input.addEventListener('input', handleInputChange);
-        }
+    const container = document.getElementById('field-settings-page');
+    if (!container) return;
+
+    ['change', 'focusout'].forEach(eventType => {
+        container.addEventListener(eventType, (e) => {
+            const input = e.target;
+
+            if (eventType === 'focusout' && !['text', 'textarea', 'number'].includes(input.type)) return;
+            if (eventType === 'change' && ['text', 'textarea', 'number'].includes(input.type)) return;
+            if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(input.tagName)) return;
+
+            if (appState.isPopulatingData) return;
+            if (!appState.isAutoSaveEnabled) return;
+
+            const titleEl = container.querySelector('.field-name');
+            if (!titleEl) return;
+            
+            const parts = titleEl.textContent.trim().split('.');
+            if (parts.length < 2) return;
+            
+            const tableName = parts[0];
+            const fieldName = parts[1];
+
+            const tableData = appState.jsonData.database.table[tableName];
+            if (!tableData || !tableData.fields[fieldName]) return;
+            
+            const fieldId = tableData.fields[fieldName].field_id;
+
+            let key = '';
+            if (input.type === 'radio') {
+                key = input.name.replace('fld-', '').replace(/-/g, '_');
+            } else {
+                key = input.id.replace('fld-', '').replace(/-/g, '_');
+            }
+
+            const keyMappings = {
+                // Tambah mapping field di sini jika perlu
+            };
+
+            if (keyMappings[key]) key = keyMappings[key];
+
+            let value;
+            if (input.type === 'checkbox') value = input.checked ? 1 : 0;
+            else if (input.type === 'radio') {
+                if (!input.checked) return;
+                value = input.value;
+            } else value = input.value;
+
+            SaveManager.addToQueue('field', fieldId, { [key]: value });
+        });
     });
 }
 
-//FUNGSI BANTUAN BAHARU: Mengemas kini keadaan butang naik/turun untuk item di dalam kumpulan 
 function updateNestedMoveButtonStates(container) {
     if (!container) return;
     const items = container.querySelectorAll('.nested-menu-item');

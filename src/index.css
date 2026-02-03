@@ -3889,3 +3889,57 @@ input.is-invalid:focus {
     gap: 1rem 1.5rem; /* Jarak antara baris dan lajur */
     align-items: start; /* Jajarkan item ke bahagian atas sel grid */
 }
+
+/* --- TOAST NOTIFICATIONS (Added for Save Feedback) --- */
+#toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    min-width: 250px;
+    padding: 12px 16px;
+    border-radius: 6px;
+    color: white;
+    font-weight: 500;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast i {
+    margin-right: 10px;
+    font-size: 1.1em;
+}
+
+/* Warna Kejayaan (Hijau) */
+.toast-success {
+    background-color: #10B981; /* Green-500 */
+    border-left: 5px solid #059669;
+}
+
+/* Warna Ralat (Merah) */
+.toast-error {
+    background-color: #EF4444; /* Red-500 */
+    border-left: 5px solid #B91C1C;
+}
+
+/* Warna Info (Biru - untuk Saving...) */
+.toast-info {
+    background-color: #3B82F6; /* Blue-500 */
+    border-left: 5px solid #1D4ED8;
+}

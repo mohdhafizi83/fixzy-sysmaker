@@ -13,7 +13,6 @@ import { populateFieldSettings, setupMediaTab } from './pages/fieldSettings.js';
 import { appState } from './state.js'; 
 import { loadProjectData } from '../renderer.js'; 
 
-// KOD PENUH: Gantikan keseluruhan fungsi sedia ada dengan yang ini.
 export function focusOnSidebarField(tableName, fieldName) {
     return new Promise(resolve => {
         const allLinks = document.querySelectorAll('.sidebar .nav-list a');
@@ -35,26 +34,34 @@ export function focusOnSidebarField(tableName, fieldName) {
             );
 
             if (targetFieldLink) {
-                // 1. Urus status 'active' secara manual
+                // 1. HIDUPKAN MOD POPULATE (PENTING!)
+                appState.isPopulatingData = true;
+
+                // Logik UI
                 allLinks.forEach(l => l.classList.remove('active'));
                 targetFieldLink.classList.add('active');
                 updateActionButtonsState();
 
-                // 2. Panggil fungsi paparan secara terus (KUNCI PENYELESAIAN)
                 showPage('field-settings');
                 document.querySelector('#field-settings-page .field-name').textContent = `${tableName}.${fieldName}`;
+                
+                // Populate Data
                 setupMediaTab(tableName, fieldName);
                 populateFieldSettings(tableName, fieldName);
+                
+                // 2. MATIKAN MOD POPULATE SELEPAS SELESAI
+                // Kita guna setTimeout untuk memastikan semua event 'change' palsu sudah reda
+                setTimeout(() => {
+                    appState.isPopulatingData = false;
+                }, 200); 
             }
             resolve();
         };
 
-        // Buka submenu jika tertutup
         if (!parentLink.classList.contains('open')) {
             parentLink.classList.add('open');
             const submenu = parentLink.nextElementSibling;
             if (submenu) submenu.style.display = 'block';
-            // Beri sedikit masa untuk UI dikemas kini sebelum memilih
             setTimeout(selectAndPopulate, 50); 
         } else {
             selectAndPopulate();
@@ -375,6 +382,7 @@ export function initializeSidebarInteractivity() {
         const isTableLink = link.parentElement.classList.contains('has-submenu');
         
         if (isFieldLink) {
+            appState.isPopulatingData = true; // Block auto-save
             const tableName = link.closest('li.has-submenu').querySelector('a > span').textContent.trim();
             const fieldName = link.querySelector('span').textContent.trim();
             const protectedFields = ['id', 'created_at', 'updated_at', 'deleted_at'];
@@ -391,8 +399,11 @@ export function initializeSidebarInteractivity() {
             document.querySelector('#field-settings-page .field-name').textContent = `${tableName}.${fieldName}`;
             setupMediaTab(tableName, fieldName);
             populateFieldSettings(tableName, fieldName);
-
+            setTimeout(() => { appState.isPopulatingData = false; }, 200);
+            
         } else if (isTableLink) {
+            
+            appState.isPopulatingData = true;
             const tableName = link.querySelector('span').textContent.trim();
             
             // PEMBETULAN DI SINI: Guna appState.isCoreLockingEnabled
@@ -419,13 +430,17 @@ export function initializeSidebarInteractivity() {
             populateTableSettings(tableName);
             populateParentChildTab(tableName);
 
+            setTimeout(() => { appState.isPopulatingData = false; }, 200); 
         } else { // Project Setup Link
+            appState.isPopulatingData = true;
+            
             applyFormLock('table', false);
             applyFormLock('field', false);
             
             showPage('main-dashboard');
             populateMainDashboard(appState.activeProject);
             closeAllSubmenus();
+            setTimeout(() => { appState.isPopulatingData = false; }, 200);
         }
     });
 }

@@ -89,169 +89,13 @@ import {
 } from './js/state.js';
 import { resolveVariables } from './js/utils.js';
 
+import { SaveManager } from './js/saveManager.js';
+export { SaveManager }; // Eksport semula supaya fail lain tak 'pecah'
+
 window.VALIDATION_RULES_CONFIG = VALIDATION_RULES_CONFIG;
 window.saveValidationData = saveValidationData;
 window.toggleValidationInputs = toggleValidationInputs;
 window.showCustomDialog = showCustomDialog;
-
-export const SaveManager = {
-    saveQueue: {
-        project: {}, tables: {}, fields: {}, relationships: {}, upserts: [], relationshipDeletes: []
-    },
-    debounceTimer: null,
-    isProcessing: false,
-
-    addToQueue(type, id, data) {
-        if (type === 'upsertRelationship') {
-            this.saveQueue.upserts.push(data);
-        } else if (type === 'deleteRelationship') {
-            this.saveQueue.relationshipDeletes.push(data);
-        } else if (type === 'project') {
-            this.saveQueue.project = { ...this.saveQueue.project, ...data };
-        } else {
-            this.saveQueue[type][id] = { ...(this.saveQueue[type][id] || {}), ...data };
-        }
-        
-        clearTimeout(this.debounceTimer);
-        this.debounceTimer = setTimeout(() => this.processQueue(), 2500);
-    },
-
-    async processQueue() {
-        if (this.isProcessing || this.isQueueEmpty()) {
-            return;
-        }
-        
-        this.isProcessing = true;
-        const saveStatus = document.getElementById('save-status');
-        saveStatus.textContent = 'Saving...';
-        saveStatus.className = 'saving';
-
-        try {
-            const activeElementId = document.activeElement ? document.activeElement.id : null;
-            
-            const isRename = (this.saveQueue.tables && Object.values(this.saveQueue.tables).some(t => t.hasOwnProperty('table_name'))) ||
-                             (this.saveQueue.fields && Object.values(this.saveQueue.fields).some(f => f.hasOwnProperty('field_name')));
-            
-            // ▼▼▼ MULA LOGIK BAHARU: Kesan perubahan pada hubungan ▼▼▼
-            const hasRelationshipChanges = Object.keys(this.saveQueue.relationships).length > 0 || 
-                                           this.saveQueue.upserts.length > 0 || 
-                                           this.saveQueue.relationshipDeletes.length > 0;
-            // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
-
-            const result = await window.electronAPI.batchUpdate(this.saveQueue);
-
-            if (result.success) {
-                console.log("[SaveManager] Kemas kini berkelompok berjaya.");
-
-                if (isRename) {
-                    // ... (logik sedia ada untuk rename, tidak berubah)
-                    let tableToFocus = null;
-                    let itemToSelect = null;
-                    const tablePage = document.getElementById('table-settings-page');
-                    const fieldPage = document.getElementById('field-settings-page');
-                    if (tablePage && !tablePage.classList.contains('hidden')) {
-                        const originalTableName = tablePage.querySelector('.table-name')?.textContent;
-                        if (originalTableName && appState.jsonData.database.table[originalTableName]) {
-                            const tableId = appState.jsonData.database.table[originalTableName].table_id;
-                            tableToFocus = this.saveQueue.tables[tableId]?.table_name || originalTableName;
-                        }
-                    } else if (fieldPage && !fieldPage.classList.contains('hidden')) {
-                        const nameParts = fieldPage.querySelector('.field-name')?.textContent.split('.');
-                        const originalTableName = nameParts[0];
-                        const originalFieldName = nameParts[1];
-                        if (originalTableName && originalFieldName && appState.jsonData.database.table[originalTableName]?.fields[originalFieldName]) {
-                            const fieldId = appState.jsonData.database.table[originalTableName].fields[originalFieldName].field_id;
-                            const fieldNameToFocus = this.saveQueue.fields[fieldId]?.field_name || originalFieldName;
-                            const tableId = appState.jsonData.database.table[originalTableName].table_id;
-                            const tableNameToFocus = this.saveQueue.tables[tableId]?.table_name || originalTableName;
-                            itemToSelect = { table: tableNameToFocus, field: fieldNameToFocus };
-                        }
-                    }
-                    this.clearQueue();
-                    await loadProjectData(appState.activeProject, { tableToSelect: tableToFocus, itemToSelect, refreshMode: 'sidebarOnly' });
-                
-                // ▼▼▼ MULA LOGIK BAHARU: Kendalikan kemas kini Parent/Child Tab ▼▼▼
-                } else if (hasRelationshipChanges) {
-                    const currentTableName = document.querySelector('#table-settings-page .table-name')?.textContent;
-                    if (currentTableName) {
-                        // Ingat anak jadual mana yang sedang aktif
-                        const activeChildLi = document.querySelector('#child-table-list li.active');
-                        setLastActiveChildTable(activeChildLi ? activeChildLi.dataset.childName : null);
-                        
-                        // Muat semula data di latar belakang
-                        await loadProjectData(appState.activeProject, { refreshMode: 'dataOnly' });
-                        
-                        // Populate semula hanya tab Parent/Child
-                        populateParentChildTab(currentTableName);
-                    }
-                    this.clearQueue();
-                // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
-
-                } else {
-                // Muat semula data di latar belakang untuk memastikan appState.jsonData sentiasa terkini.
-                await loadProjectData(appState.activeProject, { refreshMode: 'dataOnly' });
-                this.clearQueue();
-                }
-
-                if (activeElementId) {
-                    const elementToFocus = document.getElementById(activeElementId);
-                    if (elementToFocus) {
-                        elementToFocus.focus();
-                        if (typeof elementToFocus.selectionStart == "number") {
-                            elementToFocus.selectionStart = elementToFocus.selectionEnd = elementToFocus.value.length;
-                        }
-                    }
-                }
-
-                saveStatus.textContent = 'All changes saved ✔';
-                saveStatus.className = 'saved';
-            } else {
-                throw new Error(result.message);
-            }
-        } catch (error) {
-            console.error("[SaveManager] Kemas kini berkelompok gagal:", error);
-            showCustomDialog({ title: "Save Failed", message: `Error during batch save: ${error.message}` });
-            saveStatus.textContent = 'Save failed!';
-            saveStatus.className = 'error';
-        } finally {
-            this.isProcessing = false;
-            
-            if (appState.isAwaitingMenuGroupSave) {
-                document.getElementById('loading-overlay')?.classList.add('loading-overlay-hidden');
-                setAwaitingMenuGroupSave(false);
-            }
-
-            // Jangan reset `lastActiveChildTable` di sini lagi
-            // setLastActiveChildTable(null); 
-
-            setTimeout(() => {
-                if (saveStatus.textContent === 'All changes saved ✔' || saveStatus.textContent === 'Save failed!') {
-                    saveStatus.textContent = '';
-                }
-            }, 3000);
-
-            if (!this.isQueueEmpty()) {
-                setTimeout(() => this.processQueue(), 50);
-            }
-        }
-    },
-	
-	
-    clearQueue() {
-        this.saveQueue = { project: {}, tables: {}, fields: {}, relationships: {}, upserts: [], relationshipDeletes: [] };
-    },
-
-    isQueueEmpty() {
-        return (
-            Object.keys(this.saveQueue.project).length === 0 &&
-            Object.keys(this.saveQueue.tables).length === 0 &&
-            Object.keys(this.saveQueue.fields).length === 0 &&
-            Object.keys(this.saveQueue.relationships).length === 0 &&
-            this.saveQueue.upserts.length === 0 &&
-            this.saveQueue.relationshipDeletes.length === 0
-        );
-    }
-};
 
 function showConfirmationDialog(title, message) {
     return new Promise((resolve) => {
@@ -686,6 +530,7 @@ const generateAppBtn = document.getElementById('app-generate_app');
 	
     // Mulakan aplikasi dengan cuba mendapatkan projek aktif dari DB
     const project = await window.electronAPI.getActiveProject();
+    SaveManager.init(loadProjectData);
     await loadProjectData(project);
 	initializeWorkflowBuilder();
     initializeFullscreenHandlers();
