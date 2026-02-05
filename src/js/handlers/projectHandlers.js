@@ -4,7 +4,7 @@ import { appState, setIsCoreLockingEnabled } from '../state.js';
 import { SaveManager } from '../saveManager.js';
 import { showCustomDialog } from '../ui/modalHandlers.js';
 import { setElementValue, setRadioValue } from '../ui/formHelpers.js';
-import { loadProjectData } from '../../renderer.js'; // Ikut path yang anda betulkan tadi
+//import { loadProjectData } from '../../renderer.js'; // Ikut path yang anda betulkan tadi
 
 export function initializeThemeHandlers() {
     const themeSelect = document.getElementById('app-theme-select');
@@ -160,7 +160,8 @@ export async function populateProjectDropdown() {
 
                 const newActiveProject = await window.electronAPI.setActiveProject(project.project_id);
                 if (newActiveProject) {
-                    await loadProjectData(newActiveProject);
+                    //await loadProjectData(newActiveProject);
+                    await SaveManager.refreshState();
                 }
             } catch (error) {
                 console.error("Gagal menukar projek:", error);

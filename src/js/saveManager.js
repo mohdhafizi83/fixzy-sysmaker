@@ -13,6 +13,15 @@ export const SaveManager = {
         _refreshProjectDataCallback = loadDataFunction;
     },
 
+async refreshState() {
+        if (_refreshProjectDataCallback) {
+            console.log("[SaveManager] Memuat semula data projek...");
+            await _refreshProjectDataCallback();
+        } else {
+            console.warn("[SaveManager] Callback refresh belum diinisialisasi.");
+        }
+    },
+    
     addToQueue(type, id, data) {
         if (!id) {
             console.error("[SaveManager] RALAT: ID tidak sah.");

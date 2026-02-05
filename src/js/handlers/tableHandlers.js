@@ -4,11 +4,9 @@ import { appState } from '../state.js';
 import { SaveManager } from '../saveManager.js';
 import { showCustomDialog } from '../ui/modalHandlers.js';
 import { setElementValue, setRadioValue } from '../ui/formHelpers.js';
+import { openCustomViewModal } from './logicBuilderHandlers.js';
 //import { populateCustomViewsTab } from './tableHandlers.js';
 
-// src/js/handlers/tableHandlers.js
-
-// --- 1. TABLE SAVE HANDLER (DIPERBAIKI) ---
 export function initializeTableSaveHandlers() {
     const container = document.getElementById('table-settings-page');
     if (!container) return;
@@ -67,10 +65,6 @@ export function initializeTableSaveHandlers() {
         });
     });
 }
-
-// src/js/handlers/tableHandlers.js
-
-// src/js/handlers/tableHandlers.js
 
 export function initializeRelationshipSaveHandlers() {
     console.log("🛠️ Relationship Handlers: Init dipanggil."); 
@@ -465,10 +459,12 @@ export function populateCustomViewsTab(tableName) {
         </div>
     `).join('');
 }
-
+window.populateCustomViewsTab = populateCustomViewsTab;
 /**
  * Fungsi utama untuk memasang semua event listener untuk ciri Custom Views.
  */
+// src/js/handlers/tableHandlers.js
+
 export function initializeCustomViews() {
     const tableSettingsPage = document.getElementById('table-settings-page');
     if (!tableSettingsPage) return;
@@ -481,10 +477,12 @@ export function initializeCustomViews() {
         const currentTableName = document.querySelector('#table-settings-page .table-name').textContent;
         if (!currentTableName) return;
 
+        // Butang Add
         if (e.target.closest('#btn-add-custom-view')) {
             openCustomViewModal(currentTableName);
         }
 
+        // Butang Edit
         const editBtn = e.target.closest('.cv-edit-btn');
         if (editBtn) {
             const viewId = parseInt(editBtn.dataset.viewId, 10);
@@ -494,28 +492,19 @@ export function initializeCustomViews() {
             }
         }
 
+        // ▼▼▼ PERUBAHAN DI SINI ▼▼▼
+        // Butang Delete
         const deleteBtn = e.target.closest('.cv-delete-btn');
         if (deleteBtn) {
             const viewId = parseInt(deleteBtn.dataset.viewId, 10);
-            showCustomDialog({
-                title: "Confirm Deletion",
-                message: "Are you sure you want to permanently delete this Custom View? This action cannot be undone.",
-                showCancelButton: true,
-                onOk: async () => {
-                    const result = await window.electronAPI.deleteCustomView(viewId);
-                    if (result.success) {
-                        await loadProjectData(appState.activeProject);
-                        populateCustomViewsTab(currentTableName);
-                    } else {
-                        showCustomDialog({ title: "Error", message: `Failed to delete view: ${result.message}`});
-                    }
-                }
-            });
+            
+            // Panggil fungsi standalone yang telah kita perbaiki di bawah!
+            // Jangan tulis logik dialog di sini lagi.
+            deleteCustomView(viewId); 
         }
+        // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
     });
 }
-
-// src/js/handlers/tableHandlers.js (Tambah di bahagian bawah fail)
 
 export function initializeCustomViewModalLogic() {
     const modal = document.getElementById('custom-view-modal');
@@ -613,15 +602,59 @@ export function populateCustomViewModal(viewId = null) {
     modal.classList.remove('hidden');
 }
 
+// src/js/handlers/tableHandlers.js
+
 export async function deleteCustomView(viewId) {
     showCustomDialog({
         title: "Delete View",
-        message: "Are you sure you want to delete this custom view?",
+        message: "Are you sure you want to delete this custom view? This action cannot be undone.",
         showCancelButton: true,
         onOk: async () => {
-            await window.electronAPI.deleteCustomView(viewId);
-            const tableName = document.querySelector('#table-settings-page .table-name').textContent.trim();
-            populateCustomViewsTab(tableName);
+            console.group("🔍 DEBUG: Delete Custom View (Local Update Strategy)");
+            try {
+                // 1. Dapatkan nama jadual DARI DOM (sebelum apa-apa berlaku)
+                const tableNameElement = document.querySelector('#table-settings-page .table-name');
+                const tableName = tableNameElement ? tableNameElement.textContent.trim() : null;
+                
+                if (!tableName) {
+                    console.error("❌ Nama jadual tidak ditemui dalam DOM.");
+                    return;
+                }
+
+                // 2. Panggil API Delete Backend
+                const result = await window.electronAPI.deleteCustomView(viewId);
+                
+                if (result && result.success) {
+                    console.log("✅ Delete Berjaya di Backend.");
+
+                    // 3. KEMAS KINI STATE TEMPATAN (Tanpa Refresh App!)
+                    // Kita cari array custom_views dalam appState dan buang item yang ID-nya sama
+                    if (appState.jsonData.database.table[tableName]?.custom_views) {
+                        const currentViews = appState.jsonData.database.table[tableName].custom_views;
+                        
+                        // Tapis keluar view yang hendak dipadam
+                        appState.jsonData.database.table[tableName].custom_views = currentViews.filter(v => v.custom_view_id !== viewId);
+                        
+                        console.log("✅ AppState dikemaskini secara manual (Item dibuang dari array).");
+                    }
+
+                    // 4. Render Semula Tab Custom View Sahaja
+                    // (Kerana fungsi ini berada dalam fail yang sama, kita boleh panggil terus)
+                    populateCustomViewsTab(tableName);
+                    
+                    // Pilihan: Boleh tambah toast notification di sini jika mahu
+
+                } else {
+                    console.error("❌ Backend error:", result.message);
+                    showCustomDialog({ title: "Error", message: result.message || "Failed to delete custom view." });
+                }
+
+            } catch (error) {
+                console.error("❌ Delete Error:", error);
+                showCustomDialog({ title: "System Error", message: "An error occurred while deleting." });
+            } finally {
+                console.groupEnd();
+            }
         }
     });
 }

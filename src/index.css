@@ -3938,6 +3938,19 @@ input.is-invalid:focus {
     border-left: 5px solid #B91C1C;
 }
 
+/* Dalam fail CSS anda (cth: styles.css) */
+.field-item.selected, 
+.form-field-item.selected {
+    background-color: #007bff; /* Warna biru */
+    color: white;
+    cursor: pointer;
+}
+
+.field-item:hover,
+.form-field-item:hover {
+    background-color: #f0f0f0;
+}
+
 /* Warna Info (Biru - untuk Saving...) */
 .toast-info {
     background-color: #3B82F6; /* Blue-500 */
