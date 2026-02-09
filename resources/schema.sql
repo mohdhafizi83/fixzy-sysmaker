@@ -285,6 +285,7 @@ CREATE TABLE custom_views (
     view_name           TEXT NOT NULL,
     menu_icon           TEXT,
     filter_rules        TEXT, -- Akan menyimpan konfigurasi penapis dalam format JSON
+    included_relations  TEXT,
     owner_only          INTEGER DEFAULT 0, -- TAMBAH BARIS INI
     owner_field         TEXT,              -- TAMBAH BARIS INI
     view_order          INTEGER,

@@ -2303,9 +2303,14 @@ export function openQueryHelperModal(options) {
  * @param {string} tableName - Nama jadual semasa.
  * @param {object|null} viewData - Data untuk view sedia ada jika dalam mod edit.
  */
+// src/js/handlers/logicBuilderHandlers.js
+
 export function openCustomViewModal(tableName, viewData = null) {
     const modal = document.getElementById('custom-view-config-modal');
-    if (!modal) return;
+    if (!modal) {
+        console.error("Modal 'custom-view-config-modal' tidak ditemui.");
+        return;
+    }
 
     modal.dataset.tableName = tableName;
     
@@ -2315,90 +2320,211 @@ export function openCustomViewModal(tableName, viewData = null) {
         viewIdInput: document.getElementById('cv-view-id'),
         viewNameInput: document.getElementById('cv-view-name'),
         menuIconInput: document.getElementById('cv-menu-icon'),
-        filterContainer: document.getElementById('cv-filter-builder-container'),
+        
+        childTablesContainer: document.getElementById('cv-child-tables-container'),
+        
+        filterContainer: document.getElementById('cv-filter-builder-container'), // Container Filter
+        
         ownerOnlyCheckbox: document.getElementById('cv-owner-only-checkbox'),
         ownerFieldContainer: document.getElementById('cv-owner-field-container'),
         ownerFieldSelect: document.getElementById('cv-owner-field-select'),
-        // Butang Navigasi
+        
         nextBtn: document.getElementById('cv-modal-next'),
         backBtn: document.getElementById('cv-modal-back'),
         saveBtn: document.getElementById('cv-modal-save'),
         closeIcon: document.getElementById('cv-modal-close'),
         cancelBtn: document.getElementById('cv-modal-cancel'),
-        // Langkah (Steps)
+        
         step1: document.getElementById('cv-step-1'),
         step2: document.getElementById('cv-step-2'),
-        // Field Lists
+        
         addFieldBtn: document.getElementById('cv-add-field-btn'),
         removeFieldBtn: document.getElementById('cv-remove-field-btn'),
         availableList: document.getElementById('cv-available-fields-list'),
         layoutPanel: document.getElementById('cv-form-layout-panel')
     };
 
-    // 2. Setup Data Awal
+    // 2. Setup Data Awal & Reset UI
     const isEditing = viewData !== null;
     elements.title.textContent = isEditing ? `Edit Custom View: ${viewData.view_name}` : `Create New Custom View for '${tableName}'`;
     elements.viewIdInput.value = isEditing ? viewData.custom_view_id : '';
     elements.viewNameInput.value = isEditing ? viewData.view_name : '';
-    elements.menuIconInput.value = isEditing ? viewData.menu_icon : 'fa-table'; // Default icon
+    elements.menuIconInput.value = isEditing ? viewData.menu_icon || 'fas fa-table' : 'fas fa-table';
     
     elements.viewNameInput.classList.remove('is-invalid');
     const valMsg = document.getElementById('cv-name-validation-message');
     if (valMsg) valMsg.style.display = 'none';
 
-    // Isi Owner Field Dropdown
-    elements.ownerFieldSelect.innerHTML = '';
-    const fields = appState.jsonData.database.table[tableName]?.fields || {};
-    Object.keys(fields).forEach(fieldName => {
-        elements.ownerFieldSelect.add(new Option(fieldName, fieldName));
-    });
+    // Reset Save Button
+    elements.saveBtn.disabled = false;
+    elements.saveBtn.innerHTML = 'Save View';
 
-    elements.ownerOnlyCheckbox.checked = isEditing && viewData.owner_only === 1;
-    elements.ownerFieldContainer.classList.toggle('hidden', !elements.ownerOnlyCheckbox.checked);
-    if (isEditing && viewData.owner_field) {
+    // Populate Owner Field
+    if (elements.ownerFieldSelect) {
+        elements.ownerFieldSelect.innerHTML = '';
+        const fields = appState.jsonData.database.table[tableName]?.fields || {};
+        Object.keys(fields).forEach(fieldName => {
+            elements.ownerFieldSelect.add(new Option(fieldName, fieldName));
+        });
+    }
+
+    // Owner Checkbox Logic
+    if (elements.ownerOnlyCheckbox) {
+        elements.ownerOnlyCheckbox.checked = isEditing && viewData.owner_only === 1;
+        if (elements.ownerFieldContainer) {
+            elements.ownerFieldContainer.classList.toggle('hidden', !elements.ownerOnlyCheckbox.checked);
+        }
+        
+        const newOwnerCheck = elements.ownerOnlyCheckbox.cloneNode(true);
+        elements.ownerOnlyCheckbox.parentNode.replaceChild(newOwnerCheck, elements.ownerOnlyCheckbox);
+        elements.ownerOnlyCheckbox = newOwnerCheck;
+        
+        elements.ownerOnlyCheckbox.addEventListener('change', (e) => {
+            if(elements.ownerFieldContainer) 
+                elements.ownerFieldContainer.classList.toggle('hidden', !e.target.checked);
+        });
+    }
+
+    if (isEditing && viewData.owner_field && elements.ownerFieldSelect) {
         elements.ownerFieldSelect.value = viewData.owner_field;
     }
 
-    // Listener Owner Checkbox
-    const newOwnerCheck = elements.ownerOnlyCheckbox.cloneNode(true);
-    elements.ownerOnlyCheckbox.parentNode.replaceChild(newOwnerCheck, elements.ownerOnlyCheckbox);
-    elements.ownerOnlyCheckbox = newOwnerCheck;
-    elements.ownerOnlyCheckbox.addEventListener('change', (e) => {
-        elements.ownerFieldContainer.classList.toggle('hidden', !e.target.checked);
-    });
+    // FASA 1: Child Tables Logic (Kekal Sama)
+    if (elements.childTablesContainer) {
+        elements.childTablesContainer.innerHTML = '';
+        const relationships = appState.jsonData.database.relationships.filter(
+            rel => rel.parent_table_name === tableName
+        );
 
-    // 3. Setup Filter Builder
-    const filterState = isEditing ? JSON.parse(viewData.filter_rules || '{}') : null;
-    elements.filterContainer.innerHTML = '';
-    const filterBuilderWrapper = document.createElement('div');
-    filterBuilderWrapper.className = 'qb-nested-rules'; 
-    elements.filterContainer.appendChild(filterBuilderWrapper);
-    
-    if (filterState) {
-        buildRulesUI(filterBuilderWrapper, filterState, tableName);
+        if (relationships.length === 0) {
+            elements.childTablesContainer.innerHTML = '<span style="font-style:italic; color:#999; font-size:0.85em; padding:5px;">No child tables found.</span>';
+        } else {
+            let savedRelations = [];
+            if (isEditing && viewData.included_relations) {
+                try {
+                    savedRelations = typeof viewData.included_relations === 'string' 
+                        ? JSON.parse(viewData.included_relations) 
+                        : viewData.included_relations;
+                } catch (e) { console.error("Error parsing included_relations", e); }
+            }
+
+            relationships.forEach(rel => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'checkbox-item';
+                wrapper.style.cssText = 'display:flex; align-items:center; gap:8px;';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `rel-check-${rel.relationship_id}`;
+                checkbox.value = rel.child_table_name; 
+                checkbox.checked = !isEditing ? true : savedRelations.includes(rel.child_table_name);
+                const label = document.createElement('label');
+                label.htmlFor = `rel-check-${rel.relationship_id}`;
+                label.textContent = rel.child_table_name;
+                label.style.cursor = 'pointer';
+                wrapper.appendChild(checkbox);
+                wrapper.appendChild(label);
+                elements.childTablesContainer.appendChild(wrapper);
+            });
+        }
+    }
+
+    // ---------------------------------------------------------
+    // FASA 2: FILTER BUILDER INITIALIZATION
+    // ---------------------------------------------------------
+    if (elements.filterContainer) {
+        elements.filterContainer.innerHTML = ''; // Reset container
+        
+        // 1. Bina struktur asas (Root Group) atau Nested Rules Wrapper
+        const filterBuilderWrapper = document.createElement('div');
+        filterBuilderWrapper.className = 'qb-nested-rules'; 
+        filterBuilderWrapper.style.padding = '5px';
+        elements.filterContainer.appendChild(filterBuilderWrapper);
+        
+        // 2. Load Data (Jika Edit)
+        const filterState = isEditing ? JSON.parse(viewData.filter_rules || '{}') : null;
+        if (filterState && filterState.rules && filterState.rules.length > 0) {
+            // Gunakan fungsi sedia ada untuk bina UI recursive
+            buildRulesUI(filterBuilderWrapper, filterState, tableName);
+        }
+        
+        // 3. Tambah butang "Add Rule" utama di bawah
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'mt-2';
+        buttonContainer.innerHTML = `
+            <button class="btn btn-secondary btn-sm cqb-add-nested-rule"><i class="fas fa-plus"></i> Add Rule</button>
+            <button class="btn btn-secondary btn-sm cqb-add-nested-group"><i class="fas fa-layer-group"></i> Add Group</button>
+        `;
+        elements.filterContainer.appendChild(buttonContainer);
+
+        // =========================================================
+        // FASA 2: FILTER BUILDER EVENT LISTENERS (DELEGATION)
+        // =========================================================
+        
+        // Clone container untuk buang listener lama (Critical for SPA)
+        const newFilterContainer = elements.filterContainer.cloneNode(true);
+        elements.filterContainer.parentNode.replaceChild(newFilterContainer, elements.filterContainer);
+        elements.filterContainer = newFilterContainer;
+
+        // Listener A: Klik (Tambah Rule/Group, Delete)
+        elements.filterContainer.addEventListener('click', (e) => {
+            const target = e.target;
+            const button = target.closest('button'); // Handle ikon dalam butang
+
+            if (!button) return;
+
+            if (button.classList.contains('cqb-add-nested-rule')) {
+                e.preventDefault();
+                addRuleOrGroup(button, 'rule');
+            } else if (button.classList.contains('cqb-add-nested-group')) {
+                e.preventDefault();
+                addRuleOrGroup(button, 'group');
+            } else if (button.classList.contains('cqb-delete-btn')) {
+                e.preventDefault();
+                const itemToRemove = button.closest('.cqb-rule, .cqb-rule-group');
+                if (itemToRemove) itemToRemove.remove();
+            }
+        });
+
+        // Listener B: Perubahan (Table Select -> Update Fields)
+        elements.filterContainer.addEventListener('change', (e) => {
+            if (e.target.classList.contains('cqb-rule-table')) {
+                const selectedTable = e.target.value;
+                const fieldDropdown = e.target.closest('.cqb-rule').querySelector('.cqb-rule-field');
+                
+                if (fieldDropdown && appState.jsonData.database.table[selectedTable]) {
+                    fieldDropdown.innerHTML = ''; // Kosongkan
+                    const fields = Object.keys(appState.jsonData.database.table[selectedTable].fields);
+                    fields.forEach(fieldName => {
+                        const option = document.createElement('option');
+                        option.value = fieldName;
+                        option.textContent = fieldName;
+                        fieldDropdown.appendChild(option);
+                    });
+                }
+            }
+        });
+    }
+
+    // 4. Setup Form Builder & Steps UI (Kekal Sama)
+
+if (elements.layoutPanel) {
+        // Reset panel kanan
+        elements.layoutPanel.innerHTML = `<div class="empty-state-label"><p>Drag fields here</p></div>`;
+        
+        // Jika Mode Edit, isikan panel kanan dengan medan yang disimpan
+        if (isEditing && viewData.fields) {
+            populateFormBuilder(viewData.fields);
+        }
     }
     
-    const buttonContainer = document.createElement('div');
-    buttonContainer.className = 'mt-2';
-    buttonContainer.innerHTML = `<button class="btn btn-secondary btn-sm cqb-add-nested-rule"><i class="fas fa-plus"></i> Add Rule</button>`;
-    elements.filterContainer.appendChild(buttonContainer);
-    buttonContainer.querySelector('button').addEventListener('click', e => addRuleOrGroup(e.target, 'rule'));
-
-    // 4. Setup Form Builder (Step 2)
     populateAvailableFieldsTree(tableName);
-    elements.layoutPanel.innerHTML = `<div class="empty-state-label"><p>Drag fields here</p></div>`;
-    if (isEditing && viewData.fields) {
-        populateFormBuilder(viewData.fields);
-    }
     
-    // Reset Paparan Langkah
+    // Reset Navigation Logic
     elements.step1.classList.remove('hidden');
     elements.step2.classList.add('hidden');
     elements.backBtn.classList.add('hidden');
     elements.saveBtn.classList.add('hidden');
     elements.nextBtn.classList.remove('hidden');
-
-    // 5. LOGIK NAVIGASI & VALIDASI
     elements.nextBtn.disabled = !isEditing;
 
     const validateName = () => {
@@ -2412,6 +2538,7 @@ export function openCustomViewModal(tableName, viewData = null) {
     elements.viewNameInput = newNameInput;
     elements.viewNameInput.addEventListener('input', validateName);
 
+    // Navigation Handlers
     const handleNext = () => {
         if (elements.viewNameInput.value.trim() === '') {
             elements.viewNameInput.classList.add('is-invalid');
@@ -2442,7 +2569,7 @@ export function openCustomViewModal(tableName, viewData = null) {
     elements.backBtn = newBackBtn;
     elements.backBtn.addEventListener('click', handleBack);
 
-    // 6. LOGIK PEMINDAHAN FIELDS (DESIGN FORM)
+    // Field Picker Logic
     if (elements.addFieldBtn) {
         const newAddBtn = elements.addFieldBtn.cloneNode(true);
         elements.addFieldBtn.parentNode.replaceChild(newAddBtn, elements.addFieldBtn);
@@ -2475,7 +2602,7 @@ export function openCustomViewModal(tableName, viewData = null) {
         });
     }
 
-    // 7. LOGIK TUTUP (CLOSE)
+    // Modal Close
     const closeModal = () => modal.classList.add('hidden');
     if (elements.closeIcon) {
         const newCloseIcon = elements.closeIcon.cloneNode(true);
@@ -2488,84 +2615,98 @@ export function openCustomViewModal(tableName, viewData = null) {
         newCancelBtn.addEventListener('click', closeModal);
     }
 
-// 8. LOGIK SIMPAN (SAVE) - TANPA RELOAD (SOLUSI STABIL)
+    // SAVE HANDLER
     const handleSave = async () => {
         try {
-            // ... (Bahagian A: Kumpul Data - KEKAL SAMA) ...
             const tableData = appState.jsonData.database.table[tableName];
             const tableId = tableData.table_id;
             const viewName = elements.viewNameInput.value.trim();
             if (!viewName) return;
 
-            const filterRules = readRuleState(filterBuilderWrapper);
+            // Kumpul Filter Rules (FASA 2)
+            let filterRules = {};
+            // Kita baca dari wrapper root jika ada, atau dari container direct
+            // Fungsi readRuleState membaca struktur DOM .cqb-rule dan .cqb-rule-group
+            if (elements.filterContainer) {
+                // Untuk keseragaman, kita cuba baca dari .qb-nested-rules pertama
+                const rootWrapper = elements.filterContainer.querySelector('.qb-nested-rules');
+                if (rootWrapper) {
+                    // Kita perlu balut dalam objek "group" maya kerana readRuleState membaca children
+                    filterRules = readRuleState(rootWrapper); 
+                    // Nota: readRuleState perlukan struktur parent logic toggle. 
+                    // Jika readRuleState gagal, kita mungkin perlu pass element container terus.
+                    // Mari kita pastikan readRuleState flexible.
+                } else {
+                    // Fallback jika user tambah rule direct ke container utama
+                   // Logic ini bergantung kepada bagaimana addRuleOrGroup berfungsi
+                }
+            }
+
+            // *PENTING*: readRuleState menjangka container yang ada .qb-logic-toggle sebelumnya.
+            // Oleh itu, kita pastikan kita ambil state dengan betul.
+            // Cara paling selamat adalah memastikan filter kita sentiasa bermula dengan satu 'group' maya
+            // Atau kita ubah suai readRuleState. Untuk sekarang, 'qb-nested-rules' sepatutnya OK.
+
             const fields = [];
-            elements.layoutPanel.querySelectorAll('.form-field-item').forEach((item, index) => {
-                fields.push({
-                    sourceTable: item.dataset.sourceTable,
-                    sourceName: item.dataset.sourceName,
-                    label: item.querySelector('.field-label')?.textContent || item.dataset.sourceName,
-                    isReadonly: item.querySelector('.is-readonly-checkbox').checked,
-                    sortOrder: index
+            if (elements.layoutPanel) {
+                elements.layoutPanel.querySelectorAll('.form-field-item').forEach((item, index) => {
+                    fields.push({
+                        sourceTable: item.dataset.sourceTable,
+                        sourceName: item.dataset.sourceName,
+                        label: item.querySelector('.field-label')?.textContent || item.dataset.sourceName,
+                        isReadonly: item.querySelector('.is-readonly-checkbox').checked,
+                        sortOrder: index
+                    });
                 });
-            });
+            }
+
+            const selectedRelations = [];
+            if (elements.childTablesContainer) {
+                const checkboxes = elements.childTablesContainer.querySelectorAll('input[type="checkbox"]:checked');
+                checkboxes.forEach(cb => {
+                    selectedRelations.push(cb.value);
+                });
+            }
 
             const payload = {
                 custom_view_id: isEditing ? viewData.custom_view_id : null,
                 table_id: tableId,
                 view_name: viewName,
                 menu_icon: elements.menuIconInput.value,
-                owner_only: elements.ownerOnlyCheckbox.checked ? 1 : 0,
-                owner_field: elements.ownerFieldSelect.value,
-                filter_rules: JSON.stringify(filterRules),
+                owner_only: elements.ownerOnlyCheckbox && elements.ownerOnlyCheckbox.checked ? 1 : 0,
+                owner_field: elements.ownerFieldSelect ? elements.ownerFieldSelect.value : null,
+                included_relations: JSON.stringify(selectedRelations),
+                filter_rules: JSON.stringify(filterRules), // Simpan FASA 2 Data
                 fields: fields
             };
-            // ... (Tamat Bahagian A) ...
 
-            // UI Feedback
             const originalBtnText = elements.saveBtn.innerHTML;
             elements.saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
             elements.saveBtn.disabled = true;
 
-            // B. Panggil API
-            // Backend akan memulangkan object { success: true, view: { ...data_baru } }
             const result = await window.electronAPI.saveCustomView(payload);
 
             if (result && result.success) {
-                console.log("✅ Save Berjaya via Local Update");
-
-                // --- SOLUSI TANPA RELOAD ---
+                console.log("✅ Save Berjaya");
                 
-                // 1. Kemas kini AppState secara manual (Locally)
                 if (!appState.jsonData.database.table[tableName].custom_views) {
                     appState.jsonData.database.table[tableName].custom_views = [];
                 }
 
                 if (isEditing) {
-                    // Jika Edit: Cari dan ganti dalam array
                     const index = appState.jsonData.database.table[tableName].custom_views.findIndex(v => v.custom_view_id === viewData.custom_view_id);
-                    if (index !== -1) {
-                        // Gabungkan data lama dengan data baru dari result backend
-                        appState.jsonData.database.table[tableName].custom_views[index] = result.view; 
-                    }
+                    if (index !== -1) appState.jsonData.database.table[tableName].custom_views[index] = result.view; 
                 } else {
-                    // Jika New: Tambah ke dalam array
                     appState.jsonData.database.table[tableName].custom_views.push(result.view);
                 }
 
-                // 2. Tutup Modal
+                elements.saveBtn.innerHTML = 'Save View';
+                elements.saveBtn.disabled = false;
                 closeModal();
 
-                // 3. Panggil fungsi render UI (Gunakan window object atau import dinamik jika perlu)
-                // Kerana anda kata kod import sudah dibuang, kita guna window sebagai fallback selamat
                 if (typeof window.populateCustomViewsTab === 'function') {
                     window.populateCustomViewsTab(tableName);
-                } else {
-                    // Fallback jika window function belum set: Import on-the-fly
-                    const { populateCustomViewsTab } = await import('./tableHandlers.js');
-                    populateCustomViewsTab(tableName);
                 }
-                
-                // Tiada 'SaveManager.refreshState()' -> Tiada Modal New Project
 
             } else {
                 showCustomDialog({ title: "Error", message: result.message || "Failed to save." });
@@ -2575,8 +2716,9 @@ export function openCustomViewModal(tableName, viewData = null) {
 
         } catch (error) {
             console.error("Save Error:", error);
-            showCustomDialog({ title: "Error", message: "An error occurred." });
+            showCustomDialog({ title: "Error", message: "An error occurred: " + error.message });
             elements.saveBtn.disabled = false;
+            elements.saveBtn.innerHTML = 'Save View';
         }
     };
     
@@ -2973,26 +3115,34 @@ function moveFields(sourceSelector, destinationSelector) {
     itemsToMove.forEach(item => { item.classList.remove('selected'); destination.appendChild(item); });
 }
 
+// src/js/handlers/logicBuilderHandlers.js
+
 function addRuleOrGroup(button, type) {
-    // ▼▼▼ MULA PEMBETULAN: Selector 'closest' dan 'querySelector' telah diperluas ▼▼▼
+    // Cari container bapa terdekat. Kita tambah '#cv-filter-builder-container' untuk support Custom View.
     const parentContainer = button.closest('.cqb-rule-group, #cqb-container, #cv-filter-builder-container');
-    if (!parentContainer) return; // Safety check
+    
+    if (!parentContainer) return; 
 
-    // Cari bekas yang betul untuk menambah peraturan (rule) atau kumpulan (group)
-    const targetContainer = parentContainer.querySelector('.qb-nested-rules, #cqb-rules-container, div');
-    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
+    // Cari kawasan di mana rule baru patut dimasukkan
+    // Untuk Custom View, ia mungkin direct di bawah container atau dalam nested rules
+    const targetContainer = parentContainer.querySelector('.qb-nested-rules, #cqb-rules-container') || parentContainer.querySelector('.qb-nested-rules') || parentContainer;
 
-    const tableName = button.closest('#configurable-query-builder-modal, #custom-view-config-modal').dataset.tableName;
+    // Cari modal terdekat untuk dapatkan Table Name
+    const modal = button.closest('#configurable-query-builder-modal, #custom-view-config-modal');
+    if (!modal) return;
+    
+    const tableName = modal.dataset.tableName;
     
     if (targetContainer) {
         if(type === 'rule') {
             const newRule = createRuleElement(tableName);
             targetContainer.appendChild(newRule);
             
-            // Jika ini adalah peraturan pertama, buang butang "Add Rule" asal
-            const initialAddButton = parentContainer.querySelector('.cqb-add-nested-rule');
-            if (initialAddButton && initialAddButton.parentElement !== targetContainer) {
-                initialAddButton.parentElement.remove();
+            // Logik Kosmetik: Jika ini rule pertama dalam container kosong, buang butang "Add Rule" placeholder (jika ada)
+            // (Bergantung pada struktur HTML anda, kadang-kadang ini tidak perlu, tapi selamat diletakkan)
+            const initialAddButton = parentContainer.querySelector(':scope > .cqb-add-nested-rule');
+            if (initialAddButton && initialAddButton.parentElement === parentContainer && parentContainer.id === 'cv-filter-builder-container') {
+                // Jangan buang butang utama, biarkan ia di situ untuk tambah rule seterusnya
             }
         }
         else {
@@ -3128,15 +3278,33 @@ function populateFormBuilder(fields) {
     const emptyState = formLayoutPanel.querySelector('.empty-state-label');
     if (emptyState) emptyState.remove();
 
+    // Dapatkan nama jadual semasa untuk perbandingan logic 'isParent'
+    const modal = formLayoutPanel.closest('.modal-overlay');
+    const currentTableName = modal ? modal.dataset.tableName : '';
+
     fields.forEach(field => {
-        const fieldData = {
-            sourceTable: field.field_source_table,
-            sourceName: field.field_source_name,
-            isParent: field.field_source_table !== formLayoutPanel.closest('.modal-overlay').dataset.tableName,
-            isReadonly: field.is_readonly === 1
-        };
-        createFormFieldInLayout(fieldData, formLayoutPanel);
+        // --- FIX: Sokong kedua-dua format key (DB snake_case vs Frontend camelCase) ---
+        const sourceTable = field.field_source_table || field.sourceTable;
+        const sourceName = field.field_source_name || field.sourceName;
+        
+        // Handle is_readonly (DB guna 1/0, Frontend mungkin true/false)
+        let isReadonly = false;
+        if (field.is_readonly !== undefined) isReadonly = (field.is_readonly == 1);
+        else if (field.isReadonly !== undefined) isReadonly = (field.isReadonly === true);
+
+        // Hanya cipta jika data kritikal wujud
+        if (sourceTable && sourceName) {
+            const fieldData = {
+                sourceTable: sourceTable,
+                sourceName: sourceName,
+                // Semak jika table medan ini TIDAK SAMA dengan table semasa = Parent Field
+                isParent: sourceTable !== currentTableName,
+                isReadonly: isReadonly
+            };
+            createFormFieldInLayout(fieldData, formLayoutPanel);
+        }
     });
+
     updateFormFieldMoveButtons(formLayoutPanel);
 }
 
