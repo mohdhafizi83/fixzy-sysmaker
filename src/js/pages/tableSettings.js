@@ -25,8 +25,9 @@ export function populateTableSettings(tableName) {
         console.error(`Tiada data ditemui untuk jadual: ${tableName}`);
         return;
     }
-	
+	//console.log(tableData);
     setElementValue('tbl-table-name', tableData.table_name);
+    setElementValue('tbl-module-name', tableData.module_name);
     // Tab: Table view -> General
     setElementValue('tbl-table-view-title', tableData.table_view_title);
     setElementValue('tbl-table-description', tableData.table_description);

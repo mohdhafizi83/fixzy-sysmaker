@@ -903,6 +903,7 @@ export function initializeRealtimeValidation() {
     });
 
     const tableNameInput = document.getElementById('tbl-table-name');
+    const moduleNameInput = document.getElementById('tbl-module-name');
     const fieldNameInput = document.getElementById('fld-field-name');
 
     const setupNameValidation = (inputElement) => {
@@ -922,6 +923,7 @@ export function initializeRealtimeValidation() {
     };
 
     setupNameValidation(tableNameInput);
+    setupNameValidation(moduleNameInput);
     setupNameValidation(fieldNameInput);
 }
 

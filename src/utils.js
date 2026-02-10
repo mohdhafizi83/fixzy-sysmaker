@@ -256,6 +256,51 @@ function readTemplate(relativePath) {
     return fs.readFileSync(templatePath, 'utf8');
 }
 
+/**
+ * Menukar JSON Filter Rules kepada kod PHP Eloquent.
+ * @param {object} rulesObj - Objek { logic: 'AND', rules: [...] }
+ * @returns {string} String PHP Query Builder.
+ */
+function buildEloquentQueryFromRules(rulesObj) {
+    if (!rulesObj || !rulesObj.rules || rulesObj.rules.length === 0) return '';
+
+    const parts = [];
+    
+    rulesObj.rules.forEach(rule => {
+        if (rule.type === 'group') {
+            // Rekursif untuk kumpulan (Nested Logic)
+            const nested = buildEloquentQueryFromRules(rule);
+            if (nested) {
+                parts.push(`$query->where(function($q) { ${nested.replace(/\$query->/g, '$q->')} });`);
+            }
+        } else {
+            // Peraturan Biasa (Standard Rule)
+            const { field, operator, value } = rule;
+            // Sanitasi nilai asas (Basic escaping)
+            let phpValue = `'${value}'`;
+            if (value === 'null' || value === null) phpValue = 'null';
+            else if (!isNaN(value) && value !== '') phpValue = value; // Nombor
+
+            if (operator === 'IS NULL') {
+                parts.push(`$query->whereNull('${field}')`);
+            } else if (operator === 'IS NOT NULL') {
+                parts.push(`$query->whereNotNull('${field}')`);
+            } else if (operator === 'LIKE' || operator === 'NOT LIKE') {
+                parts.push(`$query->where('${field}', '${operator}', '%${value}%')`);
+            } else {
+                parts.push(`$query->where('${field}', '${operator}', ${phpValue})`);
+            }
+        }
+    });
+
+    // Gabungkan berdasarkan logik parent (AND/OR)
+    const method = rulesObj.logic === 'OR' ? 'orWhere' : 'where';
+    
+    // Nota: Filament getEloquentQuery() bermula dengan Builder, jadi kita rantai (chaining)
+    // Contoh output: ->where('status', 'pending')->where('amount', '>', 100)
+    return parts.map(p => `->${p.replace('$query->', '')}`).join('');
+}
+
 // Eksport semua fungsi ini supaya boleh digunakan oleh fail lain
 module.exports = {
     convertDateFormatToPhp,
@@ -272,5 +317,6 @@ module.exports = {
     getFakerFormatter,
     getFilesRecursive,
     runStep,
-    readTemplate
+    readTemplate,
+    buildEloquentQueryFromRules
 };

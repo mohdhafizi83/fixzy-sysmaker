@@ -23,22 +23,52 @@ const {
     runStep
 } = require('./utils');
 
-const { 
-    generateFilamentListPages,
-    generateFilamentCreatePages,
-    generateFilamentEditPages,
-    generateFilamentResources,
-    generateFilamentRelationManagers
-} = require('./generators/laravelResourcesGenerator');
+// =================================================================
+// IMPORT GENERATORS (STRUKTUR MODULAR BARU)
+// =================================================================
 
+// 1. Resources Induk
 const { 
-    generateFilamentSchemasForm
-} = require('./generators/laravelSchemasGenerator');
+    generateFilamentResources, 
+    generateFilamentResourcesCustomViews 
+} = require('./generators/laravelResourceGenerator');
 
+// 2. List Pages
 const { 
-    generateFilamentTablesTable
+    generateFilamentListPages, 
+    generateFilamentListCustomViews 
+} = require('./generators/laravelListGenerator');
+
+// 3. Create Pages
+const { 
+    generateFilamentCreatePages, 
+    generateFilamentCreateCustomViews 
+} = require('./generators/laravelCreateGenerator');
+
+// 4. Edit Pages
+const { 
+    generateFilamentEditPages, 
+    generateFilamentEditCustomViews 
+} = require('./generators/laravelEditGenerator');
+
+// 5. Relation Managers
+const { 
+    generateFilamentRelationManagers 
+} = require('./generators/laravelRelationManagersGenerator');
+
+// 6. Tables (Jadual)
+const { 
+    generateFilamentTablesTable, 
+    generateFilamentTablesCustomViews 
 } = require('./generators/laravelTablesGenerator');
 
+// 7. Forms (Schemas)
+const { 
+    generateFilamentSchemasForm, 
+    generateFilamentSchemasCustomViews 
+} = require('./generators/laravelSchemasGenerator');
+
+// 8. Database Layer (Kekal Sama)
 const { 
     generateFilamentModels,
     generateFilamentUserModel,
@@ -527,8 +557,8 @@ ipcMain.handle('table:create', async (event, projectId) => {
 
         const transaction = db.transaction(() => {
             const info = db.prepare(
-                'INSERT INTO tables (project_id, table_name, table_view_title, table_order) VALUES (?, ?, ?, ?)'
-            ).run(projectId, newName, newName, nextOrder);
+                'INSERT INTO tables (project_id, table_name, module_name, table_view_title, table_order) VALUES (?, ?, ?, ?, ?)'
+            ).run(projectId, newName, newName, newName, nextOrder);
             const tableId = info.lastInsertRowid;
 
             // ▼▼▼ PERUBAHAN DI SINI ▼▼▼
@@ -645,8 +675,8 @@ ipcMain.handle("project:create", async (event, projectName) => {
 
         // 3. Cipta rekod untuk jadual 'users'
         const tableInfo = db.prepare(
-            'INSERT INTO tables (project_id, table_name, table_view_title, table_order) VALUES (?, ?, ?, ?)'
-        ).run(projectId, 'users', 'Users', 0);
+            'INSERT INTO tables (project_id, table_name, module_name, table_view_title, table_order) VALUES (?, ?, ?, ?)'
+        ).run(projectId, 'users', 'Users', 'Users',0);
         const tableId = tableInfo.lastInsertRowid;
 
         // 4. Cipta item menu untuk jadual 'users'
@@ -901,7 +931,7 @@ ipcMain.handle('table:update', async (event, data) => {
 
             // Bina klausa SET untuk jadual 'tables'
             const allowedColumns = [
-                'table_name', 'table_view_title', 'table_description', 'show_quick_search', 'allow_pagination', 'pagination_type', 'default_sort_by', 'sort_descending', 'allow_csv_export', 'allow_csv_import', 'allow_print_view', 'allow_mass_delete', 'show_edit_button', 'show_delete_button', 'allow_restore_delete', 'allow_force_delete', 'tv_template', 'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input', 'detail_view_classes_input', 'detail_view_title', 'record_owner', 'default_focus', 'redirect_after_insert', 'enable_detail_view', 'delete_with_children', 'dv_allow_print_view', 'dv_separate_page', 'dv_hide_save_as_copy', 'dv_sticky_buttons', 'dv_allow_add_from_homepage', 'column_grid_type', 'static_grid_columns', 'table_hook_workflow'
+                'table_name', 'module_name', 'table_view_title', 'table_description', 'show_quick_search', 'allow_pagination', 'pagination_type', 'default_sort_by', 'sort_descending', 'allow_csv_export', 'allow_csv_import', 'allow_print_view', 'allow_mass_delete', 'show_edit_button', 'show_delete_button', 'allow_restore_delete', 'allow_force_delete', 'tv_template', 'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input', 'detail_view_classes_input', 'detail_view_title', 'record_owner', 'default_focus', 'redirect_after_insert', 'enable_detail_view', 'delete_with_children', 'dv_allow_print_view', 'dv_separate_page', 'dv_hide_save_as_copy', 'dv_sticky_buttons', 'dv_allow_add_from_homepage', 'column_grid_type', 'static_grid_columns', 'table_hook_workflow'
             ];
             const setClause = Object.keys(fieldsToUpdate) 
                 .filter(key => allowedColumns.includes(key))
@@ -915,7 +945,7 @@ ipcMain.handle('table:update', async (event, data) => {
                 // 1. Kemas kini jadual 'tables'
                 db.prepare(`UPDATE tables SET ${setClause} WHERE table_id = ?`).run(...values, table_id);
             }
-
+console.log(setClause);
             // 2. Jika nama jadual ditukar, kemas kini juga 'menu_items'
             if (oldTableName && fieldsToUpdate.table_name) {
                 const newTableName = fieldsToUpdate.table_name;
@@ -1954,7 +1984,7 @@ function importSchema(sql, projectId, dialect) {
             const tableName = statement.table[0].table.trim();
             const tableViewTitle = toTitleCase(tableName);
             
-            const tableInfo = db.prepare("INSERT INTO tables (project_id, table_name, table_view_title, table_order) VALUES (?, ?, ?, ?)").run(projectId, tableName, tableViewTitle, tableOrder++);
+            const tableInfo = db.prepare("INSERT INTO tables (project_id, table_name, module_name, table_view_title, table_order) VALUES (?, ?, ?, ?, ?)").run(projectId, tableName, tableViewTitle, tableViewTitle, tableOrder++);
             const tableId = tableInfo.lastInsertRowid;
             tablesCreated++;
             tableMap[tableName] = tableId;
@@ -2207,13 +2237,16 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
     try {
         console.log("Memulakan Orchestrator Laravel Filament...");
         
-        // Pastikan folder wujud
+        // Pastikan folder output wujud
         if (!fs.existsSync(outputDir)) {
             fs.mkdirSync(outputDir, { recursive: true });
         }
 
-        // FASA 1: DATABASE & MODELS
-        // Urutan: Migrations -> Models -> Factories -> Seeders
+        // ============================================================
+        // FASA 1: DATABASE LAYER
+        // ============================================================
+        console.log("--- Menjana Database Layer ---");
+        
         const migrationResult = await generateLaravelMigrations(fullSchema, outputDir);
         if (!migrationResult.success) throw new Error(`Migrations: ${migrationResult.message}`);
 
@@ -2229,24 +2262,59 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         const seederResult = await generateLaravelDatabaseSeeder(fullSchema, outputDir);
         if (!seederResult.success) throw new Error(`Seeders: ${seederResult.message}`);
 
-        // FASA 2: FILAMENT RESOURCES
-        // Urutan: Resources -> Pages -> Relation Managers
-        const resourceResult = await generateFilamentResources(fullSchema, outputDir);
-        if (!resourceResult.success) throw new Error(`Resources: ${resourceResult.message}`);
 
+        // ============================================================
+        // FASA 2: STANDARD RESOURCES (CRUD ASAL)
+        // ============================================================
+        console.log("--- Menjana Standard Resources ---");
+
+        // 1. Components (Table & Form) MESTI dijana dahulu kerana Resource memanggilnya
+        const tableResult = await generateFilamentTablesTable(fullSchema, outputDir);
+        if (!tableResult.success) throw new Error(`Tables (Standard): ${tableResult.message}`);
+
+        const formResult = await generateFilamentSchemasForm(fullSchema, outputDir);
+        if (!formResult.success) throw new Error(`Forms (Standard): ${formResult.message}`);
+
+        // 2. Pages
         await generateFilamentListPages(fullSchema, outputDir);
         await generateFilamentCreatePages(fullSchema, outputDir);
         await generateFilamentEditPages(fullSchema, outputDir);
+
+        // 3. Relation Managers
         await generateFilamentRelationManagers(fullSchema, outputDir);
 
-        // FASA 3: UI COMPONENTS (Injections)
-        // Borang & Jadual
-        const tableResult = await generateFilamentTablesTable(fullSchema, outputDir);
-        if (!tableResult.success) throw new Error(`Tables: ${tableResult.message}`);
+        // 4. Resource Induk (Menghubungkan semua di atas)
+        const resourceResult = await generateFilamentResources(fullSchema, outputDir);
+        if (!resourceResult.success) throw new Error(`Resources (Standard): ${resourceResult.message}`);
 
-        const formResult = await generateFilamentSchemasForm(fullSchema, outputDir);
-        if (!formResult.success) throw new Error(`Forms: ${formResult.message}`);
-        
+
+        // ============================================================
+        // FASA 3: CUSTOM VIEWS (FASA BARU)
+        // ============================================================
+        console.log("--- Menjana Custom Views ---");
+
+        // 1. Components Custom View
+        const cvTableResult = await generateFilamentTablesCustomViews(fullSchema, outputDir);
+        if (!cvTableResult.success) console.warn(`Custom Tables Warning: ${cvTableResult.message}`);
+
+        const cvFormResult = await generateFilamentSchemasCustomViews(fullSchema, outputDir);
+        if (!cvFormResult.success) console.warn(`Custom Forms Warning: ${cvFormResult.message}`);
+
+        // 2. Pages Custom View
+        await generateFilamentListCustomViews(fullSchema, outputDir);
+        await generateFilamentCreateCustomViews(fullSchema, outputDir);
+        await generateFilamentEditCustomViews(fullSchema, outputDir);
+
+        // 3. Resource Custom View (Tiada Relation Manager khas, guna standard)
+        const cvResourceResult = await generateFilamentResourcesCustomViews(fullSchema, outputDir);
+        if (!cvResourceResult.success) console.warn(`Custom Resources Warning: ${cvResourceResult.message}`);
+
+
+        // ============================================================
+        // FASA 4: CIRI TAMBAHAN & KONFIGURASI
+        // ============================================================
+        console.log("--- Menjana Ciri Tambahan ---");
+
         const exportResult = await generateFilamentExports(fullSchema, outputDir);
         if (!exportResult.success) throw new Error(`Exports: ${exportResult.message}`);
         
@@ -2257,11 +2325,13 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         if (!adminPanelResult.success) throw new Error(`AdminPanelProvider: ${adminPanelResult.message}`);
         
         const guideResult = await generateDeploymentGuidePage(fullSchema, outputDir);
-        if (!guideResult.success) throw new Error(`Guide: ${guideResult.message}`);
+        if (!guideResult.success) console.warn(`Guide Warning: ${guideResult.message}`); // Warning sahaja, bukan error
 
-        return { success: true };
+        console.log("Selesai menjana stack Laravel Filament.");
+        return { success: true, message: "Aplikasi berjaya dijana sepenuhnya." };
 
     } catch (error) {
+        console.error("Ralat Kritikal Orchestrator:", error);
         return { success: false, message: error.message };
     }
 }

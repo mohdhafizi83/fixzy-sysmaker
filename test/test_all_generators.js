@@ -4,13 +4,11 @@ const fs = require('fs');
 const { connectToDatabase, getFullProjectSchema } = require('./testUtils');
 
 // =================================================================
-// 1. IMPORT SEMUA GENERATORS
+// 1. IMPORT SEMUA GENERATORS (MODULAR & CLEAN)
 // =================================================================
 
-// Admin Panel
+// A. Admin & Database
 const { generateAdminPanelProvider } = require('../src/generators/laravelAdminPanelGenerator');
-
-// Database & Models
 const { 
     generateFilamentModels, 
     generateFilamentUserModel, 
@@ -19,37 +17,60 @@ const {
     generateLaravelDatabaseSeeder 
 } = require('../src/generators/laravelDatabaseGenerator');
 
-// Resources (Pages & Managers)
+// B. Filament Resources (Standard & Custom Views)
+// Resource Shell (Induk)
+const { 
+    generateFilamentResources, 
+    generateFilamentResourcesCustomViews // Fasa 3.1
+} = require('../src/generators/laravelResourceGenerator');
+
+// Components: Tables
+const { 
+    generateFilamentTablesTable, 
+    generateFilamentTablesCustomViews // Fasa 3.2 (Added above)
+} = require('../src/generators/laravelTablesGenerator');
+
+// Components: Schemas (Forms)
+const { 
+    generateFilamentSchemasForm, 
+    generateFilamentSchemasCustomViews // Fasa 3.3 (Added above)
+} = require('../src/generators/laravelSchemasGenerator');
+
+// Components: Pages (List, Create, Edit)
 const { 
     generateFilamentListPages, 
+    generateFilamentListCustomViews // Fasa 3.5
+} = require('../src/generators/laravelListGenerator');
+
+const { 
     generateFilamentCreatePages, 
+    generateFilamentCreateCustomViews // Fasa 3.6
+} = require('../src/generators/laravelCreateGenerator');
+
+const { 
     generateFilamentEditPages, 
-    generateFilamentResources, 
-    generateFilamentRelationManagers 
-} = require('../src/generators/laravelResourcesGenerator');
+    generateFilamentEditCustomViews // Fasa 3.7
+} = require('../src/generators/laravelEditGenerator');
 
-// Tables & Schemas
-const { generateFilamentTablesTable } = require('../src/generators/laravelTablesGenerator');
-const { generateFilamentSchemasForm } = require('../src/generators/laravelSchemasGenerator');
+// Components: Relation Managers
+const { generateFilamentRelationManagers } = require('../src/generators/laravelRelationManagersGenerator');
 
-// Import & Export
+// C. Features (Export/Import)
 const { generateFilamentExports } = require('../src/generators/laravelExportsGenerator');
 const { generateFilamentImporters } = require('../src/generators/laravelImportersGenerator');
 
-// Documentation (Nyah-komen jika fail ini wujud)
-// const { generateDeploymentGuidePage } = require('../src/generators/laravelDocsGenerator'); 
 
 // =================================================================
-// 2. KONFIGURASI
+// 2. KONFIGURASI OUTPUT
 // =================================================================
 const TEST_OUTPUT_DIR = path.join(__dirname, 'output_full_app');
 
-// Bersihkan folder output lama
 if (fs.existsSync(TEST_OUTPUT_DIR)) {
     console.log("🧹 Membersihkan folder output lama...");
     fs.rmSync(TEST_OUTPUT_DIR, { recursive: true, force: true });
 }
 fs.mkdirSync(TEST_OUTPUT_DIR, { recursive: true });
+
 
 // =================================================================
 // 3. FUNGSI UJIAN UTAMA
@@ -62,7 +83,6 @@ async function runFullTest() {
     if (!db) return;
 
     try {
-        // A. Dapatkan Data Projek
         const activeProject = db.prepare("SELECT * FROM projects WHERE is_active = 1 LIMIT 1").get();
         if (!activeProject) throw new Error("Tiada projek aktif dijumpai.");
         
@@ -71,7 +91,9 @@ async function runFullTest() {
         const fullSchema = await getFullProjectSchema(db, activeProject.project_id);
         console.log(`📊 Schema dimuatkan: ${Object.keys(fullSchema.database.table).length} jadual.`);
 
-        // B. Senarai Tugasan Generator
+        // ============================================================
+        // SENARAI TUGASAN (URUTAN PELAKSANAAN)
+        // ============================================================
         const tasks = [
             // 1. Database Layer
             { name: 'Migrations', func: generateLaravelMigrations },
@@ -82,25 +104,30 @@ async function runFullTest() {
 
             // 2. Filament Core
             { name: 'Admin Panel Provider', func: generateAdminPanelProvider },
-            { name: 'Resources (Main Class)', func: generateFilamentResources },
             
-            // 3. Resources Components
-            { name: 'Tables (Table Class)', func: generateFilamentTablesTable },
-            { name: 'Forms (Schema Class)', func: generateFilamentSchemasForm },
-            { name: 'List Pages', func: generateFilamentListPages },
-            { name: 'Create Pages', func: generateFilamentCreatePages },
-            { name: 'Edit Pages', func: generateFilamentEditPages },
-            { name: 'Relation Managers', func: generateFilamentRelationManagers },
+            // 3. Resources STANDARD (Original CRUD)
+            { name: 'Standard: Tables', func: generateFilamentTablesTable },     // Tables dahulu
+            { name: 'Standard: Forms', func: generateFilamentSchemasForm },      // Forms dahulu
+            { name: 'Standard: List Pages', func: generateFilamentListPages },
+            { name: 'Standard: Create Pages', func: generateFilamentCreatePages },
+            { name: 'Standard: Edit Pages', func: generateFilamentEditPages },
+            { name: 'Standard: Relation Managers', func: generateFilamentRelationManagers },
+            { name: 'Standard: Resources (Main)', func: generateFilamentResources }, // Akhir sekali sebab ia 'link' semua
 
-            // 4. Features
+            // 4. Custom Views (FASA 3)
+            // Nota: Custom Views menggunakan semula Relation Manager standard, jadi tiada generator khas untuk itu.
+            { name: 'Custom Views: Tables', func: generateFilamentTablesCustomViews },
+            { name: 'Custom Views: Forms', func: generateFilamentSchemasCustomViews },
+            { name: 'Custom Views: List Pages', func: generateFilamentListCustomViews },
+            { name: 'Custom Views: Create Pages', func: generateFilamentCreateCustomViews },
+            { name: 'Custom Views: Edit Pages', func: generateFilamentEditCustomViews },
+            { name: 'Custom Views: Resources (Main)', func: generateFilamentResourcesCustomViews },
+
+            // 5. Features
             { name: 'Exports', func: generateFilamentExports },
             { name: 'Importers', func: generateFilamentImporters },
-            
-            // 5. Docs (Nyah-komen jika perlu)
-            // { name: 'Deployment Guide', func: generateDeploymentGuidePage },
         ];
 
-        // C. Jalankan Loop
         console.log("\n--- 🛠️ MULA MENJANA KOD ---");
         let successCount = 0;
         let failCount = 0;
