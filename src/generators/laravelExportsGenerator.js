@@ -7,12 +7,13 @@ const {
     toPascalCase,
     toCamelCase,
     toTitleCase,
+    toSingularPascalCase, // Tambah ini
     readTemplate
 } = require('../utils');
 
 /**
  * Menjana fail Exporter Filament v4 dengan Label Custom.
- * DIKEMASKINI: Logik Label Foreign Key menggunakan lookup_caption_1
+ * DIKEMASKINI: Logik Penamaan menggunakan MODULE NAME.
  */
 async function generateFilamentExports(fullSchema, basePath) {
     try {
@@ -32,12 +33,19 @@ async function generateFilamentExports(fullSchema, basePath) {
         for (const tableName in tables) {
             const tableData = tables[tableName];
             
-            // Rule 1: Model Name (PascalCase Singular)
-            const singularName = pluralize.singular(tableName);
-            const modelName = toPascalCase(singularName);
+            // ========================================================================
+            // 1. LOGIK PENAMAAN (MODULE NAME)
+            // ========================================================================
+            const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
+                                ? tableData.module_name 
+                                : tableName;
+
+            // Model Name (PascalCase Singular)
+            // Cth: StudentInfo
+            const modelName = toSingularPascalCase(nameSource);
             
-            // Rule 3: Frasa (Normal Case) - untuk tajuk
-            const fraseModelName = toTitleCase(tableName);
+            // Frasa untuk Tajuk
+            const fraseModelName = toTitleCase(nameSource);
 
             // Dapatkan senarai medan (fields)
             const columns = Object.values(tableData.fields);
@@ -46,36 +54,36 @@ async function generateFilamentExports(fullSchema, basePath) {
             const exportColumnsCode = columns.map(field => {
                 const fieldName = field.field_name;
                 
-                // --- LOGIK PENENTUAN LABEL (UPDATED) ---
-                let rawLabelSource = field.caption || field.field_label || fieldName; // Default asal
+                // --- LOGIK LABEL ---
+                let rawLabelSource = field.caption || field.field_label || fieldName;
 
-                // Semak jika field ini adalah Foreign Key (ada lookup_parent_table)
                 const isForeignKeyField = field.lookup_parent_table && field.lookup_parent_table.trim() !== '';
 
                 if (isForeignKeyField) {
-                    // Jika Foreign Key, GANTI label dengan lookup_caption_1
-                    // (Pastikan lookup_caption_1 wujud, jika tidak fallback ke default)
                     if (field.lookup_caption_1 && field.lookup_caption_1.trim() !== '') {
                         rawLabelSource = field.lookup_caption_1;
                     }
                 }
 
-                // Format label kepada Title Case & Escape single quotes
                 let finalLabel = toTitleCase(rawLabelSource).replace(/'/g, "\\'"); 
                 
                 // --- BINA KOD COLUMN ---
                 let columnCode = '';
 
-                // Semak Relationship untuk Syntax ExportColumn::make(...)
+                // Semak Relationship
                 const fkRel = relationships.find(r => 
                     r.child_table_name === tableName && 
                     r.fk_child_field === fieldName
                 );
 
                 if (fkRel) {
-                    // Tentukan nama relationship
-                    let relName = pluralize.singular(fkRel.parent_table_name);
-                    relName = toCamelCase(relName);
+                    // Tentukan nama relationship mengikut MODULE NAME Parent
+                    const parentTableData = tables[fkRel.parent_table_name];
+                    const parentNameSource = (parentTableData && parentTableData.module_name && parentTableData.module_name.trim() !== '')
+                                            ? parentTableData.module_name
+                                            : fkRel.parent_table_name;
+
+                    let relName = toCamelCase(toSingularPascalCase(parentNameSource));
 
                     // Handle Self-Referencing
                     if (fkRel.parent_table_name === fkRel.child_table_name) {
@@ -96,7 +104,7 @@ async function generateFilamentExports(fullSchema, basePath) {
                     columnCode = `ExportColumn::make('${fieldName}')`;
                 }
 
-                // Tambah Modifiers (Limit & JSON)
+                // Tambah Modifiers
                 if (field.tv_text_limit && field.tv_text_limit > 0) {
                     columnCode += `->limit(${field.tv_text_limit})`;
                 }
@@ -105,10 +113,8 @@ async function generateFilamentExports(fullSchema, basePath) {
                     columnCode += `->listAsJson()`;
                 }
 
-                // MASUKKAN LABEL YANG TELAH DIPROSES
                 columnCode += `->label('${finalLabel}')`;
 
-                // Format inden yang kemas
                 return `            ${columnCode},`;
 
             }).join('\n');

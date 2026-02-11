@@ -17,11 +17,12 @@ const {
  * [HELPER] Menjana string PHP untuk lajur-lajur jadual.
  * Mengandungi SEMUA logik asal (Media, Relationships, Formatting, Summaries, dll).
  */
-function generateTableColumnsString(tableData, relationships, tableName, projectSettings) {
+function generateTableColumnsString(tableData, relationships, tableName, projectSettings, modelNameSingular) {
     const columnsCode = [];
-    const modelNameSingular = toSingularPascalCase(tableName);
+    // Nota: modelNameSingular diterima sebagai argumen (Module Name) untuk type hinting yang betul
 
     // Ambil fields yang visible dan susun ikut order
+    // (Logik ini akan digunakan oleh Standard Generator. Custom View akan pass tableData yang dah dimanipulasi)
     const visibleFields = Object.values(tableData.fields)
         .filter(field => field.hide_in_tv !== 1)
         .sort((a, b) => (a.field_order ?? 999) - (b.field_order ?? 999));
@@ -39,6 +40,7 @@ function generateTableColumnsString(tableData, relationships, tableName, project
         const fkRelationship = relationships.find(r => r.child_table_name === tableName && r.fk_child_field === field.field_name);
         if (fkRelationship) {
             const parentCamel = fkRelationship.parent_table_name === fkRelationship.child_table_name ? 'parent' : toSingularCamelCase(fkRelationship.parent_table_name);
+            
             if(field.lookup_caption_1 && field.lookup_caption_2) {
                 const combined = `${field.lookup_caption_1}_${field.lookup_caption_2}`;
                 fieldName = `${parentCamel}.${combined}`;
@@ -180,14 +182,18 @@ function generateTableColumnsString(tableData, relationships, tableName, project
 /**
  * [HELPER] Mengaplikasikan tetapan standard jadual (actions, filters, header).
  */
-function applyTableSettings(templateContent, tableData, relationships, tableName, projectSettings) {
+function applyTableSettings(templateContent, tableData, relationships, tableName, projectSettings, modelNameSingular) {
     let tableContent = templateContent;
-    const modelNameSingular = toSingularPascalCase(tableName);
+    // modelNameSingular sudah diterima sebagai argument (Module Name)
 
     // LOGIK CHILDREN COUNT & MODAL IFRAME
     const childrenWithCount = relationships.filter(r => r.parent_table_name === tableName && r.show_count_in_tv === 1);
     if (childrenWithCount.length > 0) {
         const childImports = childrenWithCount.map(r => {
+            // Nota: Import child resource masih agak tricky tanpa data module_name child di sini.
+            // Buat masa ini, kekal guna 'toSingularPascalCase(child_table_name)' 
+            // Jika child module name berbeza, kod ini mungkin perlukan allTables lookup (belum ada di scope ini).
+            // Andaian: Pengguna akan betulkan import jika nama module jauh berbeza.
             const childSingular = toSingularPascalCase(r.child_table_name);
             const childResourceFolder = toPluralPascalCase(r.child_table_name);
             return `use App\\Filament\\Resources\\${childResourceFolder}\\${childSingular}Resource;`;
@@ -289,23 +295,32 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
             if (tableName === 'users') continue;
 
             const tableData = tables[tableName];
-            const modelNameSingular = toSingularPascalCase(tableName);
-            const modelNamePlural = toPluralPascalCase(tableName);
+            
+            // ========================================================================
+            // LOGIK PENAMAAN BARU (MODULE NAME)
+            // ========================================================================
+            const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
+                                ? tableData.module_name 
+                                : tableName;
+
+            const modelNameSingular = toSingularPascalCase(nameSource); // StudentInfo
+            const modelNamePlural = toPluralPascalCase(nameSource); // StudentInfos
 
             let tableContent = templateContent
                 .replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular)
                 .replace(/<<TABLE_NAME_PLURAL>>/g, modelNamePlural);
 
-            // 1. Jana Columns
-            const columnsCode = generateTableColumnsString(tableData, relationships, tableName, projectSettings);
+            // 1. Jana Columns (Pass modelNameSingular untuk type hinting)
+            const columnsCode = generateTableColumnsString(tableData, relationships, tableName, projectSettings, modelNameSingular);
             tableContent = tableContent.replace('<<ALL_COLUMNS>>', columnsCode);
 
             // 2. Apply Settings
-            tableContent = applyTableSettings(tableContent, tableData, relationships, tableName, projectSettings);
+            tableContent = applyTableSettings(tableContent, tableData, relationships, tableName, projectSettings, modelNameSingular);
 
             // 3. Clean Up & Save
             tableContent = tableContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '').replace(/<<.*?>>/g, '');
 
+            // Use Statement Cleanup
             const allUseStatements = tableContent.match(/use (.*?);/g) || [];
             let finalContent = tableContent;
             for (const useStmt of allUseStatements) {
@@ -341,32 +356,53 @@ function generateSingleTableClass(basePath, resourceFolder, className, tableData
     const { project: projectSettings, database: { relationships } } = fullSchema;
     const templateContent = readTemplate('app/Filament/Resources/TablesTable.template');
     
-    const modelNameSingular = toSingularPascalCase(tableName);
-    const modelNamePlural = toPluralPascalCase(tableName);
-
+    // Custom View guna Model Standard (Module Name)
+    const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
+                        ? tableData.module_name 
+                        : tableName;
+    const modelNameSingular = toSingularPascalCase(nameSource);
+    
+    // Namespace untuk table class ini adalah custom folder
+    // Tapi nama model adalah standard
+    // Kita perlu override <<TABLE_NAME_PLURAL>> di sini untuk menjadi resourceFolder supaya namespace betul
+    // namespace App\Filament\Resources\PendingRegistrations\Tables;
+    
     // 1. Init Template
     let tableContent = templateContent
         .replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular)
-        .replace(/<<TABLE_NAME_PLURAL>>/g, modelNamePlural);
+        .replace(/<<TABLE_NAME_PLURAL>>/g, resourceFolder); // Namespace guna custom folder
     
     // 2. Override Class Name
     // Kita guna regex untuk cari class definisi asal dan ganti dengan yang baru
     tableContent = tableContent.replace(/class\s+\w+Table/, `class ${className}`);
 
     // 3. Jana Columns (Guna Helper yang sama)
-    const columnsCode = generateTableColumnsString(tableData, relationships, tableName, projectSettings);
+    const columnsCode = generateTableColumnsString(tableData, relationships, tableName, projectSettings, modelNameSingular);
     tableContent = tableContent.replace('<<ALL_COLUMNS>>', columnsCode);
 
     // 4. Apply Settings (Custom view biasanya warisi settings standard)
-    tableContent = applyTableSettings(tableContent, tableData, relationships, tableName, projectSettings);
+    tableContent = applyTableSettings(tableContent, tableData, relationships, tableName, projectSettings, modelNameSingular);
 
     // 5. Clean Up
     tableContent = tableContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '').replace(/<<.*?>>/g, '');
 
+    // 6. --- IMPORT CLEANUP FOR CUSTOM VIEW --- (Pembetulan Rule #2)
+    const allUseStatements = tableContent.match(/use (.*?);/g) || [];
+    let finalContent = tableContent;
+    for (const useStmt of allUseStatements) {
+        const match = useStmt.match(/use (?:.*\\)?(\w+)(?: as \w+)?;$/);
+        if (match) {
+            const className = match[1];
+            const regex = new RegExp(`\\b${className}\\b`, 'g');
+            const occurrences = (finalContent.match(regex) || []).length;
+            if (occurrences <= 1) finalContent = finalContent.replace(useStmt + '\n', '');
+        }
+    }
+
     const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'Tables');
     if (!fs.existsSync(outputFolderPath)) fs.mkdirSync(outputFolderPath, { recursive: true });
     
-    fs.writeFileSync(path.join(outputFolderPath, `${className}.php`), tableContent);
+    fs.writeFileSync(path.join(outputFolderPath, `${className}.php`), finalContent);
     console.log(`   - Table Class generated: ${className}.php`);
 }
 
@@ -380,14 +416,46 @@ async function generateFilamentTablesCustomViews(fullSchema, basePath) {
             if (tableData.custom_views && tableData.custom_views.length > 0) {
                 for (const view of tableData.custom_views) {
                     const viewSafeName = toPluralPascalCase(view.view_name.replace(/[^a-zA-Z0-9]/g, ''));
-                    const tableClassName = `${viewSafeName}Table`; // Nama class: PendingOrdersTable
+                    const tableClassName = `${viewSafeName}Table`; 
 
-                    // Panggil helper yang telah sedia ada (Fasa 3.2)
+                    // --- BINA VIRTUAL TABLE DATA UNTUK CUSTOM VIEW (Pembetulan Rule #1) ---
+                    // Hanya fields yang dipilih dalam custom_view_fields yang akan diproses
+                    const virtualFields = {};
+                    const selectedFields = view.fields || [];
+                    
+                    selectedFields.forEach(f => {
+                        // Kenalpasti nama field asal
+                        // Bergantung pada structure 'view.fields', ia mungkin 'sourceName' atau 'field_source_name'
+                        const fieldName = f.sourceName || f.field_source_name;
+                        
+                        // Ambil field properties asal dari tableData.fields
+                        const originalField = tableData.fields[fieldName];
+                        if (originalField) {
+                            // Salin properties asal
+                            virtualFields[fieldName] = { ...originalField };
+                            
+                            // Override readonly jika custom_view_fields.readonly = 1
+                            if (f.isReadonly === true || f.is_readonly === 1) {
+                                // Walaupun table biasanya tak guna readonly, kita set flag ini
+                                // Mungkin berguna jika ada inline-edit pada masa hadapan
+                                virtualFields[fieldName].is_forced_readonly = true;
+                            }
+                        }
+                    });
+
+                    // Cipta object tableData baru yang hanya mengandungi fields terpilih
+                    const virtualTableData = { 
+                        ...tableData, 
+                        fields: virtualFields, // Gantikan semua fields dengan virtualFields
+                        // Kekalkan module_name asal untuk rujukan Model
+                        module_name: tableData.module_name 
+                    };
+
                     generateSingleTableClass(
                         basePath,
                         viewSafeName,   // resourceFolder
                         tableClassName, // className
-                        tableData,
+                        virtualTableData, // Guna data maya ini!
                         fullSchema,
                         tableName
                     );
@@ -406,5 +474,5 @@ module.exports = {
     generateFilamentTablesTable,
     generateSingleTableClass,
     generateTableColumnsString,
-    generateFilamentTablesCustomViews // <--- TAMBAH INI
+    generateFilamentTablesCustomViews
 }

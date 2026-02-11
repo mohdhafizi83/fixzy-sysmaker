@@ -39,7 +39,15 @@ async function generateFilamentImporters(fullSchema, outputDir) {
         // Loop setiap table
         for (const tableName in tables) {
             const tableData = tables[tableName];
-            const modelName = toSingularPascalCase(tableName);
+
+            // ========================================================================
+            // 1. LOGIK PENAMAAN (MODULE NAME)
+            // ========================================================================
+            const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
+                                ? tableData.module_name 
+                                : tableName;
+
+            const modelName = toSingularPascalCase(nameSource); // Cth: StudentInfo
             const importerClassName = `${modelName}Importer`;
             
             let fileContent = fullTemplateContent;
@@ -47,15 +55,24 @@ async function generateFilamentImporters(fullSchema, outputDir) {
             // --- REPLACEMENTS LEVEL KELAS ---
             fileContent = fileContent.replace(/<<MODEL_NAME>>/g, modelName);
 
+            // Import Parent Models untuk Relationship
             const parentRels = relationships.filter(r => r.child_table_name === tableName);
             const useStatements = new Set();
+            
             parentRels.forEach(rel => {
-                const parentModel = toSingularPascalCase(rel.parent_table_name);
+                // Cari module_name untuk Parent Table
+                const parentTableData = tables[rel.parent_table_name];
+                const parentNameSource = (parentTableData && parentTableData.module_name && parentTableData.module_name.trim() !== '')
+                                        ? parentTableData.module_name
+                                        : rel.parent_table_name;
+
+                const parentModel = toSingularPascalCase(parentNameSource);
                 useStatements.add(`use App\\Models\\${parentModel};`);
             });
             fileContent = fileContent.replace(/<<RELATIONSHIP_MODEL_NAME>>/g, Array.from(useStatements).join('\n'));
 
-            const phrase = tableName.replace(/_/g, ' '); 
+            // Tajuk (Frasa)
+            const phrase = toTitleCase(nameSource); 
             fileContent = fileContent.replace(/<<FRASE_MODEL_NAME>>/g, phrase);
 
             // --- FASA 1: IMPORT COLUMNS ---
@@ -71,7 +88,16 @@ async function generateFilamentImporters(fullSchema, outputDir) {
                 let relationshipCode = '';
                 
                 if (field.lookup_parent_table) {
-                    colOrRelName = toCamelCase(field.lookup_parent_table); 
+                    // Nama Relationship perlu ikut standard Model Generator (CamelCase Module Name)
+                    const parentTableData = tables[field.lookup_parent_table];
+                    const parentNameSource = (parentTableData && parentTableData.module_name && parentTableData.module_name.trim() !== '')
+                                            ? parentTableData.module_name
+                                            : field.lookup_parent_table;
+                    
+                    // Cth: department (dari Module 'Department')
+                    const relationshipMethod = toCamelCase(toSingularPascalCase(parentNameSource)); 
+                    
+                    colOrRelName = relationshipMethod; 
                     captionVal = field.lookup_caption_1 || field.caption;
                     relationshipCode = `->relationship(resolveUsing: ['${field.lookup_caption_1}'])`;
                 }
@@ -86,9 +112,8 @@ async function generateFilamentImporters(fullSchema, outputDir) {
                     mappingCode = '->requiredMapping()';
                 }
                 colCode = colCode.replace(/<<MAPPING>>/g, mappingCode);
-                // ----------------------------------------------
                 
-                // ... (Logik Type Modifiers Fasa 1 kekal sama seperti sebelum ini) ...
+                // ... (Logik Type Modifiers - KEKAL SAMA) ...
                 const dataType = field.data_type.toUpperCase();
                 const displayType = field.display_type || 'text_input';
 
@@ -121,59 +146,25 @@ async function generateFilamentImporters(fullSchema, outputDir) {
                     colCode = colCode.replace(/->helperText\('<<HELPER_TEXT>>'\)/g, '');
                 }
 
-// Rules logic
+                // Rules logic (KEKAL SAMA)
                 let rulesList = [];
+                if (field.required == 1) rulesList.push("'required'");
+                if (displayType === 'text_input' && (dataType === 'INT' || dataType === 'BIGINT')) rulesList.push("'integer'");
 
-                // 1. Required Rule
-                if (field.required == 1) {
-                    rulesList.push("'required'");
-                }
-
-                // 2. Integer Rule (Type Check)
-                if (displayType === 'text_input' && (dataType === 'INT' || dataType === 'BIGINT')) {
-                    rulesList.push("'integer'");
-                }
-
-                // 3. Min & Max Rules (Conditional based on DataType)
                 if (dataType === 'INT' || dataType === 'BIGINT') {
-                    // --- LOGIC UNTUK NOMBOR (Guna min_value / max_value) ---
-                    
-                    // Min Value
-                    if (field.min_value !== null && field.min_value !== undefined && field.min_value !== '') {
-                        rulesList.push(`'min:${field.min_value}'`);
-                    }
-                    
-                    // Max Value
-                    if (field.max_value !== null && field.max_value !== undefined && field.max_value !== '') {
-                        rulesList.push(`'max:${field.max_value}'`);
-                    }
-
+                    if (field.min_value !== null && field.min_value !== undefined && field.min_value !== '') rulesList.push(`'min:${field.min_value}'`);
+                    if (field.max_value !== null && field.max_value !== undefined && field.max_value !== '') rulesList.push(`'max:${field.max_value}'`);
                 } else {
-                    // --- LOGIC UNTUK TEKS/LAIN-LAIN (Guna min_length / max_length) ---
-                    
-                    // Min Length
-                    if (field.min_length !== null && field.min_length !== undefined && field.min_length !== '') {
-                        rulesList.push(`'min:${field.min_length}'`);
-                    }
-                    
-                    // Max Length
-                    if (field.max_length !== null && field.max_length !== undefined && field.max_length !== '') {
-                        rulesList.push(`'max:${field.max_length}'`);
-                    }else{
-                        if (field.length !== null && field.length !== undefined && field.length !== '') {
-                        rulesList.push(`'max:${field.length}'`);    
-                        }
-                        
-                    }
+                    if (field.min_length !== null && field.min_length !== undefined && field.min_length !== '') rulesList.push(`'min:${field.min_length}'`);
+                    if (field.max_length !== null && field.max_length !== undefined && field.max_length !== '') rulesList.push(`'max:${field.max_length}'`);
+                    else { if (field.length !== null && field.length !== undefined && field.length !== '') rulesList.push(`'max:${field.length}'`); }
                 }
 
-                // 4. Other Format Rules
                 if (dataType === 'JSON') rulesList.push("'array'");
                 if (field.format_as === 'email') rulesList.push("'email'");
                 if (dataType === 'DATE') rulesList.push("'date'");
                 if (dataType === 'DATETIME' || dataType === 'TIMESTAMP') rulesList.push("'datetime'");
 
-                // 5. Custom Validations from field_validations table (Jika ada dalam kod asal anda)
                 if (field.validations && Array.isArray(field.validations)) {
                     field.validations.forEach(val => {
                         let ruleString = val.rule_type;
@@ -187,27 +178,13 @@ async function generateFilamentImporters(fullSchema, outputDir) {
                 if (rulesList.length > 0) rulesCode = `->rules([${rulesList.join(', ')}])`;
                 colCode = colCode.replace(/<<RULES>>/g, rulesCode);
 
-                // Dummy Data Logic
+                // Dummy Data Logic (KEKAL SAMA)
                 let dummyData = [`Sample ${captionVal} 1`, `Sample ${captionVal} 2`];
                 if (dataType.includes('INT') || dataType.includes('FLOAT')) dummyData = ["1", "2"];
                 else if (dataType === 'DATE') dummyData = ["2024-01-01", "2024-12-31"];
                 else if (dataType === 'DATETIME' || dataType === 'TIMESTAMP') dummyData = ["2024-01-01 22:56:00", "2024-12-31 22:56:00"];
                 else if (field.format_as === 'email') dummyData = ["user1@example.com", "user2@example.com"];
                 else if (dataType === 'BOOLEAN' || dataType === 'TINYINT') dummyData = ["1", "0"];
-                else if (dataType === 'DECIMAL') dummyData = ["101.50", "202.50"];
-                else if (dataType === 'BIGINT') dummyData = ["123456789", "987654321"];
-                else if (dataType === 'UUID') dummyData = ["550e8400-e29b-41d4-a716-446655440000", "9f8c1d2a-7b6e-4c3d-9a2f-8d7e9c1b2a3f"];
-                else if (dataType === 'JSON') dummyData = [`{
-  "id": 1,
-  "nama": "Ali",
-  "email": "ali@example.com",
-  "aktif": true
-}`, `{
-  "id": 2,
-  "nama": "minah",
-  "email": "minah@example.com",
-  "aktif": false
-}`];
                 
                 colCode = colCode.replace(/<<DUMMY_DATA>>/g, `['${dummyData[0]}', '${dummyData[1]}']`);
 
@@ -220,8 +197,8 @@ async function generateFilamentImporters(fullSchema, outputDir) {
             fileContent = fileContent.replace(columnBlockRegex, newReturnBlock);
 
             // --- FASA 2: RESOLVE RECORD LOGIC ---
-            // Panggil fungsi penjana logik pintar
-            const resolveLogic = generateResolveRecordLogic(tableData, modelName);
+            // Pass 'tables' untuk lookup module_name parent
+            const resolveLogic = generateResolveRecordLogic(tableData, modelName, tables);
             fileContent = fileContent.replace(/\/\* Fasa 2 \*\//g, resolveLogic);
 
             // Tulis Fail
@@ -242,33 +219,21 @@ async function generateFilamentImporters(fullSchema, outputDir) {
 /**
  * Fungsi Pintar untuk menjana logik resolveRecord() berdasarkan 6 Senario.
  */
-function generateResolveRecordLogic(tableData, modelName) {
+function generateResolveRecordLogic(tableData, modelName, tables) {
     const fields = tableData.fields;
     const constraints = tableData.constraints || [];
     
-    // 1. Cari Unique Constraints (Composite atau Single)
-    // Keutamaan: Composite Constraint > Single Column Unique
+    // 1. Cari Unique Constraints
     let targetConstraintColumns = null;
-
-    // Cari composite unique dahulu
     const compositeUnique = constraints.find(c => c.constraint_type === 'UNIQUE');
     if (compositeUnique) {
-        try {
-            targetConstraintColumns = JSON.parse(compositeUnique.columns);
-        } catch (e) {
-            console.warn(`Gagal parse constraint columns untuk table ${tableData.table_name}`);
-        }
+        try { targetConstraintColumns = JSON.parse(compositeUnique.columns); } catch (e) { }
     }
-
-    // Jika tiada composite, cari single unique column (selain ID primary key)
     if (!targetConstraintColumns) {
         const uniqueField = Object.values(fields).find(f => f.unique === 1 && f.field_name !== 'id');
-        if (uniqueField) {
-            targetConstraintColumns = [uniqueField.field_name];
-        }
+        if (uniqueField) { targetConstraintColumns = [uniqueField.field_name]; }
     }
 
-    // --- SENARIO 6: NO UNIQUE (Create Only) ---
     if (!targetConstraintColumns || targetConstraintColumns.length === 0) {
         return `return new ${modelName}();`;
     }
@@ -278,62 +243,52 @@ function generateResolveRecordLogic(tableData, modelName) {
     let nullChecks = [];
     let queryArrayItems = [];
 
-    // Loop setiap column yang terlibat dalam unique constraint
+    // Loop setiap column
     targetConstraintColumns.forEach(colName => {
         const field = fields[colName];
-        
-        if (!field) return; // Safety check
+        if (!field) return;
 
         if (field.lookup_parent_table) {
-            // --- FOREIGN KEY LOGIC ---
-            // CSV Key: relationship name (camelCase table parent)
-            const csvKey = toCamelCase(field.lookup_parent_table);
+            // --- FOREIGN KEY LOGIC (GUNA MODULE NAME) ---
             
-            // Variable: $parentTable (camelCase)
+            // Dapatkan Module Name Parent
+            const parentTableData = tables[field.lookup_parent_table];
+            const parentNameSource = (parentTableData && parentTableData.module_name && parentTableData.module_name.trim() !== '')
+                                    ? parentTableData.module_name
+                                    : field.lookup_parent_table;
+
+            // CSV Key: relationship name (camelCase Module Name)
+            // Cth: studentInfo
+            const csvKey = toCamelCase(toSingularPascalCase(parentNameSource));
+            
+            // Variable: $studentInfo
             const parentVar = `$${csvKey}`;
             
-            // Model Parent: PascalCase table parent
-            const parentModel = toSingularPascalCase(field.lookup_parent_table);
+            // Model Parent: PascalCase Module Name
+            const parentModel = toSingularPascalCase(parentNameSource);
             
-            // Lookup Column: lookup_caption_1 (default 'id' jika tiada)
+            // Lookup Column: lookup_caption_1
             const lookupCol = field.lookup_caption_1 || 'id';
 
             // JANA KOD LOOKUP
             lookupCode += `\n        ${parentVar} = ${parentModel}::firstWhere('${lookupCol}', $this->data['${csvKey}'] ?? null);`;
             
-            // JANA KOD CHECK (Jika parent tak jumpa, return null)
             nullChecks.push(`!${parentVar}`);
-
-            // MASUKKAN KE QUERY ARRAY (Guna ID dari parent yang jumpa)
             queryArrayItems.push(`'${colName}' => ${parentVar}->id`);
 
         } else {
-            // --- RAW DATA LOGIC ---
-            // CSV Key: field_name direct
             const csvKey = colName;
-            
-            // MASUKKAN KE QUERY ARRAY (Ambil direct dari CSV)
             queryArrayItems.push(`'${colName}' => $this->data['${csvKey}']`);
         }
     });
 
-    // Bina Blok Kod PHP Akhir
     let phpCode = "";
-
-    // 1. Masukkan Lookup Code (jika ada)
-    if (lookupCode) {
-        phpCode += lookupCode + "\n";
-    }
-
-    // 2. Masukkan Null Checks (jika ada FK)
+    if (lookupCode) { phpCode += lookupCode + "\n"; }
     if (nullChecks.length > 0) {
         phpCode += `\n        if (${nullChecks.join(' || ')}) {\n            return null;\n        }\n`;
     }
 
-    // 3. Masukkan Return firstOrNew
-    // Format array PHP dengan kemas
     const queryArrayString = queryArrayItems.join(",\n            ");
-
     phpCode += `\n        return ${modelName}::firstOrNew([\n            ${queryArrayString}\n        ]);`;
 
     return phpCode;

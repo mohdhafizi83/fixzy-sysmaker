@@ -9,22 +9,44 @@ const { toSingularPascalCase, toPluralPascalCase, readTemplate } = require('../u
 async function generateSingleEditPage(tableName, tableData, fullSchema, basePath, templateContent, options = {}) {
     const { database: { relationships } } = fullSchema;
 
-    const modelNameSingular = options.modelName || toSingularPascalCase(tableName);
-    // Untuk Custom View, resourceFolder ialah nama view (cth: PendingOrders).
-    // Untuk Standard, ia adalah nama plural table (cth: Orders).
-    const resourceFolder = options.resourceFolder || toPluralPascalCase(tableName);
+    const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
+                        ? tableData.module_name 
+                        : tableName;
+
+    const standardModelName = toSingularPascalCase(nameSource);
+    const standardFolder = toPluralPascalCase(nameSource);
+
+    const modelNameSingular = options.modelName || standardModelName;
+    const resourceFolder = options.resourceFolder || standardFolder;
+
+    // --- LOGIC NAMING FIX ---
+    // Custom View: EditPendingRegistrations.php
+    // Standard: EditStudentInfo.php
+    let pageClassName = `Edit${modelNameSingular}`;
+    if (options.customPageName) {
+        pageClassName = `Edit${options.customPageName}`;
+    }
 
     let editContent = templateContent;
 
-    // Replacement Standard
+    // Standard Replacements
     editContent = editContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);
     editContent = editContent.replace(/<<TABLE_NAME_PLURAL>>/g, resourceFolder);
     
-    // --- LOGIK ASAL PRIMARY KEY (KEKAL 100%) ---
+    // Fix Class Name untuk Custom View
+    if (options.customPageName) {
+        // Regex untuk menggantikan nama class yang dijana oleh placeholder <<TABLE_NAME_SINGULAR>>
+        // Template: class Edit<<TABLE_NAME_SINGULAR>> extends EditRecord
+        // Selepas replace atas: class EditStudentInfo extends EditRecord
+        const oldClassDef = `class Edit${modelNameSingular}`;
+        const newClassDef = `class ${pageClassName}`;
+        editContent = editContent.replace(new RegExp(oldClassDef, 'g'), newClassDef);
+    }
+
+    // ... (Logik Primary Key, Unique, etc. kekal sama) ...
     const primaryKeyField = Object.values(tableData.fields).find(f => f.primary_key === 1);
     editContent = editContent.replace(/<<PRIMARY_KEY>>/g, primaryKeyField ? primaryKeyField.field_name : 'id');
 
-    // --- LOGIK ASAL UNIQUE FIELDS (KEKAL 100%) ---
     const uniqueFields = Object.values(tableData.fields).filter(f => f.unique === 1);
     if (uniqueFields.length > 0) {
         const uniqueEmptyLines = uniqueFields.map(f => `        $data['${f.field_name}'] = '';`).join('\n');
@@ -33,19 +55,16 @@ async function generateSingleEditPage(tableName, tableData, fullSchema, basePath
         editContent = editContent.replace('<<UNIQUE_EMPTY>>', '');
     }
 
-    // --- LOGIK ASAL FIRST STRING FIELD (KEKAL 100%) ---
     const stringTypes = ['VARCHAR', 'CHAR', 'TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT'];
     const firstStringField = Object.values(tableData.fields).find(f => stringTypes.includes(f.data_type.toUpperCase()));
     editContent = editContent.replace('<<FIRST_STRING_FIELD>>', firstStringField ? firstStringField.field_name : '');
     
-    // --- LOGIK ASAL GRID COLUMNS (KEKAL 100%) ---
     if (tableData && tableData.column_grid_type === 'dynamic') {
         editContent = editContent.replace('<<GRIDCOLUMN_VAR>>', '    public int $gridColumns = 2;');
     } else {
         editContent = editContent.replace('<<GRIDCOLUMN_VAR>>', '');
     }
     
-    // --- LOGIK ASAL IFRAME PARENT SETUP (KEKAL 100%) ---
     const isParentTable = relationships.some(r => r.parent_table_name === tableName);
     if(isParentTable) {
         const iframeParentCode = `
@@ -71,7 +90,6 @@ async function generateSingleEditPage(tableName, tableData, fullSchema, basePath
         editContent = editContent.replace('<<IFRAME_PARENT_SETUP>>', '');
     }
 
-    // --- LOGIK ASAL IFRAME CHILD LAYOUT (KEKAL 100%) ---
     const isChildInIframeContext = relationships.some(r => 
         r.child_table_name === tableName && r.show_count_in_tv === 1
     );
@@ -92,7 +110,6 @@ async function generateSingleEditPage(tableName, tableData, fullSchema, basePath
         editContent = editContent.replace('<<IFRAME_CHILD_LAYOUT>>', '');
     }
 
-    // --- LOGIK ASAL REFRESH CLOSE IFRAME (KEKAL 100%) ---
     const isChildTable = relationships.some(r => r.child_table_name === tableName);
     if (isChildTable) {
         editContent = editContent.replace('<<IMPORT_CLOSE_IFRAME>>', 'use Filament\\Support\\Facades\\FilamentView;\nuse Illuminate\\Contracts\\View\\View;');
@@ -121,14 +138,14 @@ async function generateSingleEditPage(tableName, tableData, fullSchema, basePath
         editContent = editContent.replace('<<REFRESH_CLOSE_IFRAME>>', '');
     }
 
-    // Pembersihan Akhir
     editContent = editContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
     editContent = editContent.replace(/<<.*?>>/g, '');
 
     const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'Pages');
     fs.mkdirSync(outputFolderPath, { recursive: true });
     
-    const fileName = `Edit${modelNameSingular}.php`;
+    // Guna pageClassName
+    const fileName = `${pageClassName}.php`;
     const outputFilePath = path.join(outputFolderPath, fileName);
     
     fs.writeFileSync(outputFilePath, editContent);
@@ -160,12 +177,19 @@ async function generateFilamentEditCustomViews(fullSchema, basePath) {
         for (const tableName in tables) {
             const tableData = tables[tableName];
             if (tableData.custom_views && tableData.custom_views.length > 0) {
+                
+                const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
+                                    ? tableData.module_name 
+                                    : tableName;
+                const standardModelName = toSingularPascalCase(nameSource);
+
                 for (const view of tableData.custom_views) {
                     const viewSafeName = toPluralPascalCase(view.view_name.replace(/[^a-zA-Z0-9]/g, ''));
                     
                     await generateSingleEditPage(tableName, tableData, fullSchema, basePath, templateContent, {
-                        modelName: toSingularPascalCase(tableName),
-                        resourceFolder: viewSafeName
+                        modelName: standardModelName,
+                        resourceFolder: viewSafeName,
+                        customPageName: viewSafeName // Hantar parameter baru
                     });
                     count++;
                 }
@@ -179,6 +203,6 @@ async function generateFilamentEditCustomViews(fullSchema, basePath) {
 
 module.exports = {
     generateFilamentEditPages,
-    generateFilamentEditCustomViews, // Function Baru
+    generateFilamentEditCustomViews,
     generateSingleEditPage
 };

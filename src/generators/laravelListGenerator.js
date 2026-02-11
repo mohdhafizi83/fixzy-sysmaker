@@ -9,24 +9,46 @@ const { toSingularPascalCase, toPluralPascalCase, toPluralCamelCase, readTemplat
 async function generateSingleListPage(tableName, tableData, fullSchema, basePath, templateContent, options = {}) {
     const { database: { relationships } } = fullSchema;
 
-    const modelNameSingular = options.modelName || toSingularPascalCase(tableName);
-    // Jika Custom View, 'resourceFolder' adalah nama view (cth: PendingOrders). 
-    // Jika standard, ia adalah nama plural table (cth: Orders).
-    const modelNamePlural = options.resourceFolder || toPluralPascalCase(tableName); 
+    // ========================================================================
+    // LOGIK PENAMAAN BARU (MODULE NAME vs TABLE NAME)
+    // ========================================================================
+    const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
+                        ? tableData.module_name 
+                        : tableName;
+
+    // Nama Model (Standard) - cth: StudentInfo (bukan Pelajar)
+    const standardModelName = toSingularPascalCase(nameSource);
+    
+    // Nama Folder Standard - cth: StudentInfos
+    const standardFolder = toPluralPascalCase(nameSource);
+
+    // Tentukan Nama Model untuk Page ini (Biasanya sama dengan standardModelName)
+    const modelNameSingular = options.modelName || standardModelName;
+    
+    // Tentukan Folder Resource (Namespace)
+    // Jika Custom View: 'PendingRegistrations'
+    // Jika Standard: 'StudentInfos'
+    const resourceFolder = options.resourceFolder || standardFolder; 
+
+    // Nama fail List Page: ListStudentInfos.php (Standard) atau ListPendingRegistrations.php (Custom)
+    // Biasanya Filament menggunakan konvensyen 'List' + ResourcePluralName
+    const listPageName = `List${resourceFolder}`;
 
     let listContent = templateContent;
 
+    // Replacement Standard
     listContent = listContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);
-    listContent = listContent.replace(/<<TABLE_NAME_PLURAL>>/g, modelNamePlural);
+    listContent = listContent.replace(/<<TABLE_NAME_PLURAL>>/g, resourceFolder);
 
-    listContent = listContent.replace('<<TABLE_VIEW_TITLE>>', tableData.table_view_title || modelNamePlural);
+    listContent = listContent.replace('<<TABLE_VIEW_TITLE>>', tableData.table_view_title || resourceFolder);
     
     // --- LOGIK ASAL IFRAME (KEKAL 100%) ---
+    // Nota: 'relationships' masih merujuk kepada table_name DB sebenar.
     const parentRelationForIframe = relationships.find(r => r.child_table_name === tableName && r.show_count_in_tv === 1);
     const needsIframeLogic = !!parentRelationForIframe;
 
     if (needsIframeLogic) {
-        const foreignKey = parentRelationForIframe.fk_child_field;
+        const foreignKey = parentRelationForIframe.fk_child_field; // Nama column DB sebenar
 
         const createActionCode = `CreateAction::make()
     ->when(
@@ -137,10 +159,11 @@ async function generateSingleListPage(tableName, tableData, fullSchema, basePath
     listContent = listContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
     listContent = listContent.replace(/<<.*?>>/g, '');
 
-    const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', modelNamePlural, 'Pages');
+    const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'Pages');
     fs.mkdirSync(outputFolderPath, { recursive: true });
 
-    const fileName = `List${modelNamePlural}.php`;
+    // Nama Fail: ListStudentInfos.php
+    const fileName = `${listPageName}.php`;
     const outputFilePath = path.join(outputFolderPath, fileName);
     fs.writeFileSync(outputFilePath, listContent);
     console.log(`List Page generated: ${outputFilePath}`);
@@ -153,6 +176,7 @@ async function generateFilamentListPages(fullSchema, basePath) {
         const templateContent = readTemplate('app/Filament/Resources/PagesList.template');
         for (const tableName in tables) {
             if (tableName === 'users') continue;
+            // Helper akan uruskan nama based on Module Name
             await generateSingleListPage(tableName, tables[tableName], fullSchema, basePath, templateContent);
         }
         return { success: true, message: 'Filament List Pages generated successfully.' };
@@ -171,15 +195,22 @@ async function generateFilamentListCustomViews(fullSchema, basePath) {
         for (const tableName in tables) {
             const tableData = tables[tableName];
             if (tableData.custom_views && tableData.custom_views.length > 0) {
+                // Untuk Custom View, kita perlu nama Model asal (Module Name)
+                // cth: StudentInfo
+                const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
+                                    ? tableData.module_name 
+                                    : tableName;
+                const standardModelName = toSingularPascalCase(nameSource);
+
                 for (const view of tableData.custom_views) {
                     
                     const viewSafeName = toPluralPascalCase(view.view_name.replace(/[^a-zA-Z0-9]/g, ''));
                     
                     // Panggil Helper
-                    // Option 'resourceFolder' akan memaksa helper simpan dalam folder Custom View (cth: PendingOrders/Pages)
-                    // Nama Model kekal ikut table asal (Order)
+                    // resourceFolder = 'PendingRegistrations'
+                    // modelName = 'StudentInfo'
                     await generateSingleListPage(tableName, tableData, fullSchema, basePath, templateContent, {
-                        modelName: toSingularPascalCase(tableName),
+                        modelName: standardModelName,
                         resourceFolder: viewSafeName 
                     });
                     count++;
@@ -194,6 +225,6 @@ async function generateFilamentListCustomViews(fullSchema, basePath) {
 
 module.exports = {
     generateFilamentListPages,
-    generateFilamentListCustomViews, // Function Baru
+    generateFilamentListCustomViews,
     generateSingleListPage
 };

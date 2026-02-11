@@ -16,65 +16,75 @@ const {
  * Logik dibahagikan kepada dua: Standard (Asal) dan Custom View.
  */
 async function generateSingleResource(tableName, tableData, fullSchema, basePath, templateContent, options = {}) {
-    const { project: projectSettings, database: { relationships, unified_menu } } = fullSchema;
+    const { project: projectSettings, database: { relationships, unified_menu, table: allTables } } = fullSchema; 
     
-    // Tentukan parameter asas
-    const modelName = toSingularPascalCase(tableName);
-    const modelNamePlural = toPluralPascalCase(tableName);
+    // ========================================================================
+    // 1. TENTUKAN NAMA ASAS (GUNAKAN MODULE NAME JIKA ADA)
+    // ========================================================================
+    const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
+                        ? tableData.module_name 
+                        : tableName;
+
+    // Nama Model (Class)
+    const modelName = options.modelName || toSingularPascalCase(nameSource);
+    
+    // Nama Folder Resource Standard (Plural)
+    const modelNamePlural = toPluralPascalCase(nameSource);
+    
     const isCustomView = options.isCustomView || false;
 
-    // Nama Fail & Class
+    // ========================================================================
+    // 2. TENTUKAN NAMA FAIL & KELAS RESOURCE
+    // ========================================================================
     let resourceClassName, resourceFileName, outputFolder;
 
     if (isCustomView) {
-        // Cth: PendingPelajarsResource
+        // Custom View: Nama ikut pilihan user (cth: PendingRegistrations)
         resourceClassName = options.resourceClassName;
-        resourceFileName = options.resourceFileName; // Cth: PendingPelajars
-        outputFolder = options.resourceFileName;     // Folder: PendingPelajars
+        resourceFileName = options.resourceFileName; 
+        outputFolder = options.resourceFileName;     
     } else {
-        // Cth: PelajarResource
+        // Standard: Nama ikut Module Name (cth: StudentInfoResource)
         resourceClassName = `${modelName}Resource`;
         resourceFileName = `${modelName}Resource`;
-        outputFolder = modelNamePlural;              // Folder: Pelajars
+        outputFolder = modelNamePlural;              
     }
 
     let resourceContent = templateContent;
 
     // ========================================================================
-    // LANGKAH 1: PENGGANTIAN STANDARD (LOGIK ASAL 100%)
+    // 3. PENGGANTIAN STANDARD (LOGIK ASAL + MODULE NAME)
     // ========================================================================
-    // Kita lakukan ini untuk KEDUA-DUA jenis supaya asas kod adalah sama.
-    // Template 'Resource.template' dijangka sudah mempunyai import PelajarForm/Table.
     
     resourceContent = resourceContent.replace(/<<MODEL_NAME>>/g, modelName);
-    // Untuk standard, namespace folder ialah Pelajars. Untuk Custom, kita akan betulkan nanti.
-    // Tapi untuk mengekalkan import Model (use App\Models\Pelajar), kita perlukan nama model sebenar.
     
-    // Placeholder <<MODEL_NAME_PLURAL>> biasanya digunakan untuk Namespace Resource & Import Table/Form.
-    // Jika Custom View, kita letak nama Custom Folder (PendingPelajars) supaya Namespace betul.
-    // Jika Standard, kita letak Pelajars.
+    // Placeholder <<MODEL_NAME_PLURAL>> digunakan untuk Namespace Resource.
     const namespaceFolder = isCustomView ? outputFolder : modelNamePlural;
     resourceContent = resourceContent.replace(/<<MODEL_NAME_PLURAL>>/g, namespaceFolder);
 
-    // --- LOGIK ASAL: CHILDREN COUNT ---
-    // (Kod ini disalin tepat dari kod asal)
+    // --- LOGIK: CHILDREN COUNT ---
     const childrenWithCount = relationships.filter(r => r.parent_table_name === tableName && r.show_count_in_tv === 1);
+    
     if (childrenWithCount.length > 0) {
         resourceContent = resourceContent.replace('<<IMPORT_SHOW_COUNT_IN_TV>>', 'use Illuminate\\Database\\Eloquent\\Builder;');
-        const childPluralCamelNames = childrenWithCount.map(r => `'${toPluralCamelCase(r.child_table_name)}'`).join(', ');
-        // Nota: Kita simpan string query ini untuk digunakan/digabung nanti
+        
+        const childPluralCamelNames = childrenWithCount.map(r => {
+            const childTableData = allTables[r.child_table_name];
+            const childNameSource = (childTableData && childTableData.module_name && childTableData.module_name.trim() !== '')
+                                    ? childTableData.module_name
+                                    : r.child_table_name;
+            return `'${toPluralCamelCase(childNameSource)}'`; 
+        }).join(', ');
+        
         const withCountFunction = `
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->withCount([${childPluralCamelNames}]);
     }`;
-        // Jika Custom View, kita akan override ini kemudian, tapi untuk standard kita set terus
+        
         if (!isCustomView) {
             resourceContent = resourceContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', withCountFunction);
         } else {
-            // Untuk Custom View, kita simpan placeholder untuk di-inject dengan filter nanti
-            // Atau jika template asal tiada placeholder ini, kita perlu uruskan.
-            // Biarkan placeholder ini diganti kosong dulu jika Custom View akan buat query sendiri
              resourceContent = resourceContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', '<<CUSTOM_QUERY_PLACEHOLDER>>'); 
         }
     } else {
@@ -83,7 +93,7 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         else resourceContent = resourceContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', '<<CUSTOM_QUERY_PLACEHOLDER>>');
     }
 
-    // --- LOGIK ASAL: PRINT ACTION ---
+    // --- LOGIK: PRINT ACTION ---
     if (tableData.allow_print_view === 1) {
         resourceContent = resourceContent.replace('<<IMPORT_PRINTACTION>>', 'use Filament\\Actions\\Action;\nuse App\\Filament\\Actions\\PrintAction;');
         const printAction = `Action::make('print')
@@ -98,7 +108,7 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         resourceContent = resourceContent.replace('<<PRINT_ACTION>>', '');
     }
 
-    // --- LOGIK ASAL: EXPORT ---
+    // --- LOGIK: EXPORT ---
     if (tableData.allow_csv_export === 1) {
         const importExport = `use App\\Filament\\Exports\\${modelName}Exporter;\nuse Filament\\Actions\\ExportAction;`;
         const exportAction = `ExportAction::make()->exporter(${modelName}Exporter::class)\n                ->enableVisibleTableColumnsByDefault(),`;
@@ -109,7 +119,7 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         resourceContent = resourceContent.replace('<<EXPORT_ACTION>>', '');
     }
 
-    // --- LOGIK ASAL: IMPORT ---
+    // --- LOGIK: IMPORT ---
     if (tableData.allow_csv_import === 1) {
         const importImport = `use App\\Filament\\Imports\\${modelName}Importer;\nuse Filament\\Actions\\ImportAction;`;
         const importAction = `ImportAction::make()->importer(${modelName}Importer::class),`;
@@ -120,29 +130,39 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         resourceContent = resourceContent.replace('<<IMPORT_ACTION>>', '');
     }
 
-    // --- LOGIK ASAL: RELATION MANAGERS (STANDARD) ---
-    // Logik asal mengambil semua child yang show_tab=1 dan bukan one-to-one
-    // Untuk Custom View, kita akan tapis senarai ini, tetapi sumber kelasnya TETAP SAMA (dari folder asal).
+    // --- LOGIK: RELATION MANAGERS (STANDARD) ---
     let childrenForRelationManager = [];
     
     if (isCustomView) {
-        // Tapis ikut pilihan user
         let allowedRelations = [];
         if (options.includedRelations) {
             try { allowedRelations = JSON.parse(options.includedRelations); } catch (e) { allowedRelations = []; }
         }
         childrenForRelationManager = relationships.filter(r => r.parent_table_name === tableName && allowedRelations.includes(r.child_table_name));
     } else {
-        // Logik Standard
         childrenForRelationManager = relationships.filter(r => r.parent_table_name === tableName && r.show_tab === 1 && r.relationship_type !== 'one-to-one');
     }
 
     if (childrenForRelationManager.length > 0) {
-        // PENTING: Import sentiasa dari folder Model Asal (Pelajars), bukan Custom Folder.
-        const originalResourceFolder = toPluralPascalCase(tableName);
+        const originalResourceFolder = toPluralPascalCase(nameSource); 
         
-        const importManagers = childrenForRelationManager.map(r => `use App\\Filament\\Resources\\${originalResourceFolder}\\RelationManagers\\${toSingularPascalCase(r.child_table_name)}RelationManager;`).join('\n');
-        const relationManagers = childrenForRelationManager.map(r => `            ${toSingularPascalCase(r.child_table_name)}RelationManager::class,`).join('\n');
+        const importManagers = childrenForRelationManager.map(r => {
+            const childTableData = allTables[r.child_table_name];
+            const childNameSource = (childTableData && childTableData.module_name && childTableData.module_name.trim() !== '')
+                                    ? childTableData.module_name
+                                    : r.child_table_name;
+            const childManagerClass = `${toSingularPascalCase(childNameSource)}RelationManager`;
+            return `use App\\Filament\\Resources\\${originalResourceFolder}\\RelationManagers\\${childManagerClass};`;
+        }).join('\n');
+
+        const relationManagers = childrenForRelationManager.map(r => {
+            const childTableData = allTables[r.child_table_name];
+            const childNameSource = (childTableData && childTableData.module_name && childTableData.module_name.trim() !== '')
+                                    ? childTableData.module_name
+                                    : r.child_table_name;
+            const childManagerClass = `${toSingularPascalCase(childNameSource)}RelationManager`;
+            return `            ${childManagerClass}::class,`;
+        }).join('\n');
         
         resourceContent = resourceContent.replace('<<IMPORT_RELATIONMANAGERS>>', importManagers);
         resourceContent = resourceContent.replace('<<RELATION_RELATIONMANAGERS>>', relationManagers);
@@ -151,7 +171,7 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         resourceContent = resourceContent.replace('<<RELATION_RELATIONMANAGERS>>', '');
     }
 
-    // --- LOGIK ASAL: MENU ---
+    // --- LOGIK: MENU ---
     if (!isCustomView) {
         let menuItem = null;
         let menuGroup = null;
@@ -181,11 +201,11 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
             resourceContent = resourceContent.replace('<<SHORTCUT_MENU_ORDER>>', '');
             resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONGROUP>>', '');
             resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONSORT>>', '');
-            resourceContent = resourceContent.replace('<<MENU_NAME>>', tableData.table_view_title || modelNamePlural);
+            resourceContent = resourceContent.replace('<<MENU_NAME>>', tableData.table_view_title || toPluralPascalCase(nameSource)); 
         }
     }
 
-    // --- LOGIK ASAL: AUDIT ---
+    // --- LOGIK: AUDIT ---
     if (projectSettings.module_log_audit === 1) {
         const auditRelation = `\n        if (auth()->check() && auth()->user()->can('view_any_audit')) {\n            $relations[] = AuditsRelationManager::class;\n        }`;
         resourceContent = resourceContent.replace('<<RELATIONS_AUDIT>>', auditRelation);
@@ -193,51 +213,56 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         resourceContent = resourceContent.replace('<<RELATIONS_AUDIT>>', '');
     }
 
-    // --- LOGIK ASAL: FLATCASE NAME ---
-    resourceContent = resourceContent.replace('<<MODEL_NAME_FLATCASE>>', toFlatCase(tableName));
+    resourceContent = resourceContent.replace('<<MODEL_NAME_FLATCASE>>', toFlatCase(nameSource));
 
 
     // ========================================================================
-    // LANGKAH 2: PENGUBAHSUAIAN KHAS UNTUK CUSTOM VIEW
+    // 4. PENGUBAHSUAIAN KHAS UNTUK CUSTOM VIEW
     // ========================================================================
     
     if (isCustomView) {
         // 1. Override Class Name
-        // Tukar "class PelajarResource" -> "class PendingPelajarResource"
         resourceContent = resourceContent.replace(`class ${modelName}Resource`, `class ${resourceClassName}`);
 
         // 2. Override Form & Table Call
-        // Di sini kita menukar rujukan Form/Table dari standard ke Custom
-        // Asal: return PelajarForm::form($form);
-        // Ubah: return PendingPelajarForm::form($form);
         const standardFormClass = `${modelName}Form`;
-        const customFormClass = `${resourceFileName}Form`;
-        const standardTableClass = `${modelNamePlural}Table`;
-        const customTableClass = `${resourceFileName}Table`;
+        const customFormClass = `${resourceFileName}Form`; // PendingRegistrationsForm
+        const standardTableClass = `${modelNamePlural}Table`; 
+        const customTableClass = `${resourceFileName}Table`; // PendingRegistrationsTable
 
-        // Guna regex global replace untuk memastikan semua rujukan ditukar
         resourceContent = resourceContent.replace(new RegExp(standardFormClass, 'g'), customFormClass);
         resourceContent = resourceContent.replace(new RegExp(standardTableClass, 'g'), customTableClass);
 
-        // 3. Inject Slug
+        // --- 3. OVERRIDE PAGES IMPORT (CREATE & EDIT) ---
+        // Masalah: Template mungkin mengandungi 'CreatePelajar' (Standard)
+        // Kita mahu ganti kepada 'CreatePendingRegistrations' (Custom)
+        const standardCreatePage = `Create${modelName}`;
+        const customCreatePage = `Create${resourceFileName}`;
+        const standardEditPage = `Edit${modelName}`;
+        const customEditPage = `Edit${resourceFileName}`;
+
+        // Ganti nama class dalam array pages() dan import statements jika ada
+        resourceContent = resourceContent.replace(new RegExp(standardCreatePage, 'g'), customCreatePage);
+        resourceContent = resourceContent.replace(new RegExp(standardEditPage, 'g'), customEditPage);
+
+        // 4. Inject Slug
         const slug = toFlatCase(options.viewName || resourceFileName);
         resourceContent = resourceContent.replace('{', `{\n    protected static ?string $slug = '${slug}';`);
 
-        // 4. Inject Menu Custom
+        // 5. Inject Menu Custom
         if (options.menuIcon) {
             resourceContent = resourceContent.replace(/icon\s*=\s*'.*?'/, `icon = '${options.menuIcon}'`);
         }
         
-        // Bersihkan placeholder menu standard jika belum dibersihkan
         resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONGROUP>>', '');
         resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONSORT>>', '');
         resourceContent = resourceContent.replace('<<SHORTCUT_MENU_ORDER>>', '');
 
         const customNav = `\n    protected static ?string $navigationLabel = '${options.viewName}';\n    protected static ?int $navigationSort = ${options.viewOrder || 99};`;
-        resourceContent = resourceContent.replace('{', `{${customNav}`); // Append after opening brace
+        resourceContent = resourceContent.replace('{', `{${customNav}`); 
         resourceContent = resourceContent.replace('<<MENU_NAME>>', options.viewName);
 
-        // 5. Inject Filter Query
+        // 6. Inject Filter Query
         let queryBody = 'parent::getEloquentQuery()';
         if (options.filterRules) {
             try {
@@ -250,12 +275,11 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         resourceContent = resourceContent.replace('<<CUSTOM_QUERY_PLACEHOLDER>>', queryFunction);
 
     } else {
-        // Untuk Standard, bersihkan placeholder Custom Query jika ada
         resourceContent = resourceContent.replace('<<CUSTOM_QUERY_PLACEHOLDER>>', '');
     }
 
     // ========================================================================
-    // LANGKAH 3: PEMBERSIHAN AKHIR
+    // 5. PEMBERSIHAN AKHIR
     // ========================================================================
     resourceContent = resourceContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
     resourceContent = resourceContent.replace(/<<.*?>>/g, '');
@@ -270,7 +294,7 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
 
 
 // ===================================================================================
-// FUNGSI UTAMA (LOOP) - SAMA SEPERTI KOD ASAL
+// FUNGSI UTAMA (LOOP)
 // ===================================================================================
 
 async function generateFilamentResources(fullSchema, basePath) {

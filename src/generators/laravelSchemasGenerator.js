@@ -14,13 +14,19 @@ const {
  * [HELPER] Menjana string schema untuk form. 
  * Mengandungi 100% logik ASAL + sokongan Custom View (readonly).
  */
-function generateFormSchemaString(tableData, relationships, tableName) {
+function generateFormSchemaString(tableData, relationships, tableName, fullSchema) {
     const formFieldsCode = [];
-    const modelNameSingular = toSingularPascalCase(tableName);
+    const modelNameSingular = toSingularPascalCase(tableName); // Kekal guna tableName untuk variable dalaman
 
     // Dapatkan medan yang visible & sort
+    // LOGIK ASAL: filter visibleFields
     const visibleFields = Object.values(tableData.fields)
-        .filter(field => field.hide_in_dv !== 1)
+        .filter(field => {
+            // Logik Custom View: Jika forced readonly, sentiasa paparkan
+            if (field.is_forced_readonly) return true;
+            // Jika tidak, ikut setting hide_in_dv
+            return field.hide_in_dv !== 1;
+        })
         .sort((a, b) => (a.field_order ?? 999) - (b.field_order ?? 999));
 
     for (const field of visibleFields) {
@@ -28,7 +34,13 @@ function generateFormSchemaString(tableData, relationships, tableName) {
         // ============================================================
         // LOGIK 1: MEDAN STANDARD & HUBUNGAN (LINK)
         // ============================================================
-        if (field.media_type === 'link' && !['repeater', 'repeater_simple'].includes(field.display_type)) {
+        // KOD ASAL: if (field.media_type === 'link' ...
+        // TERIMA 'link', kosong, atau null sebagai standard media (Text/Select/Date etc)
+        const mediaType = field.media_type || ''; 
+        const isStandardMedia = (mediaType === '' || mediaType === 'link');
+        const isRepeater = ['repeater', 'repeater_simple'].includes(field.display_type);
+
+        if (isStandardMedia && !isRepeater) {
             let fieldCode = `<<ELEMENT_TYPE>>::make('${field.field_name}')
     <<IS_EMAIL>>
     <<IS_NUMERIC>>
@@ -94,6 +106,7 @@ function generateFormSchemaString(tableData, relationships, tableName) {
                 fieldCode = fieldCode.replace('->trim()', '');
             }
 
+            // ... (SEMUA LOGIK PENGGANTIAN PLACEHOLDER DIKEKALKAN SEADANYA DARI KOD ASAL) ...
             if (field.display_type === 'text_input') {
                 if (field.format_as === 'email') fieldCode = fieldCode.replace('<<IS_EMAIL>>', "->email()");
                 else if (field.format_as === 'password') fieldCode = fieldCode.replace('<<IS_PASSWORD>>', "->password()->revealable()");
@@ -156,7 +169,13 @@ function generateFormSchemaString(tableData, relationships, tableName) {
             if (field.lookup_parent_table) {
                 const parentTable = field.lookup_parent_table;
                 const caption1 = field.lookup_caption_1;
-                const relationshipName = toSingularCamelCase(parentTable);
+                
+                // UPDATE: Guna Module Name Parent untuk nama relationship (CamelCase)
+                const parentTableData = fullSchema.database.table[parentTable];
+                const parentNameSource = (parentTableData && parentTableData.module_name && parentTableData.module_name.trim() !== '')
+                                        ? parentTableData.module_name
+                                        : parentTable;
+                const relationshipName = toSingularCamelCase(parentNameSource);
 
                 if (parentTable === tableName) { 
                     const parentIdField = 'id';
@@ -181,18 +200,20 @@ function generateFormSchemaString(tableData, relationships, tableName) {
                 if (field.lookup_preload === 1) fieldCode = fieldCode.replace('<<IS_PRELOAD>>', "->preload()");
 
                 if (field.lookup_link_behavior === 'modal') {
-                    const parentTableSingular = toSingularPascalCase(parentTable);
+                    // UPDATE: Guna Module Name untuk Resource URL
+                    const parentResourceSingular = toSingularPascalCase(parentNameSource);
+                    
                     const suffixActionCode = `->suffixActions([
     Action::make('view_${parentTable}')
         ->icon('heroicon-o-eye')
-        ->modalContent(fn (Get $get): ?View => $get('${field.field_name}') ? view('filament.components.modal-iframe', ['src' => ${parentTableSingular}Resource::getUrl('edit', ['record' => $get('${field.field_name}')]) . '?iframe=1']) : null)
+        ->modalContent(fn (Get $get): ?View => $get('${field.field_name}') ? view('filament.components.modal-iframe', ['src' => ${parentResourceSingular}Resource::getUrl('edit', ['record' => $get('${field.field_name}')]) . '?iframe=1']) : null)
         ->modalWidth('6xl')
         ->modalSubmitAction(false)
         ->hidden(fn (Get $get): bool => !$get('${field.field_name}')),
 
     Action::make('create_${parentTable}')
         ->icon('heroicon-o-plus')
-        ->modalContent(fn (): View => view('filament.components.modal-iframe', ['src' => ${parentTableSingular}Resource::getUrl('create') . '?iframe=1']))
+        ->modalContent(fn (): View => view('filament.components.modal-iframe', ['src' => ${parentResourceSingular}Resource::getUrl('create') . '?iframe=1']))
         ->modalWidth('6xl')
         ->modalSubmitAction(false),
 ])`;
@@ -275,9 +296,7 @@ function generateFormSchemaString(tableData, relationships, tableName) {
             fieldCode = fieldCode.replace('<<MULTIPLE_VALIDATION>>', multiValCode);
 
             // --- TAMBAHAN UNTUK CUSTOM VIEW: FORCED READONLY ---
-            // Ini satu-satunya logik baru yang ditambah dalam blok ini
             if (field.is_forced_readonly) {
-                // Buang koma terakhir jika ada, tambah method disabled, dan letak koma balik
                 if (fieldCode.trim().endsWith(',')) {
                     fieldCode = fieldCode.trim().slice(0, -1) + "->disabled()->dehydrated(false),";
                 } else {
@@ -310,7 +329,6 @@ function generateFormSchemaString(tableData, relationships, tableName) {
                 imageCode = imageCode.replace('<<IMAGE_SHARP>>', '');
             }
             
-            // Logik Readonly Custom View
             if (field.is_forced_readonly) {
                  imageCode = imageCode.replace(',', '->disabled()->dehydrated(false),');
             }
@@ -333,7 +351,6 @@ function generateFormSchemaString(tableData, relationships, tableName) {
     ->downloadable()
     ->openable(),`;
             
-            // Logik Readonly Custom View
             if (field.is_forced_readonly) {
                  uploadCode = uploadCode.replace(',', '->disabled()->dehydrated(false),');
             }
@@ -382,7 +399,6 @@ ViewField::make('${field.field_name}')
     )
     ->reorderable(false),`;
             
-            // Logik Readonly Custom View
             if (field.is_forced_readonly) {
                  repeaterCode = repeaterCode.replace(',', '->disabled()->dehydrated(false),');
             }
@@ -431,7 +447,6 @@ ViewField::make('${field.field_name}')
     ])
     ->reorderable(false),`;
             
-            // Logik Readonly Custom View
             if (field.is_forced_readonly) {
                  repeaterCode = repeaterCode.replace(',', '->disabled()->dehydrated(false),');
             }
@@ -445,7 +460,6 @@ ViewField::make('${field.field_name}')
 
 /**
  * [FUNGSI UTAMA] Menjana fail Form Schema untuk Resources standard.
- * Logik ini KEKAL SAMA, cuma gelung field dipindahkan ke helper di atas.
  */
 async function generateFilamentSchemasForm(fullSchema, basePath) {
     try {
@@ -458,37 +472,38 @@ async function generateFilamentSchemasForm(fullSchema, basePath) {
             let formContent = templateContent;
             const tableData = tables[tableName];
             
-            // --- FASA 1: KERANGKA UTAMA ---
-            const modelNameSingular = toSingularPascalCase(tableName);
-            const modelNamePlural = toPluralPascalCase(tableName);
+            // ========================================================================
+            // LOGIK PENAMAAN BARU (MODULE NAME)
+            // ========================================================================
+            const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
+                                ? tableData.module_name 
+                                : tableName;
+
+            const modelNameSingular = toSingularPascalCase(nameSource); // StudentInfo
+            const modelNamePlural = toPluralPascalCase(nameSource); // StudentInfos
+
             formContent = formContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);
             formContent = formContent.replace(/<<TABLE_NAME_PLURAL>>/g, modelNamePlural);
 
             let importResources = new Set();
 
-            const childRelations = relationships.filter(r => r.parent_table_name === tableName);
-            for (const rel of childRelations) {
-                const childTable = tables[rel.child_table_name];
-                if (childTable && childTable.fields[rel.fk_child_field]) {
-                    const fkFieldData = childTable.fields[rel.fk_child_field];
-                    if (fkFieldData.lookup_link_behavior && fkFieldData.lookup_link_behavior !== 'disable') {
-                        const childPlural = toPluralPascalCase(rel.child_table_name);
-                        const childSingular = toSingularPascalCase(rel.child_table_name);
-                        importResources.add(`use App\\Filament\\Resources\\${childPlural}\\${childSingular}Resource;`);
-                    }
-                }
-            }
-
-            Object.values(tableData.fields).forEach(field => {
-                if (field.lookup_parent_table && field.lookup_link_behavior === 'modal') {
-                     const parentPlural = toPluralPascalCase(field.lookup_parent_table);
-                     const parentSingular = toSingularPascalCase(field.lookup_parent_table);
-                     importResources.add(`use App\\Filament\\Resources\\${parentPlural}\\${parentSingular}Resource;`);
+            // Scan fields for imports
+            Object.values(tableData.fields).forEach(f => {
+                if (f.lookup_parent_table && f.lookup_link_behavior === 'modal') {
+                    const parentTableData = tables[f.lookup_parent_table];
+                    const parentNameSource = (parentTableData && parentTableData.module_name && parentTableData.module_name.trim() !== '')
+                                            ? parentTableData.module_name
+                                            : f.lookup_parent_table;
+                    
+                    const parentSingular = toSingularPascalCase(parentNameSource);
+                    const parentFolder = toPluralPascalCase(parentNameSource);
+                    importResources.add(`use App\\Filament\\Resources\\${parentFolder}\\${parentSingular}Resource;`);
                 }
             });
-
+            
             formContent = formContent.replace('<<IMPORT_RESOURCES>>', Array.from(importResources).join('\n'));
 
+            // LOGIK GRID (SAMA SEPERTI ASAL)
             const gridType = tableData.column_grid_type || 'dynamic';
             if (gridType === 'static') {
                 const columns = parseInt(tableData.static_grid_columns) || 2;
@@ -532,13 +547,12 @@ async function generateFilamentSchemasForm(fullSchema, basePath) {
 
             formContent = formContent.replace('<<DETAIL_VIEW_TITLE>>', tableData.detail_view_title || '');
 
-            // --- PEMPROSESAN MEDAN (GUNA HELPER) ---
-            const formFieldsString = generateFormSchemaString(tableData, relationships, tableName);
+            // Jana Form Fields (Pass fullSchema untuk lookup module_name)
+            const formFieldsString = generateFormSchemaString(tableData, relationships, tableName, fullSchema);
             formContent = formContent.replace('<<ALL_COLUMNS_FORM>>', formFieldsString);
 
-            // --- FASA 4: PEMBERSIHAN AKHIR ---
-            formContent = formContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, ''); 
-            formContent = formContent.replace(/<<.*?>>/g, '');
+            // Clean Up & Save
+            formContent = formContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '').replace(/<<.*?>>/g, '');
 
             const allUseStatements = formContent.match(/use (.*?);/g) || [];
             let finalContent = formContent;
@@ -558,42 +572,56 @@ async function generateFilamentSchemasForm(fullSchema, basePath) {
             formContent = finalContent;
 
             const resourceFolder = modelNamePlural;
-            const schemasFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'Schemas');
-            fs.mkdirSync(schemasFolderPath, { recursive: true });
-
-            const outputFileName = `${modelNameSingular}Form.php`;
-            const outputFilePath = path.join(schemasFolderPath, outputFileName);
+            const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'Schemas');
+            fs.mkdirSync(outputFolderPath, { recursive: true });
             
+            const outputFilePath = path.join(outputFolderPath, `${modelNameSingular}Form.php`);
             fs.writeFileSync(outputFilePath, formContent);
-            console.log(`Form Schema generated (Final): ${outputFilePath}`);
+            console.log(`Form Schema generated: ${outputFilePath}`);
         }
         
         return { success: true, message: 'Filament Form Schemas generated successfully.' };
-
     } catch (error) {
-        console.error('Failed to generate Filament Form Schemas:', error);
         return { success: false, message: error.message };
     }
 }
 
 /**
- * [FUNGSI BARU] Menjana fail Form Schema khas untuk CUSTOM VIEW.
- * Menggunakan helper 'generateFormSchemaString' yang sama untuk menjana fields.
+ * [HELPER] Menjana satu fail Schema Class (untuk Custom View).
  */
 function generateSingleSchemaClass(basePath, resourceFolder, className, tableData, fullSchema, tableName) {
     const { project: projectSettings, database: { relationships } } = fullSchema;
     const templateContent = readTemplate('app/Filament/Resources/SchemasForm.template');
     
-    const modelNameSingular = toSingularPascalCase(tableName);
-    const modelNamePlural = toPluralPascalCase(tableName);
-
+    // Gunakan Module Name untuk Model
+    const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
+                        ? tableData.module_name 
+                        : tableName;
+    const modelNameSingular = toSingularPascalCase(nameSource); 
+    
     let formContent = templateContent
         .replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular)
-        .replace(/<<TABLE_NAME_PLURAL>>/g, modelNamePlural);
-    
-    // Override Nama Kelas (cth: PendingOrdersForm)
+        .replace(/<<TABLE_NAME_PLURAL>>/g, resourceFolder); // Namespace guna custom folder
+
+    // Override Class Name
     formContent = formContent.replace(/class\s+\w+Form/, `class ${className}`);
-    
+
+    // Import Resources (Copy logic from main function)
+    let importResources = new Set();
+    Object.values(tableData.fields).forEach(f => {
+        if (f.lookup_parent_table && f.lookup_link_behavior === 'modal') {
+            const parentTableData = fullSchema.database.table[f.lookup_parent_table];
+            const parentNameSource = (parentTableData && parentTableData.module_name && parentTableData.module_name.trim() !== '')
+                                    ? parentTableData.module_name
+                                    : f.lookup_parent_table;
+            
+            const parentSingular = toSingularPascalCase(parentNameSource);
+            const parentFolder = toPluralPascalCase(parentNameSource);
+            importResources.add(`use App\\Filament\\Resources\\${parentFolder}\\${parentSingular}Resource;`);
+        }
+    });
+    formContent = formContent.replace('<<IMPORT_RESOURCES>>', Array.from(importResources).join('\n'));
+
     // Grid Default untuk Custom View (Dynamic)
     const dynamicGridCode = `->columns(fn (Page $livewire) => $livewire->gridColumns ?? 2)`;
     formContent = formContent.replace('<<GRID_COLUMN_CONTROL>>', dynamicGridCode);
@@ -601,25 +629,43 @@ function generateSingleSchemaClass(basePath, resourceFolder, className, tableDat
     // Tajuk Borang
     formContent = formContent.replace('<<DETAIL_VIEW_TITLE>>', tableData.table_view_title || '');
 
-    // Jana Fields Menggunakan Helper
-    const schemaString = generateFormSchemaString(tableData, relationships, tableName);
-    formContent = formContent.replace('<<ALL_COLUMNS_FORM>>', schemaString);
-    
-    // Pembersihan Placeholder & Imports
-    formContent = formContent.replace('<<IMPORT_RESOURCES>>', ''); 
+    // Jana Fields
+    const formFieldsString = generateFormSchemaString(tableData, relationships, tableName, fullSchema);
+    formContent = formContent.replace('<<ALL_COLUMNS_FORM>>', formFieldsString);
+
+    // Clean Up
     formContent = formContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '').replace(/<<.*?>>/g, '');
 
-    // Simpan Fail
+    // --- IMPORT CLEANUP FOR CUSTOM VIEW (Rules #1) ---
+    const allUseStatements = formContent.match(/use (.*?);/g) || [];
+    let finalContent = formContent;
+    
+    for (const useStmt of allUseStatements) {
+        const match = useStmt.match(/use (?:.*\\)?(\w+)(?: as \w+)?;$/);
+        if (match) {
+            const className = match[1];
+            const regex = new RegExp(`\\b${className}\\b`, 'g');
+            const occurrences = (finalContent.match(regex) || []).length;
+            
+            if (occurrences <= 1) { 
+                finalContent = finalContent.replace(useStmt + '\n', '');
+            }
+        }
+    }
+
     const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'Schemas');
     if (!fs.existsSync(outputFolderPath)) fs.mkdirSync(outputFolderPath, { recursive: true });
     
-    fs.writeFileSync(path.join(outputFolderPath, `${className}.php`), formContent);
-    console.log(`   - Schema Class generated: ${className}.php`);
+    fs.writeFileSync(path.join(outputFolderPath, `${className}.php`), finalContent);
+    console.log(`   - Form Schema generated: ${className}.php`);
 }
 
+/**
+ * [BARU] Menjana Form Schema untuk SEMUA Custom Views.
+ */
 async function generateFilamentSchemasCustomViews(fullSchema, basePath) {
     try {
-        const { database: { table: tables, relationships } } = fullSchema;
+        const { database: { table: tables } } = fullSchema;
         let count = 0;
 
         for (const tableName in tables) {
@@ -627,23 +673,12 @@ async function generateFilamentSchemasCustomViews(fullSchema, basePath) {
             if (tableData.custom_views && tableData.custom_views.length > 0) {
                 for (const view of tableData.custom_views) {
                     const viewSafeName = toPluralPascalCase(view.view_name.replace(/[^a-zA-Z0-9]/g, ''));
-                    const schemaClassName = `${viewSafeName}Form`; // Nama class: PendingOrdersForm
+                    const schemaClassName = `${viewSafeName}Form`; 
 
-                    // Panggil helper yang telah sedia ada (Fasa 3.3)
-                    // Perlu bina objek 'virtualTableData' ringkas untuk dihantar ke helper jika perlu,
-                    // atau helper generateSingleSchemaClass sudah cukup pintar.
-                    // Berdasarkan kod Fasa 3.3, generateSingleSchemaClass mengendalikan generation.
-                    
-                    // Kita perlu pastikan logic fields custom view (readonly etc) dihantar.
-                    // Helper generateSingleSchemaClass dalam Fasa 3.3 mungkin perlu 'view.fields' 
-                    // tetapi signature sedia ada ialah (basePath, resourceFolder, className, tableData, ...).
-                    // Trick: Kita hantar tableData yang telah dimanipulasi (Virtual Data) seperti di Fasa 3.1
-                    
-                    // 1. Bina Virtual Fields
+                    // Bina Virtual Fields (Readonly Logic)
                     const virtualFields = {};
-                    const selectedFields = view.fields || []; // Array dari DB
+                    const selectedFields = view.fields || []; 
                     
-                    // Mapping fields
                     selectedFields.forEach(f => {
                         const fieldName = f.sourceName || f.field_source_name;
                         const originalField = tableData.fields[fieldName];
@@ -655,13 +690,19 @@ async function generateFilamentSchemasCustomViews(fullSchema, basePath) {
                         }
                     });
                     
-                    const virtualTableData = { ...tableData, fields: virtualFields, table_view_title: view.view_name };
+                    // Perlu pass 'module_name' original supaya helper tahu nama Model
+                    const virtualTableData = { 
+                        ...tableData, 
+                        fields: virtualFields, 
+                        table_view_title: view.view_name,
+                        module_name: tableData.module_name // PENTING: Kekalkan module_name asal
+                    };
 
                     generateSingleSchemaClass(
                         basePath,
                         viewSafeName,    // resourceFolder
                         schemaClassName, // className
-                        virtualTableData,// tableData (Modified)
+                        virtualTableData,
                         fullSchema,
                         tableName
                     );
@@ -680,5 +721,5 @@ module.exports = {
     generateFilamentSchemasForm,
     generateSingleSchemaClass,
     generateFormSchemaString,
-    generateFilamentSchemasCustomViews // <--- TAMBAH INI
+    generateFilamentSchemasCustomViews
 };

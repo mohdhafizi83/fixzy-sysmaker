@@ -9,26 +9,43 @@ const { toSingularPascalCase, toPluralPascalCase, readTemplate } = require('../u
 async function generateSingleCreatePage(tableName, tableData, fullSchema, basePath, templateContent, options = {}) {
     const { database: { relationships } } = fullSchema;
 
-    const modelNameSingular = options.modelName || toSingularPascalCase(tableName);
-    // Untuk Custom View, resourceFolder ialah nama view (cth: PendingOrders).
-    // Untuk Standard, ia adalah nama plural table (cth: Orders).
-    const resourceFolder = options.resourceFolder || toPluralPascalCase(tableName);
+    const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
+                        ? tableData.module_name 
+                        : tableName;
+
+    const standardModelName = toSingularPascalCase(nameSource);
+    const standardFolder = toPluralPascalCase(nameSource);
+
+    const modelNameSingular = options.modelName || standardModelName;
+    const resourceFolder = options.resourceFolder || standardFolder;
+
+    // --- LOGIC NAMING FIX ---
+    // Custom View: CreatePendingRegistrations.php
+    let pageClassName = `Create${modelNameSingular}`;
+    if (options.customPageName) {
+        pageClassName = `Create${options.customPageName}`;
+    }
 
     let createContent = templateContent;
 
     // Replacement Standard
     createContent = createContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);
-    createContent = createContent.replace(/<<TABLE_NAME_PLURAL>>/g, resourceFolder); // Penting untuk Namespace
+    createContent = createContent.replace(/<<TABLE_NAME_PLURAL>>/g, resourceFolder); 
 
-    // --- LOGIK ASAL GRID COLUMNS (KEKAL 100%) ---
+    // Fix Class Name untuk Custom View
+    if (options.customPageName) {
+        const oldClassDef = `class Create${modelNameSingular}`;
+        const newClassDef = `class ${pageClassName}`;
+        createContent = createContent.replace(new RegExp(oldClassDef, 'g'), newClassDef);
+    }
+
+    // ... (Logik lain kekal sama) ...
     if (tableData && tableData.column_grid_type === 'dynamic') {
         createContent = createContent.replace('<<GRIDCOLUMN_VAR>>', 'public int $gridColumns = 2;');
     } else {
         createContent = createContent.replace('<<GRIDCOLUMN_VAR>>', '');
     }
 
-    // --- LOGIK ASAL IFRAME LAYOUT (KEKAL 100%) ---
-    // Menyemak jika jadual ini adalah anak kepada jadual lain yang memaparkan count (konteks iframe)
     const isChildInIframeContext = relationships.some(r => 
         r.child_table_name === tableName && r.show_count_in_tv === 1
     );
@@ -49,15 +66,14 @@ async function generateSingleCreatePage(tableName, tableData, fullSchema, basePa
         createContent = createContent.replace('<<IFRAME_LAYOUT>>', '');
     }
 
-    // Pembersihan Akhir
     createContent = createContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
     createContent = createContent.replace(/<<.*?>>/g, '');
 
     const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'Pages');
     fs.mkdirSync(outputFolderPath, { recursive: true });
 
-    // Nama Fail: CreateOrder.php (Kekal standard walaupun dalam folder Custom View)
-    const fileName = `Create${modelNameSingular}.php`;
+    // Guna pageClassName
+    const fileName = `${pageClassName}.php`;
     const outputFilePath = path.join(outputFolderPath, fileName);
     
     fs.writeFileSync(outputFilePath, createContent);
@@ -89,12 +105,19 @@ async function generateFilamentCreateCustomViews(fullSchema, basePath) {
         for (const tableName in tables) {
             const tableData = tables[tableName];
             if (tableData.custom_views && tableData.custom_views.length > 0) {
+                
+                const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
+                                    ? tableData.module_name 
+                                    : tableName;
+                const standardModelName = toSingularPascalCase(nameSource);
+
                 for (const view of tableData.custom_views) {
                     const viewSafeName = toPluralPascalCase(view.view_name.replace(/[^a-zA-Z0-9]/g, ''));
                     
                     await generateSingleCreatePage(tableName, tableData, fullSchema, basePath, templateContent, {
-                        modelName: toSingularPascalCase(tableName),
-                        resourceFolder: viewSafeName
+                        modelName: standardModelName,
+                        resourceFolder: viewSafeName,
+                        customPageName: viewSafeName // Pass param
                     });
                     count++;
                 }
@@ -108,6 +131,6 @@ async function generateFilamentCreateCustomViews(fullSchema, basePath) {
 
 module.exports = {
     generateFilamentCreatePages,
-    generateFilamentCreateCustomViews, // Function Baru
+    generateFilamentCreateCustomViews,
     generateSingleCreatePage
 };
