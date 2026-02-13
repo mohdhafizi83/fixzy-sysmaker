@@ -149,7 +149,7 @@ function toSingularCamelCase(str) {
 function getFieldDefinitionForMigration(field) {
     const name = field.field_name;
     const type = field.data_type.toUpperCase();
-    const length = field.max_length;
+    const length = field.length;
 
     // Pemetaan Jenis Data
     if (type === 'INT' || type === 'INTEGER') return `$table->integer('${name}')`;

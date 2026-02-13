@@ -91,6 +91,35 @@ async function runFullTest() {
         const fullSchema = await getFullProjectSchema(db, activeProject.project_id);
         console.log(`📊 Schema dimuatkan: ${Object.keys(fullSchema.database.table).length} jadual.`);
 
+        // ▼▼▼ DEBUG: DUMP FULL SCHEMA KE FAIL ▼▼▼
+        const debugFilePath = path.join(__dirname, 'debug_schema_output.json');
+        console.log(`\n🔍 [DEBUG] Menyimpan fullSchema ke fail untuk semakan:`);
+        console.log(`   📂 ${debugFilePath}`);
+        
+        // Simpan sebagai JSON yang cantik (indented)
+        fs.writeFileSync(debugFilePath, JSON.stringify(fullSchema, null, 4));
+        
+        // Cetak ringkasan ringkas di console untuk pengesahan pantas
+        if (fullSchema.database.unified_menu) {
+            console.log(`   ✅ Unified Menu: Ditemui (${fullSchema.database.unified_menu.length} item peringkat atasan)`);
+            // Paparkan sampel item pertama untuk memastikan struktur 'type' wujud
+            if (fullSchema.database.unified_menu.length > 0) {
+                 console.log("   👉 Sampel Menu Item Pertama:", fullSchema.database.unified_menu[0]);
+            }
+        } else {
+            console.error("   ❌ Unified Menu: TIDAK DITEMUI!");
+        }
+        
+        // Semak sepintas lalu jika validation wujud
+        let validationCount = 0;
+        Object.values(fullSchema.database.table).forEach(t => {
+            Object.values(t.fields).forEach(f => {
+                if (f.validations && f.validations.length > 0) validationCount++;
+            });
+        });
+        console.log(`   ✅ Validations: Ditemui pada ${validationCount} medan.`);
+        console.log("--------------------------------------------------\n");
+        // ▲▲▲ TAMAT DEBUG ▲▲▲
         // ============================================================
         // SENARAI TUGASAN (URUTAN PELAKSANAAN)
         // ============================================================

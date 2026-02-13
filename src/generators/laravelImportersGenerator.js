@@ -156,8 +156,7 @@ async function generateFilamentImporters(fullSchema, outputDir) {
                     if (field.max_value !== null && field.max_value !== undefined && field.max_value !== '') rulesList.push(`'max:${field.max_value}'`);
                 } else {
                     if (field.min_length !== null && field.min_length !== undefined && field.min_length !== '') rulesList.push(`'min:${field.min_length}'`);
-                    if (field.max_length !== null && field.max_length !== undefined && field.max_length !== '') rulesList.push(`'max:${field.max_length}'`);
-                    else { if (field.length !== null && field.length !== undefined && field.length !== '') rulesList.push(`'max:${field.length}'`); }
+                    if (field.length !== null && field.length !== undefined && field.length !== '') rulesList.push(`'max:${field.length}'`);
                 }
 
                 if (dataType === 'JSON') rulesList.push("'array'");

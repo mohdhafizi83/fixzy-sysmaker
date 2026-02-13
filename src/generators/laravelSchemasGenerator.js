@@ -116,10 +116,10 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
             }
 
             if (field.display_type === 'text_input') {
-                if (field.min_length && field.min_length === field.max_length) fieldCode = fieldCode.replace('<<IS_FIXED_LENGTH>>', `->length(${field.min_length})`);
+                if (field.min_length && field.min_length === field.length) fieldCode = fieldCode.replace('<<IS_FIXED_LENGTH>>', `->length(${field.min_length})`);
                 else {
                     if (field.min_length) fieldCode = fieldCode.replace('<<IS_MIN_LENGTH>>', `->minLength(${field.min_length})`);
-                    if (field.max_length) fieldCode = fieldCode.replace('<<IS_MAX_LENGTH>>', `->maxLength(${field.max_length})`);
+                    if (field.length) fieldCode = fieldCode.replace('<<IS_MAX_LENGTH>>', `->maxLength(${field.length})`);
                 }
             }
 

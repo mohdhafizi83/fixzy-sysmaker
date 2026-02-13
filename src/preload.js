@@ -22,7 +22,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updateFieldIndex: (data) => ipcRenderer.invoke('field:update-index', data),
   updateRelationship: (data) => ipcRenderer.invoke('relationship:update', data),
   upsertRelationship: (data) => ipcRenderer.invoke('relationship:upsert', data),
-  
+  deleteRelationship: (data) => ipcRenderer.invoke('relationship:delete', data),
   saveAllSettings: (data) => ipcRenderer.invoke('settings:save-all', data),
   saveMenuStructure: (data) => ipcRenderer.invoke('menu:save-structure', data),
   batchUpdate: (queueData) => ipcRenderer.invoke('database:batch-update', queueData),

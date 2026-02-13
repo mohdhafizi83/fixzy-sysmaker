@@ -77,10 +77,78 @@ async refreshState() {
             } 
             // 3. FIELD
             else if (item.type === 'field' || item.type === 'fields') {
+// ▼▼▼ LOG DIAGNOSIS (TAMBAH INI) ▼▼▼
+                console.log("[SaveManager-DEBUG] Data diterima:", item.data);
+                console.log("[SaveManager-DEBUG] Senarai Key:", Object.keys(item.data));
+                // ▲▲▲ TAMAT LOG DIAGNOSIS ▲▲▲                
                 result = await window.electronAPI.updateField({ 
                     field_id: item.id, 
                     ...item.data 
                 });
+console.log(item.data.hasOwnProperty('lookup_parent_table'));
+// ▼▼▼ INTERCEPTOR YANG DIPERBAIKI (Single-Trigger) ▼▼▼
+                const dataKeys = Object.keys(item.data);
+                
+                // KITA HANYA MONITOR SATU FIELD INI SAHAJA SEKARANG
+                const triggers = ['lookup_parent_table']; 
+                
+                const isRelationshipUpdate = dataKeys.some(key => triggers.includes(key));
+
+                if (result && result.success && isRelationshipUpdate) {
+                    console.log("[SaveManager] Perubahan Parent Table dikesan. Mengemas kini Relationship...");
+                    
+                    const fieldId = item.id;
+                    const tables = appState.jsonData.database.table;
+                    let childTableName = null;
+                    let fkFieldName = null;
+                    let currentFieldData = null;
+
+                    for (const tName in tables) {
+                        const fields = tables[tName].fields;
+                        const targetField = Object.values(fields).find(f => f.field_id == fieldId);
+                        if (targetField) {
+                            childTableName = tName;
+                            fkFieldName = targetField.field_name;
+                            currentFieldData = targetField;
+                            break;
+                        }
+                    }
+
+                    if (childTableName && fkFieldName && currentFieldData) {
+                        
+                        // Ambil value direct dari item.data sebab kita pasti trigger dia adalah lookup_parent_table
+                        const parentTable = item.data.lookup_parent_table;
+
+                        console.log(`[SaveManager] Data -> Parent: ${parentTable}, Child: ${childTableName}.${fkFieldName}`);
+
+                        if (parentTable) {
+                            // UPSERT
+                            console.log(`[SaveManager] Menghantar IPC Upsert...`);
+                            const upsertResult = await window.electronAPI.upsertRelationship({
+                                parentTableName: parentTable,
+                                childTableName: childTableName,
+                                fk_child_field: fkFieldName
+                            });
+
+                            if (upsertResult && upsertResult.success) {
+                                console.log("[SaveManager] ✅ Upsert Relationship BERJAYA.");
+                                showToast('Relationship updated successfully', 'success');
+                            } else {
+                                console.error("[SaveManager] ❌ Upsert GAGAL:", upsertResult);
+                                showToast('Failed to update relationship', 'error');
+                            }
+
+                        } else {
+                            // DELETE (Jika value kosong)
+                            console.log(`[SaveManager] Trigger Delete...`);
+                            await window.electronAPI.deleteRelationship({
+                                childTableName: childTableName,
+                                fk_child_field: fkFieldName
+                            });
+                        }
+                    }
+                }
+                // ▲▲▲ TAMAT INTERCEPTOR ▲▲▲
             } 
             // 4. MENU GROUP
             else if (item.type === 'menu_group') {
@@ -101,7 +169,19 @@ async refreshState() {
                     ...item.data 
                 });
             }
-            // 6. JIKA TIADA YANG PADAN
+// 6. UPSERT RELATIONSHIP (Create or Update Parent Table)
+            else if (item.type === 'upsertRelationship') {
+                 result = await window.electronAPI.upsertRelationship(item.data);
+            }
+
+            // 7. DELETE RELATIONSHIP (Remove Lookup)
+            else if (item.type === 'deleteRelationship') {
+                 result = await window.electronAPI.deleteRelationship(item.data);
+            }
+            
+            // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
+
+            // 8. JIKA TIADA YANG PADAN (Else asal ditukar menjadi else if terakhir atau else)
             else {
                 console.error(`[SaveManager] JENIS TIDAK DIKENALI: ${item.type}`);
                 showToast(`Error: Unknown save type '${item.type}'`, 'error');

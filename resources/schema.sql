@@ -50,7 +50,7 @@ CREATE TABLE tables (
     table_id                     INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id                   INTEGER NOT NULL,
     table_name                   TEXT NOT NULL,
-    module_name          TEXT,
+    module_name                  TEXT,
 	table_order                  INTEGER,
     table_view_title             TEXT,
     table_description            TEXT,

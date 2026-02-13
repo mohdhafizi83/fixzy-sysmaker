@@ -39,12 +39,10 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
     let resourceClassName, resourceFileName, outputFolder;
 
     if (isCustomView) {
-        // Custom View: Nama ikut pilihan user (cth: PendingRegistrations)
         resourceClassName = options.resourceClassName;
         resourceFileName = options.resourceFileName; 
         outputFolder = options.resourceFileName;     
     } else {
-        // Standard: Nama ikut Module Name (cth: StudentInfoResource)
         resourceClassName = `${modelName}Resource`;
         resourceFileName = `${modelName}Resource`;
         outputFolder = modelNamePlural;              
@@ -58,7 +56,6 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
     
     resourceContent = resourceContent.replace(/<<MODEL_NAME>>/g, modelName);
     
-    // Placeholder <<MODEL_NAME_PLURAL>> digunakan untuk Namespace Resource.
     const namespaceFolder = isCustomView ? outputFolder : modelNamePlural;
     resourceContent = resourceContent.replace(/<<MODEL_NAME_PLURAL>>/g, namespaceFolder);
 
@@ -226,22 +223,19 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
 
         // 2. Override Form & Table Call
         const standardFormClass = `${modelName}Form`;
-        const customFormClass = `${resourceFileName}Form`; // PendingRegistrationsForm
+        const customFormClass = `${resourceFileName}Form`; 
         const standardTableClass = `${modelNamePlural}Table`; 
-        const customTableClass = `${resourceFileName}Table`; // PendingRegistrationsTable
+        const customTableClass = `${resourceFileName}Table`; 
 
         resourceContent = resourceContent.replace(new RegExp(standardFormClass, 'g'), customFormClass);
         resourceContent = resourceContent.replace(new RegExp(standardTableClass, 'g'), customTableClass);
 
-        // --- 3. OVERRIDE PAGES IMPORT (CREATE & EDIT) ---
-        // Masalah: Template mungkin mengandungi 'CreatePelajar' (Standard)
-        // Kita mahu ganti kepada 'CreatePendingRegistrations' (Custom)
+        // 3. Override Pages Import (Fix dari tugasan lepas)
         const standardCreatePage = `Create${modelName}`;
         const customCreatePage = `Create${resourceFileName}`;
         const standardEditPage = `Edit${modelName}`;
         const customEditPage = `Edit${resourceFileName}`;
 
-        // Ganti nama class dalam array pages() dan import statements jika ada
         resourceContent = resourceContent.replace(new RegExp(standardCreatePage, 'g'), customCreatePage);
         resourceContent = resourceContent.replace(new RegExp(standardEditPage, 'g'), customEditPage);
 
@@ -249,18 +243,51 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         const slug = toFlatCase(options.viewName || resourceFileName);
         resourceContent = resourceContent.replace('{', `{\n    protected static ?string $slug = '${slug}';`);
 
-        // 5. Inject Menu Custom
+        // 5. Inject Menu Custom (FIXED LOGIC NAVIGATION)
         if (options.menuIcon) {
             resourceContent = resourceContent.replace(/icon\s*=\s*'.*?'/, `icon = '${options.menuIcon}'`);
         }
         
+        // Remove standard placeholders dulu untuk elak konflik
         resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONGROUP>>', '');
         resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONSORT>>', '');
         resourceContent = resourceContent.replace('<<SHORTCUT_MENU_ORDER>>', '');
 
-        const customNav = `\n    protected static ?string $navigationLabel = '${options.viewName}';\n    protected static ?int $navigationSort = ${options.viewOrder || 99};`;
-        resourceContent = resourceContent.replace('{', `{${customNav}`); 
-        resourceContent = resourceContent.replace('<<MENU_NAME>>', options.viewName);
+        // --- NAVIGATION GROUP FUNCTION ---
+        // Anda boleh ubah 'Custom Views' kepada nama group yang dikehendaki atau ambil dari options jika ada
+        const customNavGroup = `
+    public static function getNavigationGroup(): string
+    {
+        return '${options.viewName}'; // Default guna view name atau group lain
+    }`;
+
+        // --- NAVIGATION SORT FUNCTION ---
+        const customNavSort = `
+    public static function getNavigationSort(): int
+    {
+        return ${options.viewOrder || 0};
+    }`;
+
+        // Masukkan kod navigation baru SELEPAS class declaration
+        // Kita selitkan dengan cara menggantikan '{' pembuka class dengan '{' + functions
+        resourceContent = resourceContent.replace('{', `{${customNavGroup}\n${customNavSort}\n`); 
+        
+        // Pastikan tiada $navigationLabel atau $navigationSort static property
+        // (Logik replace standard di atas sudah membuangnya melalui placeholder <<SHORTCUT_MENU_ORDER>>)
+        // Tetapi kita perlu pastikan <<MENU_NAME>> juga diuruskan
+        
+        // Jika kita guna getNavigationGroup/Label secara override function,
+        // kita mungkin perlu override getNavigationLabel() juga jika mahu label berbeza dari Model Label.
+        // Tapi arahan anda spesifik kepada Group dan Sort.
+        
+        // Untuk <<MENU_NAME>> (label asal), kita boleh biar atau replace.
+        // Biasanya ini masuk ke protected static ?string $navigationLabel = '<<MENU_NAME>>';
+        // Arahan anda kata REMOVE kod statik property.
+        // Jadi kita replace <<MENU_NAME>> dengan string kosong atau buang barisnya.
+        
+        // Cari baris navigationLabel standard dan buang jika wujud (biasanya ada dalam template)
+        // Template mungkin ada: protected static ?string $navigationLabel = '<<MENU_NAME>>';
+        resourceContent = resourceContent.replace(/protected static \?string \$navigationLabel = '.*?';/, '');
 
         // 6. Inject Filter Query
         let queryBody = 'parent::getEloquentQuery()';

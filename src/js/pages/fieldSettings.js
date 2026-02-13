@@ -55,9 +55,7 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-min-length', fieldData.min_length);
     // Jika max_length tiada nilai (cth: selepas import SQL), guna nilai length sebagai lalai.
     // Jika ada, guna nilai yang disimpan.
-    const maxLengthValue = (fieldData.max_length === null || fieldData.max_length === undefined) 
-                           ? fieldData.length 
-                           : fieldData.max_length;
+const maxLengthValue = fieldData.length;
     setElementValue('fld-max-length', maxLengthValue);
     setElementValue('fld-min-value', fieldData.min_value);
     setElementValue('fld-max-value', fieldData.max_value);

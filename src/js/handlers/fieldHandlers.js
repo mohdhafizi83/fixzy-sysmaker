@@ -9,42 +9,80 @@ export function initializeFieldSaveHandlers() {
     const container = document.getElementById('field-settings-page');
     if (!container) return;
 
+    // --- HELPER FUNCTION: UPDATE UI & SAVE KE DATABASE SERENTAK ---
+    // Fungsi ini memastikan 'side-effects' (perubahan automatik) disimpan.
+    const updateAndSave = (fieldId, elementId, value, dbColumnName = null) => {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+
+        // 1. Kemas kini UI (Visual)
+        // Kita update visual supaya user nampak perubahan berlaku (cth: checkbox bertanda)
+        if (el.type === 'checkbox') {
+            el.checked = (value === 1 || value === true);
+        } else {
+            el.value = value;
+        }
+
+        // 2. Simpan ke Database
+        // Tentukan nama column database yang betul
+        const key = dbColumnName || elementId.replace('fld-', '').replace(/-/g, '_');
+        
+        // Pastikan format nilai sesuai untuk SQLite (1/0 untuk boolean)
+        let dbValue = value;
+        if (typeof value === 'boolean') {
+            dbValue = value ? 1 : 0;
+        }
+
+        console.log(`[Auto-Fix] Mengemas kini & Menyimpan: ${key} = ${dbValue}`);
+        
+        // Hantar ke barisan giliran SaveManager
+        SaveManager.addToQueue('field', fieldId, { [key]: dbValue });
+    };
+
+    // --- EVENT LISTENER UTAMA ---
     ['change', 'focusout'].forEach(eventType => {
         container.addEventListener(eventType, (e) => {
             const input = e.target;
 
+            // Tapis event yang tidak perlu (Performance optimization)
             if (eventType === 'focusout' && !['text', 'textarea', 'number'].includes(input.type)) return;
             if (eventType === 'change' && ['text', 'textarea', 'number'].includes(input.type)) return;
             if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(input.tagName)) return;
 
+            // Jangan simpan jika sedang loading data atau autosave dimatikan
             if (appState.isPopulatingData) return;
             if (!appState.isAutoSaveEnabled) return;
 
+            // Dapatkan ID Field semasa dari DOM (Penting untuk tahu field mana nak update)
             const titleEl = container.querySelector('.field-name');
             if (!titleEl) return;
             
             const parts = titleEl.textContent.trim().split('.');
             if (parts.length < 2) return;
             
-            const tableName = parts[0];
-            const fieldName = parts[1];
-
+            const tableName = parts[0]; 
+            const fieldName = parts[1]; 
+            
             const tableData = appState.jsonData.database.table[tableName];
             if (!tableData || !tableData.fields[fieldName]) return;
             
             const fieldId = tableData.fields[fieldName].field_id;
 
+            // =========================================================
+            // 1. SIMPAN PERUBAHAN MANUAL (Apa yang user klik/taip)
+            // =========================================================
+            
+            // Tentukan key (nama column db)
             let key = '';
-            if (input.type === 'radio') {
+            if (input.id === 'fld-lookup-parent-table') {
+                key = 'lookup_parent_table'; // Hardcode untuk keselamatan
+            } else if (input.type === 'radio') {
                 key = input.name.replace('fld-', '').replace(/-/g, '_');
             } else {
                 key = input.id.replace('fld-', '').replace(/-/g, '_');
             }
 
-            // Mapping Manual jika perlu
-            const keyMappings = {};
-            if (keyMappings[key]) key = keyMappings[key];
-
+            // Tentukan nilai
             let value;
             if (input.type === 'checkbox') value = input.checked ? 1 : 0;
             else if (input.type === 'radio') {
@@ -52,11 +90,52 @@ export function initializeFieldSaveHandlers() {
                 value = input.value;
             } else value = input.value;
 
+            // Simpan input pengguna ini ke SaveManager
             SaveManager.addToQueue('field', fieldId, { [key]: value });
+
+
+            // =========================================================
+            // 2. LOGIK AUTOMATIK (SIDE EFFECTS) - Guna updateAndSave
+            // =========================================================
+            if (eventType === 'change') {
+                
+                // KES A: Pengguna menukar 'Data Type'
+                if (input.id === 'fld-data-type') {
+                    const newType = input.value.toUpperCase();
+
+                    // Jika JSON -> Force 'Wrap Text' (Supaya data panjang nampak kemas)
+                    if (newType === 'JSON') {
+                        updateAndSave(fieldId, 'fld-tv-wrap-text', 1, 'tv_wrap_text');
+                    }
+
+                    // Jika Date/Time -> Force 'Range Filter' & Set Default Format
+                    const dateTypes = ['DATE', 'DATETIME', 'TIMESTAMP'];
+                    if (dateTypes.includes(newType)) {
+                        updateAndSave(fieldId, 'fld-enable-range-filter', 1, 'enable_range_filter');
+                        
+                        // Set format default jika field format masih kosong
+                        const formatEl = document.getElementById('fld-tv-date-time-format');
+                        if (formatEl && !formatEl.value) {
+                            const defaultFormat = newType === 'DATE' ? 'd/m/Y' : 'd/m/Y H:i';
+                            updateAndSave(fieldId, 'fld-tv-date-time-format', defaultFormat, 'tv_date_time_format');
+                        }
+                    }
+                }
+
+                // KES B: Pengguna menukar 'Display Type' (Input Type)
+                // ID input mungkin 'fld-display-type' atau 'fld-edit-display-as' bergantung pada HTML anda
+                if (input.id === 'fld-display-type' || input.id === 'fld-edit-display-as') {
+                    if (input.value === 'image') {
+                        updateAndSave(fieldId, 'fld-allow-image-uploads', 1, 'allow_image_uploads');
+                    }
+                    if (input.value === 'file') {
+                        updateAndSave(fieldId, 'fld-allow-file-uploads', 1, 'allow_file_uploads');
+                    }
+                }
+            }
         });
     });
 }
-
 // --- DATA TYPE & DISPLAY RULES ---
 
 export function initializeDisplayTypeRules() {
@@ -651,39 +730,73 @@ export function initializeLookupFieldHandlers() {
     const displayAsRadios = document.querySelectorAll('input[name="fld-lookup-display-as"]');
     const dropdownOptions = document.getElementById('fld-lookup-dropdown-options');
 
-    if (!parentTableSelect || !caption1Select || !displayAsRadios.length || !dropdownOptions) return;
+    if (!parentTableSelect || !caption1Select) return;
 
-    parentTableSelect.addEventListener('change', () => {
-        const selectedTable = parentTableSelect.value;
-        populateParentCaptionDropdowns(selectedTable);
-        
-        if (selectedTable && appState.jsonData.database.table[selectedTable]) {
-            const parentFields = appState.jsonData.database.table[selectedTable].fields;
-            const fieldNames = Object.keys(parentFields);
-            const integerTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'];
-            let defaultCaptionField = null;
-            const firstNonIntegerField = fieldNames.find(name => !integerTypes.includes(parentFields[name].data_type.toUpperCase()));
-            if (firstNonIntegerField) {
-                defaultCaptionField = firstNonIntegerField;
-            } else if (fieldNames.length > 1) {
-                defaultCaptionField = fieldNames[1];
-            }
-            if (defaultCaptionField) {
-                caption1Select.value = defaultCaptionField;
-            }
-        }
-    });
+    // Fungsi untuk menghantar data secara manual ke SaveManager
+    const triggerManualSave = (fieldName, value) => {
+        if (appState.isPopulatingData || !appState.isAutoSaveEnabled) return;
 
-    const toggleDropdownOptions = () => {
-        const selectedRadio = document.querySelector('input[name="fld-lookup-display-as"]:checked');
-        if (selectedRadio) {
-            dropdownOptions.classList.toggle('hidden', selectedRadio.value !== 'dropdown');
+        const titleEl = document.querySelector('#field-settings-page .field-name');
+        if (!titleEl) return;
+
+        const parts = titleEl.textContent.trim().split('.');
+        if (parts.length < 2) return;
+
+        const tableName = parts[0];
+        const fieldNameText = parts[1];
+        const tableData = appState.jsonData.database.table[tableName];
+
+        if (tableData && tableData.fields[fieldNameText]) {
+            const fieldId = tableData.fields[fieldNameText].field_id;
+            
+            console.log(`[LookupHandler] Trigger manual untuk '${fieldName}': ${value}`);
+            
+            SaveManager.addToQueue('field', fieldId, { 
+                [fieldName]: value 
+            });
         }
     };
 
-    displayAsRadios.forEach(radio => {
-        radio.addEventListener('change', toggleDropdownOptions);
+    // 1. LISTENER: PARENT TABLE SAHAJA (Ini sahaja yang trigger Upsert Relationship)
+    parentTableSelect.addEventListener('change', () => {
+        const selectedTable = parentTableSelect.value;
+        
+        // Logik UI (Populate Caption)
+        populateParentCaptionDropdowns(selectedTable);
+        
+        // Auto-select caption (UI logic)
+        if (selectedTable && appState.jsonData.database.table[selectedTable]) {
+             // ... (kod auto-select caption anda kekal sama) ...
+             const parentFields = appState.jsonData.database.table[selectedTable].fields;
+             const fieldNames = Object.keys(parentFields);
+             const integerTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'];
+             let defaultCaptionField = null;
+             const firstNonIntegerField = fieldNames.find(name => !integerTypes.includes(parentFields[name].data_type.toUpperCase()));
+             
+             if (firstNonIntegerField) defaultCaptionField = firstNonIntegerField;
+             else if (fieldNames.length > 1) defaultCaptionField = fieldNames[1];
+ 
+             if (defaultCaptionField) {
+                 caption1Select.value = defaultCaptionField;
+                 caption1Select.dispatchEvent(new Event('change', { bubbles: true }));
+             }
+        }
+
+        // Hantar perubahan 'lookup_parent_table' ke SaveManager
+        triggerManualSave('lookup_parent_table', selectedTable);
     });
+
+    // NOTA: Listener untuk Caption 1 & 2 DIBUANG dari sini.
+    // Ia akan diuruskan oleh 'initializeFieldSaveHandlers' (generic handler) 
+    // untuk menyimpan data ke table 'fields' sahaja, tanpa trigger upsert relationship.
+
+    const toggleDropdownOptions = () => {
+        const selectedRadio = document.querySelector('input[name="fld-lookup-display-as"]:checked');
+        if (selectedRadio && dropdownOptions) {
+            dropdownOptions.classList.toggle('hidden', selectedRadio.value !== 'dropdown');
+        }
+    };
+    displayAsRadios.forEach(radio => radio.addEventListener('change', toggleDropdownOptions));
 }
 
 function generateDefaultLookupQuery() {

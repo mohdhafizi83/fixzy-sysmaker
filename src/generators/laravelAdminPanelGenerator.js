@@ -27,10 +27,26 @@ async function generateAdminPanelProvider(fullSchema, basePath) {
 
         // 3. Dapatkan Data dari Schema
         const project = fullSchema.project;
-        const menuGroups = fullSchema.menu_groups || []; // Pastikan array wujud
+        
+        // ▼▼▼ MULA PERUBAHAN: Dapatkan data group dari unified_menu ▼▼▼
+        // Asal: const menuGroups = fullSchema.menu_groups || [];
+        // Kita tukar kepada 'let' dan tambah fallback ke unified_menu
+        let menuGroups = fullSchema.menu_groups || []; 
+
+        // Jika menu_groups kosong TAPI unified_menu wujud (struktur schema baharu),
+        // kita petakan ia menjadi format yang difahami oleh kod asal anda.
+        if (menuGroups.length === 0 && fullSchema.database && fullSchema.database.unified_menu) {
+            menuGroups = fullSchema.database.unified_menu
+                .filter(item => item.type === 'group')
+                .map(group => ({
+                    group_name: group.name,   // Unified Menu guna 'name'
+                    group_order: group.order  // Unified Menu guna 'order'
+                }));
+        }
+        // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
 
         // ============================================================
-        // LOGIK PENGGANTIAN (REPLACEMENTS)
+        // LOGIK PENGGANTIAN (REPLACEMENTS) - KEKAL SEPERTI ASAL
         // ============================================================
 
         // 1. LOG AUDIT (Import)
@@ -55,6 +71,7 @@ async function generateAdminPanelProvider(fullSchema, basePath) {
             const groupLines = sortedGroups.map(group => {
                 // Escape single quotes dalam nama group jika ada
                 const label = group.group_name.replace(/'/g, "\\'");
+                // KOD ASAL ANDA:
                 return `                NavigationGroup::make()->label('${label}'),`;
             });
             

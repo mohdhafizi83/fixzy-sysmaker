@@ -30,6 +30,8 @@ function connectToDatabase() {
     }
 }
 
+// test/testUtils.js
+
 function getFullProjectSchema(db, projectId) {
     try {
         console.log(`🔍 Mengambil schema untuk Project ID: ${projectId}...`);
@@ -40,7 +42,6 @@ function getFullProjectSchema(db, projectId) {
             return null;
         }
 
-        // Debug Tables
         const tables = db.prepare("SELECT * FROM tables WHERE project_id = ? ORDER BY table_order, table_id").all(projectId);
         console.log(`📊 Jumpa ${tables.length} jadual dalam database.`);
         
@@ -55,7 +56,6 @@ function getFullProjectSchema(db, projectId) {
         const tableIds = tables.map((t) => t.table_id);
         const placeholder = tableIds.map(() => "?").join(",");
         
-        // Debug Fields
         const fields = db.prepare(`SELECT * FROM fields WHERE table_id IN (${placeholder}) ORDER BY field_order, field_id`).all(...tableIds);
         console.log(`📝 Jumpa ${fields.length} medan (fields) secara keseluruhan.`);
 
@@ -70,7 +70,7 @@ function getFullProjectSchema(db, projectId) {
             customViewFields = db.prepare(`SELECT * FROM custom_view_fields WHERE custom_view_id IN (${viewPlaceholder}) ORDER BY display_order`).all(...viewIds);
         }
   
-        // Validation Rules
+        // Validation Rules (Logik sedia ada yang betul - dikekalkan)
         const validations = db.prepare(`
             SELECT fv.*, f.table_id, f.field_name 
             FROM field_validations fv
@@ -109,6 +109,7 @@ function getFullProjectSchema(db, projectId) {
              WHERE r.parent_table_id IN (${placeholder}) OR r.child_table_id IN (${placeholder})`
           ).all(...tableIds, ...tableIds);
       
+        // ▼▼▼ KEMAS KINI MENU: Menggunakan logik dari Production Main.js ▼▼▼
         const allItems = db.prepare(`
             SELECT mi.*, t.table_name 
             FROM menu_items mi 
@@ -119,25 +120,47 @@ function getFullProjectSchema(db, projectId) {
         
         const groups = db.prepare("SELECT * FROM menu_groups WHERE project_id = ? ORDER BY group_order").all(projectId);
         const unifiedMenu = [];
-  
+
+        // Proses kumpulan
         groups.forEach(group => {
             const groupItems = allItems
                 .filter(item => item.menu_group_id === group.menu_group_id)
-                .map(item => ({ type: item.table_id ? 'table_item' : 'custom_item', ...item }));
-  
+                .map(item => {
+                    // Logik penentuan jenis item yang lebih tepat
+                    let itemType = 'custom_item';
+                    if (item.table_id) itemType = 'table_item';
+                    else if (item.custom_view_id) itemType = 'custom_view_item';
+                    
+                    return { type: itemType, ...item };
+                });
+
             unifiedMenu.push({ 
-                type: 'group', id: group.menu_group_id, name: group.group_name, items: groupItems
+                type: 'group', 
+                id: group.menu_group_id, 
+                order: group.group_order, 
+                name: group.group_name, 
+                items: groupItems
             });
         });
         
+        // Proses item peringkat atasan (loose items)
         allItems.forEach(item => {
             if (item.menu_group_id === null) {
+                let itemType = 'custom_item';
+                if (item.table_id) itemType = 'table_item';
+                else if (item.custom_view_id) itemType = 'custom_view_item';
+
                 unifiedMenu.push({ 
-                    type: item.table_id ? 'table_item' : 'custom_item', 
+                    type: itemType, 
+                    order: item.item_order,
                     ...item 
                 });
             }
         });
+
+        // Susun semula keseluruhan senarai berdasarkan 'order' (PENTING!)
+        unifiedMenu.sort((a, b) => a.order - b.order);
+        // ▲▲▲ TAMAT KEMAS KINI MENU ▲▲▲
   
         return {
             project: project,

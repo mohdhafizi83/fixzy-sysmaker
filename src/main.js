@@ -675,8 +675,8 @@ ipcMain.handle("project:create", async (event, projectName) => {
 
         // 3. Cipta rekod untuk jadual 'users'
         const tableInfo = db.prepare(
-            'INSERT INTO tables (project_id, table_name, module_name, table_view_title, table_order) VALUES (?, ?, ?, ?)'
-        ).run(projectId, 'users', 'Users', 'Users',0);
+            'INSERT INTO tables (project_id, table_name, module_name, table_view_title, table_order) VALUES (?, ?, ?, ?, ?)'
+        ).run(projectId, 'users', 'Users', 'Users', 0);
         const tableId = tableInfo.lastInsertRowid;
 
         // 4. Cipta item menu untuk jadual 'users'
@@ -1165,6 +1165,100 @@ ipcMain.handle('relationship:update', async (event, data) => {
         return { success: true };
     } catch (error) {
         console.error("Gagal mengemas kini hubungan:", error);
+        return { success: false, message: error.message };
+    }
+});
+
+// HANDLER UNTUK UPSERT RELATIONSHIP
+ipcMain.handle('relationship:upsert', async (event, data) => {
+    console.log("--- [MAIN] Menerima Request Upsert Relationship ---", data);
+    
+    try {
+        const { parentTableName, childTableName, fk_child_field } = data;
+        
+        // 1. Validasi Input
+        if (!parentTableName || !childTableName || !fk_child_field) {
+             return { success: false, message: "Data tidak lengkap." };
+        }
+
+        // 2. Dapatkan ID Jadual & Module Name
+        const parentTable = db.prepare("SELECT table_id FROM tables WHERE table_name = ?").get(parentTableName);
+        
+        // Kita ambil 'module_name' sekali untuk Child Table
+        const childTable = db.prepare("SELECT table_id, module_name FROM tables WHERE table_name = ?").get(childTableName);
+
+        if (!parentTable || !childTable) {
+            return { success: false, message: `Table not found.` };
+        }
+
+        // 3. Cari Relationship Sedia Ada
+        const existingRel = db.prepare(`
+            SELECT relationship_id FROM parent_child_relationships 
+            WHERE fk_child_field = ? AND child_table_id = ?
+        `).get(fk_child_field, childTable.table_id);
+
+        const transaction = db.transaction(() => {
+            if (existingRel) {
+                // UPDATE: Hanya kemaskini parent_table_id. 
+                // Kita TIDAK update tab_title di sini untuk elak overwrite custom title pengguna.
+                console.log(`--- [MAIN] Mengemaskini Relationship ID: ${existingRel.relationship_id}`);
+                db.prepare(`
+                    UPDATE parent_child_relationships 
+                    SET parent_table_id = ? 
+                    WHERE relationship_id = ?
+                `).run(parentTable.table_id, existingRel.relationship_id);
+            } else {
+                // INSERT: Logik Title Case di sini
+                console.log("--- [MAIN] Mencipta Relationship Baharu");
+                
+                // Cari parent field
+                const pkField = db.prepare(`
+                    SELECT field_name FROM fields 
+                    WHERE table_id = ? AND primary_key = 1 
+                    LIMIT 1
+                `).get(parentTable.table_id);
+                const parentFieldName = pkField ? pkField.field_name : 'id';
+
+                // Jana tab_title dari module_name (atau table_name jika module_name tiada)
+                const rawName = childTable.module_name || childTableName;
+                const formattedTitle = toTitleCase(rawName);
+
+                console.log(`--- [MAIN] Auto-Generated Tab Title: '${formattedTitle}'`);
+
+                db.prepare(`
+                    INSERT INTO parent_child_relationships 
+                    (parent_table_id, child_table_id, fk_child_field, parent_field, relationship_type, tab_title) 
+                    VALUES (?, ?, ?, ?, 'one-to-many', ?)
+                `).run(parentTable.table_id, childTable.table_id, fk_child_field, parentFieldName, formattedTitle);
+            }
+        });
+
+        transaction();
+        return { success: true };
+
+    } catch (error) {
+        console.error("--- [MAIN] Ralat SQL:", error);
+        return { success: false, message: error.message };
+    }
+});
+
+// HANDLER UNTUK DELETE RELATIONSHIP
+ipcMain.handle('relationship:delete', async (event, data) => {
+    try {
+        const { childTableName, fk_child_field } = data;
+        const deleteStmt = db.prepare(`
+            DELETE FROM parent_child_relationships 
+            WHERE fk_child_field = ? 
+            AND child_table_id = (SELECT table_id FROM tables WHERE table_name = ?)
+        `);
+        deleteStmt.run(fk_child_field, childTableName);
+        
+        // Opsional: Kosongkan lookup settings pada field tersebut
+        // db.prepare("UPDATE fields SET lookup_parent_table = NULL, lookup_caption_1 = NULL WHERE field_name = ? AND table_id = (SELECT table_id FROM tables WHERE table_name = ?)").run(fk_child_field, childTableName);
+        
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal memadam hubungan:", error);
         return { success: false, message: error.message };
     }
 });
@@ -1705,6 +1799,7 @@ async function getFullProjectSchema(projectId) {
     const fields = db.prepare(`SELECT * FROM fields WHERE table_id IN (${placeholder}) ORDER BY field_order, field_id`).all(...tableIds);
     const constraints = db.prepare(`SELECT * FROM table_constraints WHERE table_id IN (${placeholder})`).all(...tableIds);
     
+    // Custom Views
     let customViews = db.prepare(`SELECT * FROM custom_views WHERE table_id IN (${placeholder}) ORDER BY view_order`).all(...tableIds);
     const viewIds = customViews.map(v => v.custom_view_id);
     let customViewFields = [];
@@ -1712,6 +1807,15 @@ async function getFullProjectSchema(projectId) {
         const viewPlaceholder = viewIds.map(() => "?").join(",");
         customViewFields = db.prepare(`SELECT * FROM custom_view_fields WHERE custom_view_id IN (${viewPlaceholder}) ORDER BY display_order`).all(...viewIds);
     }
+
+    // ▼▼▼ TAMBAHAN BARU: Field Validations (Dari Test) ▼▼▼
+    const validations = db.prepare(`
+        SELECT fv.*, f.table_id, f.field_name 
+        FROM field_validations fv
+        JOIN fields f ON fv.column_id = f.field_id
+        WHERE f.table_id IN (${placeholder}) AND fv.is_active = 1
+    `).all(...tableIds);
+    // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
 
     const structuredTables = {};
     tables.forEach((table) => {
@@ -1731,6 +1835,9 @@ async function getFullProjectSchema(projectId) {
     fields.forEach((field) => {
       const parentTable = tables.find((t) => t.table_id === field.table_id);
       if (parentTable) {
+        // ▼▼▼ TAMBAHAN BARU: Attach Validation ke Field ▼▼▼
+        field.validations = validations.filter(v => v.column_id === field.field_id);
+        // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
         structuredTables[parentTable.table_name].fields[field.field_name] = field;
       }
     });
@@ -1745,7 +1852,7 @@ async function getFullProjectSchema(projectId) {
         )
         .all(...tableIds, ...tableIds);
     
-    // ▼▼▼ MULA LOGIK PEMBETULAN ▼▼▼
+    // (Logik Menu di sini KEKAL SAMA kerana ia sudah versi terkini)
     const allItems = db.prepare(`
         SELECT mi.*, t.table_name 
         FROM menu_items mi 
@@ -1757,7 +1864,6 @@ async function getFullProjectSchema(projectId) {
     const groups = db.prepare("SELECT * FROM menu_groups WHERE project_id = ? ORDER BY group_order").all(projectId);
     const unifiedMenu = [];
 
-    // Proses kumpulan dan sediakan 'map' untuk item di dalamnya
     const groupMap = new Map();
     groups.forEach(group => {
         const groupItems = allItems
@@ -1780,7 +1886,6 @@ async function getFullProjectSchema(projectId) {
         groupMap.set(group.group_order, groupObject);
     });
     
-    // Proses item peringkat atasan
     allItems.forEach(item => {
         if (item.menu_group_id === null) {
             let itemType = 'custom_item';
@@ -1789,15 +1894,13 @@ async function getFullProjectSchema(projectId) {
             
             unifiedMenu.push({ 
                 type: itemType,
-                order: item.item_order, // Gunakan item_order untuk susunan
+                order: item.item_order,
                 ...item 
             });
         }
     });
 
-    // Akhir sekali, susun semula keseluruhan senarai berdasarkan 'order'
     unifiedMenu.sort((a, b) => a.order - b.order);
-    // ▲▲▲ TAMAT LOGIK PEMBETULAN ▲▲▲
 
     return {
       project: project,
