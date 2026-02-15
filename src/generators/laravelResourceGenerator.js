@@ -27,6 +27,7 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
 
     // Nama Model (Class)
     const modelName = options.modelName || toSingularPascalCase(nameSource);
+    const singularFileName = options.singularFileName || '';
     
     // Nama Folder Resource Standard (Plural)
     const modelNamePlural = toPluralPascalCase(nameSource);
@@ -221,23 +222,25 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         // 1. Override Class Name
         resourceContent = resourceContent.replace(`class ${modelName}Resource`, `class ${resourceClassName}`);
 
-        // 2. Override Form & Table Call
+// 2. Override Form & Table Call
         const standardFormClass = `${modelName}Form`;
-        const customFormClass = `${resourceFileName}Form`; 
+        const customFormClass = `${singularFileName}Form`; // (kekalkan pembolehubah sedia ada anda)
         const standardTableClass = `${modelNamePlural}Table`; 
-        const customTableClass = `${resourceFileName}Table`; 
+        const customTableClass = `${resourceFileName}Table`; // (kekalkan pembolehubah sedia ada anda)
 
-        resourceContent = resourceContent.replace(new RegExp(standardFormClass, 'g'), customFormClass);
-        resourceContent = resourceContent.replace(new RegExp(standardTableClass, 'g'), customTableClass);
+        // PERUBAHAN DI SINI: Tambah \\b pada RegExp untuk elak double-replace
+        resourceContent = resourceContent.replace(new RegExp(`\\b${standardFormClass}\\b`, 'g'), customFormClass);
+        resourceContent = resourceContent.replace(new RegExp(`\\b${standardTableClass}\\b`, 'g'), customTableClass);
 
         // 3. Override Pages Import (Fix dari tugasan lepas)
         const standardCreatePage = `Create${modelName}`;
-        const customCreatePage = `Create${resourceFileName}`;
+        const customCreatePage = `Create${singularFileName}`; // (kekalkan pembolehubah sedia ada anda)
         const standardEditPage = `Edit${modelName}`;
-        const customEditPage = `Edit${resourceFileName}`;
+        const customEditPage = `Edit${singularFileName}`; // (kekalkan pembolehubah sedia ada anda)
 
-        resourceContent = resourceContent.replace(new RegExp(standardCreatePage, 'g'), customCreatePage);
-        resourceContent = resourceContent.replace(new RegExp(standardEditPage, 'g'), customEditPage);
+        // PERUBAHAN DI SINI: Tambah \\b pada RegExp
+        resourceContent = resourceContent.replace(new RegExp(`\\b${standardCreatePage}\\b`, 'g'), customCreatePage);
+        resourceContent = resourceContent.replace(new RegExp(`\\b${standardEditPage}\\b`, 'g'), customEditPage);
 
         // 4. Inject Slug
         const slug = toFlatCase(options.viewName || resourceFileName);
@@ -340,6 +343,8 @@ async function generateFilamentResources(fullSchema, basePath) {
     }
 }
 
+// Cari function ini di bahagian bawah fail dan gantikan dengan kod ini:
+
 async function generateFilamentResourcesCustomViews(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;
@@ -350,14 +355,21 @@ async function generateFilamentResourcesCustomViews(fullSchema, basePath) {
             const tableData = tables[tableName];
             if (tableData.custom_views && tableData.custom_views.length > 0) {
                 for (const view of tableData.custom_views) {
-                    const viewSafeName = toPluralPascalCase(view.view_name.replace(/[^a-zA-Z0-9]/g, ''));
-                    const customResourceClassName = `${viewSafeName}Resource`;
+                    
+                    const viewNameClean = view.view_name.replace(/[^a-zA-Z0-9]/g, '');
+                    
+                    // FOLDER: Plural (PendingRegistrations)
+                    const viewSafeNamePlural = toPluralPascalCase(viewNameClean);
+                    
+                    // FAIL: Singular (PendingRegistrationResource)
+                    const viewSafeNameSingular = toSingularPascalCase(viewNameClean);
+                    const customResourceClassName = `${viewSafeNameSingular}Resource`;
 
-                    // Panggil helper dengan mode CUSTOM VIEW
                     await generateSingleResource(tableName, tableData, fullSchema, basePath, templateContent, {
                         isCustomView: true,
-                        resourceClassName: customResourceClassName,
-                        resourceFileName: viewSafeName,
+                        resourceClassName: customResourceClassName, // Nama Class/Fail Singular
+                        resourceFileName: viewSafeNamePlural,       // Nama Folder Plural (Helper guna variable ini untuk folder)
+                        singularFileName: viewSafeNameSingular, 
                         viewName: view.view_name,
                         viewOrder: view.view_order,
                         menuIcon: view.menu_icon,
@@ -374,7 +386,6 @@ async function generateFilamentResourcesCustomViews(fullSchema, basePath) {
     }
 }
 
-// Export semua fungsi
 module.exports = {
     generateFilamentResources,
     generateFilamentResourcesCustomViews,

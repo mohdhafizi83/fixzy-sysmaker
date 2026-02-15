@@ -29,7 +29,12 @@ async function generateSingleCreatePage(tableName, tableData, fullSchema, basePa
     let createContent = templateContent;
 
     // Replacement Standard
-    createContent = createContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);
+    if (options.customPageName) {
+    createContent = createContent.replace(/<<TABLE_NAME_SINGULAR>>/g, options.customPageName);    
+    }else{
+    createContent = createContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);    
+    }
+    
     createContent = createContent.replace(/<<TABLE_NAME_PLURAL>>/g, resourceFolder); 
 
     // Fix Class Name untuk Custom View
@@ -95,7 +100,6 @@ async function generateFilamentCreatePages(fullSchema, basePath) {
     }
 }
 
-// [BARU] Custom View Create Pages
 async function generateFilamentCreateCustomViews(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;
@@ -112,12 +116,17 @@ async function generateFilamentCreateCustomViews(fullSchema, basePath) {
                 const standardModelName = toSingularPascalCase(nameSource);
 
                 for (const view of tableData.custom_views) {
-                    const viewSafeName = toPluralPascalCase(view.view_name.replace(/[^a-zA-Z0-9]/g, ''));
+                    const viewNameClean = view.view_name.replace(/[^a-zA-Z0-9]/g, '');
+
+                    // FOLDER: Plural
+                    const viewSafeNamePlural = toPluralPascalCase(viewNameClean);
+                    // FAIL: Singular
+                    const viewSafeNameSingular = toSingularPascalCase(viewNameClean);
                     
                     await generateSingleCreatePage(tableName, tableData, fullSchema, basePath, templateContent, {
                         modelName: standardModelName,
-                        resourceFolder: viewSafeName,
-                        customPageName: viewSafeName // Pass param
+                        resourceFolder: viewSafeNamePlural, // Simpan dalam folder Plural
+                        customPageName: viewSafeNameSingular // Nama Class CreateSingular
                     });
                     count++;
                 }

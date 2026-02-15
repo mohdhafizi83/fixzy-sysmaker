@@ -415,47 +415,40 @@ async function generateFilamentTablesCustomViews(fullSchema, basePath) {
             const tableData = tables[tableName];
             if (tableData.custom_views && tableData.custom_views.length > 0) {
                 for (const view of tableData.custom_views) {
-                    const viewSafeName = toPluralPascalCase(view.view_name.replace(/[^a-zA-Z0-9]/g, ''));
-                    const tableClassName = `${viewSafeName}Table`; 
+                    const viewNameClean = view.view_name.replace(/[^a-zA-Z0-9]/g, '');
 
-                    // --- BINA VIRTUAL TABLE DATA UNTUK CUSTOM VIEW (Pembetulan Rule #1) ---
-                    // Hanya fields yang dipilih dalam custom_view_fields yang akan diproses
+                    // FOLDER & FAIL: Plural
+                    const viewSafeNamePlural = toPluralPascalCase(viewNameClean);
+                    
+                    // Nama Class Table Singular: PendingRegistrationTable
+                    const tableClassName = `${viewSafeNamePlural}Table`; 
+
+                    // --- BINA VIRTUAL TABLE DATA UNTUK CUSTOM VIEW ---
                     const virtualFields = {};
                     const selectedFields = view.fields || [];
                     
                     selectedFields.forEach(f => {
-                        // Kenalpasti nama field asal
-                        // Bergantung pada structure 'view.fields', ia mungkin 'sourceName' atau 'field_source_name'
                         const fieldName = f.sourceName || f.field_source_name;
-                        
-                        // Ambil field properties asal dari tableData.fields
                         const originalField = tableData.fields[fieldName];
                         if (originalField) {
-                            // Salin properties asal
                             virtualFields[fieldName] = { ...originalField };
-                            
-                            // Override readonly jika custom_view_fields.readonly = 1
                             if (f.isReadonly === true || f.is_readonly === 1) {
-                                // Walaupun table biasanya tak guna readonly, kita set flag ini
-                                // Mungkin berguna jika ada inline-edit pada masa hadapan
                                 virtualFields[fieldName].is_forced_readonly = true;
                             }
                         }
                     });
 
-                    // Cipta object tableData baru yang hanya mengandungi fields terpilih
                     const virtualTableData = { 
                         ...tableData, 
-                        fields: virtualFields, // Gantikan semua fields dengan virtualFields
-                        // Kekalkan module_name asal untuk rujukan Model
+                        fields: virtualFields, 
                         module_name: tableData.module_name 
                     };
 
                     generateSingleTableClass(
                         basePath,
-                        viewSafeName,   // resourceFolder
-                        tableClassName, // className
-                        virtualTableData, // Guna data maya ini!
+                        viewSafeNamePlural, // resourceFolder (Plural)
+                        tableClassName,     // className (Singular)
+                        virtualTableData, 
                         fullSchema,
                         tableName
                     );
@@ -469,7 +462,6 @@ async function generateFilamentTablesCustomViews(fullSchema, basePath) {
     }
 }
 
-// KEMASKINI EXPORT
 module.exports = {
     generateFilamentTablesTable,
     generateSingleTableClass,

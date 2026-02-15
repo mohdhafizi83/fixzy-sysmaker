@@ -672,8 +672,10 @@ async function generateFilamentSchemasCustomViews(fullSchema, basePath) {
             const tableData = tables[tableName];
             if (tableData.custom_views && tableData.custom_views.length > 0) {
                 for (const view of tableData.custom_views) {
-                    const viewSafeName = toPluralPascalCase(view.view_name.replace(/[^a-zA-Z0-9]/g, ''));
-                    const schemaClassName = `${viewSafeName}Form`; 
+                    const viewNameClean = view.view_name.replace(/[^a-zA-Z0-9]/g, '');
+                    const viewSafeNamePlural = toPluralPascalCase(viewNameClean);
+                    const viewSafeNameSingular = toSingularPascalCase(viewNameClean);
+                    const schemaClassName = `${viewSafeNameSingular}Form`; 
 
                     // Bina Virtual Fields (Readonly Logic)
                     const virtualFields = {};
@@ -700,7 +702,7 @@ async function generateFilamentSchemasCustomViews(fullSchema, basePath) {
 
                     generateSingleSchemaClass(
                         basePath,
-                        viewSafeName,    // resourceFolder
+                        viewSafeNamePlural,    // resourceFolder
                         schemaClassName, // className
                         virtualTableData,
                         fullSchema,

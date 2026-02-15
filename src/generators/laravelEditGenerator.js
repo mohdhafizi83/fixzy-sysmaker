@@ -30,7 +30,12 @@ async function generateSingleEditPage(tableName, tableData, fullSchema, basePath
     let editContent = templateContent;
 
     // Standard Replacements
-    editContent = editContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);
+    if (options.customPageName) {
+    editContent = editContent.replace(/<<TABLE_NAME_SINGULAR>>/g, options.customPageName);    
+    }else{
+    editContent = editContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);    
+    }
+    
     editContent = editContent.replace(/<<TABLE_NAME_PLURAL>>/g, resourceFolder);
     
     // Fix Class Name untuk Custom View
@@ -167,7 +172,6 @@ async function generateFilamentEditPages(fullSchema, basePath) {
     }
 }
 
-// [BARU] Custom View Edit Pages
 async function generateFilamentEditCustomViews(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;
@@ -184,12 +188,17 @@ async function generateFilamentEditCustomViews(fullSchema, basePath) {
                 const standardModelName = toSingularPascalCase(nameSource);
 
                 for (const view of tableData.custom_views) {
-                    const viewSafeName = toPluralPascalCase(view.view_name.replace(/[^a-zA-Z0-9]/g, ''));
+                    const viewNameClean = view.view_name.replace(/[^a-zA-Z0-9]/g, '');
+
+                    // FOLDER: Plural
+                    const viewSafeNamePlural = toPluralPascalCase(viewNameClean);
+                    // FAIL: Singular
+                    const viewSafeNameSingular = toSingularPascalCase(viewNameClean);
                     
                     await generateSingleEditPage(tableName, tableData, fullSchema, basePath, templateContent, {
                         modelName: standardModelName,
-                        resourceFolder: viewSafeName,
-                        customPageName: viewSafeName // Hantar parameter baru
+                        resourceFolder: viewSafeNamePlural, // Simpan dalam folder Plural
+                        customPageName: viewSafeNameSingular // Nama Class EditSingular
                     });
                     count++;
                 }

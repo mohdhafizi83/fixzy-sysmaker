@@ -1614,7 +1614,7 @@
                         "calculated_query": null,
                         "lookup_custom_query": null,
                         "algorithm_enable": 0,
-                        "algorithm_logic": null,
+                        "algorithm_logic": "[]",
                         "calculation_builder_state": null,
                         "hook_functions": null,
                         "show_avg_summary": null,
@@ -8237,14 +8237,14 @@
                         "table_id": 42,
                         "view_name": "New Pendaftaran Kursus",
                         "menu_icon": "fas fa-table",
-                        "filter_rules": "{\"logic\":\"AND\",\"rules\":[{\"type\":\"rule\",\"table\":\"pendaftaran_kursus\",\"field\":\"gred\",\"operator\":\"=\",\"value\":\"E\"}]}",
+                        "filter_rules": "{\"logic\":\"AND\",\"rules\":[{\"type\":\"rule\",\"table\":\"pendaftaran_kursus\",\"field\":\"id\",\"operator\":\"=\",\"value\":\"E\"}]}",
                         "included_relations": "[\"pengesahan_pendaftaran\"]",
                         "owner_only": 0,
                         "owner_field": "id",
                         "view_order": 0,
                         "fields": [
                             {
-                                "custom_view_field_id": 68,
+                                "custom_view_field_id": 78,
                                 "custom_view_id": 3,
                                 "field_source_table": "pendaftaran_kursus",
                                 "field_source_name": "pelajar_id",
@@ -8253,7 +8253,7 @@
                                 "display_order": 0
                             },
                             {
-                                "custom_view_field_id": 69,
+                                "custom_view_field_id": 79,
                                 "custom_view_id": 3,
                                 "field_source_table": "pendaftaran_kursus",
                                 "field_source_name": "kursus_id",
@@ -8262,7 +8262,7 @@
                                 "display_order": 1
                             },
                             {
-                                "custom_view_field_id": 70,
+                                "custom_view_field_id": 80,
                                 "custom_view_id": 3,
                                 "field_source_table": "pendaftaran_kursus",
                                 "field_source_name": "tarikh_pendaftaran",
@@ -8271,7 +8271,7 @@
                                 "display_order": 2
                             },
                             {
-                                "custom_view_field_id": 71,
+                                "custom_view_field_id": 81,
                                 "custom_view_id": 3,
                                 "field_source_table": "pendaftaran_kursus",
                                 "field_source_name": "gred",
@@ -8280,7 +8280,7 @@
                                 "display_order": 3
                             },
                             {
-                                "custom_view_field_id": 72,
+                                "custom_view_field_id": 82,
                                 "custom_view_id": 3,
                                 "field_source_table": "pendaftaran_kursus",
                                 "field_source_name": "dokumen_lengkap",

@@ -37,7 +37,12 @@ async function generateSingleListPage(tableName, tableData, fullSchema, basePath
     let listContent = templateContent;
 
     // Replacement Standard
-    listContent = listContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);
+    if (options.customPageName) {
+    listContent = listContent.replace(/<<TABLE_NAME_SINGULAR>>/g, options.customPageName);    
+    }else{
+    listContent = listContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);    
+    }
+    
     listContent = listContent.replace(/<<TABLE_NAME_PLURAL>>/g, resourceFolder);
 
     listContent = listContent.replace('<<TABLE_VIEW_TITLE>>', tableData.table_view_title || resourceFolder);
@@ -204,14 +209,20 @@ async function generateFilamentListCustomViews(fullSchema, basePath) {
 
                 for (const view of tableData.custom_views) {
                     
-                    const viewSafeName = toPluralPascalCase(view.view_name.replace(/[^a-zA-Z0-9]/g, ''));
+                    const viewNameClean = view.view_name.replace(/[^a-zA-Z0-9]/g, '');
+
+                    // FOLDER: Plural
+                    const viewSafeNamePlural = toPluralPascalCase(viewNameClean);
+                    // FAIL: Singular
+                    const viewSafeNameSingular = toSingularPascalCase(viewNameClean);
                     
                     // Panggil Helper
                     // resourceFolder = 'PendingRegistrations'
                     // modelName = 'StudentInfo'
                     await generateSingleListPage(tableName, tableData, fullSchema, basePath, templateContent, {
                         modelName: standardModelName,
-                        resourceFolder: viewSafeName 
+                        resourceFolder: viewSafeNamePlural,
+                        customPageName: viewSafeNameSingular                        
                     });
                     count++;
                 }
