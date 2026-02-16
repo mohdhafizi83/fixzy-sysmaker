@@ -4,7 +4,7 @@ const { toSingularPascalCase, toPluralPascalCase, toPluralCamelCase, readTemplat
 
 /**
  * [HELPER] Menjana satu fail List Page.
- * Digunakan oleh Generator Standard dan Custom View.
+ * Digunakan oleh Generator Standard dan Custom Module.
  */
 async function generateSingleListPage(tableName, tableData, fullSchema, basePath, templateContent, options = {}) {
     const { database: { relationships } } = fullSchema;
@@ -26,7 +26,7 @@ async function generateSingleListPage(tableName, tableData, fullSchema, basePath
     const modelNameSingular = options.modelName || standardModelName;
     
     // Tentukan Folder Resource (Namespace)
-    // Jika Custom View: 'PendingRegistrations'
+    // Jika Custom Module: 'PendingRegistrations'
     // Jika Standard: 'StudentInfos'
     const resourceFolder = options.resourceFolder || standardFolder; 
 
@@ -45,7 +45,9 @@ async function generateSingleListPage(tableName, tableData, fullSchema, basePath
     
     listContent = listContent.replace(/<<TABLE_NAME_PLURAL>>/g, resourceFolder);
 
-    listContent = listContent.replace('<<TABLE_VIEW_TITLE>>', tableData.table_view_title || resourceFolder);
+    // Gunakan moduleTitle jika ada (untuk Custom Module), jika tiada, guna tajuk jadual asal
+const pageTitle = options.moduleTitle || tableData.table_view_title || resourceFolder;
+listContent = listContent.replace('<<TABLE_VIEW_TITLE>>', pageTitle);
     
     // --- LOGIK ASAL IFRAME (KEKAL 100%) ---
     // Nota: 'relationships' masih merujuk kepada table_name DB sebenar.
@@ -190,8 +192,8 @@ async function generateFilamentListPages(fullSchema, basePath) {
     }
 }
 
-// [BARU] Custom View List Pages
-async function generateFilamentListCustomViews(fullSchema, basePath) {
+// [BARU] Custom Module List Pages
+async function generateFilamentListCustomModules(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;
         const templateContent = readTemplate('app/Filament/Resources/PagesList.template');
@@ -199,17 +201,17 @@ async function generateFilamentListCustomViews(fullSchema, basePath) {
 
         for (const tableName in tables) {
             const tableData = tables[tableName];
-            if (tableData.custom_views && tableData.custom_views.length > 0) {
-                // Untuk Custom View, kita perlu nama Model asal (Module Name)
+            if (tableData.custom_modules && tableData.custom_modules.length > 0) {
+                // Untuk Custom Module, kita perlu nama Model asal (Module Name)
                 // cth: StudentInfo
                 const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
                                     ? tableData.module_name 
                                     : tableName;
                 const standardModelName = toSingularPascalCase(nameSource);
 
-                for (const view of tableData.custom_views) {
+                for (const view of tableData.custom_modules) {
                     
-                    const viewNameClean = view.view_name.replace(/[^a-zA-Z0-9]/g, '');
+                    const viewNameClean = view.module_name.replace(/[^a-zA-Z0-9]/g, '');
 
                     // FOLDER: Plural
                     const viewSafeNamePlural = toPluralPascalCase(viewNameClean);
@@ -222,13 +224,14 @@ async function generateFilamentListCustomViews(fullSchema, basePath) {
                     await generateSingleListPage(tableName, tableData, fullSchema, basePath, templateContent, {
                         modelName: standardModelName,
                         resourceFolder: viewSafeNamePlural,
-                        customPageName: viewSafeNameSingular                        
+                        customPageName: viewSafeNameSingular,
+                        moduleTitle: view.module_name                        
                     });
                     count++;
                 }
             }
         }
-        return { success: true, message: `${count} Custom View List Pages generated.` };
+        return { success: true, message: `${count} Custom Module List Pages generated.` };
     } catch (error) {
         return { success: false, message: error.message };
     }
@@ -236,6 +239,6 @@ async function generateFilamentListCustomViews(fullSchema, basePath) {
 
 module.exports = {
     generateFilamentListPages,
-    generateFilamentListCustomViews,
+    generateFilamentListCustomModules,
     generateSingleListPage
 };

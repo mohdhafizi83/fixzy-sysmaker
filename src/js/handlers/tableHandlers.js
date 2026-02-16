@@ -424,19 +424,19 @@ export function initializeConstraintsTabHandlers() {
 }
 
 /**
- * Mengisi kandungan tab "Custom Views" dengan senarai view yang telah dicipta.
+ * Mengisi kandungan tab "Custom Modules" dengan senarai view yang telah dicipta.
  * @param {string} tableName - Nama jadual semasa.
  */
 export function populateCustomViewsTab(tableName) {
-    const container = document.getElementById('custom-views-list-container');
+    const container = document.getElementById('custom-modules-list-container');
     if (!container) return;
 
-    const views = appState.jsonData.database.table[tableName]?.custom_views || [];
+    const views = appState.jsonData.database.table[tableName]?.custom_modules || [];
 
     if (views.length === 0) {
         container.innerHTML = `
             <div class="empty-state-label">
-                <p>No Custom Views created yet.</p>
+                <p>No Custom Modules created yet.</p>
                 <span>Click the button above to create one.</span>
             </div>`;
         return;
@@ -446,13 +446,13 @@ export function populateCustomViewsTab(tableName) {
         <div class="cv-list-item">
             <div class="cv-info">
                 <i class="fas ${view.menu_icon || 'fa-eye'}"></i>
-                <span>${view.view_name}</span>
+                <span>${view.module_name}</span>
             </div>
             <div class="cv-actions">
-                <button class="btn btn-secondary cv-edit-btn" data-view-id="${view.custom_view_id}">
+                <button class="btn btn-secondary cv-edit-btn" data-view-id="${view.module_id}">
                     <i class="fas fa-pencil-alt"></i> Edit
                 </button>
-                <button class="btn cv-delete-btn" data-view-id="${view.custom_view_id}">
+                <button class="btn cv-delete-btn" data-view-id="${view.module_id}">
                     <i class="fas fa-trash-alt"></i> Delete
                 </button>
             </div>
@@ -460,259 +460,283 @@ export function populateCustomViewsTab(tableName) {
     `).join('');
 }
 window.populateCustomViewsTab = populateCustomViewsTab;
-/**
- * Fungsi utama untuk memasang semua event listener untuk ciri Custom Views.
- */
-// src/js/handlers/tableHandlers.js
 
+/**
+ * Fungsi utama untuk memasang semua event listener untuk ciri Custom Modules.
+ */
 export function initializeCustomViews() {
     const tableSettingsPage = document.getElementById('table-settings-page');
     if (!tableSettingsPage) return;
 
-    // Pasang listener untuk modal SEKALI SAHAJA
-    initializeCustomViewModalLogic();
+    // Pasang listener untuk butang di dalam Modal Custom Module
+    initializeCustomModuleModalLogic();
 
     // Event delegation untuk butang "Add", "Edit", dan "Delete" di dalam tab
     tableSettingsPage.addEventListener('click', e => {
-        const currentTableName = document.querySelector('#table-settings-page .table-name').textContent;
+        const tableNameElement = document.querySelector('#table-settings-page .table-name');
+        const currentTableName = tableNameElement ? tableNameElement.textContent.trim() : null;
         if (!currentTableName) return;
 
-        // Butang Add
-        if (e.target.closest('#btn-add-custom-view')) {
-            openCustomViewModal(currentTableName);
+        // Butang Add Baru
+        if (e.target.closest('#btn-add-custom-module')) {
+            populateCustomModuleModal(currentTableName);
         }
 
         // Butang Edit
         const editBtn = e.target.closest('.cv-edit-btn');
         if (editBtn) {
             const viewId = parseInt(editBtn.dataset.viewId, 10);
-            const viewData = appState.jsonData.database.table[currentTableName]?.custom_views.find(v => v.custom_view_id === viewId);
-            if (viewData) {
-                openCustomViewModal(currentTableName, viewData);
-            }
+            const viewData = appState.jsonData.database.table[currentTableName]?.custom_modules.find(v => v.module_id === viewId);
+            if (viewData) populateCustomModuleModal(currentTableName, viewData);
         }
 
-        // ▼▼▼ PERUBAHAN DI SINI ▼▼▼
         // Butang Delete
         const deleteBtn = e.target.closest('.cv-delete-btn');
         if (deleteBtn) {
             const viewId = parseInt(deleteBtn.dataset.viewId, 10);
-            
-            // Panggil fungsi standalone yang telah kita perbaiki di bawah!
-            // Jangan tulis logik dialog di sini lagi.
-            deleteCustomView(viewId); 
+            deleteCustomView(viewId); // Fungsi ini kekal seperti sedia ada di bawah
         }
-        // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
     });
 }
 
 /**
- * Memaparkan modal Custom View dengan data yang betul.
- * Mengendalikan Fasa 1 (Child Tables) dan Schema Baru (Owner Only).
+ * Memaparkan modal Custom Module dengan data yang betul.
  */
-export function populateCustomViewModal(viewId = null) {
-    const modal = document.getElementById('custom-view-modal');
-    const title = document.getElementById('custom-view-modal-title');
-    const saveBtn = document.getElementById('btn-save-custom-view');
+export function populateCustomModuleModal(tableName, viewData = null) {
+    const modal = document.getElementById('custom-module-config-modal');
+    const title = document.getElementById('cv-modal-title');
+    const saveBtn = document.getElementById('cv-modal-save');
+    const nextBtn = document.getElementById('cv-modal-next');
     
-    // Input Elements
+    // Langkah 1 Elements
     const nameInput = document.getElementById('cv-view-name');
-    const typeSelect = document.getElementById('cv-view-type'); // Jika ada, jika tidak abaikan
-    
-    // Fasa 1 & Schema Elements
-    const childContainer = document.getElementById('cv-child-tables-container');
-    const ownerOnlyCheck = document.getElementById('cv-owner-only');
-    const ownerFieldSelect = document.getElementById('cv-owner-field');
+    const iconInput = document.getElementById('cv-menu-icon');
+    const ownerOnlyCheck = document.getElementById('cv-owner-only-checkbox'); // ID DIKEMASKINI
+    const ownerFieldSelect = document.getElementById('cv-owner-field-select'); // ID DIKEMASKINI
+    const ownerFieldContainer = document.getElementById('cv-owner-field-container');
 
-    if (!modal) return;
+    // Langkah 2 Elements
+    const availableFieldsList = document.getElementById('cv-available-fields-list');
+    const formLayoutPanel = document.getElementById('cv-form-layout-panel');
 
-    // 1. Dapatkan Konteks Jadual Semasa
-    const tableNameElement = document.querySelector('#table-settings-page .table-name');
-    const currentTableName = tableNameElement ? tableNameElement.textContent.trim() : null;
-    const tableData = appState.jsonData.database.table[currentTableName];
+    if (!modal || !appState.jsonData.database.table[tableName]) return;
+    const tableData = appState.jsonData.database.table[tableName];
 
-    if (!tableData) {
-        console.error("Data jadual tidak ditemui.");
-        return;
-    }
+    // Reset UI Navigation (Kembali ke Langkah 1)
+    document.getElementById('cv-step-1').classList.remove('hidden');
+    document.getElementById('cv-step-2').classList.add('hidden');
+    document.getElementById('cv-modal-back').classList.add('hidden');
+    saveBtn.classList.add('hidden');
+    nextBtn.classList.remove('hidden');
 
-    // 2. Cari Data View (Jika Mode Edit)
-    let viewData = null;
-    if (viewId) {
-        viewData = tableData.custom_views?.find(v => v.custom_view_id == viewId);
-    }
+    // Reset Fields UI
+    availableFieldsList.innerHTML = '';
+    formLayoutPanel.innerHTML = '';
 
-    // 3. Reset & Tetapkan Nilai Asas UI
-    if (childContainer) childContainer.innerHTML = '';
-    
-    if (viewId && viewData) {
-        // --- MODE EDIT ---
-        title.textContent = "Edit Custom View";
-        saveBtn.setAttribute('data-editing-id', viewId);
-        
-        if (nameInput) nameInput.value = viewData.view_name || '';
-        // Owner settings
-        if (ownerOnlyCheck) ownerOnlyCheck.checked = (viewData.owner_only == 1);
-        // Owner field akan diset selepas dropdown dipopulate
+    // 1. SET MAKLUMAT ASAS & OWNER (Langkah 1)
+    if (viewData) {
+        title.textContent = "Edit Custom Module";
+        saveBtn.setAttribute('data-editing-id', viewData.module_id);
+        nameInput.value = viewData.module_name || '';
+        iconInput.value = viewData.menu_icon || '';
+        ownerOnlyCheck.checked = (viewData.owner_only == 1);
     } else {
-        // --- MODE NEW ---
-        title.textContent = "Create New View";
+        title.textContent = "Create Custom Module";
         saveBtn.removeAttribute('data-editing-id');
-        
-        if (nameInput) nameInput.value = '';
-        if (ownerOnlyCheck) ownerOnlyCheck.checked = false;
+        nameInput.value = '';
+        iconInput.value = '';
+        ownerOnlyCheck.checked = false;
     }
 
-    // 4. Populate Owner Field Dropdown
-    if (ownerFieldSelect) {
-        ownerFieldSelect.innerHTML = '<option value="">-- Select Field --</option>';
-        if (tableData.fields) {
-            Object.keys(tableData.fields).forEach(fieldName => {
-                const option = document.createElement('option');
-                option.value = fieldName;
-                option.textContent = fieldName;
-                ownerFieldSelect.appendChild(option);
-            });
-        }
-        
-        // Set nilai terpilih jika dalam mode edit
-        if (viewId && viewData && viewData.owner_field) {
-            ownerFieldSelect.value = viewData.owner_field;
-        }
-
-        // Toggle enable/disable berdasarkan checkbox
-        const toggleOwnerField = () => {
-            ownerFieldSelect.disabled = !ownerOnlyCheck.checked;
-        };
-        ownerOnlyCheck.addEventListener('change', toggleOwnerField);
-        toggleOwnerField(); // Initial state
+    // Populate Owner Field Dropdown
+    ownerFieldSelect.innerHTML = '<option value="">-- Select Owner Field --</option>';
+    Object.keys(tableData.fields).forEach(fieldName => {
+        const option = document.createElement('option');
+        option.value = fieldName;
+        option.textContent = fieldName;
+        ownerFieldSelect.appendChild(option);
+    });
+    
+    if (viewData && viewData.owner_field) {
+        ownerFieldSelect.value = viewData.owner_field;
     }
 
-    // 5. Populate Child Tables (FASA 1)
-    if (childContainer) {
-        // Cari hubungan di mana jadual ini adalah PARENT
-        const relationships = appState.jsonData.database.relationships.filter(
-            rel => rel.parent_table_name === currentTableName
-        );
+    // Toggle logic for Owner Field visibility
+    const toggleOwnerField = () => {
+        if(ownerOnlyCheck.checked) ownerFieldContainer.classList.remove('hidden');
+        else ownerFieldContainer.classList.add('hidden');
+    };
+    ownerOnlyCheck.removeEventListener('change', toggleOwnerField); // Elak duplicate listener
+    ownerOnlyCheck.addEventListener('change', toggleOwnerField);
+    toggleOwnerField();
 
-        if (relationships.length === 0) {
-            childContainer.innerHTML = '<span style="font-style:italic; color:#999; font-size:0.85em; padding:5px;">No child tables found.</span>';
-        } else {
-            // Dapatkan senarai yang disimpan (included_relations)
-            let savedRelations = [];
-            if (viewData && viewData.included_relations) {
-                try {
-                    savedRelations = JSON.parse(viewData.included_relations);
-                } catch (e) { console.error("Error parsing included_relations", e); }
-            }
+    // 2. BINA SENARAI MEDAN UNTUK FORM LAYOUT (Langkah 2)
+    const template = document.getElementById('cv-form-field-template');
+    
+    Object.values(tableData.fields).forEach(field => {
+        const clone = template.content.cloneNode(true);
+        const itemDiv = clone.querySelector('.form-field-item');
+        
+        itemDiv.dataset.sourceName = field.field_name;
+        itemDiv.querySelector('.field-label').textContent = field.field_name;
+        itemDiv.querySelector('.field-source').textContent = `Type: ${field.data_type}`;
 
-            relationships.forEach(rel => {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'checkbox-item';
-                wrapper.style.cssText = 'display:flex; align-items:center; gap:8px;';
-
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = `rel-check-${rel.relationship_id}`;
-                checkbox.value = rel.child_table_name; // Kita simpan nama jadual anak
+        // Semak jika medan ini sudah dipilih (untuk Edit Mode)
+        let isSelected = false;
+        if (viewData && viewData.fields) {
+            const savedField = viewData.fields.find(f => (f.sourceName || f.field_source_name) === field.field_name);
+            if (savedField) {
+                isSelected = true;
+                itemDiv.querySelector('.is-readonly-checkbox').checked = (savedField.isReadonly == 1 || savedField.is_readonly == 1);
                 
-                // Logic: New View = Default Checked, Edit View = Ikut Saved Data
-                if (!viewId) {
-                    checkbox.checked = true; 
-                } else {
-                    checkbox.checked = savedRelations.includes(rel.child_table_name);
+                // Ekstrak Label Override (JSON Settings Override)
+                if (savedField.settings_override) {
+                    try {
+                        const overrides = JSON.parse(savedField.settings_override);
+                        if (overrides.caption) {
+                            itemDiv.querySelector('.field-label-override-input').value = overrides.caption;
+                        }
+                    } catch(e) {}
                 }
-
-                const label = document.createElement('label');
-                label.htmlFor = `rel-check-${rel.relationship_id}`;
-                label.textContent = rel.child_table_name;
-                label.style.cursor = 'pointer';
-
-                wrapper.appendChild(checkbox);
-                wrapper.appendChild(label);
-                childContainer.appendChild(wrapper);
-            });
+            }
         }
-    }
+
+        // Masukkan ke ruangan yang sepatutnya
+        if (isSelected) {
+            formLayoutPanel.appendChild(clone);
+        } else {
+            availableFieldsList.appendChild(clone);
+        }
+    });
 
     modal.classList.remove('hidden');
 }
 
 /**
- * Mengendalikan logik penyimpanan Custom View.
+ * Logik navigasi modal dan menyimpan data Modul.
  */
-export function initializeCustomViewModalLogic() {
-    const modal = document.getElementById('custom-view-modal');
-    const saveBtn = document.getElementById('btn-save-custom-view');
-    const cancelBtn = document.getElementById('btn-cancel-custom-view');
-    const closeBtn = document.getElementById('custom-view-modal-close');
+export function initializeCustomModuleModalLogic() {
+    const modal = document.getElementById('custom-module-config-modal');
+    const step1 = document.getElementById('cv-step-1');
+    const step2 = document.getElementById('cv-step-2');
+    const btnNext = document.getElementById('cv-modal-next');
+    const btnBack = document.getElementById('cv-modal-back');
+    const btnSave = document.getElementById('cv-modal-save');
+    const btnCancel = document.getElementById('cv-modal-cancel');
+    const btnClose = document.getElementById('cv-modal-close');
 
-    if (!modal || !saveBtn) return;
+    if (!modal) return;
 
-    const closeModal = () => modal.classList.add('hidden');
-
-    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
-    if (closeBtn) closeBtn.addEventListener('click', closeModal);
-
-    // Ganti elemen butang untuk buang listener lama
-    const newSaveBtn = saveBtn.cloneNode(true);
-    saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
-
-    newSaveBtn.addEventListener('click', async () => {
-        // 1. Ambil Input Values
-        const viewNameInput = document.getElementById('cv-view-name');
-        const ownerOnlyCheck = document.getElementById('cv-owner-only');
-        const ownerFieldSelect = document.getElementById('cv-owner-field');
-        
-        if (!viewNameInput || !viewNameInput.value.trim()) {
-            alert("View Name is required."); // Ganti dengan showCustomDialog jika perlu
+    // --- LOGIK NAVIGATION TAB ---
+    btnNext.addEventListener('click', () => {
+        const nameInput = document.getElementById('cv-view-name');
+        if (!nameInput.value.trim()) {
+            showCustomDialog({ title: "Required", message: "Please provide a View Name." });
             return;
         }
+        step1.classList.add('hidden');
+        step2.classList.remove('hidden');
+        btnNext.classList.add('hidden');
+        btnBack.classList.remove('hidden');
+        btnSave.classList.remove('hidden');
+    });
 
-        // 2. Dapatkan Table ID (PENTING UNTUK SCHEMA BARU)
+    btnBack.addEventListener('click', () => {
+        step2.classList.add('hidden');
+        step1.classList.remove('hidden');
+        btnBack.classList.add('hidden');
+        btnSave.classList.add('hidden');
+        btnNext.classList.remove('hidden');
+    });
+
+    const closeMyModal = () => modal.classList.add('hidden');
+    btnCancel.addEventListener('click', closeMyModal);
+    btnClose.addEventListener('click', closeMyModal);
+
+    // --- LOGIK DRAG / PINDAH MEDAN ---
+    const addSelectedBtn = document.getElementById('cv-add-field-btn');
+    const removeSelectedBtn = document.getElementById('cv-remove-field-btn');
+    
+    // (Boleh tambah logik pemilihan klik atau drag-and-drop di sini jika UI anda menyokong selection.
+    // Sebagai alternatif ringkas, kita pindahkan semua yang di-klik ke ruang sebelah).
+    document.getElementById('cv-available-fields-list').addEventListener('click', (e) => {
+        const item = e.target.closest('.form-field-item');
+        if (item) document.getElementById('cv-form-layout-panel').appendChild(item);
+    });
+
+    document.getElementById('cv-form-layout-panel').addEventListener('click', (e) => {
+        // Logik buang (delete butang)
+        if (e.target.closest('.delete-form-field-btn')) {
+            const item = e.target.closest('.form-field-item');
+            if (item) document.getElementById('cv-available-fields-list').appendChild(item);
+        }
+    });
+
+    // --- LOGIK PENYIMPANAN KE BACKEND ---
+    const newSaveBtn = btnSave.cloneNode(true); // Ganti butang untuk elak duplicate listener
+    btnSave.parentNode.replaceChild(newSaveBtn, btnSave);
+
+    newSaveBtn.addEventListener('click', async () => {
         const tableNameElement = document.querySelector('#table-settings-page .table-name');
         const currentTableName = tableNameElement ? tableNameElement.textContent.trim() : null;
         const tableData = appState.jsonData.database.table[currentTableName];
-        
         if (!tableData) return;
 
-        // 3. Ambil Data Child Tables (FASA 1)
-        const selectedRelations = [];
-        const checkboxes = document.querySelectorAll('#cv-child-tables-container input[type="checkbox"]:checked');
-        checkboxes.forEach(cb => selectedRelations.push(cb.value));
+        // Kumpul Fields dari Form Layout
+        const selectedFields = [];
+        const layoutItems = document.querySelectorAll('#cv-form-layout-panel .form-field-item');
+        layoutItems.forEach((item, index) => {
+            const labelInput = item.querySelector('.field-label-override-input');
+            const readOnlyCheck = item.querySelector('.is-readonly-checkbox');
+            
+            selectedFields.push({
+                sourceName: item.dataset.sourceName,
+                label: labelInput ? labelInput.value.trim() : '',     // Akan ditukar ke JSON settings_override di backend
+                isReadonly: readOnlyCheck ? readOnlyCheck.checked : false,
+                displayOrder: index
+            });
+        });
 
-        // 4. Bina Payload
+        // Bina Payload Akhir
         const payload = {
-            table_id: tableData.table_id, // Menggunakan ID mengikut skema
-            view_name: viewNameInput.value.trim(),
-            // menu_icon: 'fa-eye', // Boleh tambah input ikon nanti
-            
-            // FASA 1: Child Tables
-            included_relations: JSON.stringify(selectedRelations),
-            
-            // SCHEMA: Owner Settings
-            owner_only: ownerOnlyCheck && ownerOnlyCheck.checked ? 1 : 0,
-            owner_field: ownerFieldSelect ? ownerFieldSelect.value : null
+            table_id: tableData.table_id,
+            module_name: document.getElementById('cv-view-name').value.trim(),
+            menu_icon: document.getElementById('cv-menu-icon').value.trim(),
+            owner_only: document.getElementById('cv-owner-only-checkbox').checked ? 1 : 0,
+            owner_field: document.getElementById('cv-owner-field-select').value,
+            fields: selectedFields
+            // Anda boleh tambah filter_rules & included_relations di sini kemudian
         };
 
         const editingId = newSaveBtn.getAttribute('data-editing-id');
+        if (editingId) payload.module_id = editingId; // Berikan ID untuk update
 
-        // 5. Simpan Data
-        if (editingId) {
-            // Update Existing
-            SaveManager.addToQueue('custom_view', editingId, payload);
-        } else {
-            // Create New (Pastikan API anda menyokong createCustomView)
-            const result = await window.electronAPI.createCustomView(payload);
-            if (result && result.success) {
-                // Refresh Tab
-                if (typeof populateCustomViewsTab === 'function') {
-                    populateCustomViewsTab(currentTableName);
-                }
+        // Hantar ke Backend
+        try {
+            // Memanggil Backend IPC secara terus untuk kestabilan modul kompleks ini
+            // Pastikan preload.js anda mempunyai api: saveCustomModule
+            let result;
+            if (window.electronAPI.saveCustomModule) {
+                result = await window.electronAPI.saveCustomModule(payload);
+            } else {
+                // Fallback kepada invoke lama jika tiada
+                result = await window.electronAPI.createCustomView(payload); 
             }
+
+            if (result && result.success) {
+                showCustomDialog({ title: "Success", message: "Custom Module saved successfully!" });
+                closeMyModal();
+                // Reload data dan refresh tab (jika ada fungsi refresh)
+                if (typeof window.populateCustomViewsTab === 'function') {
+                    // Update state secara manual atau fetch data semula dari DB
+                    // (Bergantung pada cara aplikasi anda memuat semula data)
+                }
+            } else {
+                showCustomDialog({ title: "Error", message: result.message || "Failed to save Module." });
+            }
+        } catch (error) {
+            console.error("Save Error:", error);
         }
-        
-        closeModal();
     });
 }
 
@@ -722,7 +746,7 @@ export async function deleteCustomView(viewId) {
         message: "Are you sure you want to delete this custom view? This action cannot be undone.",
         showCancelButton: true,
         onOk: async () => {
-            console.group("🔍 DEBUG: Delete Custom View (Local Update Strategy)");
+            console.group("🔍 DEBUG: Delete Custom Module (Local Update Strategy)");
             try {
                 // 1. Dapatkan nama jadual DARI DOM (sebelum apa-apa berlaku)
                 const tableNameElement = document.querySelector('#table-settings-page .table-name');
@@ -740,17 +764,17 @@ export async function deleteCustomView(viewId) {
                     console.log("✅ Delete Berjaya di Backend.");
 
                     // 3. KEMAS KINI STATE TEMPATAN (Tanpa Refresh App!)
-                    // Kita cari array custom_views dalam appState dan buang item yang ID-nya sama
-                    if (appState.jsonData.database.table[tableName]?.custom_views) {
-                        const currentViews = appState.jsonData.database.table[tableName].custom_views;
+                    // Kita cari array custom_modules dalam appState dan buang item yang ID-nya sama
+                    if (appState.jsonData.database.table[tableName]?.custom_modules) {
+                        const currentViews = appState.jsonData.database.table[tableName].custom_modules;
                         
                         // Tapis keluar view yang hendak dipadam
-                        appState.jsonData.database.table[tableName].custom_views = currentViews.filter(v => v.custom_view_id !== viewId);
+                        appState.jsonData.database.table[tableName].custom_modules = currentViews.filter(v => v.module_id !== viewId);
                         
                         console.log("✅ AppState dikemaskini secara manual (Item dibuang dari array).");
                     }
 
-                    // 4. Render Semula Tab Custom View Sahaja
+                    // 4. Render Semula Tab Custom Module Sahaja
                     // (Kerana fungsi ini berada dalam fail yang sama, kita boleh panggil terus)
                     populateCustomViewsTab(tableName);
                     

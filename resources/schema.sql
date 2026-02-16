@@ -277,32 +277,35 @@ CREATE TABLE menu_items (
 	FOREIGN KEY (custom_view_id) REFERENCES custom_views(custom_view_id) ON DELETE CASCADE
 );
 
--- ADD THESE TWO NEW TABLES AT THE END OF schema.sql
-
--- 8. Jadual untuk menyimpan konfigurasi Custom View
-CREATE TABLE custom_views (
-    custom_view_id      INTEGER PRIMARY KEY AUTOINCREMENT,
-    table_id            INTEGER NOT NULL,
-    view_name           TEXT NOT NULL,
-    menu_icon           TEXT,
-    filter_rules        TEXT, -- Akan menyimpan konfigurasi penapis dalam format JSON
-    included_relations  TEXT,
-    owner_only          INTEGER DEFAULT 0, -- TAMBAH BARIS INI
-    owner_field         TEXT,              -- TAMBAH BARIS INI
-    view_order          INTEGER,
+-- 8. Jadual untuk menyimpan konfigurasi Custom Module
+CREATE TABLE custom_modules (
+    module_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    table_id INTEGER NOT NULL,            -- Merujuk kepada jadual fizikal asal
+    module_name TEXT NOT NULL,            -- Nama unik untuk modul ini (cth: 'Pengurusan Staf Aktif')
+    module_order INTEGER DEFAULT 0,
+    menu_icon TEXT,
+    filter_rules TEXT,                    -- Logik tapisan data (jika ada)
+    included_relations TEXT,              -- Hubungan yang dibawa bersama
+    settings_override TEXT,               -- BARU: JSON string untuk menimpa tetapan jadual asal
+	owner_only	INTEGER DEFAULT 0,
+	owner_field	TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
     FOREIGN KEY (table_id) REFERENCES tables(table_id) ON DELETE CASCADE
 );
 
--- 9. Jadual untuk menyimpan medan-medan yang dipaparkan dalam borang Custom View
-CREATE TABLE custom_view_fields (
-    custom_view_field_id    INTEGER PRIMARY KEY AUTOINCREMENT,
-    custom_view_id          INTEGER NOT NULL,
-    field_source_table      TEXT NOT NULL, -- cth: 'pelajar', 'kursus'
-    field_source_name       TEXT NOT NULL, -- cth: 'nama_penuh', 'kod_kursus'
-    field_label             TEXT,
-    is_readonly             INTEGER NOT NULL DEFAULT 0,
-    display_order           INTEGER,
-    FOREIGN KEY (custom_view_id) REFERENCES custom_views(custom_view_id) ON DELETE CASCADE
+-- 9. Jadual untuk menyimpan medan-medan yang dipaparkan dalam borang Custom Module
+CREATE TABLE custom_module_fields (
+    module_field_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    module_id INTEGER NOT NULL,
+    field_id INTEGER NOT NULL,            -- Merujuk kepada medan fizikal asal
+    is_readonly INTEGER DEFAULT 0,        -- Kekal untuk keserasian, atau boleh dipindahkan ke settings_override
+    settings_override TEXT,               -- BARU: JSON string untuk menimpa tetapan medan asal (cth: caption, required)
+    display_order	INTEGER DEFAULT 0,
+    FOREIGN KEY (module_id) REFERENCES custom_modules(module_id) ON DELETE CASCADE,
+    FOREIGN KEY (field_id) REFERENCES fields(field_id) ON DELETE CASCADE
 );
 
 -- 10. Jadual untuk menyimpan definisi kekangan peringkat jadual

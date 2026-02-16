@@ -13,7 +13,7 @@ const {
 
 /**
  * [HELPER] Menjana satu fail Resource.
- * Logik dibahagikan kepada dua: Standard (Asal) dan Custom View.
+ * Logik dibahagikan kepada dua: Standard (Asal) dan Custom Module.
  */
 async function generateSingleResource(tableName, tableData, fullSchema, basePath, templateContent, options = {}) {
     const { project: projectSettings, database: { relationships, unified_menu, table: allTables } } = fullSchema; 
@@ -32,14 +32,14 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
     // Nama Folder Resource Standard (Plural)
     const modelNamePlural = toPluralPascalCase(nameSource);
     
-    const isCustomView = options.isCustomView || false;
+    const isCustomModule = options.isCustomModule || false;
 
     // ========================================================================
     // 2. TENTUKAN NAMA FAIL & KELAS RESOURCE
     // ========================================================================
     let resourceClassName, resourceFileName, outputFolder;
 
-    if (isCustomView) {
+    if (isCustomModule) {
         resourceClassName = options.resourceClassName;
         resourceFileName = options.resourceFileName; 
         outputFolder = options.resourceFileName;     
@@ -57,7 +57,7 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
     
     resourceContent = resourceContent.replace(/<<MODEL_NAME>>/g, modelName);
     
-    const namespaceFolder = isCustomView ? outputFolder : modelNamePlural;
+    const namespaceFolder = isCustomModule ? outputFolder : modelNamePlural;
     resourceContent = resourceContent.replace(/<<MODEL_NAME_PLURAL>>/g, namespaceFolder);
 
     // --- LOGIK: CHILDREN COUNT ---
@@ -80,14 +80,14 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         return parent::getEloquentQuery()->withCount([${childPluralCamelNames}]);
     }`;
         
-        if (!isCustomView) {
+        if (!isCustomModule) {
             resourceContent = resourceContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', withCountFunction);
         } else {
              resourceContent = resourceContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', '<<CUSTOM_QUERY_PLACEHOLDER>>'); 
         }
     } else {
         resourceContent = resourceContent.replace('<<IMPORT_SHOW_COUNT_IN_TV>>', '');
-        if (!isCustomView) resourceContent = resourceContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', '');
+        if (!isCustomModule) resourceContent = resourceContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', '');
         else resourceContent = resourceContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', '<<CUSTOM_QUERY_PLACEHOLDER>>');
     }
 
@@ -131,7 +131,7 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
     // --- LOGIK: RELATION MANAGERS (STANDARD) ---
     let childrenForRelationManager = [];
     
-    if (isCustomView) {
+    if (isCustomModule) {
         let allowedRelations = [];
         if (options.includedRelations) {
             try { allowedRelations = JSON.parse(options.includedRelations); } catch (e) { allowedRelations = []; }
@@ -170,7 +170,7 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
     }
 
     // --- LOGIK: MENU ---
-    if (!isCustomView) {
+    if (!isCustomModule) {
         let menuItem = null;
         let menuGroup = null;
         for (const topLevelItem of unified_menu) {
@@ -218,7 +218,7 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
     // 4. PENGUBAHSUAIAN KHAS UNTUK CUSTOM VIEW
     // ========================================================================
     
-    if (isCustomView) {
+    if (isCustomModule) {
         // 1. Override Class Name
         resourceContent = resourceContent.replace(`class ${modelName}Resource`, `class ${resourceClassName}`);
 
@@ -242,8 +242,8 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         resourceContent = resourceContent.replace(new RegExp(`\\b${standardCreatePage}\\b`, 'g'), customCreatePage);
         resourceContent = resourceContent.replace(new RegExp(`\\b${standardEditPage}\\b`, 'g'), customEditPage);
 
-        // 4. Inject Slug
-        const slug = toFlatCase(options.viewName || resourceFileName);
+// 4. Inject Slug
+        const slug = toFlatCase(options.customModuleName || resourceFileName);
         resourceContent = resourceContent.replace('{', `{\n    protected static ?string $slug = '${slug}';`);
 
         // 5. Inject Menu Custom (FIXED LOGIC NAVIGATION)
@@ -257,18 +257,17 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         resourceContent = resourceContent.replace('<<SHORTCUT_MENU_ORDER>>', '');
 
         // --- NAVIGATION GROUP FUNCTION ---
-        // Anda boleh ubah 'Custom Views' kepada nama group yang dikehendaki atau ambil dari options jika ada
         const customNavGroup = `
     public static function getNavigationGroup(): string
     {
-        return '${options.viewName}'; // Default guna view name atau group lain
+        return '${options.customModuleName}'; // Group berdasarkan Nama Module
     }`;
 
         // --- NAVIGATION SORT FUNCTION ---
         const customNavSort = `
     public static function getNavigationSort(): int
     {
-        return ${options.viewOrder || 0};
+        return ${options.customModuleOrder || 0};
     }`;
 
         // Masukkan kod navigation baru SELEPAS class declaration
@@ -292,8 +291,15 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         // Template mungkin ada: protected static ?string $navigationLabel = '<<MENU_NAME>>';
         resourceContent = resourceContent.replace(/protected static \?string \$navigationLabel = '.*?';/, '');
 
-        // 6. Inject Filter Query
+// 6. Inject Filter Query & Owner Logic
         let queryBody = 'parent::getEloquentQuery()';
+        
+        // Logik Tapisan Pemilik (Owner Only)
+        if (options.ownerOnly === 1 && options.ownerField) {
+            queryBody += `->where('${options.ownerField}', auth()->id())`;
+        }
+
+        // Logik Tapisan Dinamik Tambahan
         if (options.filterRules) {
             try {
                 const rules = JSON.parse(options.filterRules);
@@ -301,6 +307,7 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
                 if (whereClause) queryBody += whereClause;
             } catch (e) {}
         }
+        
         const queryFunction = `\n    public static function getEloquentQuery(): Builder\n    {\n        return ${queryBody};\n    }`;
         resourceContent = resourceContent.replace('<<CUSTOM_QUERY_PLACEHOLDER>>', queryFunction);
 
@@ -335,7 +342,7 @@ async function generateFilamentResources(fullSchema, basePath) {
         for (const tableName in tables) {
             if (tableName === 'users') continue;
             // Panggil helper dengan mode STANDARD
-            await generateSingleResource(tableName, tables[tableName], fullSchema, basePath, templateContent, { isCustomView: false });
+            await generateSingleResource(tableName, tables[tableName], fullSchema, basePath, templateContent, { isCustomModule: false });
         }
         return { success: true, message: 'Filament Resources generated successfully.' };
     } catch (error) {
@@ -343,9 +350,7 @@ async function generateFilamentResources(fullSchema, basePath) {
     }
 }
 
-// Cari function ini di bahagian bawah fail dan gantikan dengan kod ini:
-
-async function generateFilamentResourcesCustomViews(fullSchema, basePath) {
+async function generateFilamentResourcesCustomModules(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;
         const templateContent = readTemplate('app/Filament/Resources/Resource.template');
@@ -353,34 +358,39 @@ async function generateFilamentResourcesCustomViews(fullSchema, basePath) {
 
         for (const tableName in tables) {
             const tableData = tables[tableName];
-            if (tableData.custom_views && tableData.custom_views.length > 0) {
-                for (const view of tableData.custom_views) {
+            if (tableData.custom_modules && tableData.custom_modules.length > 0) {
+                // Tukar pembolehubah 'view' kepada 'moduleObj'
+                for (const moduleObj of tableData.custom_modules) {
                     
-                    const viewNameClean = view.view_name.replace(/[^a-zA-Z0-9]/g, '');
+                    // Guna module_name bukan view_name
+                    const moduleNameClean = moduleObj.module_name.replace(/[^a-zA-Z0-9]/g, '');
                     
-                    // FOLDER: Plural (PendingRegistrations)
-                    const viewSafeNamePlural = toPluralPascalCase(viewNameClean);
+                    // FOLDER: Plural
+                    const moduleSafeNamePlural = toPluralPascalCase(moduleNameClean);
                     
-                    // FAIL: Singular (PendingRegistrationResource)
-                    const viewSafeNameSingular = toSingularPascalCase(viewNameClean);
-                    const customResourceClassName = `${viewSafeNameSingular}Resource`;
+                    // FAIL: Singular
+                    const moduleSafeNameSingular = toSingularPascalCase(moduleNameClean);
+                    const customResourceClassName = `${moduleSafeNameSingular}Resource`;
 
                     await generateSingleResource(tableName, tableData, fullSchema, basePath, templateContent, {
-                        isCustomView: true,
-                        resourceClassName: customResourceClassName, // Nama Class/Fail Singular
-                        resourceFileName: viewSafeNamePlural,       // Nama Folder Plural (Helper guna variable ini untuk folder)
-                        singularFileName: viewSafeNameSingular, 
-                        viewName: view.view_name,
-                        viewOrder: view.view_order,
-                        menuIcon: view.menu_icon,
-                        filterRules: view.filter_rules,
-                        includedRelations: view.included_relations
+                        isCustomModule: true,
+                        resourceClassName: customResourceClassName, 
+                        resourceFileName: moduleSafeNamePlural,       
+                        singularFileName: moduleSafeNameSingular, 
+                        customModuleName: moduleObj.module_name,    
+                        customModuleOrder: moduleObj.module_order,  
+                        menuIcon: moduleObj.menu_icon,
+                        filterRules: moduleObj.filter_rules,
+                        includedRelations: moduleObj.included_relations,
+                        // ▼▼▼ TAMBAHAN BAHARU ▼▼▼
+                        ownerOnly: moduleObj.owner_only,
+                        ownerField: moduleObj.owner_field
                     });
                     count++;
                 }
             }
         }
-        return { success: true, message: `${count} Custom View Resources generated.` };
+        return { success: true, message: `${count} Custom Module Resources generated.` };
     } catch (error) {
         return { success: false, message: error.message };
     }
@@ -388,6 +398,6 @@ async function generateFilamentResourcesCustomViews(fullSchema, basePath) {
 
 module.exports = {
     generateFilamentResources,
-    generateFilamentResourcesCustomViews,
+    generateFilamentResourcesCustomModules,
     generateSingleResource
 };

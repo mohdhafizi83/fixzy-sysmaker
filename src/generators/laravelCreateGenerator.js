@@ -4,7 +4,7 @@ const { toSingularPascalCase, toPluralPascalCase, readTemplate } = require('../u
 
 /**
  * [HELPER] Menjana satu fail Create Page.
- * Digunakan oleh Generator Standard dan Custom View.
+ * Digunakan oleh Generator Standard dan Custom Module.
  */
 async function generateSingleCreatePage(tableName, tableData, fullSchema, basePath, templateContent, options = {}) {
     const { database: { relationships } } = fullSchema;
@@ -20,7 +20,7 @@ async function generateSingleCreatePage(tableName, tableData, fullSchema, basePa
     const resourceFolder = options.resourceFolder || standardFolder;
 
     // --- LOGIC NAMING FIX ---
-    // Custom View: CreatePendingRegistrations.php
+    // Custom Module: CreatePendingRegistrations.php
     let pageClassName = `Create${modelNameSingular}`;
     if (options.customPageName) {
         pageClassName = `Create${options.customPageName}`;
@@ -37,7 +37,7 @@ async function generateSingleCreatePage(tableName, tableData, fullSchema, basePa
     
     createContent = createContent.replace(/<<TABLE_NAME_PLURAL>>/g, resourceFolder); 
 
-    // Fix Class Name untuk Custom View
+    // Fix Class Name untuk Custom Module
     if (options.customPageName) {
         const oldClassDef = `class Create${modelNameSingular}`;
         const newClassDef = `class ${pageClassName}`;
@@ -100,7 +100,7 @@ async function generateFilamentCreatePages(fullSchema, basePath) {
     }
 }
 
-async function generateFilamentCreateCustomViews(fullSchema, basePath) {
+async function generateFilamentCreateCustomModules(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;
         const templateContent = readTemplate('app/Filament/Resources/PagesCreate.template');
@@ -108,15 +108,15 @@ async function generateFilamentCreateCustomViews(fullSchema, basePath) {
 
         for (const tableName in tables) {
             const tableData = tables[tableName];
-            if (tableData.custom_views && tableData.custom_views.length > 0) {
+            if (tableData.custom_modules && tableData.custom_modules.length > 0) {
                 
                 const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
                                     ? tableData.module_name 
                                     : tableName;
                 const standardModelName = toSingularPascalCase(nameSource);
 
-                for (const view of tableData.custom_views) {
-                    const viewNameClean = view.view_name.replace(/[^a-zA-Z0-9]/g, '');
+                for (const view of tableData.custom_modules) {
+                    const viewNameClean = view.module_name.replace(/[^a-zA-Z0-9]/g, '');
 
                     // FOLDER: Plural
                     const viewSafeNamePlural = toPluralPascalCase(viewNameClean);
@@ -132,7 +132,7 @@ async function generateFilamentCreateCustomViews(fullSchema, basePath) {
                 }
             }
         }
-        return { success: true, message: `${count} Custom View Create Pages generated.` };
+        return { success: true, message: `${count} Custom Module Create Pages generated.` };
     } catch (error) {
         return { success: false, message: error.message };
     }
@@ -140,6 +140,6 @@ async function generateFilamentCreateCustomViews(fullSchema, basePath) {
 
 module.exports = {
     generateFilamentCreatePages,
-    generateFilamentCreateCustomViews,
+    generateFilamentCreateCustomModules,
     generateSingleCreatePage
 };

@@ -20,7 +20,7 @@ export function populateMenuManagement(unifiedMenu) {
         groupEl.dataset.groupId = group.id;
 
         const itemsHtml = group.items.map(item => {
-            const itemType = item.table_id ? 'table_item' : (item.custom_view_id ? 'custom_view_item' : 'custom_item');
+            const itemType = item.table_id ? 'table_item' : (item.module_id ? 'custom_view_item' : 'custom_item');
             const icon = itemType === 'table_item' ? 'fa-table' : (itemType === 'custom_view_item' ? 'fa-eye' : 'fa-link');
             const tableNameAttribute = itemType === 'table_item' ? `data-table-name="${item.table_name}"` : '';
 
@@ -135,7 +135,7 @@ function openCustomMenuModal(itemEl = null) {
             <div class="radio-group-horizontal" style="margin-top: 0.5rem;">
                 <label class="checkbox-label"><input type="radio" name="menu-item-type" value="custom" checked> Custom Menu</label>
                 <label class="checkbox-label"><input type="radio" name="menu-item-type" value="table"> Table Menu</label>
-                <label class="checkbox-label"><input type="radio" name="menu-item-type" value="custom_view"> Custom View Menu</label>
+                <label class="checkbox-label"><input type="radio" name="menu-item-type" value="custom_view"> Custom Module Menu</label>
             </div>
         </div>
         <div id="custom-menu-fields-container">
@@ -146,9 +146,9 @@ function openCustomMenuModal(itemEl = null) {
             <div class="form-group"><label for="table-menu-label-input">Menu Label</label><input type="text" id="table-menu-label-input" placeholder="Enter menu label"></div>
             <div class="form-group"><label>Available Tables</label><ul id="modal-available-tables-list" class="item-list" style="max-height: 150px; overflow-y: auto; margin-top: 0.5rem;"></ul></div>
         </div>
-        <div id="custom-view-menu-fields-container" class="hidden">
+        <div id="custom-module-menu-fields-container" class="hidden">
             <div class="form-group"><label for="cv-menu-label-input">Menu Label</label><input type="text" id="cv-menu-label-input" placeholder="Enter menu label"></div>
-            <div class="form-group"><label>Available Custom Views</label><ul id="modal-available-cv-list" class="item-list" style="max-height: 150px; overflow-y: auto; margin-top: 0.5rem;"></ul></div>
+            <div class="form-group"><label>Available Custom Modules</label><ul id="modal-available-cv-list" class="item-list" style="max-height: 150px; overflow-y: auto; margin-top: 0.5rem;"></ul></div>
         </div>
         <div class="form-group shared-menu-options"><label class="checkbox-label"><input type="checkbox" id="menu-show-record-count"> Show record count in homepage</label></div>
         <div class="form-group"><label for="custom-menu-group-select">Parent Group</label><select id="custom-menu-group-select"></select></div>
@@ -164,7 +164,7 @@ function openCustomMenuModal(itemEl = null) {
         customFieldsContainer: modal.querySelector('#custom-menu-fields-container'), labelInput: modal.querySelector('#custom-menu-label-input'),
         urlInput: modal.querySelector('#custom-menu-url-input'), tableFieldsContainer: modal.querySelector('#table-menu-fields-container'),
         tableLabelInput: modal.querySelector('#table-menu-label-input'), tableListUl: modal.querySelector('#modal-available-tables-list'),
-        cvFieldsContainer: modal.querySelector('#custom-view-menu-fields-container'), cvLabelInput: modal.querySelector('#cv-menu-label-input'),
+        cvFieldsContainer: modal.querySelector('#custom-module-menu-fields-container'), cvLabelInput: modal.querySelector('#cv-menu-label-input'),
         cvListUl: modal.querySelector('#modal-available-cv-list'),
     };
 
@@ -190,7 +190,7 @@ function openCustomMenuModal(itemEl = null) {
             const items = item.type === 'group' ? item.items : [item];
             items.forEach(i => {
                 if (i.table_id) ids.tableIds.add(i.table_id);
-                if (i.custom_view_id) ids.cvIds.add(i.custom_view_id);
+                if (i.module_id) ids.cvIds.add(i.module_id);
             });
         });
         return ids;
@@ -202,17 +202,17 @@ function openCustomMenuModal(itemEl = null) {
 
     const availableCustomViews = [];
     Object.values(appState.jsonData.database.table).forEach(table => {
-        (table.custom_views || []).forEach(view => {
-            if (!usedCvIds.has(view.custom_view_id)) {
+        (table.custom_modules || []).forEach(view => {
+            if (!usedCvIds.has(view.module_id)) {
                 availableCustomViews.push({ ...view, table_name: table.table_name });
             }
         });
     });
-    elements.cvListUl.innerHTML = availableCustomViews.length > 0 ? availableCustomViews.map(v => `<li data-cv-id="${v.custom_view_id}">${v.table_name} - ${v.view_name}</li>`).join('') : '<li>No unassigned Custom Views available.</li>';
+    elements.cvListUl.innerHTML = availableCustomViews.length > 0 ? availableCustomViews.map(v => `<li data-cv-id="${v.module_id}">${v.table_name} - ${v.module_name}</li>`).join('') : '<li>No unassigned Custom Modules available.</li>';
     
     const allCustomViews = [];
     Object.values(appState.jsonData.database.table).forEach(table => {
-        (table.custom_views || []).forEach(view => {
+        (table.custom_modules || []).forEach(view => {
             allCustomViews.push({ ...view, table_name: table.table_name });
         });
     });
@@ -245,19 +245,19 @@ function openCustomMenuModal(itemEl = null) {
             // ▼▼▼ BLOK DEBUGGING DITAMBAH DI SINI ▼▼▼
             console.log("--- DEBUGGING CUSTOM VIEW EDIT ---");
             console.log("1. Data Item Menu (dari appState.jsonData):", itemData);
-            console.log("2. ID yang dicari:", itemData?.custom_view_id, "(Jenis:", typeof itemData?.custom_view_id, ")");
+            console.log("2. ID yang dicari:", itemData?.module_id, "(Jenis:", typeof itemData?.module_id, ")");
             console.log("3. Mencari di dalam senarai ini (allCustomViews):", allCustomViews);
             
             const cvData = allCustomViews.find(v => {
-                console.log(`- Membandingkan: Menu Item CV ID ${itemData?.custom_view_id} (jenis: ${typeof itemData?.custom_view_id}) dengan View ID ${v.custom_view_id} (jenis: ${typeof v.custom_view_id})`);
-                return v.custom_view_id == itemData?.custom_view_id;
-            }) || { table_name: 'Unknown', view_name: 'View' };
+                console.log(`- Membandingkan: Menu Item CV ID ${itemData?.module_id} (jenis: ${typeof itemData?.module_id}) dengan View ID ${v.module_id} (jenis: ${typeof v.module_id})`);
+                return v.module_id == itemData?.module_id;
+            }) || { table_name: 'Unknown', module_name: 'View' };
             
             console.log("4. Hasil carian (cvData):", cvData);
             console.log("--- TAMAT DEBUGGING ---");
             // ▲▲▲ TAMAT BLOK DEBUGGING ▲▲▲
             
-            elements.cvListUl.innerHTML = `<li class="active" data-cv-id="${cvData.custom_view_id}">${cvData.table_name} - ${cvData.view_name}</li>`;
+            elements.cvListUl.innerHTML = `<li class="active" data-cv-id="${cvData.module_id}">${cvData.table_name} - ${cvData.module_name}</li>`;
             elements.cvListUl.style.pointerEvents = 'none';
         } else {
             elements.labelInput.value = itemEl.dataset.label;
@@ -311,7 +311,7 @@ function openCustomMenuModal(itemEl = null) {
             if (!tableNameForSave) { showCustomDialog({ title: "Input Required", message: "Please select a table." }); return; }
             const tableData = appState.jsonData.database.table[tableNameForSave];
             if (!tableData) { showCustomDialog({ title: "Error", message: "Table data not found." }); return; }
-            dataToSave = { ...dataToSave, label: tableLabel, url: `${tableNameForSave} Resource`, table_id: tableData.table_id, custom_view_id: null, show_record_count: elements.recordCountCheckbox.checked };
+            dataToSave = { ...dataToSave, label: tableLabel, url: `${tableNameForSave} Resource`, table_id: tableData.table_id, module_id: null, show_record_count: elements.recordCountCheckbox.checked };
         
         } else if (selectedType === 'custom_view') {
             const cvLabel = elements.cvLabelInput.value.trim();
@@ -324,19 +324,19 @@ function openCustomMenuModal(itemEl = null) {
             const cvIdForSave = activeLi ? activeLi.dataset.cvId : null;
 
             if (!cvIdForSave) {
-                showCustomDialog({ title: "Input Required", message: "Please select a Custom View." });
+                showCustomDialog({ title: "Input Required", message: "Please select a Custom Module." });
                 return;
             }
             // ▲▲▲ TAMAT BLOK PEMBAIKAN ▲▲▲
 
-            const cvData = allCustomViews.find(v => v.custom_view_id == cvIdForSave);
-            if (!cvData) { showCustomDialog({ title: "Error", message: "Custom View data not found." }); return; }
-            dataToSave = { ...dataToSave, label: cvLabel, url: `${cvData.table_name} - ${cvData.view_name}`, table_id: null, custom_view_id: cvIdForSave, show_record_count: elements.recordCountCheckbox.checked };
+            const cvData = allCustomViews.find(v => v.module_id == cvIdForSave);
+            if (!cvData) { showCustomDialog({ title: "Error", message: "Custom Module data not found." }); return; }
+            dataToSave = { ...dataToSave, label: cvLabel, url: `${cvData.table_name} - ${cvData.module_name}`, table_id: null, module_id: cvIdForSave, show_record_count: elements.recordCountCheckbox.checked };
             
         } else { // custom
             const customLabel = elements.labelInput.value.trim();
             if (!customLabel) { showCustomDialog({ title: "Input Required", message: "Menu Label is required." }); return; }
-            dataToSave = { ...dataToSave, label: customLabel, url: elements.urlInput.value.trim(), table_id: null, custom_view_id: null, show_record_count: false };
+            dataToSave = { ...dataToSave, label: customLabel, url: elements.urlInput.value.trim(), table_id: null, module_id: null, show_record_count: false };
         }
 
         const result = await window.electronAPI.saveCustomMenuItem(dataToSave);

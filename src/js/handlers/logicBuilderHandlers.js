@@ -2299,16 +2299,16 @@ export function openQueryHelperModal(options) {
 }
 
 /**
- * Membuka dan menguruskan modal konfigurasi Custom View (untuk tambah/edit).
+ * Membuka dan menguruskan modal konfigurasi Custom Module (untuk tambah/edit).
  * @param {string} tableName - Nama jadual semasa.
  * @param {object|null} viewData - Data untuk view sedia ada jika dalam mod edit.
  */
 // src/js/handlers/logicBuilderHandlers.js
 
 export function openCustomViewModal(tableName, viewData = null) {
-    const modal = document.getElementById('custom-view-config-modal');
+    const modal = document.getElementById('custom-module-config-modal');
     if (!modal) {
-        console.error("Modal 'custom-view-config-modal' tidak ditemui.");
+        console.error("Modal 'custom-module-config-modal' tidak ditemui.");
         return;
     }
 
@@ -2346,9 +2346,9 @@ export function openCustomViewModal(tableName, viewData = null) {
 
     // 2. Setup Data Awal & Reset UI
     const isEditing = viewData !== null;
-    elements.title.textContent = isEditing ? `Edit Custom View: ${viewData.view_name}` : `Create New Custom View for '${tableName}'`;
-    elements.viewIdInput.value = isEditing ? viewData.custom_view_id : '';
-    elements.viewNameInput.value = isEditing ? viewData.view_name : '';
+    elements.title.textContent = isEditing ? `Edit Custom Module: ${viewData.module_name}` : `Create New Custom Module for '${tableName}'`;
+    elements.viewIdInput.value = isEditing ? viewData.module_id : '';
+    elements.viewNameInput.value = isEditing ? viewData.module_name : '';
     elements.menuIconInput.value = isEditing ? viewData.menu_icon || 'fas fa-table' : 'fas fa-table';
     
     elements.viewNameInput.classList.remove('is-invalid');
@@ -2669,9 +2669,9 @@ if (elements.layoutPanel) {
             }
 
             const payload = {
-                custom_view_id: isEditing ? viewData.custom_view_id : null,
+                module_id: isEditing ? viewData.module_id : null,
                 table_id: tableId,
-                view_name: viewName,
+                module_name: viewName,
                 menu_icon: elements.menuIconInput.value,
                 owner_only: elements.ownerOnlyCheckbox && elements.ownerOnlyCheckbox.checked ? 1 : 0,
                 owner_field: elements.ownerFieldSelect ? elements.ownerFieldSelect.value : null,
@@ -2689,15 +2689,15 @@ if (elements.layoutPanel) {
             if (result && result.success) {
                 console.log("✅ Save Berjaya");
                 
-                if (!appState.jsonData.database.table[tableName].custom_views) {
-                    appState.jsonData.database.table[tableName].custom_views = [];
+                if (!appState.jsonData.database.table[tableName].custom_modules) {
+                    appState.jsonData.database.table[tableName].custom_modules = [];
                 }
 
                 if (isEditing) {
-                    const index = appState.jsonData.database.table[tableName].custom_views.findIndex(v => v.custom_view_id === viewData.custom_view_id);
-                    if (index !== -1) appState.jsonData.database.table[tableName].custom_views[index] = result.view; 
+                    const index = appState.jsonData.database.table[tableName].custom_modules.findIndex(v => v.module_id === viewData.module_id);
+                    if (index !== -1) appState.jsonData.database.table[tableName].custom_modules[index] = result.view; 
                 } else {
-                    appState.jsonData.database.table[tableName].custom_views.push(result.view);
+                    appState.jsonData.database.table[tableName].custom_modules.push(result.view);
                 }
 
                 elements.saveBtn.innerHTML = 'Save View';
@@ -3118,17 +3118,17 @@ function moveFields(sourceSelector, destinationSelector) {
 // src/js/handlers/logicBuilderHandlers.js
 
 function addRuleOrGroup(button, type) {
-    // Cari container bapa terdekat. Kita tambah '#cv-filter-builder-container' untuk support Custom View.
+    // Cari container bapa terdekat. Kita tambah '#cv-filter-builder-container' untuk support Custom Module.
     const parentContainer = button.closest('.cqb-rule-group, #cqb-container, #cv-filter-builder-container');
     
     if (!parentContainer) return; 
 
     // Cari kawasan di mana rule baru patut dimasukkan
-    // Untuk Custom View, ia mungkin direct di bawah container atau dalam nested rules
+    // Untuk Custom Module, ia mungkin direct di bawah container atau dalam nested rules
     const targetContainer = parentContainer.querySelector('.qb-nested-rules, #cqb-rules-container') || parentContainer.querySelector('.qb-nested-rules') || parentContainer;
 
     // Cari modal terdekat untuk dapatkan Table Name
-    const modal = button.closest('#configurable-query-builder-modal, #custom-view-config-modal');
+    const modal = button.closest('#configurable-query-builder-modal, #custom-module-config-modal');
     if (!modal) return;
     
     const tableName = modal.dataset.tableName;

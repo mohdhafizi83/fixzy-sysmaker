@@ -984,7 +984,7 @@
     </div>
 
     <div style="flex: 1;">
-        <label for="tbl-module-name" style="display: block;">Module name</label>
+        <label for="tbl-module-name" style="display: block;">Default Module name</label>
         <input type="text" id="tbl-module-name" name="tbl-module-name" style="width: 100%;">
     </div>
 </div>
@@ -993,7 +993,7 @@
         <div class="tabs-nav">
             <button class="tab-link active" data-tab="parent-tab-table-view" id="tbl-tab-tableview" name="tbl-tab-tableview">Table List</button>
             <button class="tab-link" data-tab="parent-tab-detail-view" id="tbl-tab-detailview" name="tbl-tab-detailview">Record Form</button>
-			<button class="tab-link" data-tab="tab-custom-views" id="tbl-tab-customview" name="tbl-tab-customview">Custom Pages</button>
+			<button class="tab-link" data-tab="tab-custom-modules" id="tbl-tab-customview" name="tbl-tab-customview">Custom Modules</button>
     <button class="tab-link" data-tab="tab-constraints" id="tbl-tab-constraints" name="tbl-tab-constraints">Constraints & Indexes</button>
         </div>
 
@@ -1302,19 +1302,19 @@
             </div>
 			
 			
-        <div id="tab-custom-views" class="tab-pane">
+        <div id="tab-custom-modules" class="tab-pane">
             <div class="card">
                 <div class="card-body">
-                    <div class="custom-view-header">
-                        <h4>Custom Views for this Table</h4>
-                        <button id="btn-add-custom-view" class="btn btn-primary"><i class="fas fa-plus"></i> Add Custom View</button>
+                    <div class="custom-module-header">
+                        <h4>Custom Modules for this Table</h4>
+                        <button id="btn-add-custom-module" class="btn btn-primary"><i class="fas fa-plus"></i> Add Custom Module</button>
                     </div>
                     <p class="helper-text">
                         Create specialized pages for this table with pre-filtered data and custom forms. These views will appear as new items in the main navigation menu.
                     </p>
-                    <div id="custom-views-list-container">
+                    <div id="custom-modules-list-container">
                         <div class="empty-state-label">
-                            <p>No Custom Views created yet.</p>
+                            <p>No Custom Modules created yet.</p>
                             <span>Click the button above to create one.</span>
                         </div>
                     </div>
@@ -1325,7 +1325,7 @@
 <div id="tab-constraints" class="tab-pane">
             <div class="card">
                 <div class="card-body">
-                    <div class="custom-view-header">
+                    <div class="custom-module-header">
                         <h4>Table Constraints</h4>
                         <button id="btn-add-constraint" class="btn btn-primary"><i class="fas fa-plus"></i> Add Constraint</button>
                     </div>
@@ -3302,10 +3302,10 @@
         </div>
     </div>
 </div>
-<div id="custom-view-config-modal" class="modal-overlay hidden">
+<div id="custom-module-config-modal" class="modal-overlay hidden">
     <div class="modal-content large" style="max-width: 800px; display: flex; flex-direction: column; max-height: 90vh;">
         <div class="modal-header">
-            <h3 id="cv-modal-title">Custom View Configuration</h3>
+            <h3 id="cv-modal-title">Custom Module Configuration</h3>
             <button id="cv-modal-close" class="modal-close">&times;</button>
         </div>
         <div class="modal-body" style="overflow-y: auto; padding: 20px;">
@@ -3388,36 +3388,30 @@
 </div>
 
 <template id="cv-form-field-template">
-    <div class="form-field-item" draggable="true">
-        <div class="field-info">
-            <span class="field-label" style="font-weight: bold;"></span>
-            <small class="field-source" style="display:block; color:#666; font-size:0.8em;"></small>
+    <div class="form-field-item" draggable="true" style="display: flex; flex-direction: column; gap: 8px;">
+        <div class="field-info" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <span class="field-label" style="font-weight: bold;">Field Label</span>
+                <small class="field-source" style="display:block; color:#666; font-size:0.8em;">source.table</small>
+            </div>
+            <div class="field-item-controls">
+                <button class="btn-sidebar-icon move-up-btn" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+                <button class="btn-sidebar-icon move-down-btn" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+                <button class="btn-sidebar-icon delete-form-field-btn" title="Remove field" style="color: var(--danger-color);">&times;</button>
+            </div>
         </div>
-        <div class="field-settings">
-            <label style="font-size: 0.8em;"><input type="checkbox" class="is-readonly-checkbox"> Read-only</label>
-        </div>
-        <div class="field-actions">
-            <button class="btn-icon-small move-up-btn"><i class="fas fa-arrow-up"></i></button>
-            <button class="btn-icon-small move-down-btn"><i class="fas fa-arrow-down"></i></button>
+        
+        <div class="field-settings-override" style="background: #f8f9fa; padding: 8px; border-radius: 4px; border: 1px solid #eee; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+            <div style="flex: 1; min-width: 150px;">
+                <label style="font-size: 0.8em; display: block; margin-bottom: 2px;">Label Override (Optional):</label>
+                <input type="text" class="field-label-override-input form-control" style="font-size: 0.85em; padding: 4px 8px; height: auto;" placeholder="Custom label...">
+            </div>
+            <label class="checkbox-label" style="font-size: 0.85em; margin-top: 18px;">
+                <input type="checkbox" class="is-readonly-checkbox"> Read-only
+            </label>
         </div>
     </div>
 </template>
 
-<template id="cv-form-field-template">
-    <div class="form-field-item">
-        <div class="field-info">
-            <span class="field-label">Field Label</span>
-            <span class="field-source">source.table</span>
-        </div>
-        <label class="checkbox-label">
-            <input type="checkbox" class="is-readonly-checkbox"> Read-only
-        </label>
-        <div class="field-item-controls">
-            <button class="btn-sidebar-icon move-up-btn" title="Move Up"><i class="fas fa-arrow-up"></i></button>
-            <button class="btn-sidebar-icon move-down-btn" title="Move Down"><i class="fas fa-arrow-down"></i></button>
-            <button class="btn-sidebar-icon delete-form-field-btn" title="Remove field">&times;</button>
-        </div>
-    </div>
-</template>
 </body>
 </html>

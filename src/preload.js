@@ -46,8 +46,13 @@ updateIndividualMenuOrder: (data) => ipcRenderer.invoke('menu:update-individual-
   onShowOverlay: (callback) => ipcRenderer.on('show-overlay', (event) => callback()),
   parseCalculationQuery: (sql) => ipcRenderer.invoke('sql:parse-calculation-query', sql),
 
-  saveCustomView: (data) => ipcRenderer.invoke('custom-view:save', data),
-  deleteCustomView: (viewId) => ipcRenderer.invoke('custom-view:delete', viewId),
+// --- CUSTOM MODULE API ---
+  saveCustomModule: (data) => ipcRenderer.invoke('custom-module:save', data),
+  deleteCustomModule: (viewId) => ipcRenderer.invoke('custom-module:delete', viewId),
+  
+  // (Pilihan) Alias lama dikekalkan sementara waktu sekiranya ada fail lain belum ditukar
+  saveCustomView: (data) => ipcRenderer.invoke('custom-module:save', data),
+  deleteCustomView: (viewId) => ipcRenderer.invoke('custom-module:delete', viewId),
 
   saveTableConstraint: (data) => ipcRenderer.invoke('table:save-constraint', data),
   deleteTableConstraint: (data) => ipcRenderer.invoke('table:delete-constraint', data),

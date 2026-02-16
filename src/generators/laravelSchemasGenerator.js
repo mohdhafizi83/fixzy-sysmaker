@@ -12,7 +12,7 @@ const {
 
 /**
  * [HELPER] Menjana string schema untuk form. 
- * Mengandungi 100% logik ASAL + sokongan Custom View (readonly).
+ * Mengandungi 100% logik ASAL + sokongan Custom Module (readonly).
  */
 function generateFormSchemaString(tableData, relationships, tableName, fullSchema) {
     const formFieldsCode = [];
@@ -22,7 +22,7 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
     // LOGIK ASAL: filter visibleFields
     const visibleFields = Object.values(tableData.fields)
         .filter(field => {
-            // Logik Custom View: Jika forced readonly, sentiasa paparkan
+            // Logik Custom Module: Jika forced readonly, sentiasa paparkan
             if (field.is_forced_readonly) return true;
             // Jika tidak, ikut setting hide_in_dv
             return field.hide_in_dv !== 1;
@@ -587,7 +587,7 @@ async function generateFilamentSchemasForm(fullSchema, basePath) {
 }
 
 /**
- * [HELPER] Menjana satu fail Schema Class (untuk Custom View).
+ * [HELPER] Menjana satu fail Schema Class (untuk Custom Module).
  */
 function generateSingleSchemaClass(basePath, resourceFolder, className, tableData, fullSchema, tableName) {
     const { project: projectSettings, database: { relationships } } = fullSchema;
@@ -622,7 +622,7 @@ function generateSingleSchemaClass(basePath, resourceFolder, className, tableDat
     });
     formContent = formContent.replace('<<IMPORT_RESOURCES>>', Array.from(importResources).join('\n'));
 
-    // Grid Default untuk Custom View (Dynamic)
+    // Grid Default untuk Custom Module (Dynamic)
     const dynamicGridCode = `->columns(fn (Page $livewire) => $livewire->gridColumns ?? 2)`;
     formContent = formContent.replace('<<GRID_COLUMN_CONTROL>>', dynamicGridCode);
     
@@ -661,49 +661,81 @@ function generateSingleSchemaClass(basePath, resourceFolder, className, tableDat
 }
 
 /**
- * [BARU] Menjana Form Schema untuk SEMUA Custom Views.
+ * [BARU] Menjana Form Schema untuk SEMUA Custom Modules.
  */
-async function generateFilamentSchemasCustomViews(fullSchema, basePath) {
+/**
+ * [BARU] Menjana Form Schema untuk SEMUA Custom Modules.
+ */
+async function generateFilamentSchemasCustomModules(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;
         let count = 0;
 
         for (const tableName in tables) {
             const tableData = tables[tableName];
-            if (tableData.custom_views && tableData.custom_views.length > 0) {
-                for (const view of tableData.custom_views) {
-                    const viewNameClean = view.view_name.replace(/[^a-zA-Z0-9]/g, '');
-                    const viewSafeNamePlural = toPluralPascalCase(viewNameClean);
-                    const viewSafeNameSingular = toSingularPascalCase(viewNameClean);
-                    const schemaClassName = `${viewSafeNameSingular}Form`; 
+            if (tableData.custom_modules && tableData.custom_modules.length > 0) {
+                for (const moduleObj of tableData.custom_modules) { // Tukar 'view' kepada 'moduleObj'
+                    const moduleNameClean = moduleObj.module_name.replace(/[^a-zA-Z0-9]/g, '');
+                    const moduleSafeNamePlural = toPluralPascalCase(moduleNameClean);
+                    const moduleSafeNameSingular = toSingularPascalCase(moduleNameClean);
+                    const schemaClassName = `${moduleSafeNameSingular}Form`; 
 
-                    // Bina Virtual Fields (Readonly Logic)
+                    // Bina Virtual Fields (Readonly & Settings Override Logic)
                     const virtualFields = {};
-                    const selectedFields = view.fields || []; 
+                    const selectedFields = moduleObj.fields || []; 
                     
-                    selectedFields.forEach(f => {
-                        const fieldName = f.sourceName || f.field_source_name;
-                        const originalField = tableData.fields[fieldName];
-                        if (originalField) {
+selectedFields.forEach(f => {
+                        let fieldName = null;
+                        let originalField = null;
+
+                        // 1. Cari berdasarkan field_id (Sistem Baharu)
+                        if (f.field_id) {
+                            fieldName = Object.keys(tableData.fields).find(key => tableData.fields[key].field_id === f.field_id);
+                            if (fieldName) {
+                                originalField = tableData.fields[fieldName];
+                            }
+                        }
+                        
+                        // 2. Fallback untuk keserasian (Sistem Lama jika ada)
+                        if (!originalField) {
+                            fieldName = f.sourceName || f.field_source_name || f.field_name;
+                            if (fieldName && tableData.fields[fieldName]) {
+                                originalField = tableData.fields[fieldName];
+                            }
+                        }
+
+                        // 3. Masukkan ke dalam virtualFields jika dijumpai
+                        if (originalField && fieldName) {
                             virtualFields[fieldName] = { ...originalField };
+                            
+                            // Logik Asal: Semak jika read-only
                             if (f.isReadonly === true || f.is_readonly === 1) {
                                 virtualFields[fieldName].is_forced_readonly = true;
                             }
+
+                            // LOGIK BAHARU: BACA DAN GABUNG SETTINGS OVERRIDE
+                            if (f.settings_override) {
+                                try {
+                                    const overrides = JSON.parse(f.settings_override);
+                                    Object.assign(virtualFields[fieldName], overrides);
+                                } catch (e) {
+                                    console.warn(`Gagal memproses settings_override untuk medan: ${fieldName}`);
+                                }
+                            }
                         }
-                    });
-                    
+                    });               
                     // Perlu pass 'module_name' original supaya helper tahu nama Model
                     const virtualTableData = { 
                         ...tableData, 
                         fields: virtualFields, 
-                        table_view_title: view.view_name,
+                        table_view_title: moduleObj.module_name,
                         module_name: tableData.module_name // PENTING: Kekalkan module_name asal
                     };
 
                     generateSingleSchemaClass(
                         basePath,
-                        viewSafeNamePlural,    // resourceFolder
-                        schemaClassName, // className
+                        moduleSafeNamePlural,    // resourceFolder
+                        schemaClassName,         // className
                         virtualTableData,
                         fullSchema,
                         tableName
@@ -712,7 +744,7 @@ async function generateFilamentSchemasCustomViews(fullSchema, basePath) {
                 }
             }
         }
-        return { success: true, message: `${count} Custom View Schemas generated.` };
+        return { success: true, message: `${count} Custom Module Schemas generated.` };
     } catch (error) {
         return { success: false, message: error.message };
     }
@@ -723,5 +755,12 @@ module.exports = {
     generateFilamentSchemasForm,
     generateSingleSchemaClass,
     generateFormSchemaString,
-    generateFilamentSchemasCustomViews
+    generateFilamentSchemasCustomModules
+};
+// KEMASKINI EXPORT
+module.exports = {
+    generateFilamentSchemasForm,
+    generateSingleSchemaClass,
+    generateFormSchemaString,
+    generateFilamentSchemasCustomModules
 };

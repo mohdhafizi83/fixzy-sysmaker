@@ -61,13 +61,13 @@ function getFullProjectSchema(db, projectId) {
 
         const constraints = db.prepare(`SELECT * FROM table_constraints WHERE table_id IN (${placeholder})`).all(...tableIds);
         
-        // Custom Views
-        let customViews = db.prepare(`SELECT * FROM custom_views WHERE table_id IN (${placeholder}) ORDER BY view_order`).all(...tableIds);
-        const viewIds = customViews.map(v => v.custom_view_id);
+        // Custom Modules
+        let customViews = db.prepare(`SELECT * FROM custom_modules WHERE table_id IN (${placeholder}) ORDER BY module_order`).all(...tableIds);
+        const viewIds = customViews.map(v => v.module_id);
         let customViewFields = [];
         if (viewIds.length > 0) {
             const viewPlaceholder = viewIds.map(() => "?").join(",");
-            customViewFields = db.prepare(`SELECT * FROM custom_view_fields WHERE custom_view_id IN (${viewPlaceholder}) ORDER BY display_order`).all(...viewIds);
+            customViewFields = db.prepare(`SELECT * FROM custom_module_fields WHERE module_id IN (${viewPlaceholder}) ORDER BY display_order`).all(...viewIds);
         }
   
         // Validation Rules (Logik sedia ada yang betul - dikekalkan)
@@ -82,13 +82,13 @@ function getFullProjectSchema(db, projectId) {
         tables.forEach((table) => {
             const viewsForTable = customViews.filter(v => v.table_id === table.table_id);
             viewsForTable.forEach(view => {
-                view.fields = customViewFields.filter(f => f.custom_view_id === view.custom_view_id);
+                view.fields = customViewFields.filter(f => f.module_id === view.module_id);
             });
   
             structuredTables[table.table_name] = { 
                 ...table, 
                 fields: {}, 
-                custom_views: viewsForTable,
+                custom_modules: viewsForTable,
                 constraints: constraints.filter(c => c.table_id === table.table_id)
             };
         });
@@ -129,7 +129,7 @@ function getFullProjectSchema(db, projectId) {
                     // Logik penentuan jenis item yang lebih tepat
                     let itemType = 'custom_item';
                     if (item.table_id) itemType = 'table_item';
-                    else if (item.custom_view_id) itemType = 'custom_view_item';
+                    else if (item.module_id) itemType = 'custom_view_item';
                     
                     return { type: itemType, ...item };
                 });
@@ -148,7 +148,7 @@ function getFullProjectSchema(db, projectId) {
             if (item.menu_group_id === null) {
                 let itemType = 'custom_item';
                 if (item.table_id) itemType = 'table_item';
-                else if (item.custom_view_id) itemType = 'custom_view_item';
+                else if (item.module_id) itemType = 'custom_view_item';
 
                 unifiedMenu.push({ 
                     type: itemType, 

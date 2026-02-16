@@ -4,7 +4,7 @@ const { toSingularPascalCase, toPluralPascalCase, readTemplate } = require('../u
 
 /**
  * [HELPER] Menjana satu fail Edit Page.
- * Digunakan oleh Generator Standard dan Custom View.
+ * Digunakan oleh Generator Standard dan Custom Module.
  */
 async function generateSingleEditPage(tableName, tableData, fullSchema, basePath, templateContent, options = {}) {
     const { database: { relationships } } = fullSchema;
@@ -20,7 +20,7 @@ async function generateSingleEditPage(tableName, tableData, fullSchema, basePath
     const resourceFolder = options.resourceFolder || standardFolder;
 
     // --- LOGIC NAMING FIX ---
-    // Custom View: EditPendingRegistrations.php
+    // Custom Module: EditPendingRegistrations.php
     // Standard: EditStudentInfo.php
     let pageClassName = `Edit${modelNameSingular}`;
     if (options.customPageName) {
@@ -38,7 +38,7 @@ async function generateSingleEditPage(tableName, tableData, fullSchema, basePath
     
     editContent = editContent.replace(/<<TABLE_NAME_PLURAL>>/g, resourceFolder);
     
-    // Fix Class Name untuk Custom View
+    // Fix Class Name untuk Custom Module
     if (options.customPageName) {
         // Regex untuk menggantikan nama class yang dijana oleh placeholder <<TABLE_NAME_SINGULAR>>
         // Template: class Edit<<TABLE_NAME_SINGULAR>> extends EditRecord
@@ -172,7 +172,7 @@ async function generateFilamentEditPages(fullSchema, basePath) {
     }
 }
 
-async function generateFilamentEditCustomViews(fullSchema, basePath) {
+async function generateFilamentEditCustomModules(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;
         const templateContent = readTemplate('app/Filament/Resources/PagesEdit.template');
@@ -180,15 +180,15 @@ async function generateFilamentEditCustomViews(fullSchema, basePath) {
 
         for (const tableName in tables) {
             const tableData = tables[tableName];
-            if (tableData.custom_views && tableData.custom_views.length > 0) {
+            if (tableData.custom_modules && tableData.custom_modules.length > 0) {
                 
                 const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
                                     ? tableData.module_name 
                                     : tableName;
                 const standardModelName = toSingularPascalCase(nameSource);
 
-                for (const view of tableData.custom_views) {
-                    const viewNameClean = view.view_name.replace(/[^a-zA-Z0-9]/g, '');
+                for (const view of tableData.custom_modules) {
+                    const viewNameClean = view.module_name.replace(/[^a-zA-Z0-9]/g, '');
 
                     // FOLDER: Plural
                     const viewSafeNamePlural = toPluralPascalCase(viewNameClean);
@@ -204,7 +204,7 @@ async function generateFilamentEditCustomViews(fullSchema, basePath) {
                 }
             }
         }
-        return { success: true, message: `${count} Custom View Edit Pages generated.` };
+        return { success: true, message: `${count} Custom Module Edit Pages generated.` };
     } catch (error) {
         return { success: false, message: error.message };
     }
@@ -212,6 +212,6 @@ async function generateFilamentEditCustomViews(fullSchema, basePath) {
 
 module.exports = {
     generateFilamentEditPages,
-    generateFilamentEditCustomViews,
+    generateFilamentEditCustomModules,
     generateSingleEditPage
 };

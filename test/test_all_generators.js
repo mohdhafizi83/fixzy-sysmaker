@@ -17,39 +17,39 @@ const {
     generateLaravelDatabaseSeeder 
 } = require('../src/generators/laravelDatabaseGenerator');
 
-// B. Filament Resources (Standard & Custom Views)
+// B. Filament Resources (Standard & Custom Modules)
 // Resource Shell (Induk)
 const { 
     generateFilamentResources, 
-    generateFilamentResourcesCustomViews // Fasa 3.1
+    generateFilamentResourcesCustomModules // Fasa 3.1
 } = require('../src/generators/laravelResourceGenerator');
 
 // Components: Tables
 const { 
     generateFilamentTablesTable, 
-    generateFilamentTablesCustomViews // Fasa 3.2 (Added above)
+    generateFilamentTablesCustomModules // Fasa 3.2 (Added above)
 } = require('../src/generators/laravelTablesGenerator');
 
 // Components: Schemas (Forms)
 const { 
     generateFilamentSchemasForm, 
-    generateFilamentSchemasCustomViews // Fasa 3.3 (Added above)
+    generateFilamentSchemasCustomModules // Fasa 3.3 (Added above)
 } = require('../src/generators/laravelSchemasGenerator');
 
 // Components: Pages (List, Create, Edit)
 const { 
     generateFilamentListPages, 
-    generateFilamentListCustomViews // Fasa 3.5
+    generateFilamentListCustomModules // Fasa 3.5
 } = require('../src/generators/laravelListGenerator');
 
 const { 
     generateFilamentCreatePages, 
-    generateFilamentCreateCustomViews // Fasa 3.6
+    generateFilamentCreateCustomModules // Fasa 3.6
 } = require('../src/generators/laravelCreateGenerator');
 
 const { 
     generateFilamentEditPages, 
-    generateFilamentEditCustomViews // Fasa 3.7
+    generateFilamentEditCustomModules // Fasa 3.7
 } = require('../src/generators/laravelEditGenerator');
 
 // Components: Relation Managers
@@ -143,14 +143,14 @@ async function runFullTest() {
             { name: 'Standard: Relation Managers', func: generateFilamentRelationManagers },
             { name: 'Standard: Resources (Main)', func: generateFilamentResources }, // Akhir sekali sebab ia 'link' semua
 
-            // 4. Custom Views (FASA 3)
-            // Nota: Custom Views menggunakan semula Relation Manager standard, jadi tiada generator khas untuk itu.
-            { name: 'Custom Views: Tables', func: generateFilamentTablesCustomViews },
-            { name: 'Custom Views: Forms', func: generateFilamentSchemasCustomViews },
-            { name: 'Custom Views: List Pages', func: generateFilamentListCustomViews },
-            { name: 'Custom Views: Create Pages', func: generateFilamentCreateCustomViews },
-            { name: 'Custom Views: Edit Pages', func: generateFilamentEditCustomViews },
-            { name: 'Custom Views: Resources (Main)', func: generateFilamentResourcesCustomViews },
+            // 4. Custom Modules (FASA 3)
+            // Nota: Custom Modules menggunakan semula Relation Manager standard, jadi tiada generator khas untuk itu.
+            { name: 'Custom Modules: Tables', func: generateFilamentTablesCustomModules },
+            { name: 'Custom Modules: Forms', func: generateFilamentSchemasCustomModules },
+            { name: 'Custom Modules: List Pages', func: generateFilamentListCustomModules },
+            { name: 'Custom Modules: Create Pages', func: generateFilamentCreateCustomModules },
+            { name: 'Custom Modules: Edit Pages', func: generateFilamentEditCustomModules },
+            { name: 'Custom Modules: Resources (Main)', func: generateFilamentResourcesCustomModules },
 
             // 5. Features
             { name: 'Exports', func: generateFilamentExports },

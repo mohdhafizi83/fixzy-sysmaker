@@ -3587,14 +3587,14 @@ fieldset.fieldset-disabled {
 /* ================================================================== */
 
 /* --- Tab & List Styles --- */
-.custom-view-header {
+.custom-module-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0.5rem;
 }
 
-#custom-views-list-container {
+#custom-modules-list-container {
     margin-top: 1.5rem;
 }
 

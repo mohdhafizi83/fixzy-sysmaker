@@ -30,25 +30,25 @@ const {
 // 1. Resources Induk
 const { 
     generateFilamentResources, 
-    generateFilamentResourcesCustomViews 
+    generateFilamentResourcesCustomModules 
 } = require('./generators/laravelResourceGenerator');
 
 // 2. List Pages
 const { 
     generateFilamentListPages, 
-    generateFilamentListCustomViews 
+    generateFilamentListCustomModules 
 } = require('./generators/laravelListGenerator');
 
 // 3. Create Pages
 const { 
     generateFilamentCreatePages, 
-    generateFilamentCreateCustomViews 
+    generateFilamentCreateCustomModules 
 } = require('./generators/laravelCreateGenerator');
 
 // 4. Edit Pages
 const { 
     generateFilamentEditPages, 
-    generateFilamentEditCustomViews 
+    generateFilamentEditCustomModules 
 } = require('./generators/laravelEditGenerator');
 
 // 5. Relation Managers
@@ -59,13 +59,13 @@ const {
 // 6. Tables (Jadual)
 const { 
     generateFilamentTablesTable, 
-    generateFilamentTablesCustomViews 
+    generateFilamentTablesCustomModules 
 } = require('./generators/laravelTablesGenerator');
 
 // 7. Forms (Schemas)
 const { 
     generateFilamentSchemasForm, 
-    generateFilamentSchemasCustomViews 
+    generateFilamentSchemasCustomModules 
 } = require('./generators/laravelSchemasGenerator');
 
 // 8. Database Layer (Kekal Sama)
@@ -237,7 +237,7 @@ if (queue.tables && Object.keys(queue.tables).length > 0) {
 });
 
 
-ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, label, url, menu_group_id, table_id, custom_view_id, show_record_count }) => {
+ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, label, url, menu_group_id, table_id, module_id, show_record_count }) => {
     try {
         if (!project_id) {
             throw new Error("Project ID is required.");
@@ -252,9 +252,9 @@ ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, lab
             // Logic to update an existing item
             db.prepare(
                 `UPDATE menu_items 
-                 SET item_label = ?, item_url = ?, menu_group_id = ?, table_id = ?, custom_view_id = ?, show_record_count = ? 
+                 SET item_label = ?, item_url = ?, menu_group_id = ?, table_id = ?, module_id = ?, show_record_count = ? 
                  WHERE item_id = ? AND project_id = ?`
-            ).run(label, url || null, menu_group_id || null, table_id || null, custom_view_id || null, show_record_count ? 1 : 0, item_id, project_id);
+            ).run(label, url || null, menu_group_id || null, table_id || null, module_id || null, show_record_count ? 1 : 0, item_id, project_id);
 
         } else {
             // Logic to insert a new item
@@ -273,9 +273,9 @@ ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, lab
             }
 
             db.prepare(
-                `INSERT INTO menu_items (project_id, table_id, custom_view_id, item_label, item_url, item_order, menu_group_id, show_record_count) 
+                `INSERT INTO menu_items (project_id, table_id, module_id, item_label, item_url, item_order, menu_group_id, show_record_count) 
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-            ).run(project_id, table_id || null, custom_view_id || null, label, url || null, nextOrder, menu_group_id || null, show_record_count ? 1 : 0);
+            ).run(project_id, table_id || null, module_id || null, label, url || null, nextOrder, menu_group_id || null, show_record_count ? 1 : 0);
         }
         return { success: true };
     } catch (error) {
@@ -1263,44 +1263,58 @@ ipcMain.handle('relationship:delete', async (event, data) => {
     }
 });
 
-ipcMain.handle('custom-view:save', async (event, data) => {
+ipcMain.handle('custom-module:save', async (event, data) => {
     // Guna destructuring untuk dapatkan semua data termasuk yang baharu
-    const { custom_view_id, table_id, view_name, menu_icon, filter_rules, included_relations, fields, owner_only, owner_field } = data;
-    if (!table_id || !view_name) {
-        return { success: false, message: 'Table ID and View Name are required.' };
+    const { module_id, table_id, module_name, menu_icon, filter_rules, included_relations, fields, owner_only, owner_field } = data;
+    if (!table_id || !module_name) {
+        return { success: false, message: 'Table ID and Module Name are required.' };
     }
 
     const transaction = db.transaction(() => {
-        let viewId = custom_view_id;
+        let viewId = module_id;
         let isNewView = false;
 
-        if (viewId) { // Update existing view
+        if (viewId) { // Update existing module
             db.prepare(
-                `UPDATE custom_views SET view_name = ?, menu_icon = ?, filter_rules = ?, included_relations = ?, owner_only = ?, owner_field = ? WHERE custom_view_id = ?`
-            ).run(view_name, menu_icon, filter_rules, included_relations, owner_only, owner_field, viewId);
-        } else { // Insert new view
+                `UPDATE custom_modules SET module_name = ?, menu_icon = ?, filter_rules = ?, included_relations = ?, owner_only = ?, owner_field = ? WHERE module_id = ?`
+            ).run(module_name, menu_icon, filter_rules, included_relations, owner_only, owner_field, viewId);
+        } else { // Insert new module
             isNewView = true;
-            const maxOrderResult = db.prepare('SELECT MAX(view_order) as max_order FROM custom_views WHERE table_id = ?').get(table_id);
+            const maxOrderResult = db.prepare('SELECT MAX(module_order) as max_order FROM custom_modules WHERE table_id = ?').get(table_id);
             const nextOrder = (maxOrderResult?.max_order ?? -1) + 1;
             const info = db.prepare(
-                `INSERT INTO custom_views (table_id, view_name, menu_icon, filter_rules, included_relations, owner_only, owner_field, view_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-            ).run(table_id, view_name, menu_icon, filter_rules, included_relations, owner_only, owner_field, nextOrder);
+                `INSERT INTO custom_modules (table_id, module_name, menu_icon, filter_rules, included_relations, owner_only, owner_field, module_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+            ).run(table_id, module_name, menu_icon, filter_rules, included_relations, owner_only, owner_field, nextOrder);
             viewId = info.lastInsertRowid;
         }
 
-        db.prepare('DELETE FROM custom_view_fields WHERE custom_view_id = ?').run(viewId);
+        db.prepare('DELETE FROM custom_module_fields WHERE module_id = ?').run(viewId);
+        
+        // Dapatkan statement untuk mencari ID medan berdasarkan nama
+        const getFieldIdStmt = db.prepare('SELECT field_id FROM fields WHERE table_id = ? AND field_name = ?');
+        
         const insertFieldStmt = db.prepare(
-            `INSERT INTO custom_view_fields (custom_view_id, field_source_table, field_source_name, field_label, is_readonly, display_order) 
-             VALUES (?, ?, ?, ?, ?, ?)`
+            `INSERT INTO custom_module_fields (module_id, field_id, is_readonly, settings_override, display_order) 
+             VALUES (?, ?, ?, ?, ?)`
         );
 
         if (fields && Array.isArray(fields)) {
             fields.forEach((field, index) => {
-                insertFieldStmt.run(viewId, field.sourceTable, field.sourceName, field.label, field.isReadonly ? 1 : 0, index);
+                // Dapatkan field_id sebenar dari pangkalan data
+                const fData = getFieldIdStmt.get(table_id, field.sourceName || field.field_source_name);
+                
+                if (fData) {
+                    // Bungkus label/caption dalam JSON supaya selari dengan fungsi override kita
+                    const settingsOverride = JSON.stringify({ caption: field.label });
+                    
+                    insertFieldStmt.run(viewId, fData.field_id, field.isReadonly ? 1 : 0, settingsOverride, index);
+                } else {
+                    console.warn(`Medan ${field.sourceName} tidak ditemui di pangkalan data untuk module ini.`);
+                }
             });
         }
         
-        // ▼▼▼ MULA LOGIK BAHARU: Cipta item menu jika ia adalah view baharu ▼▼▼
+        // Cipta item menu jika ia adalah modul baharu
         if (isNewView) {
             const tableInfo = db.prepare('SELECT table_name, project_id FROM tables WHERE table_id = ?').get(table_id);
             if (tableInfo) {
@@ -1309,39 +1323,38 @@ ipcMain.handle('custom-view:save', async (event, data) => {
                 ).get(tableInfo.project_id);
                 const nextMenuOrder = (maxMenuOrderResult?.max_order ?? -1) + 1;
                 
-                const menuLabel = view_name; // Seperti yang diminta
-                const menuUrl = `${tableInfo.table_name} Custom View`;
+                const menuLabel = module_name; 
+                const menuUrl = `${tableInfo.table_name} Custom Module`;
 
                 db.prepare(
-                    `INSERT INTO menu_items (project_id, custom_view_id, item_label, item_url, item_order) VALUES (?, ?, ?, ?, ?)`
+                    `INSERT INTO menu_items (project_id, module_id, item_label, item_url, item_order) VALUES (?, ?, ?, ?, ?)`
                 ).run(tableInfo.project_id, viewId, menuLabel, menuUrl, nextMenuOrder);
             }
         }
-        // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
         
         return viewId;
     });
 
     try {
         const savedViewId = transaction();
-        const savedView = db.prepare('SELECT * FROM custom_views WHERE custom_view_id = ?').get(savedViewId);
+        const savedView = db.prepare('SELECT * FROM custom_modules WHERE module_id = ?').get(savedViewId);
         return { success: true, view: savedView };
     } catch (error) {
-        console.error("Failed to save custom view:", error);
+        console.error("Failed to save custom module:", error);
         return { success: false, message: error.message };
     }
 });
 
-ipcMain.handle('custom-view:delete', async (event, viewId) => {
+ipcMain.handle('custom-module:delete', async (event, viewId) => {
     if (!viewId) {
-        return { success: false, message: 'Custom View ID is required.' };
+        return { success: false, message: 'Custom Module ID is required.' };
     }
     try {
         const transaction = db.transaction(() => {
             // Padam item menu yang berkaitan dahulu
-            db.prepare('DELETE FROM menu_items WHERE custom_view_id = ?').run(viewId);
-            // Kemudian padam custom view (akan memadam custom_view_fields melalui CASCADE)
-            db.prepare('DELETE FROM custom_views WHERE custom_view_id = ?').run(viewId);
+            db.prepare('DELETE FROM menu_items WHERE module_id = ?').run(viewId);
+            // Kemudian padam custom view (akan memadam custom_module_fields melalui CASCADE)
+            db.prepare('DELETE FROM custom_modules WHERE module_id = ?').run(viewId);
         });
         transaction();
         return { success: true };
@@ -1799,13 +1812,13 @@ async function getFullProjectSchema(projectId) {
     const fields = db.prepare(`SELECT * FROM fields WHERE table_id IN (${placeholder}) ORDER BY field_order, field_id`).all(...tableIds);
     const constraints = db.prepare(`SELECT * FROM table_constraints WHERE table_id IN (${placeholder})`).all(...tableIds);
     
-    // Custom Views
-    let customViews = db.prepare(`SELECT * FROM custom_views WHERE table_id IN (${placeholder}) ORDER BY view_order`).all(...tableIds);
-    const viewIds = customViews.map(v => v.custom_view_id);
+    // Custom Modules
+    let customViews = db.prepare(`SELECT * FROM custom_modules WHERE table_id IN (${placeholder}) ORDER BY module_order`).all(...tableIds);
+    const viewIds = customViews.map(v => v.module_id);
     let customViewFields = [];
     if (viewIds.length > 0) {
         const viewPlaceholder = viewIds.map(() => "?").join(",");
-        customViewFields = db.prepare(`SELECT * FROM custom_view_fields WHERE custom_view_id IN (${viewPlaceholder}) ORDER BY display_order`).all(...viewIds);
+        customViewFields = db.prepare(`SELECT * FROM custom_module_fields WHERE module_id IN (${viewPlaceholder}) ORDER BY display_order`).all(...viewIds);
     }
 
     // ▼▼▼ TAMBAHAN BARU: Field Validations (Dari Test) ▼▼▼
@@ -1821,13 +1834,13 @@ async function getFullProjectSchema(projectId) {
     tables.forEach((table) => {
       const viewsForTable = customViews.filter(v => v.table_id === table.table_id);
       viewsForTable.forEach(view => {
-          view.fields = customViewFields.filter(f => f.custom_view_id === view.custom_view_id);
+          view.fields = customViewFields.filter(f => f.module_id === view.module_id);
       });
 
       structuredTables[table.table_name] = { 
           ...table, 
           fields: {}, 
-          custom_views: viewsForTable,
+          custom_modules: viewsForTable,
           constraints: constraints.filter(c => c.table_id === table.table_id)
       };
     });
@@ -1871,7 +1884,7 @@ async function getFullProjectSchema(projectId) {
             .map(item => {
                 let itemType = 'custom_item';
                 if (item.table_id) itemType = 'table_item';
-                else if (item.custom_view_id) itemType = 'custom_view_item';
+                else if (item.module_id) itemType = 'custom_module_item';
                 return { type: itemType, ...item };
             });
 
@@ -1890,7 +1903,7 @@ async function getFullProjectSchema(projectId) {
         if (item.menu_group_id === null) {
             let itemType = 'custom_item';
             if (item.table_id) itemType = 'table_item';
-            else if (item.custom_view_id) itemType = 'custom_view_item';
+            else if (item.module_id) itemType = 'custom_module_item';
             
             unifiedMenu.push({ 
                 type: itemType,
@@ -2394,22 +2407,22 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         // ============================================================
         // FASA 3: CUSTOM VIEWS (FASA BARU)
         // ============================================================
-        console.log("--- Menjana Custom Views ---");
+        console.log("--- Menjana Custom Modules ---");
 
-        // 1. Components Custom View
-        const cvTableResult = await generateFilamentTablesCustomViews(fullSchema, outputDir);
+        // 1. Components Custom Module
+        const cvTableResult = await generateFilamentTablesCustomModules(fullSchema, outputDir);
         if (!cvTableResult.success) console.warn(`Custom Tables Warning: ${cvTableResult.message}`);
 
-        const cvFormResult = await generateFilamentSchemasCustomViews(fullSchema, outputDir);
+        const cvFormResult = await generateFilamentSchemasCustomModules(fullSchema, outputDir);
         if (!cvFormResult.success) console.warn(`Custom Forms Warning: ${cvFormResult.message}`);
 
-        // 2. Pages Custom View
-        await generateFilamentListCustomViews(fullSchema, outputDir);
-        await generateFilamentCreateCustomViews(fullSchema, outputDir);
-        await generateFilamentEditCustomViews(fullSchema, outputDir);
+        // 2. Pages Custom Module
+        await generateFilamentListCustomModules(fullSchema, outputDir);
+        await generateFilamentCreateCustomModules(fullSchema, outputDir);
+        await generateFilamentEditCustomModules(fullSchema, outputDir);
 
-        // 3. Resource Custom View (Tiada Relation Manager khas, guna standard)
-        const cvResourceResult = await generateFilamentResourcesCustomViews(fullSchema, outputDir);
+        // 3. Resource Custom Module (Tiada Relation Manager khas, guna standard)
+        const cvResourceResult = await generateFilamentResourcesCustomModules(fullSchema, outputDir);
         if (!cvResourceResult.success) console.warn(`Custom Resources Warning: ${cvResourceResult.message}`);
 
 

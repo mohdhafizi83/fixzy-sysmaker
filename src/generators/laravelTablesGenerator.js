@@ -22,7 +22,7 @@ function generateTableColumnsString(tableData, relationships, tableName, project
     // Nota: modelNameSingular diterima sebagai argumen (Module Name) untuk type hinting yang betul
 
     // Ambil fields yang visible dan susun ikut order
-    // (Logik ini akan digunakan oleh Standard Generator. Custom View akan pass tableData yang dah dimanipulasi)
+    // (Logik ini akan digunakan oleh Standard Generator. Custom Module akan pass tableData yang dah dimanipulasi)
     const visibleFields = Object.values(tableData.fields)
         .filter(field => field.hide_in_tv !== 1)
         .sort((a, b) => (a.field_order ?? 999) - (b.field_order ?? 999));
@@ -350,13 +350,13 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
 }
 
 /**
- * [BARU] Menjana fail Table Class khas untuk Custom View.
+ * [BARU] Menjana fail Table Class khas untuk Custom Module.
  */
 function generateSingleTableClass(basePath, resourceFolder, className, tableData, fullSchema, tableName) {
     const { project: projectSettings, database: { relationships } } = fullSchema;
     const templateContent = readTemplate('app/Filament/Resources/TablesTable.template');
     
-    // Custom View guna Model Standard (Module Name)
+    // Custom Module guna Model Standard (Module Name)
     const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
                         ? tableData.module_name 
                         : tableName;
@@ -406,48 +406,76 @@ function generateSingleTableClass(basePath, resourceFolder, className, tableData
     console.log(`   - Table Class generated: ${className}.php`);
 }
 
-async function generateFilamentTablesCustomViews(fullSchema, basePath) {
+async function generateFilamentTablesCustomModules(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;
         let count = 0;
 
         for (const tableName in tables) {
             const tableData = tables[tableName];
-            if (tableData.custom_views && tableData.custom_views.length > 0) {
-                for (const view of tableData.custom_views) {
-                    const viewNameClean = view.view_name.replace(/[^a-zA-Z0-9]/g, '');
+            if (tableData.custom_modules && tableData.custom_modules.length > 0) {
+                for (const moduleObj of tableData.custom_modules) { // Tukar 'view' kepada 'moduleObj'
+                    const moduleNameClean = moduleObj.module_name.replace(/[^a-zA-Z0-9]/g, '');
 
                     // FOLDER & FAIL: Plural
-                    const viewSafeNamePlural = toPluralPascalCase(viewNameClean);
+                    const moduleSafeNamePlural = toPluralPascalCase(moduleNameClean);
                     
-                    // Nama Class Table Singular: PendingRegistrationTable
-                    const tableClassName = `${viewSafeNamePlural}Table`; 
+                    // Nama Class Table
+                    const tableClassName = `${moduleSafeNamePlural}Table`; 
 
-                    // --- BINA VIRTUAL TABLE DATA UNTUK CUSTOM VIEW ---
+                    // --- BINA VIRTUAL TABLE DATA UNTUK CUSTOM MODULE ---
                     const virtualFields = {};
-                    const selectedFields = view.fields || [];
+                    const selectedFields = moduleObj.fields || [];
                     
-                    selectedFields.forEach(f => {
-                        const fieldName = f.sourceName || f.field_source_name;
-                        const originalField = tableData.fields[fieldName];
-                        if (originalField) {
+selectedFields.forEach(f => {
+                        let fieldName = null;
+                        let originalField = null;
+
+                        // 1. Cari berdasarkan field_id (Sistem Baharu)
+                        if (f.field_id) {
+                            fieldName = Object.keys(tableData.fields).find(key => tableData.fields[key].field_id === f.field_id);
+                            if (fieldName) {
+                                originalField = tableData.fields[fieldName];
+                            }
+                        }
+                        
+                        // 2. Fallback untuk keserasian (Sistem Lama jika ada)
+                        if (!originalField) {
+                            fieldName = f.sourceName || f.field_source_name || f.field_name;
+                            if (fieldName && tableData.fields[fieldName]) {
+                                originalField = tableData.fields[fieldName];
+                            }
+                        }
+
+                        // 3. Masukkan ke dalam virtualFields jika dijumpai
+                        if (originalField && fieldName) {
                             virtualFields[fieldName] = { ...originalField };
+                            
                             if (f.isReadonly === true || f.is_readonly === 1) {
                                 virtualFields[fieldName].is_forced_readonly = true;
                             }
+
+                            // LOGIK BAHARU: BACA DAN GABUNG SETTINGS OVERRIDE
+                            if (f.settings_override) {
+                                try {
+                                    const overrides = JSON.parse(f.settings_override);
+                                    Object.assign(virtualFields[fieldName], overrides);
+                                } catch (e) {
+                                    console.warn(`Gagal memproses settings_override untuk medan: ${fieldName}`);
+                                }
+                            }
                         }
                     });
-
                     const virtualTableData = { 
                         ...tableData, 
                         fields: virtualFields, 
-                        module_name: tableData.module_name 
+                        module_name: tableData.module_name // PENTING: Kekalkan rujukan nama asal untuk Standard Model
                     };
 
                     generateSingleTableClass(
                         basePath,
-                        viewSafeNamePlural, // resourceFolder (Plural)
-                        tableClassName,     // className (Singular)
+                        moduleSafeNamePlural, // resourceFolder (Plural)
+                        tableClassName,       // className
                         virtualTableData, 
                         fullSchema,
                         tableName
@@ -456,7 +484,7 @@ async function generateFilamentTablesCustomViews(fullSchema, basePath) {
                 }
             }
         }
-        return { success: true, message: `${count} Custom View Tables generated.` };
+        return { success: true, message: `${count} Custom Module Tables generated.` };
     } catch (error) {
         return { success: false, message: error.message };
     }
@@ -466,5 +494,5 @@ module.exports = {
     generateFilamentTablesTable,
     generateSingleTableClass,
     generateTableColumnsString,
-    generateFilamentTablesCustomViews
+    generateFilamentTablesCustomModules
 }

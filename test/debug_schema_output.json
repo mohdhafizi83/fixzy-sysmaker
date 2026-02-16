@@ -1334,7 +1334,7 @@
                         "validations": []
                     }
                 },
-                "custom_views": [],
+                "custom_modules": [],
                 "constraints": []
             },
             "pelajar": {
@@ -2769,7 +2769,7 @@
                         "validations": []
                     }
                 },
-                "custom_views": [],
+                "custom_modules": [],
                 "constraints": []
             },
             "profil_pelajar": {
@@ -4065,7 +4065,7 @@
                         "validations": []
                     }
                 },
-                "custom_views": [],
+                "custom_modules": [],
                 "constraints": []
             },
             "dokumen_pelajar": {
@@ -5361,7 +5361,7 @@
                         "validations": []
                     }
                 },
-                "custom_views": [],
+                "custom_modules": [],
                 "constraints": []
             },
             "kursus": {
@@ -6935,7 +6935,7 @@
                         "validations": []
                     }
                 },
-                "custom_views": [],
+                "custom_modules": [],
                 "constraints": []
             },
             "pendaftaran_kursus": {
@@ -8231,62 +8231,61 @@
                         "validations": []
                     }
                 },
-                "custom_views": [
+                "custom_modules": [
                     {
-                        "custom_view_id": 3,
+                        "module_id": 3,
+                        "project_id": 1,
                         "table_id": 42,
-                        "view_name": "New Pendaftaran Kursus",
+                        "module_name": "New Pendaftaran Kursus",
+                        "module_order": 0,
                         "menu_icon": "fas fa-table",
                         "filter_rules": "{\"logic\":\"AND\",\"rules\":[{\"type\":\"rule\",\"table\":\"pendaftaran_kursus\",\"field\":\"id\",\"operator\":\"=\",\"value\":\"E\"}]}",
                         "included_relations": "[\"pengesahan_pendaftaran\"]",
+                        "settings_override": "",
                         "owner_only": 0,
-                        "owner_field": "id",
-                        "view_order": 0,
+                        "owner_field": null,
+                        "created_at": "2026-02-15 11:42:13",
+                        "updated_at": "2026-02-15 11:42:13",
                         "fields": [
                             {
-                                "custom_view_field_id": 78,
-                                "custom_view_id": 3,
-                                "field_source_table": "pendaftaran_kursus",
-                                "field_source_name": "pelajar_id",
-                                "field_label": "pelajar_id",
+                                "module_field_id": 78,
+                                "module_id": 3,
+                                "field_id": 357,
                                 "is_readonly": 0,
+                                "settings_override": "",
                                 "display_order": 0
                             },
                             {
-                                "custom_view_field_id": 79,
-                                "custom_view_id": 3,
-                                "field_source_table": "pendaftaran_kursus",
-                                "field_source_name": "kursus_id",
-                                "field_label": "kursus_id",
+                                "module_field_id": 79,
+                                "module_id": 3,
+                                "field_id": 358,
                                 "is_readonly": 0,
-                                "display_order": 1
+                                "settings_override": "",
+                                "display_order": 0
                             },
                             {
-                                "custom_view_field_id": 80,
-                                "custom_view_id": 3,
-                                "field_source_table": "pendaftaran_kursus",
-                                "field_source_name": "tarikh_pendaftaran",
-                                "field_label": "tarikh_pendaftaran",
+                                "module_field_id": 80,
+                                "module_id": 3,
+                                "field_id": 359,
                                 "is_readonly": 0,
-                                "display_order": 2
+                                "settings_override": "",
+                                "display_order": 0
                             },
                             {
-                                "custom_view_field_id": 81,
-                                "custom_view_id": 3,
-                                "field_source_table": "pendaftaran_kursus",
-                                "field_source_name": "gred",
-                                "field_label": "gred",
+                                "module_field_id": 81,
+                                "module_id": 3,
+                                "field_id": 360,
                                 "is_readonly": 0,
-                                "display_order": 3
+                                "settings_override": "",
+                                "display_order": 0
                             },
                             {
-                                "custom_view_field_id": 82,
-                                "custom_view_id": 3,
-                                "field_source_table": "pendaftaran_kursus",
-                                "field_source_name": "dokumen_lengkap",
-                                "field_label": "dokumen_lengkap",
+                                "module_field_id": 82,
+                                "module_id": 3,
+                                "field_id": 64,
                                 "is_readonly": 0,
-                                "display_order": 4
+                                "settings_override": "",
+                                "display_order": 0
                             }
                         ]
                     }
@@ -9594,7 +9593,7 @@
                         "validations": []
                     }
                 },
-                "custom_views": [],
+                "custom_modules": [],
                 "constraints": []
             }
         },
@@ -9849,7 +9848,7 @@
                         "table_name": "pendaftaran_kursus"
                     },
                     {
-                        "type": "custom_view_item",
+                        "type": "custom_item",
                         "item_id": 61,
                         "project_id": 1,
                         "menu_group_id": 2,
