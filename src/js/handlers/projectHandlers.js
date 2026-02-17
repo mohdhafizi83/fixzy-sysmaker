@@ -187,12 +187,16 @@ export async function populateProjectDropdown() {
 }
 
 export function updateActionButtonsState() {
-    const activeLink = document.querySelector('.sidebar .nav-list a.active');
+    // Tukar carian dari sidebar kepada #table-list
+    const activeLink = document.querySelector('#table-list a.active');
     const newFieldBtn = document.getElementById('btn-new-field');
     const moveUpBtn = document.getElementById('btn-move-up');
     const moveDownBtn = document.getElementById('btn-move-down');
     const deleteBtn = document.getElementById('btn-delete');
-    const isDisabled = !(activeLink && activeLink.closest('.submenu'));
+    
+    // Logik: Hanya aktifkan butang Field, Up, Down, Delete jika ada item dipilih
+    const isDisabled = !(activeLink && activeLink.closest('.submenu, .has-submenu'));
+    
     if (newFieldBtn) newFieldBtn.disabled = isDisabled;
     if (moveUpBtn) moveUpBtn.disabled = isDisabled;
     if (moveDownBtn) moveDownBtn.disabled = isDisabled;

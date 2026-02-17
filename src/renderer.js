@@ -26,8 +26,9 @@ import {
     initializeCalculatedFieldRules,
 	initializeTemplatePreviewHandlers,
     populateProjectDropdown,
-    initializeTableSaveHandlers,
+initializeTableSaveHandlers,
     initializeFieldSaveHandlers,
+    initializeModulesSetupTab,
     initializeRelationshipSaveHandlers,
     initializeTableHookBuilder,
     initializeProjectHookBuilder,
@@ -357,8 +358,9 @@ window.addEventListener('beforeunload', (event) => {
 	
 	
 	initializeProjectSaveHandlers();
-	initializeTableSaveHandlers();
-	initializeFieldSaveHandlers();
+initializeTableSaveHandlers();
+    initializeFieldSaveHandlers();
+    initializeModulesSetupTab();
 
 	initializeRelationshipSaveHandlers();
 	initializeLookupFieldSaveHandler();	

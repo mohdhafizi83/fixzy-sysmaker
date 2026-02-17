@@ -465,16 +465,15 @@ window.populateCustomViewsTab = populateCustomViewsTab;
  * Fungsi utama untuk memasang semua event listener untuk ciri Custom Modules.
  */
 export function initializeCustomViews() {
-    const tableSettingsPage = document.getElementById('table-settings-page');
-    if (!tableSettingsPage) return;
+    const modulesSetupWorkspace = document.getElementById('modules-setup-workspace');
+    if (!modulesSetupWorkspace) return;
 
     // Pasang listener untuk butang di dalam Modal Custom Module
     initializeCustomModuleModalLogic();
 
     // Event delegation untuk butang "Add", "Edit", dan "Delete" di dalam tab
-    tableSettingsPage.addEventListener('click', e => {
-        const tableNameElement = document.querySelector('#table-settings-page .table-name');
-        const currentTableName = tableNameElement ? tableNameElement.textContent.trim() : null;
+    modulesSetupWorkspace.addEventListener('click', e => {
+const currentTableName = document.getElementById('modules-setup-table-select').value;
         if (!currentTableName) return;
 
         // Butang Add Baru
@@ -677,8 +676,7 @@ export function initializeCustomModuleModalLogic() {
     btnSave.parentNode.replaceChild(newSaveBtn, btnSave);
 
     newSaveBtn.addEventListener('click', async () => {
-        const tableNameElement = document.querySelector('#table-settings-page .table-name');
-        const currentTableName = tableNameElement ? tableNameElement.textContent.trim() : null;
+const currentTableName = document.getElementById('modules-setup-table-select').value;
         const tableData = appState.jsonData.database.table[currentTableName];
         if (!tableData) return;
 
@@ -791,6 +789,48 @@ export async function deleteCustomView(viewId) {
             } finally {
                 console.groupEnd();
             }
+        }
+    });
+}
+
+/**
+ * FASA 5: Menjana dan mengawal Dropdown di tab Modules Setup
+ */
+export function initializeModulesSetupTab() {
+    const tableSelect = document.getElementById('modules-setup-table-select');
+    const workspace = document.getElementById('modules-setup-workspace');
+    if (!tableSelect) return;
+
+    // Fungsi untuk mengisi dropdown jadual
+    const populateDropdown = () => {
+        const tables = appState.jsonData?.database?.table || {};
+        const currentVal = tableSelect.value;
+        
+        tableSelect.innerHTML = '<option value="">-- Choose a Table --</option>';
+        Object.keys(tables).forEach(tableName => {
+            const opt = document.createElement('option');
+            opt.value = tableName;
+            opt.textContent = tableName;
+            tableSelect.appendChild(opt);
+        });
+        
+        if (currentVal && tables[currentVal]) {
+            tableSelect.value = currentVal;
+        }
+    };
+
+    // Panggil setiap kali tab ini ditekan (atau global update)
+    document.getElementById('tab-modules-setup-btn')?.addEventListener('click', populateDropdown);
+
+    // Apabila pengguna memilih jadual dari dropdown
+    tableSelect.addEventListener('change', (e) => {
+        const selectedTable = e.target.value;
+        if (selectedTable) {
+            workspace.classList.remove('hidden');
+            // Guna semula fungsi sedia ada untuk memaparkan senarai modul
+            populateCustomViewsTab(selectedTable);
+        } else {
+            workspace.classList.add('hidden');
         }
     });
 }

@@ -3956,3 +3956,101 @@ input.is-invalid:focus {
     background-color: #3B82F6; /* Blue-500 */
     border-left: 5px solid #1D4ED8;
 }
+
+/* FASA 4: Sembunyi Sidebar & Lebar Penuh */
+.sidebar { 
+    /* display: none !important; */ 
+}
+
+.dashboard-container {
+    grid-template-columns: 1fr !important; /* Buang grid sidebar */
+}
+
+.main-content { 
+    width: 100% !important; 
+    max-width: 100% !important; 
+    margin-left: 0 !important; 
+}
+
+/* ==========================================================================
+   FASA 3 & 4: KEMASAN UI (TOUCH-UPS) MODELS DESIGN
+   ========================================================================== */
+
+/* --- 1. KEMASAN MENU COLLAPSE & WARNA (ISU 1 & 3) --- */
+
+/* Sembunyikan senarai fields (submenu) secara default */
+#table-list .submenu {
+    display: none;
+    padding-left: 25px; /* Lekukan ke dalam untuk senarai fields */
+    margin-top: 2px;
+}
+
+/* Bentuk dan warna pautan menu supaya kelihatan aktif */
+#table-list a {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    color: var(--text-color); /* Guna warna gelap biasa, bukan kelabu pudar */
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    margin-bottom: 4px;
+    background-color: transparent;
+}
+
+/* Kesan apabila tetikus berada di atas menu (Hover) */
+#table-list a:hover {
+    background-color: #e5e7eb; 
+}
+
+/* Kesan apabila menu tersebut sedang dipilih (Active) */
+#table-list a.active {
+    background-color: var(--primary-color);
+    color: #ffffff; /* Teks putih supaya menonjol */
+    font-weight: 500;
+}
+
+#table-list a i {
+    margin-right: 10px;
+    width: 16px;
+    text-align: center;
+}
+
+/* Ikon anak panah (chevron) diletakkan di hujung kanan */
+#table-list .has-submenu > a .toggle-icon {
+    margin-left: auto;
+    transition: transform 0.3s ease;
+}
+
+/* Pusingkan anak panah ke bawah apabila menu dibuka */
+#table-list .has-submenu > a.open .toggle-icon {
+    transform: rotate(180deg);
+}
+
+
+/* --- 2. PEMBETULAN LAPISAN PROTEKSI / LOCK LAYER (ISU 2) --- */
+
+/* Jadikan ruang tetapan sebagai 'sempadan' (relative) */
+#models-design-content,
+#table-settings-page, 
+#field-settings-page {
+    position: relative; 
+}
+
+/* Paksa lapisan kunci hanya memenuhi ruang sempadannya sahaja */
+.form-lock-overlay {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(248, 249, 250, 0.85) !important; /* Warna kelabu cair lutsinar */
+    z-index: 50 !important;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+}

@@ -15,8 +15,8 @@ import { loadProjectData } from '../renderer.js';
 
 export function focusOnSidebarField(tableName, fieldName) {
     return new Promise(resolve => {
-        const allLinks = document.querySelectorAll('.sidebar .nav-list a');
-        const tableLinks = document.querySelectorAll('.sidebar .nav-list .has-submenu > a');
+        const allLinks = document.querySelectorAll('#table-list a');
+        const tableLinks = document.querySelectorAll('#table-list .has-submenu > a');
         const parentLink = Array.from(tableLinks).find(
             link => link.querySelector('span').textContent.trim() === tableName
         );
@@ -42,7 +42,8 @@ export function focusOnSidebarField(tableName, fieldName) {
                 targetFieldLink.classList.add('active');
                 updateActionButtonsState();
 
-                showPage('field-settings');
+document.getElementById('table-settings-page').classList.add('hidden');
+document.getElementById('field-settings-page').classList.remove('hidden');
                 document.querySelector('#field-settings-page .field-name').textContent = `${tableName}.${fieldName}`;
                 
                 // Populate Data
@@ -73,8 +74,8 @@ export function focusOnSidebarField(tableName, fieldName) {
 export function setActiveSidebarLink(tableName) {
     if (!tableName) return;
 
-    const allLinks = document.querySelectorAll('.sidebar .nav-list a');
-    const tableLinks = document.querySelectorAll('.sidebar .nav-list .has-submenu > a');
+    const allLinks = document.querySelectorAll('#table-list a');
+    const tableLinks = document.querySelectorAll('#table-list .has-submenu > a');
 
     const targetLink = Array.from(tableLinks).find(
         link => link.querySelector('span').textContent.trim() === tableName
@@ -87,7 +88,8 @@ export function setActiveSidebarLink(tableName) {
         targetLink.classList.add('active');
         
         // Paparkan halaman dan muatkan datanya
-        showPage('table-settings');
+document.getElementById('field-settings-page').classList.add('hidden');
+document.getElementById('table-settings-page').classList.remove('hidden');
         document.querySelector('#table-settings-page .table-name').textContent = tableName;
         populateTableSettings(tableName);
         populateParentChildTab(tableName);
@@ -104,7 +106,7 @@ export function initializeSidebarButtons() {
     const moveDownBtn = document.getElementById('btn-move-down');
 
     const handleMove = async (direction) => {
-        const activeLink = document.querySelector('.sidebar .nav-list a.active');
+        const activeLink = document.querySelector('#table-list a.active');
         if (!activeLink) return;
 
         const isField = activeLink.closest('ul.submenu-level-3');
@@ -171,7 +173,7 @@ export function initializeSidebarButtons() {
 	
     if (deleteBtn) {
         deleteBtn.addEventListener('click', () => {
-            const activeLink = document.querySelector('.sidebar .nav-list a.active');
+            const activeLink = document.querySelector('#table-list a.active');
             if (!activeLink) return;
 
             const isFieldLink = activeLink.closest('ul.submenu-level-3');
@@ -234,7 +236,7 @@ const performDelete = async (tablesToDelete) => {
         const projectSetupLink = document.querySelector('.sidebar .nav-list > li > a');
         if (projectSetupLink) {
             // Buang 'active' dari semua pautan lain
-            document.querySelectorAll('.sidebar .nav-list a.active').forEach(l => l.classList.remove('active'));
+            document.querySelectorAll('#table-list a.active').forEach(l => l.classList.remove('active'));
             
             // Aktifkan pautan 'Project Setup'
             projectSetupLink.classList.add('active');
@@ -289,7 +291,7 @@ const performDelete = async (tablesToDelete) => {
 
     if (newFieldBtn) {
         newFieldBtn.addEventListener('click', async () => {
-            const activeLink = document.querySelector('.sidebar .nav-list a.active');
+            const activeLink = document.querySelector('#table-list a.active');
             if (!activeLink || !appState.activeProject) return;
 
             const tableLink = activeLink.closest('.has-submenu').querySelector('a');
@@ -313,7 +315,7 @@ const performDelete = async (tablesToDelete) => {
 export async function generateSidebarMenu() {
     try {
         const tables = appState.jsonData.database.table;
-        const menuListContainer = document.getElementById('table-menu-list');
+        const menuListContainer = document.getElementById('table-list');
         if (!menuListContainer) return;
         menuListContainer.innerHTML = '';
         for (const tableName in tables) {
@@ -352,7 +354,7 @@ export async function generateSidebarMenu() {
 }
 
 export function initializeSidebarInteractivity() {
-    const sidebarList = document.querySelector('.sidebar .nav-list');
+    const sidebarList = document.getElementById('table-list');
     if (!sidebarList) return;
 
     // Mesej kunci (Lock Message)
@@ -395,7 +397,8 @@ export function initializeSidebarInteractivity() {
                 applyFormLock('field', false);
             }
 
-            showPage('field-settings');
+document.getElementById('table-settings-page').classList.add('hidden');
+document.getElementById('field-settings-page').classList.remove('hidden');
             document.querySelector('#field-settings-page .field-name').textContent = `${tableName}.${fieldName}`;
             setupMediaTab(tableName, fieldName);
             populateFieldSettings(tableName, fieldName);
@@ -425,7 +428,8 @@ export function initializeSidebarInteractivity() {
                 link.nextElementSibling.style.display = 'none';
             }
 
-            showPage('table-settings');
+document.getElementById('field-settings-page').classList.add('hidden');
+document.getElementById('table-settings-page').classList.remove('hidden');
             document.querySelector('#table-settings-page .table-name').textContent = tableName;
             populateTableSettings(tableName);
             populateParentChildTab(tableName);

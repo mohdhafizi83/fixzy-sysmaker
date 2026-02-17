@@ -14,46 +14,6 @@
 <body>
     <div class="dashboard-container">
         
-        <nav class="sidebar">
-            <div class="sidebar-header">
-            <!--    <h3><i class="fas fa-database"></i> FiziSysMaker</h3>-->
-<div class="main-menu">
-    <div class="main-menu-dropdown" id="project-dropdown-container">
-        <button class="main-menu-btn" id="project-menu-btn">Open Project...</button>
-        <div class="main-menu-content" id="project-menu-list">
-            <a href="#" id="new-project-btn-dropdown">New...</a>
-            <div class="menu-separator"></div>
-            </div>
-    </div>
-    <div class="main-menu-dropdown">
-        <button class="main-menu-btn">Import SQL</button>
-        <div class="main-menu-content">
-            <a href="#" id="import-sql-file-btn">Upload file</a>
-            <a href="#" id="import-sql-paste-btn">Copy/Paste</a>
-        </div>
-    </div>
-</div>
-                <div class="sidebar-actions">
-                    <div class="action-group">
-                        <button class="btn-sidebar" id="btn-new-table"><i class="fas fa-plus"></i><span>Table</span></button>
-                        <button class="btn-sidebar" id="btn-new-field"><i class="fas fa-plus"></i><span>Field</span></button>
-                    </div>
-                    <div class="action-group">
-                        <button class="btn-sidebar-icon" id="btn-move-up" title="Move table/field up"><i class="fas fa-arrow-up"></i></button>
-                        <button class="btn-sidebar-icon" id="btn-move-down" title="Move table/field down"><i class="fas fa-arrow-down"></i></button>
-                        <button class="btn-sidebar-icon" id="btn-delete" title="Delete table/field"><i class="fas fa-trash-alt"></i></button>
-                    </div>
-                </div>
-            </div>
-            <ul class="nav-list">
-                <li>
-                    <a href="#" class="active"><i class="fa fa-diagram-project"></i> Project Setup</a>
-<ul class="submenu submenu-level-2" id="table-menu-list">
-    </ul>
-                </li>
-            </ul>
-        </nav>
-
 <div id="import-sql-modal" class="modal-overlay hidden">
     <div class="modal-content large">
         <div class="modal-header">
@@ -99,6 +59,20 @@
     </label>
 
     <div style="grid-area: buttons; display: flex; gap: 0.5rem;">
+        <div class="main-menu-dropdown" id="project-dropdown-container">
+            <button class="btn btn-secondary" id="project-menu-btn" style="height: 100%;"><i class="fas fa-folder-open"></i> Open Project</button>
+            <div class="main-menu-content" id="project-menu-list">
+                <a href="#" id="new-project-btn-dropdown">New...</a>
+                <div class="menu-separator"></div>
+            </div>
+        </div>
+        <div class="main-menu-dropdown">
+            <button class="btn btn-secondary" style="height: 100%;"><i class="fas fa-file-import"></i> Import SQL</button>
+            <div class="main-menu-content">
+                <a href="#" id="import-sql-file-btn">Upload file</a>
+                <a href="#" id="import-sql-paste-btn">Copy/Paste</a>
+            </div>
+        </div>
         <button class="btn hidden" id="btn-save-all"><i class="fas fa-save"></i> Save Project</button>
         <button class="btn btn-primary" id="app-generate_app" name="app-generate_app"><i class="fas fa-robot"></i> Generate app</button>
         <button class="btn" id="app-view_files" name="app-view_files"><i class="fas fa-folder-open"></i> View files</button>
@@ -118,6 +92,8 @@
 				<button class="tab-link active" data-tab="tab-stack">Technologies Stack & Core features</button>
                 <button class="tab-link" data-tab="tab-localization" id="app-tab_localization" name="app-tab_localization">Localization</button>
                 <!--<button class="tab-link" data-tab="tab-theme" id="app-tab_theme" name="app-tab_theme">Theme</button> -->
+                <button class="tab-link" data-tab="tab-models-design" id="tab-models-design-btn">Models Design</button>
+                <button class="tab-link" data-tab="tab-modules-setup" id="tab-modules-setup-btn">Modules Setup</button>
                 <button class="tab-link" data-tab="tab-menu-appearance" id="app-tab_menu_appearance" name="app-tab_menu_appearance">Menu management</button>
                 <button class="tab-link" data-tab="tab-security" id="app-tab_security" name="app-tab_security">Security & technical</button>
 				<button class="tab-link" data-tab="tab-hooks">Hooks (Optional - for complex App)</button>
@@ -821,152 +797,22 @@
                         </div>
                     </div>
                 </div>
-
-                <div id="tab-menu-appearance" class="tab-pane">
-                    <div class="card">
-                        <div class="card-body">
-<div class="form-group unified-menu-manager">
-    <div class="menu-group-header">
-        <label>Menu Structure</label>
-        <div class="action-group" style="gap: 0.5rem;">
-            <button class="btn btn-secondary" id="app-add_custom_menu">
-                <i class="fas fa-plus"></i> Add Menu Item
-            </button>
-            <button class="btn btn-secondary" id="app-add_menu_group" name="app-add_menu_group">
-                <i class="fas fa-plus"></i> Add Menu Group
-            </button>
-        </div>
-    </div>
-    <p class="helper-text" style="margin-bottom: 1rem; font-size: 0.9em; color: var(--secondary-color);">
-    Use the up <i class="fas fa-arrow-up"></i> and down <i class="fas fa-arrow-down"></i> buttons to reorder any menu item or group. Items inside a group can also be reordered.
-</p>
-    <div id="unified-menu-list" class="menu-group-list">
-        </div>
-</div>
-                            <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
-                            <div class="form-group">
-                                <label for="app-tables-per-row">Default navigation menu orientation</label>
-                                <div class="radio-group-horizontal">
-                                    <label><input type="radio" name="app-menu_orientation" id="app-app-menu_orientation_top" value="top" checked> Top Menu (Horizontal)</label>
-                                    <label><input type="radio" name="app-menu_orientation" id="app-app-menu_orientation_side" value="side"> Left Side Menu (Vertical)</label>
-                                </div>
-                            </div>
-
-                            <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
-<div class="form-group">
-    <label class="checkbox-label">
-        <input type="checkbox" id="app-menu_at_homepage" name="app-menu_at_homepage" checked> Menu at Homepage
-    </label>
-</div>
-
-<div class="form-grid  homepage-menu-option">
-    <div class="form-group">
-        <label for="app-tables-per-row">Number of tables per row in the homepage</label>
-        <select id="app-tables-per-row" name="app-tables-per-row">
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4" selected>4</option>
-            <option value="5">5</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <label for="app-panel-height">Height of table panel in the homepage (pixels)</label>
-        <input type="number" id="app-panel-height" name="app-panel-height" value="100">
-    </div>
-</div>
-
-<div class="form-group  homepage-menu-option">
-    <label>Make first table in the homepage extra wide?</label>
-    <div class="radio-group-horizontal">
-        <label><input type="radio" name="app-extra-wide" id="app-extra_wide_yes" value="1" checked> Yes</label>
-        <label><input type="radio" name="app-extra-wide" id="app-extra-wide_no" value="0"> No</label>
-    </div>
-</div>
-                        </div>
-                    </div>
-                </div>
-
-<div id="tab-hooks" class="tab-pane">
+<div id="tab-models-design" class="tab-pane">
     <div class="card">
-        <div class="card-body">
-            <div class="workflow-header">
-                <div>
-                    <h4>Project-Level Hooks</h4>
-                    <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 1.5rem;">
-                        Define actions that run on global project events...
-                    </p>
-                </div>
+        <div class="card-body" style="display: flex; gap: 20px; min-height: 600px;">
+            <div style="width: 250px; border-right: 1px solid var(--border-color); padding-right: 15px;">
+                <h4 style="margin-bottom: 15px;">Tables</h4>
+<div class="model-actions-toolbar" style="display: flex; gap: 4px; margin-bottom: 15px; flex-wrap: wrap;">
+                       <button id="btn-new-table" class="btn btn-sm btn-secondary" title="Add New Table" style="flex: 1; padding: 5px;"><i class="fas fa-plus"></i> Table</button>
+                       <button id="btn-new-field" class="btn btn-sm btn-secondary" title="Add New Field" style="flex: 1; padding: 5px;" disabled><i class="fas fa-plus"></i> Field</button>
+                       <div style="flex-basis: 100%; height: 4px;"></div> <button id="btn-move-up" class="btn btn-sm btn-secondary" title="Move Up" style="padding: 5px 10px;" disabled><i class="fas fa-arrow-up"></i></button>
+                       <button id="btn-move-down" class="btn btn-sm btn-secondary" title="Move Down" style="padding: 5px 10px;" disabled><i class="fas fa-arrow-down"></i></button>
+                       <button id="btn-delete" class="btn btn-sm btn-danger" title="Delete Selected" style="padding: 5px 10px; margin-left: auto;" disabled><i class="fas fa-trash-alt"></i></button>
+                   </div>
+                <ul id="table-list" class="nav-list" style="list-style:none; padding:0;">
+                    </ul>
             </div>
-            <input type="hidden" id="app-hook-logic" name="app-hook-logic">
-            <div id="project-workflow-container" class="workflow-container">
-                <button id="project-fullscreen-btn" class="btn-sidebar-icon fullscreen-btn" title="Toggle Fullscreen">
-                    <i class="fas fa-expand-arrows-alt"></i>
-                </button>
- <div class="workflow-palette">
-    <h4>Blocks</h4>
-    <div class="workflow-block-palette-item" draggable="true" data-block-type="hook_trigger">
-        <i class="fas fa-play-circle"></i><span>Hook Trigger</span>
-    </div>
-    <div class="workflow-block-palette-item" draggable="true" data-block-type="action"><i class="fas fa-bolt"></i><span>Advanced Action</span></div>
-<div class="workflow-block-palette-item" draggable="true" data-block-type="insert_record">
-    <i class="fas fa-plus-circle"></i><span>Insert Record</span>
-</div>
-<div class="workflow-block-palette-item" draggable="true" data-block-type="update_record">
-    <i class="fas fa-edit"></i><span>Update Record(s)</span>
-</div>
-<div class="workflow-block-palette-item" draggable="true" data-block-type="delete_record">
-    <i class="fas fa-trash-alt"></i><span>Delete Record(s)</span>
-</div>
-    <div class="workflow-block-palette-item" draggable="true" data-block-type="condition"><i class="fas fa-code-branch"></i><span>Condition</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="variable"><i class="fas fa-code"></i><span>Variable</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="for_each_loop"><i class="fas fa-sync-alt"></i><span>For Each Loop</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="data_transformer"><i class="fas fa-exchange-alt"></i><span>Data Transformer</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="terminate_workflow"><i class="fas fa-stop-circle"></i><span>Terminate Workflow</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="delay"><i class="fas fa-hourglass-half"></i><span>Delay / Wait</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="try_catch"><i class="fas fa-shield-alt"></i><span>Try / Catch</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="send_email"><i class="fas fa-paper-plane"></i><span>Send Email</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="http_request"><i class="fas fa-globe"></i><span>HTTP Request</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="switch"><i class="fas fa-sitemap"></i><span>Switch</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="send_whatsapp"><i class="fab fa-whatsapp"></i><span>Send WhatsApp</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="send_telegram"><i class="fab fa-telegram-plane"></i><span>Send Telegram</span></div>
-</div>
-<div class="workflow-canvas-wrapper">
-    <svg id="project-connector-svg" class="connector-svg"></svg>
-    <div id="project-workflow-canvas" class="workflow-canvas">
-    </div>
-    </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-                <div id="tab-security" class="tab-pane">
-                    <div class="card">
-                        <div class="card-body">
-                            <div class="checkbox-grid">
-                                <label class="checkbox-label"><input type="checkbox" id="app-hide_login" name="app-hide_login"> Hide the login/membership system</label>
-                                <label class="checkbox-label"><input type="checkbox" id="app-allow_sql_tool" name="app-allow_sql_tool" checked> Allow admin access to interactive SQL tool</label>
-                                <label class="checkbox-label"><input type="checkbox" id="app-allow_server_status" name="app-allow_server_status"> Allow admin access to server status page</label>
-                                <label class="checkbox-label"><input type="checkbox" id="app-admins_group_access" name="app-admins_group_access" checked> All members of 'Admins' group can access the admin area</label>
-                                <label class="checkbox-label"><input type="checkbox" id="app-allow_table_view_sql" name="app-allow_table_view_sql"> Allow admin access to 'Table List' SQL</label>
-                                <label class="checkbox-label"><input type="checkbox" id="app-copy_children_async" name="app-copy_children_async" checked> Copy children asynchronously using curl</label>
-                                <label class="checkbox-label"><input type="checkbox" id="app-allow_pwa_install" name="app-allow_pwa_install" checked> Allow users to install app on mobile (PWA)</label>
-                            </div>
-
-                            <div class="form-group mt-2">
-                                <label for="app-url">Application URL</label>
-                                <div class="input-group">
-                                    <input type="text" id="app-url" name="app-url" placeholder="http://localhost/">
-                                    <button class="btn" id="open-browser-btn" name="open-browser-btn">Open in browser</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+            <div id="models-design-content" style="flex: 1; padding: 10px;">
 <div id="table-settings-page" class="hidden">
     <h1>Settings for table: <span class="table-name">...</span></h1>
 
@@ -993,7 +839,6 @@
         <div class="tabs-nav">
             <button class="tab-link active" data-tab="parent-tab-table-view" id="tbl-tab-tableview" name="tbl-tab-tableview">Table List</button>
             <button class="tab-link" data-tab="parent-tab-detail-view" id="tbl-tab-detailview" name="tbl-tab-detailview">Record Form</button>
-			<button class="tab-link" data-tab="tab-custom-modules" id="tbl-tab-customview" name="tbl-tab-customview">Custom Modules</button>
     <button class="tab-link" data-tab="tab-constraints" id="tbl-tab-constraints" name="tbl-tab-constraints">Constraints & Indexes</button>
         </div>
 
@@ -1300,28 +1145,7 @@
                     </div>
                 </div>
             </div>
-			
-			
-        <div id="tab-custom-modules" class="tab-pane">
-            <div class="card">
-                <div class="card-body">
-                    <div class="custom-module-header">
-                        <h4>Custom Modules for this Table</h4>
-                        <button id="btn-add-custom-module" class="btn btn-primary"><i class="fas fa-plus"></i> Add Custom Module</button>
-                    </div>
-                    <p class="helper-text">
-                        Create specialized pages for this table with pre-filtered data and custom forms. These views will appear as new items in the main navigation menu.
-                    </p>
-                    <div id="custom-modules-list-container">
-                        <div class="empty-state-label">
-                            <p>No Custom Modules created yet.</p>
-                            <span>Click the button above to create one.</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>			
-			
+						
 <div id="tab-constraints" class="tab-pane">
             <div class="card">
                 <div class="card-body">
@@ -2369,6 +2193,183 @@
         </div>
     </div>
 </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="tab-modules-setup" class="tab-pane">
+    <div class="card">
+        <div class="card-body">
+            <h4 style="margin-bottom: 15px;">Modules Setup</h4>
+<div id="modules-setup-content">
+    <div class="form-group" style="max-width: 400px; margin-bottom: 20px;">
+        <label for="modules-setup-table-select">Select Table to Manage Modules:</label>
+        <select id="modules-setup-table-select" class="form-control">
+            <option value="">-- Choose a Table --</option>
+        </select>
+    </div>
+
+    <div id="modules-setup-workspace" class="hidden">
+        <div class="custom-module-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h4>Custom Modules</h4>
+            <button id="btn-add-custom-module" class="btn btn-primary"><i class="fas fa-plus"></i> Add Custom Module</button>
+        </div>
+        <p class="helper-text" style="margin-bottom: 15px;">Create specialized pages for this table with pre-filtered data and custom forms.</p>
+        <div id="custom-modules-list-container">
+            </div>
+    </div>
+</div>
+        </div>
+    </div>
+</div>
+                <div id="tab-menu-appearance" class="tab-pane">
+                    <div class="card">
+                        <div class="card-body">
+<div class="form-group unified-menu-manager">
+    <div class="menu-group-header">
+        <label>Menu Structure</label>
+        <div class="action-group" style="gap: 0.5rem;">
+            <button class="btn btn-secondary" id="app-add_custom_menu">
+                <i class="fas fa-plus"></i> Add Menu Item
+            </button>
+            <button class="btn btn-secondary" id="app-add_menu_group" name="app-add_menu_group">
+                <i class="fas fa-plus"></i> Add Menu Group
+            </button>
+        </div>
+    </div>
+    <p class="helper-text" style="margin-bottom: 1rem; font-size: 0.9em; color: var(--secondary-color);">
+    Use the up <i class="fas fa-arrow-up"></i> and down <i class="fas fa-arrow-down"></i> buttons to reorder any menu item or group. Items inside a group can also be reordered.
+</p>
+    <div id="unified-menu-list" class="menu-group-list">
+        </div>
+</div>
+                            <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
+                            <div class="form-group">
+                                <label for="app-tables-per-row">Default navigation menu orientation</label>
+                                <div class="radio-group-horizontal">
+                                    <label><input type="radio" name="app-menu_orientation" id="app-app-menu_orientation_top" value="top" checked> Top Menu (Horizontal)</label>
+                                    <label><input type="radio" name="app-menu_orientation" id="app-app-menu_orientation_side" value="side"> Left Side Menu (Vertical)</label>
+                                </div>
+                            </div>
+
+                            <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
+<div class="form-group">
+    <label class="checkbox-label">
+        <input type="checkbox" id="app-menu_at_homepage" name="app-menu_at_homepage" checked> Menu at Homepage
+    </label>
+</div>
+
+<div class="form-grid  homepage-menu-option">
+    <div class="form-group">
+        <label for="app-tables-per-row">Number of tables per row in the homepage</label>
+        <select id="app-tables-per-row" name="app-tables-per-row">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="app-panel-height">Height of table panel in the homepage (pixels)</label>
+        <input type="number" id="app-panel-height" name="app-panel-height" value="100">
+    </div>
+</div>
+
+<div class="form-group  homepage-menu-option">
+    <label>Make first table in the homepage extra wide?</label>
+    <div class="radio-group-horizontal">
+        <label><input type="radio" name="app-extra-wide" id="app-extra_wide_yes" value="1" checked> Yes</label>
+        <label><input type="radio" name="app-extra-wide" id="app-extra-wide_no" value="0"> No</label>
+    </div>
+</div>
+                        </div>
+                    </div>
+                </div>
+
+<div id="tab-hooks" class="tab-pane">
+    <div class="card">
+        <div class="card-body">
+            <div class="workflow-header">
+                <div>
+                    <h4>Project-Level Hooks</h4>
+                    <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 1.5rem;">
+                        Define actions that run on global project events...
+                    </p>
+                </div>
+            </div>
+            <input type="hidden" id="app-hook-logic" name="app-hook-logic">
+            <div id="project-workflow-container" class="workflow-container">
+                <button id="project-fullscreen-btn" class="btn-sidebar-icon fullscreen-btn" title="Toggle Fullscreen">
+                    <i class="fas fa-expand-arrows-alt"></i>
+                </button>
+ <div class="workflow-palette">
+    <h4>Blocks</h4>
+    <div class="workflow-block-palette-item" draggable="true" data-block-type="hook_trigger">
+        <i class="fas fa-play-circle"></i><span>Hook Trigger</span>
+    </div>
+    <div class="workflow-block-palette-item" draggable="true" data-block-type="action"><i class="fas fa-bolt"></i><span>Advanced Action</span></div>
+<div class="workflow-block-palette-item" draggable="true" data-block-type="insert_record">
+    <i class="fas fa-plus-circle"></i><span>Insert Record</span>
+</div>
+<div class="workflow-block-palette-item" draggable="true" data-block-type="update_record">
+    <i class="fas fa-edit"></i><span>Update Record(s)</span>
+</div>
+<div class="workflow-block-palette-item" draggable="true" data-block-type="delete_record">
+    <i class="fas fa-trash-alt"></i><span>Delete Record(s)</span>
+</div>
+    <div class="workflow-block-palette-item" draggable="true" data-block-type="condition"><i class="fas fa-code-branch"></i><span>Condition</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="variable"><i class="fas fa-code"></i><span>Variable</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="for_each_loop"><i class="fas fa-sync-alt"></i><span>For Each Loop</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="data_transformer"><i class="fas fa-exchange-alt"></i><span>Data Transformer</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="terminate_workflow"><i class="fas fa-stop-circle"></i><span>Terminate Workflow</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="delay"><i class="fas fa-hourglass-half"></i><span>Delay / Wait</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="try_catch"><i class="fas fa-shield-alt"></i><span>Try / Catch</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="send_email"><i class="fas fa-paper-plane"></i><span>Send Email</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="http_request"><i class="fas fa-globe"></i><span>HTTP Request</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="switch"><i class="fas fa-sitemap"></i><span>Switch</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="send_whatsapp"><i class="fab fa-whatsapp"></i><span>Send WhatsApp</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="send_telegram"><i class="fab fa-telegram-plane"></i><span>Send Telegram</span></div>
+</div>
+<div class="workflow-canvas-wrapper">
+    <svg id="project-connector-svg" class="connector-svg"></svg>
+    <div id="project-workflow-canvas" class="workflow-canvas">
+    </div>
+    </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+                <div id="tab-security" class="tab-pane">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="checkbox-grid">
+                                <label class="checkbox-label"><input type="checkbox" id="app-hide_login" name="app-hide_login"> Hide the login/membership system</label>
+                                <label class="checkbox-label"><input type="checkbox" id="app-allow_sql_tool" name="app-allow_sql_tool" checked> Allow admin access to interactive SQL tool</label>
+                                <label class="checkbox-label"><input type="checkbox" id="app-allow_server_status" name="app-allow_server_status"> Allow admin access to server status page</label>
+                                <label class="checkbox-label"><input type="checkbox" id="app-admins_group_access" name="app-admins_group_access" checked> All members of 'Admins' group can access the admin area</label>
+                                <label class="checkbox-label"><input type="checkbox" id="app-allow_table_view_sql" name="app-allow_table_view_sql"> Allow admin access to 'Table List' SQL</label>
+                                <label class="checkbox-label"><input type="checkbox" id="app-copy_children_async" name="app-copy_children_async" checked> Copy children asynchronously using curl</label>
+                                <label class="checkbox-label"><input type="checkbox" id="app-allow_pwa_install" name="app-allow_pwa_install" checked> Allow users to install app on mobile (PWA)</label>
+                            </div>
+
+                            <div class="form-group mt-2">
+                                <label for="app-url">Application URL</label>
+                                <div class="input-group">
+                                    <input type="text" id="app-url" name="app-url" placeholder="http://localhost/">
+                                    <button class="btn" id="open-browser-btn" name="open-browser-btn">Open in browser</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
         </main>
         
         <button class="help-fab">
