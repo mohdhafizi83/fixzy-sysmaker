@@ -4054,3 +4054,94 @@ input.is-invalid:focus {
     text-align: center;
     padding: 20px;
 }
+
+/* ==========================================================================
+   FASA 1: MODULES SETUP DASHBOARD CARDS
+   ========================================================================== */
+.modules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+    padding-bottom: 20px;
+}
+
+.module-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 18px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.module-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+.module-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.module-title {
+    font-size: 1.15em;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 4px;
+}
+
+.module-badge {
+    font-size: 0.75em;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-default { background: #e0e7ff; color: #3730a3; }
+.badge-custom { background: #dcfce7; color: #166534; }
+
+.module-card-body {
+    flex: 1;
+    font-size: 0.9em;
+    color: var(--secondary-color);
+    line-height: 1.5;
+}
+
+.module-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    border-top: 1px solid #f3f4f6;
+    padding-top: 15px;
+}
+
+/* ==========================================================================
+   FASA 2: MODULE WORKSPACE
+   ========================================================================== */
+#module-field-list a {
+    display: block;
+    padding: 8px 12px;
+    color: var(--text-color);
+    text-decoration: none;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    font-size: 0.95em;
+    transition: background 0.2s;
+}
+
+#module-field-list a:hover {
+    background: #f3f4f6;
+}
+
+#module-field-list a.active {
+    background: var(--primary-color);
+    color: #fff;
+    font-weight: 500;
+}

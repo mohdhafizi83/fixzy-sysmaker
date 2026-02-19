@@ -1345,6 +1345,68 @@ ipcMain.handle('custom-module:save', async (event, data) => {
     }
 });
 
+// ---------------------------------------------------------
+    // 1. BAIKI: Simpan Override Medan (Field) - Fix "no such column: id"
+    // ---------------------------------------------------------
+    ipcMain.handle('custom-module:save-field-override', async (event, data) => {
+        try {
+            const { module_id, field_id, settings_override } = data;
+            
+            // Semak kewujudan menggunakan composite key (module_id + field_id)
+            // Kita tidak guna 'SELECT id' untuk elak ralat jika lajur id tiada
+            const check = db.prepare("SELECT count(*) as count FROM custom_module_fields WHERE module_id = ? AND field_id = ?").get(module_id, field_id);
+
+            if (check.count > 0) {
+                // UPDATE: Guna module_id dan field_id sebagai syarat
+                db.prepare("UPDATE custom_module_fields SET settings_override = ? WHERE module_id = ? AND field_id = ?").run(settings_override, module_id, field_id);
+            } else {
+                // INSERT
+                db.prepare("INSERT INTO custom_module_fields (module_id, field_id, settings_override) VALUES (?, ?, ?)").run(module_id, field_id, settings_override);
+            }
+
+            return { success: true };
+        } catch (err) {
+            console.error('Error saving field override:', err);
+            return { success: false, message: err.message };
+        }
+    });
+
+    // ---------------------------------------------------------
+    // 2. TAMBAH: Simpan Override Jadual (Table) - Untuk Bug 1 & 2
+    // ---------------------------------------------------------
+    ipcMain.handle('custom-module:save-table-override', async (event, data) => {
+        try {
+            const { module_id, settings_override } = data;
+            
+            // Kita simpan override table ke dalam lajur 'settings_override' di table 'custom_modules'
+            // Pastikan lajur ini wujud. Jika belum, kita cuba update sahaja.
+            
+            const stmt = db.prepare("UPDATE custom_modules SET settings_override = ? WHERE module_id = ?");
+            const info = stmt.run(settings_override, module_id);
+
+            if (info.changes === 0) {
+                return { success: false, message: "Module ID not found." };
+            }
+
+            return { success: true };
+        } catch (err) {
+            // Jika ralat "no such column: settings_override" berlaku
+            if (err.message.includes('no such column: settings_override')) {
+                // Auto-fix: Tambah lajur tersebut (SQLite)
+                try {
+                    db.prepare("ALTER TABLE custom_modules ADD COLUMN settings_override TEXT").run();
+                    // Cuba simpan semula
+                    db.prepare("UPDATE custom_modules SET settings_override = ? WHERE module_id = ?").run(settings_override, module_id);
+                    return { success: true, message: "Column created and saved." };
+                } catch (alterErr) {
+                    return { success: false, message: "Failed to add settings_override column: " + alterErr.message };
+                }
+            }
+            console.error('Error saving table override:', err);
+            return { success: false, message: err.message };
+        }
+    });
+    
 ipcMain.handle('custom-module:delete', async (event, viewId) => {
     if (!viewId) {
         return { success: false, message: 'Custom Module ID is required.' };

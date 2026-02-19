@@ -6,136 +6,179 @@ import { showCustomDialog } from '../ui/modalHandlers.js';
 
 // --- FIELD SAVE HANDLER ---
 export function initializeFieldSaveHandlers() {
-    const container = document.getElementById('field-settings-page');
-    if (!container) return;
+    // 1. Pantau kedua-dua rumah lama dan rumah baharu
+    const containers = [
+        document.getElementById('field-settings-page'),
+        document.getElementById('module-field-settings')
+    ];
 
     // --- HELPER FUNCTION: UPDATE UI & SAVE KE DATABASE SERENTAK ---
-    // Fungsi ini memastikan 'side-effects' (perubahan automatik) disimpan.
-    const updateAndSave = (fieldId, elementId, value, dbColumnName = null) => {
+    const updateAndSave = (fieldId, elementId, value, dbColumnName = null, tableName = null) => {
         const el = document.getElementById(elementId);
-        if (!el) return;
-
-        // 1. Kemas kini UI (Visual)
-        // Kita update visual supaya user nampak perubahan berlaku (cth: checkbox bertanda)
-        if (el.type === 'checkbox') {
-            el.checked = (value === 1 || value === true);
-        } else {
-            el.value = value;
+        if (el) {
+            if (el.type === 'checkbox') el.checked = (value === 1 || value === true);
+            else el.value = value;
         }
 
-        // 2. Simpan ke Database
-        // Tentukan nama column database yang betul
         const key = dbColumnName || elementId.replace('fld-', '').replace(/-/g, '_');
-        
-        // Pastikan format nilai sesuai untuk SQLite (1/0 untuk boolean)
-        let dbValue = value;
-        if (typeof value === 'boolean') {
-            dbValue = value ? 1 : 0;
-        }
+        let dbValue = typeof value === 'boolean' ? (value ? 1 : 0) : value;
 
         console.log(`[Auto-Fix] Mengemas kini & Menyimpan: ${key} = ${dbValue}`);
-        
-        // Hantar ke barisan giliran SaveManager
         SaveManager.addToQueue('field', fieldId, { [key]: dbValue });
     };
 
-    // --- EVENT LISTENER UTAMA ---
-    ['change', 'focusout'].forEach(eventType => {
-        container.addEventListener(eventType, (e) => {
-            const input = e.target;
+    containers.forEach(container => {
+        if (!container) return;
 
-            // Tapis event yang tidak perlu (Performance optimization)
-            if (eventType === 'focusout' && !['text', 'textarea', 'number'].includes(input.type)) return;
-            if (eventType === 'change' && ['text', 'textarea', 'number'].includes(input.type)) return;
-            if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(input.tagName)) return;
+        ['change', 'focusout'].forEach(eventType => {
+            container.addEventListener(eventType, (e) => {
+                if (appState.isPopulatingData || !appState.isAutoSaveEnabled) return;
+                const input = e.target;
 
-            // Jangan simpan jika sedang loading data atau autosave dimatikan
-            if (appState.isPopulatingData) return;
-            if (!appState.isAutoSaveEnabled) return;
+                if (eventType === 'focusout' && !['text', 'textarea', 'number'].includes(input.type)) return;
+                if (eventType === 'change' && ['text', 'textarea', 'number'].includes(input.type)) return;
+                if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(input.tagName)) return;
 
-            // Dapatkan ID Field semasa dari DOM (Penting untuk tahu field mana nak update)
-            const titleEl = container.querySelector('.field-name');
-            if (!titleEl) return;
-            
-            const parts = titleEl.textContent.trim().split('.');
-            if (parts.length < 2) return;
-            
-            const tableName = parts[0]; 
-            const fieldName = parts[1]; 
-            
-            const tableData = appState.jsonData.database.table[tableName];
-            if (!tableData || !tableData.fields[fieldName]) return;
-            
-            const fieldId = tableData.fields[fieldName].field_id;
-
-            // =========================================================
-            // 1. SIMPAN PERUBAHAN MANUAL (Apa yang user klik/taip)
-            // =========================================================
-            
-            // Tentukan key (nama column db)
-            let key = '';
-            if (input.id === 'fld-lookup-parent-table') {
-                key = 'lookup_parent_table'; // Hardcode untuk keselamatan
-            } else if (input.type === 'radio') {
-                key = input.name.replace('fld-', '').replace(/-/g, '_');
-            } else {
-                key = input.id.replace('fld-', '').replace(/-/g, '_');
-            }
-
-            // Tentukan nilai
-            let value;
-            if (input.type === 'checkbox') value = input.checked ? 1 : 0;
-            else if (input.type === 'radio') {
-                if (!input.checked) return;
-                value = input.value;
-            } else value = input.value;
-
-            // Simpan input pengguna ini ke SaveManager
-            SaveManager.addToQueue('field', fieldId, { [key]: value });
-
-
-            // =========================================================
-            // 2. LOGIK AUTOMATIK (SIDE EFFECTS) - Guna updateAndSave
-            // =========================================================
-            if (eventType === 'change') {
                 
-                // KES A: Pengguna menukar 'Data Type'
-                if (input.id === 'fld-data-type') {
-                    const newType = input.value.toUpperCase();
 
-                    // Jika JSON -> Force 'Wrap Text' (Supaya data panjang nampak kemas)
-                    if (newType === 'JSON') {
-                        updateAndSave(fieldId, 'fld-tv-wrap-text', 1, 'tv_wrap_text');
+                // =========================================================
+                // MENGENAL PASTI KONTEKS (Jadual & Medan yang sedang aktif)
+                // =========================================================
+                let tableName = '';
+                let fieldNameText = '';
+                const workspaceFieldEl = document.getElementById('current-module-field-name');
+                const isWorkspaceActive = !document.getElementById('module-field-settings').classList.contains('hidden');
+
+                if (isWorkspaceActive) {
+                    tableName = document.getElementById('workspace-module-title').dataset.tableName;
+                    fieldNameText = workspaceFieldEl.textContent.trim();
+                } else {
+                    const titleEl = container.querySelector('.field-name');
+                    if (!titleEl) return;
+                    const parts = titleEl.textContent.trim().split('.');
+                    if (parts.length < 2) return;
+                    tableName = parts[0];
+                    fieldNameText = parts[1];
+                }
+
+                const tableData = appState.jsonData.database.table[tableName];
+                if (!tableData || !tableData.fields[fieldNameText]) return;
+                const fieldId = tableData.fields[fieldNameText].field_id;
+
+                let key = '';
+                if (input.id === 'fld-lookup-parent-table') key = 'lookup_parent_table';
+                else if (input.type === 'radio') key = input.name.replace('fld-', '').replace(/-/g, '_');
+                else key = input.id.replace('fld-', '').replace(/-/g, '_');
+
+                let value;
+                if (input.type === 'checkbox') value = input.checked ? 1 : 0;
+                else if (input.type === 'radio') {
+                    if (!input.checked) return;
+                    value = input.value;
+                } else value = input.value;
+
+                // =========================================================
+                // ROUTING PENYIMPANAN DATA (Default vs Custom)
+                // =========================================================
+                const badgeText = document.getElementById('workspace-module-badge')?.textContent;
+                const isCustomModule = isWorkspaceActive && badgeText === 'Custom';
+
+                if (isCustomModule) {
+                    const moduleId = parseInt(document.getElementById('workspace-module-title').dataset.moduleId);
+                    
+                    // 1. Dapatkan Data Modul dari AppState
+                    const tableData = appState.jsonData.database.table[tableName];
+                    const moduleIndex = tableData.custom_modules.findIndex(m => m.module_id === moduleId);
+                    
+                    if (moduleIndex === -1) {
+                        console.error("Module not found in AppState");
+                        return;
                     }
 
-                    // Jika Date/Time -> Force 'Range Filter' & Set Default Format
-                    const dateTypes = ['DATE', 'DATETIME', 'TIMESTAMP'];
-                    if (dateTypes.includes(newType)) {
-                        updateAndSave(fieldId, 'fld-enable-range-filter', 1, 'enable_range_filter');
+                    // 2. Cari jika medan ini sudah ada rekod dalam 'custom_module_fields'
+                    // Nota: Kita simpan array fields dalam objek module di AppState
+                    if (!tableData.custom_modules[moduleIndex].fields) {
+                        tableData.custom_modules[moduleIndex].fields = [];
+                    }
+                    
+                    let fieldRecord = tableData.custom_modules[moduleIndex].fields.find(f => f.field_id === fieldId);
+                    
+                    // Jika belum ada, cipta objek baharu untuk medan ini
+                    if (!fieldRecord) {
+                        fieldRecord = {
+                            field_id: fieldId,
+                            module_id: moduleId,
+                            settings_override: "{}" // JSON String asal kosong
+                        };
+                        tableData.custom_modules[moduleIndex].fields.push(fieldRecord);
+                    }
+
+                    // 3. Parse JSON sedia ada, kemas kini nilai, dan Stringify semula
+                    let currentSettings = {};
+                    try {
+                        currentSettings = JSON.parse(fieldRecord.settings_override || "{}");
+                    } catch (e) {
+                        currentSettings = {};
+                    }
+
+                    // Kemas kini nilai (Override)
+                    currentSettings[key] = value;
+                    const jsonString = JSON.stringify(currentSettings);
+                    
+                    // Simpan balik ke AppState (RAM)
+                    fieldRecord.settings_override = jsonString;
+
+                    console.log(`[CUSTOM MODULE] Menyimpan Override -> Field ID: ${fieldId} | ${key}: ${value}`);
+                    console.log("Updated JSON:", jsonString);
+
+                    // 4. Hantar ke Backend (Database)
+                    window.electronAPI.saveCustomFieldOverride({
+                        module_id: moduleId,
+                        field_id: fieldId,
+                        settings_override: jsonString
+                    }).then(res => {
+                        if(res.success) {
+                            // Pilihan: Tunjuk indikator simpanan kecil jika perlu
+                        } else {
+                            console.error("Gagal menyimpan override:", res.message);
+                        }
+                    });
+
+                    return; // Hentikan dari menyimpan ke DB jadual utama
+                } else {
+                    console.log(`[DEFAULT MODULE FIELD] Menyimpan -> Jadual: ${tableName}, Medan: ${fieldNameText} | ${key}: ${value}`);
+                    SaveManager.addToQueue('field', fieldId, { [key]: value });
+                }
+
+                // =========================================================
+                // LOGIK AUTOMATIK (SIDE EFFECTS)
+                // =========================================================
+                if (eventType === 'change') {
+                    if (input.id === 'fld-data-type') {
+                        const newType = input.value.toUpperCase();
+                        if (newType === 'JSON') updateAndSave(fieldId, 'fld-tv-wrap-text', 1, 'tv_wrap_text', tableName);
                         
-                        // Set format default jika field format masih kosong
-                        const formatEl = document.getElementById('fld-tv-date-time-format');
-                        if (formatEl && !formatEl.value) {
-                            const defaultFormat = newType === 'DATE' ? 'd/m/Y' : 'd/m/Y H:i';
-                            updateAndSave(fieldId, 'fld-tv-date-time-format', defaultFormat, 'tv_date_time_format');
+                        const dateTypes = ['DATE', 'DATETIME', 'TIMESTAMP'];
+                        if (dateTypes.includes(newType)) {
+                            updateAndSave(fieldId, 'fld-enable-range-filter', 1, 'enable_range_filter', tableName);
+                            const formatEl = document.getElementById('fld-tv-date-time-format');
+                            if (formatEl && !formatEl.value) {
+                                const defaultFormat = newType === 'DATE' ? 'd/m/Y' : 'd/m/Y H:i';
+                                updateAndSave(fieldId, 'fld-tv-date-time-format', defaultFormat, 'tv_date_time_format', tableName);
+                            }
                         }
                     }
-                }
 
-                // KES B: Pengguna menukar 'Display Type' (Input Type)
-                // ID input mungkin 'fld-display-type' atau 'fld-edit-display-as' bergantung pada HTML anda
-                if (input.id === 'fld-display-type' || input.id === 'fld-edit-display-as') {
-                    if (input.value === 'image') {
-                        updateAndSave(fieldId, 'fld-allow-image-uploads', 1, 'allow_image_uploads');
-                    }
-                    if (input.value === 'file') {
-                        updateAndSave(fieldId, 'fld-allow-file-uploads', 1, 'allow_file_uploads');
+                    if (input.id === 'fld-display-type' || input.id === 'fld-edit-display-as') {
+                        if (input.value === 'image') updateAndSave(fieldId, 'fld-allow-image-uploads', 1, 'allow_image_uploads', tableName);
+                        if (input.value === 'file') updateAndSave(fieldId, 'fld-allow-file-uploads', 1, 'allow_file_uploads', tableName);
                     }
                 }
-            }
+            });
         });
     });
 }
+
 // --- DATA TYPE & DISPLAY RULES ---
 
 export function initializeDisplayTypeRules() {

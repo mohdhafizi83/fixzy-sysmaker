@@ -251,7 +251,7 @@
     <div class="stack-column">
 
         
-        <h4 class="stack-column-title">Modules</h4>
+        <h4 class="stack-column-title">Core Modules</h4>
         <div class="module-options-list">
 <fieldset>
     <legend>Authentication</legend>
@@ -837,314 +837,10 @@
 	
     <div class="tabs-container">
         <div class="tabs-nav">
-            <button class="tab-link active" data-tab="parent-tab-table-view" id="tbl-tab-tableview" name="tbl-tab-tableview">Table List</button>
-            <button class="tab-link" data-tab="parent-tab-detail-view" id="tbl-tab-detailview" name="tbl-tab-detailview">Record Form</button>
     <button class="tab-link" data-tab="tab-constraints" id="tbl-tab-constraints" name="tbl-tab-constraints">Constraints & Indexes</button>
         </div>
 
         <div class="tabs-content">
-            <div id="parent-tab-table-view" class="tab-pane active">
-
-                <div class="tabs-container">
-                    <div class="tabs-nav">
-                        <button class="tab-link active" data-tab="tab-general" id="tbl-tv-tab-general" name="tbl-tv-tab-general">General</button>
-                        <button class="tab-link" data-tab="tab-display" id="tbl-tv-tab-display" name="tbl-tv-tab-display">Features</button>
-                        <button class="tab-link" data-tab="tab-template" id="tbl-tv-tab-template" name="tbl-tv-tab-template">Template</button>
-                    </div>
-                    <div class="tabs-content">
-                        <div id="tab-general" class="tab-pane active">
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="form-group">
-                                        <label for="tbl-table-view-title">'Table List' title</label>
-                                        <input type="text" id="tbl-table-view-title" name="tbl-table-view-title" value="Bilik">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="tbl-table-description">Description</label>
-                                        <textarea id="tbl-table-description" name="tbl-table-description" rows="4">List of {'Table List' title}</textarea>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="tab-display" class="tab-pane">
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="form-group">
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-show-quick-search" name="tbl-show-quick-search" checked> Show quick search box</label>
-                                    </div>
-                                    
-            <div class="form-group">
-                <label class="checkbox-label">
-                    <input type="checkbox" id="tbl-allow-pagination" name="tbl-allow-pagination" checked> Enable pagination (Highly recommended)
-                </label>
-            </div>
-<div class="form-group" id="records-per-page-group">
-    <div class="form-group radio-group-horizontal" style="margin-top: 1rem; align-items: center;">
-        <label style="margin-right: 1rem;">Pagination style:</label>
-        <label class="radio-label">
-            <input type="radio" name="tbl-pagination-type" value="simple"> Simple
-        </label>
-        <label class="radio-label">
-            <input type="radio" name="tbl-pagination-type" value="standard" checked> Standard
-        </label>
-        <label class="radio-label">
-            <input type="radio" name="tbl-pagination-type" value="extreme"> Extreme
-        </label>
-    </div>
-    </div>
-                                    <div class="form-group">
-                                        <label for="tbl-default-sort-by">Default sort by</label>
-                                        <div class="input-group">
-                                            <select id="tbl-default-sort-by" name="tbl-default-sort-by">
-                                                <option>None</option>
-                                            </select>
-                                            <label class="checkbox-label" style="margin-left: 1rem;"><input type="checkbox" id="tbl-sort-descending" name="tbl-sort-descending"> Descending</label>
-                                        </div>
-                                    </div>
-                                    <div class="permission-grid">
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-allow-csv-export" name="tbl-allow-csv-export" checked> Enable saving data to CSV files</label>
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-allow-csv-import" name="tbl-allow-csv-import" checked> Enable import CSV file</label>
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-allow-print-view" name="tbl-allow-print-view" checked> Enable print-view</label>
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-allow-mass-delete" name="tbl-allow-mass-delete" checked> Enable bulk delete</label>
-    <label class="checkbox-label">
-        <input type="checkbox" id="tbl-show-edit-button" name="tbl-show-edit-button" checked> Show edit button
-    </label>
-    <label class="checkbox-label">
-        <input type="checkbox" id="tbl-show-delete-button" name="tbl-show-delete-button" checked> Show delete button
-    </label>
-    <label class="checkbox-label">
-        <input type="checkbox" id="tbl-allow-restore-delete" name="tbl-allow-restore-delete" checked> Allow restore deleted records (Soft Delete)
-    </label>
-    <label class="checkbox-label">
-        <input type="checkbox" id="tbl-allow-force-delete" name="tbl-allow-force-delete" checked> Allow force delete (Soft Delete)
-    </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="tab-template" class="tab-pane">
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="form-grid">
-                                        <div>
-                                            <div class="form-group">
-                                                <label>'Table List' template</label>
-                                                <select id="tbl-tv-template" name="tbl-tv-template">
-                                                    <option value="horizontal">Horizontal (Default)</option>
-                                                    <option value="vertical_1">Vertical (1 field per line)</option>
-                                                    <option value="vertical_2">Vertical (2 fields per line)</option>
-                                                    <option value="left_image">Left image</option>
-                                                    <option value="right_image">Right image</option>
-                                                </select>
-                                            </div>
-                                            <div class="form-group">
-                                                <label class="checkbox-label"><input type="checkbox" id="tbl-hide-field-captions" name="tbl-hide-field-captions"> Hide field captions (labels)</label>
-                                                <label class="checkbox-label mt-1"><input type="checkbox" id="tbl-use-first-field-as-title" name="tbl-use-first-field-as-title"> Use the first textual field as a title for the record</label>
-                                            </div>
-                                            <div class="form-group">
-                                                <label>'Table List' classes</label>
-                                                <div class="input-group">
-                                                    <input type="text" id="tbl-table-view-classes-input" name="tbl-table-view-classes-input" value="">
-                                                    <select id="table-view-classes-select" name="table-view-classes-select">
-                                                        <option value="" selected>Default (full width)</option>
-                                                        <option value="col-md-offset-2 col-md-8">Narrow centered table</option>
-                                                        <option value="col-lg-6">Half-width left-aligned table</option>
-                                                        <option value="col-lg-4">One-third width left-aligned table</option>
-                                                        <option value="col-lg-8">Two-thirds width left-aligned table</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div class="form-group">
-                                                <label>'Record Form' classes</label>
-                                                <div class="input-group">
-                                                    <input type="text" id="tbl-detail-view-classes-input" name="tbl-detail-view-classes-input" value="">
-                                                    <select id="detail-view-classes-select" name="detail-view-classes-select">
-                                                        <option value="" selected>Default (full width)</option>
-                                                        <option value="col-md-offset-2 col-md-8">Narrow centered form</option>
-                                                        <option value="col-lg-6">Half-width form</option>
-                                                        <option value="col-lg-8">Two-thirds width form</option>
-                                                        <option value="col-lg-4">One-third width form</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <p style="font-size: 0.9em;"><a href="#">You can use Bootstrap grid classes above. Click here for more info ...</a></p>
-                                        </div>
-                                        <div>
-                                            <div class="theme-preview-window">
-                                                <p style="text-align: center; color: var(--secondary-color);">Template preview area</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <div id="parent-tab-detail-view" class="tab-pane">
-                <div class="tabs-container">
-                    <div class="tabs-nav">
-                        <button class="tab-link active" data-tab="tab-detail-general" id="tbl-dv-tab-general" name="tbl-dv-tab-general">General</button>
-                        <button class="tab-link" data-tab="tab-detail-permissions" id="tbl-dv-tab-permissions" name="tbl-dv-tab-permissions">Features</button>
-                        <button class="tab-link" data-tab="tab-detail-parent-child" id="tbl-dv-tab-parent-child" name="tbl-dv-tab-parent-child">Parent-Child </button>
-						<button class="tab-link" data-tab="tab-detail-hooks">Hooks (Optional - for sophisticated App)</button>
-                    </div>
-
-                    <div class="tabs-content">
-                        <div id="tab-detail-general" class="tab-pane active">
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="form-grid">
-                                        <div class="form-group">
-                                            <label for="tbl-detail-view-title">'Record Form' title</label>
-                                            <input type="text" id="tbl-detail-view-title" name="tbl-detail-view-title" value="Detail Record">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="tbl-record-owner">Record owner</label>
-                                            <select id="tbl-record-owner" name="tbl-record-owner">
-                                                <option value="current_user">Current user (default)</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="tbl-default-focus">Default focus field</label>
-                                            <select id="tbl-default-focus" name="tbl-default-focus">
-                                                <option>First editable field (jenis_bilik_id)</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="tbl-redirect-after-insert">Redirect after insert</label>
-                                            <input type="text" id="tbl-redirect-after-insert" name="tbl-redirect-after-insert" placeholder="Enter redirect path/URL">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="tab-detail-permissions" class="tab-pane">
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="permission-grid">
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-enable-detail-view" name="tbl-enable-detail-view" checked> Enable 'Record Form'</label>
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-delete-with-children" name="tbl-delete-with-children"> Delete records even if they have children</label>
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-dv-allow-print-view" name="tbl-dv-allow-print-view" checked> Allow print-view</label>
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-dv-separate-page" name="tbl-dv-separate-page"> Display 'Record Form' in a separate page</label>
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-dv-hide-save-as-copy" name="tbl-dv-hide-save-as-copy"> Hide "Save As Copy"</label>
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-dv-sticky-buttons" name="tbl-dv-sticky-buttons" checked> Keep action buttons visible while scrolling</label>
-                                        <label class="checkbox-label"><input type="checkbox" id="tbl-dv-allow-add-from-homepage" name="tbl-dv-allow-add-from-homepage"> Allow adding new records from homepage</label>                                      
-                                    </div>
-                                    
-<div class="form-group mt-2" style="border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
-    <label>Grid layout of the form ('Record Form')</label>
-    <div class="radio-group-horizontal mt-1">
-        <label>
-            <input type="radio" name="tbl-column-grid-type" id="tbl-column-grid-dynamic" value="dynamic" checked>
-            Dynamic column grid
-        </label>
-        <label>
-            <input type="radio" name="tbl-column-grid-type" id="tbl-column-grid-static" value="static">
-            Static column grid
-        </label>
-    </div>
-    <div class="form-group mt-1" id="tbl-static-grid-columns-group" style="margin-left: 2rem;">
-        <label for="tbl-static-grid-columns">Number of grids</label>
-        <input type="number" id="tbl-static-grid-columns" name="tbl-static-grid-columns" value="2" min="1" max="4" style="max-width: 100px;">
-    </div>
-</div>
-                                </div>
-                            </div>
-                        </div>
-
-<div id="tab-detail-hooks" class="tab-pane">
-    <div class="card">
-        <div class="card-body">
-            <div class="workflow-header">
-                <div>
-                    <h4>Table-Level Hooks</h4>
-                    <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 1.5rem;">
-                        Define actions that run on table-specific events...
-                    </p>
-                </div>
-
-            </div>
-            <input type="hidden" id="tbl-hook-logic" name="tbl-hook-logic">
-            <div id="table-workflow-container" class="workflow-container">
-                <button id="table-fullscreen-btn" class="btn-sidebar-icon fullscreen-btn" title="Toggle Fullscreen">
-                    <i class="fas fa-expand-arrows-alt"></i>
-                </button>
- <div class="workflow-palette">
-    <h4>Blocks</h4>
-    <div class="workflow-block-palette-item" draggable="true" data-block-type="hook_trigger">
-        <i class="fas fa-play-circle"></i><span>Hook Trigger</span>
-    </div>
-    <div class="workflow-block-palette-item" draggable="true" data-block-type="action"><i class="fas fa-bolt"></i><span>Advanced Action</span></div>
-<div class="workflow-block-palette-item" draggable="true" data-block-type="insert_record">
-    <i class="fas fa-plus-circle"></i><span>Insert Record</span>
-</div>
-<div class="workflow-block-palette-item" draggable="true" data-block-type="update_record">
-    <i class="fas fa-edit"></i><span>Update Record(s)</span>
-</div>
-<div class="workflow-block-palette-item" draggable="true" data-block-type="delete_record">
-    <i class="fas fa-trash-alt"></i><span>Delete Record(s)</span>
-</div>
-    <div class="workflow-block-palette-item" draggable="true" data-block-type="condition"><i class="fas fa-code-branch"></i><span>Condition</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="variable"><i class="fas fa-code"></i><span>Variable</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="for_each_loop"><i class="fas fa-sync-alt"></i><span>For Each Loop</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="data_transformer"><i class="fas fa-exchange-alt"></i><span>Data Transformer</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="terminate_workflow"><i class="fas fa-stop-circle"></i><span>Terminate Workflow</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="delay"><i class="fas fa-hourglass-half"></i><span>Delay / Wait</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="try_catch"><i class="fas fa-shield-alt"></i><span>Try / Catch</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="send_email"><i class="fas fa-paper-plane"></i><span>Send Email</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="http_request"><i class="fas fa-globe"></i><span>HTTP Request</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="switch"><i class="fas fa-sitemap"></i><span>Switch</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="send_whatsapp"><i class="fab fa-whatsapp"></i><span>Send WhatsApp</span></div>
-	<div class="workflow-block-palette-item" draggable="true" data-block-type="send_telegram"><i class="fab fa-telegram-plane"></i><span>Send Telegram</span></div>
-</div>
-<div class="workflow-canvas-wrapper">
-    <svg id="table-connector-svg" class="connector-svg"></svg>
-    <div id="table-workflow-canvas" class="workflow-canvas">
-    </div>
-    </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-                        <div id="tab-detail-parent-child" class="tab-pane">
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="form-grid">
-                                        <div>
-                                            <h4>Child Tables</h4>
-                                            <ul class="item-list" id="child-table-list">
-                                                <li class="active" data-child-name="tempahan_penginapan">tempahan_penginapan</li>
-                                                <li data-child-name="pendaftaran">pendaftaran</li>
-                                            </ul>
-                                        </div>
-                                        <div>
-                                            <h4>Options for "<span id="selected-child-table-name">tempahan_penginapan</span>"</h4>
-                                            <div class="permission-grid mt-2">
-                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-show-tab" name="parentchild-show-tab" checked> Show tab below 'Record Form'</label>
-                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-show-icon" name="parentchild-show-icon" checked> Show icon</label>
-                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-autoclose-modal" name="parentchild-autoclose-modal"> Auto-close modal after saving changes</label>
-                                                <div class="form-group">
-                                                    <label>Tab/column title</label>
-                                                    <input type="text" id="parentchild-tab-title" name="parentchild-tab-title" value="Tempahan penginapan">
-                                                </div>
-                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-copy-records" name="parentchild-copy-records"> Copy child records when copying parent</label>
-                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-show-link-above" name="parentchild-show-link-above" checked> Show link above 'Record Form'</label>
-                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-show-count-in-tv" name="parentchild-show-count-in-tv"> Show count of children in 'Table List' (TL)</label>
-                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-allow-add-from-tv" name="parentchild-allow-add-from-tv"> Add new children from 'Table List'</label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 						
 <div id="tab-constraints" class="tab-pane">
             <div class="card">
@@ -1213,7 +909,7 @@
             <button class="tab-link active" data-tab="tab-field-general" id="fld-tab-general" name="fld-tab-general">General</button>
             <button class="tab-link" data-tab="tab-field-media" id="fld-tab-media" name="fld-tab-media">Media</button>
             <button class="tab-link" data-tab="tab-field-lookup" id="fld-tab-lookup" name="fld-tab-lookup">Lookup field</button>
-            <button class="tab-link" data-tab="tab-field-options" id="fld-tab-options" name="fld-tab-options">View options</button>
+            <button class="tab-link" data-tab="tab-field-options" id="fld-tab-options" name="fld-tab-options">Form & Data Validations</button>
             <button class="tab-link" data-tab="tab-field-calculated" id="fld-tab-calculated" name="fld-tab-calculated">Calculated field</button>
 			<button class="tab-link" data-tab="tab-field-algorithm" id="fld-tab-algorithm" name="fld-tab-algorithm">Algorithm field</button>
         </div>
@@ -1683,12 +1379,452 @@
     <div class="card">
         <div class="card-body">
             <div class="tabs-container">
-                <div class="tabs-nav">
-                    <button class="tab-link active" data-tab="tab-tv-options">'Table List' Options</button>
-                    <button class="tab-link" data-tab="tab-dv-options">'Record Form' Options</button>
-                    <button class="tab-link" data-tab="tab-dv-validation">Form & Data Validations</button>
+    <fieldset>
+        <legend>Validation Rules</legend>
+        <div id="validationRulesContainer">
+        </div>
+    </fieldset>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="tab-field-calculated" class="tab-pane">
+    <div class="card">
+        <div class="card-body">
+            <label class="checkbox-label"><input type="checkbox" id="fld-calculated-enable" name="fld-calculated-enable"> Automatically calculate the value of this field using the following SQL query</label>
+            <div class="form-grid mt-2">
+
+                <div class="helper-box">
+ <!--                   <h4>Variables</h4>
+                    <ul>
+                        <li>Record ID</li>
+                        <li>Table name</li>
+                        <li>Username</li>
+                        <li>Primary key field name</li>
+                        <li>Group ID</li>
+                        <li>Group name</li>
+                    </ul> -->   
+    <h4 style="margin-top: 1rem;">Calculation Builder</h4>
+    <p>Use the calculation builder to generate an aggregate query (e.g., SUM, COUNT).</p>
+    <button class="btn btn-secondary mt-1" id="open-calculation-builder-btn">
+        <i class="fas fa-calculator"></i> Open Calculation Builder
+    </button>
+    </div>
+                <div class="form-group">
+                    <textarea rows="8" placeholder="SELECT ..." id="fld-calculated-query" name="fld-calculated-query"></textarea>
                 </div>
-                <div class="tabs-content">
+            </div>
+        </div>
+    </div>
+</div>
+
+            
+<div id="tab-field-algorithm" class="tab-pane">
+    <div class="card">
+        <div class="card-body">
+            <!-- ▼▼▼ KAWASAN INI DIUBAH SUAI ▼▼▼ -->
+            <label class="checkbox-label" style="margin-bottom: 1.5rem;">
+                <input type="checkbox" id="fld-algorithm-enable" name="fld-algorithm-enable">
+                Automatically calculate the value of this field using the following algorithm
+            </label>
+            <!-- Bekas untuk Algorithm Builder akan diletakkan di sini oleh JavaScript -->
+            <div id="algorithm-builder-container" class="hidden"></div>
+            <!-- ▲▲▲ TAMAT UBAH SUAI ▲▲▲ -->
+            <input type="hidden" id="fld-algorithm-logic" name="fld-algorithm-logic">
+
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+			
+        </div>
+    </div>
+</div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="tab-modules-setup" class="tab-pane">
+    <div class="card">
+        <div class="card-body">
+            <h4 style="margin-bottom: 15px;">Modules Setup</h4>
+<div id="modules-setup-content">
+       <div id="modules-dashboard-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+           <div>
+               <h3 style="margin: 0; color: var(--text-color);">Modules Dashboard</h3>
+               <p class="helper-text" style="margin: 5px 0 0 0; color: var(--secondary-color);">Manage Default and Custom Modules for your application.</p>
+           </div>
+           <button id="btn-add-custom-module-global" class="btn btn-primary"><i class="fas fa-plus"></i> Create Custom Module</button>
+       </div>
+       
+       <div id="modules-dashboard-grid" class="modules-grid">
+           </div>
+
+       <div id="module-workspace" style="display: none; background: #fff; border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; flex-direction: column; min-height: 700px;">
+           
+           <div class="workspace-header" style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); margin-bottom: 15px;">
+               <div style="display: flex; align-items: center; gap: 15px;">
+                   <button id="btn-back-to-modules" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</button>
+                   <h3 id="workspace-module-title" style="margin: 0; font-size: 1.4em;">Module Name</h3>
+                   <span id="workspace-module-badge" class="module-badge"></span>
+               </div>
+               
+               <div id="workspace-create-controls" class="hidden" style="display: flex; align-items: center; gap: 10px;">
+                   <label style="font-weight: 500; font-size: 0.9em;">Base Table:</label>
+                   <select id="workspace-base-table-select" class="form-control" style="width: 200px;"></select>
+                   <input type="text" id="workspace-new-module-name" class="form-control" placeholder="New Module Name..." style="width: 250px;">
+                   <button id="btn-save-new-module" class="btn btn-primary"><i class="fas fa-save"></i> Save Module</button>
+               </div>
+           </div>
+
+           <div style="display: flex; flex: 1; gap: 20px; overflow: hidden;">
+               
+               <div style="width: 250px; border-right: 1px solid var(--border-color); padding-right: 15px; overflow-y: auto;">
+                   <h4 style="margin-bottom: 15px; color: var(--secondary-color); font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.5px;">Module Fields</h4>
+                   <ul id="module-field-list" class="nav-list" style="list-style:none; padding:0;">
+                       </ul>
+               </div>
+
+<div id="module-settings-content" style="flex: 1; overflow-y: auto; padding: 10px; background: #f8f9fa; border-radius: 8px; position: relative;">
+                   
+                   <div id="module-settings-empty" style="text-align: center; color: #888; margin-top: 100px;">
+                       <i class="fas fa-tools" style="font-size: 3em; margin-bottom: 15px; color: #ddd;"></i>
+                       <p>Select "Module Settings" or a Field from the left to configure.</p>
+                   </div>
+
+                   <div id="module-global-settings" class="hidden">
+                       <h4 style="margin-bottom: 15px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">Module Settings</h4>
+                       <div class="tabs-container">
+                           <div class="tabs-nav">
+                               <button class="tab-link active" data-tab="parent-tab-table-view">Table List</button>
+                               <button class="tab-link" data-tab="parent-tab-detail-view">Record Form</button>
+                           </div>
+                           <div class="tabs-content">
+            <div id="parent-tab-table-view" class="tab-pane active">
+
+                <div class="tabs-container">
+                    <div class="tabs-nav">
+                        <button class="tab-link active" data-tab="tab-general" id="tbl-tv-tab-general" name="tbl-tv-tab-general">General</button>
+                        <button class="tab-link" data-tab="tab-display" id="tbl-tv-tab-display" name="tbl-tv-tab-display">Features</button>
+                        <button class="tab-link" data-tab="tab-template" id="tbl-tv-tab-template" name="tbl-tv-tab-template">Template</button>
+                    </div>
+                    <div class="tabs-content">
+                        <div id="tab-general" class="tab-pane active">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label for="tbl-table-view-title">'Table List' title</label>
+                                        <input type="text" id="tbl-table-view-title" name="tbl-table-view-title" value="Bilik">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="tbl-table-description">Description</label>
+                                        <textarea id="tbl-table-description" name="tbl-table-description" rows="4">List of {'Table List' title}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="tab-display" class="tab-pane">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-show-quick-search" name="tbl-show-quick-search" checked> Show quick search box</label>
+                                    </div>
+                                    
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="tbl-allow-pagination" name="tbl-allow-pagination" checked> Enable pagination (Highly recommended)
+                </label>
+            </div>
+<div class="form-group" id="records-per-page-group">
+    <div class="form-group radio-group-horizontal" style="margin-top: 1rem; align-items: center;">
+        <label style="margin-right: 1rem;">Pagination style:</label>
+        <label class="radio-label">
+            <input type="radio" name="tbl-pagination-type" value="simple"> Simple
+        </label>
+        <label class="radio-label">
+            <input type="radio" name="tbl-pagination-type" value="standard" checked> Standard
+        </label>
+        <label class="radio-label">
+            <input type="radio" name="tbl-pagination-type" value="extreme"> Extreme
+        </label>
+    </div>
+    </div>
+                                    <div class="form-group">
+                                        <label for="tbl-default-sort-by">Default sort by</label>
+                                        <div class="input-group">
+                                            <select id="tbl-default-sort-by" name="tbl-default-sort-by">
+                                                <option>None</option>
+                                            </select>
+                                            <label class="checkbox-label" style="margin-left: 1rem;"><input type="checkbox" id="tbl-sort-descending" name="tbl-sort-descending"> Descending</label>
+                                        </div>
+                                    </div>
+                                    <div class="permission-grid">
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-allow-csv-export" name="tbl-allow-csv-export" checked> Enable saving data to CSV files</label>
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-allow-csv-import" name="tbl-allow-csv-import" checked> Enable import CSV file</label>
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-allow-print-view" name="tbl-allow-print-view" checked> Enable print-view</label>
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-allow-mass-delete" name="tbl-allow-mass-delete" checked> Enable bulk delete</label>
+    <label class="checkbox-label">
+        <input type="checkbox" id="tbl-show-edit-button" name="tbl-show-edit-button" checked> Show edit button
+    </label>
+    <label class="checkbox-label">
+        <input type="checkbox" id="tbl-show-delete-button" name="tbl-show-delete-button" checked> Show delete button
+    </label>
+    <label class="checkbox-label">
+        <input type="checkbox" id="tbl-allow-restore-delete" name="tbl-allow-restore-delete" checked> Allow restore deleted records (Soft Delete)
+    </label>
+    <label class="checkbox-label">
+        <input type="checkbox" id="tbl-allow-force-delete" name="tbl-allow-force-delete" checked> Allow force delete (Soft Delete)
+    </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="tab-template" class="tab-pane">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="form-grid">
+                                        <div>
+                                            <div class="form-group">
+                                                <label>'Table List' template</label>
+                                                <select id="tbl-tv-template" name="tbl-tv-template">
+                                                    <option value="horizontal">Horizontal (Default)</option>
+                                                    <option value="vertical_1">Vertical (1 field per line)</option>
+                                                    <option value="vertical_2">Vertical (2 fields per line)</option>
+                                                    <option value="left_image">Left image</option>
+                                                    <option value="right_image">Right image</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="checkbox-label"><input type="checkbox" id="tbl-hide-field-captions" name="tbl-hide-field-captions"> Hide field captions (labels)</label>
+                                                <label class="checkbox-label mt-1"><input type="checkbox" id="tbl-use-first-field-as-title" name="tbl-use-first-field-as-title"> Use the first textual field as a title for the record</label>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>'Table List' classes</label>
+                                                <div class="input-group">
+                                                    <input type="text" id="tbl-table-view-classes-input" name="tbl-table-view-classes-input" value="">
+                                                    <select id="table-view-classes-select" name="table-view-classes-select">
+                                                        <option value="" selected>Default (full width)</option>
+                                                        <option value="col-md-offset-2 col-md-8">Narrow centered table</option>
+                                                        <option value="col-lg-6">Half-width left-aligned table</option>
+                                                        <option value="col-lg-4">One-third width left-aligned table</option>
+                                                        <option value="col-lg-8">Two-thirds width left-aligned table</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>'Record Form' classes</label>
+                                                <div class="input-group">
+                                                    <input type="text" id="tbl-detail-view-classes-input" name="tbl-detail-view-classes-input" value="">
+                                                    <select id="detail-view-classes-select" name="detail-view-classes-select">
+                                                        <option value="" selected>Default (full width)</option>
+                                                        <option value="col-md-offset-2 col-md-8">Narrow centered form</option>
+                                                        <option value="col-lg-6">Half-width form</option>
+                                                        <option value="col-lg-8">Two-thirds width form</option>
+                                                        <option value="col-lg-4">One-third width form</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <p style="font-size: 0.9em;"><a href="#">You can use Bootstrap grid classes above. Click here for more info ...</a></p>
+                                        </div>
+                                        <div>
+                                            <div class="theme-preview-window">
+                                                <p style="text-align: center; color: var(--secondary-color);">Template preview area</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div id="parent-tab-detail-view" class="tab-pane">
+                <div class="tabs-container">
+                    <div class="tabs-nav">
+                        <button class="tab-link active" data-tab="tab-detail-general" id="tbl-dv-tab-general" name="tbl-dv-tab-general">General</button>
+                        <button class="tab-link" data-tab="tab-detail-permissions" id="tbl-dv-tab-permissions" name="tbl-dv-tab-permissions">Features</button>
+                        <button class="tab-link" data-tab="tab-detail-parent-child" id="tbl-dv-tab-parent-child" name="tbl-dv-tab-parent-child">Parent-Child </button>
+						<button class="tab-link" data-tab="tab-detail-hooks">Hooks (Optional - for sophisticated App)</button>
+                    </div>
+
+                    <div class="tabs-content">
+                        <div id="tab-detail-general" class="tab-pane active">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="form-grid">
+                                        <div class="form-group">
+                                            <label for="tbl-detail-view-title">'Record Form' title</label>
+                                            <input type="text" id="tbl-detail-view-title" name="tbl-detail-view-title" value="Detail Record">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="tbl-record-owner">Record owner</label>
+                                            <select id="tbl-record-owner" name="tbl-record-owner">
+                                                <option value="current_user">Current user (default)</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="tbl-default-focus">Default focus field</label>
+                                            <select id="tbl-default-focus" name="tbl-default-focus">
+                                                <option>First editable field (jenis_bilik_id)</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="tbl-redirect-after-insert">Redirect after insert</label>
+                                            <input type="text" id="tbl-redirect-after-insert" name="tbl-redirect-after-insert" placeholder="Enter redirect path/URL">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="tab-detail-permissions" class="tab-pane">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="permission-grid">
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-enable-detail-view" name="tbl-enable-detail-view" checked> Enable 'Record Form'</label>
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-delete-with-children" name="tbl-delete-with-children"> Delete records even if they have children</label>
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-dv-allow-print-view" name="tbl-dv-allow-print-view" checked> Allow print-view</label>
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-dv-separate-page" name="tbl-dv-separate-page"> Display 'Record Form' in a separate page</label>
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-dv-hide-save-as-copy" name="tbl-dv-hide-save-as-copy"> Hide "Save As Copy"</label>
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-dv-sticky-buttons" name="tbl-dv-sticky-buttons" checked> Keep action buttons visible while scrolling</label>
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-dv-allow-add-from-homepage" name="tbl-dv-allow-add-from-homepage"> Allow adding new records from homepage</label>                                      
+                                    </div>
+                                    
+<div class="form-group mt-2" style="border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+    <label>Grid layout of the form ('Record Form')</label>
+    <div class="radio-group-horizontal mt-1">
+        <label>
+            <input type="radio" name="tbl-column-grid-type" id="tbl-column-grid-dynamic" value="dynamic" checked>
+            Dynamic column grid
+        </label>
+        <label>
+            <input type="radio" name="tbl-column-grid-type" id="tbl-column-grid-static" value="static">
+            Static column grid
+        </label>
+    </div>
+    <div class="form-group mt-1" id="tbl-static-grid-columns-group" style="margin-left: 2rem;">
+        <label for="tbl-static-grid-columns">Number of grids</label>
+        <input type="number" id="tbl-static-grid-columns" name="tbl-static-grid-columns" value="2" min="1" max="4" style="max-width: 100px;">
+    </div>
+</div>
+                                </div>
+                            </div>
+                        </div>
+
+<div id="tab-detail-hooks" class="tab-pane">
+    <div class="card">
+        <div class="card-body">
+            <div class="workflow-header">
+                <div>
+                    <h4>Table-Level Hooks</h4>
+                    <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 1.5rem;">
+                        Define actions that run on table-specific events...
+                    </p>
+                </div>
+
+            </div>
+            <input type="hidden" id="tbl-hook-logic" name="tbl-hook-logic">
+            <div id="table-workflow-container" class="workflow-container">
+                <button id="table-fullscreen-btn" class="btn-sidebar-icon fullscreen-btn" title="Toggle Fullscreen">
+                    <i class="fas fa-expand-arrows-alt"></i>
+                </button>
+ <div class="workflow-palette">
+    <h4>Blocks</h4>
+    <div class="workflow-block-palette-item" draggable="true" data-block-type="hook_trigger">
+        <i class="fas fa-play-circle"></i><span>Hook Trigger</span>
+    </div>
+    <div class="workflow-block-palette-item" draggable="true" data-block-type="action"><i class="fas fa-bolt"></i><span>Advanced Action</span></div>
+<div class="workflow-block-palette-item" draggable="true" data-block-type="insert_record">
+    <i class="fas fa-plus-circle"></i><span>Insert Record</span>
+</div>
+<div class="workflow-block-palette-item" draggable="true" data-block-type="update_record">
+    <i class="fas fa-edit"></i><span>Update Record(s)</span>
+</div>
+<div class="workflow-block-palette-item" draggable="true" data-block-type="delete_record">
+    <i class="fas fa-trash-alt"></i><span>Delete Record(s)</span>
+</div>
+    <div class="workflow-block-palette-item" draggable="true" data-block-type="condition"><i class="fas fa-code-branch"></i><span>Condition</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="variable"><i class="fas fa-code"></i><span>Variable</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="for_each_loop"><i class="fas fa-sync-alt"></i><span>For Each Loop</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="data_transformer"><i class="fas fa-exchange-alt"></i><span>Data Transformer</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="terminate_workflow"><i class="fas fa-stop-circle"></i><span>Terminate Workflow</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="delay"><i class="fas fa-hourglass-half"></i><span>Delay / Wait</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="try_catch"><i class="fas fa-shield-alt"></i><span>Try / Catch</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="send_email"><i class="fas fa-paper-plane"></i><span>Send Email</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="http_request"><i class="fas fa-globe"></i><span>HTTP Request</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="switch"><i class="fas fa-sitemap"></i><span>Switch</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="send_whatsapp"><i class="fab fa-whatsapp"></i><span>Send WhatsApp</span></div>
+	<div class="workflow-block-palette-item" draggable="true" data-block-type="send_telegram"><i class="fab fa-telegram-plane"></i><span>Send Telegram</span></div>
+</div>
+<div class="workflow-canvas-wrapper">
+    <svg id="table-connector-svg" class="connector-svg"></svg>
+    <div id="table-workflow-canvas" class="workflow-canvas">
+    </div>
+    </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+                        <div id="tab-detail-parent-child" class="tab-pane">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="form-grid">
+                                        <div>
+                                            <h4>Child Tables</h4>
+                                            <ul class="item-list" id="child-table-list">
+                                                <li class="active" data-child-name="tempahan_penginapan">tempahan_penginapan</li>
+                                                <li data-child-name="pendaftaran">pendaftaran</li>
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <h4>Options for "<span id="selected-child-table-name">tempahan_penginapan</span>"</h4>
+                                            <div class="permission-grid mt-2">
+                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-show-tab" name="parentchild-show-tab" checked> Show tab below 'Record Form'</label>
+                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-show-icon" name="parentchild-show-icon" checked> Show icon</label>
+                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-autoclose-modal" name="parentchild-autoclose-modal"> Auto-close modal after saving changes</label>
+                                                <div class="form-group">
+                                                    <label>Tab/column title</label>
+                                                    <input type="text" id="parentchild-tab-title" name="parentchild-tab-title" value="Tempahan penginapan">
+                                                </div>
+                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-copy-records" name="parentchild-copy-records"> Copy child records when copying parent</label>
+                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-show-link-above" name="parentchild-show-link-above" checked> Show link above 'Record Form'</label>
+                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-show-count-in-tv" name="parentchild-show-count-in-tv"> Show count of children in 'Table List' (TL)</label>
+                                                <label class="checkbox-label"><input type="checkbox" id="parentchild-allow-add-from-tv" name="parentchild-allow-add-from-tv"> Add new children from 'Table List'</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                               </div>
+                       </div>
+                   </div>
+
+                   <div id="module-field-settings" class="hidden">
+                       <h4 style="margin-bottom: 15px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">Field Options: <span id="current-module-field-name" style="color: var(--primary-color); font-weight: 600;"></span></h4>
+                       <div class="tabs-container">
+                           <div class="tabs-nav">
+                               <button class="tab-link active" data-tab="tab-tv-options">'Table List' Options</button>
+                               <button class="tab-link" data-tab="tab-dv-options">'Record Form' Options</button>
+                           </div>
+                           <div class="tabs-content">
                     <div id="tab-tv-options" class="tab-pane active">
                         <fieldset>
                             <legend>Table List: Content Display & Options</legend>
@@ -2118,111 +2254,16 @@
                             </div>
                         </fieldset>
                     </div>
-                    
-<div id="tab-dv-validation" class="tab-pane">
-    <fieldset>
-        <legend>Validation Rules</legend>
-        <div id="validationRulesContainer">
-        </div>
-    </fieldset>
-</div>                    
-                    
-                </div>
-            </div>
-        </div>
+
+                               </div>
+                       </div>
+                   </div>
+               </div>
+           </div>
+       </div>
+   </div>
     </div>
 </div>
-<div id="tab-field-calculated" class="tab-pane">
-    <div class="card">
-        <div class="card-body">
-            <label class="checkbox-label"><input type="checkbox" id="fld-calculated-enable" name="fld-calculated-enable"> Automatically calculate the value of this field using the following SQL query</label>
-            <div class="form-grid mt-2">
-
-                <div class="helper-box">
- <!--                   <h4>Variables</h4>
-                    <ul>
-                        <li>Record ID</li>
-                        <li>Table name</li>
-                        <li>Username</li>
-                        <li>Primary key field name</li>
-                        <li>Group ID</li>
-                        <li>Group name</li>
-                    </ul> -->   
-    <h4 style="margin-top: 1rem;">Calculation Builder</h4>
-    <p>Use the calculation builder to generate an aggregate query (e.g., SUM, COUNT).</p>
-    <button class="btn btn-secondary mt-1" id="open-calculation-builder-btn">
-        <i class="fas fa-calculator"></i> Open Calculation Builder
-    </button>
-    </div>
-                <div class="form-group">
-                    <textarea rows="8" placeholder="SELECT ..." id="fld-calculated-query" name="fld-calculated-query"></textarea>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-            
-<div id="tab-field-algorithm" class="tab-pane">
-    <div class="card">
-        <div class="card-body">
-            <!-- ▼▼▼ KAWASAN INI DIUBAH SUAI ▼▼▼ -->
-            <label class="checkbox-label" style="margin-bottom: 1.5rem;">
-                <input type="checkbox" id="fld-algorithm-enable" name="fld-algorithm-enable">
-                Automatically calculate the value of this field using the following algorithm
-            </label>
-            <!-- Bekas untuk Algorithm Builder akan diletakkan di sini oleh JavaScript -->
-            <div id="algorithm-builder-container" class="hidden"></div>
-            <!-- ▲▲▲ TAMAT UBAH SUAI ▲▲▲ -->
-            <input type="hidden" id="fld-algorithm-logic" name="fld-algorithm-logic">
-
-        </div>
-    </div>
-</div>
-
-
-
-
-
-
-
-
-
-
-			
-        </div>
-    </div>
-</div>
-
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="tab-modules-setup" class="tab-pane">
-    <div class="card">
-        <div class="card-body">
-            <h4 style="margin-bottom: 15px;">Modules Setup</h4>
-<div id="modules-setup-content">
-    <div class="form-group" style="max-width: 400px; margin-bottom: 20px;">
-        <label for="modules-setup-table-select">Select Table to Manage Modules:</label>
-        <select id="modules-setup-table-select" class="form-control">
-            <option value="">-- Choose a Table --</option>
-        </select>
-    </div>
-
-    <div id="modules-setup-workspace" class="hidden">
-        <div class="custom-module-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h4>Custom Modules</h4>
-            <button id="btn-add-custom-module" class="btn btn-primary"><i class="fas fa-plus"></i> Add Custom Module</button>
-        </div>
-        <p class="helper-text" style="margin-bottom: 15px;">Create specialized pages for this table with pre-filtered data and custom forms.</p>
-        <div id="custom-modules-list-container">
-            </div>
-    </div>
-</div>
-        </div>
-    </div>
 </div>
                 <div id="tab-menu-appearance" class="tab-pane">
                     <div class="card">

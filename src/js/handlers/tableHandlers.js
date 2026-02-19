@@ -5,63 +5,120 @@ import { SaveManager } from '../saveManager.js';
 import { showCustomDialog } from '../ui/modalHandlers.js';
 import { setElementValue, setRadioValue } from '../ui/formHelpers.js';
 import { openCustomViewModal } from './logicBuilderHandlers.js';
-//import { populateCustomViewsTab } from './tableHandlers.js';
+import { populateTableSettings } from '../pages/tableSettings.js';
+import { populateFieldSettings } from '../pages/fieldSettings.js';
 
 export function initializeTableSaveHandlers() {
-    const container = document.getElementById('table-settings-page');
-    if (!container) return;
+    // Kumpul kedua-dua container lama dan baharu
+    const containers = [
+        document.getElementById('table-settings-page'),
+        document.getElementById('module-global-settings') // TAPAK BAHARU FASA 3A
+    ];
 
-    ['change', 'focusout'].forEach(eventType => {
-        container.addEventListener(eventType, (e) => {
-            const input = e.target;
-            
-            // --- PEMBAIKAN UTAMA: ABAIKAN INPUT PARENT-CHILD ---
-            // Jika input berada dalam kawasan parent-child, jangan proses sebagai Table Update
-            if (input.closest('#parent-child-settings')) return;
-            if (input.id && input.id.startsWith('parentchild-')) return;
-            // ----------------------------------------------------
+    containers.forEach(container => {
+        if (!container) return;
 
-            if (eventType === 'focusout' && !['text', 'textarea', 'number'].includes(input.type) && input.tagName !== 'TEXTAREA') return;
-            if (eventType === 'change' && ['text', 'textarea', 'number'].includes(input.type) && input.tagName !== 'TEXTAREA') return;
-            if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(input.tagName)) return;
-            if (input.type === 'search') return;
+        ['change', 'focusout'].forEach(eventType => {
+            container.addEventListener(eventType, (e) => {
+                const input = e.target;
+                
+                // Abaikan input parent-child
+                if (input.closest('#parent-child-settings')) return;
+                if (input.id && input.id.startsWith('parentchild-')) return;
 
-            if (appState.isPopulatingData) return;
-            if (!appState.isAutoSaveEnabled) return;
+                if (eventType === 'focusout' && !['text', 'textarea', 'number'].includes(input.type) && input.tagName !== 'TEXTAREA') return;
+                if (eventType === 'change' && ['text', 'textarea', 'number'].includes(input.type) && input.tagName !== 'TEXTAREA') return;
+                if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(input.tagName)) return;
+                if (input.type === 'search') return;
 
-            const tableNameEl = container.querySelector('.table-name');
-            const tableName = tableNameEl ? tableNameEl.textContent.trim() : null;
-            if (!tableName) return;
+                if (appState.isPopulatingData || !appState.isAutoSaveEnabled) return;
 
-            const tableData = appState.jsonData.database.table[tableName];
-            if (!tableData) return;
+                // ==========================================
+                // MENGENAL PASTI KONTEKS (DEFAULT ATAU CUSTOM)
+                // ==========================================
+                let tableName = '';
+                const titleElWorkspace = document.getElementById('workspace-module-title');
+                const isWorkspaceActive = !document.getElementById('module-global-settings').classList.contains('hidden');
+                
+                if (isWorkspaceActive) {
+                    // Jika sedang mengedit dari Modules Setup
+                    tableName = titleElWorkspace.dataset.tableName;
+                } else {
+                    // Jika sedang mengedit dari Models Design lama
+                    const titleElTable = document.querySelector('#table-settings-page .table-name');
+                    if (!titleElTable) return;
+                    tableName = titleElTable.textContent.trim();
+                }
 
-            let key = '';
-            if (input.type === 'radio') {
-                key = input.name.replace('tbl-', '').replace(/-/g, '_');
-            } else {
-                key = input.id.replace('tbl-', '').replace(/-/g, '_');
-            }
+                const tableData = appState.jsonData.database.table[tableName];
+                if (!tableData) return;
+                const tableId = tableData.table_id;
 
-            const keyMappings = {
-                'hook_logic': 'table_hook_workflow',
-                'table_view_classes_input': 'table_view_classes_input',
-                'detail_view_classes_input': 'detail_view_classes_input',
-                'static_grid_columns': 'static_grid_columns',
-                'pagination_type': 'pagination_type', 
-                'column_grid_type': 'column_grid_type'
-            };
+                let key = '';
+                if (input.type === 'radio') {
+                    key = input.name.replace('tbl-', '').replace(/-/g, '_');
+                } else {
+                    key = input.id.replace('tbl-', '').replace(/-/g, '_');
+                }
 
-            if (keyMappings[key]) key = keyMappings[key];
+                let value;
+                if (input.type === 'checkbox') value = input.checked ? 1 : 0;
+                else if (input.type === 'radio') {
+                    if (!input.checked) return;
+                    value = input.value;
+                } else value = input.value;
 
-            let value;
-            if (input.type === 'checkbox') value = input.checked ? 1 : 0;
-            else if (input.type === 'radio') {
-                if (!input.checked) return;
-                value = input.value;
-            } else value = input.value;
+                // ==========================================
+                // ROUTING PENYIMPANAN DATA
+                // ==========================================
+                const badgeText = document.getElementById('workspace-module-badge')?.textContent;
+                const isCustomModule = isWorkspaceActive && badgeText === 'Custom';
 
-            SaveManager.addToQueue('table', tableData.table_id, { [key]: value });
+if (isCustomModule) {
+                    const moduleId = parseInt(titleElWorkspace.dataset.moduleId);
+                    
+                    // 1. Dapatkan Data Modul dari AppState
+                    const tableData = appState.jsonData.database.table[tableName];
+                    const moduleIndex = tableData.custom_modules.findIndex(m => m.module_id === moduleId);
+                    
+                    if (moduleIndex === -1) return;
+
+                    // 2. Parse JSON Override Sedia Ada (Table Level)
+                    let currentSettings = {};
+                    try {
+                        // Pastikan settings_override wujud dalam objek, jika tidak kosongkan
+                        const existingJson = tableData.custom_modules[moduleIndex].settings_override || "{}";
+                        currentSettings = JSON.parse(existingJson);
+                    } catch (e) {
+                        currentSettings = {};
+                    }
+
+                    // 3. Kemas kini nilai
+                    currentSettings[key] = value;
+                    const jsonString = JSON.stringify(currentSettings);
+
+                    // 4. Simpan ke AppState (RAM) supaya UI responsif
+                    tableData.custom_modules[moduleIndex].settings_override = jsonString;
+
+                    console.log(`[CUSTOM MODULE] Menyimpan Table Override -> Modul ID: ${moduleId} | ${key}: ${value}`);
+
+                    // 5. Hantar ke Backend (Database)
+                    window.electronAPI.saveCustomTableOverride({
+                        module_id: moduleId,
+                        settings_override: jsonString
+                    }).then(res => {
+                        if (!res.success) {
+                            console.error("Gagal menyimpan table override:", res.message);
+                            // Pilihan: Tunjuk toast error
+                        }
+                    });
+
+                } else {
+                    // ... (Kod Default Module asal kekal di sini) ...
+                    console.log(`[DEFAULT MODULE] Menyimpan -> Jadual: ${tableName} | ${key}: ${value}`);
+                    SaveManager.addToQueue('table', tableId, { [key]: value });
+                }
+            });
         });
     });
 }
@@ -774,7 +831,7 @@ export async function deleteCustomView(viewId) {
 
                     // 4. Render Semula Tab Custom Module Sahaja
                     // (Kerana fungsi ini berada dalam fail yang sama, kita boleh panggil terus)
-                    populateCustomViewsTab(tableName);
+                    renderModulesDashboard();
                     
                     // Pilihan: Boleh tambah toast notification di sini jika mahu
 
@@ -794,43 +851,393 @@ export async function deleteCustomView(viewId) {
 }
 
 /**
- * FASA 5: Menjana dan mengawal Dropdown di tab Modules Setup
+ * FASA 1 & 2: Mengawal Dashboard dan Workspace Modules Setup
  */
 export function initializeModulesSetupTab() {
-    const tableSelect = document.getElementById('modules-setup-table-select');
-    const workspace = document.getElementById('modules-setup-workspace');
-    if (!tableSelect) return;
+    const tabBtn = document.getElementById('tab-modules-setup-btn');
+    if (tabBtn) tabBtn.addEventListener('click', renderModulesDashboard);
 
-    // Fungsi untuk mengisi dropdown jadual
-    const populateDropdown = () => {
-        const tables = appState.jsonData?.database?.table || {};
-        const currentVal = tableSelect.value;
-        
-        tableSelect.innerHTML = '<option value="">-- Choose a Table --</option>';
-        Object.keys(tables).forEach(tableName => {
-            const opt = document.createElement('option');
-            opt.value = tableName;
-            opt.textContent = tableName;
-            tableSelect.appendChild(opt);
+    const workspaceContainer = document.getElementById('modules-setup-content');
+    
+    // BUG 3 FIX: Event listener untuk butang 'Back' (Guna ID & Style.display)
+    const btnBack = document.getElementById('btn-back-to-modules');
+    if (btnBack) {
+        btnBack.addEventListener('click', () => {
+            const workspace = document.getElementById('module-workspace');
+            if (workspace) workspace.style.display = 'none'; // Sembunyikan workspace
+            
+            const header = document.getElementById('modules-dashboard-header');
+            if (header) header.style.display = 'flex'; // Kembalikan header
+            
+            const grid = document.getElementById('modules-dashboard-grid');
+            if (grid) grid.style.display = 'grid'; // Kembalikan grid
+            
+            renderModulesDashboard(); // Refresh dashboard
         });
+    }
+
+    if (workspaceContainer) {
+        workspaceContainer.addEventListener('click', (e) => {
+            // Butang Edit Default Module
+            const btnEditDefault = e.target.closest('.btn-edit-default');
+            if (btnEditDefault) {
+                const tableName = btnEditDefault.dataset.tableName;
+                openModuleWorkspace('default', tableName);
+            }
+            
+            // Butang Edit Custom Module
+            const btnEditCustom = e.target.closest('.btn-edit-custom');
+            if (btnEditCustom) {
+                const tableName = btnEditCustom.dataset.tableName;
+                const moduleId = btnEditCustom.dataset.moduleId;
+                openModuleWorkspace('custom', tableName, moduleId);
+            }
+            
+            // Butang Delete Custom Module
+            const btnDeleteCustom = e.target.closest('.btn-delete-custom');
+            if (btnDeleteCustom) {
+                const viewId = parseInt(btnDeleteCustom.dataset.moduleId, 10);
+                deleteCustomView(viewId);
+            }
+            
+            // Butang Create New Custom Module
+            const btnCreateGlobal = e.target.closest('#btn-add-custom-module-global');
+            if (btnCreateGlobal) {
+                openModuleWorkspace('create');
+            }
+        });
+    }
+}
+
+/**
+ * Membuka Ruang Kerja (Workspace) berdasarkan mod (default / custom / create)
+ */
+export function openModuleWorkspace(mode, tableName = null, moduleId = null) {
+    // BUG 2 & 4 FIX: Sembunyikan Dashboard secara selamat
+    const header = document.getElementById('modules-dashboard-header');
+    if (header) header.style.display = 'none';
+    
+    const grid = document.getElementById('modules-dashboard-grid');
+    if (grid) grid.style.display = 'none';
+    
+    const workspace = document.getElementById('module-workspace');
+    if (workspace) workspace.style.display = 'flex'; // Paparkan Workspace
+
+    // Elemen UI Workspace
+    const titleEl = document.getElementById('workspace-module-title');
+    const badgeEl = document.getElementById('workspace-module-badge');
+    const createControls = document.getElementById('workspace-create-controls');
+    const baseTableSelect = document.getElementById('workspace-base-table-select');
+    const fieldList = document.getElementById('module-field-list');
+    
+    // Reset Senarai Medan
+    if (fieldList) fieldList.innerHTML = '';
+    if (createControls) createControls.classList.add('hidden');
+
+    const tables = appState.jsonData?.database?.table || {};
+
+    // LOGIK BERDASARKAN MOD
+    if (mode === 'create') {
+        if (titleEl) titleEl.textContent = "Create New Module";
+        if (badgeEl) { badgeEl.className = "module-badge"; badgeEl.textContent = ""; }
         
-        if (currentVal && tables[currentVal]) {
-            tableSelect.value = currentVal;
+        // Paparkan input Base Table dan Nama
+        if (createControls) createControls.classList.remove('hidden');
+        const nameInput = document.getElementById('workspace-new-module-name');
+        if (nameInput) nameInput.value = '';
+        
+        // Isi dropdown Base Table
+        if (baseTableSelect) {
+            baseTableSelect.innerHTML = '<option value="">-- Select Base Table --</option>';
+            Object.keys(tables).forEach(tName => {
+                baseTableSelect.appendChild(new Option(tName, tName));
+            });
+
+            // Apabila jadual dipilih, lukis senarai medannya
+            baseTableSelect.onchange = (e) => {
+                const selectedTable = e.target.value;
+                if (selectedTable && tables[selectedTable]) {
+                    renderWorkspaceFields(tables[selectedTable].fields);
+                } else {
+                    if (fieldList) fieldList.innerHTML = '';
+                }
+            };
         }
-    };
 
-    // Panggil setiap kali tab ini ditekan (atau global update)
-    document.getElementById('tab-modules-setup-btn')?.addEventListener('click', populateDropdown);
+} else if (mode === 'default') {
+        if (titleEl) {
+            titleEl.textContent = tableName;
+            titleEl.dataset.tableName = tableName; // SIMPAN KONTEKS
+            titleEl.dataset.moduleId = '';         // KOSONGKAN ID
+        }
+        if (badgeEl) { badgeEl.className = "module-badge badge-default"; badgeEl.textContent = "Default"; }
+        
+        // Lukis senarai medan
+        if (tables[tableName]) {
+            renderWorkspaceFields(tables[tableName].fields);
+        }
 
-    // Apabila pengguna memilih jadual dari dropdown
-    tableSelect.addEventListener('change', (e) => {
-        const selectedTable = e.target.value;
-        if (selectedTable) {
-            workspace.classList.remove('hidden');
-            // Guna semula fungsi sedia ada untuk memaparkan senarai modul
-            populateCustomViewsTab(selectedTable);
-        } else {
-            workspace.classList.add('hidden');
+} else if (mode === 'custom') {
+        const tableData = tables[tableName];
+        const moduleData = tableData?.custom_modules?.find(m => m.module_id == moduleId);
+        
+        if (titleEl) {
+            titleEl.textContent = moduleData ? moduleData.module_name : "Unknown Module";
+            titleEl.dataset.tableName = tableName; // SIMPAN KONTEKS
+            titleEl.dataset.moduleId = moduleId;   // SIMPAN ID
+        }
+        if (badgeEl) { badgeEl.className = "module-badge badge-custom"; badgeEl.textContent = "Custom"; }
+
+        // Lukis senarai medan
+        if (tableData) {
+            renderWorkspaceFields(tableData.fields);
+        }
+    }
+}
+
+/**
+ * Fungsi bantuan untuk melukis senarai medan di sebelah kiri ruang kerja
+ */
+function renderWorkspaceFields(fieldsObj) {
+    const fieldList = document.getElementById('module-field-list');
+    if (!fieldList) return;
+    fieldList.innerHTML = '';
+    
+    // 1. Tambah butang "Master" untuk Tetapan Modul Keseluruhan
+    const masterLi = document.createElement('li');
+    masterLi.innerHTML = `<a href="#" class="active" style="font-weight:600; color:var(--primary-color); border-bottom: 2px solid #eee; margin-bottom: 10px; padding-bottom: 12px;"><i class="fas fa-cogs" style="margin-right: 8px;"></i> Module Settings</a>`;
+    
+    masterLi.addEventListener('click', (e) => {
+        e.preventDefault();
+        fieldList.querySelectorAll('a').forEach(link => link.classList.remove('active'));
+        masterLi.querySelector('a').classList.add('active');
+        
+        document.getElementById('module-settings-empty').classList.add('hidden');
+        document.getElementById('module-field-settings').classList.add('hidden');
+        document.getElementById('module-global-settings').classList.remove('hidden');
+        
+        const currentTable = document.getElementById('workspace-module-title').dataset.tableName;
+        if (currentTable) populateTableSettings(currentTable);
+        
+        const moduleId = document.getElementById('workspace-module-title').dataset.moduleId;
+        if (moduleId) {
+            // Beri masa 50ms untuk populateTableSettings siap mengisi data asal
+            setTimeout(() => {
+                applyTableOverrides(currentTable, moduleId);
+            }, 50);
         }
     });
+    fieldList.appendChild(masterLi);
+    
+    // 2. Loop senarai medan
+    Object.keys(fieldsObj).forEach(fieldName => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = "#";
+        a.innerHTML = `<i class="fas fa-columns" style="color: #888; margin-right: 8px;"></i> ${fieldName}`;
+        
+        a.addEventListener('click', (e) => {
+            e.preventDefault();
+            fieldList.querySelectorAll('a').forEach(link => link.classList.remove('active'));
+            a.classList.add('active');
+            
+            document.getElementById('module-settings-empty').classList.add('hidden');
+            document.getElementById('module-global-settings').classList.add('hidden');
+            document.getElementById('module-field-settings').classList.remove('hidden');
+            document.getElementById('current-module-field-name').textContent = fieldName;
+            
+            const currentTable = document.getElementById('workspace-module-title').dataset.tableName;
+            if (currentTable) populateFieldSettings(currentTable, fieldName);
+            
+// --- LOGIK BARU: APPLY OVERRIDES ---
+            const titleEl = document.getElementById('workspace-module-title');
+            if (titleEl.dataset.moduleId) {
+                // Berikan sedikit masa untuk populateFieldSettings siap, kemudian apply override
+                setTimeout(() => {
+                    applyFieldOverrides(currentTable, fieldName, titleEl.dataset.moduleId);
+                }, 50); // 50ms delay cukup untuk populate siap
+            }
+        });
+        
+        li.appendChild(a);
+        fieldList.appendChild(li);
+    });
+
+    // 3. Klik tetapan Modul secara automatik bila dibuka
+    setTimeout(() => masterLi.click(), 50);
+}
+
+/**
+ * Melukis kad untuk Default Modules dan Custom Modules
+ */
+export function renderModulesDashboard() {
+    const grid = document.getElementById('modules-dashboard-grid');
+    if (!grid) return;
+    
+    const tables = appState.jsonData?.database?.table || {};
+    let html = '';
+    
+    Object.keys(tables).forEach(tableName => {
+        const tableData = tables[tableName];
+        
+        // 1. LUKIS KAD DEFAULT MODULE (Satu untuk setiap jadual)
+        html += `
+        <div class="module-card">
+            <div class="module-card-header">
+                <div>
+                    <div class="module-title"><i class="fas fa-table" style="color:#aaa; margin-right:8px;"></i>${tableName}</div>
+                    <div style="font-size: 0.85em; color: #888;">Base Table: ${tableName}</div>
+                </div>
+                <span class="module-badge badge-default">Default</span>
+            </div>
+            <div class="module-card-body">
+                Standard module automatically generated from your database schema.
+            </div>
+            <div class="module-card-actions">
+                <button class="btn btn-sm btn-secondary btn-edit-default" data-table-name="${tableName}"><i class="fas fa-paint-brush"></i> UI Setup</button>
+            </div>
+        </div>
+        `;
+        
+        // 2. LUKIS KAD CUSTOM MODULES (Jika jadual ini ada custom module)
+        const customModules = tableData.custom_modules || [];
+        customModules.forEach(mod => {
+            html += `
+            <div class="module-card" style="border-left: 4px solid var(--primary-color);">
+                <div class="module-card-header">
+                    <div>
+                        <div class="module-title"><i class="fas ${mod.menu_icon || 'fa-eye'}" style="color:var(--primary-color); margin-right:8px;"></i>${mod.module_name}</div>
+                        <div style="font-size: 0.85em; color: #888;">Base Table: ${tableName}</div>
+                    </div>
+                    <span class="module-badge badge-custom">Custom</span>
+                </div>
+                <div class="module-card-body">
+                    Specialized module with custom constraints, record owners, and specific form layouts.
+                </div>
+                <div class="module-card-actions">
+                    <button class="btn btn-sm btn-secondary btn-edit-custom" data-table-name="${tableName}" data-module-id="${mod.module_id}"><i class="fas fa-paint-brush"></i> UI Setup</button>
+                    <button class="btn btn-sm btn-danger btn-delete-custom" data-module-id="${mod.module_id}"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            </div>
+            `;
+        });
+    });
+    
+    if (Object.keys(tables).length === 0) {
+        grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #888;">No tables found. Please design your models first.</div>`;
+    } else {
+        grid.innerHTML = html;
+    }
+}
+
+/**
+ * FUNGSI AJAIB: Membaca JSON Override dan menampalnya ke atas UI
+ */
+function applyFieldOverrides(tableName, fieldName, moduleId) {
+    const tableData = appState.jsonData.database.table[tableName];
+    if (!tableData) return;
+
+    // Cari Modul
+    const moduleData = tableData.custom_modules?.find(m => m.module_id == moduleId);
+    if (!moduleData || !moduleData.fields) return;
+
+    // Cari Field ID
+    const originalField = tableData.fields[fieldName];
+    if (!originalField) return;
+    const fieldId = originalField.field_id;
+
+    // Cari Override untuk Field ini
+    const overrideRecord = moduleData.fields.find(f => f.field_id === fieldId);
+    if (!overrideRecord || !overrideRecord.settings_override) return;
+
+    try {
+        const settings = JSON.parse(overrideRecord.settings_override);
+        
+        console.log(`Applying Overrides for ${fieldName}:`, settings);
+
+        // Loop setiap kunci dalam JSON dan update UI
+        Object.keys(settings).forEach(key => {
+            const value = settings[key];
+            
+            // Cari elemen input berdasarkan ID (Convention: fld-nama_setting -> fld-nama-setting)
+            // Kita perlu tukar underscore (_) ke dash (-) kerana ID HTML guna dash
+            const elementId = 'fld-' + key.replace(/_/g, '-');
+            
+            const el = document.getElementById(elementId);
+            if (el) {
+                // Update UI secara visual tanpa trigger event 'change' (supaya tak loop save balik)
+                if (el.type === 'checkbox') {
+                    el.checked = (value === 1 || value === true);
+                } else {
+                    el.value = value;
+                }
+                
+                // Visual feedback: Berikan sedikit warna border kuning/hijau untuk tunjuk ia di-override
+                el.style.borderColor = "#10b981"; // Hijau
+                el.title = "This setting is overridden by Custom Module";
+            }
+        });
+
+    } catch (e) {
+        console.error("Error applying overrides:", e);
+    }
+}
+
+/**
+ * FUNGSI AJAIB 2: Membaca JSON Override Jadual dan menampalnya ke atas UI
+ */
+function applyTableOverrides(tableName, moduleId) {
+    const tableData = appState.jsonData.database.table[tableName];
+    if (!tableData) return;
+
+    // Cari Modul
+    // Pastikan moduleId adalah nombor (integer) kerana dalam dataset ia string
+    const modIdInt = parseInt(moduleId, 10);
+    const moduleData = tableData.custom_modules?.find(m => m.module_id === modIdInt);
+    
+    if (!moduleData || !moduleData.settings_override) return;
+
+    try {
+        const settings = JSON.parse(moduleData.settings_override);
+        console.log(`Applying Table Overrides for Module ${modIdInt}:`, settings);
+
+        Object.keys(settings).forEach(key => {
+            const value = settings[key];
+            
+            // Konvensyen ID: tbl-nama_setting -> tbl-nama-setting
+            const dashedKey = key.replace(/_/g, '-');
+            const elementId = 'tbl-' + dashedKey;
+            
+            // Cuba cari elemen standard (Input / Select / Checkbox)
+            const el = document.getElementById(elementId);
+            
+            if (el) {
+                // Update UI Visual
+                if (el.type === 'checkbox') {
+                    el.checked = (value === 1 || value === true);
+                } else {
+                    el.value = value;
+                }
+                
+                // Visual feedback (Hijau)
+                el.style.borderColor = "#10b981"; 
+                el.title = "This setting is overridden by Custom Module";
+            
+            } else {
+                // Cuba cari Radio Button (kerana radio tiada ID unik yang sama format)
+                // Format nama radio biasanya: tbl-nama-setting
+                const radioName = 'tbl-' + dashedKey;
+                const radioSelector = `input[name="${radioName}"][value="${value}"]`;
+                const radioBtn = document.querySelector(radioSelector);
+                
+                if (radioBtn) {
+                    radioBtn.checked = true;
+                    // Untuk radio, kita tandakan label induknya jika boleh, atau biarkan sahaja
+                }
+            }
+        });
+
+    } catch (e) {
+        console.error("Error applying table overrides:", e);
+    }
 }

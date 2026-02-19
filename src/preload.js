@@ -49,6 +49,9 @@ updateIndividualMenuOrder: (data) => ipcRenderer.invoke('menu:update-individual-
 // --- CUSTOM MODULE API ---
   saveCustomModule: (data) => ipcRenderer.invoke('custom-module:save', data),
   deleteCustomModule: (viewId) => ipcRenderer.invoke('custom-module:delete', viewId),
+  //Untuk menyimpan override medan individu
+  saveCustomTableOverride: (data) => ipcRenderer.invoke('custom-module:save-table-override', data),
+  saveCustomFieldOverride: (data) => ipcRenderer.invoke('custom-module:save-field-override', data),
   
   // (Pilihan) Alias lama dikekalkan sementara waktu sekiranya ada fail lain belum ditukar
   saveCustomView: (data) => ipcRenderer.invoke('custom-module:save', data),
