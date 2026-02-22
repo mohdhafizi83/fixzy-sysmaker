@@ -171,11 +171,34 @@ export function populateParentChildTab(currentTableName) {
             childList.appendChild(li);
         });
         
-        const populateForm = (childName) => {
+const populateForm = (childName) => {
             const relationData = children.find(c => c.child_table_name === childName);
             if (!relationData) return;
             optionsTitle.textContent = childName;
-            formElements.showTab.checked = relationData.show_tab === 1;
+
+            // ▼▼▼ SEMAKAN KONTEKS MODUL (CUSTOM ATAU DEFAULT?) ▼▼▼
+            const isWorkspaceActive = !document.getElementById('module-global-settings')?.classList.contains('hidden');
+            const badgeEl = document.getElementById('workspace-module-badge');
+            const isCustomModule = isWorkspaceActive && badgeEl && badgeEl.classList.contains('badge-custom');
+            
+            let isIncluded = relationData.show_tab === 1; // Nilai lalai dari Global (Default)
+
+            if (isCustomModule) {
+                const moduleIdStr = document.getElementById('workspace-module-title')?.dataset.moduleId;
+                if (moduleIdStr) {
+                    const moduleId = parseInt(moduleIdStr, 10);
+                    const modData = appState.jsonData.database.table[currentTableName]?.custom_modules?.find(m => m.module_id === moduleId);
+                    if (modData) {
+                        let includedRels = [];
+                        try { includedRels = JSON.parse(modData.included_relations || "[]"); } catch(e){}
+                        // Tandakan checkbox jika nama jadual ini ada dalam array included_relations
+                        isIncluded = includedRels.includes(childName);
+                    }
+                }
+            }
+            // ▲▲▲ TAMAT SEMAKAN ▲▲▲
+
+            formElements.showTab.checked = isIncluded;
             formElements.showIcon.checked = relationData.show_icon === 1;
             formElements.autocloseModal.checked = relationData.autoclose_modal === 1;
             formElements.tabTitle.value = relationData.tab_title || '';
@@ -183,8 +206,18 @@ export function populateParentChildTab(currentTableName) {
             formElements.showLinkAbove.checked = relationData.show_link_above === 1;
             formElements.showCount.checked = relationData.show_count_in_tv === 1;
             formElements.allowAdd.checked = relationData.allow_add_from_tv === 1;
-        };
 
+            // Kunci (disable) input lain supaya pengguna faham ia adalah tetapan Global
+            const inputsToDisable = [formElements.showIcon, formElements.autocloseModal, formElements.tabTitle, formElements.copyRecords, formElements.showLinkAbove, formElements.showCount, formElements.allowAdd];
+            inputsToDisable.forEach(input => {
+                if (input) {
+                    input.disabled = isCustomModule;
+                    if (isCustomModule) input.parentElement.title = "This visual setting is shared globally across modules.";
+                    else input.parentElement.title = ""; // Reset
+                }
+            });
+        };
+        
         // Elakkan menambah event listener berulang kali
         const newChildList = childList.cloneNode(true);
         childList.parentNode.replaceChild(newChildList, childList);

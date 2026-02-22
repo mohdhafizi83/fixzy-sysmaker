@@ -149,11 +149,14 @@ export function initializeFieldSaveHandlers() {
                     console.log(`[DEFAULT MODULE FIELD] Menyimpan -> Jadual: ${tableName}, Medan: ${fieldNameText} | ${key}: ${value}`);
                     SaveManager.addToQueue('field', fieldId, { [key]: value });
 
-                    // ▼▼▼ PENYEGERAKAN MEMORI & UI (SILENT RELOAD) ▼▼▼
-                    if (eventType === 'change' && key === 'field_name') {
+// ▼▼▼ PENYEGERAKAN MEMORI & UI (SILENT RELOAD) ▼▼▼
+                    // PEMBETULAN: Gunakan 'focusout' untuk input teks
+                    if (eventType === 'focusout' && key === 'field_name') {
                         const oldFieldName = fieldNameText;
                         const newFieldName = value;
                         
+                        console.log(`[Silent Reload] Mengemas kini Medan: ${oldFieldName} -> ${newFieldName} (ID: ${fieldId})`);
+
                         // 1. Kemas kini Kunci (Key) di dalam AppState
                         const tData = appState.jsonData.database.table[tableName];
                         if (tData && tData.fields[oldFieldName]) {
@@ -162,14 +165,11 @@ export function initializeFieldSaveHandlers() {
                             delete tData.fields[oldFieldName];
                         }
 
-                        // 2. Kemas kini UI Sidebar (Senarai Medan)
-                        const activeFieldLink = document.querySelector('#module-field-list a.active') || document.querySelector('#fields-list a.active');
-                        if (activeFieldLink) {
-                            activeFieldLink.innerHTML = `<i class="fas fa-columns" style="color: #888; margin-right: 8px;"></i> ${newFieldName}`;
-                            
-                            // Penting: Kemas kini dataset baris supaya klik seterusnya tak ralat
-                            const activeLi = activeFieldLink.closest('li');
-                            if (activeLi) activeLi.dataset.fieldName = newFieldName;
+                        // 2. Kemas kini UI Sidebar secara TEPAT menggunakan data-field-id
+                        const fieldSpan = document.querySelector(`li[data-field-id="${fieldId}"] > a > span`);
+                        if (fieldSpan) {
+                            fieldSpan.textContent = newFieldName;
+                            fieldSpan.parentElement.title = `Field Name: ${newFieldName}`;
                         }
 
                         // 3. Kemas kini Breadcrumb

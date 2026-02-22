@@ -132,10 +132,13 @@ if (isCustomModule) {
                     console.log(`[DEFAULT MODULE] Menyimpan -> Jadual: ${tableName} | ${key}: ${value}`);
                     SaveManager.addToQueue('table', tableId, { [key]: value });
 
-                    // ▼▼▼ PENYEGERAKAN MEMORI & UI (SILENT RELOAD) ▼▼▼
-                    if (eventType === 'change' && key === 'table_name') {
+// ▼▼▼ PENYEGERAKAN MEMORI & UI (SILENT RELOAD) ▼▼▼
+                    // PEMBETULAN: Gunakan 'focusout' kerana input teks diabaikan pada 'change'
+                    if (eventType === 'focusout' && key === 'table_name') {
                         const oldName = tableName;
                         const newName = value;
+                        
+                        console.log(`[Silent Reload] Mengemas kini Jadual: ${oldName} -> ${newName} (ID: ${tableId})`);
                         
                         // 1. Kemas kini Kunci (Key) di dalam AppState
                         if (appState.jsonData.database.table[oldName]) {
@@ -148,10 +151,11 @@ if (isCustomModule) {
                         const tIdx = appState.allTableNames?.indexOf(oldName);
                         if (tIdx !== -1 && tIdx !== undefined) appState.allTableNames[tIdx] = newName;
 
-                        // 2. Kemas kini UI Sidebar (Senarai Jadual)
-                        const activeTableLink = document.querySelector('#tables-list a.active') || document.querySelector('.sidebar a.active');
-                        if (activeTableLink) {
-                            activeTableLink.innerHTML = `<i class="fas fa-table" style="margin-right: 8px;"></i> ${newName}`;
+                        // 2. Kemas kini UI Sidebar secara TEPAT menggunakan data-table-id
+                        const tableSpan = document.querySelector(`li[data-table-id="${tableId}"] > a > span`);
+                        if (tableSpan) {
+                            tableSpan.textContent = newName;
+                            tableSpan.parentElement.title = `Table Name: ${newName}`; 
                         }
 
                         // 3. Kemas kini Breadcrumb & Tajuk Workspace
@@ -238,15 +242,76 @@ export function initializeRelationshipSaveHandlers() {
                     return;
                 }
 
-                let key = inputId.replace('parentchild-', '').replace(/-/g, '_');
+              let key = inputId.replace('parentchild-', '').replace(/-/g, '_');
                 if (key === 'display_type_select') key = 'display_type';
 
                 let value;
                 if (input.type === 'checkbox') value = input.checked ? 1 : 0;
                 else value = input.value;
 
+                // ▼▼▼ ROUTING: CUSTOM MODULE VS DEFAULT MODULE ▼▼▼
+                const badgeText = document.getElementById('workspace-module-badge')?.textContent;
+                const isCustomModule = isWorkspaceActive && badgeText === 'Custom';
+                const isCreateMode = isWorkspaceActive && titleElWorkspace.textContent === "Create New Module";
+
+                if (isCreateMode) {
+                    showCustomDialog({ title: "Info", message: "Please save (Create) the module first before assigning Relation Managers." });
+                    if (input.type === 'checkbox') input.checked = !input.checked;
+                    return;
+                }
+
+                if (isCustomModule) {
+                    if (key === 'show_tab') {
+                        const moduleId = parseInt(titleElWorkspace.dataset.moduleId, 10);
+                        const tableData = appState.jsonData.database.table[currentTableName];
+                        const modIndex = tableData.custom_modules.findIndex(m => m.module_id === moduleId);
+
+                        if (modIndex > -1) {
+                            const modData = tableData.custom_modules[modIndex];
+                            let includedRels = [];
+                            try { includedRels = JSON.parse(modData.included_relations || "[]"); } catch(e) {}
+
+                            // Tambah atau buang dari Array JSON
+                            if (value === 1 && !includedRels.includes(childTableName)) {
+                                includedRels.push(childTableName);
+                            } else if (value === 0) {
+                                includedRels = includedRels.filter(t => t !== childTableName);
+                            }
+
+                            const jsonString = JSON.stringify(includedRels);
+                            modData.included_relations = jsonString; // Simpan di RAM
+
+                            console.log(`[CUSTOM MODULE] Menyimpan included_relations -> ${jsonString}`);
+
+                            // Hantar payload penuh ke Backend untuk Update
+                            const payload = {
+                                module_id: modData.module_id,
+                                table_id: tableData.table_id,
+                                module_name: modData.module_name,
+                                menu_icon: modData.menu_icon,
+                                owner_only: modData.owner_only,
+                                owner_field: modData.owner_field,
+                                fields: modData.fields,
+                                filter_rules: modData.filter_rules,
+                                settings_override: modData.settings_override,
+                                included_relations: modData.included_relations || "[]"
+                            };
+
+                            window.electronAPI.saveCustomModule(payload).then(res => {
+                                if (!res.success) console.error("Gagal simpan relations:", res.message);
+                            });
+                        }
+                    } else {
+                        // Halang tetapan lain diubah
+                        showCustomDialog({ title: "Global Setting", message: "Only 'Show Tab' (Include/Exclude) can be customized per Custom Module. Other settings are shared globally."});
+                        if (input.type === 'checkbox') input.checked = !input.checked;
+                    }
+                    return; // Tamat proses untuk Custom Module
+                }
+                // ▲▲▲ TAMAT ROUTING ▲▲▲
+
+                // --- GLOBAL SAVE UNTUK DEFAULT MODULE ---
                 console.log(`🚀 Menghantar ke SaveManager: RelID=${relData.relationship_id}, Key=${key}, Val=${value}`);
-                
                 SaveManager.addToQueue('relationship', relData.relationship_id, { [key]: value });
             });
         });
@@ -1025,7 +1090,8 @@ const tableData = appState.jsonData.database.table[baseTable];
                     owner_only: 0,
                     owner_field: null,
                     filter_rules: finalFilterRules, 
-                    settings_override: JSON.stringify(tableOverrides), // <--- TAMBAH BARIS INI
+                    settings_override: JSON.stringify(tableOverrides),
+                    included_relations: "[]",
                     fields: [] 
                 };
 
