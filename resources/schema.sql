@@ -266,15 +266,15 @@ CREATE TABLE menu_items (
     project_id      INTEGER NOT NULL,
     menu_group_id   INTEGER, -- Akan NULL untuk menu individu
     table_id        INTEGER, -- NULL untuk menu custom
-	custom_view_id  INTEGER,
-    item_label      TEXT,    -- Label untuk menu custom
-    item_url        TEXT,    -- URL untuk menu custom
+	module_id       INTEGER,
+    item_label      TEXT,
+    item_detail     TEXT,
     item_order      INTEGER,
 	show_record_count INTEGER DEFAULT 0,
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
     FOREIGN KEY (menu_group_id) REFERENCES menu_groups(menu_group_id) ON DELETE CASCADE,
     FOREIGN KEY (table_id) REFERENCES tables(table_id) ON DELETE CASCADE,
-	FOREIGN KEY (custom_view_id) REFERENCES custom_views(custom_view_id) ON DELETE CASCADE
+	FOREIGN KEY (module_id) REFERENCES custom_modules(module_id) ON DELETE CASCADE
 );
 
 -- 8. Jadual untuk menyimpan konfigurasi Custom Module

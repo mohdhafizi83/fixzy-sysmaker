@@ -28,12 +28,12 @@ export function populateMenuManagement(unifiedMenu) {
             <div class="nested-menu-item" 
                  data-item-id="${item.item_id}" 
                  data-label="${item.item_label || ''}" 
-                 data-url="${item.item_url || ''}"
+                 data-url="${item.item_detail || ''}"
                  data-type="${itemType}"
                  ${tableNameAttribute}>
                 <i class="fas ${icon} nested-item-icon"></i>
                 <span class="nested-item-label" title="${item.item_label}">${item.item_label}</span>
-                <span class="nested-item-url" title="URL: ${item.item_url || 'N/A'}">${item.item_url || '(Not a link)'}</span>
+                <span class="nested-item-url" title="URL: ${item.item_detail || 'N/A'}">${item.item_detail || '(Not a link)'}</span>
                 <div class="nested-item-actions">
                     <button class="btn-sidebar-icon nested-menu-move-up-btn" title="Move Up"><i class="fas fa-arrow-up"></i></button>
                     <button class="btn-sidebar-icon nested-menu-move-down-btn" title="Move Down"><i class="fas fa-arrow-down"></i></button>
@@ -56,30 +56,34 @@ export function populateMenuManagement(unifiedMenu) {
         return groupEl;
     };
 
-    const createItemElement = (item) => {
+const createItemElement = (item) => {
         const itemEl = document.createElement('div');
         itemEl.className = 'custom-menu-item';
-        itemEl.dataset.type = item.type;
-        // ▼▼▼ MULA PEMBETULAN ▼▼▼
+        
+        // ▼▼▼ PEMBAIKAN LOGIK: Semak jenis menu berdasarkan database ▼▼▼
+        const computedType = item.table_id ? 'table_item' : (item.module_id ? 'custom_view_item' : 'custom_item');
+        
+        itemEl.dataset.type = computedType;
         itemEl.dataset.itemId = item.item_id;
         itemEl.dataset.label = item.item_label;
-        itemEl.dataset.url = item.item_url || '';
-        // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
+        itemEl.dataset.url = item.item_detail || '';
 
-        if (item.type === 'table_item') {
-            itemEl.dataset.tableName = item.table_name;
+        // Masukkan nama jadual jika ia adalah jadual atau custom module
+        if (computedType === 'table_item' || computedType === 'custom_view_item') {
+            itemEl.dataset.tableName = item.table_name || '';
         }
 
-        const icon = item.type === 'table_item' ? 'fa-table' : (item.type === 'custom_view_item' ? 'fa-eye' : 'fa-link');
+        // Tentukan ikon yang betul
+        const icon = computedType === 'table_item' ? 'fa-table' : (computedType === 'custom_view_item' ? 'fa-eye' : 'fa-link');
+        // ▲▲▲ TAMAT PEMBAIKAN ▲▲▲
         
-        // ▼▼▼ MULA PEMBETULAN ▼▼▼
         itemEl.innerHTML = `
             <i class="fas ${icon}" style="margin: 0 0.5rem; color: var(--secondary-color);"></i>
             <div class="form-group" style="flex: 1;">
                 <input type="text" readonly value="${item.item_label}" title="Label: ${item.item_label}">
             </div>
             <div class="form-group" style="flex: 2;">
-                <input type="text" readonly value="${item.item_url || '(Not a link)'}" title="URL: ${item.item_url || 'N/A'}">
+                <input type="text" readonly value="${item.item_detail || '(Not a link)'}" title="URL: ${item.item_detail || 'N/A'}">
             </div>
             <div class="group-actions">
                 <button class="btn-sidebar-icon menu-move-up-btn" title="Move Up"><i class="fas fa-arrow-up"></i></button>
@@ -88,10 +92,9 @@ export function populateMenuManagement(unifiedMenu) {
                 <button class="btn-sidebar-icon custom-menu-delete-btn" title="Delete Item"><i class="fas fa-trash-alt"></i></button>
             </div>
         `;
-        // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
         return itemEl;
     };
-
+    
     unifiedMenuList.innerHTML = ''; 
 
     unifiedMenu.forEach(item => {
@@ -311,7 +314,7 @@ function openCustomMenuModal(itemEl = null) {
             if (!tableNameForSave) { showCustomDialog({ title: "Input Required", message: "Please select a table." }); return; }
             const tableData = appState.jsonData.database.table[tableNameForSave];
             if (!tableData) { showCustomDialog({ title: "Error", message: "Table data not found." }); return; }
-            dataToSave = { ...dataToSave, label: tableLabel, url: `${tableNameForSave} Resource`, table_id: tableData.table_id, module_id: null, show_record_count: elements.recordCountCheckbox.checked };
+            dataToSave = { ...dataToSave, label: tableLabel, url: `${tableNameForSave} Module`, table_id: tableData.table_id, module_id: null, show_record_count: elements.recordCountCheckbox.checked };
         
         } else if (selectedType === 'custom_view') {
             const cvLabel = elements.cvLabelInput.value.trim();

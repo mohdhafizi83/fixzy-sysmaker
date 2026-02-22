@@ -1492,8 +1492,14 @@
                
                <div style="width: 250px; border-right: 1px solid var(--border-color); padding-right: 15px; overflow-y: auto;">
                    <h4 style="margin-bottom: 15px; color: var(--secondary-color); font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.5px;">Module Fields</h4>
-                   <ul id="module-field-list" class="nav-list" style="list-style:none; padding:0;">
-                       </ul>
+<div id="module-sort-controls" class="hidden" style="padding: 8px 15px; border-bottom: 1px solid #eee; display: flex; justify-content: flex-end; gap: 5px; background: #fdfdfd;">
+    <span style="flex-grow: 1; font-size: 0.8em; color: #888; display: flex; align-items: center;">Sort Selected Field:</span>
+    <button id="module-btn-move-up" class="btn btn-sm btn-light" title="Move Field Up" style="border: 1px solid #ddd;"><i class="fas fa-arrow-up"></i></button>
+    <button id="module-btn-move-down" class="btn btn-sm btn-light" title="Move Field Down" style="border: 1px solid #ddd;"><i class="fas fa-arrow-down"></i></button>
+</div>
+<ul id="module-field-list" class="workspace-sidebar-list"></ul>
+                   <!--<ul id="module-field-list" class="nav-list" style="list-style:none; padding:0;">
+                       </ul>-->
                </div>
 
 <div id="module-settings-content" style="flex: 1; overflow-y: auto; padding: 10px; background: #f8f9fa; border-radius: 8px; position: relative;">
@@ -1813,9 +1819,19 @@
                 </div>
             </div>
 
-                               </div>
+</div>
                        </div>
-                   </div>
+                       
+<div id="custom-module-specific-settings" class="hidden" style="margin-top: 30px; padding-top: 20px; border-top: 2px dashed #eee;">
+                           <h4 style="color: var(--primary-color); margin-bottom: 15px;"><i class="fas fa-filter"></i> Custom Module Advanced Filter</h4>
+                           
+                           <div class="form-group">
+                               <p style="font-size: 0.85em; color: #666;">Define specific criteria to filter the records shown in this module. Match <strong>ALL</strong> or <strong>ANY</strong> of the conditions.</p>
+                               <div id="workspace-filter-builder-container" style="background: #fdfdfd; border: 1px solid #ddd; padding: 15px; border-radius: 4px;">
+                                   </div>
+                           </div>
+                       </div>
+                       </div>
 
                    <div id="module-field-settings" class="hidden">
                        <h4 style="margin-bottom: 15px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">Field Options: <span id="current-module-field-name" style="color: var(--primary-color); font-weight: 600;"></span></h4>
@@ -3344,116 +3360,5 @@
         </div>
     </div>
 </div>
-<div id="custom-module-config-modal" class="modal-overlay hidden">
-    <div class="modal-content large" style="max-width: 800px; display: flex; flex-direction: column; max-height: 90vh;">
-        <div class="modal-header">
-            <h3 id="cv-modal-title">Custom Module Configuration</h3>
-            <button id="cv-modal-close" class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body" style="overflow-y: auto; padding: 20px;">
-            <input type="hidden" id="cv-view-id">
-            
-            <div id="cv-step-1">
-                <div class="form-group">
-                    <label>View Name <span class="text-danger">*</span></label>
-                    <input type="text" id="cv-view-name" class="form-control" placeholder="e.g., Pending Orders">
-                    <small id="cv-name-validation-message" class="text-danger" style="display:none;">Name is required</small>
-                </div>
-
-                <div class="form-group">
-                    <label>Menu Icon</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-icons"></i></span>
-                        <input type="text" id="cv-menu-icon" class="form-control" placeholder="fas fa-list">
-                    </div>
-                </div>
-
-                <fieldset class="form-fieldset" style="margin-top: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
-                    <legend style="width:auto; padding:0 5px; font-weight:bold; font-size: 0.9em;">Child Tables (Tabs)</legend>
-                    <div class="help-text" style="margin-bottom: 8px; font-size: 0.8em; color: #666;">
-                        Select related tables to display as tabs in this view.
-                    </div>
-                    <div id="cv-child-tables-container" style="max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px;">
-                        </div>
-                </fieldset>
-
-                <fieldset class="form-fieldset" style="margin-top: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
-                    <legend style="width:auto; padding:0 5px; font-weight:bold; font-size: 0.9em;">Record Access Control</legend>
-                    
-                    <div style="margin-bottom: 10px;">
-                        <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" id="cv-owner-only-checkbox"> 
-                            <span style="font-weight: 500;">Show only records owned by current user</span>
-                        </label>
-                    </div>
-
-                    <div class="form-group hidden" id="cv-owner-field-container" style="margin-bottom: 0;">
-                        <label for="cv-owner-field-select" style="display: block; font-size: 0.9em; margin-bottom: 4px;">Owner Field (User ID Column)</label>
-                        <select id="cv-owner-field-select" class="form-control" style="width: 100%; padding: 6px;">
-                            </select>
-                    </div>
-                </fieldset>
-
-                <fieldset class="form-fieldset" style="margin-top: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
-                    <legend style="width:auto; padding:0 5px; font-weight:bold; font-size: 0.9em;">Filter Criteria</legend>
-                    <div id="cv-filter-builder-container">
-                        </div>
-                </fieldset>
-            </div>
-
-            <div id="cv-step-2" class="hidden" style="height: 100%; display: flex; flex-direction: column;">
-                <p class="mb-2">Drag and drop fields to configure the form layout for this view.</p>
-                <div class="cv-layout-builder" style="display: flex; gap: 15px; height: 400px;">
-                    <div class="cv-available-fields" style="width: 40%; border: 1px solid #ddd; padding: 10px; overflow-y: auto; display: flex; flex-direction: column;">
-                        <h5 style="margin-top: 0;">Available Fields</h5>
-                        <ul id="cv-available-fields-list" class="tree-view-list" style="flex: 1;"></ul>
-                        <button id="cv-add-field-btn" class="btn btn-sm btn-primary mt-2" style="width: 100%;">Add Selected &rarr;</button>
-                    </div>
-                    <div class="cv-form-layout" style="width: 60%; border: 1px solid #ddd; padding: 10px; overflow-y: auto; display: flex; flex-direction: column;">
-                        <h5 style="margin-top: 0;">Form Layout</h5>
-                        <div id="cv-form-layout-panel" class="layout-drop-zone" style="flex: 1; min-height: 200px; border: 1px dashed #ccc; padding: 5px;"></div>
-                        <button id="cv-remove-field-btn" class="btn btn-sm btn-danger mt-2" style="width: 100%;">Remove Selected</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="modal-footer" style="justify-content: space-between;">
-            <button id="cv-modal-cancel" class="btn btn-secondary">Cancel</button>
-            <div>
-                <button id="cv-modal-back" class="btn btn-secondary hidden">Back</button>
-                <button id="cv-modal-next" class="btn btn-primary">Next: Form Layout</button>
-                <button id="cv-modal-save" class="btn btn-success hidden">Save View</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<template id="cv-form-field-template">
-    <div class="form-field-item" draggable="true" style="display: flex; flex-direction: column; gap: 8px;">
-        <div class="field-info" style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <span class="field-label" style="font-weight: bold;">Field Label</span>
-                <small class="field-source" style="display:block; color:#666; font-size:0.8em;">source.table</small>
-            </div>
-            <div class="field-item-controls">
-                <button class="btn-sidebar-icon move-up-btn" title="Move Up"><i class="fas fa-arrow-up"></i></button>
-                <button class="btn-sidebar-icon move-down-btn" title="Move Down"><i class="fas fa-arrow-down"></i></button>
-                <button class="btn-sidebar-icon delete-form-field-btn" title="Remove field" style="color: var(--danger-color);">&times;</button>
-            </div>
-        </div>
-        
-        <div class="field-settings-override" style="background: #f8f9fa; padding: 8px; border-radius: 4px; border: 1px solid #eee; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
-            <div style="flex: 1; min-width: 150px;">
-                <label style="font-size: 0.8em; display: block; margin-bottom: 2px;">Label Override (Optional):</label>
-                <input type="text" class="field-label-override-input form-control" style="font-size: 0.85em; padding: 4px 8px; height: auto;" placeholder="Custom label...">
-            </div>
-            <label class="checkbox-label" style="font-size: 0.85em; margin-top: 18px;">
-                <input type="checkbox" class="is-readonly-checkbox"> Read-only
-            </label>
-        </div>
-    </div>
-</template>
-
 </body>
 </html>

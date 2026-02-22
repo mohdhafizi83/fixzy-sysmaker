@@ -145,9 +145,41 @@ export function initializeFieldSaveHandlers() {
                     });
 
                     return; // Hentikan dari menyimpan ke DB jadual utama
-                } else {
+                    } else {
                     console.log(`[DEFAULT MODULE FIELD] Menyimpan -> Jadual: ${tableName}, Medan: ${fieldNameText} | ${key}: ${value}`);
                     SaveManager.addToQueue('field', fieldId, { [key]: value });
+
+                    // ▼▼▼ PENYEGERAKAN MEMORI & UI (SILENT RELOAD) ▼▼▼
+                    if (eventType === 'change' && key === 'field_name') {
+                        const oldFieldName = fieldNameText;
+                        const newFieldName = value;
+                        
+                        // 1. Kemas kini Kunci (Key) di dalam AppState
+                        const tData = appState.jsonData.database.table[tableName];
+                        if (tData && tData.fields[oldFieldName]) {
+                            tData.fields[newFieldName] = tData.fields[oldFieldName];
+                            tData.fields[newFieldName].field_name = newFieldName;
+                            delete tData.fields[oldFieldName];
+                        }
+
+                        // 2. Kemas kini UI Sidebar (Senarai Medan)
+                        const activeFieldLink = document.querySelector('#module-field-list a.active') || document.querySelector('#fields-list a.active');
+                        if (activeFieldLink) {
+                            activeFieldLink.innerHTML = `<i class="fas fa-columns" style="color: #888; margin-right: 8px;"></i> ${newFieldName}`;
+                            
+                            // Penting: Kemas kini dataset baris supaya klik seterusnya tak ralat
+                            const activeLi = activeFieldLink.closest('li');
+                            if (activeLi) activeLi.dataset.fieldName = newFieldName;
+                        }
+
+                        // 3. Kemas kini Breadcrumb
+                        const titleField = container.querySelector('.field-name');
+                        if (titleField) titleField.textContent = `${tableName}.${newFieldName}`;
+                        
+                        const workspaceField = document.getElementById('current-module-field-name');
+                        if (workspaceField) workspaceField.textContent = newFieldName;
+                    }
+                    // ▲▲▲ TAMAT PENYEGERAKAN ▲▲▲
                 }
 
                 // =========================================================

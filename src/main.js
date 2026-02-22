@@ -163,12 +163,12 @@ if (queue.tables && Object.keys(queue.tables).length > 0) {
         // ▼▼▼ KAWASAN INI TELAH DIPERBAIKI ▼▼▼
         // Jika nama jadual telah ditukar, kemas kini juga 'menu_items'
         if (oldTableName && newTableName && oldTableName !== newTableName) {
-            const newUrl = `${newTableName} Resource`;
+            const newUrl = `${newTableName} Module`;
 
             // KEMAS KINI DIPERBAIKI: Kemas kini label dan URL berdasarkan table_id,
             // tanpa mengira apa nilai lama mereka. Ini memastikan konsistensi.
             db.prepare(
-                'UPDATE menu_items SET item_label = ?, item_url = ? WHERE table_id = ?'
+                'UPDATE menu_items SET item_label = ?, item_detail = ? WHERE table_id = ?'
             ).run(newTableName, newUrl, id);
         }
         // ▲▲▲ TAMAT KAWASAN PEMBAIKAN ▲▲▲
@@ -252,7 +252,7 @@ ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, lab
             // Logic to update an existing item
             db.prepare(
                 `UPDATE menu_items 
-                 SET item_label = ?, item_url = ?, menu_group_id = ?, table_id = ?, module_id = ?, show_record_count = ? 
+                 SET item_label = ?, item_detail = ?, menu_group_id = ?, table_id = ?, module_id = ?, show_record_count = ? 
                  WHERE item_id = ? AND project_id = ?`
             ).run(label, url || null, menu_group_id || null, table_id || null, module_id || null, show_record_count ? 1 : 0, item_id, project_id);
 
@@ -273,7 +273,7 @@ ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, lab
             }
 
             db.prepare(
-                `INSERT INTO menu_items (project_id, table_id, module_id, item_label, item_url, item_order, menu_group_id, show_record_count) 
+                `INSERT INTO menu_items (project_id, table_id, module_id, item_label, item_detail, item_order, menu_group_id, show_record_count) 
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
             ).run(project_id, table_id || null, module_id || null, label, url || null, nextOrder, menu_group_id || null, show_record_count ? 1 : 0);
         }
@@ -594,9 +594,9 @@ ipcMain.handle('table:create', async (event, projectId) => {
             ).get(projectId);
             const nextMenuOrder = (maxMenuOrderResult && maxMenuOrderResult.max_order !== null ? maxMenuOrderResult.max_order : -1) + 1;
             
-            const itemUrl = `${newName} Resource`;
+            const itemUrl = `${newName} Module`;
             db.prepare(
-                'INSERT INTO menu_items (project_id, table_id, item_label, item_url, item_order, menu_group_id) VALUES (?, ?, ?, ?, ?, NULL)'
+                'INSERT INTO menu_items (project_id, table_id, item_label, item_detail, item_order, menu_group_id) VALUES (?, ?, ?, ?, ?, NULL)'
             ).run(projectId, tableId, newName, itemUrl, nextMenuOrder);
             
             return tableId;
@@ -680,9 +680,9 @@ ipcMain.handle("project:create", async (event, projectName) => {
         const tableId = tableInfo.lastInsertRowid;
 
         // 4. Cipta item menu untuk jadual 'users'
-        const menuUrl = 'users Resource';
+        const menuUrl = 'users Module';
         db.prepare(
-            'INSERT INTO menu_items (project_id, table_id, item_label, item_url, item_order) VALUES (?, ?, ?, ?, ?)'
+            'INSERT INTO menu_items (project_id, table_id, item_label, item_detail, item_order) VALUES (?, ?, ?, ?, ?)'
         ).run(projectId, tableId, 'Users', menuUrl, 0);
 
         // 5. Definisikan dan cipta semua medan untuk jadual 'users'
@@ -949,17 +949,17 @@ console.log(setClause);
             // 2. Jika nama jadual ditukar, kemas kini juga 'menu_items'
             if (oldTableName && fieldsToUpdate.table_name) {
                 const newTableName = fieldsToUpdate.table_name;
-                const newUrl = `${newTableName} Resource`;
-                const oldUrl = `${oldTableName} Resource`;
+                const newUrl = `${newTableName} Module`;
+                const oldUrl = `${oldTableName} Module`;
 
                 // Kemas kini label HANYA jika ia sepadan dengan nama jadual lama
                 db.prepare(
                     'UPDATE menu_items SET item_label = ? WHERE table_id = ? AND item_label = ?'
                 ).run(newTableName, table_id, oldTableName);
                 
-                // Kemas kini URL HANYA jika ia sepadan dengan format 'Resource' yang lama
+                // Kemas kini URL HANYA jika ia sepadan dengan format 'Module' yang lama
                 db.prepare(
-                    'UPDATE menu_items SET item_url = ? WHERE table_id = ? AND item_url = ?'
+                    'UPDATE menu_items SET item_detail = ? WHERE table_id = ? AND item_detail = ?'
                 ).run(newUrl, table_id, oldUrl);
             }
         });
@@ -1264,8 +1264,9 @@ ipcMain.handle('relationship:delete', async (event, data) => {
 });
 
 ipcMain.handle('custom-module:save', async (event, data) => {
-    // Guna destructuring untuk dapatkan semua data termasuk yang baharu
-    const { module_id, table_id, module_name, menu_icon, filter_rules, included_relations, fields, owner_only, owner_field } = data;
+    // 1. Destructuring - kita tangkap project_id dan settings_override
+    const { project_id, module_id, table_id, module_name, menu_icon, filter_rules, included_relations, fields, owner_only, owner_field, settings_override } = data;
+    
     if (!table_id || !module_name) {
         return { success: false, message: 'Table ID and Module Name are required.' };
     }
@@ -1276,15 +1277,17 @@ ipcMain.handle('custom-module:save', async (event, data) => {
 
         if (viewId) { // Update existing module
             db.prepare(
-                `UPDATE custom_modules SET module_name = ?, menu_icon = ?, filter_rules = ?, included_relations = ?, owner_only = ?, owner_field = ? WHERE module_id = ?`
-            ).run(module_name, menu_icon, filter_rules, included_relations, owner_only, owner_field, viewId);
+                `UPDATE custom_modules SET module_name = ?, menu_icon = ?, filter_rules = ?, included_relations = ?, owner_only = ?, owner_field = ?, settings_override = ? WHERE module_id = ?`
+            ).run(module_name, menu_icon, filter_rules, included_relations, owner_only, owner_field, settings_override, viewId);
         } else { // Insert new module
             isNewView = true;
             const maxOrderResult = db.prepare('SELECT MAX(module_order) as max_order FROM custom_modules WHERE table_id = ?').get(table_id);
             const nextOrder = (maxOrderResult?.max_order ?? -1) + 1;
+            
             const info = db.prepare(
-                `INSERT INTO custom_modules (table_id, module_name, menu_icon, filter_rules, included_relations, owner_only, owner_field, module_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-            ).run(table_id, module_name, menu_icon, filter_rules, included_relations, owner_only, owner_field, nextOrder);
+                `INSERT INTO custom_modules (project_id, table_id, module_name, menu_icon, filter_rules, included_relations, owner_only, owner_field, settings_override, module_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            ).run(project_id, table_id, module_name, menu_icon, filter_rules, included_relations, owner_only, owner_field, settings_override, nextOrder);
+            
             viewId = info.lastInsertRowid;
         }
 
@@ -1305,16 +1308,18 @@ ipcMain.handle('custom-module:save', async (event, data) => {
                 
                 if (fData) {
                     // Bungkus label/caption dalam JSON supaya selari dengan fungsi override kita
-                    const settingsOverride = JSON.stringify({ caption: field.label });
+                    const fieldSettingsOverride = JSON.stringify({ caption: field.label });
                     
-                    insertFieldStmt.run(viewId, fData.field_id, field.isReadonly ? 1 : 0, settingsOverride, index);
+                    insertFieldStmt.run(viewId, fData.field_id, field.isReadonly ? 1 : 0, fieldSettingsOverride, index);
                 } else {
                     console.warn(`Medan ${field.sourceName} tidak ditemui di pangkalan data untuk module ini.`);
                 }
             });
         }
         
-        // Cipta item menu jika ia adalah modul baharu
+// Cipta item menu jika ia adalah modul baharu
+        let newMenuItemObj = null; // Pembolehubah untuk memegang data menu baharu
+
         if (isNewView) {
             const tableInfo = db.prepare('SELECT table_name, project_id FROM tables WHERE table_id = ?').get(table_id);
             if (tableInfo) {
@@ -1323,22 +1328,30 @@ ipcMain.handle('custom-module:save', async (event, data) => {
                 ).get(tableInfo.project_id);
                 const nextMenuOrder = (maxMenuOrderResult?.max_order ?? -1) + 1;
                 
+                // Cipta item menu jika ia adalah modul baharu
                 const menuLabel = module_name; 
                 const menuUrl = `${tableInfo.table_name} Custom Module`;
 
-                db.prepare(
-                    `INSERT INTO menu_items (project_id, module_id, item_label, item_url, item_order) VALUES (?, ?, ?, ?, ?)`
+                // KITA GUNAKAN module_id AGAR SAMA DENGAN FRONTEND
+                const menuInfo = db.prepare(
+                    `INSERT INTO menu_items (project_id, module_id, item_label, item_detail, item_order) VALUES (?, ?, ?, ?, ?)`
                 ).run(tableInfo.project_id, viewId, menuLabel, menuUrl, nextMenuOrder);
+                
+                // Dapatkan rekod menu yang baru sahaja dicipta
+                newMenuItemObj = db.prepare('SELECT * FROM menu_items WHERE item_id = ?').get(menuInfo.lastInsertRowid);
             }
         }
         
-        return viewId;
+// 1. KITA PULANGKAN KEDUA-DUANYA DARI DALAM TRANSAKSI
+        return { viewId, newMenuItemObj };
     });
 
     try {
-        const savedViewId = transaction();
-        const savedView = db.prepare('SELECT * FROM custom_modules WHERE module_id = ?').get(savedViewId);
-        return { success: true, view: savedView };
+        // 2. TANGKAP KEDUA-DUANYA DI LUAR TRANSAKSI
+        const { viewId, newMenuItemObj } = transaction();
+        
+        const savedView = db.prepare('SELECT * FROM custom_modules WHERE module_id = ?').get(viewId);
+        return { success: true, view: savedView, newMenuItem: newMenuItemObj };
     } catch (error) {
         console.error("Failed to save custom module:", error);
         return { success: false, message: error.message };
@@ -2149,7 +2162,7 @@ function importSchema(sql, projectId, dialect) {
     const transaction = db.transaction((ast) => {
         const insertConstraintStmt = db.prepare('INSERT INTO table_constraints (table_id, constraint_name, constraint_type, columns) VALUES (?, ?, ?, ?)');
         const getMaxMenuOrderStmt = db.prepare('SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL');
-        const insertMenuItemStmt = db.prepare('INSERT INTO menu_items (project_id, table_id, item_label, item_url, item_order, menu_group_id) VALUES (?, ?, ?, ?, ?, NULL)');
+        const insertMenuItemStmt = db.prepare('INSERT INTO menu_items (project_id, table_id, item_label, item_detail, item_order, menu_group_id) VALUES (?, ?, ?, ?, ?, NULL)');
         // Dalam fungsi importSchema
         const insertFieldStmt = db.prepare(`INSERT INTO fields (table_id, field_name, data_type, length, precision, required, auto_increment, unsigned, zero_fill, primary_key, "unique", not_null, is_indexed, read_only, default_value, caption, field_order) VALUES (@table_id, @field_name, @data_type, @length, @precision, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @not_null, @is_indexed, @read_only, @default_value, @caption, @field_order)`);
 
@@ -2169,7 +2182,7 @@ function importSchema(sql, projectId, dialect) {
 
             const maxMenuOrderResult = getMaxMenuOrderStmt.get(projectId);
             const nextMenuOrder = (maxMenuOrderResult?.max_order ?? -1) + 1;
-            insertMenuItemStmt.run(projectId, tableId, tableViewTitle, `${tableName} Resource`, nextMenuOrder);
+            insertMenuItemStmt.run(projectId, tableId, tableViewTitle, `${tableName} Module`, nextMenuOrder);
 
             const definitions = statement.create_definitions || [];
             const fieldDataMap = new Map();
@@ -2442,7 +2455,7 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
 
 
         // ============================================================
-        // FASA 2: STANDARD RESOURCES (CRUD ASAL)
+        // FASA 2: STANDARD Module (CRUD ASAL)
         // ============================================================
         console.log("--- Menjana Standard Resources ---");
 

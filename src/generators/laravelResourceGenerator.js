@@ -128,21 +128,21 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         resourceContent = resourceContent.replace('<<IMPORT_ACTION>>', '');
     }
 
-    // --- LOGIK: RELATION MANAGERS (STANDARD) ---
-    let childrenForRelationManager = [];
-    
-    if (isCustomModule) {
-        let allowedRelations = [];
-        if (options.includedRelations) {
-            try { allowedRelations = JSON.parse(options.includedRelations); } catch (e) { allowedRelations = []; }
-        }
-        childrenForRelationManager = relationships.filter(r => r.parent_table_name === tableName && allowedRelations.includes(r.child_table_name));
-    } else {
-        childrenForRelationManager = relationships.filter(r => r.parent_table_name === tableName && r.show_tab === 1 && r.relationship_type !== 'one-to-one');
-    }
+// --- LOGIK: RELATION MANAGERS (STANDARD & CUSTOM MODULE) ---
+    // FASA 1: Custom Module kini mematuhi logik show_tab asal jadual (100% Seragam)
+    let childrenForRelationManager = relationships.filter(r => 
+        r.parent_table_name === tableName && 
+        r.show_tab === 1 && 
+        r.relationship_type !== 'one-to-one'
+    );
 
     if (childrenForRelationManager.length > 0) {
-        const originalResourceFolder = toPluralPascalCase(nameSource); 
+        // PENTING: Untuk Custom Module, kita nak rujuk ke folder asal base table!
+        const baseTableData = allTables[tableName];
+        const baseNameSource = (baseTableData && baseTableData.module_name && baseTableData.module_name.trim() !== '') 
+                        ? baseTableData.module_name 
+                        : tableName;
+        const originalResourceFolder = toPluralPascalCase(baseNameSource); 
         
         const importManagers = childrenForRelationManager.map(r => {
             const childTableData = allTables[r.child_table_name];
@@ -222,76 +222,53 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         // 1. Override Class Name
         resourceContent = resourceContent.replace(`class ${modelName}Resource`, `class ${resourceClassName}`);
 
-// 2. Override Form & Table Call
+        // 2. Override Form & Table Call
         const standardFormClass = `${modelName}Form`;
-        const customFormClass = `${singularFileName}Form`; // (kekalkan pembolehubah sedia ada anda)
+        const customFormClass = `${singularFileName}Form`; 
         const standardTableClass = `${modelNamePlural}Table`; 
-        const customTableClass = `${resourceFileName}Table`; // (kekalkan pembolehubah sedia ada anda)
+        const customTableClass = `${resourceFileName}Table`; 
 
-        // PERUBAHAN DI SINI: Tambah \\b pada RegExp untuk elak double-replace
         resourceContent = resourceContent.replace(new RegExp(`\\b${standardFormClass}\\b`, 'g'), customFormClass);
         resourceContent = resourceContent.replace(new RegExp(`\\b${standardTableClass}\\b`, 'g'), customTableClass);
 
-        // 3. Override Pages Import (Fix dari tugasan lepas)
+        // 3. Override Pages Import 
         const standardCreatePage = `Create${modelName}`;
-        const customCreatePage = `Create${singularFileName}`; // (kekalkan pembolehubah sedia ada anda)
+        const customCreatePage = `Create${singularFileName}`; 
         const standardEditPage = `Edit${modelName}`;
-        const customEditPage = `Edit${singularFileName}`; // (kekalkan pembolehubah sedia ada anda)
+        const customEditPage = `Edit${singularFileName}`; 
 
-        // PERUBAHAN DI SINI: Tambah \\b pada RegExp
         resourceContent = resourceContent.replace(new RegExp(`\\b${standardCreatePage}\\b`, 'g'), customCreatePage);
         resourceContent = resourceContent.replace(new RegExp(`\\b${standardEditPage}\\b`, 'g'), customEditPage);
 
-// 4. Inject Slug
+        // 4. Inject Slug
         const slug = toFlatCase(options.customModuleName || resourceFileName);
         resourceContent = resourceContent.replace('{', `{\n    protected static ?string $slug = '${slug}';`);
 
-        // 5. Inject Menu Custom (FIXED LOGIC NAVIGATION)
+        // 5. Inject Menu Custom 
         if (options.menuIcon) {
             resourceContent = resourceContent.replace(/icon\s*=\s*'.*?'/, `icon = '${options.menuIcon}'`);
         }
         
-        // Remove standard placeholders dulu untuk elak konflik
         resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONGROUP>>', '');
         resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONSORT>>', '');
         resourceContent = resourceContent.replace('<<SHORTCUT_MENU_ORDER>>', '');
 
-        // --- NAVIGATION GROUP FUNCTION ---
         const customNavGroup = `
     public static function getNavigationGroup(): string
     {
-        return '${options.customModuleName}'; // Group berdasarkan Nama Module
+        return '${options.customModuleName}';
     }`;
 
-        // --- NAVIGATION SORT FUNCTION ---
         const customNavSort = `
     public static function getNavigationSort(): int
     {
         return ${options.customModuleOrder || 0};
     }`;
 
-        // Masukkan kod navigation baru SELEPAS class declaration
-        // Kita selitkan dengan cara menggantikan '{' pembuka class dengan '{' + functions
         resourceContent = resourceContent.replace('{', `{${customNavGroup}\n${customNavSort}\n`); 
-        
-        // Pastikan tiada $navigationLabel atau $navigationSort static property
-        // (Logik replace standard di atas sudah membuangnya melalui placeholder <<SHORTCUT_MENU_ORDER>>)
-        // Tetapi kita perlu pastikan <<MENU_NAME>> juga diuruskan
-        
-        // Jika kita guna getNavigationGroup/Label secara override function,
-        // kita mungkin perlu override getNavigationLabel() juga jika mahu label berbeza dari Model Label.
-        // Tapi arahan anda spesifik kepada Group dan Sort.
-        
-        // Untuk <<MENU_NAME>> (label asal), kita boleh biar atau replace.
-        // Biasanya ini masuk ke protected static ?string $navigationLabel = '<<MENU_NAME>>';
-        // Arahan anda kata REMOVE kod statik property.
-        // Jadi kita replace <<MENU_NAME>> dengan string kosong atau buang barisnya.
-        
-        // Cari baris navigationLabel standard dan buang jika wujud (biasanya ada dalam template)
-        // Template mungkin ada: protected static ?string $navigationLabel = '<<MENU_NAME>>';
         resourceContent = resourceContent.replace(/protected static \?string \$navigationLabel = '.*?';/, '');
 
-// 6. Inject Filter Query & Owner Logic
+        // 6. Inject Filter Query & Owner Logic
         let queryBody = 'parent::getEloquentQuery()';
         
         // Logik Tapisan Pemilik (Owner Only)
@@ -299,12 +276,55 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
             queryBody += `->where('${options.ownerField}', auth()->id())`;
         }
 
-        // Logik Tapisan Dinamik Tambahan
+// Logik Tapisan Dinamik Tambahan (NESTED AND/OR BUILDER)
         if (options.filterRules) {
             try {
-                const rules = JSON.parse(options.filterRules);
-                const whereClause = buildEloquentQueryFromRules(rules);
-                if (whereClause) queryBody += whereClause;
+                const parsed = typeof options.filterRules === 'string' ? JSON.parse(options.filterRules) : options.filterRules;
+                
+                // Fungsi Rekursif untuk membina Eloquent Query String
+                function buildQueryString(group, depth = 3) {
+                    if (!group || !group.rules || group.rules.length === 0) return '';
+                    let condition = group.condition || 'AND';
+                    let indent = '    '.repeat(depth);
+                    let inner = '';
+                    
+                    group.rules.forEach((rule, index) => {
+                        let method = (index === 0) ? 'where' : (condition === 'OR' ? 'orWhere' : 'where');
+                        
+                        if (rule.condition !== undefined && rule.rules !== undefined) {
+                            // Sub-Group Rekursif
+                            let subInner = buildQueryString(rule, depth + 1);
+                            if (subInner) inner += `\n${indent}$q->${method}(function($q) {${subInner}\n${indent}});`;
+                        } else if (rule.column) {
+                            // Rule Biasa
+                            let col = rule.column;
+                            let op = rule.operator || '=';
+                            let val = rule.value || '';
+                            
+                            if (val.toLowerCase() === 'null') {
+                                let nullMethod = (op === '!=' || op === 'NOT LIKE') ? 'whereNotNull' : 'whereNull';
+                                if (index > 0 && condition === 'OR') {
+                                    nullMethod = (op === '!=' || op === 'NOT LIKE') ? 'orWhereNotNull' : 'orWhereNull';
+                                }
+                                inner += `\n${indent}$q->${nullMethod}('${col}');`;
+                            } else {
+                                inner += `\n${indent}$q->${method}('${col}', '${op}', '${val}');`;
+                            }
+                        }
+                    });
+                    return inner;
+                }
+
+                // Jalankan parser dan masukkkan ke queryBody utama
+                let rootData = { condition: 'AND', rules: [] };
+                if (Array.isArray(parsed)) rootData.rules = parsed; // Legacy fallback
+                else if (parsed && parsed.rules) rootData = parsed;
+
+                const finalInnerQuery = buildQueryString(rootData, 3);
+                if (finalInnerQuery) {
+                    queryBody += `\n        ->where(function($q) {${finalInnerQuery}\n        })`;
+                }
+
             } catch (e) {}
         }
         
@@ -328,7 +348,6 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
     fs.writeFileSync(outputFilePath, resourceContent);
     console.log(`Resource generated: ${outputFilePath}`);
 }
-
 
 // ===================================================================================
 // FUNGSI UTAMA (LOOP)
@@ -372,7 +391,25 @@ async function generateFilamentResourcesCustomModules(fullSchema, basePath) {
                     const moduleSafeNameSingular = toSingularPascalCase(moduleNameClean);
                     const customResourceClassName = `${moduleSafeNameSingular}Resource`;
 
-                    await generateSingleResource(tableName, tableData, fullSchema, basePath, templateContent, {
+                    // BACA TETAPAN OVERRIDE PERINGKAT JADUAL 
+                    let tableOverrides = {};
+                    if (moduleObj.settings_override) {
+                        try {
+                            tableOverrides = JSON.parse(moduleObj.settings_override);
+                        } catch (e) {
+                            console.warn(`Gagal memproses settings_override jadual untuk modul: ${moduleObj.module_name}`);
+                        }
+                    }
+
+                    // Bina virtualTableData supaya logic generateSingleResource baca nilai override
+                    const virtualTableData = {
+                        ...tableData,
+                        ...tableOverrides,
+                        module_name: tableData.module_name // PENTING: Kekalkan rujukan nama asal
+                    };
+
+                    // Hantar virtualTableData menggantikan tableData asal
+                    await generateSingleResource(tableName, virtualTableData, fullSchema, basePath, templateContent, {
                         isCustomModule: true,
                         resourceClassName: customResourceClassName, 
                         resourceFileName: moduleSafeNamePlural,       
@@ -382,7 +419,6 @@ async function generateFilamentResourcesCustomModules(fullSchema, basePath) {
                         menuIcon: moduleObj.menu_icon,
                         filterRules: moduleObj.filter_rules,
                         includedRelations: moduleObj.included_relations,
-                        // ▼▼▼ TAMBAHAN BAHARU ▼▼▼
                         ownerOnly: moduleObj.owner_only,
                         ownerField: moduleObj.owner_field
                     });

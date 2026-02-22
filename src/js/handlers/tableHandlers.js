@@ -4,9 +4,10 @@ import { appState } from '../state.js';
 import { SaveManager } from '../saveManager.js';
 import { showCustomDialog } from '../ui/modalHandlers.js';
 import { setElementValue, setRadioValue } from '../ui/formHelpers.js';
-import { openCustomViewModal } from './logicBuilderHandlers.js';
 import { populateTableSettings } from '../pages/tableSettings.js';
 import { populateFieldSettings } from '../pages/fieldSettings.js';
+import { populateMenuManagement } from './menuHandlers.js';
+import { loadProjectData } from '../../renderer.js';
 
 export function initializeTableSaveHandlers() {
     // Kumpul kedua-dua container lama dan baharu
@@ -25,6 +26,19 @@ export function initializeTableSaveHandlers() {
                 // Abaikan input parent-child
                 if (input.closest('#parent-child-settings')) return;
                 if (input.id && input.id.startsWith('parentchild-')) return;
+                
+// ▼▼▼ PEMBAIKAN BUG MAJOR: HALANG OVERWRITE JIKA DALAM MOD CUSTOM/CREATE ▼▼▼
+                const badgeEl = document.getElementById('workspace-module-badge');
+                const titleEl = document.getElementById('workspace-module-title');
+                const isCustomMode = badgeEl && badgeEl.classList.contains('badge-custom');
+                const isCreateMode = titleEl && titleEl.textContent === "Create New Module";
+                
+                if (isCustomMode || isCreateMode) {
+                    // Jika ini Mod Custom, JANGAN simpan ke jadual asal!
+                    // Sistem Auto-Save Custom Module akan menguruskannya.
+                    return; 
+                }
+                // ▲▲▲ TAMAT PEMBAIKAN ▲▲▲
 
                 if (eventType === 'focusout' && !['text', 'textarea', 'number'].includes(input.type) && input.tagName !== 'TEXTAREA') return;
                 if (eventType === 'change' && ['text', 'textarea', 'number'].includes(input.type) && input.tagName !== 'TEXTAREA') return;
@@ -113,10 +127,43 @@ if (isCustomModule) {
                         }
                     });
 
-                } else {
+                    } else {
                     // ... (Kod Default Module asal kekal di sini) ...
                     console.log(`[DEFAULT MODULE] Menyimpan -> Jadual: ${tableName} | ${key}: ${value}`);
                     SaveManager.addToQueue('table', tableId, { [key]: value });
+
+                    // ▼▼▼ PENYEGERAKAN MEMORI & UI (SILENT RELOAD) ▼▼▼
+                    if (eventType === 'change' && key === 'table_name') {
+                        const oldName = tableName;
+                        const newName = value;
+                        
+                        // 1. Kemas kini Kunci (Key) di dalam AppState
+                        if (appState.jsonData.database.table[oldName]) {
+                            appState.jsonData.database.table[newName] = appState.jsonData.database.table[oldName];
+                            appState.jsonData.database.table[newName].table_name = newName;
+                            delete appState.jsonData.database.table[oldName];
+                        }
+                        
+                        // Kemas kini array allTableNames
+                        const tIdx = appState.allTableNames?.indexOf(oldName);
+                        if (tIdx !== -1 && tIdx !== undefined) appState.allTableNames[tIdx] = newName;
+
+                        // 2. Kemas kini UI Sidebar (Senarai Jadual)
+                        const activeTableLink = document.querySelector('#tables-list a.active') || document.querySelector('.sidebar a.active');
+                        if (activeTableLink) {
+                            activeTableLink.innerHTML = `<i class="fas fa-table" style="margin-right: 8px;"></i> ${newName}`;
+                        }
+
+                        // 3. Kemas kini Breadcrumb & Tajuk Workspace
+                        const titleTable = document.querySelector('#table-settings-page .table-name');
+                        if (titleTable) titleTable.textContent = newName;
+                        
+                        if (titleElWorkspace && titleElWorkspace.dataset.tableName === oldName) {
+                            titleElWorkspace.textContent = newName;
+                            titleElWorkspace.dataset.tableName = newName;
+                        }
+                    }
+                    // ▲▲▲ TAMAT PENYEGERAKAN ▲▲▲
                 }
             });
         });
@@ -126,91 +173,87 @@ if (isCustomModule) {
 export function initializeRelationshipSaveHandlers() {
     console.log("🛠️ Relationship Handlers: Init dipanggil."); 
 
-    // Kita pasang 'telinga' pada keseluruhan halaman settings
-    const container = document.getElementById('table-settings-page'); 
+    // ▼▼▼ KEMAS KINI 1: Pasang telinga pada kedua-dua kawasan UI ▼▼▼
+    const containers = [
+        document.getElementById('table-settings-page'),
+        document.getElementById('module-global-settings') // UI BAHARU FASA 3A
+    ];
     
-    if (!container) {
-        console.error("❌ Ralat Kritikal: Container #table-settings-page tiada!");
-        return;
-    }
+    containers.forEach(container => {
+        if (!container) return;
 
-    ['change', 'focusout'].forEach(eventType => {
-        container.addEventListener(eventType, (e) => {
-            const input = e.target;
-            const inputId = input.id || '';
+        ['change', 'focusout'].forEach(eventType => {
+            container.addEventListener(eventType, (e) => {
+                const input = e.target;
+                const inputId = input.id || '';
 
-            // --- PERUBAHAN UTAMA DI SINI ---
-            // Kita tidak lagi bergantung pada ID container bapa.
-            // Kita terus cam input berdasarkan prefix ID-nya.
-            if (!inputId.startsWith('parentchild-')) return;
-            // -------------------------------
+                if (!inputId.startsWith('parentchild-')) return;
 
-            console.log(`🔥 Event '${eventType}' dikesan pada input Relationship: ${inputId}`);
+                console.log(`🔥 Event '${eventType}' dikesan pada input Relationship: ${inputId}`);
 
-            // Filter Event Standard (elak double fire)
-            if (eventType === 'focusout' && !['text', 'textarea', 'number'].includes(input.type)) return;
-            if (eventType === 'change' && ['text', 'textarea', 'number'].includes(input.type)) return;
-            
-            if (appState.isPopulatingData) {
-                console.warn("Save dihalang: isPopulatingData = true");
-                return;
-            }
+                if (eventType === 'focusout' && !['text', 'textarea', 'number'].includes(input.type)) return;
+                if (eventType === 'change' && ['text', 'textarea', 'number'].includes(input.type)) return;
+                
+                if (appState.isPopulatingData) {
+                    console.warn("Save dihalang: isPopulatingData = true");
+                    return;
+                }
 
-            // 1. DAPATKAN CONTEXT (Parent & Child Table)
-            const currentTableName = document.querySelector('#table-settings-page .table-name')?.textContent.trim();
-            
-            // Logik mencari Child Table (Cuba pelbagai cara untuk pastikan jumpa)
-            let childTableName = null;
-            
-            // Cara A: Cari tab yang active (class 'active')
-            const activeTab = document.querySelector('#child-table-list li.active');
-            if (activeTab) {
-                childTableName = activeTab.dataset.childName || activeTab.getAttribute('data-child-name');
-            }
-            
-            // Cara B: Cari input hidden khas (jika ada)
-            if (!childTableName) {
-                const hiddenChildInput = document.getElementById('current-active-child-table');
-                if (hiddenChildInput) childTableName = hiddenChildInput.value;
-            }
+                // ▼▼▼ KEMAS KINI 2: Dapatkan Parent Table Name dari DOM yang tepat ▼▼▼
+                let currentTableName = '';
+                const titleElWorkspace = document.getElementById('workspace-module-title');
+                const isWorkspaceActive = !document.getElementById('module-global-settings').classList.contains('hidden');
+                
+                if (isWorkspaceActive && titleElWorkspace) {
+                    currentTableName = titleElWorkspace.dataset.tableName;
+                } else {
+                    currentTableName = document.querySelector('#table-settings-page .table-name')?.textContent.trim();
+                }
+                // ▲▲▲ TAMAT KEMAS KINI 2 ▲▲▲
+                
+                let childTableName = null;
+                const activeTab = document.querySelector('#child-table-list li.active');
+                if (activeTab) {
+                    childTableName = activeTab.dataset.childName || activeTab.getAttribute('data-child-name');
+                }
+                
+                if (!childTableName) {
+                    const hiddenChildInput = document.getElementById('current-active-child-table');
+                    if (hiddenChildInput) childTableName = hiddenChildInput.value;
+                }
 
-            console.log(`Info: Parent=[${currentTableName}], Child=[${childTableName}]`);
+                console.log(`Info: Parent=[${currentTableName}], Child=[${childTableName}]`);
 
-            if (!currentTableName || !childTableName) {
-                console.error("❌ Gagal mengesan Table Induk atau Child Table yang aktif.");
-                return;
-            }
+                if (!currentTableName || !childTableName) {
+                    console.error("❌ Gagal mengesan Table Induk atau Child Table yang aktif.");
+                    return;
+                }
 
-            // 2. CARI RELATIONSHIP ID
-            const relData = appState.jsonData.database.relationships.find(
-                r => r.parent_table_name === currentTableName && r.child_table_name === childTableName
-            );
+                const relData = appState.jsonData.database.relationships.find(
+                    r => r.parent_table_name === currentTableName && r.child_table_name === childTableName
+                );
 
-            if (!relData) {
-                console.error("❌ Data Relationship tiada dalam AppState untuk pasangan ini.");
-                return;
-            }
+                if (!relData) {
+                    console.error("❌ Data Relationship tiada dalam AppState untuk pasangan ini.");
+                    return;
+                }
 
-            // 3. SEDIAKAN DATA
-            let key = inputId.replace('parentchild-', '').replace(/-/g, '_');
-            
-            // Mapping Manual (Contoh: input ID 'parentchild-display-type-select' -> DB 'display_type')
-            if (key === 'display_type_select') key = 'display_type';
+                let key = inputId.replace('parentchild-', '').replace(/-/g, '_');
+                if (key === 'display_type_select') key = 'display_type';
 
-            let value;
-            if (input.type === 'checkbox') value = input.checked ? 1 : 0;
-            else value = input.value;
+                let value;
+                if (input.type === 'checkbox') value = input.checked ? 1 : 0;
+                else value = input.value;
 
-            // 4. HANTAR
-            console.log(`🚀 Menghantar ke SaveManager: RelID=${relData.relationship_id}, Key=${key}, Val=${value}`);
-            
-            SaveManager.addToQueue('relationship', relData.relationship_id, { [key]: value });
+                console.log(`🚀 Menghantar ke SaveManager: RelID=${relData.relationship_id}, Key=${key}, Val=${value}`);
+                
+                SaveManager.addToQueue('relationship', relData.relationship_id, { [key]: value });
+            });
         });
     });
 
-    console.log("✅ Relationship Handlers berjaya dipasang (Mode: Prefix Detection).");
+    console.log("✅ Relationship Handlers berjaya dipasang (Mode: Dual Container Fasa 3A).");
 }
-
 
 // ==========================================================================
 // ARAHAN: SILA PINDAHKAN FUNGSI-FUNGSI BERIKUT DARI uiHandlers.js KE SINI
@@ -801,39 +844,35 @@ export async function deleteCustomView(viewId) {
         message: "Are you sure you want to delete this custom view? This action cannot be undone.",
         showCancelButton: true,
         onOk: async () => {
-            console.group("🔍 DEBUG: Delete Custom Module (Local Update Strategy)");
+            console.group("🔍 DEBUG: Delete Custom Module");
             try {
-                // 1. Dapatkan nama jadual DARI DOM (sebelum apa-apa berlaku)
+                // 1. Dapatkan nama jadual DARI DOM
                 const tableNameElement = document.querySelector('#table-settings-page .table-name');
                 const tableName = tableNameElement ? tableNameElement.textContent.trim() : null;
                 
-                if (!tableName) {
-                    console.error("❌ Nama jadual tidak ditemui dalam DOM.");
-                    return;
-                }
-
                 // 2. Panggil API Delete Backend
                 const result = await window.electronAPI.deleteCustomView(viewId);
                 
                 if (result && result.success) {
                     console.log("✅ Delete Berjaya di Backend.");
 
-                    // 3. KEMAS KINI STATE TEMPATAN (Tanpa Refresh App!)
-                    // Kita cari array custom_modules dalam appState dan buang item yang ID-nya sama
-                    if (appState.jsonData.database.table[tableName]?.custom_modules) {
-                        const currentViews = appState.jsonData.database.table[tableName].custom_modules;
-                        
-                        // Tapis keluar view yang hendak dipadam
-                        appState.jsonData.database.table[tableName].custom_modules = currentViews.filter(v => v.module_id !== viewId);
-                        
-                        console.log("✅ AppState dikemaskini secara manual (Item dibuang dari array).");
-                    }
-
-                    // 4. Render Semula Tab Custom Module Sahaja
-                    // (Kerana fungsi ini berada dalam fail yang sama, kita boleh panggil terus)
-                    renderModulesDashboard();
+                    // Reload Keseluruhan Data
+                    await loadProjectData(appState.activeProject);
                     
-                    // Pilihan: Boleh tambah toast notification di sini jika mahu
+                    // ▼▼▼ PEMBAIKAN: Kekalkan paparan Dashboard (Grid Kad) ▼▼▼
+                    // Pastikan workspace disembunyikan dan Dashboard dipaparkan
+                    const workspace = document.getElementById('module-workspace');
+                    if (workspace) workspace.style.display = 'none';
+                    
+                    const header = document.getElementById('modules-dashboard-header');
+                    if (header) header.style.display = 'flex';
+                    
+                    const grid = document.getElementById('modules-dashboard-grid');
+                    if (grid) grid.style.display = 'grid';
+
+                    // Lukis semula kad tanpa memanggil openModuleWorkspace
+                    renderModulesDashboard();
+                    // ▲▲▲ TAMAT PEMBAIKAN ▲▲▲
 
                 } else {
                     console.error("❌ Backend error:", result.message);
@@ -876,6 +915,56 @@ export function initializeModulesSetupTab() {
         });
     }
 
+// ▼▼▼ LOGIK GLOBAL: BUTANG SORT UP / DOWN ▼▼▼
+    const btnMoveUp = document.getElementById('module-btn-move-up');
+    const btnMoveDown = document.getElementById('module-btn-move-down');
+
+    if (btnMoveUp && btnMoveDown) {
+        // Fungsi Bantuan Pergerakan
+        const moveItem = (direction) => {
+            // Cari elemen yang sedang 'Aktif' / di-klik
+            const activeLink = document.querySelector('#module-field-list a.active');
+            if (!activeLink) return;
+
+            const currentLi = activeLink.closest('li');
+            if (!currentLi || !currentLi.dataset.fieldId) {
+                // Ignore jika yang aktif adalah "Module Settings" (tiada fieldId)
+                return; 
+            }
+
+            const titleEl = document.getElementById('workspace-module-title');
+            const tableName = titleEl.dataset.tableName;
+            const moduleId = titleEl.dataset.moduleId;
+
+            if (direction === 'up') {
+                const prevLi = currentLi.previousElementSibling;
+                // Pastikan tidak melompat atas "Module Settings"
+                if (prevLi && prevLi.dataset.fieldId) {
+                    currentLi.parentNode.insertBefore(currentLi, prevLi);
+                    saveFieldOrder(tableName, moduleId);
+                    highlightLi(currentLi);
+                }
+            } else if (direction === 'down') {
+                const nextLi = currentLi.nextElementSibling;
+                if (nextLi) {
+                    currentLi.parentNode.insertBefore(nextLi, currentLi);
+                    saveFieldOrder(tableName, moduleId);
+                    highlightLi(currentLi);
+                }
+            }
+        };
+
+        // Ganti klon untuk elakkan duplicate event listener (SPA standard practice)
+        const newBtnMoveUp = btnMoveUp.cloneNode(true);
+        btnMoveUp.parentNode.replaceChild(newBtnMoveUp, btnMoveUp);
+        newBtnMoveUp.addEventListener('click', () => moveItem('up'));
+
+        const newBtnMoveDown = btnMoveDown.cloneNode(true);
+        btnMoveDown.parentNode.replaceChild(newBtnMoveDown, btnMoveDown);
+        newBtnMoveDown.addEventListener('click', () => moveItem('down'));
+    }
+    // ▲▲▲ TAMAT LOGIK GLOBAL ▲▲▲
+    
     if (workspaceContainer) {
         workspaceContainer.addEventListener('click', (e) => {
             // Butang Edit Default Module
@@ -900,11 +989,73 @@ export function initializeModulesSetupTab() {
                 deleteCustomView(viewId);
             }
             
-            // Butang Create New Custom Module
+// Butang Create New Custom Module (buka workspace)
             const btnCreateGlobal = e.target.closest('#btn-add-custom-module-global');
-            if (btnCreateGlobal) {
-                openModuleWorkspace('create');
-            }
+            if (btnCreateGlobal) openModuleWorkspace('create');
+
+            const btnSaveNew = e.target.closest('#btn-save-new-module');
+            if (btnSaveNew) {
+                const baseTable = document.getElementById('workspace-base-table-select').value;
+                const moduleName = document.getElementById('workspace-new-module-name').value.trim();
+
+                if (!baseTable || !moduleName) {
+                    showCustomDialog({ title: "Error", message: "Please select a base table and provide a module name." });
+                    return;
+                }
+
+// ▼▼▼ BACA NESTED FILTER RULES JIKA ADA ▼▼▼
+                let finalFilterRules = '{"condition":"AND", "rules":[]}';
+                const filterContainer = document.getElementById('workspace-filter-builder-container');
+                if (filterContainer && !document.getElementById('custom-module-specific-settings').classList.contains('hidden')) {
+                    const rootGroup = filterContainer.querySelector('.cm-filter-group');
+                    if (rootGroup) {
+                        finalFilterRules = JSON.stringify(extractGroupData(rootGroup));
+                    }
+                }
+
+const tableData = appState.jsonData.database.table[baseTable];
+// Bina Payload Akhir (100% Tepat Berdasarkan Log)
+                const tableOverrides = { table_view_title: document.getElementById('tbl-table-view-title')?.value || '' };
+                
+                const payload = {
+                    project_id: tableData.project_id,
+                    table_id: tableData.table_id,
+                    module_name: moduleName,
+                    menu_icon: 'fas fa-box',
+                    owner_only: 0,
+                    owner_field: null,
+                    filter_rules: finalFilterRules, 
+                    settings_override: JSON.stringify(tableOverrides), // <--- TAMBAH BARIS INI
+                    fields: [] 
+                };
+
+            const originalBtnText = btnSaveNew.innerHTML;
+            btnSaveNew.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+            btnSaveNew.disabled = true;
+
+            window.electronAPI.saveCustomModule(payload).then(async (res) => { // Pastikan ada 'async' di sini
+                if (res.success) {
+                    
+                    // ▼▼▼ CARA PALING SEMPURNA (RELOAD KESELURUHAN DATA) ▼▼▼
+                    // Fungsi ini akan mengambil data terbaru dari database dan 
+                    // me-render semula SEMUA tab termasuk Menu Management & Dashboard
+                    await loadProjectData(appState.activeProject);
+                    // ▲▲▲ TAMAT RELOAD ▲▲▲
+
+                    // Selepas data segar, buka semula workspace untuk modul yang baru dicipta ini
+                    openModuleWorkspace('custom', baseTable, res.view.module_id);
+                    
+                    showCustomDialog({ title: "Success", message: "New Custom Module created successfully!" });
+                } else {
+                    showCustomDialog({ title: "Error", message: res.message });
+                }
+            }).finally(() => {
+                btnSaveNew.innerHTML = originalBtnText;
+                btnSaveNew.disabled = false;
+            });
+        }
+        // ▲▲▲ TAMAT LOGIK CREATE ▲▲▲
+        
         });
     }
 }
@@ -913,7 +1064,7 @@ export function initializeModulesSetupTab() {
  * Membuka Ruang Kerja (Workspace) berdasarkan mod (default / custom / create)
  */
 export function openModuleWorkspace(mode, tableName = null, moduleId = null) {
-    // BUG 2 & 4 FIX: Sembunyikan Dashboard secara selamat
+    // Sembunyikan Dashboard secara selamat
     const header = document.getElementById('modules-dashboard-header');
     if (header) header.style.display = 'none';
     
@@ -930,15 +1081,30 @@ export function openModuleWorkspace(mode, tableName = null, moduleId = null) {
     const baseTableSelect = document.getElementById('workspace-base-table-select');
     const fieldList = document.getElementById('module-field-list');
     
+    // ▼▼▼ KAWALAN BUTANG SORT GLOBAL (Dari Fasa 3) ▼▼▼
+    const sortControls = document.getElementById('module-sort-controls');
+    if (sortControls) {
+        if (mode === 'custom') sortControls.classList.remove('hidden');
+        else sortControls.classList.add('hidden');
+    }
+
     // Reset Senarai Medan
     if (fieldList) fieldList.innerHTML = '';
     if (createControls) createControls.classList.add('hidden');
 
     const tables = appState.jsonData?.database?.table || {};
 
-    // LOGIK BERDASARKAN MOD
+    // ==========================================
+    // LOGIK BERDASARKAN MOD (CREATE / DEFAULT / CUSTOM)
+    // ==========================================
+    
     if (mode === 'create') {
-        if (titleEl) titleEl.textContent = "Create New Module";
+        if (titleEl) {
+            titleEl.textContent = "Create New Module";
+            // KOSONGKAN KONTEKS AWAL
+            titleEl.dataset.tableName = ""; 
+            titleEl.dataset.moduleId = "";
+        }
         if (badgeEl) { badgeEl.className = "module-badge"; badgeEl.textContent = ""; }
         
         // Paparkan input Base Table dan Nama
@@ -953,18 +1119,21 @@ export function openModuleWorkspace(mode, tableName = null, moduleId = null) {
                 baseTableSelect.appendChild(new Option(tName, tName));
             });
 
-            // Apabila jadual dipilih, lukis senarai medannya
+            // ▼▼▼ PEMBAIKAN: Apabila jadual dipilih, simpan konteks nama jadual ▼▼▼
             baseTableSelect.onchange = (e) => {
                 const selectedTable = e.target.value;
                 if (selectedTable && tables[selectedTable]) {
-                    renderWorkspaceFields(tables[selectedTable].fields);
+                    // BERIKAN KONTEKS supaya field settings tidak kosong/undefined
+                    if (titleEl) titleEl.dataset.tableName = selectedTable;
+                    renderWorkspaceFields(tables[selectedTable].fields, 'create', null, selectedTable);
                 } else {
                     if (fieldList) fieldList.innerHTML = '';
+                    if (titleEl) titleEl.dataset.tableName = "";
                 }
             };
         }
 
-} else if (mode === 'default') {
+    } else if (mode === 'default') {
         if (titleEl) {
             titleEl.textContent = tableName;
             titleEl.dataset.tableName = tableName; // SIMPAN KONTEKS
@@ -974,10 +1143,10 @@ export function openModuleWorkspace(mode, tableName = null, moduleId = null) {
         
         // Lukis senarai medan
         if (tables[tableName]) {
-            renderWorkspaceFields(tables[tableName].fields);
+            renderWorkspaceFields(tables[tableName].fields, 'default', null, tableName);
         }
 
-} else if (mode === 'custom') {
+    } else if (mode === 'custom') {
         const tableData = tables[tableName];
         const moduleData = tableData?.custom_modules?.find(m => m.module_id == moduleId);
         
@@ -990,7 +1159,7 @@ export function openModuleWorkspace(mode, tableName = null, moduleId = null) {
 
         // Lukis senarai medan
         if (tableData) {
-            renderWorkspaceFields(tableData.fields);
+            renderWorkspaceFields(tableData.fields, 'custom', moduleData, tableName);
         }
     }
 }
@@ -998,7 +1167,7 @@ export function openModuleWorkspace(mode, tableName = null, moduleId = null) {
 /**
  * Fungsi bantuan untuk melukis senarai medan di sebelah kiri ruang kerja
  */
-function renderWorkspaceFields(fieldsObj) {
+function renderWorkspaceFields(fieldsObj, mode = 'default', moduleData = null, tableName = '') {
     const fieldList = document.getElementById('module-field-list');
     if (!fieldList) return;
     fieldList.innerHTML = '';
@@ -1007,7 +1176,7 @@ function renderWorkspaceFields(fieldsObj) {
     const masterLi = document.createElement('li');
     masterLi.innerHTML = `<a href="#" class="active" style="font-weight:600; color:var(--primary-color); border-bottom: 2px solid #eee; margin-bottom: 10px; padding-bottom: 12px;"><i class="fas fa-cogs" style="margin-right: 8px;"></i> Module Settings</a>`;
     
-    masterLi.addEventListener('click', (e) => {
+masterLi.addEventListener('click', (e) => {
         e.preventDefault();
         fieldList.querySelectorAll('a').forEach(link => link.classList.remove('active'));
         masterLi.querySelector('a').classList.add('active');
@@ -1020,26 +1189,60 @@ function renderWorkspaceFields(fieldsObj) {
         if (currentTable) populateTableSettings(currentTable);
         
         const moduleId = document.getElementById('workspace-module-title').dataset.moduleId;
+        
         if (moduleId) {
-            // Beri masa 50ms untuk populateTableSettings siap mengisi data asal
-            setTimeout(() => {
-                applyTableOverrides(currentTable, moduleId);
+            // EDIT CUSTOM MODULE
+            setTimeout(() => { 
+                applyTableOverrides(currentTable, moduleId); 
+                setupCustomModuleSpecificSettings(currentTable, moduleId, 'edit');
             }, 50);
+        } else if (currentTable && mode === 'create') {
+            // CREATE NEW CUSTOM MODULE
+            setTimeout(() => { 
+                setupCustomModuleSpecificSettings(currentTable, null, 'create');
+            }, 50);
+        } else {
+            // DEFAULT MODULE
+            setupCustomModuleSpecificSettings(currentTable, null, 'default');
         }
     });
     fieldList.appendChild(masterLi);
     
-    // 2. Loop senarai medan
-    Object.keys(fieldsObj).forEach(fieldName => {
+    // 2. Bina Array Medan & Susun (Sort)
+    let fieldsArray = Object.keys(fieldsObj).map(fieldName => {
+        const field = fieldsObj[fieldName];
+        let order = 999; 
+        if (mode === 'custom' && moduleData && moduleData.fields) {
+            const modField = moduleData.fields.find(f => f.field_id === field.field_id);
+            if (modField && modField.display_order !== undefined) {
+                order = parseInt(modField.display_order);
+            }
+        }
+        return { fieldName, field, order };
+    });
+
+    fieldsArray.sort((a, b) => a.order - b.order);
+
+    // 3. Loop senarai medan yang telah disusun (TANPA BUTANG INLINE)
+    fieldsArray.forEach((item) => {
+        const fieldName = item.fieldName;
+        const fieldId = item.field.field_id;
+
         const li = document.createElement('li');
+        li.dataset.fieldName = fieldName;
+        li.dataset.fieldId = fieldId; // PENTING UNTUK SAVE
+        li.style.display = 'flex';
+        li.style.alignItems = 'center';
+
         const a = document.createElement('a');
         a.href = "#";
+        a.style.flexGrow = '1';
         a.innerHTML = `<i class="fas fa-columns" style="color: #888; margin-right: 8px;"></i> ${fieldName}`;
         
         a.addEventListener('click', (e) => {
             e.preventDefault();
             fieldList.querySelectorAll('a').forEach(link => link.classList.remove('active'));
-            a.classList.add('active');
+            a.classList.add('active'); // Fokuskan item ini (Visual & Untuk Sort)
             
             document.getElementById('module-settings-empty').classList.add('hidden');
             document.getElementById('module-global-settings').classList.add('hidden');
@@ -1049,13 +1252,9 @@ function renderWorkspaceFields(fieldsObj) {
             const currentTable = document.getElementById('workspace-module-title').dataset.tableName;
             if (currentTable) populateFieldSettings(currentTable, fieldName);
             
-// --- LOGIK BARU: APPLY OVERRIDES ---
             const titleEl = document.getElementById('workspace-module-title');
             if (titleEl.dataset.moduleId) {
-                // Berikan sedikit masa untuk populateFieldSettings siap, kemudian apply override
-                setTimeout(() => {
-                    applyFieldOverrides(currentTable, fieldName, titleEl.dataset.moduleId);
-                }, 50); // 50ms delay cukup untuk populate siap
+                setTimeout(() => { applyFieldOverrides(currentTable, fieldName, titleEl.dataset.moduleId); }, 50); 
             }
         });
         
@@ -1063,7 +1262,6 @@ function renderWorkspaceFields(fieldsObj) {
         fieldList.appendChild(li);
     });
 
-    // 3. Klik tetapan Modul secara automatik bila dibuka
     setTimeout(() => masterLi.click(), 50);
 }
 
@@ -1239,5 +1437,315 @@ function applyTableOverrides(tableName, moduleId) {
 
     } catch (e) {
         console.error("Error applying table overrides:", e);
+    }
+}
+
+/**
+ * FUNGSI BANTUAN UX: Memberi kesan visual (highlight hijau) pada baris yang diubah
+ */
+function highlightLi(li) {
+    li.style.transition = 'background-color 0.3s';
+    li.style.backgroundColor = '#e8f5e9'; // Hijau lembut
+    setTimeout(() => li.style.backgroundColor = 'transparent', 300);
+}
+
+/**
+ * FASA 3: Menyimpan susunan baharu medan ke pangkalan data
+ */
+async function saveFieldOrder(tableName, moduleId) {
+    const tableData = appState.jsonData.database.table[tableName];
+    
+    // Pastikan moduleId dibaca sebagai integer (nombor)
+    const modIdInt = parseInt(moduleId, 10);
+    const moduleIndex = tableData.custom_modules.findIndex(m => m.module_id === modIdInt);
+    
+    if (moduleIndex === -1) {
+        console.error("❌ Modul tidak ditemui dalam AppState.");
+        return;
+    }
+
+    const modData = tableData.custom_modules[moduleIndex];
+    
+    // Kita cari elemen LI yang mempunyai nama medan
+    const listItems = document.querySelectorAll('#module-field-list li[data-field-name]'); 
+    
+    const updatedFields = [];
+    
+    listItems.forEach((li, index) => {
+        const fieldName = li.dataset.fieldName;
+        let fieldId = li.dataset.fieldId ? parseInt(li.dataset.fieldId, 10) : null;
+        if (isNaN(fieldId)) fieldId = null;
+        
+        // Pengekalan Data: Cari tetapan asal berdasarkan ID atau Nama
+        const existingFieldData = modData.fields.find(f => 
+            (fieldId && f.field_id === fieldId) || 
+            f.sourceName === fieldName || 
+            f.field_source_name === fieldName ||
+            f.field_name === fieldName
+        ) || {
+            is_readonly: 0,
+            settings_override: "{}"
+        };
+        
+        // BINA PAYLOAD YANG LENGKAP UNTUK BACKEND
+        updatedFields.push({
+            ...existingFieldData,
+            field_id: fieldId,             
+            sourceName: fieldName,         // Mesti dihantar untuk elak ralat "undefined"
+            field_name: fieldName,         // Nama alternatif jika backend guna key ini
+            displayOrder: index + 1,       // Format camelCase untuk fallback
+            display_order: index + 1       // Format snake_case (Standard Fasa 3)
+        });
+    });
+
+    // 1. Simpan ke AppState (RAM)
+    modData.fields = updatedFields;
+
+    // 2. Bina Payload penuh untuk API
+    const payload = {
+        module_id: modData.module_id,
+        table_id: tableData.table_id,
+        module_name: modData.module_name,
+        menu_icon: modData.menu_icon,
+        owner_only: modData.owner_only,
+        owner_field: modData.owner_field,
+        fields: updatedFields // Hantar senarai medan yang lengkap
+    };
+
+    // 3. Hantar ke Backend
+    if (window.electronAPI.saveCustomModule) {
+        try {
+            const result = await window.electronAPI.saveCustomModule(payload);
+            if (result.success) {
+                console.log("✅ Susunan medan berjaya disimpan!");
+            } else {
+                console.error("❌ Gagal menyimpan susunan medan:", result.message);
+            }
+        } catch (err) {
+            console.error("❌ Ralat Pelaksanaan API saveCustomModule:", err);
+        }
+    }
+}
+
+// --- HELPER MENGELUARKAN DATA BERSARANG ---
+export function extractGroupData(groupEl) {
+    const condition = groupEl.querySelector(':scope > .group-header .group-condition').value;
+    const rules = [];
+    const container = groupEl.querySelector(':scope > .group-rules-container');
+    
+    Array.from(container.children).forEach(child => {
+        if (child.classList.contains('cm-filter-rule-row')) {
+            const col = child.querySelector('.rule-col').value;
+            if (col) {
+                rules.push({
+                    column: col,
+                    operator: child.querySelector('.rule-op').value,
+                    value: child.querySelector('.rule-val').value
+                });
+            }
+        } else if (child.classList.contains('cm-filter-group')) {
+            const subGroup = extractGroupData(child);
+            if (subGroup.rules.length > 0) rules.push(subGroup);
+        }
+    });
+    return { condition, rules };
+}
+
+/**
+ * FASA 3: Nested Query Builder + Sistem Auto-Save Dinamik
+ */
+export function setupCustomModuleSpecificSettings(tableName, moduleId, mode = 'edit') {
+    const specificSettingsDiv = document.getElementById('custom-module-specific-settings');
+    if (!specificSettingsDiv) return;
+
+    if (mode === 'default' || !tableName) {
+        specificSettingsDiv.classList.add('hidden');
+        return;
+    }
+
+    const tableData = appState.jsonData.database.table[tableName];
+    if (!tableData) return;
+
+    let modData = { filter_rules: '{"condition":"AND", "rules":[]}' }; 
+    if (mode === 'edit' && moduleId) {
+        const found = tableData.custom_modules?.find(m => m.module_id == moduleId);
+        if (found) modData = found; else return;
+    }
+
+    specificSettingsDiv.classList.remove('hidden');
+
+    const filterContainer = document.getElementById('workspace-filter-builder-container');
+    if (filterContainer) {
+        let rootData = { condition: 'AND', rules: [] };
+        try { 
+            const parsed = typeof modData.filter_rules === 'string' ? JSON.parse(modData.filter_rules) : (modData.filter_rules || []); 
+            if (Array.isArray(parsed)) rootData.rules = parsed; 
+            else if (parsed && parsed.rules) rootData = parsed;
+        } catch(e){}
+
+        // Rangka asas UI (Tanpa butang Save Manual)
+        filterContainer.innerHTML = `
+            <div id="cm-filter-rules-root"></div>
+            <div id="cm-save-rules-wrapper" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; display: flex; gap: 10px; align-items: center;">
+                <span id="cm-specifics-save-status" style="color: #10b981; font-weight: bold; opacity: 0; transition: opacity 0.3s;"><i class="fas fa-check-circle"></i> Auto-saved!</span>
+                <small style="color:#888; margin-left: auto; font-style: italic;">Changes are saved automatically.</small>
+            </div>
+        `;
+
+        if (mode === 'create') document.getElementById('cm-save-rules-wrapper').style.display = 'none';
+
+        const rootContainer = document.getElementById('cm-filter-rules-root');
+        const cols = Object.keys(tableData.fields);
+
+        // --- SISTEM AUTO-SAVE DEBOUNCE ---
+        let autoSaveTimeout;
+        const triggerAutoSave = async () => {
+            // Jangan save jika mod mencipta modul baru (tunggu butang Create)
+            if (mode === 'create') return; 
+
+            const rootGroup = rootContainer.querySelector('.cm-filter-group');
+            if (!rootGroup) return;
+            const finalData = extractGroupData(rootGroup);
+
+            modData.filter_rules = JSON.stringify(finalData);
+            
+            // ▼▼▼ BACA TABLE-LEVEL OVERRIDES UNTUK AUTO-SAVE ▼▼▼
+            const tableOverrides = { table_view_title: document.getElementById('tbl-table-view-title')?.value || '' };
+            modData.settings_override = JSON.stringify(tableOverrides);
+
+            const payload = {
+                module_id: modData.module_id,
+                table_id: tableData.table_id,
+                module_name: modData.module_name,
+                menu_icon: modData.menu_icon,
+                owner_only: modData.owner_only,
+                owner_field: modData.owner_field,
+                fields: modData.fields,
+                filter_rules: modData.filter_rules,
+                settings_override: modData.settings_override // <--- HANTAR KE BACKEND
+            };
+
+            if (window.electronAPI.saveCustomModule) {
+                const res = await window.electronAPI.saveCustomModule(payload);
+                if (res.success) {
+                    const status = document.getElementById('cm-specifics-save-status');
+                    status.style.opacity = '1';
+                    setTimeout(() => status.style.opacity = '0', 2000);
+                }
+            }
+        };
+
+        const debounceAutoSave = () => {
+            clearTimeout(autoSaveTimeout);
+            autoSaveTimeout = setTimeout(() => {
+                triggerAutoSave();
+            }, 600); // Tunggu 600ms selepas pengguna berhenti berinteraksi
+        };
+
+        // Delegasi Acara (Event Delegation) untuk Input & Dropdown
+        rootContainer.addEventListener('change', (e) => {
+            if (e.target.tagName === 'SELECT' || e.target.type === 'radio' || e.target.type === 'checkbox') debounceAutoSave();
+        });
+        rootContainer.addEventListener('keyup', (e) => {
+            if (e.target.tagName === 'INPUT' && e.target.type === 'text') debounceAutoSave();
+        });
+
+
+        // FUNGSI RENDER REKURSIF
+        const renderRuleGroup = (groupData, container, isRoot = false) => {
+            const groupEl = document.createElement('div');
+            groupEl.className = 'cm-filter-group';
+            groupEl.style.cssText = `border: 1px solid ${isRoot ? '#ddd' : '#2196f3'}; padding: 12px; margin-top: 10px; border-radius: 6px; background: ${isRoot ? '#fdfdfd' : '#f0f8ff'};`;
+
+            const header = document.createElement('div');
+            header.className = 'group-header';
+            header.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center;';
+            
+            const condSelect = document.createElement('select');
+            condSelect.className = 'form-control group-condition';
+            condSelect.style.width = '80px';
+            condSelect.innerHTML = `<option value="AND" ${groupData.condition === 'AND' ? 'selected' : ''}>AND</option><option value="OR" ${groupData.condition === 'OR' ? 'selected' : ''}>OR</option>`;
+            
+            const btnAddRule = document.createElement('button');
+            btnAddRule.className = 'btn btn-sm btn-secondary';
+            btnAddRule.innerHTML = '<i class="fas fa-plus"></i> Rule';
+            
+            const btnAddGroup = document.createElement('button');
+            btnAddGroup.className = 'btn btn-sm btn-info';
+            btnAddGroup.innerHTML = '<i class="fas fa-folder-plus"></i> Group';
+
+            header.appendChild(condSelect);
+            header.appendChild(btnAddRule);
+            header.appendChild(btnAddGroup);
+
+            if (!isRoot) {
+                const btnRemoveGroup = document.createElement('button');
+                btnRemoveGroup.className = 'btn btn-sm btn-danger';
+                btnRemoveGroup.style.marginLeft = 'auto';
+                btnRemoveGroup.innerHTML = '<i class="fas fa-trash"></i> Delete Group';
+                // Trigger auto-save bila buang group
+                btnRemoveGroup.onclick = () => { groupEl.remove(); debounceAutoSave(); };
+                header.appendChild(btnRemoveGroup);
+            }
+
+            const rulesContainer = document.createElement('div');
+            rulesContainer.className = 'group-rules-container';
+            rulesContainer.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-left: 10px; border-left: 2px solid #ccc; padding-left: 15px;';
+
+            groupEl.appendChild(header);
+            groupEl.appendChild(rulesContainer);
+
+            if (groupData.rules && groupData.rules.length > 0) {
+                groupData.rules.forEach(rule => {
+                    if (rule.condition !== undefined) renderRuleGroup(rule, rulesContainer);
+                    else renderRuleItem(rule, rulesContainer);
+                });
+            } else {
+                if (isRoot) renderRuleItem({}, rulesContainer);
+            }
+
+            // Trigger auto-save bila tambah rule/group
+            btnAddRule.onclick = () => { renderRuleItem({}, rulesContainer); debounceAutoSave(); };
+            btnAddGroup.onclick = () => { renderRuleGroup({ condition: 'AND', rules: [{}] }, rulesContainer); debounceAutoSave(); };
+
+            container.appendChild(groupEl);
+        };
+
+        // FUNGSI RENDER RULE ITEM
+        const renderRuleItem = (ruleData, container) => {
+            const row = document.createElement('div');
+            row.className = 'cm-filter-rule-row';
+            row.style.cssText = 'display: flex; gap: 10px; align-items: center;';
+            row.innerHTML = `
+                <select class="form-control rule-col" style="flex: 1;">
+                    <option value="">-- Select Field --</option>
+                    ${cols.map(c => `<option value="${c}" ${c === ruleData.column ? 'selected' : ''}>${c}</option>`).join('')}
+                </select>
+                <select class="form-control rule-op" style="width: 120px;">
+                    ${['=', '!=', '>', '<', '>=', '<=', 'LIKE', 'NOT LIKE'].map(op => `<option value="${op}" ${op === ruleData.operator ? 'selected' : ''}>${op}</option>`).join('')}
+                </select>
+                <input type="text" class="form-control rule-val" placeholder="Value (e.g. active, 1, NULL)" style="flex: 1;" value="${ruleData.value || ''}">
+                <button class="btn btn-danger btn-sm rule-del"><i class="fas fa-times"></i></button>
+            `;
+            // Trigger auto-save bila buang rule individu
+            row.querySelector('.rule-del').onclick = () => { row.remove(); debounceAutoSave(); };
+            container.appendChild(row);
+        };
+
+        // Mulakan lukisan root
+        renderRuleGroup(rootData, rootContainer, true);
+
+        // ▼▼▼ BIND AUTO-SAVE KEPADA KOTAK TABLE TITLE ▼▼▼
+        const globalSettingsBox = document.getElementById('module-global-settings');
+        if (globalSettingsBox && !globalSettingsBox.dataset.cmBound) {
+            const handleGlobalChange = (e) => {
+                if (document.getElementById('workspace-module-badge')?.classList.contains('badge-custom')) {
+                    if (e.target.id && e.target.id.startsWith('tbl-')) debounceAutoSave();
+                }
+            };
+            globalSettingsBox.addEventListener('change', handleGlobalChange);
+            globalSettingsBox.addEventListener('keyup', handleGlobalChange);
+            globalSettingsBox.dataset.cmBound = "true"; 
+        }
     }
 }

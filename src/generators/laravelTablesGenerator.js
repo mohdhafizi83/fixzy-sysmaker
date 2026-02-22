@@ -414,7 +414,7 @@ async function generateFilamentTablesCustomModules(fullSchema, basePath) {
         for (const tableName in tables) {
             const tableData = tables[tableName];
             if (tableData.custom_modules && tableData.custom_modules.length > 0) {
-                for (const moduleObj of tableData.custom_modules) { // Tukar 'view' kepada 'moduleObj'
+                for (const moduleObj of tableData.custom_modules) { 
                     const moduleNameClean = moduleObj.module_name.replace(/[^a-zA-Z0-9]/g, '');
 
                     // FOLDER & FAIL: Plural
@@ -423,11 +423,21 @@ async function generateFilamentTablesCustomModules(fullSchema, basePath) {
                     // Nama Class Table
                     const tableClassName = `${moduleSafeNamePlural}Table`; 
 
+                    // --- BACA TETAPAN OVERRIDE PERINGKAT JADUAL (TABLE LEVEL) ---
+                    let tableOverrides = {};
+                    if (moduleObj.settings_override) {
+                        try {
+                            tableOverrides = JSON.parse(moduleObj.settings_override);
+                        } catch (e) {
+                            console.warn(`Gagal memproses settings_override jadual untuk modul: ${moduleObj.module_name}`);
+                        }
+                    }
+
                     // --- BINA VIRTUAL TABLE DATA UNTUK CUSTOM MODULE ---
                     const virtualFields = {};
                     const selectedFields = moduleObj.fields || [];
                     
-selectedFields.forEach(f => {
+                    selectedFields.forEach(f => {
                         let fieldName = null;
                         let originalField = null;
 
@@ -455,7 +465,12 @@ selectedFields.forEach(f => {
                                 virtualFields[fieldName].is_forced_readonly = true;
                             }
 
-                            // LOGIK BAHARU: BACA DAN GABUNG SETTINGS OVERRIDE
+                            // ▼▼▼ SUSUNAN MEDAN (DISPLAY ORDER) ▼▼▼
+                            if (f.display_order !== undefined && f.display_order !== null) {
+                                virtualFields[fieldName].field_order = parseInt(f.display_order);
+                            }
+
+                            // LOGIK BAHARU: BACA DAN GABUNG SETTINGS OVERRIDE PERINGKAT MEDAN
                             if (f.settings_override) {
                                 try {
                                     const overrides = JSON.parse(f.settings_override);
@@ -466,8 +481,11 @@ selectedFields.forEach(f => {
                             }
                         }
                     });
+
+                    // Gabungkan override jadual ke dalam table data
                     const virtualTableData = { 
                         ...tableData, 
+                        ...tableOverrides,
                         fields: virtualFields, 
                         module_name: tableData.module_name // PENTING: Kekalkan rujukan nama asal untuk Standard Model
                     };

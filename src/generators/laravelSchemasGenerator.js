@@ -660,12 +660,6 @@ function generateSingleSchemaClass(basePath, resourceFolder, className, tableDat
     console.log(`   - Form Schema generated: ${className}.php`);
 }
 
-/**
- * [BARU] Menjana Form Schema untuk SEMUA Custom Modules.
- */
-/**
- * [BARU] Menjana Form Schema untuk SEMUA Custom Modules.
- */
 async function generateFilamentSchemasCustomModules(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;
@@ -674,17 +668,17 @@ async function generateFilamentSchemasCustomModules(fullSchema, basePath) {
         for (const tableName in tables) {
             const tableData = tables[tableName];
             if (tableData.custom_modules && tableData.custom_modules.length > 0) {
-                for (const moduleObj of tableData.custom_modules) { // Tukar 'view' kepada 'moduleObj'
+                for (const moduleObj of tableData.custom_modules) { 
                     const moduleNameClean = moduleObj.module_name.replace(/[^a-zA-Z0-9]/g, '');
                     const moduleSafeNamePlural = toPluralPascalCase(moduleNameClean);
                     const moduleSafeNameSingular = toSingularPascalCase(moduleNameClean);
                     const schemaClassName = `${moduleSafeNameSingular}Form`; 
 
-                    // Bina Virtual Fields (Readonly & Settings Override Logic)
+                    // Bina Virtual Fields (Readonly, Display Order & Settings Override Logic)
                     const virtualFields = {};
                     const selectedFields = moduleObj.fields || []; 
                     
-selectedFields.forEach(f => {
+                    selectedFields.forEach(f => {
                         let fieldName = null;
                         let originalField = null;
 
@@ -713,7 +707,12 @@ selectedFields.forEach(f => {
                                 virtualFields[fieldName].is_forced_readonly = true;
                             }
 
-                            // LOGIK BAHARU: BACA DAN GABUNG SETTINGS OVERRIDE
+                            // ▼▼▼ SUSUNAN MEDAN (DISPLAY ORDER) ▼▼▼
+                            if (f.display_order !== undefined && f.display_order !== null) {
+                                virtualFields[fieldName].field_order = parseInt(f.display_order);
+                            }
+
+                            // LOGIK BAHARU: BACA DAN GABUNG SETTINGS OVERRIDE PERINGKAT MEDAN
                             if (f.settings_override) {
                                 try {
                                     const overrides = JSON.parse(f.settings_override);
@@ -724,6 +723,7 @@ selectedFields.forEach(f => {
                             }
                         }
                     });               
+                    
                     // Perlu pass 'module_name' original supaya helper tahu nama Model
                     const virtualTableData = { 
                         ...tableData, 

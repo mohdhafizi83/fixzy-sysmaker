@@ -19,6 +19,8 @@ export function populateTableSettings(tableName) {
     populateRecordOwnerDropdown(tableName);
 	populateCustomViewsTab(tableName);
     populateConstraintsTab(tableName);
+    
+    populateParentChildTab(tableName);
 		
     const tableData = appState.jsonData.database.table[tableName];
     if (!tableData) {
