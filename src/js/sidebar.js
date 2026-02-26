@@ -387,7 +387,7 @@ export function initializeSidebarInteractivity() {
             appState.isPopulatingData = true; // Block auto-save
             const tableName = link.closest('li.has-submenu').querySelector('a > span').textContent.trim();
             const fieldName = link.querySelector('span').textContent.trim();
-            const protectedFields = ['id', 'created_at', 'updated_at', 'deleted_at'];
+            const protectedFields = ['id', 'created_at', 'updated_at', 'deleted_at', 'created_by', 'updated_by', 'deleted_by'];
 
             // PEMBETULAN DI SINI: Guna appState.isCoreLockingEnabled
             if (appState.isCoreLockingEnabled && (tableName === 'users' || protectedFields.includes(fieldName))) {

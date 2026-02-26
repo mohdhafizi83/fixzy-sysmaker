@@ -561,33 +561,44 @@ ipcMain.handle('table:create', async (event, projectId) => {
             ).run(projectId, newName, newName, newName, nextOrder);
             const tableId = info.lastInsertRowid;
 
-            // ▼▼▼ PERUBAHAN DI SINI ▼▼▼
-            // Tambah `hide_in_tv` pada senarai lajur
+// Tambah `hide_in_tv` dan `hide_in_dv` pada senarai lajur
             const insertFieldStmt = db.prepare(`
-                INSERT INTO fields (table_id, field_name, caption, data_type, length, primary_key, auto_increment, unsigned, read_only, field_order, hide_in_tv)
-                VALUES (@table_id, @field_name, @caption, @data_type, @length, @primary_key, @auto_increment, @unsigned, @read_only, @field_order, @hide_in_tv)
+                INSERT INTO fields (table_id, field_name, caption, data_type, length, primary_key, auto_increment, unsigned, read_only, field_order, hide_in_tv, hide_in_dv)
+                VALUES (@table_id, @field_name, @caption, @data_type, @length, @primary_key, @auto_increment, @unsigned, @read_only, @field_order, @hide_in_tv, @hide_in_dv)
             `);
 
-            // 1a. Cipta medan 'id' dan tetapkan hide_in_tv = 1
+            // 1a. Cipta medan 'id' (Sembunyikan dari TV dan DV)
             insertFieldStmt.run({
                 table_id: tableId, field_name: 'id', caption: 'ID', data_type: 'INT',
-                length: 11, primary_key: 1, auto_increment: 1, unsigned: 1, read_only: 1, field_order: 0, hide_in_tv: 1
+                length: 11, primary_key: 1, auto_increment: 1, unsigned: 1, read_only: 1, field_order: 0, hide_in_tv: 1, hide_in_dv: 1
             });
 
-            const timestamps = [
-                { name: 'created_at', caption: 'Created At', order: 1 },
-                { name: 'updated_at', caption: 'Updated At', order: 2 },
-                { name: 'deleted_at', caption: 'Deleted At', order: 3 }
+            // 1b. Cipta medan Timestamps & Userstamps (Blameable)
+            const systemFields = [
+                { name: 'created_at', caption: 'Created At', type: 'DATETIME', length: null, order: 1 },
+                { name: 'updated_at', caption: 'Updated At', type: 'DATETIME', length: null, order: 2 },
+                { name: 'deleted_at', caption: 'Deleted At', type: 'DATETIME', length: null, order: 3 },
+                { name: 'created_by', caption: 'Created By', type: 'BIGINT', length: 20, order: 4 },
+                { name: 'updated_by', caption: 'Updated By', type: 'BIGINT', length: 20, order: 5 },
+                { name: 'deleted_by', caption: 'Deleted By', type: 'BIGINT', length: 20, order: 6 }
             ];
 
-            // 1b. Cipta medan cap masa dan tetapkan hide_in_tv = 1
-            for (const ts of timestamps) {
+            for (const sysFld of systemFields) {
                 insertFieldStmt.run({
-                    table_id: tableId, field_name: ts.name, caption: ts.caption, data_type: 'DATETIME',
-                    length: null, primary_key: 0, auto_increment: 0, unsigned: 0, read_only: 0, field_order: ts.order, hide_in_tv: 1
+                    table_id: tableId, 
+                    field_name: sysFld.name, 
+                    caption: sysFld.caption, 
+                    data_type: sysFld.type,
+                    length: sysFld.length, 
+                    primary_key: 0, 
+                    auto_increment: 0, 
+                    unsigned: sysFld.type === 'BIGINT' ? 1 : 0, // Unsigned untuk ID Pengguna
+                    read_only: 1, // Userstamps adalah read_only
+                    field_order: sysFld.order, 
+                    hide_in_tv: 1, 
+                    hide_in_dv: 1
                 });
             }
-            // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
             
             const maxMenuOrderResult = db.prepare(
                 'SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL'
@@ -1301,18 +1312,31 @@ ipcMain.handle('custom-module:save', async (event, data) => {
              VALUES (?, ?, ?, ?, ?)`
         );
 
-        if (fields && Array.isArray(fields)) {
+if (fields && Array.isArray(fields)) {
             fields.forEach((field, index) => {
-                // Dapatkan field_id sebenar dari pangkalan data
-                const fData = getFieldIdStmt.get(table_id, field.sourceName || field.field_source_name);
+                let actualFieldId = field.field_id;
                 
-                if (fData) {
-                    // Bungkus label/caption dalam JSON supaya selari dengan fungsi override kita
-                    const fieldSettingsOverride = JSON.stringify({ caption: field.label });
+                // Jika data datang dari UI (Create Modal), ia tiada field_id tapi ada sourceName
+                if (!actualFieldId && (field.sourceName || field.field_source_name)) {
+                    const fData = getFieldIdStmt.get(table_id, field.sourceName || field.field_source_name);
+                    if (fData) actualFieldId = fData.field_id;
+                }
+
+                if (actualFieldId) {
+                    // Tangkap format dari RAM (Auto-Save) atau format dari UI (Create)
+                    const isReadonly = field.isReadonly !== undefined ? (field.isReadonly ? 1 : 0) : (field.is_readonly ? 1 : 0);
                     
-                    insertFieldStmt.run(viewId, fData.field_id, field.isReadonly ? 1 : 0, fieldSettingsOverride, index);
-                } else {
-                    console.warn(`Medan ${field.sourceName} tidak ditemui di pangkalan data untuk module ini.`);
+                    let finalSettingsOverride = field.settings_override || "{}";
+                    // Jika dari UI (ada label), kita bina JSON override
+                    if (field.label !== undefined) {
+                        const currentOverrides = {};
+                        if (field.label.trim() !== '') currentOverrides.caption = field.label;
+                        finalSettingsOverride = JSON.stringify(currentOverrides);
+                    }
+
+                    const finalOrder = field.display_order !== undefined ? field.display_order : (field.displayOrder !== undefined ? field.displayOrder : index);
+                    
+                    insertFieldStmt.run(viewId, actualFieldId, isReadonly, finalSettingsOverride, finalOrder);
                 }
             });
         }
@@ -2351,27 +2375,54 @@ function importSchema(sql, projectId, dialect) {
             }
         }
         
-        const checkPKStmt = db.prepare('SELECT 1 FROM fields WHERE table_id = ? AND primary_key = 1 LIMIT 1');
+const checkPKStmt = db.prepare('SELECT 1 FROM fields WHERE table_id = ? AND primary_key = 1 LIMIT 1');
         const checkFieldExistsStmt = db.prepare('SELECT 1 FROM fields WHERE table_id = ? AND field_name = ? LIMIT 1');
-        const insertStandardFieldStmt = db.prepare(`INSERT INTO fields (table_id, field_name, caption, data_type, length, primary_key, auto_increment, unsigned, read_only, is_indexed, field_order) VALUES (@table_id, @field_name, @caption, @data_type, @length, @primary_key, @auto_increment, @unsigned, @read_only, @is_indexed, @field_order)`);
+        
+        // Tambah hide_in_tv dan hide_in_dv pada statement SQL
+        const insertStandardFieldStmt = db.prepare(`INSERT INTO fields (table_id, field_name, caption, data_type, length, primary_key, auto_increment, unsigned, read_only, is_indexed, field_order, hide_in_tv, hide_in_dv) VALUES (@table_id, @field_name, @caption, @data_type, @length, @primary_key, @auto_increment, @unsigned, @read_only, @is_indexed, @field_order, @hide_in_tv, @hide_in_dv)`);
+        
         for (const tableName in tableMap) {
             const tableId = tableMap[tableName];
             if (!checkPKStmt.get(tableId)) {
                 if (!checkFieldExistsStmt.get(tableId, 'id')) {
-                    insertStandardFieldStmt.run({ table_id: tableId, field_name: 'id', caption: 'ID', data_type: 'INT', length: 11, primary_key: 1, auto_increment: 1, unsigned: 1, read_only: 1, is_indexed: 0, field_order: -1 });
+                    insertStandardFieldStmt.run({ table_id: tableId, field_name: 'id', caption: 'ID', data_type: 'INT', length: 11, primary_key: 1, auto_increment: 1, unsigned: 1, read_only: 1, is_indexed: 0, field_order: -1, hide_in_tv: 1, hide_in_dv: 1 });
                     if (!standardizationLog[tableName]) standardizationLog[tableName] = [];
                     standardizationLog[tableName].push('id');
                 }
             }
-            const requiredTimestamps = ['created_at', 'updated_at', 'deleted_at'];
+            
+            const systemFields = [
+                { name: 'created_at', type: 'DATETIME', length: null, unsigned: 0 },
+                { name: 'updated_at', type: 'DATETIME', length: null, unsigned: 0 },
+                { name: 'deleted_at', type: 'DATETIME', length: null, unsigned: 0 },
+                { name: 'created_by', type: 'BIGINT', length: 20, unsigned: 1 },
+                { name: 'updated_by', type: 'BIGINT', length: 20, unsigned: 1 },
+                { name: 'deleted_by', type: 'BIGINT', length: 20, unsigned: 1 }
+            ];
+
             const allFields = db.prepare('SELECT field_name FROM fields WHERE table_id = ?').all(tableId);
             const existingFieldNames = new Set(allFields.map(f => f.field_name));
             let lastOrder = allFields.length;
-            for (const fieldName of requiredTimestamps) {
-                if (!existingFieldNames.has(fieldName)) {
-                    insertStandardFieldStmt.run({ table_id: tableId, field_name: fieldName, caption: toTitleCase(fieldName), data_type: 'DATETIME', length: null, primary_key: 0, auto_increment: 0, unsigned: 0, read_only: 0, is_indexed: 0, field_order: lastOrder++ });
+            
+            for (const sysFld of systemFields) {
+                if (!existingFieldNames.has(sysFld.name)) {
+                    insertStandardFieldStmt.run({ 
+                        table_id: tableId, 
+                        field_name: sysFld.name, 
+                        caption: toTitleCase(sysFld.name), 
+                        data_type: sysFld.type, 
+                        length: sysFld.length, 
+                        primary_key: 0, 
+                        auto_increment: 0, 
+                        unsigned: sysFld.unsigned, 
+                        read_only: 1, 
+                        is_indexed: 0, 
+                        field_order: lastOrder++,
+                        hide_in_tv: 1,
+                        hide_in_dv: 1
+                    });
                     if (!standardizationLog[tableName]) standardizationLog[tableName] = [];
-                    standardizationLog[tableName].push(fieldName);
+                    standardizationLog[tableName].push(sysFld.name);
                 }
             }
         }

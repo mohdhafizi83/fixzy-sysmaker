@@ -34,16 +34,37 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-table-view-title', tableData.table_view_title);
     setElementValue('tbl-table-description', tableData.table_description);
 
-    // Tab: Table view -> Features
+// Tab: Table view -> Features
     setElementValue('tbl-show-quick-search', tableData.show_quick_search);
     setElementValue('tbl-allow-pagination', tableData.allow_pagination);
     setRadioValue('tbl-pagination-type', tableData.pagination_type);
     setElementValue('tbl-default-sort-by', tableData.default_sort_by);
     setElementValue('tbl-sort-descending', tableData.sort_descending);
     setElementValue('tbl-allow-csv-export', tableData.allow_csv_export);
-    setElementValue('tbl-allow-csv-import', tableData.allow_csv_import);
     setElementValue('tbl-allow-print-view', tableData.allow_print_view);
     setElementValue('tbl-allow-mass-delete', tableData.allow_mass_delete);
+
+    // ▼▼▼ LOGIK BAHARU: LUMPUHKAN IMPORT UNTUK CUSTOM MODULE ▼▼▼
+    const importCheckbox = document.getElementById('tbl-allow-csv-import');
+    if (importCheckbox) {
+        // Semak jika kita sedang berada dalam mod Custom Module
+        const isWorkspaceActive = !document.getElementById('module-global-settings')?.classList.contains('hidden');
+        const badgeEl = document.getElementById('workspace-module-badge');
+        const isCustomModule = isWorkspaceActive && badgeEl && badgeEl.classList.contains('badge-custom');
+
+        if (isCustomModule) {
+            importCheckbox.checked = false; // Nyahtanda
+            importCheckbox.disabled = true; // Bekukan
+            if (importCheckbox.parentElement) {
+                importCheckbox.parentElement.title = "Fungsi Import dilumpuhkan untuk Custom Module bagi memelihara integriti data rules tapisan.";
+            }
+        } else {
+            importCheckbox.disabled = false; // Aktifkan semula untuk Default Module
+            if (importCheckbox.parentElement) importCheckbox.parentElement.title = "";
+            setElementValue('tbl-allow-csv-import', tableData.allow_csv_import);
+        }
+    }
+    // ▲▲▲ TAMAT LOGIK IMPORT ▲▲▲
     
     setElementValue('tbl-show-edit-button', tableData.show_edit_button);
     setElementValue('tbl-show-delete-button', tableData.show_delete_button);

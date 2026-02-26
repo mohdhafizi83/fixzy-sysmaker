@@ -675,54 +675,52 @@ async function generateFilamentSchemasCustomModules(fullSchema, basePath) {
                     const schemaClassName = `${moduleSafeNameSingular}Form`; 
 
                     // Bina Virtual Fields (Readonly, Display Order & Settings Override Logic)
+                    // ▼▼▼ PEMBAIKAN GENERATOR: SALIN DEFAULT DAHULU, KEMUDIAN OVERRIDE ▼▼▼
                     const virtualFields = {};
-                    const selectedFields = moduleObj.fields || []; 
                     
-                    selectedFields.forEach(f => {
-                        let fieldName = null;
-                        let originalField = null;
+                    // 1. Salin SEMUA medan dari jadual asal (Default Module)
+                    for (const [fName, fData] of Object.entries(tableData.fields)) {
+                        virtualFields[fName] = { ...fData }; // Deep copy
+                    }
 
-                        // 1. Cari berdasarkan field_id (Sistem Baharu)
-                        if (f.field_id) {
-                            fieldName = Object.keys(tableData.fields).find(key => tableData.fields[key].field_id === f.field_id);
-                            if (fieldName) {
-                                originalField = tableData.fields[fieldName];
-                            }
-                        }
-                        
-                        // 2. Fallback untuk keserasian (Sistem Lama jika ada)
-                        if (!originalField) {
-                            fieldName = f.sourceName || f.field_source_name || f.field_name;
-                            if (fieldName && tableData.fields[fieldName]) {
-                                originalField = tableData.fields[fieldName];
-                            }
-                        }
-
-                        // 3. Masukkan ke dalam virtualFields jika dijumpai
-                        if (originalField && fieldName) {
-                            virtualFields[fieldName] = { ...originalField };
+                    // 2. Tindihkan (Override) dengan tetapan khusus Custom Module jika wujud
+                    if (moduleObj.fields && Array.isArray(moduleObj.fields)) {
+                        moduleObj.fields.forEach(f => {
+                            const fieldId = parseInt(f.field_id, 10);
                             
-                            // Logik Asal: Semak jika read-only
-                            if (f.isReadonly === true || f.is_readonly === 1) {
-                                virtualFields[fieldName].is_forced_readonly = true;
-                            }
-
-                            // ▼▼▼ SUSUNAN MEDAN (DISPLAY ORDER) ▼▼▼
-                            if (f.display_order !== undefined && f.display_order !== null) {
-                                virtualFields[fieldName].field_order = parseInt(f.display_order);
-                            }
-
-                            // LOGIK BAHARU: BACA DAN GABUNG SETTINGS OVERRIDE PERINGKAT MEDAN
-                            if (f.settings_override) {
-                                try {
-                                    const overrides = JSON.parse(f.settings_override);
-                                    Object.assign(virtualFields[fieldName], overrides);
-                                } catch (e) {
-                                    console.warn(`Gagal memproses settings_override untuk medan: ${fieldName}`);
+                            // Cari nama medan berdasarkan ID (Elak isu DataType String vs Int)
+                            let fieldName = null;
+                            for (const [fName, fData] of Object.entries(tableData.fields)) {
+                                if (parseInt(fData.field_id, 10) === fieldId) {
+                                    fieldName = fName;
+                                    break;
                                 }
                             }
-                        }
-                    });               
+
+                            if (fieldName && virtualFields[fieldName]) {
+                                // Tindih status Read-Only
+                                if (f.isReadonly === true || f.is_readonly === 1) {
+                                    virtualFields[fieldName].is_forced_readonly = true;
+                                }
+                                
+                                // Tindih susunan (Order)
+                                if (f.display_order !== undefined) {
+                                    virtualFields[fieldName].field_order = f.display_order;
+                                }
+
+                                // Tindih sebarang Settings Override (Cth: hide_in_dv, dll)
+                                if (f.settings_override) {
+                                    try {
+                                        const overrides = typeof f.settings_override === 'string' ? JSON.parse(f.settings_override) : f.settings_override;
+                                        Object.assign(virtualFields[fieldName], overrides);
+                                    } catch (e) {
+                                        console.warn(`Gagal memproses settings_override untuk medan: ${fieldName}`);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                    // ▲▲▲ TAMAT PEMBAIKAN GENERATOR ▲▲▲        
                     
                     // Perlu pass 'module_name' original supaya helper tahu nama Model
                     const virtualTableData = { 

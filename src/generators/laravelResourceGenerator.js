@@ -60,36 +60,80 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
     const namespaceFolder = isCustomModule ? outputFolder : modelNamePlural;
     resourceContent = resourceContent.replace(/<<MODEL_NAME_PLURAL>>/g, namespaceFolder);
 
-    // --- LOGIK: CHILDREN COUNT ---
+// --- MULA: LOGIK ELOQUENT QUERY KESELURUHAN (COUNT, OWNER & FILTER) ---
     const childrenWithCount = relationships.filter(r => r.parent_table_name === tableName && r.show_count_in_tv === 1);
-    
-    if (childrenWithCount.length > 0) {
+    const hasWithCount = childrenWithCount.length > 0;
+    const isOwnerOnly = tableData.record_owner === 'current_user'; // Tangkap setting dari DB
+
+    let filterQueryStr = '';
+    if (isCustomModule && options.filterRules) {
+        try {
+            const parsed = typeof options.filterRules === 'string' ? JSON.parse(options.filterRules) : options.filterRules;
+            
+            function buildQueryString(group, depth = 3) {
+                if (!group || !group.rules || group.rules.length === 0) return '';
+                let condition = group.condition || 'AND';
+                let indent = '    '.repeat(depth);
+                let inner = '';
+                
+                group.rules.forEach((rule, index) => {
+                    let method = (index === 0) ? 'where' : (condition === 'OR' ? 'orWhere' : 'where');
+                    if (rule.condition !== undefined && rule.rules !== undefined) {
+                        let subInner = buildQueryString(rule, depth + 1);
+                        if (subInner) inner += `\n${indent}$q->${method}(function($q) {${subInner}\n${indent}});`;
+                    } else if (rule.column) {
+                        let col = rule.column; let op = rule.operator || '='; let val = rule.value || '';
+                        if (val.toLowerCase() === 'null') {
+                            let nullMethod = (op === '!=' || op === 'NOT LIKE') ? 'whereNotNull' : 'whereNull';
+                            if (index > 0 && condition === 'OR') nullMethod = (op === '!=' || op === 'NOT LIKE') ? 'orWhereNotNull' : 'orWhereNull';
+                            inner += `\n${indent}$q->${nullMethod}('${col}');`;
+                        } else {
+                            inner += `\n${indent}$q->${method}('${col}', '${op}', '${val}');`;
+                        }
+                    }
+                });
+                return inner;
+            }
+
+            let rootData = { condition: 'AND', rules: [] };
+            if (Array.isArray(parsed)) rootData.rules = parsed;
+            else if (parsed && parsed.rules) rootData = parsed;
+
+            const finalInnerQuery = buildQueryString(rootData, 3);
+            if (finalInnerQuery) filterQueryStr = `\n            ->where(function($q) {${finalInnerQuery}\n            })`;
+        } catch (e) {}
+    }
+
+    // Jika mana-mana logik di atas ada, kita jana fungsi getEloquentQuery()
+    if (hasWithCount || isOwnerOnly || filterQueryStr) {
         resourceContent = resourceContent.replace('<<IMPORT_SHOW_COUNT_IN_TV>>', 'use Illuminate\\Database\\Eloquent\\Builder;');
         
-        const childPluralCamelNames = childrenWithCount.map(r => {
-            const childTableData = allTables[r.child_table_name];
-            const childNameSource = (childTableData && childTableData.module_name && childTableData.module_name.trim() !== '')
-                                    ? childTableData.module_name
-                                    : r.child_table_name;
-            return `'${toPluralCamelCase(childNameSource)}'`; 
-        }).join(', ');
+        let queryBody = 'parent::getEloquentQuery()';
         
-        const withCountFunction = `
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()->withCount([${childPluralCamelNames}]);
-    }`;
-        
-        if (!isCustomModule) {
-            resourceContent = resourceContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', withCountFunction);
-        } else {
-             resourceContent = resourceContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', '<<CUSTOM_QUERY_PLACEHOLDER>>'); 
+        if (hasWithCount) {
+            const childPluralCamelNames = childrenWithCount.map(r => {
+                const childTableData = allTables[r.child_table_name];
+                const childNameSource = (childTableData && childTableData.module_name && childTableData.module_name.trim() !== '') ? childTableData.module_name : r.child_table_name;
+                return `'${toPluralCamelCase(childNameSource)}'`; 
+            }).join(', ');
+            queryBody += `->withCount([${childPluralCamelNames}])`;
         }
+
+        if (isOwnerOnly) {
+            queryBody += `\n            ->where('created_by', auth()->id())`;
+        }
+
+        if (filterQueryStr) {
+            queryBody += filterQueryStr;
+        }
+
+        const queryFunction = `\n    public static function getEloquentQuery(): Builder\n    {\n        return ${queryBody};\n    }`;
+        resourceContent = resourceContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', queryFunction);
     } else {
         resourceContent = resourceContent.replace('<<IMPORT_SHOW_COUNT_IN_TV>>', '');
-        if (!isCustomModule) resourceContent = resourceContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', '');
-        else resourceContent = resourceContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', '<<CUSTOM_QUERY_PLACEHOLDER>>');
+        resourceContent = resourceContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', '');
     }
+    // --- TAMAT LOGIK ELOQUENT QUERY ---
 
     // --- LOGIK: PRINT ACTION ---
     if (tableData.allow_print_view === 1) {
@@ -117,8 +161,9 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         resourceContent = resourceContent.replace('<<EXPORT_ACTION>>', '');
     }
 
-    // --- LOGIK: IMPORT ---
-    if (tableData.allow_csv_import === 1) {
+// --- LOGIK: IMPORT ---
+    // Pastikan ciri import dihalang 100% jika ia adalah Custom Module (!isCustomModule)
+    if (tableData.allow_csv_import === 1 && !isCustomModule) {
         const importImport = `use App\\Filament\\Imports\\${modelName}Importer;\nuse Filament\\Actions\\ImportAction;`;
         const importAction = `ImportAction::make()->importer(${modelName}Importer::class),`;
         resourceContent = resourceContent.replace('<<IMPORT_IMPORTDATA>>', importImport);
@@ -129,12 +174,32 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
     }
 
 // --- LOGIK: RELATION MANAGERS (STANDARD & CUSTOM MODULE) ---
-    // FASA 1: Custom Module kini mematuhi logik show_tab asal jadual (100% Seragam)
-    let childrenForRelationManager = relationships.filter(r => 
-        r.parent_table_name === tableName && 
-        r.show_tab === 1 && 
-        r.relationship_type !== 'one-to-one'
-    );
+    let childrenForRelationManager = [];
+
+    if (isCustomModule) {
+        // ▼▼▼ PEMBAIKAN: Baca dari tatasusunan (array) includedRelations untuk Custom Module ▼▼▼
+        let includedRels = [];
+        try {
+            includedRels = typeof options.includedRelations === 'string' 
+                ? JSON.parse(options.includedRelations || "[]") 
+                : (options.includedRelations || []);
+        } catch (e) {
+            includedRels = [];
+        }
+
+        childrenForRelationManager = relationships.filter(r => 
+            r.parent_table_name === tableName && 
+            r.relationship_type !== 'one-to-one' &&
+            includedRels.includes(r.child_table_name) // Hanya masukkan jika namanya ada dalam array
+        );
+    } else {
+        // Logik Standard/Default: Gunakan tetapan show_tab = 1
+        childrenForRelationManager = relationships.filter(r => 
+            r.parent_table_name === tableName && 
+            r.show_tab === 1 && 
+            r.relationship_type !== 'one-to-one'
+        );
+    }
 
     if (childrenForRelationManager.length > 0) {
         // PENTING: Untuk Custom Module, kita nak rujuk ke folder asal base table!
@@ -169,40 +234,45 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         resourceContent = resourceContent.replace('<<RELATION_RELATIONMANAGERS>>', '');
     }
 
-    // --- LOGIK: MENU ---
-    if (!isCustomModule) {
-        let menuItem = null;
-        let menuGroup = null;
-        for (const topLevelItem of unified_menu) {
-            if (topLevelItem.type === 'group') {
-                const foundItem = topLevelItem.items.find(item => item.table_id === tableData.table_id);
-                if (foundItem) { menuItem = foundItem; menuGroup = topLevelItem; break; }
-            } else if (topLevelItem.table_id === tableData.table_id) {
-                menuItem = topLevelItem; break;
-            }
-        }
+// --- LOGIK: MENU ---
+    // KITA SATUKAN LOGIK UNTUK KEDUA-DUA DEFAULT & CUSTOM MODULE
+    let menuItem = null;
+    let menuGroup = null;
 
-        if (menuItem) {
-            if (menuGroup) { 
-                const groupFunction = `\n    public static function getNavigationGroup(): string\n    {\n        return '${menuGroup.name}';\n    }`;
-                const sortFunction = `\n    public static function getNavigationSort(): int\n    {\n        return ${menuItem.item_order};\n    }`;
-                resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONGROUP>>', groupFunction);
-                resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONSORT>>', sortFunction);
-            } else { 
-                const sortProperty = `protected static ?int $navigationSort = ${menuItem.item_order};`;
-                resourceContent = resourceContent.replace('<<SHORTCUT_MENU_ORDER>>', sortProperty);
-                resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONGROUP>>', '');
-                resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONSORT>>', '');
-            }
-            resourceContent = resourceContent.replace('<<MENU_NAME>>', menuItem.item_label);
+    for (const topLevelItem of unified_menu) {
+        if (topLevelItem.type === 'group') {
+            // Guna '==' untuk keselamatan jika ID berbeza jenis (String vs Int)
+            const foundItem = topLevelItem.items.find(item => 
+                isCustomModule ? item.module_id == options.moduleId : item.table_id == tableData.table_id
+            );
+            if (foundItem) { menuItem = foundItem; menuGroup = topLevelItem; break; }
         } else {
-            resourceContent = resourceContent.replace('<<SHORTCUT_MENU_ORDER>>', '');
-            resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONGROUP>>', '');
-            resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONSORT>>', '');
-            resourceContent = resourceContent.replace('<<MENU_NAME>>', tableData.table_view_title || toPluralPascalCase(nameSource)); 
+            const isMatch = isCustomModule ? topLevelItem.module_id == options.moduleId : topLevelItem.table_id == tableData.table_id;
+            if (isMatch) { menuItem = topLevelItem; break; }
         }
     }
 
+    if (menuItem) {
+        if (menuGroup) { 
+            const groupFunction = `\n    public static function getNavigationGroup(): string\n    {\n        return '${menuGroup.name}';\n    }`;
+            const sortFunction = `\n    public static function getNavigationSort(): int\n    {\n        return ${menuItem.item_order};\n    }`;
+            resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONGROUP>>', groupFunction);
+            resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONSORT>>', sortFunction);
+            resourceContent = resourceContent.replace('<<SHORTCUT_MENU_ORDER>>', ''); // Buang shortcut
+        } else { 
+            const sortProperty = `protected static ?int $navigationSort = ${menuItem.item_order};`;
+            resourceContent = resourceContent.replace('<<SHORTCUT_MENU_ORDER>>', sortProperty);
+            resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONGROUP>>', '');
+            resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONSORT>>', '');
+        }
+        resourceContent = resourceContent.replace('<<MENU_NAME>>', menuItem.item_label);
+    } else {
+        resourceContent = resourceContent.replace('<<SHORTCUT_MENU_ORDER>>', '');
+        resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONGROUP>>', '');
+        resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONSORT>>', '');
+        resourceContent = resourceContent.replace('<<MENU_NAME>>', isCustomModule ? options.customModuleName : (tableData.table_view_title || toPluralPascalCase(nameSource))); 
+    }
+    
     // --- LOGIK: AUDIT ---
     if (projectSettings.module_log_audit === 1) {
         const auditRelation = `\n        if (auth()->check() && auth()->user()->can('view_any_audit')) {\n            $relations[] = AuditsRelationManager::class;\n        }`;
@@ -248,92 +318,13 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         if (options.menuIcon) {
             resourceContent = resourceContent.replace(/icon\s*=\s*'.*?'/, `icon = '${options.menuIcon}'`);
         }
+
+        // 6. Inject Filter Query & Owner Logic 
+        // (Telah dipindahkan ke logik utama di bahagian atas)
         
-        resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONGROUP>>', '');
-        resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONSORT>>', '');
-        resourceContent = resourceContent.replace('<<SHORTCUT_MENU_ORDER>>', '');
-
-        const customNavGroup = `
-    public static function getNavigationGroup(): string
-    {
-        return '${options.customModuleName}';
-    }`;
-
-        const customNavSort = `
-    public static function getNavigationSort(): int
-    {
-        return ${options.customModuleOrder || 0};
-    }`;
-
-        resourceContent = resourceContent.replace('{', `{${customNavGroup}\n${customNavSort}\n`); 
-        resourceContent = resourceContent.replace(/protected static \?string \$navigationLabel = '.*?';/, '');
-
-        // 6. Inject Filter Query & Owner Logic
-        let queryBody = 'parent::getEloquentQuery()';
-        
-        // Logik Tapisan Pemilik (Owner Only)
-        if (options.ownerOnly === 1 && options.ownerField) {
-            queryBody += `->where('${options.ownerField}', auth()->id())`;
-        }
-
-// Logik Tapisan Dinamik Tambahan (NESTED AND/OR BUILDER)
-        if (options.filterRules) {
-            try {
-                const parsed = typeof options.filterRules === 'string' ? JSON.parse(options.filterRules) : options.filterRules;
-                
-                // Fungsi Rekursif untuk membina Eloquent Query String
-                function buildQueryString(group, depth = 3) {
-                    if (!group || !group.rules || group.rules.length === 0) return '';
-                    let condition = group.condition || 'AND';
-                    let indent = '    '.repeat(depth);
-                    let inner = '';
-                    
-                    group.rules.forEach((rule, index) => {
-                        let method = (index === 0) ? 'where' : (condition === 'OR' ? 'orWhere' : 'where');
-                        
-                        if (rule.condition !== undefined && rule.rules !== undefined) {
-                            // Sub-Group Rekursif
-                            let subInner = buildQueryString(rule, depth + 1);
-                            if (subInner) inner += `\n${indent}$q->${method}(function($q) {${subInner}\n${indent}});`;
-                        } else if (rule.column) {
-                            // Rule Biasa
-                            let col = rule.column;
-                            let op = rule.operator || '=';
-                            let val = rule.value || '';
-                            
-                            if (val.toLowerCase() === 'null') {
-                                let nullMethod = (op === '!=' || op === 'NOT LIKE') ? 'whereNotNull' : 'whereNull';
-                                if (index > 0 && condition === 'OR') {
-                                    nullMethod = (op === '!=' || op === 'NOT LIKE') ? 'orWhereNotNull' : 'orWhereNull';
-                                }
-                                inner += `\n${indent}$q->${nullMethod}('${col}');`;
-                            } else {
-                                inner += `\n${indent}$q->${method}('${col}', '${op}', '${val}');`;
-                            }
-                        }
-                    });
-                    return inner;
-                }
-
-                // Jalankan parser dan masukkkan ke queryBody utama
-                let rootData = { condition: 'AND', rules: [] };
-                if (Array.isArray(parsed)) rootData.rules = parsed; // Legacy fallback
-                else if (parsed && parsed.rules) rootData = parsed;
-
-                const finalInnerQuery = buildQueryString(rootData, 3);
-                if (finalInnerQuery) {
-                    queryBody += `\n        ->where(function($q) {${finalInnerQuery}\n        })`;
-                }
-
-            } catch (e) {}
-        }
-        
-        const queryFunction = `\n    public static function getEloquentQuery(): Builder\n    {\n        return ${queryBody};\n    }`;
-        resourceContent = resourceContent.replace('<<CUSTOM_QUERY_PLACEHOLDER>>', queryFunction);
-
-    } else {
-        resourceContent = resourceContent.replace('<<CUSTOM_QUERY_PLACEHOLDER>>', '');
     }
+    // (Abaikan custom query placeholder kerana ia tidak lagi diperlukan)
+    resourceContent = resourceContent.replace('<<CUSTOM_QUERY_PLACEHOLDER>>', '');
 
     // ========================================================================
     // 5. PEMBERSIHAN AKHIR
@@ -411,6 +402,7 @@ async function generateFilamentResourcesCustomModules(fullSchema, basePath) {
                     // Hantar virtualTableData menggantikan tableData asal
                     await generateSingleResource(tableName, virtualTableData, fullSchema, basePath, templateContent, {
                         isCustomModule: true,
+                        moduleId: moduleObj.module_id, // <--- 1. TAMBAH BARIS INI
                         resourceClassName: customResourceClassName, 
                         resourceFileName: moduleSafeNamePlural,       
                         singularFileName: moduleSafeNameSingular, 

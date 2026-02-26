@@ -187,12 +187,46 @@ async function generateFilamentModels(fullSchema, basePath) {
             }
             modelContent = modelContent.replace('<<COMBINE_FIELDS_VALUE>>', accessorFunctions.join('\n'));
             
-            let helperMethods = [];
+let helperMethods = [];
             const hasYoutubeField = Object.values(tableData.fields).some(field => field.media_type === 'youtube');
             if (hasYoutubeField) {
                 const youtubeHelper = `\n    public function getCleanYoutubeUrl(string \$fieldName): string\n    {\n        \$url = \$this->{\$fieldName};\n        if (blank(\$url)) {\n            return '';\n        }\n\n        preg_match('/(?:v=|\\/v\\/|watch\\?v=|youtu\\.be\\/|embed\\/)([a-zA-Z0-9_-]{11})/', \$url, \$matches);\n\n        if (isset(\$matches[1])) {\n            return 'https://www.youtube.com/embed/' . \$matches[1];\n        }\n\n        return \$url;\n    }\n`;
                 helperMethods.push(youtubeHelper);
             }
+
+            // --- MULA: LOGIK USERSTAMPS (BOOT METHOD) ---
+            const hasCreatedBy = Object.values(tableData.fields).some(f => f.field_name === 'created_by');
+            const hasUpdatedBy = Object.values(tableData.fields).some(f => f.field_name === 'updated_by');
+            const hasDeletedBy = Object.values(tableData.fields).some(f => f.field_name === 'deleted_by');
+
+            if (hasCreatedBy || hasUpdatedBy || hasDeletedBy) {
+                let bootMethodContent = `\n    protected static function boot()\n    {\n        parent::boot();\n`;
+                
+                if (hasCreatedBy || hasUpdatedBy) {
+                    bootMethodContent += `\n        static::creating(function ($model) {`;
+                    if (hasCreatedBy) {
+                        bootMethodContent += `\n            if (empty($model->created_by)) {\n                $model->created_by = auth()->id();\n            }`;
+                    }
+                    if (hasUpdatedBy) {
+                        bootMethodContent += `\n            if (empty($model->updated_by)) {\n                $model->updated_by = auth()->id();\n            }`;
+                    }
+                    bootMethodContent += `\n        });\n`;
+                }
+
+                if (hasUpdatedBy) {
+                    bootMethodContent += `\n        static::updating(function ($model) {\n            $model->updated_by = auth()->id();\n        });\n`;
+                }
+
+                if (hasDeletedBy && projectSettings.data_delete_type === 'soft') {
+                    bootMethodContent += `\n        static::deleting(function ($model) {\n            $model->deleted_by = auth()->id();\n            $model->saveQuietly(); // Guna saveQuietly elak trigger event updating\n        });\n`;
+                }
+                
+                bootMethodContent += `    }\n`;
+                helperMethods.push(bootMethodContent); // Masukkan ke dalam array helperMethods
+            }
+            // --- TAMAT LOGIK USERSTAMPS ---
+
+            // Cantumkan semua function (Youtube + Boot) dan masukkan ke placeholder template
             modelContent = modelContent.replace('<<HELPER_METHODS>>', helperMethods.join('\n'));
 
             modelContent = modelContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
@@ -307,14 +341,10 @@ async function generateFilamentUserModel(fullSchema, basePath) {
     }
 }
 
-// ... (Functions generateLaravelMigrations, generateLaravelFactories, generateLaravelDatabaseSeeder KEKAL SAMA - melainkan anda mahu saya tampal sepenuhnya untuk kepastian) ...
-// Saya akan sertakan fungsi-fungsi lain tanpa perubahan untuk memastikan fail ini lengkap.
-
 async function generateLaravelMigrations(fullSchema, outputBasePath) {
-    // ... (Kod migrasi - tiada perubahan pada nama table DB, jadi logik asal kekal) ...
-    // Saya salin logik asal anda
     try {
-        const { database: { table: tables, relationships } } = fullSchema;
+        // ▼▼▼ PEMBAIKAN 1: Panggil project (projectSettings) dari fullSchema ▼▼▼
+        const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
         const migrationsPath = path.join(outputBasePath, 'database', 'migrations');
         if (!fs.existsSync(migrationsPath)) fs.mkdirSync(migrationsPath, { recursive: true });
 
@@ -329,7 +359,8 @@ async function generateLaravelMigrations(fullSchema, outputBasePath) {
             const fileName = `${timestamp}_create_${tableName}_table.php`;
             const fieldsArr = Object.values(tableData.fields);
             const pkField = fieldsArr.find(f => f.primary_key === 1);
-            const ignoredFields = ['created_at', 'updated_at', 'deleted_at'];
+            // Tambah created_by, updated_by, deleted_by ke dalam senarai yang diabaikan (untuk diuruskan secara manual di bawah)
+            const ignoredFields = ['created_at', 'updated_at', 'deleted_at', 'created_by', 'updated_by', 'deleted_by'];
             if (pkField) ignoredFields.push(pkField.field_name);
             const regularFields = fieldsArr.filter(f => !ignoredFields.includes(f.field_name)).sort((a, b) => (a.field_order || 999) - (b.field_order || 999));
             
@@ -359,7 +390,7 @@ async function generateLaravelMigrations(fullSchema, outputBasePath) {
                 if (field.is_unique === 1 || field.unique === 1) line += `->unique()`;
                 content += `${line};\n`;
             });
-            if (tableData.constraints && tableData.constraints.length > 0) {
+if (tableData.constraints && tableData.constraints.length > 0) {
                 tableData.constraints.forEach(constraint => {
                     if (constraint.constraint_type === 'UNIQUE') {
                         try {
@@ -372,8 +403,26 @@ async function generateLaravelMigrations(fullSchema, outputBasePath) {
                     }
                 });
             }
+
+// --- MULA: LOGIK MIGRASI USERSTAMPS ---
+            const hasCreatedBy = fieldsArr.some(f => f.field_name === 'created_by');
+            const hasUpdatedBy = fieldsArr.some(f => f.field_name === 'updated_by');
+            const hasDeletedBy = fieldsArr.some(f => f.field_name === 'deleted_by');
+
+            // Kita letakkan ia sebagai nullable() supaya Seeder / proses sistem (tanpa auth) tidak crash
+            if (hasCreatedBy) content += `            $table->unsignedBigInteger('created_by')->nullable();\n`;
+            if (hasUpdatedBy) content += `            $table->unsignedBigInteger('updated_by')->nullable();\n`;
+            
+            // Sentiasa jana deleted_by (jika wujud dalam table) tidak kira jenis delete
+            if (hasDeletedBy) content += `            $table->unsignedBigInteger('deleted_by')->nullable();\n`;
+            // --- TAMAT LOGIK MIGRASI USERSTAMPS ---
+
             content += `            $table->timestamps();\n`;
-            if (tableData.soft_deletes === 1) content += `            $table->softDeletes();\n`;
+            
+            // ▼▼▼ PEMBAIKAN 2: Guna global projectSettings untuk Soft Deletes ▼▼▼
+            if (projectSettings && projectSettings.data_delete_type === 'soft') {
+                 content += `            $table->softDeletes();\n`;
+            }
             content += `        });\n    }\n\n    public function down(): void\n    {\n        Schema::dropIfExists('${tableName}');\n    }\n};`;
             fs.writeFileSync(path.join(migrationsPath, fileName), content);
         }
@@ -461,7 +510,7 @@ async function generateLaravelDatabaseSeeder(fullSchema, basePath) {
         runContent.push(`        // 1. Create Test User`);
         runContent.push(`        User::factory()->create(['name' => 'Test User', 'email' => 'admin@admin.com', 'password' => bcrypt('password')]);`);
 
-        sortedTables.forEach(tableName => {
+sortedTables.forEach(tableName => {
             const modelName = getModelClassName(tableName, tables); // UPDATE: Guna Module Name
             importStatements.push(`use App\\Models\\${modelName};`);
             
@@ -475,14 +524,17 @@ async function generateLaravelDatabaseSeeder(fullSchema, basePath) {
                 if (rel.parent_table_name === 'users') overrides.push(`            '${fkField}' => 1`);
                 else overrides.push(`            '${fkField}' => ${parentModel}::inRandomOrder()->first()?->id ?? null`);
             });
-            runContent.push(`        ${modelName}::factory(20)->create([\\n${overrides.join(',\\n')}\\n        ]);`);
+            // PEMBAIKAN: Tukar \\n kepada \n
+            runContent.push(`        ${modelName}::factory(20)->create([\n${overrides.join(',\n')}\n        ]);`);
         });
 
         if (projectSettings.module_authorization === 1) {
-            runContent.push(`\\n        // Filament Shield Security`);
+            // PEMBAIKAN: Tukar \\n kepada \n
+            runContent.push(`\n        // Filament Shield Security`);
             runContent.push(`        $this->call(ShieldSeeder::class);`);
         }
-        const content = `<?php\nnamespace Database\\Seeders;\nuse Illuminate\\Database\\Seeder;\n${importStatements.join('\\n')}\n\nclass DatabaseSeeder extends Seeder {\n    public function run(): void {\n${runContent.join('\\n')}\n    }\n}`;
+        // PEMBAIKAN: Tukar join('\\n') kepada join('\n')
+        const content = `<?php\nnamespace Database\\Seeders;\nuse Illuminate\\Database\\Seeder;\n${importStatements.join('\n')}\n\nclass DatabaseSeeder extends Seeder {\n    public function run(): void {\n${runContent.join('\n')}\n    }\n}`;
         fs.writeFileSync(path.join(seedersPath, 'DatabaseSeeder.php'), content);
         return { success: true, message: 'DatabaseSeeder generated successfully.' };
     } catch (error) { return { success: false, message: error.message }; }

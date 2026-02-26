@@ -59,6 +59,9 @@ const { generateFilamentRelationManagers } = require('../src/generators/laravelR
 const { generateFilamentExports } = require('../src/generators/laravelExportsGenerator');
 const { generateFilamentImporters } = require('../src/generators/laravelImportersGenerator');
 
+// ▼▼▼ TAMBAH IMPORT INI ▼▼▼
+const { generateDeploymentGuidePage } = require('../src/generators/laravelDocsGenerator');
+
 
 // =================================================================
 // 2. KONFIGURASI OUTPUT
@@ -155,6 +158,8 @@ async function runFullTest() {
             // 5. Features
             { name: 'Exports', func: generateFilamentExports },
             { name: 'Importers', func: generateFilamentImporters },
+            // ▼▼▼ TAMBAH TUGASAN INI ▼▼▼
+            { name: 'Deployment Guide', func: generateDeploymentGuidePage },
         ];
 
         console.log("\n--- 🛠️ MULA MENJANA KOD ---");
