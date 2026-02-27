@@ -45,9 +45,24 @@ async function generateAdminPanelProvider(fullSchema, basePath) {
         }
         // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
 
-        // ============================================================
+// ============================================================
         // LOGIK PENGGANTIAN (REPLACEMENTS) - KEKAL SEPERTI ASAL
         // ============================================================
+
+        // --- MULA: LOGIK MULTI-TENANCY ---
+        // Placeholder: <<TENANT_CONFIGURATION>>
+        let tenantConfigCode = '';
+        if (project.tenancy_type === 'many_to_many' && project.tenant_table) {
+            // Tukar format snake_case ke PascalCase (cth: kumpulan_pengguna -> KumpulanPengguna)
+            const tenantModelName = project.tenant_table
+                .split('_')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join('');
+            
+            tenantConfigCode = `->tenant(\\App\\Models\\${tenantModelName}::class)`;
+        }
+        templateContent = templateContent.replace(/<<TENANT_CONFIGURATION>>/g, tenantConfigCode);
+        // --- TAMAT: LOGIK MULTI-TENANCY ---
 
         // 1. LOG AUDIT (Import)
         // Placeholder: <<IMPORT_AUDITSRELATIONMANAGER>>

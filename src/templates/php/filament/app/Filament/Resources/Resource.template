@@ -26,6 +26,8 @@ use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
 class <<MODEL_NAME>>Resource extends Resource
 {
     protected static ?string $model = <<MODEL_NAME>>::class;
+    
+    <<TENANT_SCOPING_PROPERTY>>
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 

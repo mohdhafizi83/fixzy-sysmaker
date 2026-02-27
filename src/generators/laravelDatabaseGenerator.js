@@ -194,16 +194,36 @@ let helperMethods = [];
                 helperMethods.push(youtubeHelper);
             }
 
-            // --- MULA: LOGIK USERSTAMPS (BOOT METHOD) ---
+// --- MULA: LOGIK USERSTAMPS & TENANCY (BOOT METHOD) ---
             const hasCreatedBy = Object.values(tableData.fields).some(f => f.field_name === 'created_by');
             const hasUpdatedBy = Object.values(tableData.fields).some(f => f.field_name === 'updated_by');
             const hasDeletedBy = Object.values(tableData.fields).some(f => f.field_name === 'deleted_by');
 
-            if (hasCreatedBy || hasUpdatedBy || hasDeletedBy) {
+            // Kesan FK Tenant (untuk one_to_many)
+            const isOneToMany = projectSettings.tenancy_type === 'one_to_many';
+            const tenantTable = projectSettings.tenant_table;
+            let tenantFkField = null;
+
+            if (isOneToMany && tenantTable && tableName !== tenantTable && tableName !== 'users') {
+                const tenantRel = relationships.find(r => r.parent_table_name === tenantTable && r.child_table_name === tableName);
+                if (tenantRel) tenantFkField = tenantRel.fk_child_field;
+                else {
+                    const fallbackFk = toSingularCamelCase(tenantTable) + '_id';
+                    if (Object.values(tableData.fields).some(f => f.field_name === fallbackFk)) tenantFkField = fallbackFk;
+                    else if (Object.values(tableData.fields).some(f => f.field_name === tenantTable + '_id')) tenantFkField = tenantTable + '_id';
+                }
+            }
+
+            if (hasCreatedBy || hasUpdatedBy || hasDeletedBy || tenantFkField) {
                 let bootMethodContent = `\n    protected static function boot()\n    {\n        parent::boot();\n`;
                 
-                if (hasCreatedBy || hasUpdatedBy) {
+                if (hasCreatedBy || hasUpdatedBy || tenantFkField) {
                     bootMethodContent += `\n        static::creating(function ($model) {`;
+                    
+                    // Suntik nilai tenant_id secara automatik
+                    if (tenantFkField) {
+                        bootMethodContent += `\n            if (empty($model->${tenantFkField}) && auth()->check()) {\n                $model->${tenantFkField} = auth()->user()->${tenantFkField};\n            }`;
+                    }
                     if (hasCreatedBy) {
                         bootMethodContent += `\n            if (empty($model->created_by)) {\n                $model->created_by = auth()->id();\n            }`;
                     }
@@ -276,12 +296,23 @@ async function generateFilamentUserModel(fullSchema, basePath) {
              userModelContent = userModelContent.replace('<<IMPORT_AUDIT>>', '').replace('<<CLASS_IMPLEMENTS_AUDIT>>', '').replace('<<TRAIT_AUDIT>>', '');
         }
 
-        if (projectSettings.module_authorization === 1) {
+if (projectSettings.module_authorization === 1) {
             userModelContent = userModelContent.replace('<<IMPORT_SHIELD>>', 'use Spatie\\Permission\\Traits\\HasRoles;');
             userModelContent = userModelContent.replace('<<TRAIT_SHIELD>>', ', HasRoles');
         } else {
              userModelContent = userModelContent.replace('<<IMPORT_SHIELD>>', '').replace('<<TRAIT_SHIELD>>', '');
         }
+
+        // --- MULA: LOGIK IMPORT TENANCY UNTUK USER ---
+        if (projectSettings.tenancy_type === 'many_to_many' && projectSettings.tenant_table) {
+            const importTenant = `use Filament\\Models\\Contracts\\HasTenants;\nuse Illuminate\\Support\\Collection;\nuse Illuminate\\Database\\Eloquent\\Model;\nuse Filament\\Panel;`;
+            userModelContent = userModelContent.replace('<<IMPORT_TENANT>>', importTenant);
+            userModelContent = userModelContent.replace('<<CLASS_IMPLEMENTS_TENANT>>', ', HasTenants');
+        } else {
+            userModelContent = userModelContent.replace('<<IMPORT_TENANT>>', '');
+            userModelContent = userModelContent.replace('<<CLASS_IMPLEMENTS_TENANT>>', '');
+        }
+        // --- TAMAT LOGIK IMPORT TENANCY ---
 
         // ▼▼▼ HUBUNGAN USER GUNA MODULE NAME ▼▼▼
         let relationshipFunctions = [];
@@ -322,7 +353,32 @@ async function generateFilamentUserModel(fullSchema, basePath) {
         return $this->belongsTo(${parentClassName}::class, '${rel.fk_child_field}', '${rel.parent_field}');
     }
 `);
-        });
+});
+        
+        // --- MULA: FUNGSI WAJIB FILAMENT TENANCY (MANY-TO-MANY) ---
+        if (projectSettings.tenancy_type === 'many_to_many' && projectSettings.tenant_table) {
+            const tenantModelName = getModelClassName(projectSettings.tenant_table, tables);
+            const relationName = getRelationFunctionName(projectSettings.tenant_table, tables, true); // Plural
+            
+            relationshipFunctions.push(`
+    public function ${relationName}()
+    {
+        return $this->belongsToMany(${tenantModelName}::class);
+    }
+
+    public function getTenants(Panel $panel): Collection
+    {
+        return $this->${relationName};
+    }
+
+    public function canAccessTenant(Model $tenant): bool
+    {
+        return $this->${relationName}()->whereKey($tenant)->exists();
+    }
+`);
+        }
+        // --- TAMAT FUNGSI WAJIB TENANCY ---
+        
         // ▲▲▲ TAMAT HUBUNGAN USER ▲▲▲
 
         userModelContent = userModelContent.replace('<<RELATIONSHIP_FUNCTIONS>>', relationshipFunctions.join(''));
@@ -423,9 +479,39 @@ if (tableData.constraints && tableData.constraints.length > 0) {
             if (projectSettings && projectSettings.data_delete_type === 'soft') {
                  content += `            $table->softDeletes();\n`;
             }
-            content += `        });\n    }\n\n    public function down(): void\n    {\n        Schema::dropIfExists('${tableName}');\n    }\n};`;
+content += `        });\n    }\n\n    public function down(): void\n    {\n        Schema::dropIfExists('${tableName}');\n    }\n};`;
             fs.writeFileSync(path.join(migrationsPath, fileName), content);
         }
+
+        // --- MULA: AUTO-JANA PIVOT TABLE UNTUK MANY-TO-MANY TENANCY ---
+        if (projectSettings && projectSettings.tenancy_type === 'many_to_many' && projectSettings.tenant_table) {
+            const tenantTable = projectSettings.tenant_table;
+            const tenantSingular = toSingularCamelCase(tenantTable);
+            const pivotTable = `${tenantSingular}_user`;
+            
+            // Jana file migrasi hanya jika user belum membinanya secara manual
+            if (!tables[pivotTable] && !tables[`user_${tenantSingular}`]) {
+                sequence++;
+                const timestamp = getFormattedTimestamp(now, sequence);
+                const fileName = `${timestamp}_create_${pivotTable}_table.php`;
+                
+                let content = `<?php\nuse Illuminate\\Database\\Migrations\\Migration;\nuse Illuminate\\Database\\Schema\\Blueprint;\nuse Illuminate\\Support\\Facades\\Schema;\n\nreturn new class extends Migration\n{\n    public function up(): void\n    {\n        Schema::create('${pivotTable}', function (Blueprint $table) {\n`;
+                content += `            $table->id();\n`;
+                
+                // Cari Primary Key bagi Tenant Table (Biasanya 'id')
+                const tenantPk = tables[tenantTable] ? (Object.values(tables[tenantTable].fields).find(f => f.primary_key === 1)?.field_name || 'id') : 'id';
+                
+                content += `            $table->foreignId('${tenantSingular}_id')->constrained('${tenantTable}', '${tenantPk}')->cascadeOnDelete();\n`;
+                content += `            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();\n`;
+                content += `            $table->timestamps();\n`;
+                content += `        });\n    }\n\n    public function down(): void\n    {\n        Schema::dropIfExists('${pivotTable}');\n    }\n};`;
+                
+                fs.writeFileSync(path.join(migrationsPath, fileName), content);
+                console.log(`Pivot Table Migration generated: ${fileName}`);
+            }
+        }
+        // --- TAMAT AUTO-JANA PIVOT TABLE ---
+
         sequence += 20;
         for (const tableName in tables) {
             if (tableName === 'users') continue;

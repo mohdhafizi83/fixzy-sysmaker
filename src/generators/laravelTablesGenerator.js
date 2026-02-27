@@ -21,10 +21,32 @@ function generateTableColumnsString(tableData, relationships, tableName, project
     const columnsCode = [];
     // Nota: modelNameSingular diterima sebagai argumen (Module Name) untuk type hinting yang betul
 
+    // --- MULA: LOGIK PENGESANAN TENANT FK ---
+    const isOneToMany = projectSettings && projectSettings.tenancy_type === 'one_to_many';
+    const isManyToMany = projectSettings && projectSettings.tenancy_type === 'many_to_many';
+    const tenantTable = projectSettings && projectSettings.tenant_table;
+    let tenantFkField = null;
+
+    if ((isOneToMany || isManyToMany) && tenantTable && tableName !== tenantTable && tableName !== 'users') {
+        const tenantRel = relationships.find(r => r.parent_table_name === tenantTable && r.child_table_name === tableName);
+        if (tenantRel) tenantFkField = tenantRel.fk_child_field;
+        else {
+            const fallbackFk = toSingularCamelCase(tenantTable) + '_id';
+            if (Object.values(tableData.fields).some(f => f.field_name === fallbackFk)) tenantFkField = fallbackFk;
+            else if (Object.values(tableData.fields).some(f => f.field_name === tenantTable + '_id')) tenantFkField = tenantTable + '_id';
+        }
+    }
+    // --- TAMAT LOGIK PENGESANAN TENANT FK ---
+
     // Ambil fields yang visible dan susun ikut order
     // (Logik ini akan digunakan oleh Standard Generator. Custom Module akan pass tableData yang dah dimanipulasi)
     const visibleFields = Object.values(tableData.fields)
-        .filter(field => field.hide_in_tv !== 1)
+        .filter(field => {
+            // Sembunyikan Tenant FK dari pandangan table list secara automatik
+            if (tenantFkField && field.field_name === tenantFkField) return false;
+            
+            return field.hide_in_tv !== 1;
+        })
         .sort((a, b) => (a.field_order ?? 999) - (b.field_order ?? 999));
 
     for (const field of visibleFields) {

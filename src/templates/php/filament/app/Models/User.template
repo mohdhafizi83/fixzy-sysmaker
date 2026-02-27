@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 <<IMPORT_SHIELD>>
 <<IMPORT_SOFTDELETE>>
 <<IMPORT_AUDIT>>
+<<IMPORT_TENANT>>
 
 class User extends Authenticatable <<CLASS_IMPLEMENTS_AUDIT>>
 {

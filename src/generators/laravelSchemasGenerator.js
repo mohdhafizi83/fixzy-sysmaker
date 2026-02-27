@@ -18,10 +18,31 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
     const formFieldsCode = [];
     const modelNameSingular = toSingularPascalCase(tableName); // Kekal guna tableName untuk variable dalaman
 
+    // --- MULA: LOGIK PENGESANAN TENANT FK ---
+    const projectSettings = fullSchema.project || {};
+    const isOneToMany = projectSettings.tenancy_type === 'one_to_many';
+    const isManyToMany = projectSettings.tenancy_type === 'many_to_many';
+    const tenantTable = projectSettings.tenant_table;
+    let tenantFkField = null;
+
+    if ((isOneToMany || isManyToMany) && tenantTable && tableName !== tenantTable && tableName !== 'users') {
+        const tenantRel = relationships.find(r => r.parent_table_name === tenantTable && r.child_table_name === tableName);
+        if (tenantRel) tenantFkField = tenantRel.fk_child_field;
+        else {
+            const fallbackFk = toSingularCamelCase(tenantTable) + '_id';
+            if (Object.values(tableData.fields).some(f => f.field_name === fallbackFk)) tenantFkField = fallbackFk;
+            else if (Object.values(tableData.fields).some(f => f.field_name === tenantTable + '_id')) tenantFkField = tenantTable + '_id';
+        }
+    }
+    // --- TAMAT LOGIK PENGESANAN TENANT FK ---
+
     // Dapatkan medan yang visible & sort
     // LOGIK ASAL: filter visibleFields
     const visibleFields = Object.values(tableData.fields)
         .filter(field => {
+            // Sembunyikan Tenant FK dari pandangan form secara automatik
+            if (tenantFkField && field.field_name === tenantFkField) return false;
+
             // Logik Custom Module: Jika forced readonly, sentiasa paparkan
             if (field.is_forced_readonly) return true;
             // Jika tidak, ikut setting hide_in_dv

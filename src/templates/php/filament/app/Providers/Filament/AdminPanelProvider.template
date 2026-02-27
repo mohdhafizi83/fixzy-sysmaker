@@ -35,6 +35,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->profile()
+            <<TENANT_CONFIGURATION>>
             ->colors([
                 'primary' => Color::Amber,
             ])

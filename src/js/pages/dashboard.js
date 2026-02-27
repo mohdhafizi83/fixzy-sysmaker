@@ -30,9 +30,50 @@ export function populateMainDashboard(projectData) {
     setElementValue('app-module-auth-google-sso', projectData.module_auth_google_sso);
     setElementValue('app-module-authorization', projectData.module_authorization);
     setElementValue('app-module-log-audit', projectData.module_log_audit);
-    setElementValue('app-module-fake-data', projectData.module_fake_data); 
+setElementValue('app-module-fake-data', projectData.module_fake_data); 
 	setRadioValue('app-data_delete_type', projectData.data_delete_type || 'hard');
 	
+    // ▼▼▼ MULA: LOGIK ARCHITECTURE & TENANCY ▼▼▼
+    setRadioValue('app-tenancy_type', projectData.tenancy_type || 'standard');
+
+    // 1. Bina pilihan dropdown untuk Tenant Table berdasarkan senarai jadual semasa
+    const tenantTableSelect = document.getElementById('app-tenant_table');
+    if (tenantTableSelect && appState.jsonData?.database?.table) {
+        tenantTableSelect.innerHTML = '<option value="">-- Please Select --</option>';
+        Object.keys(appState.jsonData.database.table).forEach(tableName => {
+            const option = document.createElement('option');
+            option.value = tableName;
+            option.textContent = tableName;
+            tenantTableSelect.appendChild(option);
+        });
+        // Tetapkan nilai yang telah disimpan di DB
+        setElementValue('app-tenant_table', projectData.tenant_table || '');
+    }
+
+    // 2. Logik untuk paparkan/sembunyikan dropdown Tenant Table
+    const toggleTenantTableVisibility = () => {
+        const fgTenant = document.getElementById('fg-tenant-table');
+        const selectedTenancy = document.querySelector('input[name="app-tenancy_type"]:checked')?.value;
+        
+        if (fgTenant) {
+            if (selectedTenancy === 'one_to_many' || selectedTenancy === 'many_to_many') {
+                fgTenant.classList.remove('hidden');
+            } else {
+                fgTenant.classList.add('hidden');
+            }
+        }
+    };
+
+    // 3. Pasang event listener pada butang radio Tenancy Type
+    document.querySelectorAll('input[name="app-tenancy_type"]').forEach(radio => {
+        radio.removeEventListener('change', toggleTenantTableVisibility); // Elak duplicate listener
+        radio.addEventListener('change', toggleTenantTableVisibility);
+    });
+
+    // 4. Panggil sekali semasa memuatkan halaman
+    toggleTenantTableVisibility();
+    // ▲▲▲ TAMAT: LOGIK ARCHITECTURE & TENANCY ▲▲▲
+
     // Tab: Localization
     setElementValue('app-title', projectData.app_title);
     setElementValue('app-date-format', projectData.date_format);

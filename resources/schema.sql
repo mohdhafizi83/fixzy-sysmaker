@@ -42,6 +42,8 @@ CREATE TABLE projects (
     module_authorization         INTEGER DEFAULT 1,
     module_log_audit             INTEGER DEFAULT 1,
     module_fake_data             INTEGER DEFAULT 1,
+    tenancy_type                 TEXT DEFAULT 'standard', -- BARU: standard, one_to_many, many_to_many
+    tenant_table                 TEXT,                    -- BARU: Nama jadual tenant (cth: fakulti, syarikat)
 	is_active                    INTEGER DEFAULT 0
 );
 
@@ -74,6 +76,7 @@ CREATE TABLE tables (
     detail_view_classes_input    TEXT,
     detail_view_title            TEXT DEFAULT 'Detail View',
     record_owner                 TEXT DEFAULT 'current_user',
+    owner_fk_value               TEXT,
     default_focus                TEXT,
     redirect_after_insert        TEXT,
     enable_detail_view           INTEGER DEFAULT 1,
@@ -288,8 +291,6 @@ CREATE TABLE custom_modules (
     filter_rules TEXT,                    -- Logik tapisan data (jika ada)
     included_relations TEXT,              -- Hubungan yang dibawa bersama
     settings_override TEXT,               -- BARU: JSON string untuk menimpa tetapan jadual asal
-	owner_only	INTEGER DEFAULT 0,
-	owner_field	TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE,

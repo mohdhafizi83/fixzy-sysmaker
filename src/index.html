@@ -95,6 +95,7 @@
                 <button class="tab-link" data-tab="tab-models-design" id="tab-models-design-btn">Models Design</button>
                 <button class="tab-link" data-tab="tab-modules-setup" id="tab-modules-setup-btn">Modules Setup</button>
                 <button class="tab-link" data-tab="tab-menu-appearance" id="app-tab_menu_appearance" name="app-tab_menu_appearance">Menu management</button>
+                <button class="tab-link" data-tab="tab-architecture" id="app-tab_architecture" name="app-tab_architecture">Architecture & Multi-Tenancy</button>
                 <button class="tab-link" data-tab="tab-security" id="app-tab_security" name="app-tab_security">Security & technical</button>
 				<button class="tab-link" data-tab="tab-hooks">Hooks (Optional - for complex App)</button>
             </div>
@@ -224,9 +225,7 @@
                 <h4 class="stack-column-title">Theme</h4>
                 <input type="text" value="Default Theme" readonly>
             </div>
-        </div>
-		
-		
+        </div>		                      
 		<div>
 
                 <h4 class="stack-column-title">Data Deletion Strategy</h4>
@@ -1674,12 +1673,21 @@
                                             <label for="tbl-detail-view-title">'Record Form' title</label>
                                             <input type="text" id="tbl-detail-view-title" name="tbl-detail-view-title" value="Detail Record">
                                         </div>
-                                        <div class="form-group">
-                                            <label for="tbl-record-owner">Record owner</label>
-                                            <select id="tbl-record-owner" name="tbl-record-owner">
-                                                <option value="current_user">Current user (default)</option>
-                                            </select>
-                                        </div>
+<div class="form-group">
+                <label for="tbl-record-owner" title="Tentukan kebolehcapaian (accessibility) atau skop data ini.">Data Accessibility (Scoping)</label>
+                <select id="tbl-record-owner" class="form-control">
+                    <option value="">Anybody (with auth)</option>
+                    <option value="current_user">Current User Only</option>
+                </select>
+            </div>
+            
+            <div class="form-group hidden" id="fg-owner-by-fk">
+                <label for="tbl-owner-by-fk">Select Parent Record</label>
+                <select id="tbl-owner-by-fk" class="form-control">
+                    <option value="">-- Please Select --</option>
+                </select>
+                <small class="form-text text-muted">Pilih rekod spesifik dari jadual rujukan (Parent Table) sebagai pemilik data ini.</small>
+            </div>
                                         <div class="form-group">
                                             <label for="tbl-default-focus">Default focus field</label>
                                             <select id="tbl-default-focus" name="tbl-default-focus">
@@ -2400,6 +2408,57 @@
     </div>
 </div>
 
+                <div id="tab-architecture" class="tab-pane">
+                    <div class="card">
+                        <div class="card-body">
+                        
+<div class="stack-selector-grid">
+    <div class="stack-column">
+        <div>
+            <h4 class="stack-column-title">Architecture & Multi-Tenancy</h4>
+            <div class="radio-group" style="flex-direction: column; gap: 0.75rem; align-items: flex-start;">
+                
+                <label>
+                    <input type="radio" name="app-tenancy_type" value="standard" checked> Standard Application (No Tenancy)
+                </label>
+                <p class="module-description" style="margin-left: 1.75rem; margin-top: 1rem;">
+                    All data resides in a single shared space. Access is controlled purely by Authentication and User Roles (Filament Shield). Best for standard portals and CMS.
+                </p>
+
+                <label>
+                    <input type="radio" name="app-tenancy_type" value="one_to_many"> One-to-Many Scoping (Single Tenant)
+                </label>
+                <p class="module-description" style="margin-left: 1.75rem; margin-top: 1rem;">
+                    A user is strictly tied to <strong>ONE</strong> entity (e.g., one Faculty, Branch, or Department). Data is scoped automatically under the hood without needing a tenant switcher in the UI.
+                </p>
+
+                <label>
+                    <input type="radio" name="app-tenancy_type" value="many_to_many"> Many-to-Many (Filament SaaS Multi-Tenancy)
+                </label>
+                <p class="module-description" style="margin-left: 1.75rem; margin-top: 1rem;">
+                    A user can belong to <strong>MULTIPLE</strong> entities. Filament will generate a tenant switcher dropdown in the top navigation bar (SaaS style), allowing users to switch contexts.
+                </p>
+
+            </div>
+        </div>
+    </div>
+    
+    <div class="stack-column">
+            <div id="fg-tenant-table" class="form-group hidden" style="margin-top: 1.5rem; padding-left: 1.75rem;">
+                <label for="app-tenant_table"><strong>Tenant Model (Base Table)</strong></label>
+                <select id="app-tenant_table" name="app-tenant_table" class="form-control">
+                    <option value="">-- Please Select --</option>
+                    </select>
+                <small class="form-text text-muted" style="display: block; margin-top: 0.5rem;">Select the core table that represents a tenant (e.g., Companies, Faculties, Clinics).</small>
+            </div>    
+    </div>
+</div>    
+
+ 
+                        </div>
+                    </div>
+                </div>
+                
                 <div id="tab-security" class="tab-pane">
                     <div class="card">
                         <div class="card-body">

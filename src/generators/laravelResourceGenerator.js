@@ -6,6 +6,7 @@ const {
     toSingularPascalCase,
     toPluralPascalCase,
     toPluralCamelCase,
+    toSingularCamelCase,
     toFlatCase,
     readTemplate,
     buildEloquentQueryFromRules 
@@ -57,8 +58,34 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
     
     resourceContent = resourceContent.replace(/<<MODEL_NAME>>/g, modelName);
     
-    const namespaceFolder = isCustomModule ? outputFolder : modelNamePlural;
+const namespaceFolder = isCustomModule ? outputFolder : modelNamePlural;
     resourceContent = resourceContent.replace(/<<MODEL_NAME_PLURAL>>/g, namespaceFolder);
+
+    // --- MULA: LOGIK PENAPISAN TENANT (TENANT SCOPING PROPERTY) ---
+    const isOneToMany = projectSettings.tenancy_type === 'one_to_many';
+    const isManyToMany = projectSettings.tenancy_type === 'many_to_many';
+    const tenantTable = projectSettings.tenant_table;
+    let tenantFkField = null;
+
+    if ((isOneToMany || isManyToMany) && tenantTable && tableName !== tenantTable && tableName !== 'users') {
+        const tenantRel = relationships.find(r => r.parent_table_name === tenantTable && r.child_table_name === tableName);
+        if (tenantRel) tenantFkField = tenantRel.fk_child_field;
+        else {
+            const fallbackFk = toSingularCamelCase(tenantTable) + '_id';
+            if (Object.values(tableData.fields).some(f => f.field_name === fallbackFk)) tenantFkField = fallbackFk;
+            else if (Object.values(tableData.fields).some(f => f.field_name === tenantTable + '_id')) tenantFkField = tenantTable + '_id';
+        }
+    }
+
+    let tenantScopingProperty = '';
+    if (isManyToMany) {
+        // Jika ia adalah jadual tenant itu sendiri, atau jadual yang TIADA foreign key ke tenant
+        if (tableName === tenantTable || !tenantFkField) {
+            tenantScopingProperty = `    protected static bool $isScopedToTenant = false;\n`;
+        }
+    }
+    resourceContent = resourceContent.replace('<<TENANT_SCOPING_PROPERTY>>', tenantScopingProperty);
+    // --- TAMAT LOGIK PENAPISAN TENANT ---
 
 // --- MULA: LOGIK ELOQUENT QUERY KESELURUHAN (COUNT, OWNER & FILTER) ---
     const childrenWithCount = relationships.filter(r => r.parent_table_name === tableName && r.show_count_in_tv === 1);
@@ -104,8 +131,10 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         } catch (e) {}
     }
 
+const needsTenantScope = (isOneToMany && tenantFkField);
+
     // Jika mana-mana logik di atas ada, kita jana fungsi getEloquentQuery()
-    if (hasWithCount || isOwnerOnly || filterQueryStr) {
+    if (hasWithCount || isOwnerOnly || filterQueryStr || needsTenantScope) {
         resourceContent = resourceContent.replace('<<IMPORT_SHOW_COUNT_IN_TV>>', 'use Illuminate\\Database\\Eloquent\\Builder;');
         
         let queryBody = 'parent::getEloquentQuery()';
@@ -122,6 +151,12 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         if (isOwnerOnly) {
             queryBody += `\n            ->where('created_by', auth()->id())`;
         }
+
+        // --- MULA: SUNTIKAN ONE-TO-MANY TENANCY ---
+        if (needsTenantScope) {
+            queryBody += `\n            ->where('${tenantFkField}', auth()->user()->${tenantFkField})`;
+        }
+        // --- TAMAT SUNTIKAN ---
 
         if (filterQueryStr) {
             queryBody += filterQueryStr;
@@ -410,9 +445,7 @@ async function generateFilamentResourcesCustomModules(fullSchema, basePath) {
                         customModuleOrder: moduleObj.module_order,  
                         menuIcon: moduleObj.menu_icon,
                         filterRules: moduleObj.filter_rules,
-                        includedRelations: moduleObj.included_relations,
-                        ownerOnly: moduleObj.owner_only,
-                        ownerField: moduleObj.owner_field
+                        includedRelations: moduleObj.included_relations
                     });
                     count++;
                 }

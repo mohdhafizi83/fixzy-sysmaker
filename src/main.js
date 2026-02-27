@@ -876,8 +876,7 @@ ipcMain.handle('project:update', async (event, data) => {
             'allow_server_status', 'admins_group_access', 'allow_table_view_sql',
             'copy_children_async', 'allow_pwa_install', 'url', 'project_hook_workflow', 'stack_base', 'stack_database',
 			'stack_theme', 'module_auth_email_2fa', 'module_auth_email_captcha', 'module_auth_ldap',
-            'module_auth_google_sso', 'module_authorization', 'module_log_audit', 'data_delete_type',
-            'module_fake_data' // ADD THIS ITEM
+            'module_auth_google_sso', 'module_authorization', 'module_log_audit', 'data_delete_type', 'module_fake_data', 'tenancy_type', 'tenant_table'
         ];
 
         const setClause = Object.keys(fieldsToUpdate)
@@ -1276,7 +1275,7 @@ ipcMain.handle('relationship:delete', async (event, data) => {
 
 ipcMain.handle('custom-module:save', async (event, data) => {
     // 1. Destructuring - kita tangkap project_id dan settings_override
-    const { project_id, module_id, table_id, module_name, menu_icon, filter_rules, included_relations, fields, owner_only, owner_field, settings_override } = data;
+    const { project_id, module_id, table_id, module_name, menu_icon, filter_rules, included_relations, fields, settings_override } = data;
     
     if (!table_id || !module_name) {
         return { success: false, message: 'Table ID and Module Name are required.' };
@@ -1288,16 +1287,16 @@ ipcMain.handle('custom-module:save', async (event, data) => {
 
         if (viewId) { // Update existing module
             db.prepare(
-                `UPDATE custom_modules SET module_name = ?, menu_icon = ?, filter_rules = ?, included_relations = ?, owner_only = ?, owner_field = ?, settings_override = ? WHERE module_id = ?`
-            ).run(module_name, menu_icon, filter_rules, included_relations, owner_only, owner_field, settings_override, viewId);
+                `UPDATE custom_modules SET module_name = ?, menu_icon = ?, filter_rules = ?, included_relations = ?, settings_override = ? WHERE module_id = ?`
+            ).run(module_name, menu_icon, filter_rules, included_relations, settings_override, viewId);
         } else { // Insert new module
             isNewView = true;
             const maxOrderResult = db.prepare('SELECT MAX(module_order) as max_order FROM custom_modules WHERE table_id = ?').get(table_id);
             const nextOrder = (maxOrderResult?.max_order ?? -1) + 1;
             
             const info = db.prepare(
-                `INSERT INTO custom_modules (project_id, table_id, module_name, menu_icon, filter_rules, included_relations, owner_only, owner_field, settings_override, module_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-            ).run(project_id, table_id, module_name, menu_icon, filter_rules, included_relations, owner_only, owner_field, settings_override, nextOrder);
+                `INSERT INTO custom_modules (project_id, table_id, module_name, menu_icon, filter_rules, included_relations, settings_override, module_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+            ).run(project_id, table_id, module_name, menu_icon, filter_rules, included_relations, settings_override, nextOrder);
             
             viewId = info.lastInsertRowid;
         }

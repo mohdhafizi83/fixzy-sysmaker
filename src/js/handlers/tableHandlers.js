@@ -289,8 +289,6 @@ export function initializeRelationshipSaveHandlers() {
                                 table_id: tableData.table_id,
                                 module_name: modData.module_name,
                                 menu_icon: modData.menu_icon,
-                                owner_only: modData.owner_only,
-                                owner_field: modData.owner_field,
                                 fields: modData.fields,
                                 filter_rules: modData.filter_rules,
                                 settings_override: modData.settings_override,
@@ -387,7 +385,7 @@ export function populateRecordOwnerDropdown(tableName) {
 
     // 1. Tambah opsyen lalai
     const defaultOption = document.createElement('option');
-    defaultOption.value = ''; // Nilai kosong untuk 'Current user'
+    defaultOption.value = 'current_user'; // Nilai kosong untuk 'Current user'
     defaultOption.textContent = 'Current user (default)';
     recordOwnerDropdown.appendChild(defaultOption);
 
@@ -1087,8 +1085,6 @@ const tableData = appState.jsonData.database.table[baseTable];
                     table_id: tableData.table_id,
                     module_name: moduleName,
                     menu_icon: 'fas fa-box',
-                    owner_only: 0,
-                    owner_field: null,
                     filter_rules: finalFilterRules, 
                     settings_override: JSON.stringify(tableOverrides),
                     included_relations: "[]",
@@ -1573,8 +1569,6 @@ async function saveFieldOrder(tableName, moduleId) {
         table_id: tableData.table_id,
         module_name: modData.module_name,
         menu_icon: modData.menu_icon,
-        owner_only: modData.owner_only,
-        owner_field: modData.owner_field,
         fields: updatedFields // Hantar senarai medan yang lengkap
     };
 
