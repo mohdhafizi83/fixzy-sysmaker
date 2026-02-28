@@ -2443,14 +2443,27 @@
         </div>
     </div>
     
-    <div class="stack-column">
-            <div id="fg-tenant-table" class="form-group hidden" style="margin-top: 1.5rem; padding-left: 1.75rem;">
-                <label for="app-tenant_table"><strong>Tenant Model (Base Table)</strong></label>
-                <select id="app-tenant_table" name="app-tenant_table" class="form-control">
-                    <option value="">-- Please Select --</option>
-                    </select>
-                <small class="form-text text-muted" style="display: block; margin-top: 0.5rem;">Select the core table that represents a tenant (e.g., Companies, Faculties, Clinics).</small>
-            </div>    
+<div class="stack-column">
+        <div id="fg-tenant-table" class="form-group hidden" style="margin-top: 1.5rem; padding-left: 1.75rem;">
+            <h4 class="stack-column-title">Tenant Configuration</h4>
+            
+            <button id="btn-configure-tenancy" class="btn btn-primary" style="margin-bottom: 1rem;">
+                <i class="fas fa-cogs"></i> Configure Multi-Tenancy
+            </button>
+
+            <div id="tenancy-summary-container" class="hidden" style="background: #f8f9fa; border: 1px solid var(--border-color); padding: 15px; border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                    <h5 style="margin: 0; color: var(--primary-color);">Current Settings</h5>
+                    <button id="btn-edit-tenancy" class="btn btn-sm btn-secondary"><i class="fas fa-edit"></i> Edit</button>
+                </div>
+                <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.9em; line-height: 1.6;">
+                    <li><strong>Entity (Table):</strong> <span id="summary-tenant-entity" style="font-weight: 600;">-</span></li>
+                    <li><strong>Architecture:</strong> <span id="summary-tenant-type">-</span></li>
+                    <li><strong>Secured Tables:</strong> <div id="summary-secured-tables" style="color: var(--secondary-color); margin-top: 5px;">-</div></li>
+                </ul>
+            </div>
+            <small class="form-text text-muted" style="display: block; margin-top: 1rem;">Define your tenant entity and select which tables require data privacy.</small>
+        </div>    
     </div>
 </div>    
 
@@ -3416,6 +3429,53 @@
         </div>
         <div class="modal-footer">
             <button class="btn btn-primary" id="sql-import-error-ok-btn">Understood</button>
+        </div>
+    </div>
+</div>
+<div id="tenancy-wizard-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="tenancy-wizard-title">Configure Multi-Tenancy</h3>
+            <button id="tenancy-wizard-close" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            
+            <div class="form-group">
+                <label>Do you already have a table for the Tenant (e.g., companies, branches)?</label>
+                <div style="margin-top: 0.5rem;">
+                    <label class="inline-radio">
+                        <input type="radio" name="wizard_has_table" value="yes" checked> Yes, I have one
+                    </label>
+                    <label class="inline-radio" style="margin-left: 15px;">
+                        <input type="radio" name="wizard_has_table" value="no"> No, create it for me
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group mt-2" id="wizard-existing-table-group">
+                <label for="wizard-existing-table">Select Existing Tenant Table:</label>
+                <select id="wizard-existing-table" class="form-control">
+                    <option value="">-- Please Select --</option>
+                    </select>
+            </div>
+
+            <div class="form-group mt-2 hidden" id="wizard-new-table-group">
+                <label for="wizard-new-table-name">New Tenant Entity Name (e.g., company, faculty):</label>
+                <input type="text" id="wizard-new-table-name" class="form-control" placeholder="Enter singular name (no spaces)">
+                <small class="form-text text-muted">A new table will be automatically generated with standard fields.</small>
+            </div>
+
+            <div class="form-group mt-3">
+                <label>Select tables that require data privacy (Data scoped by Tenant):</label>
+                <div id="wizard-privacy-tables-container" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); padding: 10px; border-radius: 4px; background: #fff;">
+                    <p style="color: #888; text-align: center; margin: 10px 0;">No tables available.</p>
+                </div>
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="tenancy-wizard-cancel">Cancel</button>
+            <button class="btn btn-primary" id="tenancy-wizard-save">Save & Apply Scheme</button>
         </div>
     </div>
 </div>

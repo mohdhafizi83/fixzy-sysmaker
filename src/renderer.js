@@ -52,6 +52,8 @@ initializeTableSaveHandlers,
     initializeDataTypeDefaultRules
 } from './js/uiHandlers.js';
 
+import { tenancyManager } from './js/features/tenancyManager.js';
+
 import { initializeWorkflowBuilder } from './js/workflowBuilder.js';
 
 import { openGeneralQueryBuilder } from './js/features/queryBuilder.js';
@@ -161,6 +163,11 @@ export async function loadProjectData(project, options = {}) {
     } else {
         console.error("Gagal memuatkan data skema dari backend.");
     }
+    
+// TAMBAH KOD INI: Pastikan UI Tenancy dipaparkan dengan betul mengikut projek aktif
+        if (refreshMode === 'full' && typeof tenancyManager.refreshUIState === 'function') {
+            tenancyManager.refreshUIState();
+        }
 	
     if (refreshMode === 'full') {
         await populateProjectDropdown();
@@ -369,7 +376,9 @@ initializeTableSaveHandlers();
     initializeColumnGridHandlers();
     initializeWrapTextRule();
     initializeMediaTypeDefaultRules();
-    initializeDataTypeDefaultRules(); 
+    initializeDataTypeDefaultRules();
+
+    tenancyManager.init();    
     
     // Setup Event Listeners
     const newProjectBtn = document.getElementById('new-project-btn');

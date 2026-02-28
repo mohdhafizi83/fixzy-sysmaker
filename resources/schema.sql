@@ -75,7 +75,7 @@ CREATE TABLE tables (
     table_view_classes_input     TEXT,
     detail_view_classes_input    TEXT,
     detail_view_title            TEXT DEFAULT 'Detail View',
-    record_owner                 TEXT DEFAULT 'current_user',
+    record_owner                 TEXT,
     owner_fk_value               TEXT,
     default_focus                TEXT,
     redirect_after_insert        TEXT,
