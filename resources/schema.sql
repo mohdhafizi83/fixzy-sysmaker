@@ -89,6 +89,7 @@ CREATE TABLE tables (
     column_grid_type             TEXT DEFAULT 'dynamic',
     static_grid_columns          INTEGER DEFAULT 2,
     table_hook_workflow          TEXT,
+    feature_source               TEXT DEFAULT NULL,
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
 

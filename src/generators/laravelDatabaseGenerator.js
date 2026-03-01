@@ -269,7 +269,7 @@ let helperMethods = [];
  */
 async function generateFilamentUserModel(fullSchema, basePath) {
     try {
-        const { project: projectSettings, database: { table: tables, relationships } } = fullSchema; // tables needed for module names
+        const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
         const userData = tables.users;
 
         if (!userData) {
@@ -280,6 +280,7 @@ async function generateFilamentUserModel(fullSchema, basePath) {
         const templateContent = readTemplate('app/Models/User.template');
         let userModelContent = templateContent;
 
+        // --- KEKAL 100% LOGIK ASAL ANDA ---
         if (projectSettings.data_delete_type === 'soft') {
             userModelContent = userModelContent.replace('<<IMPORT_SOFTDELETE>>', 'use Illuminate\\Database\\Eloquent\\SoftDeletes;');
             userModelContent = userModelContent.replace('<<TRAIT_SOFTDELETE>>', ', SoftDeletes');
@@ -296,77 +297,64 @@ async function generateFilamentUserModel(fullSchema, basePath) {
              userModelContent = userModelContent.replace('<<IMPORT_AUDIT>>', '').replace('<<CLASS_IMPLEMENTS_AUDIT>>', '').replace('<<TRAIT_AUDIT>>', '');
         }
 
-if (projectSettings.module_authorization === 1) {
+        if (projectSettings.module_authorization === 1) {
             userModelContent = userModelContent.replace('<<IMPORT_SHIELD>>', 'use Spatie\\Permission\\Traits\\HasRoles;');
             userModelContent = userModelContent.replace('<<TRAIT_SHIELD>>', ', HasRoles');
         } else {
              userModelContent = userModelContent.replace('<<IMPORT_SHIELD>>', '').replace('<<TRAIT_SHIELD>>', '');
         }
 
-        // --- MULA: LOGIK IMPORT TENANCY UNTUK USER ---
+        // --- MULA: LOGIK IMPORT TENANCY UNTUK USER (DIKEMASKINI) ---
         if (projectSettings.tenancy_type === 'many_to_many' && projectSettings.tenant_table) {
-            const importTenant = `use Filament\\Models\\Contracts\\HasTenants;\nuse Illuminate\\Support\\Collection;\nuse Illuminate\\Database\\Eloquent\\Model;\nuse Filament\\Panel;`;
+            const importTenant = `use Filament\\Models\\Contracts\\HasTenants;\nuse Illuminate\\Support\\Collection;\nuse Illuminate\\Database\\Eloquent\\Model;\nuse Filament\\Panel;\nuse Illuminate\\Database\\Eloquent\\Relations\\BelongsToMany;`;
             userModelContent = userModelContent.replace('<<IMPORT_TENANT>>', importTenant);
-            userModelContent = userModelContent.replace('<<CLASS_IMPLEMENTS_TENANT>>', ', HasTenants');
+            
+            // Pastikan tiada ralat sintaks (, HasTenants) jika Audit off
+            const implementsStr = (projectSettings.module_log_audit === 1) ? ', HasTenants' : 'implements HasTenants';
+            userModelContent = userModelContent.replace('<<CLASS_IMPLEMENTS_TENANT>>', implementsStr);
         } else {
             userModelContent = userModelContent.replace('<<IMPORT_TENANT>>', '');
             userModelContent = userModelContent.replace('<<CLASS_IMPLEMENTS_TENANT>>', '');
         }
         // --- TAMAT LOGIK IMPORT TENANCY ---
 
-        // ▼▼▼ HUBUNGAN USER GUNA MODULE NAME ▼▼▼
+        // ▼▼▼ HUBUNGAN USER GUNA MODULE NAME (KEKAL 100% ASAL) ▼▼▼
         let relationshipFunctions = [];
         const tableName = 'users';
 
-        // User as Parent (HasMany/HasOne)
         relationships.filter(r => r.parent_table_name === tableName).forEach(rel => {
             const childClassName = getModelClassName(rel.child_table_name, tables);
             const foreignKey = rel.fk_child_field;
             const localKey = rel.parent_field;
 
             if (rel.relationship_type === 'one-to-one') {
-                const functionName = getRelationFunctionName(rel.child_table_name, tables, false); // Singular
-                relationshipFunctions.push(`
-    public function ${functionName}()
-    {
-        return $this->hasOne(${childClassName}::class, '${foreignKey}', '${localKey}');
-    }
-`);
+                const functionName = getRelationFunctionName(rel.child_table_name, tables, false);
+                relationshipFunctions.push(`\n    public function ${functionName}()\n    {\n        return $this->hasOne(${childClassName}::class, '${foreignKey}', '${localKey}');\n    }\n`);
             } else {
-                const functionName = getRelationFunctionName(rel.child_table_name, tables, true); // Plural
-                relationshipFunctions.push(`
-    public function ${functionName}()
-    {
-        return $this->hasMany(${childClassName}::class, '${foreignKey}', '${localKey}');
-    }
-`);
+                const functionName = getRelationFunctionName(rel.child_table_name, tables, true);
+                relationshipFunctions.push(`\n    public function ${functionName}()\n    {\n        return $this->hasMany(${childClassName}::class, '${foreignKey}', '${localKey}');\n    }\n`);
             }
         });
 
-        // User as Child (BelongsTo)
         relationships.filter(r => r.child_table_name === tableName).forEach(rel => {
             const parentClassName = getModelClassName(rel.parent_table_name, tables);
-            const functionName = getRelationFunctionName(rel.parent_table_name, tables, false); // Singular
-            relationshipFunctions.push(`
-    public function ${functionName}()
-    {
-        return $this->belongsTo(${parentClassName}::class, '${rel.fk_child_field}', '${rel.parent_field}');
-    }
-`);
-});
+            const functionName = getRelationFunctionName(rel.parent_table_name, tables, false);
+            relationshipFunctions.push(`\n    public function ${functionName}()\n    {\n        return $this->belongsTo(${parentClassName}::class, '${rel.fk_child_field}', '${rel.parent_field}');\n    }\n`);
+        });
         
-        // --- MULA: FUNGSI WAJIB FILAMENT TENANCY (MANY-TO-MANY) ---
+        // --- MULA: FUNGSI WAJIB FILAMENT TENANCY (DIKEMASKINI UNTUK PIVOT) ---
         if (projectSettings.tenancy_type === 'many_to_many' && projectSettings.tenant_table) {
             const tenantModelName = getModelClassName(projectSettings.tenant_table, tables);
-            const relationName = getRelationFunctionName(projectSettings.tenant_table, tables, true); // Plural
+            const relationName = getRelationFunctionName(projectSettings.tenant_table, tables, true);
+            const pivotTable = `${projectSettings.tenant_table}_user`;
             
             relationshipFunctions.push(`
-    public function ${relationName}()
+    public function ${relationName}(): BelongsToMany
     {
-        return $this->belongsToMany(${tenantModelName}::class);
+        return $this->belongsToMany(\\App\\Models\\${tenantModelName}::class, '${pivotTable}');
     }
 
-    public function getTenants(Panel $panel): Collection
+    public function getTenants(Panel $panel): array|Collection
     {
         return $this->${relationName};
     }
@@ -378,7 +366,6 @@ if (projectSettings.module_authorization === 1) {
 `);
         }
         // --- TAMAT FUNGSI WAJIB TENANCY ---
-        
         // ▲▲▲ TAMAT HUBUNGAN USER ▲▲▲
 
         userModelContent = userModelContent.replace('<<RELATIONSHIP_FUNCTIONS>>', relationshipFunctions.join(''));

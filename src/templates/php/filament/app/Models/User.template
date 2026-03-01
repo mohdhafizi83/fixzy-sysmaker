@@ -11,7 +11,7 @@ use Illuminate\Notifications\Notifiable;
 <<IMPORT_AUDIT>>
 <<IMPORT_TENANT>>
 
-class User extends Authenticatable <<CLASS_IMPLEMENTS_AUDIT>>
+class User extends Authenticatable <<CLASS_IMPLEMENTS_AUDIT>><<CLASS_IMPLEMENTS_TENANT>>
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable<<TRAIT_SHIELD>><<TRAIT_AUDIT>><<TRAIT_SOFTDELETE>>;
@@ -49,6 +49,8 @@ class User extends Authenticatable <<CLASS_IMPLEMENTS_AUDIT>>
             'password' => 'hashed',
         ];
     }
+
+<<TENANT_METHODS>>
 
 <<RELATIONSHIP_FUNCTIONS>>
 

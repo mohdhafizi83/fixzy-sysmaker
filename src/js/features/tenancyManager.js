@@ -6,6 +6,7 @@ import { showCustomDialog } from '../ui/modalHandlers.js';
 class TenancyManager {
     constructor() {
         this.initialized = false;
+        this.currentTenancyType = 'standard';
         // Rujukan DOM Modal
         this.modal = document.getElementById('tenancy-wizard-modal');
         this.closeBtn = document.getElementById('tenancy-wizard-close');
@@ -25,7 +26,9 @@ class TenancyManager {
 
     init() {
         if (this.initialized) return;
-
+// Sinkronisasi penjejak dalaman dengan pangkalan data semasa dibuka
+        this.currentTenancyType = appState.activeProject?.tenancy_type || 'standard';
+        
         this.attachEventListeners();
         this.initialized = true;
         console.log("TenancyManager initialized.");
@@ -33,10 +36,11 @@ class TenancyManager {
 
     attachEventListeners() {
         
-// Dengar perubahan pada radio button Tenancy Type
-        const tenancyRadios = document.querySelectorAll('input[name="app-tenancy_type"]');
-        tenancyRadios.forEach(radio => {
-            radio.addEventListener('change', (e) => this.handleTenancyTypeChange(e));
+// Guna Event Delegation pada document.body supaya ia kalis-refresh
+        document.body.addEventListener('change', (e) => {
+            if (e.target && e.target.name === 'app-tenancy_type') {
+                this.handleTenancyTypeChange(e);
+            }
         });
         // Togol jenis jadual (Existing vs New)
         this.radioHasTable.forEach(radio => {
@@ -62,38 +66,7 @@ class TenancyManager {
         // Simpan Data
         if (this.saveBtn) this.saveBtn.addEventListener('click', () => this.processTenancySetup());
     }
-    
-async handleTenancyTypeChange(event) {
-        const newType = event.target.value;
-        const currentTenant = appState.activeProject?.tenant_table;
-
-        if (newType === 'standard') {
-            if (currentTenant) {
-                // Minta pengesahan pengguna sebelum cuci pangkalan data
-                const isConfirm = confirm("AMARAN: Menukar ke 'Standard' akan memadamkan jadual Pivot dan semua lajur Foreign Key (Tenant) dari skema anda. Teruskan?");
-                if (isConfirm) {
-                    await this.rollbackTenancy(currentTenant);
-                } else {
-                    // Jika pengguna batal, kembalikan radio button ke nilai asal
-                    const oldType = appState.activeProject?.tenancy_type || 'standard';
-                    const oldRadio = document.querySelector(`input[name="app-tenancy_type"][value="${oldType}"]`);
-                    if (oldRadio) oldRadio.checked = true;
-                    
-                    // Kemas kini semula SaveManager supaya pangkalan data tidak tersalah simpan
-                    SaveManager.addToQueue('project', appState.activeProject.project_id, { tenancy_type: oldType });
-                    SaveManager.processQueue();
-                }
-            } else {
-                // Jika projek memang kosong/standard, hanya pastikan UI betul
-                this.summaryContainer.classList.add('hidden');
-                this.btnConfigure.classList.remove('hidden');
-            }
-        } else {
-            // Jika tukar ke one_to_many atau many_to_many, terus buka wizard!
-            this.openWizard();
-        }
-    }
-
+        
     // Fungsi untuk memastikan kotak rumusan (Read-only) dipaparkan bila projek mula-mula dimuatkan
     refreshUIState() {
         const tenantTable = appState.activeProject?.tenant_table;
@@ -161,8 +134,53 @@ openWizard() {
         this.modal.classList.remove('hidden');
     }
     
+async handleTenancyTypeChange(event) {
+        const newType = event.target.value;
+        const currentTenant = appState.activeProject?.tenant_table;
+
+        // Bandingkan dengan penjejak dalaman KITA, elakkan konflik dashboard.js
+        if (newType === this.currentTenancyType) return;
+
+        if (newType === 'standard') {
+            if (currentTenant) {
+                // GUNA CUSTOM MODAL
+                const isConfirm = await showCustomDialog({
+                    title: "Amaran Pemadaman Skema",
+                    message: "Menukar ke mod 'Standard' akan memadamkan jadual Pivot dan membuang semua lajur Foreign Key (Privasi) dari projek anda.\n\nAdakah anda pasti mahu meneruskan pembersihan ini?",
+                    showCancelButton: true
+                });
+
+                if (isConfirm) {
+                    await this.rollbackTenancy(currentTenant);
+                } else {
+                    // Jika pengguna batal, kembalikan UI ke keadaan asal
+                    this.revertRadioToCurrentState();
+                }
+            } else {
+                this.currentTenancyType = 'standard';
+                this.summaryContainer.classList.add('hidden');
+                this.btnConfigure.classList.remove('hidden');
+            }
+        } else {
+            // Jika pilih One-to-Many atau Many-to-Many, terus buka wizard
+            this.openWizard();
+        }
+    }
+
+    // FUNGSI BAHARU: Paksa antaramuka dan baris gilir kembali ke pangkal jalan
+    revertRadioToCurrentState() {
+        const correctRadio = document.querySelector(`input[name="app-tenancy_type"][value="${this.currentTenancyType}"]`);
+        if (correctRadio) correctRadio.checked = true;
+        
+        // Tindan sebarang perubahan silap yang dibuat oleh skrip lain
+        appState.activeProject.tenancy_type = this.currentTenancyType;
+        SaveManager.addToQueue('project', appState.activeProject.project_id, { tenancy_type: this.currentTenancyType });
+    }
+
     closeWizard() {
         this.modal.classList.add('hidden');
+        // Jika wizard ditutup (batal), pastikan radio UI undur kembali
+        this.revertRadioToCurrentState();
     }
 
 async processTenancySetup() {
@@ -229,6 +247,7 @@ if (tenancyType === 'standard') {
                 const newTable = await window.electronAPI.createTable(projectId);
                 newTable.table_name = tenantTable;
                 newTable.module_name = rawName;
+                newTable.feature_source = 'multi_tenancy';
                 await window.electronAPI.updateTable(newTable);
                 tenantTableId = newTable.table_id;
                 
@@ -273,6 +292,7 @@ if (tenancyType === 'standard') {
                     const pivotTable = await window.electronAPI.createTable(projectId);
                     pivotTable.table_name = pivotTableName;
                     pivotTable.module_name = pivotTableName;
+                    pivotTable.feature_source = 'multi_tenancy';
                     await window.electronAPI.updateTable(pivotTable);
 
                     // FK ke Tenant (Disorok)
@@ -306,6 +326,7 @@ if (tenancyType === 'standard') {
             }
 
             // E. Muat semula aplikasi (Refresh State & UI)
+            this.currentTenancyType = tenancyType;
             await loadProjectData(appState.activeProject, { refreshMode: 'full' });
             this.closeWizard();
             this.updateDashboardSummary(tenantTable, securedTables);
@@ -337,26 +358,49 @@ async rollbackTenancy(tenantTableName) {
 
             console.log(`[Rollback] Membuang kesan Multi-Tenancy untuk entiti: ${tenantTableName}`);
 
-            // 1. Buang Pivot Table sepenuhnya (jika ada)
+            const tablesToDelete = [];
+
+            // 1. Semak Pivot Table
             const pivotTableData = appState.jsonData.database.table[pivotTableName];
             if (pivotTableData) {
-                // KEMAS KINI: Hantar parameter yang betul ke backend
-                await window.electronAPI.deleteTables({
-                    projectId: projectId,
-                    tableNamesToDelete: [pivotTableName]
-                });
-                console.log(`[Rollback] Pivot table dipadam: ${pivotTableName}`);
+                tablesToDelete.push(pivotTableName);
             }
 
-            // 2. Buang lajur FK (syarikat_id) dari semua jadual lain (termasuk users)
+// 2. Semak Jadual Tenant (Adakah ia auto-generated?)
+            const tenantTableData = appState.jsonData.database.table[tenantTableName];
+            if (tenantTableData && tenantTableData.feature_source === 'multi_tenancy') {
+                if (overlay) overlay.classList.add('loading-overlay-hidden');
+                
+                // GUNA CUSTOM MODAL UNTUK PADAM JADUAL TENANT
+                const isConfirm = await showCustomDialog({
+                    title: "Padam Jadual Entiti Utama?",
+                    message: `Jadual '${tenantTableName}' telah dibina secara automatik oleh sistem sebelum ini.\n\nAdakah anda mahu memadam jadual ini sepenuhnya (termasuk rekod di dalamnya)?\n\n- Klik YES untuk PADAM jadual ini.\n- Klik CANCEL untuk KEKALKAN ia dalam pangkalan data.`,
+                    showCancelButton: true
+                });
+                
+                if (isConfirm) {
+                    tablesToDelete.push(tenantTableName);
+                }
+                
+                if (overlay) overlay.classList.remove('loading-overlay-hidden');
+            }
+
+            // 3. Jalankan pemadaman jadual-jadual yang dikumpulkan
+            if (tablesToDelete.length > 0) {
+                await window.electronAPI.deleteTables({
+                    projectId: projectId,
+                    tableNamesToDelete: tablesToDelete
+                });
+                console.log(`[Rollback] Jadual dipadam: ${tablesToDelete.join(', ')}`);
+            }
+
+            // 4. Buang lajur FK (syarikat_id) dari semua jadual privasi dan jadual users
             for (const tableName in appState.jsonData.database.table) {
                 const tableData = appState.jsonData.database.table[tableName];
                 
-                // JANGAN padam jadual Tenant itu sendiri! Kita hanya buang FK di dalamnya (jika ada)
                 if (tableData.fields && tableData.fields[fkFieldName]) {
                     const fieldId = tableData.fields[fkFieldName].field_id;
                     
-                    // KEMAS KINI: Hantar parameter yang betul mengikut main.js
                     await window.electronAPI.deleteField({ 
                         fieldId: fieldId, 
                         tableName: tableName, 
@@ -366,7 +410,8 @@ async rollbackTenancy(tenantTableName) {
                 }
             }
 
-            // 3. Kemas kini status Projek ke 'standard'
+            // 5. Kemas kini status Projek ke 'standard'
+            this.currentTenancyType = 'standard';
             appState.activeProject.tenancy_type = 'standard';
             appState.activeProject.tenant_table = '';
             SaveManager.addToQueue('project', projectId, {
@@ -375,10 +420,9 @@ async rollbackTenancy(tenantTableName) {
             });
             await SaveManager.processQueue();
 
-            // 4. Muat semula aplikasi dan UI
+            // 6. Muat semula aplikasi dan UI
             await loadProjectData(appState.activeProject, { refreshMode: 'full' });
             
-            // Sembunyikan summary box, tunjukkan balik butang utama
             this.summaryContainer.classList.add('hidden');
             this.btnConfigure.classList.remove('hidden');
 
@@ -386,7 +430,7 @@ async rollbackTenancy(tenantTableName) {
 
             showCustomDialog({
                 title: "Rollback Berjaya",
-                message: `Projek dikembalikan ke mod Standard.\n\nSemua jadual persilangan (Pivot) dan lajur carian (${fkFieldName}) yang dijana oleh sistem telah dipadam dengan selamat.`
+                message: `Projek dikembalikan ke mod Standard.\n\nSegala automasi skema telah dicuci dengan selamat mengikut pilihan anda.`
             });
 
         } catch (error) {
