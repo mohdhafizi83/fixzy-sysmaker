@@ -22,6 +22,16 @@ if (! function_exists('\Laravel\Prompts\text')) {
     }
 }
 
+if (! function_exists('\Laravel\Prompts\number')) {
+    /**
+     * Prompt the user for number input.
+     */
+    function number(string $label, string $placeholder = '', string $default = '', bool|string $required = false, mixed $validate = null, string $hint = '', ?int $min = null, ?int $max = null, ?int $step = null): int|string
+    {
+        return (new NumberPrompt(...get_defined_vars()))->prompt();
+    }
+}
+
 if (! function_exists('\Laravel\Prompts\textarea')) {
     /**
      * Prompt the user for multiline text input.
@@ -295,6 +305,18 @@ if (! function_exists('\Laravel\Prompts\table')) {
     function table(array|Collection $headers = [], array|Collection|null $rows = null): void
     {
         (new Table($headers, $rows))->display();
+    }
+}
+
+if (! function_exists('\Laravel\Prompts\grid')) {
+    /**
+     * Display a grid.
+     *
+     * @param  array<int, string>|Collection<int, string>  $items
+     */
+    function grid(array|Collection $items = [], ?int $maxWidth = null): void
+    {
+        (new Grid($items, $maxWidth))->display();
     }
 }
 

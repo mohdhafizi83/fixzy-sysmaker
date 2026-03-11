@@ -2,8 +2,10 @@
 
 namespace Illuminate\JsonSchema\Types;
 
+use BackedEnum;
 use Illuminate\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Serializer;
+use InvalidArgumentException;
 
 abstract class Type extends JsonSchema
 {
@@ -35,11 +37,30 @@ abstract class Type extends JsonSchema
     protected ?array $enum = null;
 
     /**
+     * Indicates if the type is nullable.
+     */
+    protected ?bool $nullable = null;
+
+    /**
      * Indicate that the type is required.
      */
-    public function required(): static
+    public function required(bool $required = true): static
     {
-        $this->required = true;
+        if ($required) {
+            $this->required = true;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Indicate that the type is optional.
+     */
+    public function nullable(bool $nullable = true): static
+    {
+        if ($nullable) {
+            $this->nullable = true;
+        }
 
         return $this;
     }
@@ -67,11 +88,21 @@ abstract class Type extends JsonSchema
     /**
      * Restrict the value to one of the provided enumerated values.
      *
-     * @param  array<int, mixed>  $values
+     * @param  class-string<\BackedEnum>|array<int, mixed>  $values
+     *
+     * @throws \InvalidArgumentException
      */
-    public function enum(array $values): static
+    public function enum(array|string $values): static
     {
-        // Keep order and allow complex values (arrays/objects) without forcing uniqueness...
+        if (is_string($values)) {
+            if (! is_subclass_of($values, BackedEnum::class)) {
+                throw new InvalidArgumentException('The provided class must be a BackedEnum.');
+            }
+
+            $values = array_column($values::cases(), 'value');
+        }
+
+        // Keep order and allow complex values (arrays / objects) without forcing uniqueness...
         $this->enum = array_values($values);
 
         return $this;

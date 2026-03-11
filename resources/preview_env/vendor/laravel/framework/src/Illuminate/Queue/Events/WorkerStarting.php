@@ -9,12 +9,12 @@ class WorkerStarting
      *
      * @param  string  $connectionName
      * @param  string  $queue
-     * @param  \Illuminate\Queue\WorkerOptions  $options
+     * @param  \Illuminate\Queue\WorkerOptions  $workerOptions
      */
     public function __construct(
         public $connectionName,
         public $queue,
-        public $workerOptions
+        public $workerOptions,
     ) {
     }
 }

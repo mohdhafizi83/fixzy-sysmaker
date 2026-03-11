@@ -1,0 +1,8 @@
+/vendor/
+/.idea/
+/.qlty/
+build/
+.phpunit.result.cache
+/coverage/clover.xml
+.hadolint.yaml
+.yamllint.yaml

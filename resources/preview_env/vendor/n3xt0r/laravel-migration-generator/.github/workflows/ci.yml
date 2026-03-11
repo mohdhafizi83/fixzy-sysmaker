@@ -1,0 +1,279 @@
+name: CI
+
+on:
+  push:
+    branches: [ 'feature/*', 'develop', 'dev-*', 'master', 'updates', 'bugfix/*' ]
+    tags:
+      - '*'
+  pull_request:
+    branches: [ feature/*, develop, dev-*, master ]
+
+jobs:
+  test-mysql:
+    name: Laravel ${{ matrix.laravel }} / PHP ${{ matrix.php }} / MySQL ${{ matrix.mysql }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        laravel: [11, 12]
+        php: [8.2, 8.3, 8.4, 8.5]
+        mysql: [5.7, 8.0]
+
+    services:
+      mysql:
+        image: mysql:${{ matrix.mysql }}
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: testing
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USERNAME: root
+      DB_PASSWORD: ''
+      DB_DATABASE: testing
+      DB_CONNECTION: 'mysql'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo_mysql, zip, exif, intl, gd, bcmath, curl, dom, xdebug
+          coverage: xdebug
+
+      - name: Debug info
+        run: |
+          php -v
+          composer --version
+          mysql --version || true
+
+      - name: Wait for MySQL
+        run: |
+          for i in {30..0}; do
+            if mysqladmin ping -h 127.0.0.1 --silent; then
+              echo "MySQL is ready"
+              break
+            fi
+            echo "Waiting for MySQL ($i)..."
+            sleep 1
+          done
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ matrix.php }}-laravel-${{ matrix.laravel }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-${{ matrix.php }}-laravel-${{ matrix.laravel }}-
+
+      - name: Adjust Laravel/Testbench version per matrix
+        run: |
+         composer remove laravel/framework orchestra/testbench --no-update || true
+         composer require laravel/framework:^${{ matrix.laravel }} --no-update
+         composer update --no-interaction --prefer-dist --no-progress
+
+      - name: Ensure coverage directory exists
+        run: mkdir -p coverage
+
+      - name: Run Tests
+        run: vendor/bin/phpunit --coverage-clover=coverage/clover.xml --path-coverage
+
+      - uses: qltysh/qlty-action/coverage@v1
+        with:
+          token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
+          files: coverage/clover.xml
+
+
+  test-pgsql:
+    name: Laravel ${{ matrix.laravel }} / PHP ${{ matrix.php }} / PostgreSQL 15
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        laravel: [11, 12]
+        php: [8.2, 8.3, 8.4]
+
+
+    services:
+      postgres:
+        image: postgres:15
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_DB: testing
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ''
+          POSTGRES_HOST_AUTH_METHOD: trust
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_USERNAME: postgres
+      DB_PASSWORD: ''
+      DB_DATABASE: testing
+      DB_CONNECTION: 'pgsql'
+
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo_pgsql, zip, exif, intl, gd, bcmath, curl, dom, xdebug
+          coverage: xdebug
+
+      - name: Debug info
+        run: |
+          php -v
+          composer --version
+          psql --version || true
+
+      - name: Wait for Postgres
+        run: |
+          for i in {30..0}; do
+            if pg_isready -h 127.0.0.1 -U postgres; then
+              echo "Postgres is ready"
+              break
+            fi
+            echo "Waiting for Postgres ($i)..."
+            sleep 1
+          done
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ matrix.php }}-laravel-${{ matrix.laravel }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-${{ matrix.php }}-laravel-${{ matrix.laravel }}-
+      - name: Adjust Laravel/Testbench version per matrix
+        run: |
+         composer remove laravel/framework orchestra/testbench --no-update || true
+         composer require laravel/framework:^${{ matrix.laravel }} --no-update
+         composer update --no-interaction --prefer-dist --no-progress
+
+      - name: Ensure coverage directory exists
+        run: mkdir -p coverage
+
+      - name: Run Tests
+        run: vendor/bin/phpunit --coverage-clover=coverage/clover.xml --path-coverage
+
+      - uses: qltysh/qlty-action/coverage@v1
+        with:
+          token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
+          files: coverage/clover.xml
+
+
+  test-sqlsrv:
+    name: Laravel ${{ matrix.laravel }} / PHP ${{ matrix.php }} / MSSQL 2022-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        laravel: [11, 12]
+        php: [8.2, 8.3, 8.4]
+
+        exclude:
+          - laravel: 11
+
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        ports:
+          - 1433:1433
+        env:
+          ACCEPT_EULA: Y
+          SA_PASSWORD: Passw0rd1234!
+          MSSQL_PID: Express
+        options: >-
+          --health-cmd="exit 0"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 1433
+      DB_USERNAME: SA
+      DB_PASSWORD: Passw0rd1234!
+      DB_DATABASE: testing
+      DB_CONNECTION: 'sqlsrv'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Microsoft ODBC Driver for SQL Server (Linux)
+        run: |
+          curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+          curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql17 mssql-tools
+          sudo apt-get install -y unixodbc-dev
+          echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+          source ~/.bashrc
+
+      - name: Set up PHP with SQLSRV
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo_sqlsrv, sqlsrv, zip, exif, intl, gd, bcmath, curl, dom, xdebug
+          coverage: xdebug
+
+      - name: Debug info
+        run: |
+          php -v
+          composer --version
+          /opt/mssql-tools/bin/sqlcmd -? || true
+
+      - name: Wait for MSSQL
+        run: |
+          echo "Waiting 30 seconds for MSSQL to start..."
+          sleep 30
+
+      - name: Initialize Database
+        run: |
+          /opt/mssql-tools/bin/sqlcmd -S 127.0.0.1 -U SA -P 'Passw0rd1234!' -Q "
+              CREATE DATABASE testing;
+              CREATE LOGIN testuser WITH PASSWORD = 'TestPassw0rd!';
+              CREATE USER testuser FOR LOGIN testuser;
+              ALTER ROLE db_owner ADD MEMBER testuser;"
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ matrix.php }}-laravel-${{ matrix.laravel }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-${{ matrix.php }}-laravel-${{ matrix.laravel }}-
+
+      - name: Adjust Laravel/Testbench version per matrix
+        run: |
+          composer remove laravel/framework orchestra/testbench --no-update || true
+          composer require laravel/framework:^${{ matrix.laravel }} --no-update
+          composer update --no-interaction --prefer-dist --no-progress
+
+      - name: Ensure coverage directory exists
+        run: mkdir -p coverage
+
+      - name: Run Tests
+        run: vendor/bin/phpunit --coverage-clover=coverage/clover.xml --path-coverage
+
+      - uses: qltysh/qlty-action/coverage@v1
+        with:
+          token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
+          files: coverage/clover.xml

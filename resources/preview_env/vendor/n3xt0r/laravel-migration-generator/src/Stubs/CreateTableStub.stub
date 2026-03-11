@@ -1,0 +1,36 @@
+<?php
+
+{{$migrationNamespace}}
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\{Schema, DB};
+
+return new class extends {{$migrationClass}}
+{
+
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up(): void
+    {
+        Schema::create(
+            '{{$tableName}}',
+            static function (Blueprint $table) {
+                {{$columns}}
+            }
+        );
+    }
+
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('{{$tableName}}');
+    }
+
+};

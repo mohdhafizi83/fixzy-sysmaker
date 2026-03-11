@@ -121,6 +121,8 @@ class RouteRegistrar
         }
 
         if ($key === 'middleware') {
+            $value = array_filter(Arr::wrap($value));
+
             foreach ($value as $index => $middleware) {
                 $value[$index] = (string) $middleware;
             }
@@ -295,6 +297,10 @@ class RouteRegistrar
         if (in_array($method, $this->allowedAttributes)) {
             if ($method === 'middleware') {
                 return $this->attribute($method, is_array($parameters[0]) ? $parameters[0] : $parameters);
+            }
+
+            if ($method === 'can') {
+                return $this->attribute($method, [$parameters]);
             }
 
             return $this->attribute($method, array_key_exists(0, $parameters) ? $parameters[0] : true);

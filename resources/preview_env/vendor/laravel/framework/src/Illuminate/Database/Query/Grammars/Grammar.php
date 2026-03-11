@@ -328,6 +328,18 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * Compile a "where null safe equals" clause.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected function whereNullSafeEquals(Builder $query, $where)
+    {
+        return $this->wrap($where['column']).' is not distinct from '.$this->parameter($where['value']);
+    }
+
+    /**
      * Compile a "where in" clause.
      *
      * @param  \Illuminate\Database\Query\Builder  $query
@@ -987,7 +999,11 @@ class Grammar extends BaseGrammar
      */
     protected function compileOrdersToArray(Builder $query, $orders)
     {
-        return array_map(function ($order) {
+        return array_map(function ($order) use ($query) {
+            if (isset($order['sql']) && $order['sql'] instanceof Expression) {
+                return $order['sql']->getValue($query->getGrammar());
+            }
+
             return $order['sql'] ?? $this->wrap($order['column']).' '.$order['direction'];
         }, $orders);
     }
