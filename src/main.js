@@ -7,6 +7,8 @@ const Database = require("better-sqlite3");
 const { Parser } = require("node-sql-parser");
 const parser = new Parser();
 const { spawn } = require('child_process');
+// Pembolehubah untuk menjejak proses pelayan PHP
+let previewServerProcess = null;
 const pluralize = require('pluralize');
 
 // IMPORT FUNGSI BANTUAN DARI UTILS
@@ -72,6 +74,7 @@ const {
 const { 
     generateFilamentModels,
     generateFilamentUserModel,
+    generateLaravelUserMigration,
     generateLaravelMigrations, 
     generateLaravelFactories, 
     generateLaravelDatabaseSeeder 
@@ -109,6 +112,49 @@ if (!dbExists) {
   } catch (error) {
     console.error("Gagal mencipta skema pangkalan data:", error);
   }
+}
+
+// =================================================================
+// FUNGSI BANTUAN: SALIN FOLDER DENGAN PROGRESS BAR (FIZIKAL 100%)
+// =================================================================
+async function copyDirWithProgress(src, dest, onProgress) {
+    let totalFiles = 0;
+    async function countFiles(dir) {
+        const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+        for (let entry of entries) {
+            if (entry.isDirectory()) {
+                await countFiles(path.join(dir, entry.name));
+            } else {
+                totalFiles++;
+            }
+        }
+    }
+    await countFiles(src);
+
+    let copiedFiles = 0;
+    async function copyRecursive(source, destination) {
+        await fs.promises.mkdir(destination, { recursive: true });
+        const entries = await fs.promises.readdir(source, { withFileTypes: true });
+
+        for (let entry of entries) {
+            const srcPath = path.join(source, entry.name);
+            const destPath = path.join(destination, entry.name);
+
+            if (entry.isDirectory()) {
+                await copyRecursive(srcPath, destPath);
+            } else {
+                await fs.promises.copyFile(srcPath, destPath); // Salinan fizikal sebenar
+                copiedFiles++;
+                
+                if (copiedFiles % 100 === 0 || copiedFiles === totalFiles) {
+                    const percentage = Math.round((copiedFiles / totalFiles) * 100);
+                    onProgress(copiedFiles, totalFiles, percentage);
+                }
+            }
+        }
+    }
+
+    await copyRecursive(src, dest);
 }
 
 //app.whenReady().then(() => {
@@ -1843,6 +1889,434 @@ ipcMain.handle('app:deploy', deployApp);
 ipcMain.handle('app:update', updateApp);
 
 // =================================================================
+// FUNGSI BUILT-IN PREVIEW SERVER
+// =================================================================
+
+ipcMain.handle('preview:start', async (event, projectPath) => {
+    return new Promise((resolve, reject) => {
+        try {
+            // 1. Tentukan laluan PHP (Sama seperti runComposer)
+            const baseBinPath = app.isPackaged 
+                ? path.join(process.resourcesPath, 'app.asar.unpacked', 'bin')
+                : path.join(__dirname, '../../bin');
+            const phpPath = path.join(baseBinPath, 'php-8.4.12', 'php.exe');
+
+            // 2. Bunuh pelayan sedia ada jika sedang berjalan
+            if (previewServerProcess) {
+                previewServerProcess.kill();
+                previewServerProcess = null;
+                console.log("Pelayan preview terdahulu telah dihentikan.");
+            }
+
+            // 3. Pastikan fail database.sqlite wujud (Elak prompt Laravel)
+            const dbPath = path.join(projectPath, 'database', 'database.sqlite');
+            if (!fs.existsSync(dbPath)) {
+                fs.writeFileSync(dbPath, ''); // Cipta fail kosong
+            }
+
+            console.log(`Menyediakan pangkalan data di: ${projectPath}`);
+
+            // 4. Jalankan Migrate & Seed (Bina jadual dan masukkan data test)
+            const migrateProcess = spawn(phpPath, ['artisan', 'migrate:fresh', '--seed', '--force'], {
+                cwd: projectPath,
+                stdio: 'pipe' // Abaikan output untuk percepatkan
+            });
+
+            migrateProcess.on('close', (code) => {
+                if (code !== 0) {
+                    return resolve({ success: false, message: "Ralat semasa menjalankan migrasi pangkalan data." });
+                }
+
+                console.log("Migrasi berjaya! Menghidupkan pelayan Laravel...");
+
+                // 5. Hidupkan PHP Built-in Server
+                const port = 8080;
+                previewServerProcess = spawn(phpPath, ['artisan', 'serve', `--port=${port}`], {
+                    cwd: projectPath,
+                    stdio: 'pipe'
+                });
+
+                previewServerProcess.stdout.on('data', (data) => {
+                    const output = data.toString();
+                    console.log(`[Server]: ${output}`);
+                    
+                    // Jika server berjaya dihidupkan, Laravel akan paparkan "Server running on..."
+                    if (output.includes('running') || output.includes('127.0.0.1')) {
+                        resolve({ success: true, url: `http://127.0.0.1:${port}/admin` });
+                    }
+                });
+
+                previewServerProcess.stderr.on('data', (data) => {
+                    console.error(`[Server Error]: ${data.toString()}`);
+                });
+
+                previewServerProcess.on('error', (err) => {
+                    resolve({ success: false, message: `Gagal menghidupkan pelayan: ${err.message}` });
+                });
+            });
+
+        } catch (error) {
+            resolve({ success: false, message: error.message });
+        }
+    });
+});
+
+// Fungsi untuk memberhentikan pelayan (Boleh dipanggil jika pengguna tutup FiziSysMaker)
+ipcMain.handle('preview:stop', () => {
+    if (previewServerProcess) {
+        previewServerProcess.kill();
+        previewServerProcess = null;
+        console.log("Pelayan preview telah dihentikan oleh pengguna.");
+        return true;
+    }
+    return false;
+});
+
+// =================================================================
+// FUNGSI BUILT-IN PREVIEW SERVER (INSTANT RUN - SENARIO 3)
+// =================================================================
+ipcMain.handle('preview:instant-run', async (event, fullSchema) => { // Pastikan 'event' ada di sini
+    const win = BrowserWindow.fromWebContents(event.sender); // Tangkap tetingkap UI
+    return new Promise(async (resolve, reject) => {
+        try {
+const templatePreviewPath = app.isPackaged ? path.join(process.resourcesPath, 'preview_env') : path.join(__dirname, '../resources/preview_env');
+            const userDataPath = app.getPath('userData'); 
+            const workingPreviewPath = path.join(userDataPath, 'preview_env');
+
+// 2. SALINAN KALI PERTAMA (SALINAN FIZIKAL PENUH + PROGRESS BAR)
+            if (!fs.existsSync(workingPreviewPath)) {
+                console.log(`[Preview] Menyalin template ke: ${workingPreviewPath}`);
+                
+                if (!fs.existsSync(templatePreviewPath)) {
+                    return resolve({ success: false, message: `Template pralihat tidak dijumpai di: ${templatePreviewPath}` });
+                }
+
+                // ========================================================
+                // MULA: DIALOG PENGESAHAN KALI PERTAMA (NATIVE ELECTRON)
+                // ========================================================
+                const { response } = await dialog.showMessageBox(win, {
+                    type: 'info',
+                    buttons: ['OK', 'Batal'],
+                    title: 'Persediaan Persekitaran Pralihat',
+                    message: 'Pemasangan Kali Pertama',
+                    detail: 'Ini adalah kali pertama anda menggunakan fungsi Show Preview.\n\nSistem akan menyediakan persekitaran pralihat untuk projek anda. Proses ini melibatkan penyalinan fail asas sistem (termasuk folder vendor) dan mungkin memakan masa sekitar 1 hingga 3 minit bergantung kepada kelajuan komputer anda.\n\nAdakah anda mahu meneruskan?',
+                    defaultId: 0,
+                    cancelId: 1
+                });
+
+                // Jika pengguna tekan 'Batal' (index 1) atau pangkah dialog
+                if (response !== 0) {
+                    return resolve({ success: false, message: 'Proses persediaan pralihat dibatalkan oleh pengguna.' });
+                }
+                // ========================================================
+                // TAMAT: DIALOG PENGESAHAN
+                // ========================================================
+
+                win?.webContents.send('show-overlay', { 
+                    message: 'Mengira fail sistem. Sila tunggu...',
+                    progress: 0 
+                });
+
+// Proses ini menyalin SEMUA fail secara fizikal
+                await copyDirWithProgress(templatePreviewPath, workingPreviewPath, (copied, total, percentage) => {
+                    // MENDARAB DENGAN 0.90 UNTUK MENGHADKAN MAKSIMUM KEPADA 90%
+                    const scaledPercentage = Math.round(percentage * 0.90); 
+                    
+                    win?.webContents.send('show-overlay', { 
+                        message: `Menyediakan persekitaran (Menyalin fail ${copied}/${total})...`,
+                        progress: scaledPercentage // Hantar nilai yang telah diskalakan
+                    });
+                });
+
+                console.log(`[Preview] Salinan penuh berjaya!`);
+            } else {
+                win?.webContents.send('show-overlay', { 
+                    message: 'Menjana dan memuatkan pralihat...',
+                    progress: 90 
+                });
+            }
+
+            const previewPath = workingPreviewPath;
+
+            // 3. BUNUH PELAYAN LAMA (JIKA ADA)
+            if (previewServerProcess) {
+                previewServerProcess.kill();
+                previewServerProcess = null;
+            }
+
+            // ========================================================
+            // 4. DAPATKAN DATA SKEMA (SAMA SEPERTI SENARIO 2)
+            // ========================================================
+            const activeProject = db.prepare("SELECT * FROM projects WHERE is_active = 1 LIMIT 1").get();
+            if (!activeProject) return resolve({ success: false, message: "Tiada projek aktif dijumpai." });
+
+            const fullSchema = await getFullProjectSchema(activeProject.project_id);
+            if (!fullSchema) return resolve({ success: false, message: "Gagal mendapatkan schema projek penuh." });
+
+// 5. PEMBERSIHAN FOLDER PINTAR (Simpan User.php & Migrasi Asas)
+            console.log(`[Preview] Membersihkan fail lama di: ${previewPath}`);
+            const modelsPath = path.join(previewPath, 'app', 'Models');
+            const filamentPath = path.join(previewPath, 'app', 'Filament');
+            const migrationsPath = path.join(previewPath, 'database', 'migrations');
+            
+            // A. Bersihkan folder Models (Kecuali User.php)
+            if (fs.existsSync(modelsPath)) {
+                fs.readdirSync(modelsPath).forEach(file => {
+                    if (file !== 'User.php') {
+                        fs.rmSync(path.join(modelsPath, file), { recursive: true, force: true });
+                    }
+                });
+            }
+
+// B. Bersihkan folder Migrations dengan Senarai Dilindungi (Protected List)
+            if (fs.existsSync(migrationsPath)) {
+                // Senarai kata kunci fail yang WAJIB disimpan (berdasarkan senarai anda)
+                const protectedMigrations = [
+                    'create_users_table',
+                    'create_cache_table',
+                    'create_jobs_table',
+                    'create_permission_tables',
+                    'create_audits_table',
+                    'create_notifications_table',
+                    'create_imports_table',
+                    'create_exports_table',
+                    'create_failed_import_rows_table'
+                ];
+
+                fs.readdirSync(migrationsPath).forEach(file => {
+                    // Semak sama ada nama fail ini mengandungi mana-mana kata kunci di atas
+                    const isProtected = protectedMigrations.some(keyword => file.includes(keyword));
+                    
+                    // PADAM HANYA JIKA ia BUKAN fail yang dilindungi
+                    if (!isProtected) {
+                        fs.rmSync(path.join(migrationsPath, file), { recursive: true, force: true });
+                    }
+                });
+            }
+
+// C. Bersihkan folder Filament/Resources dengan Senarai Dilindungi
+            const resourcesPath = path.join(previewPath, 'app', 'Filament', 'Resources');
+            
+            if (fs.existsSync(resourcesPath)) {
+                // Senarai nama folder yang WAJIB disimpan
+                // (Termasuk perkataan 'Resource' sebagai langkah berjaga-jaga jika Filament Shield menjana RoleResource)
+                const protectedResources = ['Users', 'Roles', 'UserResource', 'RoleResource'];
+                
+                fs.readdirSync(resourcesPath).forEach(file => {
+                    // Semak jika nama folder ini sepadan dengan senarai di atas
+                    const isProtected = protectedResources.some(keyword => file.includes(keyword));
+                    
+                    // PADAM HANYA JIKA ia BUKAN folder yang dilindungi
+                    if (!isProtected) {
+                        fs.rmSync(path.join(resourcesPath, file), { recursive: true, force: true });
+                    }
+                });
+            }
+            
+// D. Bersihkan folder Policies (Padam fail di dalamnya sahaja untuk elak ralat EPERM Windows)
+            const policiesPath = path.join(previewPath, 'app', 'Policies');
+            if (fs.existsSync(policiesPath)) {
+                // Baca semua isi dalam folder Policies
+                fs.readdirSync(policiesPath).forEach(file => {
+                    const filePath = path.join(policiesPath, file);
+                    // Jika ia adalah fail biasa (cth: PelajarPolicy.php), kita padam fail tersebut
+                    if (fs.statSync(filePath).isFile()) {
+                        try {
+                            fs.rmSync(filePath, { force: true });
+                        } catch (err) {
+                            console.warn(`[Preview] Gagal memadam fail polisi: ${file}`);
+                        }
+                    }
+                });
+            }
+
+            // ============================================================
+            // 6. TRIGGER PENJANA (GENERATORS) SECARA LANGSUNG
+            // ============================================================
+            console.log(`[Preview] Menjana fail secara langsung ke folder preview...`);
+            
+            // FASA 1: Database Layer
+            await generateLaravelUserMigration(fullSchema, previewPath);
+            await generateLaravelMigrations(fullSchema, previewPath);
+            await generateFilamentModels(fullSchema, previewPath);
+            await generateFilamentUserModel(fullSchema, previewPath);
+            await generateLaravelFactories(fullSchema, previewPath);
+            await generateLaravelDatabaseSeeder(fullSchema, previewPath);
+
+            // FASA 2: Standard Module
+            await generateFilamentTablesTable(fullSchema, previewPath);
+            await generateFilamentSchemasForm(fullSchema, previewPath);
+            await generateFilamentListPages(fullSchema, previewPath);
+            await generateFilamentCreatePages(fullSchema, previewPath);
+            await generateFilamentEditPages(fullSchema, previewPath);
+            await generateFilamentRelationManagers(fullSchema, previewPath);
+            await generateFilamentResources(fullSchema, previewPath);
+
+            // FASA 3: Custom Modules
+            await generateFilamentTablesCustomModules(fullSchema, previewPath);
+            await generateFilamentSchemasCustomModules(fullSchema, previewPath);
+            await generateFilamentListCustomModules(fullSchema, previewPath);
+            await generateFilamentCreateCustomModules(fullSchema, previewPath);
+            await generateFilamentEditCustomModules(fullSchema, previewPath);
+            await generateFilamentResourcesCustomModules(fullSchema, previewPath);
+
+            // FASA 4: Ciri Tambahan
+            await generateFilamentExports(fullSchema, previewPath);
+            await generateFilamentImporters(fullSchema, previewPath);
+            await generateAdminPanelProvider(fullSchema, previewPath);
+
+// ============================================================
+            // 7. SETUP PANGKALAN DATA & PELAYAN (SERVER)
+            // ============================================================
+            const dbSqlitePath = path.join(previewPath, 'database', 'database.sqlite');
+            if (!fs.existsSync(dbSqlitePath)) {
+                fs.writeFileSync(dbSqlitePath, ''); 
+            }
+
+            const baseBinPath = app.isPackaged 
+                ? path.join(process.resourcesPath, 'app.asar.unpacked', 'bin') 
+                : path.join(__dirname, '../bin'); 
+            const phpPath = path.join(baseBinPath, 'php-8.4.12', 'php.exe');
+
+            console.log(`[Preview] Menjalankan Migrasi & Seeder...`);
+            
+            // Mula dari 90%
+            let currentProgress = 90;
+            win?.webContents.send('show-overlay', { 
+                message: 'Memulakan Migrasi Pangkalan Data...',
+                progress: currentProgress
+            });
+
+            const migrateProcess = spawn(phpPath, ['artisan', 'migrate:fresh', '--seed', '--force'], {
+                cwd: previewPath
+            });
+
+            let migrateLog = '';
+            
+            // Setiap kali Laravel mengeluarkan log migrasi/seeder, kita gerakkan bar!
+            migrateProcess.stdout.on('data', (data) => { 
+                migrateLog += data.toString(); 
+                if (currentProgress < 98) {
+                    currentProgress += 1; // Tambah 1% perlahan-lahan
+                    win?.webContents.send('show-overlay', { 
+                        message: 'Membina jadual dan memasukkan data ujian (Seeder)...',
+                        progress: currentProgress
+                    });
+                }
+            });
+            
+            migrateProcess.stderr.on('data', (data) => { migrateLog += data.toString(); });
+
+            migrateProcess.on('error', (err) => {
+                resolve({ success: false, message: `Gagal mencari fail PHP: ${err.message}` });
+            });
+
+migrateProcess.on('close', (code) => {
+                if (code !== 0) {
+                    return resolve({ 
+                        success: false, 
+                        message: `Gagal menjalankan migrasi pangkalan data.\n\nLog Terminal:\n...${migrateLog.slice(-1000)}` 
+                    });
+                }
+
+                console.log(`[Preview] Migrasi berjaya. Menjana Polisi Keselamatan (Shield)...`);
+
+                // ========================================================
+                // TAMBAHAN: JALANKAN FILAMENT SHIELD GENERATOR
+                // ========================================================
+                win?.webContents.send('show-overlay', { 
+                    message: 'Menjana Polisi Keselamatan & Hak Akses (Filament Shield)...',
+                    progress: 96
+                });
+
+// Jalankan perintah shield:generate berserta pilihan PANEL supaya ia tidak bertanya soalan
+                const shieldProcess = spawn(phpPath, ['artisan', 'shield:generate', '--all', '--panel=admin', '--no-interaction'], {
+                    cwd: previewPath
+                });
+
+                let shieldLog = '';
+                shieldProcess.stdout.on('data', (data) => { shieldLog += data.toString(); });
+                shieldProcess.stderr.on('data', (data) => { shieldLog += data.toString(); });
+
+                shieldProcess.on('close', (shieldCode) => {
+                    // TANGKAP RALAT SECARA NYATA!
+                    // Jika kod bukan 0, atau terdapat perkataan 'error'/'exception' di dalam log terminal
+                    if (shieldCode !== 0 || shieldLog.toLowerCase().includes('error') || shieldLog.toLowerCase().includes('exception')) {
+                        return resolve({ 
+                            success: false, 
+                            message: `Gagal menjana Polisi Shield!\n\nSebab Ralat:\n${shieldLog.trim()}` 
+                        });
+                    }
+
+                    console.log(`[Preview] Polisi berjaya dijana. Menghidupkan Pelayan...`);
+
+                    // ========================================================
+                    // PENGHIDUPAN PELAYAN (SERVER)
+                    // ========================================================
+                    win?.webContents.send('show-overlay', { 
+                        message: 'Menghidupkan Pelayan Tempatan (Localhost)...',
+                        progress: 99
+                    });
+
+                    const port = 8080;
+                    previewServerProcess = spawn(phpPath, ['artisan', 'serve', `--port=${port}`], {
+                        cwd: previewPath
+                    });
+
+                    previewServerProcess.on('error', (err) => {
+                        resolve({ success: false, message: `Gagal menghidupkan pelayan: ${err.message}` });
+                    });
+
+                    previewServerProcess.stdout.on('data', (data) => {
+                        const output = data.toString();
+                        if (output.includes('running') || output.includes('127.0.0.1')) {
+                            win?.webContents.send('show-overlay', { 
+                                message: 'Pralihat Sedia Dilancarkan!',
+                                progress: 100
+                            });
+                            
+                            setTimeout(() => {
+                                resolve({ success: true, url: `http://127.0.0.1:${port}/admin` });
+                            }, 500);
+                        }
+                    });
+                }); // Tamat shieldProcess
+            }); // Tamat migrateProcess
+
+        } catch (error) {
+            console.error('Ralat Instant Preview:', error);
+            resolve({ success: false, message: error.message });
+        }
+    });
+});
+
+// Pastikan pelayan dibunuh apabila aplikasi ditutup
+app.on('will-quit', () => {
+    if (previewServerProcess) {
+        previewServerProcess.kill();
+    }
+});
+
+// Tambahkan ini untuk mematikan pelayan pralihat (Preview Server) ke akar umbi!
+ipcMain.on('stop-preview-server', () => {
+    if (typeof previewServerProcess !== 'undefined' && previewServerProcess !== null) {
+        
+        // Semak adakah OS pengguna adalah Windows
+        if (process.platform === 'win32') {
+            const { spawn } = require('child_process');
+            // /pid = Process ID, /f = Force kill, /t = Kill whole tree (Induk & Anak)
+            spawn('taskkill', ['/pid', previewServerProcess.pid, '/f', '/t']);
+        } else {
+            // Untuk pengguna Mac/Linux, .kill() biasa sudah mencukupi untuk membunuh tree
+            previewServerProcess.kill(); 
+        }
+
+        previewServerProcess = null;
+        console.log('[Preview] Pelayan PHP dan keturunannya telah dibasmi sepenuhnya.');
+    }
+});
+
+// =================================================================
 // ▼▼▼ VALIDATION HANDLERS (BETTER-SQLITE3 COMPATIBLE) ▼▼▼
 // =================================================================
 
@@ -2487,6 +2961,9 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         // FASA 1: DATABASE LAYER
         // ============================================================
         console.log("--- Menjana Database Layer ---");
+
+        const migrationUserResult = await generateLaravelUserMigration(fullSchema, outputDir);
+        if (!migrationUserResult.success) throw new Error(`Migrations Users: ${migrationUserResult.message}`);
         
         const migrationResult = await generateLaravelMigrations(fullSchema, outputDir);
         if (!migrationResult.success) throw new Error(`Migrations: ${migrationResult.message}`);
@@ -2590,6 +3067,7 @@ function createWindow() {
 	resizable: false, //Kunci saiz tetingkap
     webPreferences: {
       preload: path.join(__dirname, './preload.js'),
+      webviewTag: true
     },
   });
   
@@ -2653,7 +3131,7 @@ async function runComposerInstall(projectPath) {
       ? path.join(process.resourcesPath, 'app.asar.unpacked', 'bin')
       : path.join(__dirname, '../../bin'); // Keluar dari src/main
 
-    const phpPath = path.join(baseBinPath, 'win-php-8.x', 'php.exe');
+    const phpPath = path.join(baseBinPath, 'php-8.4.12', 'php.exe');
     const composerPath = path.join(baseBinPath, 'composer.phar');
 
     console.log(`Running composer in: ${projectPath}`);

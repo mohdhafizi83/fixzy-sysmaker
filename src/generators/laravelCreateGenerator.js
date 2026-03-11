@@ -20,7 +20,6 @@ async function generateSingleCreatePage(tableName, tableData, fullSchema, basePa
     const resourceFolder = options.resourceFolder || standardFolder;
 
     // --- LOGIC NAMING FIX ---
-    // Custom Module: CreatePendingRegistrations.php
     let pageClassName = `Create${modelNameSingular}`;
     if (options.customPageName) {
         pageClassName = `Create${options.customPageName}`;
@@ -28,21 +27,16 @@ async function generateSingleCreatePage(tableName, tableData, fullSchema, basePa
 
     let createContent = templateContent;
 
-    // Replacement Standard
+    // Replacement Standard (Ini sudah cukup untuk menetapkan nama Class dengan betul)
     if (options.customPageName) {
-    createContent = createContent.replace(/<<TABLE_NAME_SINGULAR>>/g, options.customPageName);    
-    }else{
-    createContent = createContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);    
+        createContent = createContent.replace(/<<TABLE_NAME_SINGULAR>>/g, options.customPageName);    
+    } else {
+        createContent = createContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);    
     }
     
     createContent = createContent.replace(/<<TABLE_NAME_PLURAL>>/g, resourceFolder); 
 
-    // Fix Class Name untuk Custom Module
-    if (options.customPageName) {
-        const oldClassDef = `class Create${modelNameSingular}`;
-        const newClassDef = `class ${pageClassName}`;
-        createContent = createContent.replace(new RegExp(oldClassDef, 'g'), newClassDef);
-    }
+    // [DIBUANG]: Blok "Fix Class Name untuk Custom Module" telah dipadam dari sini untuk mengelak bug double-replace.
 
     // ... (Logik lain kekal sama) ...
     if (tableData && tableData.column_grid_type === 'dynamic') {

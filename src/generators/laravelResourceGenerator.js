@@ -58,7 +58,7 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
     
     resourceContent = resourceContent.replace(/<<MODEL_NAME>>/g, modelName);
     
-const namespaceFolder = isCustomModule ? outputFolder : modelNamePlural;
+    const namespaceFolder = isCustomModule ? outputFolder : modelNamePlural;
     resourceContent = resourceContent.replace(/<<MODEL_NAME_PLURAL>>/g, namespaceFolder);
 
     // --- MULA: LOGIK PENAPISAN TENANT (TENANT SCOPING PROPERTY) ---
@@ -87,10 +87,10 @@ const namespaceFolder = isCustomModule ? outputFolder : modelNamePlural;
     resourceContent = resourceContent.replace('<<TENANT_SCOPING_PROPERTY>>', tenantScopingProperty);
     // --- TAMAT LOGIK PENAPISAN TENANT ---
 
-// --- MULA: LOGIK ELOQUENT QUERY KESELURUHAN (COUNT, OWNER & FILTER) ---
+    // --- MULA: LOGIK ELOQUENT QUERY KESELURUHAN (COUNT, OWNER & FILTER) ---
     const childrenWithCount = relationships.filter(r => r.parent_table_name === tableName && r.show_count_in_tv === 1);
     const hasWithCount = childrenWithCount.length > 0;
-    const isOwnerOnly = tableData.record_owner === 'current_user'; // Tangkap setting dari DB
+    const isOwnerOnly = tableData.record_owner === 'current_user'; 
 
     let filterQueryStr = '';
     if (isCustomModule && options.filterRules) {
@@ -131,9 +131,8 @@ const namespaceFolder = isCustomModule ? outputFolder : modelNamePlural;
         } catch (e) {}
     }
 
-const needsTenantScope = (isOneToMany && tenantFkField);
+    const needsTenantScope = (isOneToMany && tenantFkField);
 
-    // Jika mana-mana logik di atas ada, kita jana fungsi getEloquentQuery()
     if (hasWithCount || isOwnerOnly || filterQueryStr || needsTenantScope) {
         resourceContent = resourceContent.replace('<<IMPORT_SHOW_COUNT_IN_TV>>', 'use Illuminate\\Database\\Eloquent\\Builder;');
         
@@ -152,11 +151,9 @@ const needsTenantScope = (isOneToMany && tenantFkField);
             queryBody += `\n            ->where('created_by', auth()->id())`;
         }
 
-        // --- MULA: SUNTIKAN ONE-TO-MANY TENANCY ---
         if (needsTenantScope) {
             queryBody += `\n            ->where('${tenantFkField}', auth()->user()->${tenantFkField})`;
         }
-        // --- TAMAT SUNTIKAN ---
 
         if (filterQueryStr) {
             queryBody += filterQueryStr;
@@ -168,7 +165,6 @@ const needsTenantScope = (isOneToMany && tenantFkField);
         resourceContent = resourceContent.replace('<<IMPORT_SHOW_COUNT_IN_TV>>', '');
         resourceContent = resourceContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', '');
     }
-    // --- TAMAT LOGIK ELOQUENT QUERY ---
 
     // --- LOGIK: PRINT ACTION ---
     if (tableData.allow_print_view === 1) {
@@ -188,7 +184,7 @@ const needsTenantScope = (isOneToMany && tenantFkField);
     // --- LOGIK: EXPORT ---
     if (tableData.allow_csv_export === 1) {
         const importExport = `use App\\Filament\\Exports\\${modelName}Exporter;\nuse Filament\\Actions\\ExportAction;`;
-        const exportAction = `ExportAction::make()->exporter(${modelName}Exporter::class)\n                ->enableVisibleTableColumnsByDefault(),`;
+        const exportAction = `ExportAction::make()->exporter(${modelName}Exporter::class)\n                /*->enableVisibleTableColumnsByDefault()*/,`;
         resourceContent = resourceContent.replace('<<IMPORT_EXPORTDATA>>', importExport);
         resourceContent = resourceContent.replace('<<EXPORT_ACTION>>', exportAction);
     } else {
@@ -196,8 +192,7 @@ const needsTenantScope = (isOneToMany && tenantFkField);
         resourceContent = resourceContent.replace('<<EXPORT_ACTION>>', '');
     }
 
-// --- LOGIK: IMPORT ---
-    // Pastikan ciri import dihalang 100% jika ia adalah Custom Module (!isCustomModule)
+    // --- LOGIK: IMPORT ---
     if (tableData.allow_csv_import === 1 && !isCustomModule) {
         const importImport = `use App\\Filament\\Imports\\${modelName}Importer;\nuse Filament\\Actions\\ImportAction;`;
         const importAction = `ImportAction::make()->importer(${modelName}Importer::class),`;
@@ -208,11 +203,10 @@ const needsTenantScope = (isOneToMany && tenantFkField);
         resourceContent = resourceContent.replace('<<IMPORT_ACTION>>', '');
     }
 
-// --- LOGIK: RELATION MANAGERS (STANDARD & CUSTOM MODULE) ---
+    // --- LOGIK: RELATION MANAGERS (STANDARD & CUSTOM MODULE) ---
     let childrenForRelationManager = [];
 
     if (isCustomModule) {
-        // ▼▼▼ PEMBAIKAN: Baca dari tatasusunan (array) includedRelations untuk Custom Module ▼▼▼
         let includedRels = [];
         try {
             includedRels = typeof options.includedRelations === 'string' 
@@ -225,10 +219,9 @@ const needsTenantScope = (isOneToMany && tenantFkField);
         childrenForRelationManager = relationships.filter(r => 
             r.parent_table_name === tableName && 
             r.relationship_type !== 'one-to-one' &&
-            includedRels.includes(r.child_table_name) // Hanya masukkan jika namanya ada dalam array
+            includedRels.includes(r.child_table_name)
         );
     } else {
-        // Logik Standard/Default: Gunakan tetapan show_tab = 1
         childrenForRelationManager = relationships.filter(r => 
             r.parent_table_name === tableName && 
             r.show_tab === 1 && 
@@ -237,7 +230,6 @@ const needsTenantScope = (isOneToMany && tenantFkField);
     }
 
     if (childrenForRelationManager.length > 0) {
-        // PENTING: Untuk Custom Module, kita nak rujuk ke folder asal base table!
         const baseTableData = allTables[tableName];
         const baseNameSource = (baseTableData && baseTableData.module_name && baseTableData.module_name.trim() !== '') 
                         ? baseTableData.module_name 
@@ -269,14 +261,12 @@ const needsTenantScope = (isOneToMany && tenantFkField);
         resourceContent = resourceContent.replace('<<RELATION_RELATIONMANAGERS>>', '');
     }
 
-// --- LOGIK: MENU ---
-    // KITA SATUKAN LOGIK UNTUK KEDUA-DUA DEFAULT & CUSTOM MODULE
+    // --- LOGIK: MENU ---
     let menuItem = null;
     let menuGroup = null;
 
     for (const topLevelItem of unified_menu) {
         if (topLevelItem.type === 'group') {
-            // Guna '==' untuk keselamatan jika ID berbeza jenis (String vs Int)
             const foundItem = topLevelItem.items.find(item => 
                 isCustomModule ? item.module_id == options.moduleId : item.table_id == tableData.table_id
             );
@@ -293,7 +283,7 @@ const needsTenantScope = (isOneToMany && tenantFkField);
             const sortFunction = `\n    public static function getNavigationSort(): int\n    {\n        return ${menuItem.item_order};\n    }`;
             resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONGROUP>>', groupFunction);
             resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONSORT>>', sortFunction);
-            resourceContent = resourceContent.replace('<<SHORTCUT_MENU_ORDER>>', ''); // Buang shortcut
+            resourceContent = resourceContent.replace('<<SHORTCUT_MENU_ORDER>>', '');
         } else { 
             const sortProperty = `protected static ?int $navigationSort = ${menuItem.item_order};`;
             resourceContent = resourceContent.replace('<<SHORTCUT_MENU_ORDER>>', sortProperty);
@@ -316,8 +306,12 @@ const needsTenantScope = (isOneToMany && tenantFkField);
         resourceContent = resourceContent.replace('<<RELATIONS_AUDIT>>', '');
     }
 
-    resourceContent = resourceContent.replace('<<MODEL_NAME_FLATCASE>>', toFlatCase(nameSource));
-
+    // --- LOGIK: SET SLUG (GABUNGAN STANDARD & CUSTOM MODULE) ---
+    const finalSlug = isCustomModule 
+        ? toFlatCase(options.customModuleName || resourceFileName) 
+        : toFlatCase(nameSource);
+        
+    resourceContent = resourceContent.replace('<<MODEL_NAME_FLATCASE>>', finalSlug);
 
     // ========================================================================
     // 4. PENGUBAHSUAIAN KHAS UNTUK CUSTOM VIEW
@@ -345,20 +339,12 @@ const needsTenantScope = (isOneToMany && tenantFkField);
         resourceContent = resourceContent.replace(new RegExp(`\\b${standardCreatePage}\\b`, 'g'), customCreatePage);
         resourceContent = resourceContent.replace(new RegExp(`\\b${standardEditPage}\\b`, 'g'), customEditPage);
 
-        // 4. Inject Slug
-        const slug = toFlatCase(options.customModuleName || resourceFileName);
-        resourceContent = resourceContent.replace('{', `{\n    protected static ?string $slug = '${slug}';`);
-
-        // 5. Inject Menu Custom 
+        // 4. Inject Menu Custom Icon
         if (options.menuIcon) {
             resourceContent = resourceContent.replace(/icon\s*=\s*'.*?'/, `icon = '${options.menuIcon}'`);
         }
-
-        // 6. Inject Filter Query & Owner Logic 
-        // (Telah dipindahkan ke logik utama di bahagian atas)
-        
     }
-    // (Abaikan custom query placeholder kerana ia tidak lagi diperlukan)
+    
     resourceContent = resourceContent.replace('<<CUSTOM_QUERY_PLACEHOLDER>>', '');
 
     // ========================================================================

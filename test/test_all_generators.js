@@ -12,6 +12,7 @@ const { generateAdminPanelProvider } = require('../src/generators/laravelAdminPa
 const { 
     generateFilamentModels, 
     generateFilamentUserModel, 
+    generateLaravelUserMigration,
     generateLaravelMigrations, 
     generateLaravelFactories, 
     generateLaravelDatabaseSeeder 
@@ -68,11 +69,21 @@ const { generateDeploymentGuidePage } = require('../src/generators/laravelDocsGe
 // =================================================================
 const TEST_OUTPUT_DIR = path.join(__dirname, 'output_full_app');
 
-if (fs.existsSync(TEST_OUTPUT_DIR)) {
-    console.log("🧹 Membersihkan folder output lama...");
-    fs.rmSync(TEST_OUTPUT_DIR, { recursive: true, force: true });
+// Jika folder belum wujud, kita cipta
+if (!fs.existsSync(TEST_OUTPUT_DIR)) {
+    fs.mkdirSync(TEST_OUTPUT_DIR, { recursive: true });
+} else {
+    console.log("🧹 Membersihkan isi folder output lama...");
+    // Jika sudah wujud, kita hanya kosongkan isinya tanpa memadam folder root
+    fs.readdirSync(TEST_OUTPUT_DIR).forEach(file => {
+        const filePath = path.join(TEST_OUTPUT_DIR, file);
+        try {
+            fs.rmSync(filePath, { recursive: true, force: true });
+        } catch (err) {
+            console.warn(`[Amaran] Gagal memadam fail/folder lama: ${file}`);
+        }
+    });
 }
-fs.mkdirSync(TEST_OUTPUT_DIR, { recursive: true });
 
 
 // =================================================================
@@ -128,6 +139,7 @@ async function runFullTest() {
         // ============================================================
         const tasks = [
             // 1. Database Layer
+            { name: 'Users Migrations', func: generateLaravelUserMigration },
             { name: 'Migrations', func: generateLaravelMigrations },
             { name: 'Models', func: generateFilamentModels },
             { name: 'User Model', func: generateFilamentUserModel },

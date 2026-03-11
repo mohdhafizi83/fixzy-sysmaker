@@ -20,8 +20,6 @@ async function generateSingleEditPage(tableName, tableData, fullSchema, basePath
     const resourceFolder = options.resourceFolder || standardFolder;
 
     // --- LOGIC NAMING FIX ---
-    // Custom Module: EditPendingRegistrations.php
-    // Standard: EditStudentInfo.php
     let pageClassName = `Edit${modelNameSingular}`;
     if (options.customPageName) {
         pageClassName = `Edit${options.customPageName}`;
@@ -29,24 +27,16 @@ async function generateSingleEditPage(tableName, tableData, fullSchema, basePath
 
     let editContent = templateContent;
 
-    // Standard Replacements
+    // Standard Replacements (Ini sudah cukup untuk menetapkan nama Class dengan betul)
     if (options.customPageName) {
-    editContent = editContent.replace(/<<TABLE_NAME_SINGULAR>>/g, options.customPageName);    
-    }else{
-    editContent = editContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);    
+        editContent = editContent.replace(/<<TABLE_NAME_SINGULAR>>/g, options.customPageName);    
+    } else {
+        editContent = editContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);    
     }
     
     editContent = editContent.replace(/<<TABLE_NAME_PLURAL>>/g, resourceFolder);
     
-    // Fix Class Name untuk Custom Module
-    if (options.customPageName) {
-        // Regex untuk menggantikan nama class yang dijana oleh placeholder <<TABLE_NAME_SINGULAR>>
-        // Template: class Edit<<TABLE_NAME_SINGULAR>> extends EditRecord
-        // Selepas replace atas: class EditStudentInfo extends EditRecord
-        const oldClassDef = `class Edit${modelNameSingular}`;
-        const newClassDef = `class ${pageClassName}`;
-        editContent = editContent.replace(new RegExp(oldClassDef, 'g'), newClassDef);
-    }
+    // [DIBUANG]: Blok "Fix Class Name untuk Custom Module" telah dipadam dari sini untuk mengelak bug double-replace.
 
     // ... (Logik Primary Key, Unique, etc. kekal sama) ...
     const primaryKeyField = Object.values(tableData.fields).find(f => f.primary_key === 1);

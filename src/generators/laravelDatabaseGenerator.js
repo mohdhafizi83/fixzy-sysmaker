@@ -525,6 +525,91 @@ content += `        });\n    }\n\n    public function down(): void\n    {\n     
     } catch (error) { return { success: false, message: error.message }; }
 }
 
+/**
+ * Menjana fail Migrasi khusus untuk jadual 'users'.
+ * Ia menggabungkan lajur asas Laravel dengan lajur tersuai FiziSysMaker.
+ */
+async function generateLaravelUserMigration(fullSchema, basePath) {
+    try {
+        const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
+        const migrationsPath = path.join(basePath, 'database', 'migrations');
+        if (!fs.existsSync(migrationsPath)) fs.mkdirSync(migrationsPath, { recursive: true });
+
+        // Sila pastikan laluan templat ini tepat dengan struktur folder anda
+        const templateContent = readTemplate('database/migrations/create_users_table.template');
+        let content = templateContent;
+
+        let customFieldsCode = '';
+        const userData = tables['users'];
+
+        if (userData && userData.fields) {
+            // Senarai lajur yang sudah pun ada dalam template asas Laravel. Kita abaikan.
+            const standardFields = ['id', 'name', 'email', 'email_verified_at', 'password', 'remember_token', 'created_at', 'updated_at', 'deleted_at'];
+            
+            const fieldsArr = Object.values(userData.fields).sort((a, b) => (a.field_order || 999) - (b.field_order || 999));
+
+            fieldsArr.forEach(field => {
+                // Langkau jika ia adalah lajur asas
+                if (standardFields.includes(field.field_name)) return;
+
+                const isForeignKey = relationships.some(r => r.child_table_name === 'users' && r.fk_child_field === field.field_name);
+                let line = '';
+                const upperType = field.data_type ? field.data_type.toUpperCase() : 'VARCHAR';
+
+                // Logik janaan padanan jenis data (sama seperti migrasi biasa)
+                if (isForeignKey && ['INT', 'INTEGER', 'BIGINT'].includes(upperType)) {
+                    line = `            $table->foreignId('${field.field_name}')`;
+                } else if (['VARCHAR', 'STRING', 'CHAR'].includes(upperType)) {
+                    const method = upperType === 'CHAR' ? 'char' : 'string';
+                    const lengthParam = (field.length && parseInt(field.length) > 0) ? `, ${field.length}` : '';
+                    line = `            $table->${method}('${field.field_name}'${lengthParam})`;
+                } else {
+                    line = `            ${getFieldDefinitionForMigration(field)}`;
+                }
+
+                // Logik Nullable
+                if (field.not_null !== undefined && field.not_null !== null) { 
+                    if (Number(field.not_null) === 0) line += `->nullable()`; 
+                } else { 
+                    if (field.is_nullable === 1) line += `->nullable()`; 
+                }
+                
+                // Logik Default Value
+                if (field.default_value) { 
+                    if (field.default_value.toUpperCase() === 'CURRENT_TIMESTAMP') line += `->useCurrent()`; 
+                    else line += `->default('${field.default_value}')`; 
+                }
+                
+                // Logik Unique
+                if (field.is_unique === 1 || field.unique === 1) line += `->unique()`;
+
+                customFieldsCode += `${line};\n`;
+            });
+        }
+
+        // Gantikan Placeholder Lajur Tersuai
+        content = content.replace('<<CUSTOM_FIELDS>>', customFieldsCode ? customFieldsCode : '');
+
+        // Gantikan Placeholder Soft Deletes
+        if (projectSettings && projectSettings.data_delete_type === 'soft') {
+            content = content.replace('<<SOFT_DELETES>>', '            $table->softDeletes();');
+        } else {
+            content = content.replace('<<SOFT_DELETES>>', '');
+        }
+
+        // Buang barisan kosong (jika ada placeholder yang tiada isi)
+        content = content.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
+
+        // Tulis fail dengan nama rasmi migrasi Laravel supaya ia kekal berjalan paling awal
+        const fileName = '0001_01_01_000000_create_users_table.php';
+        fs.writeFileSync(path.join(migrationsPath, fileName), content);
+
+        return { success: true, message: 'User Migration generated successfully.' };
+    } catch (error) { 
+        return { success: false, message: error.message }; 
+    }
+}
+
 async function generateLaravelFactories(fullSchema, basePath) {
     try {
         const { database: { table: tables, relationships } } = fullSchema;
@@ -566,6 +651,7 @@ async function generateLaravelDatabaseSeeder(fullSchema, basePath) {
         let sortedTables = [];
         let visited = new Set();
         let tempVisited = new Set();
+        
         const visit = (table) => {
             if (tempVisited.has(table)) return; 
             if (visited.has(table)) return;
@@ -580,43 +666,80 @@ async function generateLaravelDatabaseSeeder(fullSchema, basePath) {
 
         let importStatements = [`use App\\Models\\User;`];
         let runContent = [];
-        runContent.push(`        // 1. Create Test User`);
-        runContent.push(`        User::factory()->create(['name' => 'Test User', 'email' => 'admin@admin.com', 'password' => bcrypt('password')]);`);
+        
+        runContent.push(`        // 1. Cipta Pengguna Ujian (Super Admin)`);
+        runContent.push(`        $user = User::firstOrCreate(`);
+        runContent.push(`            ['email' => 'admin@admin.com'],`);
+        runContent.push(`            ['name' => 'Super Admin', 'password' => bcrypt('password')]`);
+        runContent.push(`        );`);
 
-sortedTables.forEach(tableName => {
-            const modelName = getModelClassName(tableName, tables); // UPDATE: Guna Module Name
-            importStatements.push(`use App\\Models\\${modelName};`);
+        // Jika modul Authorization (Spatie/Filament Shield) diaktifkan, tugaskan peranan super_admin
+        if (projectSettings.module_authorization === 1) {
+            runContent.push(`\n        // Tugaskan Peranan (Role) Super Admin`);
+            runContent.push(`        $role = \\Spatie\\Permission\\Models\\Role::firstOrCreate([`);
+            runContent.push(`            'name' => 'super_admin',`);
+            runContent.push(`            'guard_name' => 'web'`);
+            runContent.push(`        ]);`);
+            runContent.push(`        $user->assignRole($role);\n`);
+        }
+
+        sortedTables.forEach(tableName => {
+            const modelName = getModelClassName(tableName, tables);
             
-            const tableData = tables[tableName];
-            // Skip jika tiada factory (patut ada jika ikut logic atas)
+            // Elakkan import duplikat
+            if (!importStatements.includes(`use App\\Models\\${modelName};`)) {
+                importStatements.push(`use App\\Models\\${modelName};`);
+            }
+            
             const overrides = [];
             const myRelationships = relationships.filter(r => r.child_table_name === tableName);
             myRelationships.forEach(rel => {
-                const parentModel = getModelClassName(rel.parent_table_name, tables); // UPDATE
+                const parentModel = getModelClassName(rel.parent_table_name, tables);
                 const fkField = rel.fk_child_field;
-                if (rel.parent_table_name === 'users') overrides.push(`            '${fkField}' => 1`);
-                else overrides.push(`            '${fkField}' => ${parentModel}::inRandomOrder()->first()?->id ?? null`);
+                if (rel.parent_table_name === 'users') {
+                    overrides.push(`                    '${fkField}' => 1`);
+                } else {
+                    overrides.push(`                    '${fkField}' => ${parentModel}::inRandomOrder()->first()?->id ?? null`);
+                }
             });
-            // PEMBAIKAN: Tukar \\n kepada \n
-            runContent.push(`        ${modelName}::factory(20)->create([\n${overrides.join(',\n')}\n        ]);`);
+
+            // MULA PEMBAIKAN KESTABILAN (TRY-CATCH LOOP)
+            runContent.push(`\n        // Seed ${modelName} (Kalis Ralat Unique Constraint)`);
+            runContent.push(`        for ($i = 0; $i < 20; $i++) {`);
+            runContent.push(`            try {`);
+            
+            if (overrides.length > 0) {
+                runContent.push(`                ${modelName}::factory()->create([\n${overrides.join(',\n')}\n                ]);`);
+            } else {
+                runContent.push(`                ${modelName}::factory()->create();`);
+            }
+            
+            runContent.push(`            } catch (\\Exception $e) {`);
+            runContent.push(`                // Abaikan jika data duplikat atau langgar Unique Constraint`);
+            runContent.push(`            }`);
+            runContent.push(`        }`);
+            // TAMAT PEMBAIKAN KESTABILAN
         });
 
         if (projectSettings.module_authorization === 1) {
-            // PEMBAIKAN: Tukar \\n kepada \n
             runContent.push(`\n        // Filament Shield Security`);
             runContent.push(`        $this->call(ShieldSeeder::class);`);
         }
-        // PEMBAIKAN: Tukar join('\\n') kepada join('\n')
+
         const content = `<?php\nnamespace Database\\Seeders;\nuse Illuminate\\Database\\Seeder;\n${importStatements.join('\n')}\n\nclass DatabaseSeeder extends Seeder {\n    public function run(): void {\n${runContent.join('\n')}\n    }\n}`;
         fs.writeFileSync(path.join(seedersPath, 'DatabaseSeeder.php'), content);
+        
         return { success: true, message: 'DatabaseSeeder generated successfully.' };
-    } catch (error) { return { success: false, message: error.message }; }
+    } catch (error) { 
+        return { success: false, message: error.message }; 
+    }
 }
 
 // Export functions untuk digunakan di main.js
 module.exports = {
     generateFilamentModels,
     generateFilamentUserModel,
+    generateLaravelUserMigration,
     generateLaravelMigrations,
     generateLaravelFactories,
     generateLaravelDatabaseSeeder

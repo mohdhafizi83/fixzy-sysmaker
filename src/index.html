@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-	<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com;">
+	<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; frame-src 'self' http://127.0.0.1:* http://localhost:*;">
     
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -74,6 +74,9 @@
             </div>
         </div>
         <button class="btn hidden" id="btn-save-all"><i class="fas fa-save"></i> Save Project</button>
+        <button id="btn-show-preview" class="btn btn-success" style="margin-right: 10px;">
+    <i class="fas fa-play-circle"></i> Show Preview
+</button>
         <button class="btn btn-primary" id="app-generate_app" name="app-generate_app"><i class="fas fa-robot"></i> Generate app</button>
         <button class="btn" id="app-view_files" name="app-view_files"><i class="fas fa-folder-open"></i> View files</button>
         <button class="btn" id="config-btn"  title="Configuration">
@@ -2835,8 +2838,15 @@
 </div>
 
 <div id="loading-overlay" class="loading-overlay-hidden">
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
         <div class="loader"></div>
+        <div id="loading-text" style="color: black; margin-top: 20px; font-size: 1.1rem; text-align: center;">Loading...</div>
+        <div id="loading-progress-container" style="display: none; width: 60%; max-width: 500px; background-color: #334155; border-radius: 10px; overflow: hidden; height: 12px; margin-top: 15px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);">
+            <div id="loading-progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); transition: width 0.1s ease-out;"></div>
+        </div>
+        <div id="loading-progress-text" style="display: none; color: black; font-weight: bold; margin-top: 8px; font-size: 0.95rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">0%</div>
     </div>
+</div>
 
 <!-- ▼▼▼ TEMPLATE UNTUK LOGIC BUILDER (Diletakkan di hujung body) ▼▼▼ -->
 <template id="logic-builder-template">
@@ -3476,6 +3486,35 @@
         <div class="modal-footer">
             <button class="btn btn-secondary" id="tenancy-wizard-cancel">Cancel</button>
             <button class="btn btn-primary" id="tenancy-wizard-save">Save & Apply Scheme</button>
+        </div>
+    </div>
+</div>
+
+<div id="app-preview-modal" class="modal-overlay hidden" style="z-index: 9998;">
+    <div class="modal-content" style="width: 95%; height: 95%; max-width: none; display: flex; flex-direction: column; padding: 0; overflow: hidden; background-color: #f1f5f9;">
+        
+        <div class="modal-header" style="padding: 15px 20px; background: white; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 15px;">
+                <i class="fas fa-desktop" style="color: #3b82f6;"></i> Live Preview
+                <span style="font-size: 0.8rem; color: #64748b; font-weight: normal; background: #f1f5f9; padding: 4px 10px; border-radius: 20px;">
+                    <i class="fas fa-key"></i> admin@admin.com &nbsp;|&nbsp; password
+                </span>
+            </h3>
+            <div style="display: flex; gap: 10px;">
+                <button id="app-preview-external-btn" class="btn btn-secondary" style="padding: 5px 12px;" title="Buka di Browser Chrome/Edge"><i class="fas fa-external-link-alt"></i></button>
+                <button id="app-preview-refresh-btn" class="btn btn-primary" style="padding: 5px 12px;" title="Muat Semula (Refresh)"><i class="fas fa-sync-alt"></i></button>
+                <button id="app-preview-modal-close" class="btn" style="padding: 5px 12px; background: #ef4444; color: white;" title="Tutup Preview"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        
+<div class="modal-body" style="flex: 1; padding: 0; display: flex; flex-direction: column;">
+            
+            <div id="app-preview-loading" style="display: flex; flex: 1; justify-content: center; align-items: center; color: #94a3b8;">
+                <i class="fas fa-circle-notch fa-spin fa-3x"></i>
+            </div>
+            
+            <webview id="app-preview-iframe" src="" style="flex: 1; width: 100%; border: none; display: none; background: white;"></webview>
+            
         </div>
     </div>
 </div>

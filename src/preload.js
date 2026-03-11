@@ -43,7 +43,8 @@ updateIndividualMenuOrder: (data) => ipcRenderer.invoke('menu:update-individual-
   importSqlText: (data) => ipcRenderer.invoke('sql:import-text', data),
   getInitialProjectStatus: (projectId) => ipcRenderer.invoke('project:get-initial-status', projectId),
   deleteProjectSchema: (projectId) => ipcRenderer.invoke('project:delete-schema', projectId),
-  onShowOverlay: (callback) => ipcRenderer.on('show-overlay', (event) => callback()),
+  onShowOverlay: (callback) => ipcRenderer.on('show-overlay', (event, data) => callback(data)),
+  onHideOverlay: (callback) => ipcRenderer.on('hide-overlay', () => callback()),
   parseCalculationQuery: (sql) => ipcRenderer.invoke('sql:parse-calculation-query', sql),
 
 // --- CUSTOM MODULE API ---
@@ -66,6 +67,11 @@ updateIndividualMenuOrder: (data) => ipcRenderer.invoke('menu:update-individual-
 // =================================================================
 // Generator functions will be put here
 // =================================================================  
+    startPreview: (projectPath) => ipcRenderer.invoke('preview:start', projectPath),
+    stopPreview: () => ipcRenderer.invoke('preview:stop'),
+    // API untuk Instant Preview
+    runInstantPreview: () => ipcRenderer.invoke('preview:instant-run'),
+    stopPreviewServer: () => ipcRenderer.send('stop-preview-server'),
     generateApp: () => ipcRenderer.invoke('generate-app'),
     openFolder: (path) => ipcRenderer.send('open-folder', path),
 	runComposer: (projectPath) => ipcRenderer.invoke('run-composer', projectPath)

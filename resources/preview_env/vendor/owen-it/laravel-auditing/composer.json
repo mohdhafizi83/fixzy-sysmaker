@@ -1,0 +1,80 @@
+{
+    "name": "owen-it/laravel-auditing",
+    "description": "Audit changes of your Eloquent models in Laravel",
+    "keywords": [
+        "accountability",
+        "audit",
+        "auditing",
+        "changes",
+        "eloquent",
+        "history",
+        "log",
+        "logging",
+        "observer",
+        "laravel",
+        "lumen",
+        "record",
+        "revision",
+        "tracking"
+    ],
+    "homepage": "https://laravel-auditing.com",
+    "type": "package",
+    "license": "MIT",
+    "support": {
+        "issues": "https://github.com/owen-it/laravel-auditing/issues",
+        "source": "https://github.com/owen-it/laravel-auditing"
+    },
+    "authors": [
+        {
+            "name": "Antério Vieira",
+            "email": "anteriovieira@gmail.com"
+        },
+        {
+            "name": "Raphael França",
+            "email": "raphaelfrancabsb@gmail.com"
+        },
+        {
+            "name": "Morten D. Hansen",
+            "email": "morten@visia.dk"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "ext-json": "*",
+        "illuminate/console": "^11.0|^12.0",
+        "illuminate/database": "^11.0|^12.0",
+        "illuminate/filesystem": "^11.0|^12.0"
+    },
+    "require-dev": {
+        "mockery/mockery": "^1.5.1",
+        "orchestra/testbench": "^9.0|^10.0",
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "OwenIt\\Auditing\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "OwenIt\\Auditing\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "v14-dev"
+        },
+        "laravel": {
+            "providers": [
+                "OwenIt\\Auditing\\AuditingServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "format": "composer require --dev laravel/pint --quiet && pint --config .pint.json && composer remove --dev laravel/pint --no-update",
+        "analyse": "composer require --dev larastan/larastan --quiet && phpstan analyse && composer remove --dev larastan/larastan --no-update"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

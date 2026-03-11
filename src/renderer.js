@@ -297,6 +297,92 @@ function initializeFullscreenHandlers() {
 // Inisialisasi Aplikasi
 document.addEventListener('DOMContentLoaded', async () => {
 
+// FUNGSI BUTANG SHOW PREVIEW
+const btnShowPreview = document.getElementById('btn-show-preview');
+if (btnShowPreview) {
+    btnShowPreview.addEventListener('click', async () => {
+        const overlay = document.getElementById('loading-overlay');
+        const loadingText = overlay ? overlay.querySelector('.loading-text') || { textContent: '' } : null;
+
+        if (overlay) overlay.classList.remove('loading-overlay-hidden');
+        if (loadingText) loadingText.textContent = "Menjana skrip dan menyediakan Persekitaran Pralihat...";
+
+        // Panggil API Instant Preview dari main.js
+        const result = await window.electronAPI.runInstantPreview();
+
+        if (overlay) overlay.classList.add('loading-overlay-hidden');
+        if (loadingText) loadingText.textContent = "Loading...";
+
+        if (result.success) {
+            // =========================================================
+            // MULA: LOGIK MODAL IFRAME (Gantikan pelayar luar)
+            // =========================================================
+            const previewModal = document.getElementById('app-preview-modal');
+            const previewIframe = document.getElementById('app-preview-iframe');
+            const previewLoading = document.getElementById('app-preview-loading');
+            const externalBtn = document.getElementById('app-preview-external-btn');
+            const refreshBtn = document.getElementById('app-preview-refresh-btn');
+            const closeBtn = document.getElementById('app-preview-modal-close');
+
+            if (previewModal && previewIframe) {
+                // Paparkan modal gergasi dan tunjuk animasi loading putih
+                previewModal.classList.remove('hidden');
+                previewIframe.style.display = 'none';
+                if (previewLoading) previewLoading.style.display = 'flex';
+                
+// Masukkan URL localhost ke dalam webview
+                previewIframe.src = result.url;
+
+// Buang loading spinner apabila webview selesai dimuatkan sepenuhnya
+                previewIframe.addEventListener('did-stop-loading', () => {
+                    if (previewLoading) previewLoading.style.display = 'none';
+                    // TUKAR 'block' KEPADA 'flex' DI SINI
+                    previewIframe.style.display = 'flex'; 
+                });
+
+                if (externalBtn) {
+                    externalBtn.onclick = () => window.electronAPI.openUrl(result.url);
+                }
+                
+                if (refreshBtn) {
+                    refreshBtn.onclick = () => {
+                        previewIframe.style.display = 'none';
+                        if (previewLoading) previewLoading.style.display = 'flex';
+                        // [UBAH SUAI 2]: Webview ada fungsi .reload() yang sebenar!
+                        previewIframe.reload(); 
+                    };
+                }
+
+                    if (closeBtn) {
+                    closeBtn.onclick = () => {
+                        // 1. Sembunyikan modal
+                        previewModal.classList.add('hidden');
+                        
+                        // 2. Hentikan webview daripada berjalan di latar belakang
+                        previewIframe.src = "about:blank"; 
+                        
+                        // 3. BUNUH PELAYAN PHP!
+                        if (window.electronAPI.stopPreviewServer) {
+                            window.electronAPI.stopPreviewServer();
+                        }
+                    };
+                }
+            } else {
+                console.error("Elemen Modal Iframe tidak dijumpai di index.html!");
+            }
+            // =========================================================
+            // TAMAT: LOGIK MODAL IFRAME
+            // =========================================================
+            
+        } else {
+            showCustomDialog({
+                title: "Ralat Pralihat",
+                message: `Gagal memulakan pelayan: ${result.message}`
+            });
+        }
+    });
+}
+    
 // Jaring keselamatan untuk menghalang kehilangan data semasa reload/tutup
 window.addEventListener('beforeunload', (event) => {
     // Periksa jika ada sebarang perubahan yang sedang menunggu di dalam queue
@@ -545,13 +631,48 @@ const generateAppBtn = document.getElementById('app-generate_app');
     await loadProjectData(project);
 	initializeWorkflowBuilder();
     initializeFullscreenHandlers();
-    // Pasang pendengar untuk mesej 'show-overlay' dari proses utama
+
+// Pasang pendengar untuk mesej 'show-overlay' dari proses utama
     if (window.electronAPI && typeof window.electronAPI.onShowOverlay === 'function') {
-        window.electronAPI.onShowOverlay(() => {
+        window.electronAPI.onShowOverlay((data) => {
             const overlay = document.getElementById('loading-overlay');
             if (overlay) {
                 overlay.classList.remove('loading-overlay-hidden');
+                
+                const textEl = document.getElementById('loading-text');
+                const progContainer = document.getElementById('loading-progress-container');
+                const progFill = document.getElementById('loading-progress-fill');
+                const progText = document.getElementById('loading-progress-text'); // Tangkap elemen teks peratusan
+                
+                // Kemas kini teks dinamik
+                if (textEl) {
+                    textEl.textContent = (data && data.message) ? data.message : "Loading...";
+                }
+                
+                // Papar dan gerakkan Progress Bar serta Teks Peratusan
+                if (data && data.progress !== undefined && data.progress !== null) {
+                    if (progContainer) progContainer.style.display = 'block';
+                    if (progFill) progFill.style.width = data.progress + '%';
+                    
+                    if (progText) {
+                        progText.style.display = 'block';
+                        progText.textContent = data.progress + '%'; // Masukkan nilai peratusan (cth: "45%")
+                    }
+                } else {
+                    // Sembunyikan bar dan teks peratusan jika operasi biasa
+                    if (progContainer) progContainer.style.display = 'none';
+                    if (progFill) progFill.style.width = '0%';
+                    if (progText) progText.style.display = 'none';
+                }
             }
+        });
+    }
+    
+    // Pasang pendengar untuk menutup overlay
+    if (window.electronAPI && typeof window.electronAPI.onHideOverlay === 'function') {
+        window.electronAPI.onHideOverlay(() => {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) overlay.classList.add('loading-overlay-hidden');
         });
     }
     
@@ -569,15 +690,57 @@ const generateAppBtn = document.getElementById('app-generate_app');
 });
 
 async function finalizeGeneratedApp(pathKeProjekBaharu) {
-  // Paparkan status kepada pengguna, cth: "Memasang dependensi..."
-  
-  const success = await window.electronAPI.runComposer(pathKeProjekBaharu);
-  
-  if (success) {
-    // Paparkan mesej kejayaan
-    console.log("Semua dependensi berjaya dipasang!");
-  } else {
-    // Paparkan mesej ralat
-    console.error("Gagal memasang dependensi PHP.");
-  }
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) overlay.classList.remove('loading-overlay-hidden');
+    
+    // Tukar teks loading supaya pengguna tahu status terkini
+    const loadingText = overlay.querySelector('.loading-text') || { textContent: '' };
+    loadingText.textContent = "Memasang dependensi Composer (Ini mungkin mengambil masa)...";
+    
+    const success = await window.electronAPI.runComposer(pathKeProjekBaharu);
+    
+    if (success) {
+        if (overlay) overlay.classList.add('loading-overlay-hidden');
+        loadingText.textContent = "Loading..."; // Reset teks
+        
+        // Tanya pengguna jika mereka mahu terus membuat paparan (Preview)
+        const isPreview = await showCustomDialog({
+            title: "Janaan Berjaya!",
+            message: "Aplikasi Filament anda telah siap dibina berserta dependensi.\n\nAdakah anda mahu melancarkan 'Preview Server' sekarang untuk menguji aplikasi ini?",
+            showCancelButton: true
+        });
+
+        if (isPreview) {
+            if (overlay) {
+                overlay.classList.remove('loading-overlay-hidden');
+                loadingText.textContent = "Menyediakan Pangkalan Data & Menghidupkan Pelayan...";
+            }
+            
+            const serverResult = await window.electronAPI.startPreview(pathKeProjekBaharu);
+            
+            if (overlay) overlay.classList.add('loading-overlay-hidden');
+            loadingText.textContent = "Loading...";
+
+            if (serverResult.success) {
+                // Tunjuk mesej beritahu kredensial log masuk
+                await showCustomDialog({
+                    title: "Server Sedang Berjalan",
+                    message: "Aplikasi anda akan dibuka di pelayar (browser) sekarang.\n\nSila log masuk menggunakan:\nE-mel: admin@admin.com\nKatalaluan: password",
+                });
+                // Buka url di Chrome/Edge pengguna
+                window.electronAPI.openUrl(serverResult.url);
+            } else {
+                showCustomDialog({
+                    title: "Ralat Server",
+                    message: `Gagal menghidupkan preview: ${serverResult.message}`
+                });
+            }
+        }
+    } else {
+        if (overlay) overlay.classList.add('loading-overlay-hidden');
+        showCustomDialog({
+            title: "Ralat Composer",
+            message: "Gagal memasang dependensi. Sila semak konsol untuk maklumat lanjut."
+        });
+    }
 }
