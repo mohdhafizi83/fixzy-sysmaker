@@ -934,7 +934,7 @@ ipcMain.handle('project:update', async (event, data) => {
             'allow_server_status', 'admins_group_access', 'allow_table_view_sql',
             'copy_children_async', 'allow_pwa_install', 'url', 'project_hook_workflow', 'stack_base', 'stack_database',
 			'stack_theme', 'module_auth_email_2fa', 'module_auth_email_captcha', 'module_auth_ldap',
-            'module_auth_google_sso', 'module_authorization', 'module_log_audit', 'data_delete_type', 'module_fake_data', 'tenancy_type', 'tenant_table'
+            'module_auth_google_sso', 'module_authorization', 'module_log_audit', 'data_delete_type', 'module_fake_data', 'tenancy_type', 'tenant_table', 'debug_mode'
         ];
 
         const setClause = Object.keys(fieldsToUpdate)
@@ -2117,34 +2117,64 @@ ipcMain.handle('preview:instant-run', async (event) => {
             const fullSchema = await getFullProjectSchema(activeProject.project_id);
             if (!fullSchema) return resolve({ success: false, message: "Gagal mendapatkan schema projek." });
             
-// --- MULA: KEMAS KINI NAMA PROJEK DI DALAM .ENV ---
+// --- MULA: KEMAS KINI NAMA PROJEK & TETAPAN DI DALAM .ENV ---
             const envPath = path.join(previewPath, '.env');
             let envChanged = false;
             
             if (fs.existsSync(envPath)) {
+                // envContent diisytiharkan di sini (dalam skop 'if')
                 let envContent = fs.readFileSync(envPath, 'utf8');
+                
+                // 1. Logik Kemas Kini APP_NAME
                 const rawAppName = activeProject.app_title || 'FiziSysMakerApp';
-                
-                // Jika nama ada jarak (space), balut dengan double quotes. Jika tidak, biarkan biasa.
                 const safeAppName = rawAppName.includes(' ') ? `"${rawAppName}"` : rawAppName;
-                
-                // Ekstrak nama semasa dari .env untuk perbandingan
                 const currentAppNameMatch = envContent.match(/^APP_NAME=(.*)$/m);
                 const currentAppName = currentAppNameMatch ? currentAppNameMatch[1] : null;
 
-                // Jika nama berbeza, lakukan proses ganti (replace)
                 if (currentAppName !== safeAppName) {
                     envContent = envContent.replace(/^APP_NAME=.*$/m, `APP_NAME=${safeAppName}`);
-                    
-                    // Kemas kini juga VITE_APP_NAME supaya nama di tab browser berubah
                     envContent = envContent.replace(/^VITE_APP_NAME=.*$/m, `VITE_APP_NAME=${safeAppName}`);
-                    
-                    fs.writeFileSync(envPath, envContent, 'utf8');
                     envChanged = true;
-                    console.log(`[Preview] APP_NAME di dalam .env telah dikemas kini kepada: ${safeAppName}`);
+                    console.log(`[Preview] APP_NAME dikemas kini kepada: ${safeAppName}`);
+                }
+
+                // 2. Logik Kemas Kini APP_DEBUG & DEBUGBAR_ENABLED
+                // Menggunakan activeProject.debug_mode (dari Checkbox UI)
+                const isDebugEnabled = activeProject.debug_mode == 1 || activeProject.debug_mode === 'true';
+                const targetDebugMode = isDebugEnabled ? 'true' : 'false'; 
+                
+                // A. Kemas kini APP_DEBUG (Ralat terperinci)
+                const currentAppDebugMatch = envContent.match(/^APP_DEBUG=(.*)$/m);
+                const currentAppDebug = currentAppDebugMatch ? currentAppDebugMatch[1].trim() : null;
+
+                if (currentAppDebug !== targetDebugMode) {
+                    envContent = envContent.replace(/^APP_DEBUG=.*$/m, `APP_DEBUG=${targetDebugMode}`);
+                    envChanged = true;
+                    console.log(`[Preview] APP_DEBUG dikemas kini kepada: ${targetDebugMode}`);
+                }
+
+                // B. Kemas kini atau Tambah DEBUGBAR_ENABLED (Bar Merah di bawah skrin)
+                const currentDebugbarMatch = envContent.match(/^DEBUGBAR_ENABLED=(.*)$/m);
+                
+                if (currentDebugbarMatch) {
+                    const currentDebugbar = currentDebugbarMatch[1].trim();
+                    if (currentDebugbar !== targetDebugMode) {
+                        envContent = envContent.replace(/^DEBUGBAR_ENABLED=.*$/m, `DEBUGBAR_ENABLED=${targetDebugMode}`);
+                        envChanged = true;
+                        console.log(`[Preview] DEBUGBAR_ENABLED dikemas kini kepada: ${targetDebugMode}`);
+                    }
+                } else {
+                    envContent += `\nDEBUGBAR_ENABLED=${targetDebugMode}\n`;
+                    envChanged = true;
+                    console.log(`[Preview] DEBUGBAR_ENABLED disuntik baharu sebagai: ${targetDebugMode}`);
+                }
+
+                // 3. Simpan fail jika ada sebarang pertukaran
+                if (envChanged) {
+                    fs.writeFileSync(envPath, envContent, 'utf8');
                 }
             }
-            // --- TAMAT: KEMAS KINI NAMA PROJEK ---
+            // --- TAMAT: KEMAS KINI .ENV ---
 
             // MULA PEMBAIKAN: Baca dari Hard Disk jika RAM kosong (App baru dibuka)
             const schemaCachePath = path.join(userDataPath, 'last_schema_cache.json');

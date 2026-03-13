@@ -42,6 +42,7 @@ CREATE TABLE projects (
     module_authorization         INTEGER DEFAULT 1,
     module_log_audit             INTEGER DEFAULT 1,
     module_fake_data             INTEGER DEFAULT 1,
+    debug_mode                   INTEGER DEFAULT 0,
     tenancy_type                 TEXT DEFAULT 'standard', -- BARU: standard, one_to_many, many_to_many
     tenant_table                 TEXT,                    -- BARU: Nama jadual tenant (cth: fakulti, syarikat)
 	is_active                    INTEGER DEFAULT 0

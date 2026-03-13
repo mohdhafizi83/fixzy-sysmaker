@@ -307,6 +307,16 @@
                     <input type="checkbox" id="app-module-fake-data" name="app-module-fake-data"> Include Data Seeder
                 </label>
             </fieldset>
+            
+<fieldset>
+                <legend>Application Debugging</legend>
+                 <p class="module-description">
+                    Enable detailed error reporting and display a developer debugbar at the bottom of the screen to monitor database queries, memory usage, and performance. <br><span style="color: #ef4444; font-weight: 500;"><i class="fas fa-exclamation-triangle"></i> Warning: Never enable this in a live production environment as it may expose sensitive database passwords and API keys!</span>
+                </p>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="app-debug-mode" name="app-debug-mode"> Enable Debug Mode & Debugbar
+                </label>
+            </fieldset>
         </div>
     </div>
 </div>
