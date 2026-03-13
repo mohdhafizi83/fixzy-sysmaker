@@ -2116,6 +2116,35 @@ ipcMain.handle('preview:instant-run', async (event) => {
 
             const fullSchema = await getFullProjectSchema(activeProject.project_id);
             if (!fullSchema) return resolve({ success: false, message: "Gagal mendapatkan schema projek." });
+            
+// --- MULA: KEMAS KINI NAMA PROJEK DI DALAM .ENV ---
+            const envPath = path.join(previewPath, '.env');
+            let envChanged = false;
+            
+            if (fs.existsSync(envPath)) {
+                let envContent = fs.readFileSync(envPath, 'utf8');
+                const rawAppName = activeProject.app_title || 'FiziSysMakerApp';
+                
+                // Jika nama ada jarak (space), balut dengan double quotes. Jika tidak, biarkan biasa.
+                const safeAppName = rawAppName.includes(' ') ? `"${rawAppName}"` : rawAppName;
+                
+                // Ekstrak nama semasa dari .env untuk perbandingan
+                const currentAppNameMatch = envContent.match(/^APP_NAME=(.*)$/m);
+                const currentAppName = currentAppNameMatch ? currentAppNameMatch[1] : null;
+
+                // Jika nama berbeza, lakukan proses ganti (replace)
+                if (currentAppName !== safeAppName) {
+                    envContent = envContent.replace(/^APP_NAME=.*$/m, `APP_NAME=${safeAppName}`);
+                    
+                    // Kemas kini juga VITE_APP_NAME supaya nama di tab browser berubah
+                    envContent = envContent.replace(/^VITE_APP_NAME=.*$/m, `VITE_APP_NAME=${safeAppName}`);
+                    
+                    fs.writeFileSync(envPath, envContent, 'utf8');
+                    envChanged = true;
+                    console.log(`[Preview] APP_NAME di dalam .env telah dikemas kini kepada: ${safeAppName}`);
+                }
+            }
+            // --- TAMAT: KEMAS KINI NAMA PROJEK ---
 
             // MULA PEMBAIKAN: Baca dari Hard Disk jika RAM kosong (App baru dibuka)
             const schemaCachePath = path.join(userDataPath, 'last_schema_cache.json');
@@ -2132,6 +2161,12 @@ ipcMain.handle('preview:instant-run', async (event) => {
             // 3. ANALISIS HOT RELOAD (DIFF CHECKER)
             // ========================================================
             let scenario = analyzeSchemaDiff(lastGeneratedSchema, fullSchema);
+            
+            // Jika .env berubah, paksa sistem masuk ke Senario 2 supaya arahan 'optimize:clear' membersihkan cache Laravel
+            if (scenario === 1 && envChanged) {
+                scenario = 2;
+                console.log("[Preview] Memaksa Senario 2 (Clear Cache) kerana APP_NAME telah dikemas kini.");
+            }
             
             // Paksa Senario 3 jika fail database.sqlite ghaib (dipadam manual oleh pengguna)
             const dbSqlitePath = path.join(previewPath, 'database', 'database.sqlite');
