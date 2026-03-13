@@ -323,6 +323,9 @@ if (btnShowPreview) {
             const externalBtn = document.getElementById('app-preview-external-btn');
             const refreshBtn = document.getElementById('app-preview-refresh-btn');
             const closeBtn = document.getElementById('app-preview-modal-close');
+            
+            const backBtn = document.getElementById('app-preview-back-btn');
+            const forwardBtn = document.getElementById('app-preview-forward-btn');
 
             if (previewModal && previewIframe) {
                 // Paparkan modal gergasi dan tunjuk animasi loading putih
@@ -330,13 +333,33 @@ if (btnShowPreview) {
                 previewIframe.style.display = 'none';
                 if (previewLoading) previewLoading.style.display = 'flex';
                 
-// Masukkan URL localhost ke dalam webview
-                previewIframe.src = result.url;
+                // Semak URL terakhir webview sebelum ini
+                let currentUrl = "";
+                try {
+                    currentUrl = previewIframe.getURL();
+                } catch (e) {}
 
-// Buang loading spinner apabila webview selesai dimuatkan sepenuhnya
+                // Jika webview sudah ada URL projek (contoh: sedang edit rekod), muat semula sahaja!
+                if (currentUrl && currentUrl.includes('127.0.0.1')) {
+                    previewIframe.reload(); 
+                } else {
+                    // Jika webview kosong (baru pertama kali buka), muatkan URL lalai (Dashboard)
+                    previewIframe.src = result.url;
+                }
+
+// ==========================================
+                // PENGESAN STATUS LOADING WEBVIEW
+                // ==========================================
+                
+                // 1. Apabila Webview MULA memuatkan halaman (Klik link / Refresh / Back / Forward)
+                previewIframe.addEventListener('did-start-loading', () => {
+                    if (previewLoading) previewLoading.style.display = 'flex';
+                });
+
+                // 2. Apabila Webview SELESAI memuatkan halaman
                 previewIframe.addEventListener('did-stop-loading', () => {
                     if (previewLoading) previewLoading.style.display = 'none';
-                    // TUKAR 'block' KEPADA 'flex' DI SINI
+                    // Pastikan webview dipaparkan
                     previewIframe.style.display = 'flex'; 
                 });
 
@@ -352,6 +375,20 @@ if (btnShowPreview) {
                         previewIframe.reload(); 
                     };
                 }
+                
+// Logik Butang Undur (Back)
+                if (backBtn) {
+                    backBtn.onclick = () => {
+                        if (previewIframe.canGoBack()) previewIframe.goBack();
+                    };
+                }
+
+                // Logik Butang Maju (Forward)
+                if (forwardBtn) {
+                    forwardBtn.onclick = () => {
+                        if (previewIframe.canGoForward()) previewIframe.goForward();
+                    };
+                }
 
                     if (closeBtn) {
                     closeBtn.onclick = () => {
@@ -359,12 +396,12 @@ if (btnShowPreview) {
                         previewModal.classList.add('hidden');
                         
                         // 2. Hentikan webview daripada berjalan di latar belakang
-                        previewIframe.src = "about:blank"; 
+                        //previewIframe.src = "about:blank"; 
                         
                         // 3. BUNUH PELAYAN PHP!
-                        if (window.electronAPI.stopPreviewServer) {
-                            window.electronAPI.stopPreviewServer();
-                        }
+                        //if (window.electronAPI.stopPreviewServer) {
+                        //    window.electronAPI.stopPreviewServer();
+                        //}
                     };
                 }
             } else {

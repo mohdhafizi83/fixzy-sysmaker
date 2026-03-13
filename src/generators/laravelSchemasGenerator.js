@@ -136,7 +136,8 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
                 else if (field.format_as === 'custom' && field.format_mask) fieldCode = fieldCode.replace('<<IS_MASK>>', `->mask('${field.format_mask}')`);
             }
 
-            if (field.display_type === 'text_input') {
+// Mengaplikasikan maxLength/minLength HANYA jika komponen akhir adalah komponen teks
+            if (['TextInput', 'Textarea', 'RichEditor'].includes(elementType)) {
                 if (field.min_length && field.min_length === field.length) fieldCode = fieldCode.replace('<<IS_FIXED_LENGTH>>', `->length(${field.min_length})`);
                 else {
                     if (field.min_length) fieldCode = fieldCode.replace('<<IS_MIN_LENGTH>>', `->minLength(${field.min_length})`);

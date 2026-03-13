@@ -356,6 +356,31 @@ const maxLengthValue = fieldData.length;
         loadValidationTab(currentFieldData.field_id, tableName); 
     }
     // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
+    
+// ========================================================
+    // PERLINDUNGAN VISUAL BUTANG DELETE GLOBAL (UI)
+    // ========================================================
+    const deleteBtn = document.getElementById('btn-delete');
+    
+    if (deleteBtn) {
+        // Senarai medan sistem yang dilarang padam
+        const protectedFields = ['id', 'created_at', 'updated_at', 'deleted_at', 'created_by', 'updated_by', 'deleted_by'];
+        
+        // 'fieldName' diambil terus dari parameter fungsi di atas
+        if (protectedFields.includes(fieldName)) {
+            // MATIKAN BUTANG (Kelabukan)
+            deleteBtn.disabled = true;
+            deleteBtn.style.opacity = '0.4';
+            deleteBtn.style.cursor = 'not-allowed';
+            deleteBtn.title = "Akses Ditolak: Medan sistem asas ini tidak boleh dipadam.";
+        } else {
+            // HIDUPKAN SEMULA BUTANG (Untuk medan biasa)
+            deleteBtn.disabled = false;
+            deleteBtn.style.opacity = '1';
+            deleteBtn.style.cursor = 'pointer';
+            deleteBtn.title = "Delete Selected";
+        }
+    } 
 }
 
 /**

@@ -3500,17 +3500,24 @@
                     <i class="fas fa-key"></i> admin@admin.com &nbsp;|&nbsp; password
                 </span>
             </h3>
+            
             <div style="display: flex; gap: 10px;">
+                <button id="app-preview-back-btn" class="btn btn-secondary" style="padding: 5px 12px;" title="Undur (Back)"><i class="fas fa-arrow-left"></i></button>
+                <button id="app-preview-forward-btn" class="btn btn-secondary" style="padding: 5px 12px;" title="Maju (Forward)"><i class="fas fa-arrow-right"></i></button>
+                
                 <button id="app-preview-external-btn" class="btn btn-secondary" style="padding: 5px 12px;" title="Buka di Browser Chrome/Edge"><i class="fas fa-external-link-alt"></i></button>
                 <button id="app-preview-refresh-btn" class="btn btn-primary" style="padding: 5px 12px;" title="Muat Semula (Refresh)"><i class="fas fa-sync-alt"></i></button>
                 <button id="app-preview-modal-close" class="btn" style="padding: 5px 12px; background: #ef4444; color: white;" title="Tutup Preview"><i class="fas fa-times"></i></button>
             </div>
         </div>
         
-<div class="modal-body" style="flex: 1; padding: 0; display: flex; flex-direction: column;">
+        <div class="modal-body" style="flex: 1; padding: 0; display: flex; flex-direction: column; position: relative;">
             
-            <div id="app-preview-loading" style="display: flex; flex: 1; justify-content: center; align-items: center; color: #94a3b8;">
-                <i class="fas fa-circle-notch fa-spin fa-3x"></i>
+            <div id="app-preview-loading" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255, 255, 255, 0.7); z-index: 10; display: flex; justify-content: center; align-items: center; color: #3b82f6;">
+                <div style="text-align: center;">
+                    <i class="fas fa-circle-notch fa-spin fa-3x"></i>
+                    <p style="margin-top: 10px; font-weight: bold; color: #1e293b;">Loading...</p>
+                </div>
             </div>
             
             <webview id="app-preview-iframe" src="" style="flex: 1; width: 100%; border: none; display: none; background: white;"></webview>

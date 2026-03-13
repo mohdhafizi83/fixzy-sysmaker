@@ -9,6 +9,10 @@ const parser = new Parser();
 const { spawn } = require('child_process');
 // Pembolehubah untuk menjejak proses pelayan PHP
 let previewServerProcess = null;
+
+// ▼▼▼ TAMBAH DUA BARIS INI (Sistem Memori Hot Reload) ▼▼▼
+let lastGeneratedSchema = null; 
+let lastPreviewScenario = 0;
 const pluralize = require('pluralize');
 
 // IMPORT FUNGSI BANTUAN DARI UTILS
@@ -450,6 +454,14 @@ ipcMain.handle('field:update-order', async (event, orderData) => {
 });
 
 ipcMain.handle('field:delete', async (event, { fieldId, tableName, fieldName }) => {
+    // 1. PENAPIS KESELAMATAN (PROTECTED FIELDS)
+    const protectedFields = ['id', 'created_at', 'updated_at', 'deleted_at', 'created_by', 'updated_by', 'deleted_by'];
+    
+    if (protectedFields.includes(fieldName)) {
+        console.warn(`[Keselamatan] Cubaan memadam medan sistem dikesan: ${fieldName}`);
+        return { success: false, message: "Akses Ditolak: Medan sistem asas ini tidak boleh dipadam kerana ia penting untuk operasi teras Laravel Filament." };
+    }
+
     try {
         const transaction = db.transaction(() => {
             // Dapatkan ID jadual anak
@@ -1973,177 +1985,240 @@ ipcMain.handle('preview:stop', () => {
 });
 
 // =================================================================
-// FUNGSI BUILT-IN PREVIEW SERVER (INSTANT RUN - SENARIO 3)
+// SISTEM PENGESAN PERUBAHAN (DIFF CHECKER) UNTUK HOT RELOAD
 // =================================================================
-ipcMain.handle('preview:instant-run', async (event, fullSchema) => { // Pastikan 'event' ada di sini
-    const win = BrowserWindow.fromWebContents(event.sender); // Tangkap tetingkap UI
+
+/**
+ * Membandingkan Skema Lama dan Baharu untuk menentukan Senario Pralihat
+ * Pulangan:
+ * 1 = Tiada Perubahan (Hanya buka modal semula)
+ * 2 = Perubahan UI/Tetapan (Jana kod UI + Clear Cache)
+ * 3 = Perubahan Pangkalan Data (Jana semua + Migrate DB)
+ */
+function analyzeSchemaDiff(oldSchema, newSchema) {
+    if (!oldSchema) {
+        console.log("[Diff Checker] Tiada memori lama. Paksa Senario 3 (First Run).");
+        return 3; 
+    }
+
+    // 1. Ujian Senario 1 (Tiada Perubahan Langsung)
+    // Oleh kerana SQLite memulangkan data dengan susunan (ORDER BY) yang konsisten,
+    // kita boleh menggunakan JSON.stringify untuk perbandingan pantas 100%.
+    const oldStr = JSON.stringify(oldSchema);
+    const newStr = JSON.stringify(newSchema);
+    
+    if (oldStr === newStr) {
+        console.log("[Diff Checker] Skema 100% sama. Masuk Senario 1.");
+        return 1;
+    }
+
+    // 2. Ujian Senario 3 (Perubahan Pangkalan Data)
+    const isDbChanged = checkDatabaseChanges(oldSchema, newSchema);
+    if (isDbChanged) {
+        console.log("[Diff Checker] Perubahan struktur pangkalan data dikesan. Masuk Senario 3.");
+        return 3;
+    }
+
+    // 3. Jika ia bukan Senario 1 (Ada beza) dan bukan Senario 3 (Bukan beza DB),
+    // maka ia pasti Senario 2 (Hanya UI/Tetapan yang berubah).
+    console.log("[Diff Checker] Hanya perubahan UI/Tetapan dikesan. Masuk Senario 2.");
+    return 2;
+}
+
+/**
+ * Fungsi bantuan untuk memeriksa hanya ciri fizikal Pangkalan Data
+ */
+function checkDatabaseChanges(oldS, newS) {
+    // A. Semak bilangan atau nama jadual
+    const oldTables = Object.keys(oldS.database.table);
+    const newTables = Object.keys(newS.database.table);
+    if (oldTables.length !== newTables.length) return true;
+
+    for (const tName of newTables) {
+        if (!oldS.database.table[tName]) return true; // Jadual baharu ditambah
+
+        const oldFields = oldS.database.table[tName].fields;
+        const newFields = newS.database.table[tName].fields;
+
+        // B. Semak bilangan atau nama medan (fields)
+        const oldFieldNames = Object.keys(oldFields);
+        const newFieldNames = Object.keys(newFields);
+        if (oldFieldNames.length !== newFieldNames.length) return true;
+
+        for (const fName of newFieldNames) {
+            if (!oldFields[fName]) return true; // Medan baharu ditambah
+
+            const oF = oldFields[fName];
+            const nF = newFields[fName];
+
+            // C. Semak ciri FIZIKAL medan (Jika berubah, wajib migrate DB)
+            if (oF.data_type !== nF.data_type) return true;
+            if (oF.length !== nF.length) return true;
+            if (oF.primary_key !== nF.primary_key) return true;
+            if (oF.unique !== nF.unique) return true;
+            if (oF.not_null !== nF.not_null) return true;
+            if (oF.unsigned !== nF.unsigned) return true;
+            if (oF.auto_increment !== nF.auto_increment) return true;
+            if (oF.default_value !== nF.default_value) return true;
+        }
+    }
+
+    // D. Semak perubahan pada Relationships (One-to-Many, dll)
+    // Perubahan relationship melibatkan Foreign Key di DB, wajib migrate
+    if (JSON.stringify(oldS.database.relationships) !== JSON.stringify(newS.database.relationships)) {
+        return true;
+    }
+
+    return false; // Tiada perubahan pada tapak fizikal DB
+}
+
+// =================================================================
+// FUNGSI BUILT-IN PREVIEW SERVER (SMART REBUILD / HOT RELOAD)
+// =================================================================
+ipcMain.handle('preview:instant-run', async (event) => { 
+    const win = BrowserWindow.fromWebContents(event.sender); 
     return new Promise(async (resolve, reject) => {
         try {
-const templatePreviewPath = app.isPackaged ? path.join(process.resourcesPath, 'preview_env') : path.join(__dirname, '../resources/preview_env');
+            const templatePreviewPath = app.isPackaged ? path.join(process.resourcesPath, 'preview_env') : path.join(__dirname, '../resources/preview_env');
             const userDataPath = app.getPath('userData'); 
             const workingPreviewPath = path.join(userDataPath, 'preview_env');
 
-// 2. SALINAN KALI PERTAMA (SALINAN FIZIKAL PENUH + PROGRESS BAR)
+            // 1. SALINAN KALI PERTAMA (Fizikal)
             if (!fs.existsSync(workingPreviewPath)) {
-                console.log(`[Preview] Menyalin template ke: ${workingPreviewPath}`);
-                
-                if (!fs.existsSync(templatePreviewPath)) {
-                    return resolve({ success: false, message: `Template pralihat tidak dijumpai di: ${templatePreviewPath}` });
-                }
+                if (!fs.existsSync(templatePreviewPath)) return resolve({ success: false, message: `Template tidak dijumpai: ${templatePreviewPath}` });
 
-                // ========================================================
-                // MULA: DIALOG PENGESAHAN KALI PERTAMA (NATIVE ELECTRON)
-                // ========================================================
                 const { response } = await dialog.showMessageBox(win, {
-                    type: 'info',
-                    buttons: ['OK', 'Batal'],
-                    title: 'Persediaan Persekitaran Pralihat',
+                    type: 'info', buttons: ['OK', 'Batal'], title: 'Persediaan Persekitaran Pralihat',
                     message: 'Pemasangan Kali Pertama',
-                    detail: 'Ini adalah kali pertama anda menggunakan fungsi Show Preview.\n\nSistem akan menyediakan persekitaran pralihat untuk projek anda. Proses ini melibatkan penyalinan fail asas sistem (termasuk folder vendor) dan mungkin memakan masa sekitar 1 hingga 3 minit bergantung kepada kelajuan komputer anda.\n\nAdakah anda mahu meneruskan?',
-                    defaultId: 0,
-                    cancelId: 1
+                    detail: 'Ini adalah kali pertama anda menggunakan fungsi Show Preview.\nProses ini melibatkan penyalinan fail asas sistem dan mungkin memakan masa 1 hingga 3 minit.\n\nAdakah anda mahu meneruskan?'
                 });
 
-                // Jika pengguna tekan 'Batal' (index 1) atau pangkah dialog
-                if (response !== 0) {
-                    return resolve({ success: false, message: 'Proses persediaan pralihat dibatalkan oleh pengguna.' });
-                }
-                // ========================================================
-                // TAMAT: DIALOG PENGESAHAN
-                // ========================================================
+                if (response !== 0) return resolve({ success: false, message: 'Dibatalkan oleh pengguna.' });
 
-                win?.webContents.send('show-overlay', { 
-                    message: 'Mengira fail sistem. Sila tunggu...',
-                    progress: 0 
-                });
-
-// Proses ini menyalin SEMUA fail secara fizikal
+                win?.webContents.send('show-overlay', { message: 'Mengira fail sistem. Sila tunggu...', progress: 0 });
                 await copyDirWithProgress(templatePreviewPath, workingPreviewPath, (copied, total, percentage) => {
-                    // MENDARAB DENGAN 0.90 UNTUK MENGHADKAN MAKSIMUM KEPADA 90%
-                    const scaledPercentage = Math.round(percentage * 0.90); 
-                    
-                    win?.webContents.send('show-overlay', { 
-                        message: `Menyediakan persekitaran (Menyalin fail ${copied}/${total})...`,
-                        progress: scaledPercentage // Hantar nilai yang telah diskalakan
-                    });
+                    win?.webContents.send('show-overlay', { message: `Menyediakan persekitaran (Menyalin fail ${copied}/${total})...`, progress: Math.round(percentage * 0.90) });
                 });
-
-                console.log(`[Preview] Salinan penuh berjaya!`);
             } else {
-                win?.webContents.send('show-overlay', { 
-                    message: 'Menjana dan memuatkan pralihat...',
-                    progress: 90 
-                });
+                win?.webContents.send('show-overlay', { message: 'Menyemak perubahan skema...', progress: 90 });
             }
 
             const previewPath = workingPreviewPath;
-
-            // 3. BUNUH PELAYAN LAMA (JIKA ADA)
-            if (previewServerProcess) {
-                previewServerProcess.kill();
-                previewServerProcess = null;
-            }
+            const baseBinPath = app.isPackaged ? path.join(process.resourcesPath, 'app.asar.unpacked', 'bin') : path.join(__dirname, '../bin'); 
+            const phpPath = path.join(baseBinPath, 'php-8.4.12', 'php.exe');
+            const port = 8080;
 
             // ========================================================
-            // 4. DAPATKAN DATA SKEMA (SAMA SEPERTI SENARIO 2)
+            // 2. DAPATKAN DATA SKEMA TERKINI & LOAD MEMORI CAKERA TEPAT (HARD DISK)
             // ========================================================
             const activeProject = db.prepare("SELECT * FROM projects WHERE is_active = 1 LIMIT 1").get();
             if (!activeProject) return resolve({ success: false, message: "Tiada projek aktif dijumpai." });
 
             const fullSchema = await getFullProjectSchema(activeProject.project_id);
-            if (!fullSchema) return resolve({ success: false, message: "Gagal mendapatkan schema projek penuh." });
+            if (!fullSchema) return resolve({ success: false, message: "Gagal mendapatkan schema projek." });
 
-// 5. PEMBERSIHAN FOLDER PINTAR (Simpan User.php & Migrasi Asas)
-            console.log(`[Preview] Membersihkan fail lama di: ${previewPath}`);
-            const modelsPath = path.join(previewPath, 'app', 'Models');
-            const filamentPath = path.join(previewPath, 'app', 'Filament');
-            const migrationsPath = path.join(previewPath, 'database', 'migrations');
+            // MULA PEMBAIKAN: Baca dari Hard Disk jika RAM kosong (App baru dibuka)
+            const schemaCachePath = path.join(userDataPath, 'last_schema_cache.json');
+            if (!lastGeneratedSchema && fs.existsSync(schemaCachePath)) {
+                try {
+                    lastGeneratedSchema = JSON.parse(fs.readFileSync(schemaCachePath, 'utf8'));
+                    console.log("[Preview] Memori skema dari sesi lepas berjaya dimuatkan dari cakera.");
+                } catch (e) {
+                    console.warn("[Preview] Gagal membaca cache skema, menganggap ia sesi baharu.");
+                }
+            }
+
+            // ========================================================
+            // 3. ANALISIS HOT RELOAD (DIFF CHECKER)
+            // ========================================================
+            let scenario = analyzeSchemaDiff(lastGeneratedSchema, fullSchema);
             
-            // A. Bersihkan folder Models (Kecuali User.php)
-            if (fs.existsSync(modelsPath)) {
-                fs.readdirSync(modelsPath).forEach(file => {
-                    if (file !== 'User.php') {
-                        fs.rmSync(path.join(modelsPath, file), { recursive: true, force: true });
-                    }
-                });
+            // Paksa Senario 3 jika fail database.sqlite ghaib (dipadam manual oleh pengguna)
+            const dbSqlitePath = path.join(previewPath, 'database', 'database.sqlite');
+            if (!fs.existsSync(dbSqlitePath)) {
+                scenario = 3;
+                console.log("[Preview] Pangkalan data SQLite hilang. Memaksa Senario 3.");
             }
 
-// B. Bersihkan folder Migrations dengan Senarai Dilindungi (Protected List)
-            if (fs.existsSync(migrationsPath)) {
-                // Senarai kata kunci fail yang WAJIB disimpan (berdasarkan senarai anda)
-                const protectedMigrations = [
-                    'create_users_table',
-                    'create_cache_table',
-                    'create_jobs_table',
-                    'create_permission_tables',
-                    'create_audits_table',
-                    'create_notifications_table',
-                    'create_imports_table',
-                    'create_exports_table',
-                    'create_failed_import_rows_table'
-                ];
-
-                fs.readdirSync(migrationsPath).forEach(file => {
-                    // Semak sama ada nama fail ini mengandungi mana-mana kata kunci di atas
-                    const isProtected = protectedMigrations.some(keyword => file.includes(keyword));
-                    
-                    // PADAM HANYA JIKA ia BUKAN fail yang dilindungi
-                    if (!isProtected) {
-                        fs.rmSync(path.join(migrationsPath, file), { recursive: true, force: true });
+            // Fungsi bantuan untuk menghidupkan pelayan secara seragam
+            const startServerAndResolve = () => {
+                win?.webContents.send('show-overlay', { message: 'Menghidupkan Pelayan Tempatan...', progress: 99 });
+                previewServerProcess = spawn(phpPath, ['artisan', 'serve', `--port=${port}`], { cwd: previewPath });
+                previewServerProcess.on('error', (err) => resolve({ success: false, message: `Gagal menghidupkan pelayan: ${err.message}` }));
+                previewServerProcess.stdout.on('data', (data) => {
+                    if (data.toString().includes('running') || data.toString().includes('127.0.0.1')) {
+                        win?.webContents.send('show-overlay', { message: 'Pralihat Sedia Dilancarkan!', progress: 100 });
+                        setTimeout(() => resolve({ success: true, url: `http://127.0.0.1:${port}/admin` }), 500);
                     }
                 });
+            };
+
+            // --- SENARIO 1: TIADA PERUBAHAN ---
+            if (scenario === 1) {
+                console.log("[Preview] Senario 1: Tiada perubahan skema.");
+                if (previewServerProcess) {
+                    // Pelayan dah hidup, terus buka
+                    win?.webContents.send('show-overlay', { message: 'Pralihat Sedia Dilancarkan!', progress: 100 });
+                    return setTimeout(() => resolve({ success: true, url: `http://127.0.0.1:${port}/admin` }), 300);
+                } else {
+                    // App baru buka, pelayan mati. Hanya hidupkan pelayan.
+                    return startServerAndResolve();
+                }
             }
 
-// C. Bersihkan folder Filament/Resources dengan Senarai Dilindungi
+            // Bunuh pelayan lama JIKA senario 3 (untuk lepaskan fail kunci DB)
+            if (scenario === 3 && previewServerProcess) {
+                if (process.platform === 'win32') spawn('taskkill', ['/pid', previewServerProcess.pid, '/f', '/t']);
+                else previewServerProcess.kill();
+                previewServerProcess = null;
+            }
+
+            // ========================================================
+            // 4. PEMBERSIHAN FOLDER PINTAR
+            // ========================================================
+            const modelsPath = path.join(previewPath, 'app', 'Models');
+            const migrationsPath = path.join(previewPath, 'database', 'migrations');
             const resourcesPath = path.join(previewPath, 'app', 'Filament', 'Resources');
+            const policiesPath = path.join(previewPath, 'app', 'Policies');
+            
+            if (fs.existsSync(modelsPath)) fs.readdirSync(modelsPath).forEach(file => { if (file !== 'User.php') fs.rmSync(path.join(modelsPath, file), { recursive: true, force: true }); });
             
             if (fs.existsSync(resourcesPath)) {
-                // Senarai nama folder yang WAJIB disimpan
-                // (Termasuk perkataan 'Resource' sebagai langkah berjaga-jaga jika Filament Shield menjana RoleResource)
                 const protectedResources = ['Users', 'Roles', 'UserResource', 'RoleResource'];
-                
                 fs.readdirSync(resourcesPath).forEach(file => {
-                    // Semak jika nama folder ini sepadan dengan senarai di atas
-                    const isProtected = protectedResources.some(keyword => file.includes(keyword));
-                    
-                    // PADAM HANYA JIKA ia BUKAN folder yang dilindungi
-                    if (!isProtected) {
-                        fs.rmSync(path.join(resourcesPath, file), { recursive: true, force: true });
-                    }
-                });
-            }
-            
-// D. Bersihkan folder Policies (Padam fail di dalamnya sahaja untuk elak ralat EPERM Windows)
-            const policiesPath = path.join(previewPath, 'app', 'Policies');
-            if (fs.existsSync(policiesPath)) {
-                // Baca semua isi dalam folder Policies
-                fs.readdirSync(policiesPath).forEach(file => {
-                    const filePath = path.join(policiesPath, file);
-                    // Jika ia adalah fail biasa (cth: PelajarPolicy.php), kita padam fail tersebut
-                    if (fs.statSync(filePath).isFile()) {
-                        try {
-                            fs.rmSync(filePath, { force: true });
-                        } catch (err) {
-                            console.warn(`[Preview] Gagal memadam fail polisi: ${file}`);
-                        }
-                    }
+                    if (!protectedResources.some(keyword => file.includes(keyword))) fs.rmSync(path.join(resourcesPath, file), { recursive: true, force: true });
                 });
             }
 
-            // ============================================================
-            // 6. TRIGGER PENJANA (GENERATORS) SECARA LANGSUNG
-            // ============================================================
-            console.log(`[Preview] Menjana fail secara langsung ke folder preview...`);
-            
-            // FASA 1: Database Layer
-            await generateLaravelUserMigration(fullSchema, previewPath);
-            await generateLaravelMigrations(fullSchema, previewPath);
-            await generateFilamentModels(fullSchema, previewPath);
-            await generateFilamentUserModel(fullSchema, previewPath);
-            await generateLaravelFactories(fullSchema, previewPath);
-            await generateLaravelDatabaseSeeder(fullSchema, previewPath);
+            if (scenario === 3) {
+                if (fs.existsSync(migrationsPath)) {
+                    const protectedMigrations = ['create_users_table', 'create_cache_table', 'create_jobs_table', 'create_permission_tables', 'create_audits_table', 'create_notifications_table', 'create_imports_table', 'create_exports_table', 'create_failed_import_rows_table'];
+                    fs.readdirSync(migrationsPath).forEach(file => {
+                        if (!protectedMigrations.some(keyword => file.includes(keyword))) fs.rmSync(path.join(migrationsPath, file), { recursive: true, force: true });
+                    });
+                }
+                if (fs.existsSync(policiesPath)) {
+                    fs.readdirSync(policiesPath).forEach(file => {
+                        const filePath = path.join(policiesPath, file);
+                        if (fs.statSync(filePath).isFile()) { try { fs.rmSync(filePath, { force: true }); } catch (err) {} }
+                    });
+                }
+            }
 
-            // FASA 2: Standard Module
+            // ============================================================
+            // 5. TRIGGER PENJANA (GENERATORS)
+            // ============================================================
+            console.log(`[Preview] Menjana fail untuk Senario ${scenario}...`);
+            
+            if (scenario === 3) {
+                await generateLaravelUserMigration(fullSchema, previewPath);
+                await generateLaravelMigrations(fullSchema, previewPath);
+                await generateLaravelFactories(fullSchema, previewPath);
+                await generateLaravelDatabaseSeeder(fullSchema, previewPath);
+                await generateFilamentUserModel(fullSchema, previewPath);
+            }
+            
+            await generateFilamentModels(fullSchema, previewPath); 
             await generateFilamentTablesTable(fullSchema, previewPath);
             await generateFilamentSchemasForm(fullSchema, previewPath);
             await generateFilamentListPages(fullSchema, previewPath);
@@ -2151,137 +2226,79 @@ const templatePreviewPath = app.isPackaged ? path.join(process.resourcesPath, 'p
             await generateFilamentEditPages(fullSchema, previewPath);
             await generateFilamentRelationManagers(fullSchema, previewPath);
             await generateFilamentResources(fullSchema, previewPath);
-
-            // FASA 3: Custom Modules
             await generateFilamentTablesCustomModules(fullSchema, previewPath);
             await generateFilamentSchemasCustomModules(fullSchema, previewPath);
             await generateFilamentListCustomModules(fullSchema, previewPath);
             await generateFilamentCreateCustomModules(fullSchema, previewPath);
             await generateFilamentEditCustomModules(fullSchema, previewPath);
             await generateFilamentResourcesCustomModules(fullSchema, previewPath);
-
-            // FASA 4: Ciri Tambahan
             await generateFilamentExports(fullSchema, previewPath);
             await generateFilamentImporters(fullSchema, previewPath);
             await generateAdminPanelProvider(fullSchema, previewPath);
 
-// ============================================================
-            // 7. SETUP PANGKALAN DATA & PELAYAN (SERVER)
+            // Simpan memori skema selepas kod berjaya dijana ke RAM dan Cakera Keras
+            lastGeneratedSchema = JSON.parse(JSON.stringify(fullSchema));
+            fs.writeFileSync(schemaCachePath, JSON.stringify(lastGeneratedSchema), 'utf8');
+
             // ============================================================
-            const dbSqlitePath = path.join(previewPath, 'database', 'database.sqlite');
-            if (!fs.existsSync(dbSqlitePath)) {
-                fs.writeFileSync(dbSqlitePath, ''); 
+            // 6. --- SENARIO 2: HOT RELOAD (CLEAR CACHE) ---
+            // ============================================================
+            if (scenario === 2) {
+                console.log(`[Preview] Senario 2: Mengemaskini Cache...`);
+                win?.webContents.send('show-overlay', { message: 'Mengemaskini Antaramuka (Menjana Semula Cache)...', progress: 96 });
+                
+                const cacheProcess = spawn(phpPath, ['artisan', 'optimize:clear'], { cwd: previewPath });
+                cacheProcess.on('close', () => {
+                    if (previewServerProcess) {
+                        win?.webContents.send('show-overlay', { message: 'Pralihat Dikemaskini!', progress: 100 });
+                        setTimeout(() => resolve({ success: true, url: `http://127.0.0.1:${port}/admin` }), 500);
+                    } else {
+                        // Jika pelayan mati waktu S2 (sebab app baru buka), kita hidupkan lepas cache dicuci
+                        startServerAndResolve();
+                    }
+                });
+                return;
             }
 
-            const baseBinPath = app.isPackaged 
-                ? path.join(process.resourcesPath, 'app.asar.unpacked', 'bin') 
-                : path.join(__dirname, '../bin'); 
-            const phpPath = path.join(baseBinPath, 'php-8.4.12', 'php.exe');
+            // ============================================================
+            // 7. --- SENARIO 3: SETUP DB & START SERVER ---
+            // ============================================================
+            if (!fs.existsSync(dbSqlitePath)) fs.writeFileSync(dbSqlitePath, ''); 
 
             console.log(`[Preview] Menjalankan Migrasi & Seeder...`);
-            
-            // Mula dari 90%
             let currentProgress = 90;
-            win?.webContents.send('show-overlay', { 
-                message: 'Memulakan Migrasi Pangkalan Data...',
-                progress: currentProgress
-            });
+            win?.webContents.send('show-overlay', { message: 'Memulakan Migrasi Pangkalan Data...', progress: currentProgress });
 
-            const migrateProcess = spawn(phpPath, ['artisan', 'migrate:fresh', '--seed', '--force'], {
-                cwd: previewPath
-            });
-
+            const migrateProcess = spawn(phpPath, ['artisan', 'migrate:fresh', '--seed', '--force'], { cwd: previewPath });
             let migrateLog = '';
             
-            // Setiap kali Laravel mengeluarkan log migrasi/seeder, kita gerakkan bar!
             migrateProcess.stdout.on('data', (data) => { 
                 migrateLog += data.toString(); 
-                if (currentProgress < 98) {
-                    currentProgress += 1; // Tambah 1% perlahan-lahan
-                    win?.webContents.send('show-overlay', { 
-                        message: 'Membina jadual dan memasukkan data ujian (Seeder)...',
-                        progress: currentProgress
-                    });
+                if (currentProgress < 95) {
+                    currentProgress += 1; 
+                    win?.webContents.send('show-overlay', { message: 'Membina jadual dan data ujian (Seeder)...', progress: currentProgress });
                 }
             });
-            
             migrateProcess.stderr.on('data', (data) => { migrateLog += data.toString(); });
+            migrateProcess.on('error', (err) => { resolve({ success: false, message: `Gagal mencari fail PHP: ${err.message}` }); });
 
-            migrateProcess.on('error', (err) => {
-                resolve({ success: false, message: `Gagal mencari fail PHP: ${err.message}` });
-            });
+            migrateProcess.on('close', (code) => {
+                if (code !== 0) return resolve({ success: false, message: `Gagal menjalankan migrasi pangkalan data.\n\nLog Terminal:\n...${migrateLog.slice(-1000)}` });
 
-migrateProcess.on('close', (code) => {
-                if (code !== 0) {
-                    return resolve({ 
-                        success: false, 
-                        message: `Gagal menjalankan migrasi pangkalan data.\n\nLog Terminal:\n...${migrateLog.slice(-1000)}` 
-                    });
-                }
+                win?.webContents.send('show-overlay', { message: 'Menjana Polisi Keselamatan & Hak Akses...', progress: 96 });
 
-                console.log(`[Preview] Migrasi berjaya. Menjana Polisi Keselamatan (Shield)...`);
-
-                // ========================================================
-                // TAMBAHAN: JALANKAN FILAMENT SHIELD GENERATOR
-                // ========================================================
-                win?.webContents.send('show-overlay', { 
-                    message: 'Menjana Polisi Keselamatan & Hak Akses (Filament Shield)...',
-                    progress: 96
-                });
-
-// Jalankan perintah shield:generate berserta pilihan PANEL supaya ia tidak bertanya soalan
-                const shieldProcess = spawn(phpPath, ['artisan', 'shield:generate', '--all', '--panel=admin', '--no-interaction'], {
-                    cwd: previewPath
-                });
-
+                const shieldProcess = spawn(phpPath, ['artisan', 'shield:generate', '--all', '--panel=admin', '--no-interaction'], { cwd: previewPath });
                 let shieldLog = '';
                 shieldProcess.stdout.on('data', (data) => { shieldLog += data.toString(); });
                 shieldProcess.stderr.on('data', (data) => { shieldLog += data.toString(); });
 
                 shieldProcess.on('close', (shieldCode) => {
-                    // TANGKAP RALAT SECARA NYATA!
-                    // Jika kod bukan 0, atau terdapat perkataan 'error'/'exception' di dalam log terminal
                     if (shieldCode !== 0 || shieldLog.toLowerCase().includes('error') || shieldLog.toLowerCase().includes('exception')) {
-                        return resolve({ 
-                            success: false, 
-                            message: `Gagal menjana Polisi Shield!\n\nSebab Ralat:\n${shieldLog.trim()}` 
-                        });
+                        return resolve({ success: false, message: `Gagal menjana Polisi Shield!\n\nSebab Ralat:\n${shieldLog.trim()}` });
                     }
-
-                    console.log(`[Preview] Polisi berjaya dijana. Menghidupkan Pelayan...`);
-
-                    // ========================================================
-                    // PENGHIDUPAN PELAYAN (SERVER)
-                    // ========================================================
-                    win?.webContents.send('show-overlay', { 
-                        message: 'Menghidupkan Pelayan Tempatan (Localhost)...',
-                        progress: 99
-                    });
-
-                    const port = 8080;
-                    previewServerProcess = spawn(phpPath, ['artisan', 'serve', `--port=${port}`], {
-                        cwd: previewPath
-                    });
-
-                    previewServerProcess.on('error', (err) => {
-                        resolve({ success: false, message: `Gagal menghidupkan pelayan: ${err.message}` });
-                    });
-
-                    previewServerProcess.stdout.on('data', (data) => {
-                        const output = data.toString();
-                        if (output.includes('running') || output.includes('127.0.0.1')) {
-                            win?.webContents.send('show-overlay', { 
-                                message: 'Pralihat Sedia Dilancarkan!',
-                                progress: 100
-                            });
-                            
-                            setTimeout(() => {
-                                resolve({ success: true, url: `http://127.0.0.1:${port}/admin` });
-                            }, 500);
-                        }
-                    });
-                }); // Tamat shieldProcess
-            }); // Tamat migrateProcess
+                    startServerAndResolve();
+                }); 
+            }); 
 
         } catch (error) {
             console.error('Ralat Instant Preview:', error);
@@ -2749,10 +2766,13 @@ function importSchema(sql, projectId, dialect) {
                             }
                     });
                     
-                    // Tetapkan hide_in_tv = 1 secara lalai untuk medan tertentu
-                    const protectedFields = ['created_at', 'updated_at', 'deleted_at'];
+// Tetapkan hide_in_tv = 1, hide_in_dv = 1, dan read_only = 1 secara lalai untuk medan sistem
+                    const protectedFields = ['id', 'created_at', 'updated_at', 'deleted_at', 'created_by', 'updated_by', 'deleted_by'];
+                    
                     if (fieldData.primary_key === 1 || protectedFields.includes(fieldName)) {
                         fieldData.hide_in_tv = 1;
+                        fieldData.hide_in_dv = 1;
+                        fieldData.read_only = 1;
                     }
                     if (normalizedDataType === 'TEXT' || normalizedDataType === 'LONGTEXT') {
                         fieldData.tv_wrap_text = 1;
