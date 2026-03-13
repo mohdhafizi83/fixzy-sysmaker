@@ -115,33 +115,33 @@
             <div class="form-group">
                 <select name="app-stack_base" id="app-stack_base">
                     <optgroup label="PHP Base">
-                        <option value="core_php" data-stack-group="php-generic">Core PHP</option>
+                        <option value="core_php" data-stack-group="php-generic" disabled>Core PHP</option>
                         <option value="laravel_filament" data-stack-group="laravel-filament">Laravel [Filament]</option>
-                        <option value="laravel_backpack" data-stack-group="laravel-backpack">Laravel [Backpack]</option>
-                        <option value="ci4" data-stack-group="php-generic">Codeigniter 4</option>
-                        <option value="ci3" data-stack-group="php-generic">Codeigniter 3</option>
-						<option value="wordpress" data-stack-group="wordpress">Wordpress</option>
-                        <option value="appgini" data-stack-group="appgini">AppGini Scripts</option>
+                        <option value="laravel_backpack" data-stack-group="laravel-backpack" disabled>Laravel [Backpack]</option>
+                        <option value="ci4" data-stack-group="php-generic" disabled>Codeigniter 4</option>
+                        <option value="ci3" data-stack-group="php-generic" disabled>Codeigniter 3</option>
+						<option value="wordpress" data-stack-group="wordpress" disabled>Wordpress</option>
+                        <option value="appgini" data-stack-group="appgini" disabled>AppGini Scripts</option>
                     </optgroup>
                     <optgroup label="Python Base">
-                        <option value="django" data-stack-group="python-generic">Django</option>
-                        <option value="flask" data-stack-group="python-generic">Flask</option>
+                        <option value="django" data-stack-group="python-generic" disabled>Django</option>
+                        <option value="flask" data-stack-group="python-generic" disabled>Flask</option>
                     </optgroup>
                     <optgroup label="C# Base">
-                        <option value="aspnet_core" data-stack-group="aspnet-core">ASP.NET Core</option>
+                        <option value="aspnet_core" data-stack-group="aspnet-core" disabled>ASP.NET Core</option>
                     </optgroup>
                     <optgroup label="Ruby Base">
-                        <option value="ror" data-stack-group="ror">Ruby on Rails</option>
+                        <option value="ror" data-stack-group="ror" disabled>Ruby on Rails</option>
                     </optgroup>
                     <optgroup label="Java Base">
-                        <option value="java_spring" data-stack-group="java-generic">Spring Boot</option>
-                        <option value="java_struts" data-stack-group="java-generic">Apache Struts</option>
+                        <option value="java_spring" data-stack-group="java-generic" disabled>Spring Boot</option>
+                        <option value="java_struts" data-stack-group="java-generic" disabled>Apache Struts</option>
                     </optgroup>
                     <optgroup label="Javascript Base">
-                        <option value="mean" data-stack-group="js-mean">MEAN</option>
-                        <option value="mern" data-stack-group="js-mern">MERN</option>
-                        <option value="mevn" data-stack-group="js-mevn">MEVN</option>
-                        <option value="pern" data-stack-group="js-pern">PERN</option>
+                        <option value="mean" data-stack-group="js-mean" disabled>MEAN</option>
+                        <option value="mern" data-stack-group="js-mern" disabled>MERN</option>
+                        <option value="mevn" data-stack-group="js-mevn" disabled>MEVN</option>
+                        <option value="pern" data-stack-group="js-pern" disabled>PERN</option>
                     </optgroup>
                 </select>
 				<div id="stack-description-container" class="stack-description"></div>
@@ -153,33 +153,33 @@
             <div class="stack-detail-group" data-stack-ref="php-generic python-generic laravel-backpack">
                 <h4 class="stack-column-title">Database</h4>
                 <select class="app-stack-database">
-                    <option value="mysql_mariadb">MySQL/MariaDB</option>
+                    <option value="mysql_mariadb" disabled>MySQL/MariaDB</option>
                     <option value="sqlite">SQLite</option>
-                    <option value="postgresql">PostgreSQL</option>
-                    <option value="sql_server">SQL Server</option>
+                    <option value="postgresql" disabled>PostgreSQL</option>
+                    <option value="sql_server" disabled>SQL Server</option>
                 </select>
             </div>
             <div class="stack-detail-group" data-stack-ref="laravel-filament">
                 <h4 class="stack-column-title">Database</h4>
                 <select class="app-stack-database">
-                    <option value="mysql_mariadb">MySQL/MariaDB</option>
+                    <option value="mysql_mariadb" disabled>MySQL/MariaDB</option>
                     <option value="sqlite">SQLite</option>
-                    <option value="postgresql">PostgreSQL</option>
-                    <option value="sql_server">SQL Server</option>
+                    <option value="postgresql" disabled>PostgreSQL</option>
+                    <option value="sql_server" disabled>SQL Server</option>
                 </select>
             </div>
             <div class="stack-detail-group" data-stack-ref="wordpress appgini">
                 <h4 class="stack-column-title">Database</h4>
                 <select class="app-stack-database">
-                    <option value="mysql_mariadb">MySQL/MariaDB</option>
+                    <option value="mysql_mariadb" disabled>MySQL/MariaDB</option>
                 </select>
             </div>
             <div class="stack-detail-group" data-stack-ref="java-generic">
                  <h4 class="stack-column-title">Database</h4>
                 <select class="app-stack-database">
-                    <option value="mysql_mariadb">MySQL/MariaDB</option>
-                    <option value="postgresql">PostgreSQL</option>
-                    <option value="sql_server">SQL Server</option>
+                    <option value="mysql_mariadb" disabled>MySQL/MariaDB</option>
+                    <option value="postgresql" disabled>PostgreSQL</option>
+                    <option value="sql_server" disabled>SQL Server</option>
                 </select>
             </div>
             <div class="stack-detail-group" data-stack-ref="aspnet-core">
@@ -190,8 +190,8 @@
                  <h4 class="stack-column-title">Database</h4>
                 <select class="app-stack-database">
                     <option value="sqlite">SQLite</option>
-                    <option value="postgresql">PostgreSQL</option>
-                    <option value="mysql_mariadb">MySQL/MariaDB</option>
+                    <option value="postgresql" disabled>PostgreSQL</option>
+                    <option value="mysql_mariadb" disabled>MySQL/MariaDB</option>
                 </select>
             </div>
             <div class="stack-detail-group" data-stack-ref="js-mean js-mern js-mevn"><h4 class="stack-column-title">Database</h4><input type="text" value="MongoDB" readonly></div>
@@ -201,27 +201,27 @@
                 <h4 class="stack-column-title">Theme</h4>
                 <select class="app-stack-theme">
                     <option value="fiziSys">fiziSys</option>
-                    <option value="adminlte">adminLTE</option>
-                    <option value="coreui">CoreUI</option>
-                    <option value="tabler">Tabler</option>
-                    <option value="matrix_admin">Matrix Admin</option>
-                    <option value="mazer">Mazer</option>
+                    <option value="adminlte" disabled>adminLTE</option>
+                    <option value="coreui" disabled>CoreUI</option>
+                    <option value="tabler" disabled>Tabler</option>
+                    <option value="matrix_admin" disabled>Matrix Admin</option>
+                    <option value="mazer" disabled>Mazer</option>
                 </select>
             </div>
             <div class="stack-detail-group" data-stack-ref="laravel-backpack">
                 <h4 class="stack-column-title">Theme</h4>
                 <select class="app-stack-theme">
                     <option value="fiziSys">fiziSys</option>
-                    <option value="coreui">CoreUI</option>
-                    <option value="tabler">Tabler</option>
+                    <option value="coreui" disabled>CoreUI</option>
+                    <option value="tabler" disabled>Tabler</option>
                 </select>
             </div>
             <div class="stack-detail-group" data-stack-ref="laravel-filament">
                 <h4 class="stack-column-title">Theme</h4>
                 <select class="app-stack-theme">
                     <option value="fiziSys">fiziSys</option>
-                    <option value="brisk">Brisk</option>
-                    <option value="nord_theme">Nord Theme</option>
+                    <option value="brisk" disabled>Brisk</option>
+                    <option value="nord_theme" disabled>Nord Theme</option>
                 </select>
             </div>
              <div class="stack-detail-group" data-stack-ref="appgini wordpress js-mean js-mern js-mevn js-pern">
