@@ -1050,32 +1050,43 @@ ipcMain.handle('field:update', async (event, data) => {
             throw new Error("Field ID tidak dibekalkan.");
         }
 
-        if (fieldsToUpdate.hasOwnProperty('field_name')) {
-            const newFieldName = fieldsToUpdate.field_name;
+if (fieldsToUpdate.hasOwnProperty('field_name')) {
+            // 1. Bersihkan ruang kosong di awal dan akhir perkataan (PENTING!)
+            const newFieldName = fieldsToUpdate.field_name.trim();
+            fieldsToUpdate.field_name = newFieldName; // Simpan semula nilai yang telah dibersihkan
+            
             let isNameValid = true;
+            let errorMessage = "";
 
-            // 1. Semak jika null atau kosong
-            if (!newFieldName || newFieldName.trim() === '') {
+            // 2. Semak jika null atau kosong
+            if (!newFieldName || newFieldName === '') {
                 isNameValid = false;
+                errorMessage = "Nama medan tidak boleh kosong.";
             }
-            // 2. Semak jika mengandungi aksara tidak sah
+            // 3. Semak jika mengandungi aksara tidak sah
             else if (!/^[a-zA-Z_]+$/.test(newFieldName)) {
                 isNameValid = false;
+                errorMessage = "Nama medan hanya boleh mengandungi huruf dan garis bawah (_). Ruang kosong tidak dibenarkan.";
             }
-            // 3. Semak jika nama sudah wujud (untuk medan lain dalam jadual yang sama)
+            // 4. Semak jika nama sudah wujud dalam jadual yang sama
             else {
                 const tableInfo = db.prepare('SELECT table_id FROM fields WHERE field_id = ?').get(field_id);
-                const existingField = db.prepare(
-                    'SELECT field_id FROM fields WHERE table_id = ? AND field_name = ? AND field_id != ?'
-                ).get(tableInfo.table_id, newFieldName, field_id);
-                if (existingField) {
-                    isNameValid = false;
+                if (tableInfo) {
+                    const existingField = db.prepare(
+                        'SELECT field_id FROM fields WHERE table_id = ? AND field_name = ? AND field_id != ?'
+                    ).get(tableInfo.table_id, newFieldName, field_id);
+                    
+                    if (existingField) {
+                        isNameValid = false;
+                        errorMessage = `Nama medan '${newFieldName}' sudah wujud di dalam jadual ini!`;
+                    }
                 }
             }
             
-            // Jika tidak sah, buang 'field_name' dari senarai kemas kini
+            // ▼▼▼ PERUBAHAN UTAMA: Jangan padam secara senyap. Berikan ralat! ▼▼▼
             if (!isNameValid) {
-                delete fieldsToUpdate.field_name;
+                // Return terus supaya UI SaveManager anda menerima ralat ini dan boleh paparkan di konsol/amaran
+                return { success: false, message: errorMessage };
             }
         }
 		

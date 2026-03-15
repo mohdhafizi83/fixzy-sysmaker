@@ -94,20 +94,32 @@ async function generateFilamentModels(fullSchema, basePath) {
             const fillableFields = Object.values(tableData.fields).filter(field => !excludedFields.includes(field.field_name) && field.read_only !== 1).map(field => `\n        '${field.field_name}'`).join(',');
             modelContent = modelContent.replace('<<ARRAY_EDITABLE_BYUSER_FIELDS>>', fillableFields ? `${fillableFields}\n    ` : '');
             
-            // Casts
+// ==========================================
+            // LOGIK CASTS (DIKEMASKINI UNTUK LARAVEL 11 & ARRAY UI)
+            // ==========================================
             const castableFields = Object.values(tableData.fields).filter(field => 
                 field.data_type === 'JSON' || 
-                (field.data_type === 'BOOLEAN' && field.display_type === 'check_box')
+                (field.data_type === 'BOOLEAN' && field.display_type === 'check_box') ||
+                // Tambah semakan untuk komponen UI yang menghasilkan Array
+                ['repeater', 'repeater_simple'].includes(field.display_type)
             );
             
             if (castableFields.length > 0) {
                 const castLines = castableFields.map(field => {
                     let castType = '';
-                    if (field.data_type === 'JSON') castType = 'array';
-                    else if (field.data_type === 'BOOLEAN' && field.display_type === 'check_box') castType = 'boolean';
-                    return `\n        '${field.field_name}' => '${castType}',`;
+                    
+                    if (field.data_type === 'JSON' || ['repeater', 'repeater_simple'].includes(field.display_type)) {
+                        castType = 'array';
+                    } else if (field.data_type === 'BOOLEAN' && field.display_type === 'check_box') {
+                        castType = 'boolean';
+                    }
+                    
+                    return `\n            '${field.field_name}' => '${castType}',`;
                 }).join('');
-                modelContent = modelContent.replace('<<MODEL_CASTS>>', `\n    protected \$casts = [${castLines}\n    ];`);
+                
+                // Menggunakan standard fungsi Laravel 11: protected function casts(): array
+                const castsBlock = `\n    protected function casts(): array\n    {\n        return [${castLines}\n        ];\n    }\n`;
+                modelContent = modelContent.replace('<<MODEL_CASTS>>', castsBlock);
             } else {
                 modelContent = modelContent.replace('<<MODEL_CASTS>>', '');
             }
@@ -624,16 +636,39 @@ async function generateLaravelFactories(fullSchema, basePath) {
             const modelName = getModelClassName(tableName, tables);
             const className = `${modelName}Factory`;
             
-            const columns = [];
+const columns = [];
             const fieldsArr = Object.values(tableData.fields);
-            fieldsArr.forEach(field => {
+            
+fieldsArr.forEach(field => {
                 if (field.primary_key === 1) return;
                 if (['created_at', 'updated_at', 'deleted_at'].includes(field.field_name)) return;
+                
+                // ▼▼▼ MULA: LOGIK RECORD OWNER (SUPER ADMIN ID = 1) ▼▼▼
+                // Jika table ini di set sebagai 'current_user' dan field ini adalah created_by/updated_by
+                if (tableData.record_owner === 'current_user' && ['created_by', 'updated_by', 'user_id'].includes(field.field_name)) {
+                    // Kita paksa ia menjadi 1 (Super Admin) supaya data ini muncul di dashboard admin
+                    columns.push(`            '${field.field_name}' => 1,`);
+                    return; // Skip logik di bawah dan teruskan ke medan seterusnya
+                }
+                // ▲▲▲ TAMAT LOGIK RECORD OWNER ▲▲▲
+
                 const isForeignKey = relationships.some(r => r.child_table_name === tableName && r.fk_child_field === field.field_name);
                 if (isForeignKey) return;
-                columns.push(`            '${field.field_name}' => ${getFakerFormatter(field)},`);
-            });
+                
+                // Dapatkan string asal faker (cth: $this->faker->word())
+                let fakerLogic = getFakerFormatter(field);
+                
+                // Logik pembalut Array/JSON yang kita buat sebelum ini
+                const isArrayType = field.data_type === 'JSON' || 
+                    ['repeater', 'repeater_simple'].includes(field.display_type);
+                
+                if (isArrayType) {
+                    fakerLogic = `[${fakerLogic}, ${fakerLogic}]`;
+                }
 
+                columns.push(`            '${field.field_name}' => ${fakerLogic},`);
+            });
+            
             const content = `<?php\nnamespace Database\\Factories;\nuse Illuminate\\Database\\Eloquent\\Factories\\Factory;\nuse App\\Models\\${modelName};\n\n/**\n * @extends \\Illuminate\\Database\\Eloquent\\Factories\\Factory<\\App\\Models\\${modelName}>\n */\nclass ${className} extends Factory\n{\n    protected $model = ${modelName}::class;\n\n    public function definition(): array\n    {\n        return [\n${columns.join('\n')}\n        ];\n    }\n}\n`;
             fs.writeFileSync(path.join(factoriesPath, `${className}.php`), content);
         }
