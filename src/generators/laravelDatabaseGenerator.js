@@ -654,17 +654,53 @@ fieldsArr.forEach(field => {
 
                 const isForeignKey = relationships.some(r => r.child_table_name === tableName && r.fk_child_field === field.field_name);
                 if (isForeignKey) return;
+
+                // ▼▼▼ MULA: LOGIK OPTIONS LIST (NILAI TETAP / FIXED VALUES) ▼▼▼
+                if (field.display_type === 'options_list' && field.options_list_values) {
+                    // 1. Pisahkan teks berdasarkan koma (,), baris baharu (\n), titik bertindih (;), atau pipe (|)
+                    const optionsArray = field.options_list_values
+                        .split(/[\n,;|]+/) // <--- PERUBAHAN DI SINI (Tambah ; dan |)
+                        .map(opt => opt.trim())       // Bersihkan ruang kosong
+                        .filter(opt => opt !== '');   // Buang nilai yang kosong
+                        
+                    if (optionsArray.length > 0) {
+                        // 2. Formatkan menjadi bentuk tatasusunan (array) PHP yang sah
+                        const phpArrayString = optionsArray.map(opt => `'${opt.replace(/'/g, "\\'")}'`).join(', ');
+                        
+                        // 3. Bina sintaks faker randomElement
+                        const optionsFakerLogic = `$this->faker->randomElement([${phpArrayString}])`;
+                        
+                        columns.push(`            '${field.field_name}' => ${optionsFakerLogic},`);
+                        return; // Selesai untuk medan ini, terus lompat ke medan seterusnya!
+                    }
+                }
+                // ▲▲▲ TAMAT LOGIK OPTIONS LIST ▲▲▲
                 
-                // Dapatkan string asal faker (cth: $this->faker->word())
+                // Dapatkan string asal faker (cth: $this->faker->word()) untuk medan-medan lain
                 let fakerLogic = getFakerFormatter(field);
                 
-                // Logik pembalut Array/JSON yang kita buat sebelum ini
+// ▼▼▼ MULA: LOGIK ARRAY / JSON YANG KETAT ▼▼▼
                 const isArrayType = field.data_type === 'JSON' || 
                     ['repeater', 'repeater_simple'].includes(field.display_type);
                 
                 if (isArrayType) {
-                    fakerLogic = `[${fakerLogic}, ${fakerLogic}]`;
+                    if (field.display_type === 'repeater') {
+                        // Untuk Repeater Kompleks: Bina Array of Associative Arrays
+                        let repeaterKeys = [];
+                        for (let i = 1; i <= 3; i++) {
+                            if (field[`repeater_${i}_display_as`]) {
+                                // Contoh hasil: 'email_1' => $this->faker->word()
+                                repeaterKeys.push(`'${field.field_name}_${i}' => ${fakerLogic}`);
+                            }
+                        }
+                        const assocArray = `[${repeaterKeys.join(', ')}]`;
+                        fakerLogic = `[${assocArray}, ${assocArray}]`;
+                    } else {
+                        // Untuk Repeater Simple / Tags: Bina Flat Array biasa
+                        fakerLogic = `[${fakerLogic}, ${fakerLogic}]`;
+                    }
                 }
+                // ▲▲▲ TAMAT LOGIK ARRAY / JSON ▲▲▲
 
                 columns.push(`            '${field.field_name}' => ${fakerLogic},`);
             });

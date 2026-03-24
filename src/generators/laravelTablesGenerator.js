@@ -161,16 +161,44 @@ function generateTableColumnsString(tableData, relationships, tableName, project
             }
         }
         
-        if (field.data_type === 'JSON') {
-            const jsonFormatter = `->formatStateUsing(function (?array \$state): ?string {
+if (field.data_type === 'JSON') {
+            const jsonFormatter = `->formatStateUsing(function (array|string|null \$state): ?string {
             if (blank(\$state)) { return null; }
-            if (isset(\$state['${field.field_name}'])) { return \$state['${field.field_name}']; }
-            if (is_array(\$state) && isset(\$state[0]['${field.field_name}'])) { return implode(', ', array_column(\$state, '${field.field_name}')); }
+            
+            // Jaring Keselamatan: Jika Eloquent memulangkan String (gagal cast automatik), decode secara manual
+            if (is_string(\$state)) {
+                \$decoded = json_decode(\$state, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    \$state = \$decoded;
+                } else {
+                    return \$state; // Jika bukan JSON, pulangkan teks mentah
+                }
+            }
+            
+            // Proses data yang telah disahkan sebagai Array
+            if (is_array(\$state)) {
+                // Senario A: Baca format Repeater Simple / Tags (Flat Array)
+                // Cth: ["ali@gmail.com", "abu@gmail.com"]
+                if (isset(\$state[0]) && !is_array(\$state[0])) {
+                    return implode(', ', \$state);
+                }
+                
+                // Senario B: Baca format Repeater (Array of Objects)
+                // Cth: [["email_1" => "ali..."], ["email_1" => "abu..."]]
+                \$values = [];
+                foreach (\$state as \$item) {
+                    if (is_array(\$item)) {
+                        \$values = array_merge(\$values, array_values(\$item));
+                    }
+                }
+                return implode(', ', array_filter(\$values));
+            }
+            
             return '';
         })`;
             lines.push(jsonFormatter);
         }
-
+        
         // --- SUMMARIES ---
         const hasSummary = field.show_sum === 1 || field.show_avg_summary === 1 || field.show_count_summary === 1 || field.show_range_summary === 1;
         if (hasSummary) {

@@ -2005,35 +2005,84 @@ ipcMain.handle('preview:stop', () => {
  * 1 = Tiada Perubahan (Hanya buka modal semula)
  * 2 = Perubahan UI/Tetapan (Jana kod UI + Clear Cache)
  * 3 = Perubahan Pangkalan Data (Jana semua + Migrate DB)
+ * 4 = Perubahan Pangkalan Data terhad (pilihan options_list / array type)
+ * Pulangan Object: { scenario: 1|2|3|4, targets: ['nama_jadual'] }
  */
 function analyzeSchemaDiff(oldSchema, newSchema) {
     if (!oldSchema) {
         console.log("[Diff Checker] Tiada memori lama. Paksa Senario 3 (First Run).");
-        return 3; 
+        return { scenario: 3, targets: [] }; 
     }
 
-    // 1. Ujian Senario 1 (Tiada Perubahan Langsung)
-    // Oleh kerana SQLite memulangkan data dengan susunan (ORDER BY) yang konsisten,
-    // kita boleh menggunakan JSON.stringify untuk perbandingan pantas 100%.
     const oldStr = JSON.stringify(oldSchema);
     const newStr = JSON.stringify(newSchema);
     
     if (oldStr === newStr) {
         console.log("[Diff Checker] Skema 100% sama. Masuk Senario 1.");
-        return 1;
+        return { scenario: 1, targets: [] };
     }
 
-    // 2. Ujian Senario 3 (Perubahan Pangkalan Data)
+    // Ujian Senario 3 (Perubahan Pangkalan Data)
     const isDbChanged = checkDatabaseChanges(oldSchema, newSchema);
     if (isDbChanged) {
         console.log("[Diff Checker] Perubahan struktur pangkalan data dikesan. Masuk Senario 3.");
-        return 3;
+        return { scenario: 3, targets: [] };
     }
 
-    // 3. Jika ia bukan Senario 1 (Ada beza) dan bukan Senario 3 (Bukan beza DB),
-    // maka ia pasti Senario 2 (Hanya UI/Tetapan yang berubah).
+    // ▼▼▼ MULA: UJIAN SENARIO 4 (TARGETED REFRESH UNTUK OPTIONS LIST & ARRAY) ▼▼▼
+    let targetedTables = [];
+    const oldTables = oldSchema.database.table;
+    const newTables = newSchema.database.table;
+
+    for (const tableName in newTables) {
+        const newTable = newTables[tableName];
+        const oldTable = oldTables[tableName] || { fields: {} };
+        
+        let requiresFakeDataRefresh = false;
+        
+        for (const fieldName in newTable.fields) {
+            const newField = newTable.fields[fieldName];
+            const oldField = oldTable.fields[fieldName] || {};
+
+            const oldOptions = oldField.options_list_values || '';
+            const newOptions = newField.options_list_values || '';
+            
+            // 1. Adakah jenis paparan berubah?
+            const isDisplayTypeChanged = oldField.display_type !== newField.display_type;
+            
+            // 2. Adakah ia melibatkan options_list (sama ada DARI atau KEPADA)?
+            const involvesOptionsList = oldField.display_type === 'options_list' || newField.display_type === 'options_list';
+            
+            // 3. Adakah ia melibatkan komponen Array/JSON?
+            const arrayTypes = ['multiple_select', 'checkbox_list', 'tags_input', 'repeater', 'repeater_simple'];
+            const involvesArrayType = arrayTypes.includes(oldField.display_type) || arrayTypes.includes(newField.display_type);
+
+            // LOGIK PENCETUS SENARIO 4:
+            if (
+                // Kes A: Tukar DARI atau KEPADA options_list/array_type
+                (isDisplayTypeChanged && (involvesOptionsList || involvesArrayType)) ||
+                
+                // Kes B: Kekal options_list, tetapi nilainya (options_list_values) berubah
+                (newField.display_type === 'options_list' && oldOptions !== newOptions)
+            ) {
+                requiresFakeDataRefresh = true;
+                break; // Cukup satu field berubah, kita refresh jadual ini
+            }
+        }
+        
+        if (requiresFakeDataRefresh) {
+            targetedTables.push(tableName);
+        }
+    }
+
+    if (targetedTables.length > 0) {
+        console.log(`[Diff Checker] Perubahan format data UI dikesan. Masuk Senario 4 untuk jadual: ${targetedTables.join(', ')}`);
+        return { scenario: 4, targets: targetedTables };
+    }
+    // ▲▲▲ TAMAT UJIAN SENARIO 4 ▲▲▲
+
     console.log("[Diff Checker] Hanya perubahan UI/Tetapan dikesan. Masuk Senario 2.");
-    return 2;
+    return { scenario: 2, targets: [] };
 }
 
 /**
@@ -2201,7 +2250,9 @@ ipcMain.handle('preview:instant-run', async (event) => {
             // ========================================================
             // 3. ANALISIS HOT RELOAD (DIFF CHECKER)
             // ========================================================
-            let scenario = analyzeSchemaDiff(lastGeneratedSchema, fullSchema);
+            const diffResult = analyzeSchemaDiff(lastGeneratedSchema, fullSchema);
+            let scenario = diffResult.scenario;
+            let targetedTables = diffResult.targets;
             
             // Jika .env berubah, paksa sistem masuk ke Senario 2 supaya arahan 'optimize:clear' membersihkan cache Laravel
             if (scenario === 1 && envChanged) {
@@ -2289,9 +2340,13 @@ ipcMain.handle('preview:instant-run', async (event) => {
             if (scenario === 3) {
                 await generateLaravelUserMigration(fullSchema, previewPath);
                 await generateLaravelMigrations(fullSchema, previewPath);
-                await generateLaravelFactories(fullSchema, previewPath);
                 await generateLaravelDatabaseSeeder(fullSchema, previewPath);
                 await generateFilamentUserModel(fullSchema, previewPath);
+            }
+            
+            // Factory wajib dijana untuk Senario 3 DAN Senario 4
+            if (scenario === 3 || scenario === 4) {
+                await generateLaravelFactories(fullSchema, previewPath);
             }
             
             await generateFilamentModels(fullSchema, previewPath); 
@@ -2316,6 +2371,51 @@ ipcMain.handle('preview:instant-run', async (event) => {
             lastGeneratedSchema = JSON.parse(JSON.stringify(fullSchema));
             fs.writeFileSync(schemaCachePath, JSON.stringify(lastGeneratedSchema), 'utf8');
 
+            // ============================================================
+            // --- SENARIO 4: TARGETED REFRESH (KHAS UNTUK OPTIONS LIST & ARRAY) ---
+            // ============================================================
+            if (scenario === 4) {
+                console.log(`[Preview] Senario 4: Mencuci cache & membina semula fake data untuk ${targetedTables.join(', ')}...`);
+                win?.webContents.send('show-overlay', { message: 'Mencuci cache sistem...', progress: 93 });
+                
+                // LANGKAH 1: Cuci Cache Dahulu (Sama macam Senario 2)
+                const cacheProcess = spawn(phpPath, ['artisan', 'optimize:clear'], { cwd: previewPath });
+                
+                cacheProcess.on('close', () => {
+                    win?.webContents.send('show-overlay', { message: 'Menjana semula data ujian untuk jadual yang terlibat...', progress: 96 });
+                    
+                    // LANGKAH 2: Bina kod PHP untuk Tinker (Padam rekod lama & Cipta rekod baharu)
+                    let tinkerCode = `\\Illuminate\\Support\\Facades\\Schema::disableForeignKeyConstraints(); `;
+                    
+                    targetedTables.forEach(tableName => {
+                        const modelName = typeof getModelClassName === 'function' ? getModelClassName(tableName, fullSchema.database.table) : tableName;
+                        
+                        tinkerCode += `
+                            try {
+                                $model = '\\\\App\\\\Models\\\\${modelName}';
+                                $model::query()->delete();
+                                $model::factory()->count(20)->create();
+                            } catch (\\Exception $e) {}
+                        `;
+                    });
+                    
+                    tinkerCode += ` \\Illuminate\\Support\\Facades\\Schema::enableForeignKeyConstraints();`;
+
+                    // Jalankan perintah Tinker di latar belakang
+                    const tinkerProcess = spawn(phpPath, ['artisan', 'tinker', '--execute', tinkerCode], { cwd: previewPath });
+                    
+                    tinkerProcess.on('close', () => {
+                        if (previewServerProcess) {
+                            win?.webContents.send('show-overlay', { message: 'Antaramuka & Data berjaya dikemas kini!', progress: 100 });
+                            setTimeout(() => resolve({ success: true, url: `http://127.0.0.1:${port}/admin` }), 500);
+                        } else {
+                            startServerAndResolve();
+                        }
+                    });
+                });
+                return; // Tamatkan proses kerana Senario 4 sudah selesai!
+            }
+            
             // ============================================================
             // 6. --- SENARIO 2: HOT RELOAD (CLEAR CACHE) ---
             // ============================================================
