@@ -380,17 +380,23 @@ export function populateRecordOwnerDropdown(tableName) {
     const recordOwnerDropdown = document.getElementById('tbl-record-owner');
     if (!recordOwnerDropdown || !appState.jsonData) return;
 
-    // Kosongkan opsyen sedia ada
+    // Kosongkan opsyen sedia ada (termasuk yang statik dari HTML)
     recordOwnerDropdown.innerHTML = '';
 
-    // 1. Tambah opsyen lalai
-    const defaultOption = document.createElement('option');
-    defaultOption.value = 'current_user'; // Nilai kosong untuk 'Current user'
-    defaultOption.textContent = 'Current user (default)';
-    recordOwnerDropdown.appendChild(defaultOption);
+    // 1. Tambah opsyen lalai pertama (Anybody / All - Tiada Sekatan)
+    const anybodyOption = document.createElement('option');
+    anybodyOption.value = ''; // Nilai kosong yang kita mahukan
+    anybodyOption.textContent = 'Anybody (with auth)';
+    recordOwnerDropdown.appendChild(anybodyOption);
 
-    // ▼▼▼ LOGIK YANG DIPERBAIKI ▼▼▼
-    // 2. Cari dan tambah semua medan kunci asing (foreign key) berdasarkan data hubungan
+    // 2. Tambah opsyen statik kedua (Current User Only)
+    const currentUserOption = document.createElement('option');
+    currentUserOption.value = 'current_user'; 
+    currentUserOption.textContent = 'Current User Only';
+    recordOwnerDropdown.appendChild(currentUserOption);
+
+    // ▼▼▼ LOGIK DINAMIK ▼▼▼
+    // 3. Cari dan tambah semua medan kunci asing (foreign key) berdasarkan data hubungan
     const relationships = appState.jsonData.database.relationships || [];
     
     relationships.forEach(rel => {
@@ -400,11 +406,11 @@ export function populateRecordOwnerDropdown(tableName) {
             
             const lookupOption = document.createElement('option');
             lookupOption.value = fkFieldName;
-            lookupOption.textContent = fkFieldName;
+            lookupOption.textContent = fkFieldName; // Anda boleh tambah toTitleCase(fkFieldName) jika mahu lebih kemas
             recordOwnerDropdown.appendChild(lookupOption);
         }
     });
-    // ▲▲▲ TAMAT LOGIK YANG DIPERBAIKI ▲▲▲
+    // ▲▲▲ TAMAT LOGIK DINAMIK ▲▲▲
 }
 
 /**

@@ -74,5 +74,8 @@ updateIndividualMenuOrder: (data) => ipcRenderer.invoke('menu:update-individual-
     stopPreviewServer: () => ipcRenderer.send('stop-preview-server'),
     generateApp: () => ipcRenderer.invoke('generate-app'),
     openFolder: (path) => ipcRenderer.send('open-folder', path),
-	runComposer: (projectPath) => ipcRenderer.invoke('run-composer', projectPath)
+	runComposer: (projectPath) => ipcRenderer.invoke('run-composer', projectPath),
+    // --- PENGURUSAN WIDGET DASHBOARD ---
+  saveWidget: (data) => ipcRenderer.invoke('widget:save', data),
+  deleteWidget: (widgetId) => ipcRenderer.invoke('widget:delete', widgetId),
 });

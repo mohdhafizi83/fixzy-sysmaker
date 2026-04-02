@@ -652,8 +652,18 @@ fieldsArr.forEach(field => {
                 }
                 // ▲▲▲ TAMAT LOGIK RECORD OWNER ▲▲▲
 
-                const isForeignKey = relationships.some(r => r.child_table_name === tableName && r.fk_child_field === field.field_name);
-                if (isForeignKey) return;
+// ▼▼▼ MULA: LOGIK FOREIGN KEY UNTUK FACTORY (Sokongan Senario 4) ▼▼▼
+                const relation = relationships.find(r => r.child_table_name === tableName && r.fk_child_field === field.field_name);
+                
+                if (relation) {
+                    // Dapatkan nama Model bagi jadual Parent
+                    const parentModelName = getModelClassName(relation.parent_table_name, tables);
+                    
+                    // Ajar Factory untuk tarik satu ID secara rawak dari jadual Parent
+                    columns.push(`            '${field.field_name}' => \\App\\Models\\${parentModelName}::inRandomOrder()->value('id'),`);
+                    return; // Selesai untuk medan Foreign Key ini, terus lompat ke medan seterusnya
+                }
+                // ▲▲▲ TAMAT LOGIK FOREIGN KEY ▲▲▲
 
                 // ▼▼▼ MULA: LOGIK OPTIONS LIST (NILAI TETAP / FIXED VALUES) ▼▼▼
                 if (field.display_type === 'options_list' && field.options_list_values) {
@@ -681,23 +691,55 @@ fieldsArr.forEach(field => {
                 
 // ▼▼▼ MULA: LOGIK ARRAY / JSON YANG KETAT ▼▼▼
                 const isArrayType = field.data_type === 'JSON' || 
-                    ['repeater', 'repeater_simple'].includes(field.display_type);
+                    ['repeater', 'repeater_simple', 'multiple_select', 'checkbox_list', 'tags_input'].includes(field.display_type);
                 
                 if (isArrayType) {
+                    // FUNGSI BANTUAN PINTAR: Menggantikan getFakerFormatter yang gagal baca JSON
+                    const getRealFaker = (fieldName, formatAs) => {
+                        const nameLower = fieldName.toLowerCase();
+                        if (formatAs === 'email' || nameLower.includes('email')) {
+                            return `$this->faker->unique()->safeEmail()`; // Wajib unik untuk elak DB crash!
+                        }
+                        if (formatAs === 'tel' || nameLower.includes('tel') || nameLower.includes('phone')) {
+                            return `$this->faker->phoneNumber()`;
+                        }
+                        if (formatAs === 'url' || nameLower.includes('url')) {
+                            return `$this->faker->url()`;
+                        }
+                        if (nameLower.includes('name') || nameLower.includes('nama')) {
+                            return `$this->faker->name()`;
+                        }
+                        return `$this->faker->word()`;
+                    };
+
                     if (field.display_type === 'repeater') {
-                        // Untuk Repeater Kompleks: Bina Array of Associative Arrays
-                        let repeaterKeys = [];
+                        // Untuk Repeater Kompleks: Bina 2 objek berasingan
+                        let object1Keys = [];
+                        let object2Keys = [];
+
                         for (let i = 1; i <= 3; i++) {
                             if (field[`repeater_${i}_display_as`]) {
-                                // Contoh hasil: 'email_1' => $this->faker->word()
-                                repeaterKeys.push(`'${field.field_name}_${i}' => ${fakerLogic}`);
+                                const format = field[`repeater_${i}_format_as`];
+                                const fakeItem1 = getRealFaker(field.field_name, format);
+                                const fakeItem2 = getRealFaker(field.field_name, format);
+
+                                object1Keys.push(`'${field.field_name}_${i}' => ${fakeItem1}`);
+                                object2Keys.push(`'${field.field_name}_${i}' => ${fakeItem2}`);
                             }
                         }
-                        const assocArray = `[${repeaterKeys.join(', ')}]`;
-                        fakerLogic = `[${assocArray}, ${assocArray}]`;
+                        const assocArray1 = `[${object1Keys.join(', ')}]`;
+                        const assocArray2 = `[${object2Keys.join(', ')}]`;
+                        
+                        fakerLogic = `[${assocArray1}, ${assocArray2}]`;
+                        
                     } else {
-                        // Untuk Repeater Simple / Tags: Bina Flat Array biasa
-                        fakerLogic = `[${fakerLogic}, ${fakerLogic}]`;
+                        // Untuk Repeater Simple / Tags / Dll: Bina 3 string rawak yang berbeza
+                        const format = field.repeater_simple_format_as;
+                        const fake1 = getRealFaker(field.field_name, format);
+                        const fake2 = getRealFaker(field.field_name, format);
+                        const fake3 = getRealFaker(field.field_name, format);
+                        
+                        fakerLogic = `[${fake1}, ${fake2}, ${fake3}]`;
                     }
                 }
                 // ▲▲▲ TAMAT LOGIK ARRAY / JSON ▲▲▲

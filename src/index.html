@@ -91,16 +91,17 @@
 <main class="main-content">
     <div id="main-dashboard-page">
         <div class="tabs-container">
-            <div class="tabs-nav">
-				<button class="tab-link active" data-tab="tab-stack">Technologies Stack & Core features</button>
+<div class="tabs-nav">
+                <button class="tab-link active" data-tab="tab-stack">Technologies Stack & Core features</button>
                 <button class="tab-link" data-tab="tab-localization" id="app-tab_localization" name="app-tab_localization">Localization</button>
-                <!--<button class="tab-link" data-tab="tab-theme" id="app-tab_theme" name="app-tab_theme">Theme</button> -->
                 <button class="tab-link" data-tab="tab-models-design" id="tab-models-design-btn">Models Design</button>
                 <button class="tab-link" data-tab="tab-modules-setup" id="tab-modules-setup-btn">Modules Setup</button>
                 <button class="tab-link" data-tab="tab-menu-appearance" id="app-tab_menu_appearance" name="app-tab_menu_appearance">Menu management</button>
+                
+                <button class="tab-link" data-tab="tab-dashboard-builder" id="app-tab_dashboard_builder" name="app-tab_dashboard_builder">Dashboard Builder</button>
                 <button class="tab-link" data-tab="tab-architecture" id="app-tab_architecture" name="app-tab_architecture">Architecture & Multi-Tenancy</button>
                 <button class="tab-link" data-tab="tab-security" id="app-tab_security" name="app-tab_security">Security & technical</button>
-				<button class="tab-link" data-tab="tab-hooks">Hooks (Optional - for complex App)</button>
+                <button class="tab-link" data-tab="tab-hooks">Hooks (Optional - for complex App)</button>
             </div>
 
             <div class="tabs-content">
@@ -2367,6 +2368,94 @@
                     </div>
                 </div>
 
+<div id="tab-dashboard-builder" class="tab-pane">
+
+<div id="panel-dashboard-builder" class="d-none"> 
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Dashboard Builder</h3>
+        <button id="btn-add-widget" class="btn btn-primary">+ Tambah Widget</button>
+    </div>
+
+    <div id="widget-list-container" class="row"></div>
+</div>
+
+<div id="modal-widget-settings" class="modal" tabindex="-1" style="display: none; background: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="widget-modal-title">Tetapan Widget</h5>
+                <button type="button" class="close" id="btn-close-modal-header">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-widget-settings">
+                    <input type="hidden" id="widget-id">
+                    
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>Tajuk Widget</label>
+                            <input type="text" id="widget-title" class="form-control" placeholder="Cth: Jumlah Pelajar">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>Jenis Widget</label>
+                            <select id="widget-type" class="form-control">
+                                <option value="stats">Statistik (Kad Nombor)</option>
+                                <option value="chart_bar">Carta Palang (Bar Chart)</option>
+                                <option value="chart_pie">Carta Pai (Pie Chart)</option>
+                                <option value="table_latest">Senarai Terkini (Latest Table)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>Jadual Sumber (Target Table)</label>
+                            <select id="widget-target-table" class="form-control"></select>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>Jenis Pengiraan (Aggregate)</label>
+                            <select id="widget-aggregate-type" class="form-control">
+                                <option value="count">Count (Kira Jumlah Baris)</option>
+                                <option value="sum">Sum (Tambah Nilai)</option>
+                                <option value="avg">Average (Purata Nilai)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 form-group">
+                            <label>Lebar Paparan (Width)</label>
+                            <select id="widget-width-span" class="form-control">
+                                <option value="1">1/3 Skrin</option>
+                                <option value="2">2/3 Skrin</option>
+                                <option value="full">Penuh Skrin (Full)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label>Warna Tema</label>
+                            <select id="widget-color" class="form-control">
+                                <option value="primary">Primary (Biru)</option>
+                                <option value="success">Success (Hijau)</option>
+                                <option value="danger">Danger (Merah)</option>
+                                <option value="warning">Warning (Kuning)</option>
+                                <option value="info">Info (Sian)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label>Ikon (Heroicon)</label>
+                            <input type="text" id="widget-icon" class="form-control" placeholder="Cth: heroicon-o-users">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btn-close-modal-footer">Batal</button>
+                <button type="button" class="btn btn-success" id="btn-save-widget">Simpan Widget</button>
+            </div>
+        </div>
+    </div>
+</div>
+    </div>
+    
 <div id="tab-hooks" class="tab-pane">
     <div class="card">
         <div class="card-body">

@@ -92,6 +92,8 @@ import {
 } from './js/state.js';
 import { resolveVariables } from './js/utils.js';
 
+import { initDashboardBuilder } from './js/pages/dashboardBuilder.js';
+
 import { SaveManager } from './js/saveManager.js';
 export { SaveManager }; // Eksport semula supaya fail lain tak 'pecah'
 
@@ -139,6 +141,7 @@ export async function loadProjectData(project, options = {}) {
         if (refreshMode === 'full') {
             populateMainDashboard(appState.activeProject);  
             populateMenuManagement(appState.jsonData.database.unified_menu);
+            initDashboardBuilder();
             document.getElementById('app-title').value = appState.activeProject.app_title || 'Project Name';
         }
         
@@ -500,7 +503,7 @@ initializeTableSaveHandlers();
     initializeWrapTextRule();
     initializeMediaTypeDefaultRules();
     initializeDataTypeDefaultRules();
-
+   
     tenancyManager.init();    
     
     // Setup Event Listeners

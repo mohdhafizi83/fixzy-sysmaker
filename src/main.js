@@ -2553,6 +2553,59 @@ ipcMain.handle('save-field-validations', (event, { columnId, validations }) => {
     }
 });
 
+// ==========================================
+// IPC: PENGURUSAN WIDGET DASHBOARD
+// ==========================================
+
+// 1. Simpan atau Kemas Kini Widget
+ipcMain.handle('widget:save', (event, data) => {
+    try {
+        let savedData;
+        
+        if (data.id) {
+            // Kemas kini (Update)
+            const stmt = db.prepare(`
+                UPDATE project_widgets 
+                SET title = ?, widget_type = ?, target_table = ?, aggregate_type = ?, width_span = ?, color = ?, icon = ?
+                WHERE id = ? AND project_id = ?
+            `);
+            stmt.run(data.title, data.widget_type, data.target_table, data.aggregate_type, data.width_span, data.color, data.icon, data.id, data.project_id);
+            
+            savedData = { ...data, id: parseInt(data.id) };
+        } else {
+            // Cipta Baru (Insert)
+            // Cari susunan tertinggi (sort_order)
+            const orderStmt = db.prepare(`SELECT MAX(sort_order) as max_order FROM project_widgets WHERE project_id = ?`);
+            const orderResult = orderStmt.get(data.project_id);
+            const nextOrder = (orderResult && orderResult.max_order !== null) ? orderResult.max_order + 1 : 1;
+
+            const stmt = db.prepare(`
+                INSERT INTO project_widgets (project_id, title, widget_type, target_table, aggregate_type, width_span, color, icon, sort_order)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `);
+            const info = stmt.run(data.project_id, data.title, data.widget_type, data.target_table, data.aggregate_type, data.width_span, data.color, data.icon, nextOrder);
+            
+            savedData = { ...data, id: info.lastInsertRowid, sort_order: nextOrder };
+        }
+        
+        return { success: true, data: savedData };
+    } catch (error) {
+        console.error('Ralat widget:save:', error);
+        return { success: false, message: error.message };
+    }
+});
+
+// 2. Padam Widget
+ipcMain.handle('widget:delete', (event, id) => {
+    try {
+        const stmt = db.prepare("DELETE FROM project_widgets WHERE id = ?");
+        stmt.run(id);
+        return { success: true };
+    } catch (error) {
+        return { success: false, message: error.message };
+    }
+});
+
 async function getFullProjectSchema(projectId) {
   try {
     const project = db
@@ -2560,6 +2613,12 @@ async function getFullProjectSchema(projectId) {
       .get(projectId);
     if (!project)
       throw new Error(`Projek dengan ID ${projectId} tidak ditemui.`);
+
+    // ▼▼▼ TAMBAHAN BARU: Ambil Data Dashboard Widgets ▼▼▼
+    const widgets = db
+      .prepare("SELECT * FROM project_widgets WHERE project_id = ? ORDER BY sort_order ASC")
+      .all(projectId);
+    // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
 
     const tables = db
       .prepare("SELECT * FROM tables WHERE project_id = ? ORDER BY table_order, table_id")
@@ -2569,7 +2628,8 @@ async function getFullProjectSchema(projectId) {
     if (tableIds.length === 0) {
         return {
             project,
-            database: { name: project.app_title, table: {}, relationships: [], unified_menu: [] },
+            // Kemas kini: Masukkan widgets walaupun jadual belum ada
+            database: { name: project.app_title, table: {}, relationships: [], unified_menu: [], widgets: widgets },
         };
     }
 
@@ -2586,14 +2646,13 @@ async function getFullProjectSchema(projectId) {
         customViewFields = db.prepare(`SELECT * FROM custom_module_fields WHERE module_id IN (${viewPlaceholder}) ORDER BY display_order`).all(...viewIds);
     }
 
-    // ▼▼▼ TAMBAHAN BARU: Field Validations (Dari Test) ▼▼▼
+    // Field Validations (Dari Test)
     const validations = db.prepare(`
         SELECT fv.*, f.table_id, f.field_name 
         FROM field_validations fv
         JOIN fields f ON fv.column_id = f.field_id
         WHERE f.table_id IN (${placeholder}) AND fv.is_active = 1
     `).all(...tableIds);
-    // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
 
     const structuredTables = {};
     tables.forEach((table) => {
@@ -2613,9 +2672,7 @@ async function getFullProjectSchema(projectId) {
     fields.forEach((field) => {
       const parentTable = tables.find((t) => t.table_id === field.table_id);
       if (parentTable) {
-        // ▼▼▼ TAMBAHAN BARU: Attach Validation ke Field ▼▼▼
         field.validations = validations.filter(v => v.column_id === field.field_id);
-        // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
         structuredTables[parentTable.table_name].fields[field.field_name] = field;
       }
     });
@@ -2630,7 +2687,7 @@ async function getFullProjectSchema(projectId) {
         )
         .all(...tableIds, ...tableIds);
     
-    // (Logik Menu di sini KEKAL SAMA kerana ia sudah versi terkini)
+    // Logik Unified Menu
     const allItems = db.prepare(`
         SELECT mi.*, t.table_name 
         FROM menu_items mi 
@@ -2687,6 +2744,9 @@ async function getFullProjectSchema(projectId) {
         table: structuredTables,
         relationships: relationships,
         unified_menu: unifiedMenu,
+        // ▼▼▼ TAMBAHAN BARU: Masukkan widgets ke dalam payload JSON akhir ▼▼▼
+        widgets: widgets,
+        // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
       },
     };
   } catch (error) {

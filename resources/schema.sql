@@ -355,3 +355,18 @@ CREATE TABLE IF NOT EXISTS field_validations (
     is_active INTEGER DEFAULT 0,
     FOREIGN KEY (column_id) REFERENCES fields(field_id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS project_widgets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    widget_type TEXT NOT NULL,
+    target_table TEXT NOT NULL,
+    target_field TEXT,
+    aggregate_type TEXT,
+    width_span TEXT DEFAULT '1',
+    icon TEXT,                        -- Cth: 'heroicon-o-users' (Untuk Stats)
+    color TEXT DEFAULT 'primary',     -- Cth: 'primary', 'success', 'danger', 'warning', 'info'
+    sort_order INTEGER DEFAULT 0,
+    FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
