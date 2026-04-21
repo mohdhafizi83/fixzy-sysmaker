@@ -2563,27 +2563,36 @@ ipcMain.handle('widget:save', (event, data) => {
         let savedData;
         
         if (data.id) {
-            // Kemas kini (Update)
+            // Kemas kini (Update) - Tambah 5 medan baharu
             const stmt = db.prepare(`
                 UPDATE project_widgets 
-                SET title = ?, widget_type = ?, target_table = ?, aggregate_type = ?, width_span = ?, color = ?, icon = ?
-                WHERE id = ? AND project_id = ?
+                SET title = ?, widget_type = ?, target_table = ?, aggregate_type = ?, target_field = ?, width_span = ?, color = ?, icon = ?,
+    chart_label_column = ?, filter_field = ?, filter_operator = ?, filter_value = ?, timeframe_range = ?, advanced_query = ?
+WHERE id = ? AND project_id = ?
             `);
-            stmt.run(data.title, data.widget_type, data.target_table, data.aggregate_type, data.width_span, data.color, data.icon, data.id, data.project_id);
+            stmt.run(
+                data.chart_label_column, data.filter_field, data.filter_operator, data.filter_value, data.timeframe_range, data.advanced_query,
+data.id, data.project_id
+            );
             
             savedData = { ...data, id: parseInt(data.id) };
         } else {
-            // Cipta Baru (Insert)
-            // Cari susunan tertinggi (sort_order)
+            // Cipta Baru (Insert) - Tambah 5 medan baharu
             const orderStmt = db.prepare(`SELECT MAX(sort_order) as max_order FROM project_widgets WHERE project_id = ?`);
             const orderResult = orderStmt.get(data.project_id);
             const nextOrder = (orderResult && orderResult.max_order !== null) ? orderResult.max_order + 1 : 1;
 
             const stmt = db.prepare(`
-                INSERT INTO project_widgets (project_id, title, widget_type, target_table, aggregate_type, width_span, color, icon, sort_order)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO project_widgets (
+                    project_id, title, widget_type, target_table, aggregate_type, target_field, width_span, color, icon, sort_order,
+                    chart_label_column, filter_field, filter_operator, filter_value, timeframe_range, advanced_query
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `);
-            const info = stmt.run(data.project_id, data.title, data.widget_type, data.target_table, data.aggregate_type, data.width_span, data.color, data.icon, nextOrder);
+            const info = stmt.run(
+                data.project_id, data.title, data.widget_type, data.target_table, data.aggregate_type, data.target_field, data.width_span, data.color, data.icon, nextOrder,
+                data.chart_label_column, data.filter_field, data.filter_operator, data.filter_value, data.timeframe_range, data.advanced_query
+            );
             
             savedData = { ...data, id: info.lastInsertRowid, sort_order: nextOrder };
         }

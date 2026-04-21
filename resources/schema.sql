@@ -368,5 +368,11 @@ CREATE TABLE IF NOT EXISTS project_widgets (
     icon TEXT,                        -- Cth: 'heroicon-o-users' (Untuk Stats)
     color TEXT DEFAULT 'primary',     -- Cth: 'primary', 'success', 'danger', 'warning', 'info'
     sort_order INTEGER DEFAULT 0,
+    chart_label_column TEXT,      -- Untuk Paksi-X Carta (Cth: 'nama_fakulti')
+    filter_field TEXT,            -- Lajur untuk klausa WHERE (Cth: 'status')
+    filter_operator TEXT,         -- Operasi (Cth: '=', '!=', '>', 'LIKE')
+    filter_value TEXT,            -- Nilai tapisan (Cth: 'aktif')
+    timeframe_range TEXT,         -- Tapisan masa (Cth: 'this_month', 'this_year')
+    advanced_query TEXT,          -- BARU: Untuk simpan JSON/SQL dari Query Builder
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );

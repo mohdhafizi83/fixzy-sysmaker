@@ -1,17 +1,21 @@
+import { showConfigurableQueryBuilder } from '../handlers/logicBuilderHandlers.js';
 /**
  * Membuka Query Builder dalam mod 'general'.
- * Fungsi ini boleh dieksport dan dipanggil dari mana-mana, terutamanya dari Algorithm Builder.
+ * Kini menyokong parameter khusus untuk Dashboard Builder.
  */
-export function openGeneralQueryBuilder(targetTextarea) {
-    let tableName;
+export function openGeneralQueryBuilder(targetTextarea, overrideTableName = null, customCallback = null) {
+    let tableName = overrideTableName; // Guna jadual yang dihantar jika ada
+    
     const fieldPage = document.getElementById('field-settings-page');
     const tablePage = document.getElementById('table-settings-page');
 
-    // Tentukan konteks jadual berdasarkan halaman yang sedang aktif
-    if (fieldPage && !fieldPage.classList.contains('hidden')) {
-        [tableName] = fieldPage.querySelector('.field-name')?.textContent.split('.') || [];
-    } else if (tablePage && !tablePage.classList.contains('hidden')) {
-        tableName = tablePage.querySelector('.table-name')?.textContent;
+    // Jika tiada overrideTableName, guna logik asal untuk cari di UI
+    if (!tableName) {
+        if (fieldPage && !fieldPage.classList.contains('hidden')) {
+            [tableName] = fieldPage.querySelector('.field-name')?.textContent.split('.') || [];
+        } else if (tablePage && !tablePage.classList.contains('hidden')) {
+            tableName = tablePage.querySelector('.table-name')?.textContent;
+        }
     }
 
     if (!tableName) {
@@ -21,9 +25,13 @@ export function openGeneralQueryBuilder(targetTextarea) {
 
     let initialState = null;
     if (targetTextarea) {
-        const stateInput = targetTextarea.parentElement.querySelector('.query-builder-state');
+        // Logik asal: Cari input state tersembunyi
+        const stateInput = targetTextarea.parentElement ? targetTextarea.parentElement.querySelector('.query-builder-state') : null;
         if (stateInput) {
             initialState = stateInput.value || null;
+        } else {
+            // Logik baharu untuk Dashboard: Baca terus dari input itu sendiri
+            initialState = targetTextarea.value || null;
         }
     }
 
@@ -32,9 +40,13 @@ export function openGeneralQueryBuilder(targetTextarea) {
         tableName: tableName,
         initialState: initialState,
         onComplete: (sql, state) => {
-            if (targetTextarea) {
+            if (customCallback) {
+                // Jika ada callback (untuk Dashboard), gunakan ini
+                customCallback(sql, state);
+            } else if (targetTextarea) {
+                // Logik asal
                 targetTextarea.value = sql;
-                const stateInput = targetTextarea.parentElement.querySelector('.query-builder-state');
+                const stateInput = targetTextarea.parentElement ? targetTextarea.parentElement.querySelector('.query-builder-state') : null;
                 if (stateInput) stateInput.value = state;
                 targetTextarea.dispatchEvent(new Event('input', { bubbles: true }));
             }

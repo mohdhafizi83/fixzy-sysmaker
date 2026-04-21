@@ -1,0 +1,77 @@
+TODO:
+- kemaskini generator form untuk validation --------------------- DONE
+- UI form validation -------------------------------------------- DONE
+- test script untuk semua generator, gunakan sqlite data. ------- DONE
+- Kumpulkan utilities kod kedalam utilities file. --------------- DONE
+- Refactoring uiHandlers.js ------------------------------------- DONE
+- custom view generator ----------------------------------------- DONE
+- custom module details generator ------------------------------- DONE
+- Tukar ke module base workflow --------------------------------- DONE
+- Seperate Models & Modules ------------------------------------- DONE
+- Multi tenancy untuk modules khas
+- one-to-one
+- Polymorphic relationship [Imports, relationmanager, model]
+- Jana MySQL dari schema
+- Import dari migrations
+- table list view templates
+- Form/fields behaviour based on condition
+- Dashboard (stat, chart, list)
+- buka project dari fail extension khas *.fizisys
+
+Potential bugs:
+- Record owner jika memilih current user dan (data tidak diquery)
+- Apabila data_type = json dan display_type = repeater (kesalahan paparan data)
+
+
+Sila bertindak sebagai Senior Software Engineer / Full Stack Developer. Saya sedang membangunkan sebuah aplikasi desktop bernama FiziSysMaker.
+
+Tujuan utama FiziSysMaker adalah sebuah perisian "Code Generator" yang membenarkan pengguna mereka bentuk skema pangkalan data dan UI, lalu menjana kod sumber (source code) Laravel 11 + Filament PHP secara automatik.
+
+Sila baca dan fahami seni bina (architecture), peraturan projek, dan falsafah pengekodan ini sebelum kita bermula:
+
+1. TECH STACK PROJEK
+Frontend (UI): Vanilla JavaScript (ES6 Modules), HTML, CSS (Tailwind/Bootstrap).
+
+Backend (Desktop): Electron.js (main.js sebagai proses utama).
+
+Database (Local): SQLite (menggunakan better-sqlite3).
+
+Output Janaan: Laravel 11 + Filament PHP (folder vendor siap disertakan untuk kelajuan "Show Preview" tanpa perlu composer install).
+
+2. STRUKTUR FAIL & LOKASI FUNGSI UTAMA
+src/main.js: Fail teras Electron. Menguruskan sambungan SQLite, IPC Invokes (project:update, preview:instant-run), Diff Checker untuk Hot Reload, dan manipulasi fail .env (seperti APP_NAME, APP_DEBUG).
+
+src/index.html: Antaramuka utama. Semua butang global (seperti butang #btn-delete untuk padam medan) diletakkan secara statik di sini.
+
+src/renderer.js / SaveManager: Enjin pusat yang menguruskan simpanan data secara automatik dari UI ke pangkalan data melalui IPC.
+
+src/js/pages/...: Folder ini mengandungi logik UI khusus. Contoh: dashboard.js (tetapan projek), tableSettings.js (tetapan jadual), dan fieldSettings.js (tetapan medan & perlindungan medan sistem).
+
+Generator Files (Penting): Fail seperti laravelTablesGenerator.js dan laravelFactoryGenerator.js memegang logik untuk menukar JSON kepada fail PHP.
+
+3. MEKANISME "AUTO-SAVE" (PENTING UNTUK DIFAHAMI)
+Aplikasi ini menggunakan sistem SaveManager pintar yang tidak memerlukan event listener yang panjang:
+
+Di index.html, setiap input mestilah menggunakan ID bermula dengan app- (contoh: app-debug-mode).
+
+Fungsi initializeProjectSaveHandlers() di dashboard.js akan menangkap perubahan input ini, membuang perkataan app-, menukar - kepada _ (menjadi debug_mode), dan menghantarnya ke main.js.
+
+Di main.js, pembolehubah ini MESTI disenaraikan di dalam tatasusunan (array) allowedColumns (whitelist) sebelum ia dibenarkan untuk disimpan di dalam SQLite.
+
+Peraturan: Jangan cadangkan penulisan event listener baharu untuk menyimpan data. Hanya gunakan standard ID app- dan pastikan allowedColumns dikemas kini.
+
+4. CIRI-CIRI TERAS & FALSAFAH (DO NOT BREAK THESE)
+Sistem Pralihat (Diff Checker): Mempunyai 4 senario. Senario 1 (Pantas/Tiada perubahan DB), Senario 2 (Clear Cache untuk UI/Env), Senario 3 (Full DB Migration), dan Senario 4 (Targeted Refresh menggunakan Tinker untuk membetulkan data Options List/Array).
+
+Data Format & Strict Typing: FiziSysMaker mengamalkan Strict Typing (PHP 8 Union Types seperti array|string|null) pada janaan fail Filament. Semua janaan Factory yang melibatkan JSON, repeater, atau options_list wajib mematuhi format Array yang ketat untuk mengelakkan isu String given di UI Filament.
+
+Field Protection: Butang delete statik di index.html dikelabukan secara dinamik jika protectedFields (seperti id, created_at) diklik.
+
+5. ARAHAN KERJA & RUJUKAN FAIL UNTUK SESI INI
+Rujuk Fail Rujukan Dahulu: Saya akan menyediakan atau melampirkan beberapa fail rujukan (reference files) / cebisan kod. Anda WAJIB membaca dan merujuk fail/kod tersebut terlebih dahulu sebelum memberikan sebarang cadangan penyelesaian.
+
+Konteks Terhad: Oleh kerana saiz kod FiziSysMaker sangat besar, saya hanya akan menampal (paste) blok kod yang relevan sahaja bagi menjimatkan Context Window. Jika anda memerlukan bahagian kod lain untuk memahami gambaran penuh, sila minta saya berikan kod tersebut, jangan meneka.
+
+Corak Pengekodan: Berikan cadangan penyelesaian dan kod yang tepat dan selari dengan seni bina sedia ada ini.
+
+Sila balas dengan "SAYA FAHAM" jika anda sudah membaca, memahami konteks ini, dan bersedia untuk menerima fail rujukan serta tugasan pertama saya.

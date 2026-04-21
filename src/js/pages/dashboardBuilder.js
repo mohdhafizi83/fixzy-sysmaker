@@ -1,11 +1,11 @@
 import { appState } from '../state.js';
+import { openGeneralQueryBuilder } from '../features/queryBuilder.js';
 
-let isEventsAttached = false; // Elak event terpasang berkali-kali
+let isEventsAttached = false;
 
 export function initDashboardBuilder() {
     renderDashboardWidgets();
     
-    // Pasang Event Listener (Patuh CSP) hanya sekali
     if (!isEventsAttached) {
         attachEventListeners();
         isEventsAttached = true;
@@ -13,22 +13,24 @@ export function initDashboardBuilder() {
 }
 
 function attachEventListeners() {
-    // 1. Butang Tambah Widget
+       
     document.getElementById('btn-add-widget')?.addEventListener('click', () => {
         openWidgetModal();
     });
 
-    // 2. Butang Tutup Modal
     document.getElementById('btn-close-modal-header')?.addEventListener('click', closeWidgetModal);
     document.getElementById('btn-close-modal-footer')?.addEventListener('click', closeWidgetModal);
-
-    // 3. Butang Simpan
     document.getElementById('btn-save-widget')?.addEventListener('click', saveWidgetData);
 
-    // 4. Perubahan Jenis Widget (onchange)
+    // Dengar perubahan untuk menunjukkan/menyembunyikan input dinamik
     document.getElementById('widget-type')?.addEventListener('change', toggleWidgetFields);
+    document.getElementById('widget-aggregate-type')?.addEventListener('change', toggleWidgetFields);
+    
+    // ▼▼▼ LOGIK BARU: Dengar perubahan Jadual dan isikan dropdown lajur ▼▼▼
+    document.getElementById('widget-target-table')?.addEventListener('change', (e) => {
+        populateTableFieldsDropdown(e.target.value);
+    });
 
-    // 5. Event Delegation untuk Butang Edit & Delete (Kerana ia dilukis secara dinamik)
     const container = document.getElementById('widget-list-container');
     if (container) {
         container.addEventListener('click', (e) => {
@@ -39,11 +41,82 @@ function attachEventListeners() {
             if (delBtn) deleteWidget(parseInt(delBtn.dataset.id));
         });
     }
+    
+    
+// Butang buka Advanced Query Builder
+    document.getElementById('btn-open-advanced-filter')?.addEventListener('click', () => {
+        const tableName = document.getElementById('widget-target-table').value;
+        if (!tableName) {
+            alert("Please select a Source Table first.");
+            return;
+        }
+
+        const advancedInput = document.getElementById('widget-advanced-query');
+
+        // Panggil fungsi dengan 3 parameter: (targetTextarea, overrideTableName, customCallback)
+        openGeneralQueryBuilder(advancedInput, tableName, (sql, state) => {
+            if (state) {
+                // Simpan JSON state ke dalam input tersembunyi
+                advancedInput.value = state;
+                
+                // Tunjuk status bahawa Advanced Filter sedang digunakan
+                document.getElementById('advanced-query-status').style.display = 'block';
+                
+                // Lumpuhkan basic filter
+                document.getElementById('widget-filter-field').disabled = true;
+                document.getElementById('widget-filter-value').disabled = true;
+            }
+        });
+    });
+
+    // Butang buang Advanced Filter
+    document.getElementById('btn-clear-advanced-query')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('widget-advanced-query').value = '';
+        document.getElementById('advanced-query-status').style.display = 'none';
+        
+        // Aktifkan semula basic filter
+        document.getElementById('widget-filter-field').disabled = false;
+        document.getElementById('widget-filter-value').disabled = false;
+    });
 }
 
-// ==========================================
-// 1. LUKIS SENARAI WIDGET (RENDER)
-// ==========================================
+// FUNGSI BARU: Isi senarai lajur berdasarkan jadual yang dipilih
+function populateTableFieldsDropdown(tableName, selectedValues = {}) {
+    const selects = ['widget-chart-label', 'widget-target-field', 'widget-filter-field'];
+    
+    // Kosongkan dahulu semua dropdown lajur
+    selects.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<option value="">-- Pilih Lajur --</option>';
+    });
+
+    if (!tableName) return;
+
+    // Dapatkan data lajur jadual dari appState
+    const tableData = appState.jsonData?.database?.table?.[tableName];
+    if (!tableData || !tableData.fields) return;
+
+    const fields = Object.keys(tableData.fields);
+    
+    selects.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        
+        fields.forEach(field => {
+            const opt = document.createElement('option');
+            opt.value = field;
+            opt.textContent = field;
+            el.appendChild(opt);
+        });
+        
+        // Pilih nilai sedia ada jika dalam mod Edit
+        if (id === 'widget-chart-label' && selectedValues.chart_label_column) el.value = selectedValues.chart_label_column;
+        if (id === 'widget-target-field' && selectedValues.target_field) el.value = selectedValues.target_field;
+        if (id === 'widget-filter-field' && selectedValues.filter_field) el.value = selectedValues.filter_field;
+    });
+}
+
 export function renderDashboardWidgets() {
     const container = document.getElementById('widget-list-container');
     if (!container) return;
@@ -51,8 +124,8 @@ export function renderDashboardWidgets() {
     container.innerHTML = ''; 
     const widgets = appState.jsonData?.database?.widgets || [];
 
-    if (widgets.length === 0) {
-        container.innerHTML = `<div class="col-12 text-center text-muted mt-4"><p>Tiada widget. Klik "+ Tambah Widget" untuk bermula.</p></div>`;
+if (widgets.length === 0) {
+        container.innerHTML = `<div class="col-12 text-center text-muted mt-4"><p>No widgets found. Click "+ Add Widget" to get started.</p></div>`;
         return;
     }
 
@@ -60,7 +133,12 @@ export function renderDashboardWidgets() {
         const colSize = widget.width_span === 'full' ? 'col-12' : (widget.width_span === '2' ? 'col-md-8' : 'col-md-4');
         const badgeColor = widget.widget_type === 'stats' ? 'primary' : (widget.widget_type === 'table_latest' ? 'success' : 'info');
         
-        // Perhatikan: Tiada lagi onclick di sini. Kita guna class dan data-id
+        // Tunjukkan info tapisan tambahan di UI Kad
+let extraInfo = '';
+    if (widget.filter_field && widget.filter_value) {
+        extraInfo = `<br><small class="text-info"><i class="fa fa-filter"></i> Filter: ${widget.filter_field} ${widget.filter_operator} '${widget.filter_value}'</small>`;
+    }
+
         const cardHTML = `
             <div class="${colSize} mb-3">
                 <div class="card shadow-sm border-${widget.color || 'primary'}">
@@ -77,6 +155,7 @@ export function renderDashboardWidgets() {
                         </div>
                         <p class="text-muted mt-2 mb-0 text-sm">
                             Jadual: <strong>${widget.target_table}</strong> | Aggregate: <strong>${widget.aggregate_type || 'N/A'}</strong>
+                            ${extraInfo}
                         </p>
                     </div>
                 </div>
@@ -86,26 +165,24 @@ export function renderDashboardWidgets() {
     });
 }
 
-// ==========================================
-// 2. KAWALAN MODAL & BORANG
-// ==========================================
 function openWidgetModal(widgetId = null) {
     const tableSelect = document.getElementById('widget-target-table');
-    tableSelect.innerHTML = '';
+    tableSelect.innerHTML = '<option value="">-- Select Source Table --</option>';
     
     const tables = appState.jsonData?.database?.table || {};
-    
-    const defaultOption = document.createElement('option');
-    defaultOption.value = '';
-    defaultOption.textContent = '-- Sila Pilih Jadual --';
-    tableSelect.appendChild(defaultOption);
-
+   
     for (const tableName in tables) {
         const option = document.createElement('option');
         option.value = tableName;
         option.textContent = tableName;
         tableSelect.appendChild(option);
     }
+    
+// ▼▼▼ LOGIK RESET TAB PINTAR ▼▼▼
+    // Kita arahkan sistem untuk seolah-olah "menekan" butang tab pertama secara automatik
+    const basicTabBtn = document.querySelector('.tab-link[data-tab="tab-widget-basic"]');
+    if (basicTabBtn) basicTabBtn.click();
+    // ▲▲▲ TAMAT LOGIK RESET TAB ▲▲▲
 
     if (widgetId) {
         const widgetsList = appState.jsonData?.database?.widgets || [];
@@ -120,12 +197,48 @@ function openWidgetModal(widgetId = null) {
             document.getElementById('widget-width-span').value = widget.width_span || '1';
             document.getElementById('widget-color').value = widget.color || 'primary';
             document.getElementById('widget-icon').value = widget.icon || '';
-            document.getElementById('widget-modal-title').textContent = 'Sunting Widget';
+            
+            // Masukkan data Lanjutan
+            populateTableFieldsDropdown(widget.target_table, {
+                chart_label_column: widget.chart_label_column,
+                target_field: widget.target_field,
+                filter_field: widget.filter_field
+            });
+            document.getElementById('widget-filter-operator').value = widget.filter_operator || '=';
+            document.getElementById('widget-filter-value').value = widget.filter_value || '';
+            document.getElementById('widget-timeframe').value = widget.timeframe_range || 'all';
+// ▼▼▼ TAMBAH DI SINI: Proses Load Data Advanced Query ▼▼▼
+            const advancedQueryInput = document.getElementById('widget-advanced-query');
+            const advancedStatus = document.getElementById('advanced-query-status');
+            const basicField = document.getElementById('widget-filter-field');
+            const basicValue = document.getElementById('widget-filter-value');
+
+            advancedQueryInput.value = widget.advanced_query || '';
+            
+            // Jika ada data Advanced Query, paparkan lencana hijau dan lumpuhkan basic filter
+            if (widget.advanced_query) {
+                advancedStatus.style.display = 'block';
+                basicField.disabled = true;
+                basicValue.disabled = true;
+            } else {
+                advancedStatus.style.display = 'none';
+                basicField.disabled = false;
+                basicValue.disabled = false;
+            }
+            // ▲▲▲ TAMAT TAMBAHAN ▲▲▲            
+            document.getElementById('widget-modal-title').textContent = 'Edit Widget';
         }
     } else {
         document.getElementById('form-widget-settings').reset();
         document.getElementById('widget-id').value = '';
-        document.getElementById('widget-modal-title').textContent = 'Tambah Widget Baru';
+        populateTableFieldsDropdown(''); // Kosongkan
+// ▼▼▼ TAMBAH DI SINI: Proses Reset untuk Widget Baru ▼▼▼
+        document.getElementById('widget-advanced-query').value = '';
+        document.getElementById('advanced-query-status').style.display = 'none';
+        document.getElementById('widget-filter-field').disabled = false;
+        document.getElementById('widget-filter-value').disabled = false;
+        // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
+        document.getElementById('widget-modal-title').textContent = 'Add New Widget';
     }
 
     toggleWidgetFields();
@@ -139,18 +252,36 @@ function closeWidgetModal() {
 function toggleWidgetFields() {
     const type = document.getElementById('widget-type').value;
     const aggregateSelect = document.getElementById('widget-aggregate-type');
+    const aggregateVal = aggregateSelect.value;
     
+    const groupChart = document.getElementById('group-chart-label');
+    const groupTargetField = document.getElementById('group-target-field');
+
+    // 1. Kawalan Logik Jadual Terkini
     if (type === 'table_latest') {
         aggregateSelect.disabled = true;
         aggregateSelect.value = '';
     } else {
         aggregateSelect.disabled = false;
     }
+
+    // 2. Kawalan Logik Paparan Carta
+    if (type === 'chart_bar' || type === 'chart_pie') {
+        if(groupChart) groupChart.style.display = 'block';
+    } else {
+        if(groupChart) groupChart.style.display = 'none';
+        document.getElementById('widget-chart-label').value = '';
+    }
+
+    // 3. Kawalan Logik Target Field (Hanya untuk SUM/AVG)
+    if (aggregateVal === 'sum' || aggregateVal === 'avg') {
+        if(groupTargetField) groupTargetField.style.display = 'block';
+    } else {
+        if(groupTargetField) groupTargetField.style.display = 'none';
+        document.getElementById('widget-target-field').value = '';
+    }
 }
 
-// ==========================================
-// 3. SIMPAN & PADAM
-// ==========================================
 async function saveWidgetData() {
     const widgetData = {
         id: document.getElementById('widget-id').value,
@@ -161,11 +292,34 @@ async function saveWidgetData() {
         aggregate_type: document.getElementById('widget-aggregate-type').value,
         width_span: document.getElementById('widget-width-span').value,
         color: document.getElementById('widget-color').value,
-        icon: document.getElementById('widget-icon').value
+        icon: document.getElementById('widget-icon').value,
+        
+        // Data Baharu
+        chart_label_column: document.getElementById('widget-chart-label').value,
+        target_field: document.getElementById('widget-target-field').value,
+        filter_field: document.getElementById('widget-filter-field').value,
+        filter_operator: document.getElementById('widget-filter-operator').value,
+        filter_value: document.getElementById('widget-filter-value').value,
+        timeframe_range: document.getElementById('widget-timeframe').value,
+        
+        // ▼▼▼ TAMBAH DI SINI: Tarik nilai dari input tersembunyi ▼▼▼
+        advanced_query: document.getElementById('widget-advanced-query').value
+        // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
     };
 
     if (!widgetData.title || !widgetData.target_table) {
-        alert("Sila isi Tajuk dan Jadual Sumber!");
+        alert("Please fill in the Title and Source Table!");
+        return;
+    }
+    
+    // Validasi tambahan
+    if ((widgetData.aggregate_type === 'sum' || widgetData.aggregate_type === 'avg') && !widgetData.target_field) {
+        alert("For SUM or AVG calculations, please select a Target Column.");
+        return;
+    }
+    
+    if ((widgetData.widget_type === 'chart_bar' || widgetData.widget_type === 'chart_pie') && !widgetData.chart_label_column) {
+        alert("For Charts, selecting a 'Group Data By' column is mandatory.");
         return;
     }
 
@@ -192,7 +346,7 @@ async function saveWidgetData() {
 }
 
 async function deleteWidget(widgetId) {
-    if (!confirm("Anda pasti mahu memadam widget ini?")) return;
+    if (!confirm("Are you sure you want to delete this widget?")) return;
     
     try {
         const response = await window.electronAPI.deleteWidget(widgetId);
