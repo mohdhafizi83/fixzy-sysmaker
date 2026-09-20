@@ -877,7 +877,15 @@ ipcMain.handle("sql:import-text", async (event, { sql, projectId, dialect }) => 
 });
 
 ipcMain.handle("open-url", (event, url) => {
+  // Only allow http/https — block file://, custom schemes, and protocol hijacks
+  let parsed;
+  try { parsed = new URL(String(url)); } catch { return { success: false }; }
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+    console.warn('Blocked open-url with protocol:', parsed.protocol);
+    return { success: false };
+  }
   shell.openExternal(url);
+  return { success: true };
 });
 
 ipcMain.handle("settings:get-all", async () => {

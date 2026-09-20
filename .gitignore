@@ -14,3 +14,4 @@ others/start_electronbat.bat
 /test/output
 /test/output_importers_real
 /test/output_full_app
+test/audit_output/
