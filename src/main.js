@@ -19,7 +19,7 @@ if (!dbExists) {
     console.log("FiziSysMaker database created at", dbPath);
 }
 
-const { registerIpcHandlers } = require("./handlers/register");
+const registerIpcHandlers = require("./handlers/register");
 
 registerIpcHandlers({
     ipcMain,

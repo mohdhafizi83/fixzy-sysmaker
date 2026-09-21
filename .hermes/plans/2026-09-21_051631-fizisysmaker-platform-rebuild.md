@@ -234,16 +234,27 @@ Next: Phase 5 (Headless + Web UI delivery mode).
 
 **Objective:** `fizisysmaker serve` runs the same GUI in a browser on localhost; same IR/generators; safe file writes.
 
-- [ ] **5.1** Extract core engine from Electron: create `src/core/` (or verify current generators already free of `electron` imports — grep `require('electron')` in generators/utils; move any offenders).
-- [ ] **5.2** CLI entry `bin/fizisysmaker.js` (add `"bin"` to package.json): commands `serve [--port 7788] [--host 127.0.0.1]`, `generate --project <name> --out <path>`, `fixtures` (run golden tests).
-- [ ] **5.3** Express (or plain http) server serving the existing renderer as static web UI + IPC-over-HTTP shim mirroring the 54 IPC handler names (POST `/ipc/<channel>`). Reuse main.js handler logic by extracting handlers into `src/handlers/*.js` shared by Electron and web.
-- [ ] **5.4** **Path allowlist (security-critical):**
-  - Output roots from config: `FSM_OUTPUT_ROOTS` (default `~/projects`, `$HOME`).
-  - Resolve `fs.realpathSync` on destination parent; reject if outside allowlist; reject symlink escapes; reject `..` traversal before resolution too.
-  - TDD: unit tests for traversal, symlink escape, allowed path, missing parent.
-- [ ] **5.5** Zip export mode: generate to temp → zip → serve download. (Solves remote/permission-free delivery.)
-- [ ] **5.6** Bind to 127.0.0.1 by default; if `--host 0.0.0.0`, require explicit `FSM_ALLOW_REMOTE=1` + print big warning. No auth in v1 remote — documented as LAN-only or put behind reverse proxy.
-- [ ] **5.7** Electron BrowserWindow can later load the same local server (documented, not required this phase).
+**STATUS: COMPLETE (2026-09-21, commit 27568b31 + fixups)**
+
+- [x] **5.1** Core engine extracted: generators/utils were already electron-free; new `src/core/` (store.js, pathGuard.js, webServer.js, web-shim.js) + `src/handlers/register.js` (all 53 IPC handlers, Electron-agnostic via ctx). Only main.js/preload.js touch electron now; deploymentHandler uses resolveWindow() fallback.
+- [x] **5.2** `bin/fizisysmaker.js` + package.json `bin` entry: `serve`, `generate --project|--fixture --out [--zip]`, `list`, `fixtures`. Verified end-to-end (fixture generate + zip).
+- [x] **5.3** Plain-http server: static renderer + `POST /ipc/<channel>` (invoke + send/once semantics) + SSE `GET /events` for push channels. Browser-verified: UI loads, `window.electronAPI.getActiveProject()` round-trips through shim (58 methods), zero JS console errors.
+- [x] **5.4** Path allowlist: `FSM_OUTPUT_ROOTS` (default ~/projects:$HOME), raw `..` rejection BEFORE resolution, lexical containment, symlink-escape realpath check. 10 TDD tests (`test/pathguard_test.js`) all pass; CLI rejects `/etc` and `..` traversal, accepts inside-root paths.
+- [x] **5.5** Zip export: `generate --zip` produces `<target>.zip` (verified 51 files).
+- [x] **5.6** 127.0.0.1 default bind; non-localhost refused without `FSM_ALLOW_REMOTE=1` (verified refusal + warning). LAN-only/reverse-proxy documented.
+- [x] **5.7** Documented in docs/HEADLESS_WEB.md (`win.loadURL('http://127.0.0.1:7788')` — shim makes renderer mode-agnostic).
+
+### Phase 5 AUDIT (2026-09-21) — PASSED
+
+1. All layers green after refactor: golden 16/16, ir_test, render_validate, audit_headless 6/6, pathguard 10/10, node --check all entry files.
+2. Electron boot test (xvfb, Linux dist rebuilt): main process boots with slim main.js + register.js — zero errors/exceptions (after fixing destructure bug caught by this test: `registerIpcHandlers` is a direct function export).
+3. Web mode live-verified in real browser: index.html served with injected shim, renderer fully interactive, IPC round-trip OK, malformed JSON body rejected cleanly, SSE connects.
+4. Security read-back: traversal/symlink/outside-root all rejected in unit tests AND live CLI; remote bind gated; static server contained to src/.
+5. Handler parity: 53 handlers registered in shim == 53 in original main.js (count verified during extraction).
+6. ABI note: better-sqlite3 must be rebuilt per runtime (Electron 40 = NODE_MODULE_VERSION 143 vs Node 22 = 127). Workflow: `npx @electron/rebuild -f -w better-sqlite3` for desktop, `npm rebuild better-sqlite3` for CLI/tests. Documented for owner.
+7. Pitfalls logged: (a) destructure-vs-direct export mismatch on register.js hit 3 call sites — caught by boot/smoke each time; (b) path.normalize erases `..` so guard must check RAW input first; (c) CLI resolved before guarding — fixed to guard raw then resolved.
+
+Next: Phase 6 (macOS + packaging).
 
 ---
 
@@ -302,3 +313,5 @@ P4/P5/P6 can interleave after P3, but P7 requires all. Recommended order: 0→1�
 - 2026-09-21 16:05 UTC — P3-AUDIT — passed. All layers green (golden 16/16, ir_test, render_validate 11/11, audit_headless 45/6-6, node --check, ci.yml YAML valid). Read-back of tenancy_1m/tenancy_mm/soft_delete/auditing_on/field_types_all goldens verified semantics. e2e_smoke booted ALL 14 new fixtures -> HTTP 200 (BUG-003 only catchable this way). Sabotage: tampered goldens FAIL, restore PASS. big_university has no m:m rels so BUG-003 fix is regression-safe. Next: Phase 4.
 - 2026-09-21 17:40 UTC — P4 (4.1–4.6) — done — commit 0a253f05. Native audit trail (audits migration + Audit model + AuditObserver via HasAudits trait + AuditsRelationManager in app/Filament/RelationManagers to dodge Filament resource-dir scan), native BelongsToTenant trait for 1:m, native PrintAction generated on demand. owen-it + tapp purged from preview_env composer.json/lock/vendor/bootstrap cache; stale .template files deleted. docs/NATIVE_FEATURES.md written. Pitfall hit: patch tool mangled backslashes in import_tenant template string — restored exact line from git via python. Pitfall: /tmp quota filled by e2e workdirs — cleanup loop added.
 - 2026-09-21 17:55 UTC — P4-AUDIT — passed. (1) All layers green: golden 16/16, ir_test, render_validate, audit_headless 45/6-6, node --check. (2) Read-back: native audit files in auditing_on golden; tenancy_1m uses BelongsToTenant; tenancy_mm User first-party HasTenants only; grep Tapp|OwenIt = 0 (non-.bak, src + golden). (3) Functional: tinker create/update/delete -> audits rows created/updated/deleted. (4) Audit-off fixture -> zero audit files generated. (5) Sabotage: tampered AuditObserver golden -> FAIL, restore -> PASS. (6) composer validate OK on preview_env (ignore-platform-reqs needed only for this box's PHP 8.5 w/o ext-intl). (7) e2e ALL 16 fixtures HTTP 200. Next: Phase 5.
+- 2026-09-21 18:30 UTC — P5 (5.1–5.7) — done — commit 27568b31. 53 handlers extracted to src/handlers/register.js (ctx-based); main.js slimmed to lifecycle; src/core/{store,pathGuard,webServer,web-shim}.js; bin/fizisysmaker.js CLI (serve/generate/list/fixtures, --zip). deploymentHandler resolveWindow() fallback. docs/HEADLESS_WEB.md.
+- 2026-09-21 18:55 UTC — P5-AUDIT — passed. (1) All layers green: golden 16/16, ir/render/audit/pathguard 10/10, node --check. (2) Electron xvfb boot: clean after fixing destructure bug (register.js exports function directly — 3 call sites had {destructure}). (3) Browser live test: UI loads with injected shim, electronAPI.getActiveProject() round-trip OK, 0 JS errors, malformed JSON rejected, SSE connects. (4) Security: traversal/symlink/outside-root rejected (unit + live CLI); remote bind refused without FSM_ALLOW_REMOTE=1. (5) 53-handler parity verified. (6) ABI: better-sqlite3 rebuild per runtime documented (Electron 143 vs Node 127). Next: Phase 6.
