@@ -203,16 +203,11 @@ let helperMethods = [];
                 }
             }
 
-            if (hasCreatedBy || hasUpdatedBy || hasDeletedBy || tenantFkField) {
+            if (hasCreatedBy || hasUpdatedBy || hasDeletedBy) {
                 let bootMethodContent = `\n    protected static function boot()\n    {\n        parent::boot();\n`;
                 
-                if (hasCreatedBy || hasUpdatedBy || tenantFkField) {
+                if (hasCreatedBy || hasUpdatedBy) {
                     bootMethodContent += `\n        static::creating(function ($model) {`;
-                    
-                    // Suntik nilai tenant_id secara automatik
-                    if (tenantFkField) {
-                        bootMethodContent += `\n            if (empty($model->${tenantFkField}) && auth()->check()) {\n                $model->${tenantFkField} = auth()->user()->${tenantFkField};\n            }`;
-                    }
                     if (hasCreatedBy) {
                         bootMethodContent += `\n            if (empty($model->created_by)) {\n                $model->created_by = auth()->id();\n            }`;
                     }
@@ -241,9 +236,12 @@ let helperMethods = [];
                 trait_factory: fakeData ? 'use HasFactory;' : '',
                 import_softdelete: softDelete ? 'use Illuminate\\Database\\Eloquent\\SoftDeletes;' : '',
                 trait_softdelete: softDelete ? 'use SoftDeletes;' : '',
-                import_audit: audit ? `use OwenIt\\Auditing\\Contracts\\Auditable;\nuse OwenIt\\Auditing\\Auditable as AuditableTrait;` : '',
-                class_implements_audit: audit ? 'implements Auditable' : '',
-                trait_audit: audit ? 'use AuditableTrait;' : '',
+                import_tenant_trait: tenantFkField ? 'use App\\Models\\Concerns\\BelongsToTenant;' : '',
+                tenant_property: tenantFkField ? `protected $tenantForeignKey = '${tenantFkField}';` : '',
+                trait_tenant: tenantFkField ? 'use BelongsToTenant;' : '',
+                import_audit: audit ? 'use App\\Models\\Concerns\\HasAudits;' : '',
+                class_implements_audit: '',
+                trait_audit: audit ? 'use HasAudits;' : '',
                 class_name: className,
                 table_name: tableName,
                 primary_key: primaryKeyField ? primaryKeyField.field_name : 'id',
@@ -288,14 +286,15 @@ async function generateFilamentUserModel(fullSchema, basePath) {
         const userContext = {
             import_softdelete: softDelete ? 'use Illuminate\\Database\\Eloquent\\SoftDeletes;' : '',
             trait_softdelete: softDelete ? ', SoftDeletes' : '',
-            import_audit: audit ? `use OwenIt\\Auditing\\Contracts\\Auditable;\nuse OwenIt\\Auditing\\Auditable as AuditableTrait;` : '',
-            class_implements_audit: audit ? 'implements Auditable' : '',
-            trait_audit: audit ? ', AuditableTrait' : '',
+            import_audit: audit ? 'use App\\Models\\Concerns\\HasAudits;' : '',
+            class_implements_audit: '',
+            trait_audit: audit ? ', HasAudits' : '',
             import_shield: authorization ? 'use Spatie\\Permission\\Traits\\HasRoles;' : '',
             trait_shield: authorization ? ', HasRoles' : '',
             import_tenant: tenantMtm ? `use Filament\\Models\\Contracts\\HasTenants;\nuse Illuminate\\Support\\Collection;\nuse Illuminate\\Database\\Eloquent\\Model;\nuse Filament\\Panel;\nuse Illuminate\\Database\\Eloquent\\Relations\\BelongsToMany;` : '',
-            // Pastikan tiada ralat sintaks (, HasTenants) jika Audit off
-            class_implements_tenant: tenantMtm ? ((audit) ? ', HasTenants' : 'implements HasTenants') : '',
+            // Native audit uses a trait (no interface), so this is always the
+            // first `implements` clause when present.
+            class_implements_tenant: tenantMtm ? 'implements HasTenants' : '',
             tenant_methods: '',
             relationship_functions: '',
         };
@@ -812,11 +811,52 @@ async function generateLaravelDatabaseSeeder(fullSchema, basePath) {
 }
 
 // Export functions untuk digunakan di main.js
+/**
+ * Generate the native audit-trail files (Phase 4).
+ *
+ * Replaces the 3rd-party owen-it/laravel-auditing + tapp/filament-auditing
+ * pair with plain app code: audits migration, Audit model, AuditObserver,
+ * HasAudits trait, and a read-only AuditsRelationManager.
+ * Only emitted when project.module_log_audit === 1.
+ */
+async function generateNativeAuditFiles(fullSchema, basePath) {
+    try {
+        const { project: projectSettings } = fullSchema;
+        if (!projectSettings || projectSettings.module_log_audit !== 1) {
+            return { success: true, message: 'Auditing off — native audit files skipped.' };
+        }
+
+        const writes = [
+            ['app/Models/Concerns/HasAudits.php', 'app/Models/Concerns/HasAudits.php.njk'],
+            ['app/Models/Audit.php', 'app/Models/Audit.php.njk'],
+            ['app/Observers/AuditObserver.php', 'app/Observers/AuditObserver.php.njk'],
+            ['app/Filament/RelationManagers/AuditsRelationManager.php', 'app/Filament/RelationManagers/AuditsRelationManager.php.njk'],
+        ];
+        for (const [outRel, tpl] of writes) {
+            const outPath = path.join(basePath, outRel);
+            fs.mkdirSync(path.dirname(outPath), { recursive: true });
+            fs.writeFileSync(outPath, renderTemplate(tpl, {}));
+        }
+
+        // audits table migration (timestamped like other migrations)
+        const migrationsPath = path.join(basePath, 'database', 'migrations');
+        fs.mkdirSync(migrationsPath, { recursive: true });
+        const timestamp = getFormattedTimestamp(new Date(), 990);
+        const migPath = path.join(migrationsPath, `${timestamp}_create_audits_table.php`);
+        fs.writeFileSync(migPath, renderTemplate('database/migrations/create_audits_table.php.njk', {}));
+
+        return { success: true, message: 'Native audit files generated.' };
+    } catch (error) {
+        return { success: false, message: error.message };
+    }
+}
+
 module.exports = {
     generateFilamentModels,
     generateFilamentUserModel,
     generateLaravelUserMigration,
     generateLaravelMigrations,
     generateLaravelFactories,
-    generateLaravelDatabaseSeeder
+    generateLaravelDatabaseSeeder,
+    generateNativeAuditFiles
 };

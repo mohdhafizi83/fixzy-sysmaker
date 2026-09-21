@@ -23,8 +23,7 @@ use App\Filament\Exports\TempahanExporter;
 use Filament\Actions\ExportAction;
 
 use App\Filament\Resources\Tempahans\RelationManagers\ItemTempahanRelationManager;
-
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+use App\Filament\RelationManagers\AuditsRelationManager;
 
 class TempahanResource extends Resource
 {

@@ -24,8 +24,7 @@ use Filament\Actions\ExportAction;
 
 use App\Filament\Resources\Fakultis\RelationManagers\PelajarRelationManager;
 use App\Filament\Resources\Fakultis\RelationManagers\InvoiceRelationManager;
-
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+use App\Filament\RelationManagers\AuditsRelationManager;
 
 class FakultiResource extends Resource
 {

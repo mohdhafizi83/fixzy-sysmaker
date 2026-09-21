@@ -6,12 +6,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 {{ import_softdelete }}
 {{ import_audit }}
+{{ import_tenant_trait }}
 
 class {{ class_name }} extends Model {{ class_implements_audit }}
 {
 	{{ trait_factory }}
     {{ trait_audit }}
     {{ trait_softdelete }}
+    {{ trait_tenant }}
+    {{ tenant_property }}
     /**
      *
      * @var string

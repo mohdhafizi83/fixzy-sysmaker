@@ -3,6 +3,8 @@
 // (golden tests, CLI) without Electron. main.js now requires this module.
 
 const fs = require('fs');
+const path = require('path');
+const { renderTemplate } = require('../render/engine');
 
 const {
     generateFilamentResources,
@@ -35,7 +37,8 @@ const {
     generateLaravelUserMigration,
     generateLaravelMigrations,
     generateLaravelFactories,
-    generateLaravelDatabaseSeeder
+    generateLaravelDatabaseSeeder,
+    generateNativeAuditFiles
 } = require('./laravelDatabaseGenerator');
 const { generateFilamentExports } = require('./laravelExportsGenerator');
 const { generateFilamentImporters } = require('./laravelImportersGenerator');
@@ -76,6 +79,27 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
 
         const seederResult = await generateLaravelDatabaseSeeder(fullSchema, outputDir);
         if (!seederResult.success) throw new Error(`Seeders: ${seederResult.message}`);
+
+        // Native audit-trail files (Phase 4: replaces owen-it + tapp packages)
+        const nativeAuditResult = await generateNativeAuditFiles(fullSchema, outputDir);
+        if (!nativeAuditResult.success) throw new Error(`Native audit: ${nativeAuditResult.message}`);
+
+        // Native PrintAction class — referenced by resources with print view
+        // enabled; must ship with the generated app, not just the preview skeleton.
+        const anyPrint = Object.values(fullSchema.database.table || {})
+            .some(t => t.allow_print_view === 1 || t.dv_allow_print_view === 1);
+        if (anyPrint) {
+            const printDir = path.join(outputDir, 'app', 'Filament', 'Actions');
+            fs.mkdirSync(printDir, { recursive: true });
+            fs.writeFileSync(path.join(printDir, 'PrintAction.php'), renderTemplate('app/Filament/Actions/PrintAction.php.njk', {}));
+        }
+
+        // Native BelongsToTenant trait — used by 1:m tenancy models.
+        if (fullSchema.project && fullSchema.project.tenancy_type === 'one_to_many') {
+            const concernsDir = path.join(outputDir, 'app', 'Models', 'Concerns');
+            fs.mkdirSync(concernsDir, { recursive: true });
+            fs.writeFileSync(path.join(concernsDir, 'BelongsToTenant.php'), renderTemplate('app/Models/Concerns/BelongsToTenant.php.njk', {}));
+        }
 
 
         // ============================================================

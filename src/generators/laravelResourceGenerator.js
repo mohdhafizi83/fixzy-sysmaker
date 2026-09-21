@@ -290,6 +290,7 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         shortcut_menu_order: shortcutMenuOrder,
         menu_name: menuName,
         relations_audit: relationsAudit,
+        audit_enabled: projectSettings.module_log_audit === 1,
         model_name_flatcase: finalSlug,
     };
 

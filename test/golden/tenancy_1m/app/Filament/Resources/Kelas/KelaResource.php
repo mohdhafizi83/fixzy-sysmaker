@@ -23,8 +23,7 @@ use App\Filament\Exports\KelaExporter;
 use Filament\Actions\ExportAction;
 
 
-
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+use App\Filament\RelationManagers\AuditsRelationManager;
 
 class KelaResource extends Resource
 {

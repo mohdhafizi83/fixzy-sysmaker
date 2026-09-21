@@ -23,8 +23,7 @@ use App\Filament\Exports\SyarikatExporter;
 use Filament\Actions\ExportAction;
 
 use App\Filament\Resources\Syarikats\RelationManagers\KontrakRelationManager;
-
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+use App\Filament\RelationManagers\AuditsRelationManager;
 
 class SyarikatResource extends Resource
 {

@@ -23,8 +23,7 @@ use App\Filament\Exports\ProjekExporter;
 use Filament\Actions\ExportAction;
 
 use App\Filament\Resources\Projeks\RelationManagers\TugasRelationManager;
-
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+use App\Filament\RelationManagers\AuditsRelationManager;
 
 class ProjekResource extends Resource
 {

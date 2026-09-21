@@ -23,8 +23,7 @@ use App\Filament\Exports\PelangganExporter;
 use Filament\Actions\ExportAction;
 
 use App\Filament\Resources\Pelanggans\RelationManagers\TempahanRelationManager;
-
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+use App\Filament\RelationManagers\AuditsRelationManager;
 
 class PelangganResource extends Resource
 {

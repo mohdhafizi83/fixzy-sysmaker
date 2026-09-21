@@ -23,8 +23,7 @@ use App\Filament\Exports\KategoriExporter;
 use Filament\Actions\ExportAction;
 
 use App\Filament\Resources\Kategoris\RelationManagers\KategoriRelationManager;
-
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+use App\Filament\RelationManagers\AuditsRelationManager;
 
 class KategoriResource extends Resource
 {

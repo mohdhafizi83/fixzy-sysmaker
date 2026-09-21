@@ -22,8 +22,6 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filament\Navigation\NavigationGroup;
-use Livewire\Livewire;
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
 
 
 class AdminPanelProvider extends PanelProvider
@@ -83,6 +81,5 @@ class AdminPanelProvider extends PanelProvider
      */
     public function boot(): void
     {
-                Livewire::component('tapp.filament-auditing.relation-managers.audits-relation-manager', AuditsRelationManager::class);
     }
 }

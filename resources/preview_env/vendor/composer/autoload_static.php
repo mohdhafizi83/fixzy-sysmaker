@@ -88,7 +88,6 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
             'TijsVerkoyen\\CssToInlineStyles\\' => 31,
             'Tests\\' => 6,
             'Termwind\\' => 9,
-            'Tapp\\FilamentAuditing\\' => 22,
         ),
         'S' => 
         array (
@@ -163,7 +162,6 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         ),
         'O' => 
         array (
-            'OwenIt\\Auditing\\' => 16,
             'OpenSpout\\' => 10,
         ),
         'N' => 
@@ -318,10 +316,6 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'Termwind\\' => 
         array (
             0 => __DIR__ . '/..' . '/nunomaduro/termwind/src',
-        ),
-        'Tapp\\FilamentAuditing\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/tapp/filament-auditing/src',
         ),
         'Symfony\\Polyfill\\Uuid\\' => 
         array (
@@ -571,10 +565,6 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'PHPStan\\PhpDocParser\\' => 
         array (
             0 => __DIR__ . '/..' . '/phpstan/phpdoc-parser/src',
-        ),
-        'OwenIt\\Auditing\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/owen-it/laravel-auditing/src',
         ),
         'OpenSpout\\' => 
         array (
@@ -890,6 +880,7 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'AnourValar\\EloquentSerialize\\Package' => __DIR__ . '/..' . '/anourvalar/eloquent-serialize/src/Package.php',
         'AnourValar\\EloquentSerialize\\Service' => __DIR__ . '/..' . '/anourvalar/eloquent-serialize/src/Service.php',
         'App\\Filament\\Actions\\PrintAction' => __DIR__ . '/../..' . '/app/Filament/Actions/PrintAction.php',
+        'App\\Filament\\RelationManagers\\AuditsRelationManager' => __DIR__ . '/../..' . '/app/Filament/RelationManagers/AuditsRelationManager.php',
         'App\\Filament\\Resources\\Roles\\Pages\\CreateRole' => __DIR__ . '/../..' . '/app/Filament/Resources/Roles/Pages/CreateRole.php',
         'App\\Filament\\Resources\\Roles\\Pages\\EditRole' => __DIR__ . '/../..' . '/app/Filament/Resources/Roles/Pages/EditRole.php',
         'App\\Filament\\Resources\\Roles\\Pages\\ListRoles' => __DIR__ . '/../..' . '/app/Filament/Resources/Roles/Pages/ListRoles.php',
@@ -902,7 +893,10 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'App\\Filament\\Resources\\Users\\Tables\\UsersTable' => __DIR__ . '/../..' . '/app/Filament/Resources/Users/Tables/UsersTable.php',
         'App\\Filament\\Resources\\Users\\UserResource' => __DIR__ . '/../..' . '/app/Filament/Resources/Users/UserResource.php',
         'App\\Http\\Controllers\\Controller' => __DIR__ . '/../..' . '/app/Http/Controllers/Controller.php',
+        'App\\Models\\Audit' => __DIR__ . '/../..' . '/app/Models/Audit.php',
+        'App\\Models\\Concerns\\HasAudits' => __DIR__ . '/../..' . '/app/Models/Concerns/HasAudits.php',
         'App\\Models\\User' => __DIR__ . '/../..' . '/app/Models/User.php',
+        'App\\Observers\\AuditObserver' => __DIR__ . '/../..' . '/app/Observers/AuditObserver.php',
         'App\\Policies\\DokumenPelajarPolicy' => __DIR__ . '/../..' . '/app/Policies/DokumenPelajarPolicy.php',
         'App\\Policies\\KursusPolicy' => __DIR__ . '/../..' . '/app/Policies/KursusPolicy.php',
         'App\\Policies\\PelajarPolicy' => __DIR__ . '/../..' . '/app/Policies/PelajarPolicy.php',
@@ -6407,43 +6401,6 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'OpenSpout\\Writer\\XLSX\\Properties' => __DIR__ . '/..' . '/openspout/openspout/src/Writer/XLSX/Properties.php',
         'OpenSpout\\Writer\\XLSX\\Writer' => __DIR__ . '/..' . '/openspout/openspout/src/Writer/XLSX/Writer.php',
         'Override' => __DIR__ . '/..' . '/symfony/polyfill-php83/Resources/stubs/Override.php',
-        'OwenIt\\Auditing\\Audit' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Audit.php',
-        'OwenIt\\Auditing\\Auditable' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Auditable.php',
-        'OwenIt\\Auditing\\AuditableObserver' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/AuditableObserver.php',
-        'OwenIt\\Auditing\\AuditingServiceProvider' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/AuditingServiceProvider.php',
-        'OwenIt\\Auditing\\Auditor' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Auditor.php',
-        'OwenIt\\Auditing\\Console\\AuditDriverCommand' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Console/AuditDriverCommand.php',
-        'OwenIt\\Auditing\\Console\\AuditResolverCommand' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Console/AuditResolverCommand.php',
-        'OwenIt\\Auditing\\Console\\InstallCommand' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Console/InstallCommand.php',
-        'OwenIt\\Auditing\\Contracts\\AttributeEncoder' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Contracts/AttributeEncoder.php',
-        'OwenIt\\Auditing\\Contracts\\AttributeModifier' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Contracts/AttributeModifier.php',
-        'OwenIt\\Auditing\\Contracts\\AttributeRedactor' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Contracts/AttributeRedactor.php',
-        'OwenIt\\Auditing\\Contracts\\Audit' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Contracts/Audit.php',
-        'OwenIt\\Auditing\\Contracts\\AuditDriver' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Contracts/AuditDriver.php',
-        'OwenIt\\Auditing\\Contracts\\Auditable' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Contracts/Auditable.php',
-        'OwenIt\\Auditing\\Contracts\\Auditor' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Contracts/Auditor.php',
-        'OwenIt\\Auditing\\Contracts\\Resolver' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Contracts/Resolver.php',
-        'OwenIt\\Auditing\\Contracts\\UserResolver' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Contracts/UserResolver.php',
-        'OwenIt\\Auditing\\Drivers\\Database' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Drivers/Database.php',
-        'OwenIt\\Auditing\\Encoders\\Base64Encoder' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Encoders/Base64Encoder.php',
-        'OwenIt\\Auditing\\Events\\AuditCustom' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Events/AuditCustom.php',
-        'OwenIt\\Auditing\\Events\\Audited' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Events/Audited.php',
-        'OwenIt\\Auditing\\Events\\Auditing' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Events/Auditing.php',
-        'OwenIt\\Auditing\\Events\\DispatchAudit' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Events/DispatchAudit.php',
-        'OwenIt\\Auditing\\Events\\DispatchingAudit' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Events/DispatchingAudit.php',
-        'OwenIt\\Auditing\\Exceptions\\AuditableTransitionException' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Exceptions/AuditableTransitionException.php',
-        'OwenIt\\Auditing\\Exceptions\\AuditingException' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Exceptions/AuditingException.php',
-        'OwenIt\\Auditing\\Facades\\Auditor' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Facades/Auditor.php',
-        'OwenIt\\Auditing\\Listeners\\ProcessDispatchAudit' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Listeners/ProcessDispatchAudit.php',
-        'OwenIt\\Auditing\\Listeners\\RecordCustomAudit' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Listeners/RecordCustomAudit.php',
-        'OwenIt\\Auditing\\Models\\Audit' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Models/Audit.php',
-        'OwenIt\\Auditing\\Redactors\\LeftRedactor' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Redactors/LeftRedactor.php',
-        'OwenIt\\Auditing\\Redactors\\RightRedactor' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Redactors/RightRedactor.php',
-        'OwenIt\\Auditing\\Resolvers\\DumpResolver' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Resolvers/DumpResolver.php',
-        'OwenIt\\Auditing\\Resolvers\\IpAddressResolver' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Resolvers/IpAddressResolver.php',
-        'OwenIt\\Auditing\\Resolvers\\UrlResolver' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Resolvers/UrlResolver.php',
-        'OwenIt\\Auditing\\Resolvers\\UserAgentResolver' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Resolvers/UserAgentResolver.php',
-        'OwenIt\\Auditing\\Resolvers\\UserResolver' => __DIR__ . '/..' . '/owen-it/laravel-auditing/src/Resolvers/UserResolver.php',
         'PHPStan\\PhpDocParser\\Ast\\AbstractNodeVisitor' => __DIR__ . '/..' . '/phpstan/phpdoc-parser/src/Ast/AbstractNodeVisitor.php',
         'PHPStan\\PhpDocParser\\Ast\\Attribute' => __DIR__ . '/..' . '/phpstan/phpdoc-parser/src/Ast/Attribute.php',
         'PHPStan\\PhpDocParser\\Ast\\Comment' => __DIR__ . '/..' . '/phpstan/phpdoc-parser/src/Ast/Comment.php',
@@ -10084,21 +10041,6 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'Symfony\\Polyfill\\Php84\\Php84' => __DIR__ . '/..' . '/symfony/polyfill-php84/Php84.php',
         'Symfony\\Polyfill\\Php85\\Php85' => __DIR__ . '/..' . '/symfony/polyfill-php85/Php85.php',
         'Symfony\\Polyfill\\Uuid\\Uuid' => __DIR__ . '/..' . '/symfony/polyfill-uuid/Uuid.php',
-        'Tapp\\FilamentAuditing\\Concerns\\CanRestoreAudit' => __DIR__ . '/..' . '/tapp/filament-auditing/src/Concerns/CanRestoreAudit.php',
-        'Tapp\\FilamentAuditing\\Concerns\\HasExtraColumns' => __DIR__ . '/..' . '/tapp/filament-auditing/src/Concerns/HasExtraColumns.php',
-        'Tapp\\FilamentAuditing\\Concerns\\HasFormattedData' => __DIR__ . '/..' . '/tapp/filament-auditing/src/Concerns/HasFormattedData.php',
-        'Tapp\\FilamentAuditing\\FilamentAuditingPlugin' => __DIR__ . '/..' . '/tapp/filament-auditing/src/FilamentAuditingPlugin.php',
-        'Tapp\\FilamentAuditing\\FilamentAuditingServiceProvider' => __DIR__ . '/..' . '/tapp/filament-auditing/src/FilamentAuditingServiceProvider.php',
-        'Tapp\\FilamentAuditing\\Filament\\Actions\\RestoreAuditAction' => __DIR__ . '/..' . '/tapp/filament-auditing/src/Filament/Actions/RestoreAuditAction.php',
-        'Tapp\\FilamentAuditing\\Filament\\Infolists\\Components\\AuditValuesEntry' => __DIR__ . '/..' . '/tapp/filament-auditing/src/Filament/Infolists/Components/AuditValuesEntry.php',
-        'Tapp\\FilamentAuditing\\Filament\\Resources\\Audits\\AuditResource' => __DIR__ . '/..' . '/tapp/filament-auditing/src/Filament/Resources/Audits/AuditResource.php',
-        'Tapp\\FilamentAuditing\\Filament\\Resources\\Audits\\Pages\\ListAudits' => __DIR__ . '/..' . '/tapp/filament-auditing/src/Filament/Resources/Audits/Pages/ListAudits.php',
-        'Tapp\\FilamentAuditing\\Filament\\Resources\\Audits\\Pages\\ViewAudit' => __DIR__ . '/..' . '/tapp/filament-auditing/src/Filament/Resources/Audits/Pages/ViewAudit.php',
-        'Tapp\\FilamentAuditing\\Filament\\Resources\\Audits\\Schemas\\AuditFilters' => __DIR__ . '/..' . '/tapp/filament-auditing/src/Filament/Resources/Audits/Schemas/AuditFilters.php',
-        'Tapp\\FilamentAuditing\\Filament\\Resources\\Audits\\Schemas\\AuditInfolist' => __DIR__ . '/..' . '/tapp/filament-auditing/src/Filament/Resources/Audits/Schemas/AuditInfolist.php',
-        'Tapp\\FilamentAuditing\\Filament\\Resources\\Audits\\Tables\\AuditsTable' => __DIR__ . '/..' . '/tapp/filament-auditing/src/Filament/Resources/Audits/Tables/AuditsTable.php',
-        'Tapp\\FilamentAuditing\\Filament\\Tables\\Columns\\AuditValuesColumn' => __DIR__ . '/..' . '/tapp/filament-auditing/src/Filament/Tables/Columns/AuditValuesColumn.php',
-        'Tapp\\FilamentAuditing\\RelationManagers\\AuditsRelationManager' => __DIR__ . '/..' . '/tapp/filament-auditing/src/RelationManagers/AuditsRelationManager.php',
         'Termwind\\Actions\\StyleToMethod' => __DIR__ . '/..' . '/nunomaduro/termwind/src/Actions/StyleToMethod.php',
         'Termwind\\Components\\Anchor' => __DIR__ . '/..' . '/nunomaduro/termwind/src/Components/Anchor.php',
         'Termwind\\Components\\BreakLine' => __DIR__ . '/..' . '/nunomaduro/termwind/src/Components/BreakLine.php',

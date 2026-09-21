@@ -5,13 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
+use App\Models\Concerns\HasAudits;
 
-class Pelanggan extends Model implements Auditable
+
+class Pelanggan extends Model 
 {
 	use HasFactory;
-    use AuditableTrait;
+    use HasAudits;
+    
+    
     
     /**
      *

@@ -5,14 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
+use App\Models\Concerns\HasAudits;
+use App\Models\Concerns\BelongsToTenant;
 
-class Kela extends Model implements Auditable
+class Kela extends Model 
 {
 	use HasFactory;
-    use AuditableTrait;
+    use HasAudits;
     use SoftDeletes;
+    use BelongsToTenant;
+    protected $tenantForeignKey = 'sekolah_id';
     /**
      *
      * @var string
@@ -44,16 +46,5 @@ class Kela extends Model implements Auditable
 
 
 
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($model) {
-            if (empty($model->sekolah_id) && auth()->check()) {
-                $model->sekolah_id = auth()->user()->sekolah_id;
-            }
-        });
-    }
 
 }

@@ -20,8 +20,7 @@ use Filament\Tables\Table;
 {{ import_exportdata }}
 
 {{ import_relationmanagers }}
-
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+{% if audit_enabled %}use App\Filament\RelationManagers\AuditsRelationManager;{% endif %}
 
 class {{ model_name }}Resource extends Resource
 {

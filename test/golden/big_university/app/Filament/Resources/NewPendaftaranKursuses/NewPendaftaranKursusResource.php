@@ -22,8 +22,7 @@ use App\Filament\Exports\PendaftaranKursusExporter;
 use Filament\Actions\ExportAction;
 
 
-
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+use App\Filament\RelationManagers\AuditsRelationManager;
 
 class NewPendaftaranKursusResource extends Resource
 {

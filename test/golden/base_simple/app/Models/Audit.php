@@ -1,0 +1,51 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+
+/**
+ * Native audit record (FiziSysMaker generated code).
+ *
+ * One row per create/update/delete of an auditable model.
+ */
+class Audit extends Model
+{
+    protected $table = 'audits';
+
+    protected $fillable = [
+        'auditable_type',
+        'auditable_id',
+        'event',
+        'user_id',
+        'old_values',
+        'new_values',
+        'url',
+        'ip_address',
+        'user_agent',
+        'tags',
+    ];
+
+    protected $casts = [
+        'old_values' => 'array',
+        'new_values' => 'array',
+    ];
+
+    /**
+     * The auditable parent model.
+     */
+    public function auditable(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    /**
+     * The authenticated user who triggered the audit (null when unauthenticated).
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+}

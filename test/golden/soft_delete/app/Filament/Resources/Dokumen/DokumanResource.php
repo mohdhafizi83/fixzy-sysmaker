@@ -23,8 +23,7 @@ use App\Filament\Exports\DokumanExporter;
 use Filament\Actions\ExportAction;
 
 
-
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+use App\Filament\RelationManagers\AuditsRelationManager;
 
 class DokumanResource extends Resource
 {

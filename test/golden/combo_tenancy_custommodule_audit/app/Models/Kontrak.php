@@ -5,14 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
+use App\Models\Concerns\HasAudits;
+use App\Models\Concerns\BelongsToTenant;
 
-class Kontrak extends Model implements Auditable
+class Kontrak extends Model 
 {
 	use HasFactory;
-    use AuditableTrait;
+    use HasAudits;
     use SoftDeletes;
+    use BelongsToTenant;
+    protected $tenantForeignKey = 'syarikat_id';
     /**
      *
      * @var string
@@ -54,9 +56,6 @@ class Kontrak extends Model implements Auditable
         parent::boot();
 
         static::creating(function ($model) {
-            if (empty($model->syarikat_id) && auth()->check()) {
-                $model->syarikat_id = auth()->user()->syarikat_id;
-            }
             if (empty($model->created_by)) {
                 $model->created_by = auth()->id();
             }

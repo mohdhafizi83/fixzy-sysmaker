@@ -24,8 +24,7 @@ use Filament\Actions\ExportAction;
 
 use App\Filament\Resources\Kursuses\RelationManagers\KursusRelationManager;
 use App\Filament\Resources\Kursuses\RelationManagers\PendaftaranKursusRelationManager;
-
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+use App\Filament\RelationManagers\AuditsRelationManager;
 
 class KursusResource extends Resource
 {

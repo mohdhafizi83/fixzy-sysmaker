@@ -23,8 +23,7 @@ use App\Filament\Exports\LaporanHarianExporter;
 use Filament\Actions\ExportAction;
 
 
-
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+use App\Filament\RelationManagers\AuditsRelationManager;
 
 class LaporanHarianResource extends Resource
 {

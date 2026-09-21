@@ -23,8 +23,7 @@ use App\Filament\Exports\SekolahExporter;
 use Filament\Actions\ExportAction;
 
 use App\Filament\Resources\Sekolahs\RelationManagers\KelaRelationManager;
-
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+use App\Filament\RelationManagers\AuditsRelationManager;
 
 class SekolahResource extends Resource
 {

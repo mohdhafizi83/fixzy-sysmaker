@@ -23,8 +23,7 @@ use App\Filament\Exports\PengesahanPendaftaranExporter;
 use Filament\Actions\ExportAction;
 
 
-
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+use App\Filament\RelationManagers\AuditsRelationManager;
 
 class PengesahanPendaftaranResource extends Resource
 {

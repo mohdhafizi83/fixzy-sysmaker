@@ -25,8 +25,7 @@ use Filament\Actions\ExportAction;
 use App\Filament\Resources\Pelajars\RelationManagers\DokumenPelajarRelationManager;
 use App\Filament\Resources\Pelajars\RelationManagers\PendaftaranKursusRelationManager;
 use App\Filament\Resources\Pelajars\RelationManagers\KeputusanUjianRelationManager;
-
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+use App\Filament\RelationManagers\AuditsRelationManager;
 
 class PelajarResource extends Resource
 {

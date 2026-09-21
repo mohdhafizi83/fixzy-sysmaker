@@ -22,8 +22,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filament\Navigation\NavigationGroup; //fizisysmaker
-use Livewire\Livewire; // 1. Import Livewire fizisysmaker - global auditing
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager; // 2. Import Relation Manager fizisysmaker -global auditing
+
 
 
 class AdminPanelProvider extends PanelProvider
@@ -87,6 +86,5 @@ class AdminPanelProvider extends PanelProvider
     public function boot(): void
     {
         // 3. Daftar komponen AuditsRelationManager secara manual
-        Livewire::component('tapp.filament-auditing.relation-managers.audits-relation-manager', AuditsRelationManager::class);
     }
 }

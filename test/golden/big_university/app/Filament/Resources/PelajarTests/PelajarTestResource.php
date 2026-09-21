@@ -22,8 +22,7 @@ use App\Filament\Exports\PelajarExporter;
 use Filament\Actions\ExportAction;
 
 
-
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+use App\Filament\RelationManagers\AuditsRelationManager;
 
 class PelajarTestResource extends Resource
 {

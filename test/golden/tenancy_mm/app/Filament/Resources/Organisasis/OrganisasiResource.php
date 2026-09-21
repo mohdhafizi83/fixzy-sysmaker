@@ -23,8 +23,7 @@ use App\Filament\Exports\OrganisasiExporter;
 use Filament\Actions\ExportAction;
 
 use App\Filament\Resources\Organisasis\RelationManagers\ProdukRelationManager;
-
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+use App\Filament\RelationManagers\AuditsRelationManager;
 
 class OrganisasiResource extends Resource
 {
