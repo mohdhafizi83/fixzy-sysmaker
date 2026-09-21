@@ -1,0 +1,73 @@
+<?php
+namespace App\Filament\Resources\Invoices\Schemas;
+
+use App\Filament\Resources\Fakultis\FakultiResource;
+
+use Illuminate\Contracts\View\View;
+use Filament\Schemas\Schema;
+use Filament\Pages\Page;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Section;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+
+class InvoiceForm
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema->components([
+            Section::make("Detail View")
+                ->columns(fn (Page $livewire) => $livewire->gridColumns)
+    ->headerActions([
+        Action::make('1 Kolum')
+            ->icon('heroicon-o-queue-list')
+            ->iconButton()
+            ->color('gray')
+            ->tooltip('Display 1 column')
+            ->action(fn (Page $livewire) => $livewire->gridColumns = 1),
+
+        Action::make('2 Kolum')
+            ->icon('heroicon-o-view-columns')
+            ->iconButton()
+            ->color('gray')
+            ->tooltip('Display 2 column')
+            ->action(fn (Page $livewire) => $livewire->gridColumns = 2),
+
+        Action::make('3 Kolum')
+            ->icon('heroicon-o-table-cells')
+            ->iconButton()
+            ->color('gray')
+            ->tooltip('Display 3 column')
+            ->action(fn (Page $livewire) => $livewire->gridColumns = 3),
+    ])
+                ->schema([
+				Select::make('fakulti_id')
+    ->label('Fakulti ID')
+    ->searchable()
+    ->preload()
+    ->relationship('fakulti', 'nama_fakulti')
+    ->suffixActions([
+    Action::make('view_fakulti')
+        ->icon('heroicon-o-eye')
+        ->modalContent(fn (Get $get): ?View => $get('fakulti_id') ? view('filament.components.modal-iframe', ['src' => FakultiResource::getUrl('edit', ['record' => $get('fakulti_id')]) . '?iframe=1']) : null)
+        ->modalWidth('6xl')
+        ->modalSubmitAction(false)
+        ->hidden(fn (Get $get): bool => !$get('fakulti_id')),
+    Action::make('create_fakulti')
+        ->icon('heroicon-o-plus')
+        ->modalContent(fn (): View => view('filament.components.modal-iframe', ['src' => FakultiResource::getUrl('create') . '?iframe=1']))
+        ->modalWidth('6xl')
+        ->modalSubmitAction(false),
+])
+    ,
+                TextInput::make('jumlah_bayaran')
+    ->numeric()
+    ->maxLength(255)
+    ->label('Jumlah Bayaran')
+    ->trim(),
+                ])
+                ->columnSpanFull(),
+        ]);
+    }
+}

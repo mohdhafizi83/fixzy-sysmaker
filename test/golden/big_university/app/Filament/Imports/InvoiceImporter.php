@@ -1,0 +1,119 @@
+<?php
+
+namespace App\Filament\Imports;
+
+use App\Models\Invoice;
+use App\Models\Fakulti;
+use Filament\Actions\Imports\ImportColumn;
+use Filament\Actions\Imports\Importer;
+use Filament\Actions\Imports\Models\Import;
+use Illuminate\Support\Number;
+use Filament\Forms\Components\Checkbox;
+
+class InvoiceImporter extends Importer
+{
+    protected static ?string $model = Invoice::class;
+
+    public static function getColumns(): array
+    {
+        return [
+            ImportColumn::make('id')
+                ->label('ID')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('ID'),
+
+            ImportColumn::make('fakulti')
+                ->label('nama_fakulti')
+                ->relationship(resolveUsing: ['nama_fakulti'])
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample nama_fakulti 1', 'Sample nama_fakulti 2'])
+                ->exampleHeader('nama_fakulti'),
+
+            ImportColumn::make('jumlah_bayaran')
+                ->label('Jumlah Bayaran')
+                ->numeric()
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Jumlah Bayaran 1', 'Sample Jumlah Bayaran 2'])
+                ->exampleHeader('Jumlah Bayaran'),
+
+            ImportColumn::make('created_at')
+                ->label('Created At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Created At'),
+
+            ImportColumn::make('updated_at')
+                ->label('Updated At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Updated At'),
+
+            ImportColumn::make('deleted_at')
+                ->label('Deleted At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Deleted At'),
+
+            ImportColumn::make('created_by')
+                ->label('Created By')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Created By'),
+
+            ImportColumn::make('updated_by')
+                ->label('Updated By')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Updated By'),
+
+            ImportColumn::make('deleted_by')
+                ->label('Deleted By')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Deleted By'),
+        ];
+    }
+
+    public function resolveRecord(): ?Invoice
+    {
+    return new Invoice();
+    }
+
+    public static function getCompletedNotificationBody(Import $import): string
+    {
+        $body = 'Your Invoice import has completed and ' . Number::format($import->successful_rows) . ' ' . str('row')->plural($import->successful_rows) . ' imported.';
+
+        if ($failedRowsCount = $import->getFailedRowsCount()) {
+            $body .= ' ' . Number::format($failedRowsCount) . ' ' . str('row')->plural($failedRowsCount) . ' failed to import.';
+        }
+
+        return $body;
+    }
+    
+    public static function getOptionsFormComponents(): array
+    {
+        return [
+            Checkbox::make('updateExisting')
+                ->label('Update existing records'),
+        ];
+    }
+
+}

@@ -1,0 +1,76 @@
+<?php
+
+namespace App\Filament\Resources\Pelajars\Pages;
+
+use App\Filament\Resources\Pelajars\PelajarResource;
+use Filament\Actions\CreateAction;
+use Filament\Resources\Pages\ListRecords;
+
+use Filament\Support\Facades\FilamentView;
+use Illuminate\Contracts\View\View;
+use Illuminate\Contracts\Support\Htmlable;
+
+class ListPelajars extends ListRecords
+{
+    protected static string $resource = PelajarResource::class;
+
+    public function getTitle(): string | Htmlable
+    {
+        return 'Pelajar Kursus'; 
+    }
+    
+    protected function getHeaderActions(): array
+    {
+        return [
+            CreateAction::make(),
+        ];
+    }
+    
+    
+    
+    public function render(): View
+    {
+        
+        FilamentView::registerRenderHook(
+            'panels::body.end',
+            fn (): string => <<<HTML
+                <style>
+                    td.fi-ta-cell > .fi-ta-actions {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: flex-start; 
+                        gap: 0.5rem; 
+                    }
+                </style>
+            HTML
+        );
+
+        
+        if ((bool) request()->query('print')) {
+            FilamentView::registerRenderHook(
+                'panels::body.end',
+                fn (): string => <<<HTML
+                    <style>
+                        @media print {
+                            body { visibility: hidden; }
+                            .fi-ta-content-ctn, .fi-ta-content-ctn * { visibility: visible; }
+                            .fi-ta-content-ctn { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; margin: 0 !important; }
+                            body { font-size: 12pt !important; background-color: #fff !important; }
+                            .fi-ta-cell .fi-ta-actions { display: none !important; }
+                        }
+                    </style>
+                    <script>
+                        window.onload = () => {
+                            window.print();
+                            window.onafterprint = () => { window.close(); };
+                        };
+                    </script>
+                HTML
+            );
+        }
+
+        return parent::render();
+    }
+    
+    
+}

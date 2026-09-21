@@ -1,0 +1,23 @@
+<?php
+namespace Database\Factories;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\Invoice;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Invoice>
+ */
+class InvoiceFactory extends Factory
+{
+    protected $model = Invoice::class;
+
+    public function definition(): array
+    {
+        return [
+            'fakulti_id' => \App\Models\Fakulti::inRandomOrder()->value('id'),
+            'jumlah_bayaran' => fake()->randomFloat(2, 10, 1000),
+            'created_by' => fake()->randomNumber(),
+            'updated_by' => fake()->randomNumber(),
+            'deleted_by' => fake()->randomNumber(),
+        ];
+    }
+}

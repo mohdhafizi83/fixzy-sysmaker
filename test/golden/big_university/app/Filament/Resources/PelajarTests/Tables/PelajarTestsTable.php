@@ -1,0 +1,193 @@
+<?php
+
+namespace App\Filament\Resources\PelajarTests\Tables;
+
+use App\Filament\Resources\DokumenPelajars\DokumenPelajarResource;
+
+use App\Models\Pelajar;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\RestoreAction;
+use Filament\Tables\Table;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TrashedFilter;
+use Filament\Tables\Columns\Summarizers\Range;
+use Filament\Support\Enums\TextSize;
+use Filament\Support\Enums\FontWeight;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
+use Illuminate\Contracts\View\View;
+
+
+class PelajarTestsTable
+{
+    public static function configure(Table $table): Table
+    {
+        return $table
+            
+            
+            
+            
+            ->recordUrl(null)
+            ->description('Maklumat tentang pelajar diuruskan disini.')
+            ->columns([
+                TextColumn::make('id')
+                    ->label('Id')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                TextColumn::make('nama_penuh')
+                    ->label('Nama Penuh')
+                    ->sortable()
+                    ->wrap()
+                    ->weight(FontWeight::Bold)
+                    ->limit(50, end: ' (more)')
+                    ->searchable(isIndividual: true)
+                    ->toggleable()
+                    ->tooltip('Papar nama penuh pelajar')
+                    ->alignCenter(),
+                TextColumn::make('fakulti.nama_fakulti')
+                    ->label('Id Fakulti')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                TextColumn::make('no_matrik')
+                    ->label('No Matrik')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->color('primary')
+                    ->size(TextSize::Large)
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('email')
+                    ->label('Email')
+                    ->wrap()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->formatStateUsing(function (array|string|null $state): ?string {
+            if (blank($state)) { return null; }
+            
+            // Jaring Keselamatan: Jika Eloquent memulangkan String (gagal cast automatik), decode secara manual
+            if (is_string($state)) {
+                $decoded = json_decode($state, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $state = $decoded;
+                } else {
+                    return $state; // Jika bukan JSON, pulangkan teks mentah
+                }
+            }
+            
+            // Proses data yang telah disahkan sebagai Array
+            if (is_array($state)) {
+                // Senario A: Baca format Repeater Simple / Tags (Flat Array)
+                // Cth: ["ali@gmail.com", "abu@gmail.com"]
+                if (isset($state[0]) && !is_array($state[0])) {
+                    return implode(', ', $state);
+                }
+                
+                // Senario B: Baca format Repeater (Array of Objects)
+                // Cth: [["email_1" => "ali..."], ["email_1" => "abu..."]]
+                $values = [];
+                foreach ($state as $item) {
+                    if (is_array($item)) {
+                        $values = array_merge($values, array_values($item));
+                    }
+                }
+                return implode(', ', array_filter($values));
+            }
+            
+            return '';
+        }),
+                TextColumn::make('tarikh_daftar')
+                    ->label('Tarikh Daftar')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->dateTime('d F Y')
+                    ->summarize([
+                        Range::make()->minimalDateTimeDifference()
+                    ]),
+                ImageColumn::make('gambar_profil')
+                    ->label('Gambar Profil')
+                    ->square()
+                    ->imageWidth(50)
+                    ->imageHeight(50)
+                    ->disk('public')
+                    ->action(
+                    Action::make('Show full image')
+                        ->modalHeading(false)->modalFooter(null)
+                        ->modalContent(fn (Pelajar $record): HtmlString => new HtmlString(
+                            $record->gambar_profil
+                                ? '<img src="' . Storage::url($record->gambar_profil) . '" alt="Gambar Profil" style="width: 100%;">'
+                                : '<p class="text-center">No image uploaded.</p>'
+                        ))
+                )
+                    ->searchable()
+                    ->toggleable(),
+                IconColumn::make('surat_tawaran')
+                    ->label('Surat Tawaran')
+                    ->icon(fn ($state): ?string => $state ? 'heroicon-o-document-arrow-down' : null)
+                    ->url(fn (?Pelajar $record) => $record?->surat_tawaran ? Storage::disk('public')->url($record->surat_tawaran) : null, shouldOpenInNewTab: true)
+                    ->color('primary')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('created_at')
+                    ->label('Created At')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->dateTime('d F Y h:i A'),
+                TextColumn::make('updated_at')
+                    ->label('Updated At')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->dateTime('d F Y h:i A'),
+                TextColumn::make('deleted_at')
+                    ->label('Deleted At')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->dateTime('d F Y h:i A')
+            ])
+            ->when((bool) request()->query('print'), fn (Table $table) => $table->paginated(false),)
+            ->filters([
+                TrashedFilter::make(),
+            ])
+            ->recordActions([
+
+                
+                Action::make('showDokumenPelajar')
+                    ->label(fn (Pelajar $record): string => 'Dokumen Pelajar: ' . $record->dokumen_pelajars_count)
+                    ->button()->outlined()->color('info')
+                    ->tooltip('Show total of dokumen pelajar')
+                    ->visible(fn (Pelajar $record): bool => $record->dokumen_pelajars_count > 0)
+                    ->modalHeading(fn (Pelajar $record) => 'Nama Penuh: ' . $record->nama_penuh)
+                    ->modalSubmitAction(false)->modalCancelAction(false)->modalWidth('6xl')
+                    ->modalContent(fn (Pelajar $record): View =>
+                        view('filament.components.modal-iframe', ['src' => DokumenPelajarResource::getUrl('index', ['pelajar_id' => $record->id, 'iframe' => 1])])
+                    ),   
+                    
+                EditAction::make(),
+                DeleteAction::make(),
+                ForceDeleteAction::make(),
+                RestoreAction::make(),
+            ])
+            ->toolbarActions([
+                
+            ]);
+    }
+}

@@ -1,24 +1,22 @@
 const fs = require('fs');
 const path = require('path');
-const { 
-    toSingularPascalCase, 
-    toPluralPascalCase, 
-    toPluralCamelCase, 
-    readTemplate 
+const {
+    toSingularPascalCase,
+    toPluralPascalCase,
+    toPluralCamelCase,
 } = require('../utils');
+const { renderTemplate } = require('../render/engine');
 
 /**
  * [HELPER] Menjana satu fail Relation Manager.
  */
-function generateSingleRelationManager(rel, basePath, templateContent, fullSchema) {
+function generateSingleRelationManager(rel, basePath, fullSchema) {
     const { database: { table: tables } } = fullSchema;
 
     // Logik Asal: Langkau jika 'one-to-one' atau melibatkan 'users'
     if (rel.relationship_type === 'one-to-one' || rel.parent_table_name === 'users' || rel.child_table_name === 'users') {
         return;
     }
-
-    let managerContent = templateContent;
 
     // --- 1. DAPATKAN MODULE NAME UNTUK PARENT & CHILD ---
     const parentTableData = tables[rel.parent_table_name];
@@ -33,34 +31,23 @@ function generateSingleRelationManager(rel, basePath, templateContent, fullSchem
                             : rel.child_table_name;
 
     // Sediakan variasi nama (Berasaskan MODULE NAME)
-    // Nama folder Resource induk: StudentInfos (bukan Pelajars)
     const parentTablePlural = toPluralPascalCase(parentNameSource);
-    
-    // Nama label Child dalam UI (Title): StudentInfos
     const childTablePlural = toPluralPascalCase(childNameSource);
-    
-    // Nama Fail/Class Child: StudentInfoRelationManager
     const childTableSingular = toSingularPascalCase(childNameSource);
-    
+
     // --- 2. TENTUKAN NAMA FUNGSI HUBUNGAN (RELATIONSHIP NAME) ---
-    // Mesti sama dengan Model Generator: camelCase dari Module Name child
     // Jika self-referencing (Parent -> Children), guna 'children'
     const relationshipName = rel.parent_table_name === rel.child_table_name
-        ? 'children' 
-        : toPluralCamelCase(childNameSource); 
-    
-    // --- 3. LAKUKAN PENGGANTIAN PLACEHOLDER ---
-    // Namespace: App\Filament\Resources\StudentInfos\RelationManagers
-    managerContent = managerContent.replace(/<<TABLE_NAME_PLURAL>>/g, parentTablePlural);
-    
-    // Label UI ($title)
-    managerContent = managerContent.replace(/<<CHILD_TABLE_NAME_PLURAL>>/g, childTablePlural);
-    
-    // Nama Method dalam Model ($relationship)
-    managerContent = managerContent.replace(/<<CHILD_TABLE_NAME_PLURAL_CAMEL>>/g, relationshipName);
-    
-    // Nama Class (class StudentInfoRelationManager)
-    managerContent = managerContent.replace(/<<CHILD_TABLE_NAME_SINGULAR>>/g, childTableSingular);
+        ? 'children'
+        : toPluralCamelCase(childNameSource);
+
+    // --- 3. RENDER TEMPLATE (context object; template owns layout) ---
+    const managerContent = renderTemplate('app/Filament/Resources/RelationManagers.php.njk', {
+        parent_plural: parentTablePlural,
+        child_plural: childTablePlural,
+        child_singular: childTableSingular,
+        relationship_name: relationshipName,
+    });
 
     // --- 4. SIMPAN FAIL ---
     const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', parentTablePlural, 'RelationManagers');
@@ -77,14 +64,12 @@ function generateSingleRelationManager(rel, basePath, templateContent, fullSchem
 async function generateFilamentRelationManagers(fullSchema, basePath) {
     try {
         const { database: { relationships } } = fullSchema;
-        const templateContent = readTemplate('app/Filament/Resources/RelationManagers.template');
 
         // Loop melalui setiap hubungan yang wujud
         for (const rel of relationships) {
-            // Hantar fullSchema untuk lookup module_name
-            generateSingleRelationManager(rel, basePath, templateContent, fullSchema);
+            generateSingleRelationManager(rel, basePath, fullSchema);
         }
-        
+
         return { success: true, message: 'Filament Relation Managers generated successfully.' };
 
     } catch (error) {
@@ -95,5 +80,5 @@ async function generateFilamentRelationManagers(fullSchema, basePath) {
 
 module.exports = {
     generateFilamentRelationManagers,
-    generateSingleRelationManager 
+    generateSingleRelationManager
 };

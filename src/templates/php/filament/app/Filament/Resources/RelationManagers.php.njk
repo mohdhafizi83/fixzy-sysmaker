@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Filament\Resources\{{ parent_plural }}\RelationManagers;
+
+use App\Filament\Resources\{{ child_plural }}\{{ child_singular }}Resource;
+use Filament\Actions\CreateAction;
+use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Tables\Table;
+
+class {{ child_singular }}RelationManager extends RelationManager
+{
+    protected static string $relationship = '{{ relationship_name }}';
+    
+    protected static ?string $relatedResource = {{ child_singular }}Resource::class;
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->headerActions([
+                CreateAction::make(),
+            ]);
+    }
+}

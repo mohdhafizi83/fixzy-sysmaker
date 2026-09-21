@@ -1,0 +1,120 @@
+<?php
+namespace App\Filament\Resources\PengesahanPendaftarans\Schemas;
+
+use App\Filament\Resources\PendaftaranKursuses\PendaftaranKursusResource;
+use App\Filament\Resources\Users\UserResource;
+
+use Illuminate\Contracts\View\View;
+use Filament\Schemas\Schema;
+use Filament\Pages\Page;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Section;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+
+class PengesahanPendaftaranForm
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema->components([
+            Section::make("Detail View")
+                ->columns(fn (Page $livewire) => $livewire->gridColumns)
+    ->headerActions([
+        Action::make('1 Kolum')
+            ->icon('heroicon-o-queue-list')
+            ->iconButton()
+            ->color('gray')
+            ->tooltip('Display 1 column')
+            ->action(fn (Page $livewire) => $livewire->gridColumns = 1),
+
+        Action::make('2 Kolum')
+            ->icon('heroicon-o-view-columns')
+            ->iconButton()
+            ->color('gray')
+            ->tooltip('Display 2 column')
+            ->action(fn (Page $livewire) => $livewire->gridColumns = 2),
+
+        Action::make('3 Kolum')
+            ->icon('heroicon-o-table-cells')
+            ->iconButton()
+            ->color('gray')
+            ->tooltip('Display 3 column')
+            ->action(fn (Page $livewire) => $livewire->gridColumns = 3),
+    ])
+                ->schema([
+				TextInput::make('id')
+    ->integer()
+    ->readOnly()
+    ->maxLength(11)
+    ->label('Id')
+    ->trim(),
+                Select::make('pendaftaran_id')
+    ->required()->markAsRequired()
+    ->unique(ignoreRecord: true)
+    ->label('Pendaftaran Id')
+    ->searchable()
+    ->preload()
+    ->relationship('pendaftaranKursus', 'tarikh_pendaftaran')
+    ->suffixActions([
+    Action::make('view_pendaftaran_kursus')
+        ->icon('heroicon-o-eye')
+        ->modalContent(fn (Get $get): ?View => $get('pendaftaran_id') ? view('filament.components.modal-iframe', ['src' => PendaftaranKursusResource::getUrl('edit', ['record' => $get('pendaftaran_id')]) . '?iframe=1']) : null)
+        ->modalWidth('6xl')
+        ->modalSubmitAction(false)
+        ->hidden(fn (Get $get): bool => !$get('pendaftaran_id')),
+    Action::make('create_pendaftaran_kursus')
+        ->icon('heroicon-o-plus')
+        ->modalContent(fn (): View => view('filament.components.modal-iframe', ['src' => PendaftaranKursusResource::getUrl('create') . '?iframe=1']))
+        ->modalWidth('6xl')
+        ->modalSubmitAction(false),
+])
+    ,
+                Select::make('user_id')
+    ->required()->markAsRequired()
+    ->label('User Id')
+    ->searchable()
+    ->preload()
+    ->relationship('user', 'name')
+    ->suffixActions([
+    Action::make('view_users')
+        ->icon('heroicon-o-eye')
+        ->modalContent(fn (Get $get): ?View => $get('user_id') ? view('filament.components.modal-iframe', ['src' => UserResource::getUrl('edit', ['record' => $get('user_id')]) . '?iframe=1']) : null)
+        ->modalWidth('6xl')
+        ->modalSubmitAction(false)
+        ->hidden(fn (Get $get): bool => !$get('user_id')),
+    Action::make('create_users')
+        ->icon('heroicon-o-plus')
+        ->modalContent(fn (): View => view('filament.components.modal-iframe', ['src' => UserResource::getUrl('create') . '?iframe=1']))
+        ->modalWidth('6xl')
+        ->modalSubmitAction(false),
+])
+    ,
+                TextInput::make('status')
+    ->maxLength(15)
+    ->required()->markAsRequired()
+    ->label('Status')
+    ->trim(),
+                TextInput::make('catatan')
+    ->default('NULL')
+    ->label('Catatan')
+    ->trim(),
+                TextInput::make('tarikh_tindakan')
+    ->required()->markAsRequired()
+    ->default('CURRENT_TIMESTAMP')
+    ->label('Tarikh Tindakan')
+    ->trim(),
+                TextInput::make('created_at')
+    ->label('Created At')
+    ->trim(),
+                TextInput::make('updated_at')
+    ->label('Updated At')
+    ->trim(),
+                TextInput::make('deleted_at')
+    ->label('Deleted At')
+    ->trim(),
+                ])
+                ->columnSpanFull(),
+        ]);
+    }
+}

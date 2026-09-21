@@ -67,6 +67,10 @@ async function generateFilamentImporters(fullSchema, outputDir) {
                                         : rel.parent_table_name;
 
                 const parentModel = toSingularPascalCase(parentNameSource);
+                // Skip parent model equal to the importer's own model — the class
+                // is already imported via <<MODEL_NAME>>; a duplicate `use`
+                // is a PHP fatal (name already in use).
+                if (parentModel === modelName) return;
                 useStatements.add(`use App\\Models\\${parentModel};`);
             });
             fileContent = fileContent.replace(/<<RELATIONSHIP_MODEL_NAME>>/g, Array.from(useStatements).join('\n'));

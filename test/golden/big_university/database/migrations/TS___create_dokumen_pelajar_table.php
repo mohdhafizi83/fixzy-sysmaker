@@ -1,0 +1,26 @@
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('dokumen_pelajar', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('pelajar_id');
+            $table->string('nama_fail', 200);
+            $table->string('path_fail', 255);
+            $table->string('jenis_dokumen', 50)->nullable()->default('Am');
+            $table->timestamp('tarikh_muatnaik')->nullable()->useCurrent();
+            $table->timestamps();
+            $table->softDeletes();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('dokumen_pelajar');
+    }
+};

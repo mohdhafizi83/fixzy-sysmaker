@@ -1,0 +1,134 @@
+<?php
+
+namespace App\Filament\Imports;
+
+use App\Models\Kursus;
+
+use Filament\Actions\Imports\ImportColumn;
+use Filament\Actions\Imports\Importer;
+use Filament\Actions\Imports\Models\Import;
+use Illuminate\Support\Number;
+use Filament\Forms\Components\Checkbox;
+
+class KursusImporter extends Importer
+{
+    protected static ?string $model = Kursus::class;
+
+    public static function getColumns(): array
+    {
+        return [
+            ImportColumn::make('id')
+                ->label('Id')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Id'),
+
+            ImportColumn::make('nama_kursus')
+                ->label('Nama Kursus')
+                ->requiredMapping()
+                ->ignoreBlankState()
+                ->rules(['required', 'max:150'])
+                ->examples(['Sample Nama Kursus 1', 'Sample Nama Kursus 2'])
+                ->exampleHeader('Nama Kursus'),
+
+            ImportColumn::make('kod_kursus')
+                ->label('Kod Kursus')
+                ->requiredMapping()
+                ->ignoreBlankState()
+                ->rules(['required', 'max:10'])
+                ->examples(['Sample Kod Kursus 1', 'Sample Kod Kursus 2'])
+                ->exampleHeader('Kod Kursus'),
+
+            ImportColumn::make('deskripsi')
+                ->label('Deskripsi')
+                ->ignoreBlankState()
+                ->examples(['Sample Deskripsi 1', 'Sample Deskripsi 2'])
+                ->exampleHeader('Deskripsi'),
+
+            ImportColumn::make('jam_kredit')
+                ->label('Jam Kredit')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Jam Kredit'),
+
+            ImportColumn::make('kursus')
+                ->label('nama_kursus')
+                ->relationship(resolveUsing: ['nama_kursus'])
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('nama_kursus'),
+
+            ImportColumn::make('lokasi_kelas')
+                ->label('Lokasi Kelas')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Lokasi Kelas 1', 'Sample Lokasi Kelas 2'])
+                ->exampleHeader('Lokasi Kelas'),
+
+            ImportColumn::make('created_at')
+                ->label('Created At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Created At'),
+
+            ImportColumn::make('youtube_intro')
+                ->label('Youtube Intro')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Youtube Intro 1', 'Sample Youtube Intro 2'])
+                ->exampleHeader('Youtube Intro'),
+
+            ImportColumn::make('updated_at')
+                ->label('Updated At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Updated At'),
+
+            ImportColumn::make('deleted_at')
+                ->label('Deleted At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Deleted At'),
+        ];
+    }
+
+    public function resolveRecord(): ?Kursus
+    {
+    
+        return Kursus::firstOrNew([
+            'kod_kursus' => $this->data['kod_kursus']
+        ]);
+    }
+
+    public static function getCompletedNotificationBody(Import $import): string
+    {
+        $body = 'Your Kursus import has completed and ' . Number::format($import->successful_rows) . ' ' . str('row')->plural($import->successful_rows) . ' imported.';
+
+        if ($failedRowsCount = $import->getFailedRowsCount()) {
+            $body .= ' ' . Number::format($failedRowsCount) . ' ' . str('row')->plural($failedRowsCount) . ' failed to import.';
+        }
+
+        return $body;
+    }
+    
+    public static function getOptionsFormComponents(): array
+    {
+        return [
+            Checkbox::make('updateExisting')
+                ->label('Update existing records'),
+        ];
+    }
+
+}

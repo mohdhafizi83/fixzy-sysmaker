@@ -1,0 +1,23 @@
+<?php
+namespace Database\Factories;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\PendaftaranKursus;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\PendaftaranKursus>
+ */
+class PendaftaranKursusFactory extends Factory
+{
+    protected $model = PendaftaranKursus::class;
+
+    public function definition(): array
+    {
+        return [
+            'pelajar_id' => \App\Models\Pelajar::inRandomOrder()->value('id'),
+            'kursus_id' => \App\Models\Kursus::inRandomOrder()->value('id'),
+            'tarikh_pendaftaran' => fake()->dateTimeThisYear(),
+            'gred' => fake()->word(),
+            'dokumen_lengkap' => fake()->boolean(),
+        ];
+    }
+}

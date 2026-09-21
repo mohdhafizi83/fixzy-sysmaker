@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Filament\Exports;
+
+use App\Models\Pelajar;
+use Filament\Actions\Exports\ExportColumn;
+use Filament\Actions\Exports\Exporter;
+use Filament\Actions\Exports\Models\Export;
+use Illuminate\Support\Number;
+
+class PelajarExporter extends Exporter
+{
+    protected static ?string $model = Pelajar::class;
+
+    public static function getColumns(): array
+    {
+        return [
+                        ExportColumn::make('id')->limit(50)->label('Id'),
+            ExportColumn::make('fakulti.nama_fakulti')->limit(50)->label('Nama Fakulti'),
+            ExportColumn::make('nama_penuh')->limit(50)->label('Nama Penuh'),
+            ExportColumn::make('no_matrik')->limit(50)->label('No Matrik'),
+            ExportColumn::make('email')->limit(50)->listAsJson()->label('Email'),
+            ExportColumn::make('tarikh_daftar')->limit(50)->label('Tarikh Daftar'),
+            ExportColumn::make('gambar_profil')->limit(50)->label('Gambar Profil'),
+            ExportColumn::make('surat_tawaran')->limit(50)->label('Surat Tawaran'),
+            ExportColumn::make('created_at')->limit(50)->label('Created At'),
+            ExportColumn::make('updated_at')->limit(50)->label('Updated At'),
+            ExportColumn::make('deleted_at')->limit(50)->label('Deleted At'),
+        ];
+    }
+
+    public static function getCompletedNotificationBody(Export $export): string
+    {
+        $body = 'Your Pelajar export has completed and ' . Number::format($export->successful_rows) . ' ' . str('row')->plural($export->successful_rows) . ' exported.';
+
+        if ($failedRowsCount = $export->getFailedRowsCount()) {
+            $body .= ' ' . Number::format($failedRowsCount) . ' ' . str('row')->plural($failedRowsCount) . ' failed to export.';
+        }
+
+        return $body;
+    }
+}
