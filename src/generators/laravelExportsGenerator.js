@@ -8,8 +8,8 @@ const {
     toCamelCase,
     toTitleCase,
     toSingularPascalCase, // Tambah ini
-    readTemplate
 } = require('../utils');
+const { renderTemplate } = require('../render/engine');
 
 /**
  * Menjana fail Exporter Filament v4 dengan Label Custom.
@@ -24,7 +24,7 @@ async function generateFilamentExports(fullSchema, basePath) {
             fs.mkdirSync(exportsDir, { recursive: true });
         }
 
-        const templateContent = readTemplate('app/Filament/Exports/Exporter.template');
+        const templateName = 'app/Filament/Exports/Exporter.php.njk';
 
         // AMBIL DATA DARI STRUKTUR YANG BETUL
         const { database: { table: tables, relationships } } = fullSchema;
@@ -120,11 +120,12 @@ async function generateFilamentExports(fullSchema, basePath) {
             }).join('\n');
 
 
-            // Replacements dalam Template
-            let fileContent = templateContent;
-            fileContent = fileContent.replace(/<<MODEL_NAME>>/g, modelName);
-            fileContent = fileContent.replace(/<<FRASE_MODEL_NAME>>/g, fraseModelName);
-            fileContent = fileContent.replace(/<<EXPORTCOLUMN>>/g, exportColumnsCode);
+            // Render template dengan context object
+            const fileContent = renderTemplate(templateName, {
+                model_name: modelName,
+                frase_model_name: fraseModelName,
+                export_columns: exportColumnsCode,
+            });
 
             const fileName = `${modelName}Exporter.php`;
             fs.writeFileSync(path.join(exportsDir, fileName), fileContent);
