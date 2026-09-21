@@ -7,13 +7,13 @@ use App\Models\Produk;
 
 class DatabaseSeeder extends Seeder {
     public function run(): void {
-        // 1. Cipta Pengguna Ujian (Super Admin)
+        // 1. Create Test User (Super Admin)
         $user = User::firstOrCreate(
             ['email' => 'admin@admin.com'],
             ['name' => 'Super Admin', 'password' => bcrypt('password')]
         );
 
-        // Tugaskan Peranan (Role) Super Admin
+        // Assign the Super Admin Role
         $role = \Spatie\Permission\Models\Role::firstOrCreate([
             'name' => 'super_admin',
             'guard_name' => 'web'

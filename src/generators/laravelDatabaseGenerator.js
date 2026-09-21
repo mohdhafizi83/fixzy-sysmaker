@@ -742,7 +742,7 @@ async function generateLaravelDatabaseSeeder(fullSchema, basePath) {
         let importStatements = [`use App\\Models\\User;`];
         let runContent = [];
         
-        runContent.push(`        // 1. Cipta Pengguna Ujian (Super Admin)`);
+        runContent.push(`        // 1. Create Test User (Super Admin)`);
         runContent.push(`        $user = User::firstOrCreate(`);
         runContent.push(`            ['email' => 'admin@admin.com'],`);
         runContent.push(`            ['name' => 'Super Admin', 'password' => bcrypt('password')]`);
@@ -750,7 +750,7 @@ async function generateLaravelDatabaseSeeder(fullSchema, basePath) {
 
         // If the Authorization module (Spatie/Filament Shield) is enabled, assign the super_admin role
         if (projectSettings.module_authorization === 1) {
-            runContent.push(`\n        // Tugaskan Peranan (Role) Super Admin`);
+            runContent.push(`\n        // Assign the Super Admin Role`);
             runContent.push(`        $role = \\Spatie\\Permission\\Models\\Role::firstOrCreate([`);
             runContent.push(`            'name' => 'super_admin',`);
             runContent.push(`            'guard_name' => 'web'`);
