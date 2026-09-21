@@ -1951,7 +1951,7 @@ ipcMain.handle('preview:start', async (event, projectPath) => {
             const baseBinPath = ctx.isPackaged 
                 ? path.join(process.resourcesPath, 'app.asar.unpacked', 'bin')
                 : path.join(__dirname, '../../bin');
-            const phpPath = path.join(baseBinPath, 'php-8.4.12', 'php.exe');
+            const phpPath = require('../core/phpResolver').resolvePhpBinary(baseBinPath);
 
             // 2. Bunuh pelayan sedia ada jika sedang berjalan
             if (previewServerProcess) {
@@ -2194,7 +2194,7 @@ ipcMain.handle('preview:instant-run', async (event) => {
 
             const previewPath = workingPreviewPath;
             const baseBinPath = ctx.isPackaged ? path.join(process.resourcesPath, 'app.asar.unpacked', 'bin') : path.join(__dirname, '../bin'); 
-            const phpPath = path.join(baseBinPath, 'php-8.4.12', 'php.exe');
+            const phpPath = require('../core/phpResolver').resolvePhpBinary(baseBinPath);
             const port = 8080;
 
             // ========================================================
@@ -3260,7 +3260,7 @@ async function runComposerInstall(projectPath) {
       ? path.join(process.resourcesPath, 'app.asar.unpacked', 'bin')
       : path.join(__dirname, '../../bin'); // Keluar dari src/main
 
-    const phpPath = path.join(baseBinPath, 'php-8.4.12', 'php.exe');
+    const phpPath = require('../core/phpResolver').resolvePhpBinary(baseBinPath);
     const composerPath = path.join(baseBinPath, 'composer.phar');
 
     console.log(`Running composer in: ${projectPath}`);

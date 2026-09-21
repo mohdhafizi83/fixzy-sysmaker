@@ -16,3 +16,8 @@ others/start_electronbat.bat
 /test/output_full_app
 test/audit_output/
 test/golden_tmp/
+# Platform binaries provisioned by `npm run setup:binaries` (Phase 6.2)
+bin/php-8.4.12/
+
+# electron-builder output
+dist/

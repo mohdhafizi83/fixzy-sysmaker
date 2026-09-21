@@ -1,0 +1,45 @@
+# electron-builder config (Phase 6.3) — unsigned first.
+# Codesign/notarize: optional, needs Apple Developer account (owner decision).
+# Build: npx electron-builder --win --mac (see README)
+
+appId: com.fizisysmaker.app
+productName: FiziSysMaker
+copyright: Copyright © 2026 Hafizi
+
+directories:
+  output: dist
+  buildResources: build
+
+files:
+  - src/**/*
+  - resources/schema.sql
+  - package.json
+  # preview_env is large; ship it (preview feature needs it). Trim later if size hurts.
+  - resources/preview_env/**/*
+  - "!**/*.bak*"
+  - "!resources/preview_env/vendor/**/tests"
+  - "!resources/preview_env/node_modules"
+
+asarUnpack:
+  - resources/preview_env/**
+  - bin/composer.phar
+
+# PHP is NOT bundled — provisioned per-platform via `npm run setup:binaries`
+# or resolved from PATH / FSM_PHP_BIN (see src/core/phpResolver.js).
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.ico
+
+mac:
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+  category: public.app-category.developer-tools
+  # identity: null  # unsigned; set to sign when owner has a Developer ID
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true

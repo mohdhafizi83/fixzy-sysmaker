@@ -4,13 +4,15 @@
   "description": "",
   "main": "src/main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "setup:binaries": "node scripts/setup-binaries.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "electron": "^40.1.0",
+    "electron-builder": "^26.15.3",
     "electron-rebuild": "^3.2.9"
   },
   "dependencies": {
