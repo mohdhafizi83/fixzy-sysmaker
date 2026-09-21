@@ -1,0 +1,62 @@
+<?php
+
+namespace App\Filament\Imports;
+
+use App\Models\{{ model_name }};
+{% for rel_use in relationship_uses %}{{ rel_use }}
+{% endfor %}{% if relationship_uses.length == 0 %}
+{% endif %}use Filament\Actions\Imports\ImportColumn;
+use Filament\Actions\Imports\Importer;
+use Filament\Actions\Imports\Models\Import;
+use Illuminate\Support\Number;
+use Filament\Forms\Components\Checkbox;
+
+class {{ model_name }}Importer extends Importer
+{
+    protected static ?string $model = {{ model_name }}::class;
+
+    public static function getColumns(): array
+    {
+        return [
+{% for col in columns %}            ImportColumn::make('{{ col.name }}')
+                ->label('{{ col.label }}')
+{% if col.required_mapping %}                ->requiredMapping()
+{% endif %}{% if col.relationship %}                ->relationship(resolveUsing: ['{{ col.relationship }}'])
+{% endif %}{% if col.numeric %}                ->numeric()
+{% endif %}{% if col.integer %}                ->integer()
+{% endif %}{% if col.boolean %}                ->boolean()
+{% endif %}{% if col.json_list %}                ->multiple(',')
+{% endif %}{% if col.helper_text %}                ->helperText('{{ col.helper_text }}')
+{% endif %}                ->ignoreBlankState()
+{% if col.rules %}                ->rules([{{ col.rules }}])
+{% endif %}                ->examples([{{ col.examples }}])
+                ->exampleHeader('{{ col.label }}'),
+{% if not loop.last %}
+{% endif %}{% endfor %}        ];
+    }
+
+    public function resolveRecord(): ?{{ model_name }}
+    {
+{{ resolve_logic }}
+    }
+
+    public static function getCompletedNotificationBody(Import $import): string
+    {
+        $body = 'Your {{ frase_model_name }} import has completed and ' . Number::format($import->successful_rows) . ' ' . str('row')->plural($import->successful_rows) . ' imported.';
+
+        if ($failedRowsCount = $import->getFailedRowsCount()) {
+            $body .= ' ' . Number::format($failedRowsCount) . ' ' . str('row')->plural($failedRowsCount) . ' failed to import.';
+        }
+
+        return $body;
+    }
+    
+    public static function getOptionsFormComponents(): array
+    {
+        return [
+            Checkbox::make('updateExisting')
+                ->label('Update existing records'),
+        ];
+    }
+
+}
