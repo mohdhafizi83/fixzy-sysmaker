@@ -18,6 +18,7 @@
         "cross-spawn": "^7.0.6",
         "mysql2": "^3.16.1",
         "node-sql-parser": "^5.3.11",
+        "nunjucks": "^3.2.4",
         "pluralize": "^8.0.0"
     }
 }

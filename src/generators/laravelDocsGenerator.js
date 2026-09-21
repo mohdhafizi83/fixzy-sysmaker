@@ -1,9 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const { 
-    readTemplate
-} = require('../utils');
+const { renderTemplate } = require('../render/engine');
 
 async function generateDeploymentGuidePage(fullSchema, basePath) {
     try {
@@ -16,31 +14,22 @@ async function generateDeploymentGuidePage(fullSchema, basePath) {
         if (!fs.existsSync(pagesDir)) fs.mkdirSync(pagesDir, { recursive: true });
         if (!fs.existsSync(viewsDir)) fs.mkdirSync(viewsDir, { recursive: true });
 
-        // 2. Data untuk penggantian (Replacements)
-        // Kita boleh masukkan nama projek ke dalam panduan jika mahu
-        const appDbName = fullSchema.project.app_title 
-            ? fullSchema.project.app_title.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase() 
+        // 2. Context data (JS supplies data only; template owns the layout)
+        const appDbName = fullSchema.project.app_title
+            ? fullSchema.project.app_title.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase()
             : 'nama_db_anda';
 
-        // ============================================================
         // 3. JANA PHP CLASS (DeploymentGuide.php)
-        // ============================================================
-        let phpTemplate = readTemplate('app/Filament/Pages/DeploymentGuide.template');
-        
-        // Lakukan penggantian placeholder
-        phpTemplate = phpTemplate.replace(/<<NAMESPACE>>/g, 'App\\Filament\\Pages');
-        
-        fs.writeFileSync(path.join(pagesDir, 'DeploymentGuide.php'), phpTemplate);
+        const phpOut = renderTemplate('app/Filament/Pages/DeploymentGuide.php.njk', {
+            namespace: 'App\\Filament\\Pages',
+        });
+        fs.writeFileSync(path.join(pagesDir, 'DeploymentGuide.php'), phpOut);
 
-        // ============================================================
         // 4. JANA BLADE VIEW (deployment-guide.blade.php)
-        // ============================================================
-        let bladeTemplate = readTemplate('resources/views/filament/pages/deployment-guide.blade.template');
-        
-        // Gantikan placeholder nama DB dalam panduan
-        bladeTemplate = bladeTemplate.replace(/<<APP_DB_NAME>>/g, appDbName);
-
-        fs.writeFileSync(path.join(viewsDir, 'deployment-guide.blade.php'), bladeTemplate);
+        const bladeOut = renderTemplate('resources/views/filament/pages/deployment-guide.blade.php.njk', {
+            app_db_name: appDbName,
+        });
+        fs.writeFileSync(path.join(viewsDir, 'deployment-guide.blade.php'), bladeOut);
 
         return { success: true };
 
