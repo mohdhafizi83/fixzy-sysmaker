@@ -283,12 +283,12 @@ Next: Phase 7 (Public MVP gate).
 
 ## Phase 7 — Public MVP gate (from AUDIT-2026-09-20, unchanged)
 
-- [ ] **7.1** Delete/mark empty non-PHP template dirs (`src/templates/{dotnet,java,javascript,python,ruby}`) — scope honesty; list them in README roadmap instead.
-- [ ] **7.2** English pass: all code comments + UI strings (mechanical; do last so new code is already English).
-- [ ] **7.3** Full README: what/why, GIF/screenshot, generator matrix, quickstart (clone → npm i → npm start → generate < 15 min), security notes, roadmap (other stacks).
-- [ ] **7.4** Golden test matrix in CI green (Phase 3.6).
-- [ ] **7.5** Gate DevTools behind `FSM_DEVTOOLS=1`.
-- [ ] **7.6** Secret scan of full git history (repo has been private with real usage — scan before publish; if dirty, orphan-commit fresh history per portfolio bar).
+- [x] **7.1** Delete/mark empty non-PHP template dirs (`src/templates/{dotnet,java,javascript,python,ruby}`) — scope honesty; list them in README roadmap instead.
+- [x] **7.2** English pass: all code comments + UI strings (mechanical; do last so new code is already English).
+- [x] **7.3** Full README: what/why, GIF/screenshot, generator matrix, quickstart (clone → npm i → npm start → generate < 15 min), security notes, roadmap (other stacks). *(screenshot/GIF: owner to provide real capture; README references docs/FEATURE_MATRIX.md)*
+- [x] **7.4** Golden test matrix in CI green (Phase 3.6).
+- [x] **7.5** Gate DevTools behind `FSM_DEVTOOLS=1`.
+- [x] **7.6** Secret scan of full git history (repo has been private with real usage — scan before publish; if dirty, orphan-commit fresh history per portfolio bar).
 - [ ] **7.7** Owner final sign-off → make repo PUBLIC.
 
 ---
@@ -331,3 +331,5 @@ P4/P5/P6 can interleave after P3, but P7 requires all. Recommended order: 0→1�
 - 2026-09-21 18:55 UTC — P5-AUDIT — passed. (1) All layers green: golden 16/16, ir/render/audit/pathguard 10/10, node --check. (2) Electron xvfb boot: clean after fixing destructure bug (register.js exports function directly — 3 call sites had {destructure}). (3) Browser live test: UI loads with injected shim, electronAPI.getActiveProject() round-trip OK, 0 JS errors, malformed JSON rejected, SSE connects. (4) Security: traversal/symlink/outside-root rejected (unit + live CLI); remote bind refused without FSM_ALLOW_REMOTE=1. (5) 53-handler parity verified. (6) ABI: better-sqlite3 rebuild per runtime documented (Electron 143 vs Node 127). Next: Phase 6.
 - 2026-09-21 19:30 UTC — P6 (6.2–6.4) — done — commit 29179493. phpResolver (env→bundled→PATH), setup:binaries script, electron-builder.yml (win nsis + mac dmg unsigned), CI matrix ubuntu+macos. 6.1 macOS runtime delegated to CI runner (no darwin hardware here).
 - 2026-09-21 19:40 UTC — P6-AUDIT — passed (6.1 caveat). electron-builder --dir packages OK; packaged binary boots clean (xvfb). No php.exe literals in src. All layers green. Git slim. Next: Phase 7.
+- 2026-09-21 20:05 UTC — P7 (7.1–7.6) — done — commits 6c6a26a5 + 6577ad3b. 7.1: empty non-PHP template dirs + dead .template files deleted. 7.2: English pass via 4 parallel agents + owner-side sweep of generators/preview_env/test utils; word-boundary grep (yang|tidak|untuk|dalam|berjaya|gagal|ralat|anda|akan|bagi|ialah|jadual|medan|projek|menjana|...) = 0 hits outside vendor/golden/.bak. 7.3: full README (modes, quickstart, security notes, roadmap). 7.6: preview_env/.env UNtracked (dev APP_KEY), empty .env.example shipped, setup:binaries + e2e_smoke auto copy-example+key:generate so fresh clones work (proved: e2e PASS with local .env removed). History scan: all matches are vendor fixtures/dummy docker-compose creds — no real secrets; no history rewrite needed.
+- 2026-09-21 20:20 UTC — P7-AUDIT — passed. (1) node --check: register.js + renderer + all generators + test utils OK. (2) Golden rebaselined post-translation: 16/16 PASS; sabotage (tampered comment in golden) -> FAIL detected, restore+rebaseline green. (3) e2e_smoke base_simple + field_types_all HTTP 200 post-translation. (4) Packaged app (dist/linux-unpacked) boots healthy under xvfb, no uncaught exceptions. (5) ir_test PASS, render_validate 11/11. Remaining for publish: 7.7 owner sign-off; README screenshot/GIF (owner capture). Repo stays PRIVATE until owner says otherwise.
