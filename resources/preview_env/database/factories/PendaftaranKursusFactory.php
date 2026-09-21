@@ -17,7 +17,7 @@ class PendaftaranKursusFactory extends Factory
 	public function definition(): array
 	{
 		return [
-			// pelajar_id dan kursus_id akan diisi oleh Seeder
+			// pelajar_id and kursus_id will be filled by the Seeder
 			'tarikh_pendaftaran' => fake()->dateTimeThisYear(),
 			'status' => fake()->randomElement(['Baru', 'Disahkan', 'Ditolak']),
 		];

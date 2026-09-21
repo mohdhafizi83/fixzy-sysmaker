@@ -6,30 +6,30 @@ import { showCustomDialog } from '../ui/modalHandlers.js';
 import { setElementValue } from '../ui/formHelpers.js';
 
 /**
- * Fungsi Teras Boleh Guna Semula untuk mencipta Logic Builder.
- * Ia menerima satu objek konfigurasi untuk menentukan kelakuannya.
+ * Reusable core function for creating a Logic Builder.
+ * It takes a configuration object that defines its behavior.
  * @param {object} config - Objek konfigurasi.
  * @param {HTMLElement} config.palette - Elemen palet.
  * @param {HTMLElement} config.canvas - Elemen kanvas.
  * @param {HTMLInputElement} config.hiddenInput - Elemen input tersembunyi.
- * @param {object} config.validationRules - Tatabahasa (grammar) untuk pengesahan susunan.
- * @param {object} [config.context] - Objek pilihan untuk membekalkan data konteks (cth: { tableName: 'users' }).
- * @param {string} [config.updateMode='live'] - Mod kemas kini ('live' atau 'manual').
- * @returns {object} Objek dengan kaedah untuk berinteraksi dengan builder.
+ * @param {object} config.validationRules - Grammar for validating the sequence.
+ * @param {object} [config.context] - Optional object that supplies context data (e.g. { tableName: 'users' }).
+ * @param {string} [config.updateMode='live'] - Update mode ('live' or 'manual').
+ * @returns {object} Object with methods to interact with the builder.
  */
 function setupLogicBuilderCore(config) {
     const { palette, canvas, hiddenInput, validationRules, context, updateMode = 'live' } = config;
     const placeholder = canvas ? canvas.querySelector('.canvas-placeholder') : null;
 
     if (!palette || !canvas || !hiddenInput) {
-        console.error("Satu atau lebih elemen untuk Logic Builder tidak ditemui.", { palette: !!palette, canvas: !!canvas, hiddenInput: !!hiddenInput });
+        console.error("One or more elements for the Logic Builder were not found.", { palette: !!palette, canvas: !!canvas, hiddenInput: !!hiddenInput });
         return;
     }
 
     let isRebuildingUI = false;
     let modalCanvasState = '[]';
 	
-    // ▼▼▼ FUNGSI BANTUAN DIPINDAHKAN KE SINI UNTUK SKOP YANG BETUL ▼▼▼
+    // ▼▼▼ HELPER FUNCTIONS MOVED HERE FOR THE CORRECT SCOPE ▼▼▼
     const updateChildMathUI = (componentEl) => {
         if (!componentEl) return;
         const aggregateSelect = componentEl.querySelector('.aggregate-select');
@@ -41,9 +41,9 @@ function setupLogicBuilderCore(config) {
         fieldSelect.classList.toggle('hidden', isCount);
         countStar.classList.toggle('hidden', !isCount);
     };
-    // ▲▲▲ TAMAT PEMINDAHAN FUNGSI BANTUAN ▲▲▲
+    // ▲▲▲ END HELPER FUNCTION MOVE ▲▲▲
 
-    // ▼▼▼ MULA FUNGSI BANTUAN UNTUK JANA QUERY ▼▼▼
+    // ▼▼▼ START HELPER FUNCTIONS TO GENERATE QUERIES ▼▼▼
     const buildWhereClauseForQuery = (whereData, tableName) => {
         if (!whereData || !whereData.rules || whereData.rules.length === 0) return '';
         
@@ -82,7 +82,7 @@ function setupLogicBuilderCore(config) {
         const whereString = buildWhereClauseForQuery(whereClause, table);
         return `DELETE FROM \`${table}\` ${whereString};`;
     };
-    // ▲▲▲ TAMAT FUNGSI BANTUAN ▲▲▲
+    // ▲▲▲ END HELPER FUNCTIONS ▲▲▲
 
     // ▼▼▼ ALL ORIGINAL HELPER FUNCTIONS ARE PRESENT ▼▼▼
     const populateFieldsForRelatedData = (componentEl) => {
@@ -265,7 +265,7 @@ const updateModalCanvasState = () => {
                 const type = item.dataset.itemType;
                 let itemData = { type };
 
-                // ▼▼▼ LOGIK ASAL UNTUK KOMPONEN SEDIA ADA (DIKEMBALIKAN) ▼▼▼
+                // ▼▼▼ ORIGINAL LOGIC FOR EXISTING COMPONENTS (RESTORED) ▼▼▼
                 if (type === 'function') {
                     itemData.name = item.dataset.functionName;
                     const argContainer = item.querySelector('.function-argument-droppable');
@@ -389,7 +389,7 @@ const updateModalCanvasState = () => {
                     
                     itemData.query = buildRelatedDataQuery(itemData, context.tableName);
                 
-                // ▼▼▼ LOGIK BAHARU & PEMBAIKAN JSON (DIGABUNGKAN DI SINI) ▼▼▼
+                // ▼▼▼ NEW LOGIC & JSON IMPROVEMENTS (MERGED HERE) ▼▼▼
 				} else if (type === 'insert_record') {
                     const table = item.querySelector('.table-select')?.value;
                     const fields = Array.from(item.querySelectorAll('.field-value-pair')).map(pair => ({
@@ -415,7 +415,7 @@ const updateModalCanvasState = () => {
                     itemData.table = table;
                     itemData.query = generateDeleteQuery(table, whereClause);
                     itemData.details = { where: whereClause };
-                // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
+                // ▲▲▲ END NEW LOGIC ▲▲▲
 
                 } else if (type === 'boolean') {
                     itemData.value = item.querySelector('select')?.value;
@@ -557,7 +557,7 @@ const updateModalCanvasState = () => {
                         const tableSelect = newItem.querySelector('.table-select');
                         tableSelect.value = itemData.table;
                         
-                        // Bahagian untuk 'calculate_related_record'
+                        // Section for 'calculate_related_record'
                         if (itemData.type === 'calculate_related_record') {
                             const aggregateSelect = newItem.querySelector('.aggregate-select');
                             const fieldSelect = newItem.querySelector('.field-select');
@@ -569,7 +569,7 @@ const updateModalCanvasState = () => {
                              updateChildMathUI(newItem);
                         }
 
-                        // Bahagian untuk 'related_record_data'
+                        // Section for 'related_record_data'
                         if (itemData.type === 'related_record_data') {
                              const rel = appState.jsonData.database.relationships.find(r => r.parent_table_name === context.tableName && r.child_table_name === itemData.table);
                              const fkField = rel ? rel.fk_child_field : '...';
@@ -579,7 +579,7 @@ const updateModalCanvasState = () => {
                              }
                         }
 
-                        // Bahagian penapis (dikongsi oleh kedua-dua komponen)
+                        // Filter section (shared by both components)
                         if (itemData.filter && itemData.filter.rules && itemData.filter.rules.length > 0) {
                             const showWhereBtn = newItem.querySelector('.show-where-btn');
                             if(showWhereBtn) {
@@ -668,22 +668,22 @@ const updateModalCanvasState = () => {
                             }
                         }
                         
-                        // ▼▼▼ PEMBETULAN UTAMA: URUTAN DIUBAH ▼▼▼
-                        // Selepas bahagian penapis dibina, barulah kita mengisi senarai medan
+                        // ▼▼▼ MAIN FIX: ORDER CHANGED ▼▼▼
+                        // After the filter section is built, we then populate the field list
                         if(itemData.type === 'calculate_related_record') {
                             populateFieldsForChildMath(newItem);
                         } else if (itemData.type === 'related_record_data') {
-                            // 1. Panggil fungsi untuk mengisi senarai medan (kini ia boleh "melihat" jadual JOIN)
+                            // 1. Call the function to populate the field list (it can now "see" the JOIN tables)
                             populateFieldsForRelatedData(newItem);
                             
-                            // 2. Pilih semula medan yang disimpan
+                            // 2. Re-select the saved fields
                             const fieldMultiSelect = newItem.querySelector('.field-multiselect');
                             (itemData.fields || []).forEach(fieldName => {
                                 const option = fieldMultiSelect.querySelector(`option[value="${fieldName}"]`);
                                 if (option) option.selected = true;
                             });
                         }
-                        // ▲▲▲ TAMAT PEMBETULAN URUTAN ▲▲▲
+                        // ▲▲▲ END ORDER FIX ▲▲▲
 
                     }
                     else if (itemData.type === 'boolean' || ['comparison_operator', 'logical_operator', 'arithmetic_operator', 'current_user', 'current_datetime'].includes(itemData.type)) {
@@ -698,7 +698,7 @@ const updateModalCanvasState = () => {
                         }
                     }
                     // ▼▼▼ MERGED CASES FOR DATABASE ACTIONS ▼▼▼
-// ▼▼▼ ...DENGAN BLOK `if` YANG BAHARU INI ▼▼▼
+// ▼▼▼ ...WITH THIS NEW `if` BLOCK ▼▼▼
                     if (['insert_record', 'update_record', 'delete_record'].includes(itemData.type)) {
                         const tableSelect = newItem.querySelector('.table-select');
                         tableSelect.value = itemData.table;
@@ -733,7 +733,7 @@ const updateModalCanvasState = () => {
             const logic = JSON.parse(currentLogicValue);
             buildFromLogic(canvas, logic);
         } catch (e) {
-            console.error("Gagal memuat semula kanvas dari state:", e);
+            console.error("Failed to reload canvas from state:", e);
         } finally {
             isRebuildingUI = false;
         }
@@ -812,11 +812,11 @@ case 'custom_query': {
     const textarea = itemContainer.querySelector('textarea');
     textarea.addEventListener('input', updateModalCanvasState);
 
-    // Event listener untuk Query Helper
+    // Event listener for the Query Helper
     itemContainer.querySelector('.open-qh-btn').addEventListener('click', () => {
         openQueryHelperModal({
             targetTextarea: textarea,
-            context: context // 'context' diwarisi dari skop fungsi setupLogicBuilderCore
+            context: context // 'context' is inherited from the setupLogicBuilderCore function scope
         });
     });
     break;
@@ -1245,11 +1245,11 @@ case 'custom_query': {
             stringInput.addEventListener('input', updateModalCanvasState);
             itemContainer.appendChild(stringInput);
             break;
-        // ▼▼▼ TAMBAH/GANTIKAN KOD UNTUK 'case number' ▼▼▼
+        // ▼▼▼ ADD/REPLACE CODE FOR 'case number' ▼▼▼
         case 'number':
             const numberInput = document.createElement('input');
             numberInput.type = 'number';
-            numberInput.step = 'any'; // Membenarkan nombor perpuluhan (float)
+            numberInput.step = 'any'; // Allow decimal numbers (float)
             numberInput.placeholder = '0';
             numberInput.addEventListener('input', updateModalCanvasState);
             itemContainer.appendChild(numberInput);
@@ -1290,7 +1290,7 @@ case 'custom_query': {
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-algo-item';
         deleteBtn.innerHTML = '&times;';
-        deleteBtn.title = 'Padam komponen ini';
+        deleteBtn.title = 'Delete this component';
         const targetForDeleteBtn = itemContainer.querySelector('.sql-query-header, .comment-header') || itemContainer;
         targetForDeleteBtn.appendChild(deleteBtn);
         return itemContainer;
@@ -1315,7 +1315,7 @@ case 'custom_query': {
         }
         const allowedNext = validationRules[lastComponentType];
         if (!allowedNext) {
-            showCustomDialog({ title: "Peraturan Dilanggar", message: `Tidak ada peraturan yang ditetapkan selepas komponen '${lastComponentType}'.` });
+            showCustomDialog({ title: "Rule Violated", message: `No rules are defined after the '${lastComponentType}' component.` });
             return false;
         }
         const isValueDrop = VALUE_TYPES.includes(componentType);
@@ -1323,14 +1323,14 @@ case 'custom_query': {
             return true;
         } else {
             const friendlyNames = allowedNext.map(type => {
-                if (type === 'value') return 'sebarang nilai (field, string, nombor, dll.)';
+                if (type === 'value') return 'any value (field, string, number, etc.)';
                 if (type === 'open_paren') return "'('";
                 if (type === 'close_paren') return "')'";
                 return `'${type.replace(/_/g, ' ')}'`;
-            }).join(' atau ');
+            }).join(' or ');
             const lastFriendlyName = lastComponentType.replace(/_/g, ' ');
-            const message = `Selepas komponen '${lastFriendlyName}', anda hanya boleh meletakkan: ${friendlyNames}.`;
-            showCustomDialog({ title: "Peraturan Dilanggar", message: message });
+            const message = `After the '${lastFriendlyName}' component, you can only place: ${friendlyNames}.`;
+            showCustomDialog({ title: "Rule Violated", message: message });
             return false;
         }
     };
@@ -1378,7 +1378,7 @@ case 'custom_query': {
                 itemToRemove.remove();
                 updateModalCanvasState();
             } else {
-                showCustomDialog({ title: "Peraturan", message: "Anda hanya boleh memadam komponen logik dari bawah ke atas (komponen terakhir). Komen boleh dipadam pada bila-bila masa." });
+                showCustomDialog({ title: "Rule", message: "You can only delete logic components from bottom to top (the last component). Comments can be deleted at any time." });
             }
         }        
         
@@ -1677,13 +1677,13 @@ export function openModalLogicBuilder(config) {
         return;
     }
 
-    // Sembunyikan semua komponen dan kumpulan secara lalai dahulu
+    // Hide all components and groups by default first
     const allComponents = ui.palette.querySelectorAll('.algo-component');
     const allGroups = ui.palette.querySelectorAll('.palette-group');
     allComponents.forEach(comp => comp.style.display = 'none');
     allGroups.forEach(group => group.style.display = 'none');
 
-    // Tentukan komponen mana yang perlu dipaparkan
+    // Determine which components need to be shown
     let componentsToShow = [];
     if (config.allowedComponents && Array.isArray(config.allowedComponents)) {
         componentsToShow = config.allowedComponents;
@@ -1696,7 +1696,7 @@ export function openModalLogicBuilder(config) {
         });
     }
 
-    // Paparkan hanya komponen yang dibenarkan
+    // Show only the allowed components
     componentsToShow.forEach(type => {
         const componentEl = ui.palette.querySelector(`.algo-component[data-type="${type}"]`);
         if (componentEl) {
@@ -1704,13 +1704,13 @@ export function openModalLogicBuilder(config) {
         }
     });
 
-    // ▼▼▼ MULA BLOK LOGIK YANG TELAH DIPERBAIKI ▼▼▼
-    // Paparkan semula kumpulan JIKA ia mempunyai komponen yang kelihatan ATAU jika ia adalah 'legend' yang perlu dipaparkan
+    // ▼▼▼ START THE IMPROVED LOGIC BLOCK ▼▼▼
+    // Show the group again IF it has visible components OR if it is a 'legend' that needs to be shown
     allGroups.forEach(group => {
-        // KES KHAS: Uruskan paparan dan pengisian 'legend' pembolehubah
+        // SPECIAL CASE: Handle the display and population of the variable 'legend'
         if (group.id === 'variable-legend-container') {
             if (config.showVariableLegend) {
-                group.style.display = 'block'; // Tunjukkan bekas utama
+                group.style.display = 'block'; // Show the main container
 
                 const defaultVarsContainer = ui.palette.querySelector('#legend-default-vars');
                 const userVarsContainer = ui.palette.querySelector('#legend-user-vars');
@@ -1738,7 +1738,7 @@ export function openModalLogicBuilder(config) {
                 }
             }
         } 
-        // Logik asal untuk semua kumpulan komponen yang lain
+        // Original logic for all other component groups
         else {
             const visibleChild = group.querySelector('.algo-component[style*="display: flex"]');
             if (visibleChild) {
@@ -1746,7 +1746,7 @@ export function openModalLogicBuilder(config) {
             }
         }
     });
-    // ▲▲▲ TAMAT BLOK LOGIK YANG TELAH DIPERBAIKI ▲▲▲
+    // ▲▲▲ END THE IMPROVED LOGIC BLOCK ▲▲▲
 
     const builderInstance = setupLogicBuilderCore({
         ...ui,
@@ -1774,7 +1774,7 @@ export function openModalLogicBuilder(config) {
                 config.onComplete(logicJson);
             } else {
                 hiddenInput.value = logicJson;
-                // Tukar kepada 'change'
+                // Switch to 'change'
                 hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
             }
             closeModal();
@@ -1787,13 +1787,13 @@ export function openModalLogicBuilder(config) {
 }
 
 /**
- * Fungsi Pengasas untuk Algorithm Builder pada tetapan medan.
- * Ia mentakrifkan konfigurasi dan memanggil fungsi teras.
+ * Initializer function for the Algorithm Builder in field settings.
+ * It defines the configuration and calls the core function.
  */
 export function initializeAlgorithmBuilder() {
-    // Grammar baharu berasaskan keadaan (state-based)
+    // New state-based grammar
     const COMPLEX_ALGORITHM_GRAMMAR = {
-        // Key: jenis komponen SEBELUMNYA. Value: array jenis komponen BERIKUTNYA yang dibenarkan.
+        // Key: the PREVIOUS component type. Value: array of allowed NEXT component types.
         'start':               ['if', 'open_paren', 'value'],
         'if':                  ['value', 'open_paren'],
         'else_if':             ['value', 'open_paren'],
@@ -1812,11 +1812,11 @@ export function initializeAlgorithmBuilder() {
     const hiddenInput = document.getElementById('fld-algorithm-logic');
 
     if (!enableCheckbox || !builderContainer || !hiddenInput) {
-        console.error("Elemen untuk Algorithm Builder tidak ditemui.");
+        console.error("Elements for the Algorithm Builder were not found.");
         return;
     }
 
-    // Fungsi untuk menyuntik UI builder dari template
+    // Function to inject the builder UI from the template
     const injectBuilderUI = (targetContainer) => {
         const template = document.getElementById('logic-builder-template');
         if (!template) return null;
@@ -1853,7 +1853,7 @@ export function initializeAlgorithmBuilder() {
 }
 
 /**
- * Fungsi Pengasas untuk Algorithm Builder bagi 'Table Hook'.
+ * Initializer function for the Algorithm Builder for the 'Table Hook'.
  * @deprecated This functionality is now handled by the Workflow Builder in workflowBuilder.js
  */
 export function initializeTableHookBuilder() {
@@ -1861,7 +1861,7 @@ export function initializeTableHookBuilder() {
 }
 
 /**
- * Fungsi Pengasas untuk Algorithm Builder bagi 'Project Hook'.
+ * Initializer function for the Algorithm Builder for the 'Project Hook'.
  * @deprecated This functionality is now handled by the Workflow Builder in workflowBuilder.js
  */
 export function initializeProjectHookBuilder() {
@@ -1869,17 +1869,17 @@ export function initializeProjectHookBuilder() {
 }
 
 /**
- * Fungsi teras untuk memaparkan dan menguruskan Query Builder yang boleh dikonfigurasi.
+ * Core function to display and manage the configurable Query Builder.
  * @param {object} config - Objek konfigurasi.
  */
 export function showConfigurableQueryBuilder(config) {
     const modal = document.getElementById('configurable-query-builder-modal');
     if (!modal) return;
 
-    // Tetapkan nama jadual pada modal supaya fungsi lain boleh mengaksesnya
+    // Set the table name on the modal so other functions can access it
     modal.dataset.tableName = config.tableName;
 
-    // Rujukan kepada elemen UI utama
+    // References to the main UI elements
     const elements = {
         title: document.getElementById('cqb-modal-title'),
         modalBody: modal.querySelector('.modal-body'),
@@ -1895,7 +1895,7 @@ export function showConfigurableQueryBuilder(config) {
         sortingUI: document.getElementById('cqb-sorting-section')
     };
 
-    // 1. Tetapkan UI berdasarkan mod
+    // 1. Set up the UI based on the mode
     modal.querySelectorAll('.qb-mode-calculation, .qb-mode-general').forEach(el => el.classList.add('hidden'));
     modal.querySelectorAll(`.qb-mode-${config.mode}`).forEach(el => el.classList.remove('hidden'));
     
@@ -1906,19 +1906,19 @@ export function showConfigurableQueryBuilder(config) {
         elements.mandatoryRuleText.textContent = `the calculation is linked to the current '${config.tableName}' record via its key ('${pkField || 'not found'}').`;
     }
 
-    // 2. Sediakan builder (isi dropdown, dll.)
+    // 2. Prepare the builder (populate dropdowns, etc.)
     setupBuilderUI(config.tableName);
 
-    // 3. Isi builder dengan keadaan (state) awal jika ada
+    // 3. Populate the builder with the initial state if present
     populateBuilderFromState(config.initialState, config.tableName, config.mode);
     
-    // Panggil fungsi baharu untuk menguruskan kebergantungan UI
+    // Call the new function to manage UI dependencies
     handleAdvancedCalcDependencies();
     
-    // 4. Pasang event listener untuk butang 'Generate'
+    // 4. Attach the event listener for the 'Generate' button
     const generateHandler = () => {
         const stateString = getBuilderStateAsJson(config.mode); // Dapatkan sebagai string
-        const stateObject = JSON.parse(stateString); // Tukar kepada objek
+        const stateObject = JSON.parse(stateString); // Convert to an object
 
         let sql = '';
         if (config.mode === 'calculation') {
@@ -1928,34 +1928,34 @@ export function showConfigurableQueryBuilder(config) {
         }
         
         if (sql && typeof config.onComplete === 'function') {
-            // Hantar string asal untuk disimpan
+            // Send the original string to be saved
             config.onComplete(sql, stateString);
         }
         modal.classList.add('hidden');
     };
     
-    // Guna klon untuk pastikan listener lama dibuang
+    // Use a clone to make sure old listeners are removed
     const newGenerateBtn = elements.generateBtn.cloneNode(true);
     elements.generateBtn.parentNode.replaceChild(newGenerateBtn, elements.generateBtn);
     newGenerateBtn.addEventListener('click', generateHandler);
 
-    // 5. Paparkan modal
+    // 5. Show the modal
     modal.classList.remove('hidden');
 }
 
 /**
- * Fungsi Pengasas (Initializer) untuk mod 'Calculation'.
+ * Initializer function for the 'Calculation' mode.
  */
 export function initializeCalculationBuilder() {
     const openBtn = document.getElementById('open-calculation-builder-btn');
     
-    // Gunakan 'replaceWith' clone untuk elak event listener bertindih jika fungsi dipanggil berulang kali
+    // Use a 'replaceWith' clone to avoid overlapping event listeners if the function is called repeatedly
     if (openBtn) {
         const newOpenBtn = openBtn.cloneNode(true);
         openBtn.parentNode.replaceChild(newOpenBtn, openBtn);
         
         newOpenBtn.addEventListener('click', () => {
-            // Dapatkan konteks jadual dan medan semasa
+            // Get the current table and field context
             const fieldNameEl = document.querySelector('#field-settings-page .field-name');
             if (!fieldNameEl) return;
 
@@ -1966,7 +1966,7 @@ export function initializeCalculationBuilder() {
                  return;
             }
             
-            // Dapatkan data medan dari state
+            // Get the field data from state
             const fieldData = appState.jsonData.database.table[tableName]?.fields[fieldName];
             
             showConfigurableQueryBuilder({
@@ -1975,26 +1975,26 @@ export function initializeCalculationBuilder() {
                 fieldName: fieldName,
                 initialState: fieldData?.calculation_builder_state || null,
                 onComplete: (sql, state) => {
-                    // ▼▼▼ PEMBAIKAN: KEMAS KINI UI SECARA MANUAL ▼▼▼
+                    // ▼▼▼ IMPROVEMENT: UPDATE THE UI MANUALLY ▼▼▼
                     
-                    // 1. Masukkan Query ke dalam Textarea
+                    // 1. Insert the Query into the Textarea
                     const queryInput = document.getElementById('fld-calculated-query');
                     if (queryInput) {
                         queryInput.value = sql;
-                        // Trigger event 'change' supaya UI lain yang bergantung kepadanya tahu ada perubahan
+                        // Trigger the 'change' event so other dependent UI knows a change occurred
                         queryInput.dispatchEvent(new Event('change', { bubbles: true }));
                     }
 
-                    // 2. Auto-check checkbox "Enable Calculation" (jika ada)
+                    // 2. Auto-check the "Enable Calculation" checkbox (if present)
                     const enableCheckbox = document.getElementById('fld-calculated-enable');
                     if (enableCheckbox && !enableCheckbox.checked) {
                         enableCheckbox.checked = true;
-                        // Trigger event supaya field 'Calculated Query' muncul (jika tersembunyi)
+                        // Trigger the event so the 'Calculated Query' field appears (if hidden)
                         enableCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
                     }
-                    // ▲▲▲ TAMAT PEMBAIKAN ▲▲▲
+                    // ▲▲▲ END IMPROVEMENT ▲▲▲
 
-                    // 3. Simpan ke Backend (SaveManager)
+                    // 3. Save to the backend (SaveManager)
                     SaveManager.addToQueue('fields', fieldData.field_id, {
                         calculated_query: sql,
                         calculation_builder_state: state,
@@ -2007,7 +2007,7 @@ export function initializeCalculationBuilder() {
 }
 
 /**
- * Fungsi Pengasas (Initializer) untuk mod 'General'.
+ * Initializer function for the 'General' mode.
  */
 export function initializeQueryBuilder() {
 
@@ -2024,7 +2024,7 @@ export function initializeQueryBuilder() {
         modal.querySelector('#cqb-calculation-advanced').classList.toggle('hidden', !isAdvanced);
     });
 
-    // Pasang listener untuk operator dalam mod lanjutan
+    // Attach the listener for the operator in advanced mode
     modal.querySelector('#cqb-expr-operator')?.addEventListener('change', handleAdvancedCalcDependencies);
 
     modal.querySelector('#cqb-calc-function')?.addEventListener('change', (e) => {
@@ -2036,7 +2036,7 @@ export function initializeQueryBuilder() {
     modal.querySelector('#cqb-groupby-add-field')?.addEventListener('click', () => moveFields('#cqb-groupby-available-fields', '#cqb-groupby-selected-fields'));
     modal.querySelector('#cqb-groupby-remove-field')?.addEventListener('click', () => moveFields('#cqb-groupby-selected-fields', '#cqb-groupby-available-fields'));
 
-    // Butang tambah peraturan, kumpulan, dan susunan
+    // Buttons to add rules, groups, and ordering
     modal.querySelector('#cqb-add-rule')?.addEventListener('click', (e) => addRuleOrGroup(e.target, 'rule'));
     modal.querySelector('#cqb-add-group')?.addEventListener('click', (e) => addRuleOrGroup(e.target, 'group'));
     modal.querySelector('#cqb-add-sort-level')?.addEventListener('click', () => {
@@ -2044,7 +2044,7 @@ export function initializeQueryBuilder() {
         document.getElementById('cqb-sort-container').appendChild(createSortElement(tableName));
     });
 
-    // Event delegation untuk semua klik di dalam modal
+    // Event delegation for all clicks inside the modal
     modal.addEventListener('click', e => {
         const target = e.target;
         const button = target.closest('button');
@@ -2060,7 +2060,7 @@ export function initializeQueryBuilder() {
         }
     });
 
-    // Tukar senarai medan apabila jadual dalam peraturan diubah
+    // Update the field list when the rule's table changes
     modal.addEventListener('change', (e) => {
         if (e.target.classList.contains('cqb-rule-table')) {
             const selectedTable = e.target.value;
@@ -2077,10 +2077,10 @@ export function initializeQueryBuilder() {
 }
 
 /**
- * Membuka Query Snippet Helper yang berkuasa dan kontekstual.
+ * Opens the powerful, contextual Query Snippet Helper.
  * @param {object} options - Objek konfigurasi.
- * @param {HTMLTextAreaElement} options.targetTextarea - Textarea sasaran untuk menerima output.
- * @param {object} options.context - Maklumat tentang di mana helper dibuka.
+ * @param {HTMLTextAreaElement} options.targetTextarea - Target textarea that receives the output.
+ * @param {object} options.context - Information about where the helper was opened.
  */
 export function openQueryHelperModal(options) {
     const modal = document.getElementById('query-helper-modal');
@@ -2089,12 +2089,12 @@ export function openQueryHelperModal(options) {
 
     if (!modal || !modalBody || !template) return;
 
-    // 1. Sediakan UI
+    // 1. Prepare the UI
     modalBody.innerHTML = '';
     modalBody.appendChild(template.content.cloneNode(true));
     modal.classList.remove('hidden');
 
-    // 2. Rujukan kepada elemen UI
+    // 2. References to the UI elements
     const elements = {
         tableSelect: document.getElementById('qh-table-select'),
         fieldList: document.getElementById('qh-field-list'),
@@ -2111,14 +2111,14 @@ export function openQueryHelperModal(options) {
         mainTable: options.context.tableName || null,
         selectedFields: new Set(),
         activeTemplate: 'select',
-        activeJoins: new Set(), // Menggunakan Set untuk menguruskan JOIN yang aktif
+        activeJoins: new Set(), // Uses a Set to manage the active JOINs
     };
 
-    // 4. Fungsi-Fungsi Teras
+    // 4. Core Functions
 
     /**
-     * FUNGSI BAHARU: Mengemas kini senarai medan yang boleh dipilih.
-     * Ia akan memasukkan medan dari jadual utama dan mana-mana jadual yang di-JOIN.
+     * NEW FUNCTION: Updates the list of selectable fields.
+     * It includes fields from the main table and any JOINed tables.
      */
     const updateAvailableFields = () => {
         elements.fieldList.innerHTML = '';
@@ -2129,12 +2129,12 @@ export function openQueryHelperModal(options) {
             const tableData = appState.jsonData.database.table[tableName];
             if (tableData && tableData.fields) {
                 Object.keys(tableData.fields).forEach(fieldName => {
-                    // Gunakan nama penuh (jadual.medan) sebagai pengenal pasti unik
+                    // Use the full name (table.field) as the unique identifier
                     const qualifiedName = `${tableName}.${fieldName}`;
                     const li = document.createElement('li');
                     li.className = 'qh-list-item';
                     li.dataset.field = qualifiedName;
-                    // Paparkan nama penuh jika bukan jadual utama untuk mengelakkan kekeliruan
+                    // Show the full name if it's not the main table to avoid confusion
                     li.innerHTML = `<input type="checkbox" ${state.selectedFields.has(qualifiedName) ? 'checked' : ''}><span>${tableName === state.mainTable ? fieldName : qualifiedName}</span>`;
                     if (state.selectedFields.has(qualifiedName)) {
                         li.classList.add('selected');
@@ -2151,7 +2151,7 @@ export function openQueryHelperModal(options) {
             return;
         }
 
-        // Penjanaan query yang lebih bijak, menyokong nama medan yang penuh
+        // Smarter query generation that supports fully-qualified field names
         const fields = state.selectedFields.size > 0 ?
             Array.from(state.selectedFields).map(f => {
                 const [tableName, fieldName] = f.split('.');
@@ -2165,7 +2165,7 @@ export function openQueryHelperModal(options) {
             case 'select':
                 query = `SELECT\n    ${fields}\nFROM\n    \`${state.mainTable}\`\n${joinClause}`;
                 break;
-            // ... (logik untuk templat lain kekal sama) ...
+            // ... (logic for other templates stays the same) ...
         }
         elements.previewArea.value = query.trim() + ';';
     };
@@ -2199,7 +2199,7 @@ export function openQueryHelperModal(options) {
             const li = document.createElement('li');
             li.className = 'qh-list-item';
             li.dataset.rel = JSON.stringify(rel);
-            li.dataset.relatedTable = relatedTable; // Simpan nama jadual berkaitan
+            li.dataset.relatedTable = relatedTable; // Store the related table name
             li.innerHTML = `<i class="fas fa-link"></i><span>${relText}</span>`;
             elements.relationList.appendChild(li);
         });
@@ -2228,7 +2228,7 @@ export function openQueryHelperModal(options) {
         updatePreview();
     });
     
-    // Logik utama yang ditambah baik
+    // The improved main logic
     elements.relationList.addEventListener('click', (e) => {
         const li = e.target.closest('.qh-list-item');
         if (!li) return;
@@ -2241,13 +2241,13 @@ export function openQueryHelperModal(options) {
         const wasActive = li.classList.contains('selected');
 
         if (wasActive) {
-            // Buang JOIN dari state
+            // Remove the JOIN from state
             state.activeJoins.forEach(j => {
                 if (j.clause === joinClause) state.activeJoins.delete(j);
             });
             li.classList.remove('selected');
 
-            // Buang medan yang telah dipilih dari jadual yang dibuang
+            // Remove selected fields from the removed table
             state.selectedFields.forEach(field => {
                 if (field.startsWith(`${relatedTable}.`)) {
                     state.selectedFields.delete(field);
@@ -2260,8 +2260,8 @@ export function openQueryHelperModal(options) {
             li.classList.add('selected');
         }
 
-        updateAvailableFields(); // Bina semula senarai medan yang boleh dipilih
-        updatePreview(); // Kemas kini pratonton query
+        updateAvailableFields(); // Rebuild the list of selectable fields
+        updatePreview(); // Update the query preview
     });
 
     elements.templateTabs.forEach(tab => {
@@ -2273,7 +2273,7 @@ export function openQueryHelperModal(options) {
         });
     });
 
-    // ... (listener untuk butang-butang lain kekal sama) ...
+    // ... (listeners for other buttons stay the same) ...
     const closeModal = () => modal.classList.add('hidden');
     elements.insertBtn.addEventListener('click', () => {
         const snippet = elements.previewArea.value;
@@ -2284,7 +2284,7 @@ export function openQueryHelperModal(options) {
     elements.closeBtn.addEventListener('click', closeModal);
     elements.cancelBtn.addEventListener('click', closeModal);
 
-    // 6. Logik Kontekstual Permulaan
+    // 6. Initial Contextual Logic
     const allTables = Object.keys(appState.jsonData.database.table);
     elements.tableSelect.innerHTML = '<option value="">-- Select a table --</option>' + allTables.map(t => `<option value="${t}">${t}</option>`).join('');
     
@@ -2311,7 +2311,7 @@ function generateDefaultLookupQuery() {
         captionFields = `CONCAT(${captionFields}, '${separator}', \`${parentTable}\`.\`${caption2}\`)`;
     }
 
-    // Dapatkan Primary Key dari jadual induk
+    // Get the Primary Key from the parent table
     const parentTableData = appState.jsonData.database.table[parentTable];
     const pkField = Object.keys(parentTableData.fields).find(f => parentTableData.fields[f].primary_key) || 'id';
 
@@ -2319,9 +2319,9 @@ function generateDefaultLookupQuery() {
 }
 
 /**
- * Menguruskan kebergantungan UI dalam mod 'Advanced' Calculation Builder.
- * Ia akan mengaktifkan/menyahaktifkan 'DISTINCT' dan medan ekspresi kedua
- * berdasarkan pilihan operator.
+ * Manages UI dependencies in the Calculation Builder's 'Advanced' mode.
+ * It enables/disables 'DISTINCT' and the second expression field
+ * based on the operator selection.
  */
 function handleAdvancedCalcDependencies() {
     const modal = document.getElementById('configurable-query-builder-modal');
@@ -2337,10 +2337,10 @@ function handleAdvancedCalcDependencies() {
 }
 
 /**
- * Mengimbas keadaan penapis (filter state) dan mengembalikan satu Set
- * yang mengandungi semua nama jadual unik yang digunakan dalam peraturan.
- * @param {object} filterState - Objek keadaan penapis dari builder.
- * @returns {Set<string>} Satu Set nama jadual.
+ * Scans the filter state and returns a Set
+ * containing all unique table names used in the rules.
+ * @param {object} filterState - The filter state object from the builder.
+ * @returns {Set<string>} A Set of table names.
  */
 function getTablesFromFilters(filterState) {
     const tables = new Set();
@@ -2361,17 +2361,17 @@ function getTablesFromFilters(filterState) {
 }
 
 /**
- * Membina klausa LEFT JOIN berdasarkan hubungan Parent/Child yang telah ditetapkan.
- * @param {string} mainTable - Nama jadual utama dalam klausa FROM.
- * @param {Set<string>} tablesInFilters - Satu Set jadual yang digunakan dalam penapis.
- * @returns {string} String klausa JOIN yang lengkap, cth: "\nLEFT JOIN `customers` ON ..."
+ * Builds a LEFT JOIN clause based on the defined Parent/Child relationships.
+ * @param {string} mainTable - Name of the main table in the FROM clause.
+ * @param {Set<string>} tablesInFilters - A Set of tables used in the filters.
+ * @returns {string} The complete JOIN clause string, e.g. "\nLEFT JOIN `customers` ON ..."
  */
 function buildJoinClause(mainTable, tablesInFilters) {
     const allRelationships = appState.jsonData.database.relationships;
     let joinClauses = '';
 
     tablesInFilters.forEach(tableToJoin => {
-        if (tableToJoin === mainTable) return; // Langkau jadual utama
+        if (tableToJoin === mainTable) return; // Skip the main table
 
         const foundRelationship = allRelationships.find(rel =>
             (rel.parent_table_name === mainTable && rel.child_table_name === tableToJoin) ||
@@ -2382,7 +2382,7 @@ function buildJoinClause(mainTable, tablesInFilters) {
             const onClause = `\`${foundRelationship.parent_table_name}\`.\`${foundRelationship.parent_field}\` = \`${foundRelationship.child_table_name}\`.\`${foundRelationship.fk_child_field}\``;
             joinClauses += `\nLEFT JOIN \`${tableToJoin}\` ON ${onClause}`;
         } else {
-            console.warn(`Tiada hubungan terus ditemui antara '${mainTable}' dan '${tableToJoin}'. Ia akan dilangkau.`);
+            console.warn(`No direct relationship found between '${mainTable}' and '${tableToJoin}'. It will be skipped.`);
         }
     });
 
@@ -2401,7 +2401,7 @@ function setupBuilderUI(tableName) {
         genAvailable: document.getElementById('cqb-gen-available-fields')
     };
 
-    // Kosongkan semua senarai
+    // Clear all lists
     Object.values(elements).forEach(el => el.innerHTML = '');
     document.getElementById('cqb-gen-selected-fields').innerHTML = '';
     document.getElementById('cqb-groupby-selected-fields').innerHTML = '';
@@ -2434,8 +2434,8 @@ function getBuilderStateAsJson(mode) {
     if (mode === 'calculation') {
         state.isAdvanced = document.getElementById('cqb-advanced-mode-toggle').checked;
 
-        // Sentiasa baca keadaan untuk SEMUA kawalan, tidak kira mod semasa.
-        // Ini menghalang kehilangan data apabila bertukar antara mod Asas dan Lanjutan.
+        // Always read the state for ALL controls, regardless of the current mode.
+        // This prevents data loss when switching between Basic and Advanced modes.
         state.basicFunction = document.getElementById('cqb-calc-function').value;
         state.field = document.getElementById('cqb-calc-field').value;
         state.advancedFunction = document.getElementById('cqb-adv-function').value;
@@ -2520,8 +2520,8 @@ function generateCalculationQuery(tableName, state) {
         aggregation = functionName === 'COUNT' ? 'COUNT(*)' : `${functionName}(\`${state.field}\`)`;
     }
 
-    // Balut dengan COALESCE untuk memastikan nombor sentiasa dikembalikan (0 bukannya NULL)
-    // KECUALI untuk fungsi COUNT, kerana ia sentiasa mengembalikan nombor.
+    // Wrap with COALESCE to ensure a number is always returned (0 instead of NULL)
+    // EXCEPT for COUNT, since it always returns a number.
     if (functionName === 'COUNT') {
         selectClause += aggregation;
     } else {
@@ -2541,7 +2541,7 @@ function generateCalculationQuery(tableName, state) {
 }
 
 function generateGeneralQuery(tableName, state) {
-    // Tambah awalan nama jadual untuk mengelakkan ralat kekaburan (ambiguity)
+    // Add the table-name prefix to avoid ambiguity errors
     const selectClause = 'SELECT\n    ' + (state.selectedFields.length === 0 ? '*' : state.selectedFields.map(f => `\`${tableName}\`.\`${f}\``).join(',\n    '));
     
     const tablesInFilters = getTablesFromFilters(state.filters);
@@ -2549,7 +2549,7 @@ function generateGeneralQuery(tableName, state) {
 
     const fromClause = `\nFROM\n    \`${tableName}\`${joinClause}`;
     const whereClause = buildNestedWhereClause(state.filters) ? `\nWHERE\n    ${buildNestedWhereClause(state.filters)}` : '';
-    // Tambah awalan nama jadual untuk mengelakkan ralat kekaburan (ambiguity)
+    // Add the table-name prefix to avoid ambiguity errors
     const orderByClause = state.sorting.length > 0 ? '\nORDER BY\n    ' + state.sorting.map(s => `\`${tableName}\`.\`${s.field}\` ${s.direction}`).join(', ') : '';
     return `${selectClause}${fromClause}${whereClause}${orderByClause};`;
 }
@@ -2589,7 +2589,7 @@ function createRuleElement(tableName, data = null) {
     const operatorSelect = newRule.querySelector('.cqb-rule-operator');
     const valueInput = newRule.querySelector('.cqb-rule-value');
 
-    // Sembunyikan input nilai jika operator adalah IS NULL atau IS NOT NULL
+    // Hide the value input if the operator is IS NULL or IS NOT NULL
     operatorSelect.addEventListener('change', (e) => {
         const operator = e.target.value;
         valueInput.classList.toggle('hidden', operator === 'IS NULL' || operator === 'IS NOT NULL');
@@ -2600,7 +2600,7 @@ function createRuleElement(tableName, data = null) {
         newRule.querySelector('.cqb-rule-field').value = data.field;
         operatorSelect.value = data.operator;
         newRule.querySelector('.cqb-rule-value').value = data.value;
-        // Cetuskan 'change' untuk menetapkan keadaan awal UI yang betul
+        // Fire 'change' to set the correct initial UI state
         operatorSelect.dispatchEvent(new Event('change'));
     }
     return newRule;
@@ -2634,24 +2634,24 @@ function buildNestedWhereClause(filterState) {
         if (rule.type === 'rule') {
             const { table, field, operator, value } = rule;
             const fieldData = appState.jsonData.database.table[table]?.fields[field];
-            if (!fieldData) return null; // Langkau jika maklumat medan tiada
+            if (!fieldData) return null; // Skip if field info is missing
 
-            // Kendalikan operator yang tidak memerlukan nilai
+            // Handle operators that don't require a value
             if (operator === 'IS NULL' || operator === 'IS NOT NULL') {
                 return `\`${table}\`.\`${field}\` ${operator}`;
             }
 
-            // Kendalikan IN dan NOT IN
+            // Handle IN and NOT IN
             if (operator === 'IN' || operator === 'NOT IN') {
                 const list = value.split(',').map(item => {
                     const trimmed = item.trim();
-                    // Letak petikan jika bukan nombor, jika tidak guna seadanya
+                    // Add quotes if it's not a number, otherwise use as-is
                     return isNaN(trimmed) || trimmed === '' ? `'${trimmed.replace(/'/g, "''")}'` : trimmed;
                 }).join(', ');
                 return `\`${table}\`.\`${field}\` ${operator} (${list})`;
             }
 
-            // Kendalikan operator lain yang mempunyai nilai
+            // Handle other operators that have a value
             const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
             const isNumeric = numericTypes.includes(fieldData.data_type.toUpperCase());
             
@@ -2660,9 +2660,9 @@ function buildNestedWhereClause(filterState) {
                  formattedValue = `'%${String(value || '').replace(/'/g, "''")}%'`;
             } else if (isNumeric) {
                 formattedValue = parseFloat(value);
-                if (isNaN(formattedValue)) formattedValue = 0; // Lalai kepada 0 jika tidak sah
+                if (isNaN(formattedValue)) formattedValue = 0; // Default to 0 if invalid
             } else {
-                // Untuk rentetan, tarikh, dll., balut dengan petikan dan escape
+                // For strings, dates, etc., wrap in quotes and escape
                 formattedValue = `'${String(value || '').replace(/'/g, "''")}'`;
             }
 
@@ -2672,7 +2672,7 @@ function buildNestedWhereClause(filterState) {
             return buildNestedWhereClause(rule);
         }
         return null;
-    }).filter(c => c); // Tapis keluar keadaan yang null/kosong
+    }).filter(c => c); // Filter out null/empty conditions
     return conditions.length > 0 ? `(${conditions.join(` ${logic} `)})` : '';
 }
 
@@ -2686,16 +2686,16 @@ function moveFields(sourceSelector, destinationSelector) {
 // src/js/handlers/logicBuilderHandlers.js
 
 function addRuleOrGroup(button, type) {
-    // Cari container bapa terdekat. Kita tambah '#cv-filter-builder-container' untuk support Custom Module.
+    // Find the nearest parent container. We add '#cv-filter-builder-container' to support Custom Modules.
     const parentContainer = button.closest('.cqb-rule-group, #cqb-container, #cv-filter-builder-container');
     
     if (!parentContainer) return; 
 
-    // Cari kawasan di mana rule baru patut dimasukkan
-    // Untuk Custom Module, ia mungkin direct di bawah container atau dalam nested rules
+    // Find the area where the new rule should be inserted
+    // For Custom Modules, it may be directly under the container or inside nested rules
     const targetContainer = parentContainer.querySelector('.qb-nested-rules, #cqb-rules-container') || parentContainer.querySelector('.qb-nested-rules') || parentContainer;
 
-    // Cari modal terdekat untuk dapatkan Table Name
+    // Find the nearest modal to get the Table Name
     const modal = button.closest('#configurable-query-builder-modal, #custom-module-config-modal');
     if (!modal) return;
     
@@ -2706,11 +2706,11 @@ function addRuleOrGroup(button, type) {
             const newRule = createRuleElement(tableName);
             targetContainer.appendChild(newRule);
             
-            // Logik Kosmetik: Jika ini rule pertama dalam container kosong, buang butang "Add Rule" placeholder (jika ada)
-            // (Bergantung pada struktur HTML anda, kadang-kadang ini tidak perlu, tapi selamat diletakkan)
+            // Cosmetic logic: if this is the first rule in an empty container, remove the "Add Rule" placeholder button (if present)
+            // (Depends on your HTML structure; sometimes this isn't needed, but it's safe to include)
             const initialAddButton = parentContainer.querySelector(':scope > .cqb-add-nested-rule');
             if (initialAddButton && initialAddButton.parentElement === parentContainer && parentContainer.id === 'cv-filter-builder-container') {
-                // Jangan buang butang utama, biarkan ia di situ untuk tambah rule seterusnya
+                // Don't remove the main button; leave it there to add the next rule
             }
         }
         else {

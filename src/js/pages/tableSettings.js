@@ -24,7 +24,7 @@ export function populateTableSettings(tableName) {
 		
     const tableData = appState.jsonData.database.table[tableName];
     if (!tableData) {
-        console.error(`Tiada data ditemui untuk jadual: ${tableName}`);
+        console.error(`No data found for table: ${tableName}`);
         return;
     }
 	//console.log(tableData);
@@ -44,34 +44,34 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-allow-print-view', tableData.allow_print_view);
     setElementValue('tbl-allow-mass-delete', tableData.allow_mass_delete);
 
-    // ▼▼▼ LOGIK BAHARU: LUMPUHKAN IMPORT UNTUK CUSTOM MODULE ▼▼▼
+    // ▼▼▼ NEW LOGIC: DISABLE IMPORT FOR CUSTOM MODULES ▼▼▼
     const importCheckbox = document.getElementById('tbl-allow-csv-import');
     if (importCheckbox) {
-        // Semak jika kita sedang berada dalam mod Custom Module
+        // Check whether we are currently in Custom Module mode
         const isWorkspaceActive = !document.getElementById('module-global-settings')?.classList.contains('hidden');
         const badgeEl = document.getElementById('workspace-module-badge');
         const isCustomModule = isWorkspaceActive && badgeEl && badgeEl.classList.contains('badge-custom');
 
         if (isCustomModule) {
-            importCheckbox.checked = false; // Nyahtanda
-            importCheckbox.disabled = true; // Bekukan
+            importCheckbox.checked = false; // Untick
+            importCheckbox.disabled = true; // Freeze it
             if (importCheckbox.parentElement) {
-                importCheckbox.parentElement.title = "Fungsi Import dilumpuhkan untuk Custom Module bagi memelihara integriti data rules tapisan.";
+                importCheckbox.parentElement.title = "Import is disabled for Custom Modules to preserve the integrity of the filter rules data.";
             }
         } else {
-            importCheckbox.disabled = false; // Aktifkan semula untuk Default Module
+            importCheckbox.disabled = false; // Re-enable for Default Modules
             if (importCheckbox.parentElement) importCheckbox.parentElement.title = "";
             setElementValue('tbl-allow-csv-import', tableData.allow_csv_import);
         }
     }
-    // ▲▲▲ TAMAT LOGIK IMPORT ▲▲▲
+    // ▲▲▲ END IMPORT LOGIC ▲▲▲
     
     setElementValue('tbl-show-edit-button', tableData.show_edit_button);
     setElementValue('tbl-show-delete-button', tableData.show_delete_button);
     setElementValue('tbl-allow-restore-delete', tableData.allow_restore_delete);
     setElementValue('tbl-allow-force-delete', tableData.allow_force_delete);
 
-    // Logik untuk menyahaktifkan ciri soft-delete jika projek menggunakan hard-delete
+    // Logic to disable soft-delete features if the project uses hard delete
     const isHardDelete = appState.activeProject.data_delete_type === 'hard';
     const restoreCheckbox = document.getElementById('tbl-allow-restore-delete');
     const forceDeleteCheckbox = document.getElementById('tbl-allow-force-delete');
@@ -87,13 +87,13 @@ export function populateTableSettings(tableName) {
             recordsPerPageGroup.classList.toggle('hidden', !paginationCheckbox.checked);
         };
 
-        // Pasang listener HANYA jika ia belum dipasang
+        // Attach the listener ONLY if it hasn't been attached yet
         if (!paginationCheckbox.dataset.listenerAttached) {
             paginationCheckbox.addEventListener('change', toggleVisibility);
             paginationCheckbox.dataset.listenerAttached = 'true';
         }
         
-        // Jalankan logik sekali untuk menetapkan keadaan awal yang betul
+        // Run the logic once to set the correct initial state
         toggleVisibility();
     }
 
@@ -122,7 +122,7 @@ export function populateTableSettings(tableName) {
     setRadioValue('tbl-column-grid-type', tableData.column_grid_type || 'dynamic');
     setElementValue('tbl-static-grid-columns', tableData.static_grid_columns);
     
-    // Cetuskan event untuk memastikan keadaan disabled/enabled adalah betul semasa dimuatkan
+    // Fire an event to make sure the disabled/enabled state is correct on load
     const gridRadios = document.querySelectorAll('input[name="tbl-column-grid-type"]');
     if (gridRadios.length > 0) {
         gridRadios[0].dispatchEvent(new Event('change', { bubbles: true }));
@@ -188,7 +188,7 @@ export function populateParentChildTab(currentTableName) {
         children.forEach(child => {
             const li = document.createElement('li');
             li.textContent = child.child_table_name;
-            li.dataset.childName = child.child_table_name; // Pastikan dataset ini wujud
+            li.dataset.childName = child.child_table_name; // Make sure this dataset exists
             childList.appendChild(li);
         });
         
@@ -197,12 +197,12 @@ const populateForm = (childName) => {
             if (!relationData) return;
             optionsTitle.textContent = childName;
 
-            // ▼▼▼ SEMAKAN KONTEKS MODUL (CUSTOM ATAU DEFAULT?) ▼▼▼
+            // ▼▼▼ MODULE CONTEXT CHECK (CUSTOM OR DEFAULT?) ▼▼▼
             const isWorkspaceActive = !document.getElementById('module-global-settings')?.classList.contains('hidden');
             const badgeEl = document.getElementById('workspace-module-badge');
             const isCustomModule = isWorkspaceActive && badgeEl && badgeEl.classList.contains('badge-custom');
             
-            let isIncluded = relationData.show_tab === 1; // Nilai lalai dari Global (Default)
+            let isIncluded = relationData.show_tab === 1; // Default value from Global
 
             if (isCustomModule) {
                 const moduleIdStr = document.getElementById('workspace-module-title')?.dataset.moduleId;
@@ -212,12 +212,12 @@ const populateForm = (childName) => {
                     if (modData) {
                         let includedRels = [];
                         try { includedRels = JSON.parse(modData.included_relations || "[]"); } catch(e){}
-                        // Tandakan checkbox jika nama jadual ini ada dalam array included_relations
+                        // Tick the checkbox if this table name is in the included_relations array
                         isIncluded = includedRels.includes(childName);
                     }
                 }
             }
-            // ▲▲▲ TAMAT SEMAKAN ▲▲▲
+            // ▲▲▲ END CHECK ▲▲▲
 
             formElements.showTab.checked = isIncluded;
             formElements.showIcon.checked = relationData.show_icon === 1;
@@ -228,7 +228,7 @@ const populateForm = (childName) => {
             formElements.showCount.checked = relationData.show_count_in_tv === 1;
             formElements.allowAdd.checked = relationData.allow_add_from_tv === 1;
 
-            // Kunci (disable) input lain supaya pengguna faham ia adalah tetapan Global
+            // Lock (disable) the other inputs so the user understands these are Global settings
             const inputsToDisable = [formElements.showIcon, formElements.autocloseModal, formElements.tabTitle, formElements.copyRecords, formElements.showLinkAbove, formElements.showCount, formElements.allowAdd];
             inputsToDisable.forEach(input => {
                 if (input) {
@@ -239,7 +239,7 @@ const populateForm = (childName) => {
             });
         };
         
-        // Elakkan menambah event listener berulang kali
+        // Avoid adding event listeners repeatedly
         const newChildList = childList.cloneNode(true);
         childList.parentNode.replaceChild(newChildList, childList);
 
@@ -259,8 +259,8 @@ const populateForm = (childName) => {
             newChildList.firstChild.click();
         }
         
-        // ▼▼▼ KEMAS KINI: Baris kod di bawah ini telah dibuang ▼▼▼
+        // ▼▼▼ UPDATE: The code line below was removed ▼▼▼
         // setLastActiveChildTable(null); 
-        // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
+        // ▲▲▲ END UPDATE ▲▲▲
     }
 }

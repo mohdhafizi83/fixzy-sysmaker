@@ -36,7 +36,7 @@ function generateSingleRelationManager(rel, basePath, fullSchema) {
     const childTableSingular = toSingularPascalCase(childNameSource);
 
     // --- 2. TENTUKAN NAMA FUNGSI HUBUNGAN (RELATIONSHIP NAME) ---
-    // Jika self-referencing (Parent -> Children), guna 'children'
+    // If self-referencing (Parent -> Children), use 'children'
     const relationshipName = rel.parent_table_name === rel.child_table_name
         ? 'children'
         : toPluralCamelCase(childNameSource);
@@ -59,13 +59,13 @@ function generateSingleRelationManager(rel, basePath, fullSchema) {
 }
 
 /**
- * [UTAMA] Menjana semua Relation Managers standard.
+ * [MAIN] Generates all standard Relation Managers.
  */
 async function generateFilamentRelationManagers(fullSchema, basePath) {
     try {
         const { database: { relationships } } = fullSchema;
 
-        // Loop melalui setiap hubungan yang wujud
+        // Loop through every existing relationship
         for (const rel of relationships) {
             generateSingleRelationManager(rel, basePath, fullSchema);
         }

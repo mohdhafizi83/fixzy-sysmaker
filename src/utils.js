@@ -3,13 +3,13 @@ const fs = require('fs');
 const path = require('path');
 
 function convertDateFormatToPhp(formatString) {
-    if (!formatString) return 'd/m/Y'; // Lalai yang selamat
+    if (!formatString) return 'd/m/Y'; // Safe default
 
-    // Normalkan tahun dalam rentetan input supaya padanan tidak bergantung pada tahun semasa
+    // Normalize the year in the input string so matching does not depend on the current year
     const normalizedFormat = formatString.replace(/\d{4}/, '9999');
 
     switch (normalizedFormat) {
-        // Format Tarikh
+        // Date Formats
         case '31/12/9999': return 'd/m/Y';
         case '12/31/9999': return 'm/d/Y';
         case '9999-12-31': return 'Y-m-d';
@@ -18,13 +18,13 @@ function convertDateFormatToPhp(formatString) {
         case 'December 31, 9999': return 'F d, Y';
         case 'Dec 31, 9999': return 'M d, Y';
 
-        // Format Masa
+        // Time Formats
         case '11:59 PM': return 'h:i A';
         case '11:59:59 PM': return 'h:i:s A';
         case '23:59': return 'H:i';
         case '23:59:59': return 'H:i:s';
 
-        // Jika tiada padanan, kembalikan format lalai yang komprehensif
+        // If no match, return a comprehensive default format
         default: return 'd/m/Y H:i:s';
     }
 }
@@ -36,41 +36,41 @@ function getFormattedTimestamp(date, sequence) {
     const hh = String(date.getHours()).padStart(2, '0');
     const min = String(date.getMinutes()).padStart(2, '0');
     const ss = String(date.getSeconds()).padStart(2, '0');
-    // Tambah sequence supaya fail tidak bertembung masa
+    // Add sequence so files do not collide
     const seq = String(sequence).padStart(2, '0'); 
     return `${yyyy}_${mm}_${dd}_${hh}${min}${ss}${seq}`;
 }
 
 /**
- * Menukar rentetan snake_case, kebab-case, camelCase, PascalCase, pelik/type kepada PascalCase.
- * Contoh: 'user_profile' -> 'UserProfile', 'user-profile' -> 'UserProfile', 'userProfile' -> 'UserProfile', 'UserProfile' -> 'UserProfile', 'UsErProfile' -> 'UsErProfile', 'USER_NAME' -> 'UserName',
+ * Converts snake_case, kebab-case, camelCase, PascalCase, or odd/type strings to PascalCase.
+ * Examples: 'user_profile' -> 'UserProfile', 'user-profile' -> 'UserProfile', 'userProfile' -> 'UserProfile', 'UserProfile' -> 'UserProfile', 'UsErProfile' -> 'UsErProfile', 'USER_NAME' -> 'UserName',
  */
 function toPascalCase(str) {
     if (!str) return '';
 
     return str
-        // LANGKAH 1: Kendalikan camelCase
-        // Jika jumpa huruf kecil diikuti huruf besar (cth: rP dalam userProfile),
-        // letakkan jarak di tengahnya.
+        // STEP 1: Handle camelCase
+        // If a lowercase letter is followed by an uppercase letter (e.g. rP in userProfile),
+        // insert a space between them.
         // userProfile -> user Profile
         .replace(/([a-z])([A-Z])/g, '$1 $2')
 
-        // LANGKAH 2: Pecahkan ikut simbol (- _ atau jarak)
+        // STEP 2: Split by symbols (- _ or space)
         .split(/[-_\s]/)
 
-        // LANGKAH 3: Buang sisa kosong (jika ada double space/underscore)
+        // STEP 3: Remove leftover blanks (if there are double spaces/underscores)
         .filter(word => word.length > 0)
 
-        // LANGKAH 4: Standardisasi (Huruf pertama Besar, baki Kecil)
+        // STEP 4: Standardize (first letter uppercase, rest lowercase)
         .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
 
-        // LANGKAH 5: Gabung semula
+        // STEP 5: Join back together
         .join('');
 }
 
 /**
- * Menukar rentetan snake_case kepada camelCase.
- * Contoh: 'pelajar_sekolah' -> 'pelajarSekolah'
+ * Converts a snake_case string to camelCase.
+ * Example: 'student_school' -> 'studentSchool'
  */
 function toCamelCase(str) {
     if (!str) return '';
@@ -79,70 +79,70 @@ function toCamelCase(str) {
 }
 
 /**
- * Menukar rentetan snake_case kepada Plural PascalCase menggunakan logik Bahasa Inggeris yang betul.
- * Contoh: 'activity_log' -> 'ActivityLogs'
+ * Converts a snake_case string to plural PascalCase using correct English logic.
+ * Example: 'activity_log' -> 'ActivityLogs'
  */
 function toPluralPascalCase(str) {
     if (!str) return '';
-    // Gunakan 'pluralize' pada rentetan asal sebelum menukar kes
+    // Apply 'pluralize' to the original string before changing case
     return toPascalCase(pluralize.plural(str));
 }
 
 /**
- * Menukar rentetan snake_case kepada Plural camelCase menggunakan logik Bahasa Inggeris yang betul.
- * Contoh: 'activity_log' -> 'activityLogs'
+ * Converts a snake_case string to plural camelCase using correct English logic.
+ * Example: 'activity_log' -> 'activityLogs'
  */
 function toPluralCamelCase(str) {
     if (!str) return '';
-    // Gunakan 'pluralize' pada rentetan asal sebelum menukar kes
+    // Apply 'pluralize' to the original string before changing case
     return toCamelCase(pluralize.plural(str));
 }
 
 /**
- * Menukar string kepada flatcase (cth: User Profile -> userprofile)
- * Sesuai untuk kod ringkas, permission string, atau slug dalaman.
+ * Converts a string to flatcase (e.g. User Profile -> userprofile).
+ * Suitable for short code, permission strings, or internal slugs.
  */
 function toFlatCase(str) {
     if (!str) return '';
     
-    // Ganti dash (-), underscore (_), DAN space (\s) dengan kosong
+    // Replace dash (-), underscore (_), AND space (\s) with nothing
     return str.replace(/[-_\s]/g, '').toLowerCase();
 }
 
 /**
- * Menukar rentetan snake_case, kebab-case, camelCase, PascalCase kepada Title Case.
- * Contoh: 'user_profile' -> 'User Profile', 'USER_PROFILE' -> 'User Profile', 'userProfile' -> 'User Profile', 'user-profile' -> 'User Profile'
+ * Converts snake_case, kebab-case, camelCase, PascalCase strings to Title Case.
+ * Examples: 'user_profile' -> 'User Profile', 'USER_PROFILE' -> 'User Profile', 'userProfile' -> 'User Profile', 'user-profile' -> 'User Profile'
  */
 function toTitleCase(str) {
     if (!str) return '';
     
     return str
-        // 1. Pisahkan camelCase (firstName -> first Name)
+        // 1. Separate camelCase (firstName -> first Name)
         .replace(/([a-z])([A-Z])/g, '$1 $2')
         
-        // 2. Gantikan underscore/dash dengan space
+        // 2. Replace underscores/dashes with spaces
         .replace(/[-_]/g, ' ')
         
-        // 3. Pecahkan kepada perkataan, buang space berlebihan
+        // 3. Split into words, remove excess spaces
         .split(' ')
         .filter(word => word.length > 0)
         
-        // 4. Format: Huruf pertama Besar, baki Kecil
+        // 4. Format: first letter uppercase, rest lowercase
         .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         
-        // 5. Cantum semula dengan jarak
+        // 5. Rejoin with spaces
         .join(' ');
 }
 
 function toSingularPascalCase(str) {
     if (!str) return '';
-    // Gunakan 'pluralize.singular' pada rentetan asal sebelum menukar kes
+    // Apply 'pluralize.singular' to the original string before changing case
     return toPascalCase(pluralize.singular(str));
 }
 
 function toSingularCamelCase(str) {
     if (!str) return '';
-    // Gunakan 'pluralize.singular' pada rentetan asal sebelum menukar kes
+    // Apply 'pluralize.singular' to the original string before changing case
     return toCamelCase(pluralize.singular(str));
 }
 
@@ -151,7 +151,7 @@ function getFieldDefinitionForMigration(field) {
     const type = field.data_type.toUpperCase();
     const length = field.length;
 
-    // Pemetaan Jenis Data
+    // Data Type Mapping
     if (type === 'INT' || type === 'INTEGER') return `$table->integer('${name}')`;
     if (type === 'BIGINT') return `$table->bigInteger('${name}')`;
     if (type === 'TINYINT') return (length == 1) ? `$table->boolean('${name}')` : `$table->tinyInteger('${name}')`;
@@ -182,14 +182,14 @@ function getFieldDefinitionForMigration(field) {
 }
 
 /**
- * Meneka format Faker berdasarkan nama medan dan jenis data.
+ * Guesses the Faker format based on field name and data type.
  */
 function getFakerFormatter(field) {
     const name = field.field_name.toLowerCase();
     const type = field.data_type.toUpperCase();
     const unique = (field.unique === 1 || field.is_unique === 1) ? '->unique()' : '';
 
-    // 1. Tekaan berdasarkan Nama Medan (Name-based Guessing)
+    // 1. Name-based Guessing (Malay name variants kept: they match user-defined field names)
     if (name.includes('email')) return `fake()${unique}->safeEmail()`;
     if (name.includes('phone') || name.includes('tel')) return `fake()${unique}->phoneNumber()`;
     if (name.includes('name') || name.includes('nama')) return `fake()${unique}->name()`;
@@ -208,7 +208,7 @@ function getFakerFormatter(field) {
     if (name.includes('matrik') || name.includes('matric')) return `fake()${unique}->bothify('??#####')`;
     if (name.includes('slug')) return `fake()${unique}->slug()`;
     
-    // 2. Tekaan berdasarkan Jenis Data (Type-based Guessing)
+    // 2. Type-based Guessing
     if (type === 'BOOLEAN' || type === 'TINYINT') return `fake()->boolean()`;
     if (type === 'DATE') return `fake()->date()`;
     if (type === 'DATETIME' || type === 'TIMESTAMP') return `fake()->dateTimeThisYear()`;
@@ -223,10 +223,10 @@ function getFakerFormatter(field) {
 }
 
 async function runStep(name, promise) {
-    console.log(`  > Menjana ${name}...`);
+    console.log(`  > Generating ${name}...`);
     const result = await promise;
     if (!result.success) {
-        throw new Error(`Gagal menjana ${name}: ${result.message}`);
+        throw new Error(`Failed to generate ${name}: ${result.message}`);
     }
 }
 
@@ -237,7 +237,7 @@ function getFilesRecursive(dir, fileList = [], relativePath = '') {
         const relPath = path.join(relativePath, file);
         const stat = fs.statSync(filePath);
         if (stat.isDirectory()) {
-            if (file !== 'vendor' && file !== 'node_modules' && file !== '.git') { // Skip folder berat
+            if (file !== 'vendor' && file !== 'node_modules' && file !== '.git') { // Skip heavy folders
                 getFilesRecursive(filePath, fileList, relPath);
             }
         } else {
@@ -247,13 +247,13 @@ function getFilesRecursive(dir, fileList = [], relativePath = '') {
     return fileList;
 }
 
-// Fungsi helper untuk membaca template kini di src/render/engine.js (Nunjucks).
-// readTemplate (string-replacement era) telah dibuang selepas migrasi Fasa 2.
+// Helper function for reading the current templates in src/render/engine.js (Nunjucks).
+// readTemplate (string-replacement era) was removed after the Phase 2 migration.
 
 /**
- * Menukar JSON Filter Rules kepada kod PHP Eloquent.
- * @param {object} rulesObj - Objek { logic: 'AND', rules: [...] }
- * @returns {string} String PHP Query Builder.
+ * Converts JSON Filter Rules to PHP Eloquent code.
+ * @param {object} rulesObj - Object of the form { logic: 'AND', rules: [...] }
+ * @returns {string} PHP Query Builder string.
  */
 function buildEloquentQueryFromRules(rulesObj) {
     if (!rulesObj || !rulesObj.rules || rulesObj.rules.length === 0) return '';
@@ -262,18 +262,18 @@ function buildEloquentQueryFromRules(rulesObj) {
     
     rulesObj.rules.forEach(rule => {
         if (rule.type === 'group') {
-            // Rekursif untuk kumpulan (Nested Logic)
+            // Recursion for groups (Nested Logic)
             const nested = buildEloquentQueryFromRules(rule);
             if (nested) {
                 parts.push(`$query->where(function($q) { ${nested.replace(/\$query->/g, '$q->')} });`);
             }
         } else {
-            // Peraturan Biasa (Standard Rule)
+            // Standard Rule
             const { field, operator, value } = rule;
-            // Sanitasi nilai asas (Basic escaping)
+            // Sanitize basic values (Basic escaping)
             let phpValue = `'${value}'`;
             if (value === 'null' || value === null) phpValue = 'null';
-            else if (!isNaN(value) && value !== '') phpValue = value; // Nombor
+            else if (!isNaN(value) && value !== '') phpValue = value; // Number
 
             if (operator === 'IS NULL') {
                 parts.push(`$query->whereNull('${field}')`);
@@ -287,15 +287,15 @@ function buildEloquentQueryFromRules(rulesObj) {
         }
     });
 
-    // Gabungkan berdasarkan logik parent (AND/OR)
+    // Combine based on the parent logic (AND/OR)
     const method = rulesObj.logic === 'OR' ? 'orWhere' : 'where';
     
-    // Nota: Filament getEloquentQuery() bermula dengan Builder, jadi kita rantai (chaining)
-    // Contoh output: ->where('status', 'pending')->where('amount', '>', 100)
+    // Note: Filament getEloquentQuery() starts with a Builder, so we chain (chaining)
+    // Example output: ->where('status', 'pending')->where('amount', '>', 100)
     return parts.map(p => `->${p.replace('$query->', '')}`).join('');
 }
 
-// Eksport semua fungsi ini supaya boleh digunakan oleh fail lain
+// Export all these functions so they can be used by other files
 module.exports = {
     convertDateFormatToPhp,
     getFormattedTimestamp,

@@ -372,7 +372,7 @@ async function generateFilamentResourcesCustomModules(fullSchema, basePath) {
                         try {
                             tableOverrides = JSON.parse(moduleObj.settings_override);
                         } catch (e) {
-                            console.warn(`Gagal memproses settings_override jadual untuk modul: ${moduleObj.module_name}`);
+                            console.warn(`Failed to process table settings_override for module: ${moduleObj.module_name}`);
                         }
                     }
 

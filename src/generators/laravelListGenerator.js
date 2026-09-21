@@ -28,7 +28,7 @@ async function generateSingleListPage(tableName, tableData, fullSchema, basePath
     // Nama fail List Page: ListStudentInfos.php (Standard) / ListPendingRegistrations.php (Custom)
     const listPageName = `List${resourceFolder}`;
 
-    // Gunakan moduleTitle jika ada (untuk Custom Module), jika tiada, guna tajuk jadual asal
+    // Use moduleTitle when present (for Custom Module), otherwise the original table title
     const pageTitle = options.moduleTitle || tableData.table_view_title || resourceFolder;
 
     // --- LOGIK ASAL IFRAME ---

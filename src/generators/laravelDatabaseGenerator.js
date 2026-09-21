@@ -48,7 +48,7 @@ function getRelationFunctionName(tableName, tables, isPlural = false) {
 
 
 /**
- * Menjana fail Model Laravel Filament berdasarkan skema pangkalan data.
+ * Generate Laravel Filament Model files from the database schema.
  */
 async function generateFilamentModels(fullSchema, basePath) {
     try {
@@ -82,7 +82,7 @@ async function generateFilamentModels(fullSchema, basePath) {
             const castableFields = Object.values(tableData.fields).filter(field => 
                 field.data_type === 'JSON' || 
                 (field.data_type === 'BOOLEAN' && field.display_type === 'check_box') ||
-                // Tambah semakan untuk komponen UI yang menghasilkan Array
+                // Add a check for UI components that produce an Array
                 ['repeater', 'repeater_simple'].includes(field.display_type)
             );
             
@@ -118,9 +118,9 @@ async function generateFilamentModels(fullSchema, basePath) {
                     // Self-referencing (Parent -> Children)
                     functionName = 'children'; 
                 } else {
-                    // Guna Module Name untuk nama function (cth: studentInfos)
+                    // Use Module Name for the function name (e.g. studentInfos)
                     functionName = getRelationFunctionName(rel.child_table_name, tables, true); 
-                    // Jika One-to-One, guna Singular
+                    // For One-to-One, use Singular
                     if (rel.relationship_type === 'one-to-one') {
                          functionName = getRelationFunctionName(rel.child_table_name, tables, false);
                     }
@@ -188,7 +188,7 @@ let helperMethods = [];
             const hasUpdatedBy = Object.values(tableData.fields).some(f => f.field_name === 'updated_by');
             const hasDeletedBy = Object.values(tableData.fields).some(f => f.field_name === 'deleted_by');
 
-            // Kesan FK Tenant (untuk one_to_many)
+            // Apply Tenant FK (for one_to_many)
             const isOneToMany = projectSettings.tenancy_type === 'one_to_many';
             const tenantTable = projectSettings.tenant_table;
             let tenantFkField = null;
@@ -226,7 +226,7 @@ let helperMethods = [];
                 }
                 
                 bootMethodContent += `    }\n`;
-                helperMethods.push(bootMethodContent); // Masukkan ke dalam array helperMethods
+                helperMethods.push(bootMethodContent); // Push into the helperMethods array
             }
             // --- TAMAT LOGIK USERSTAMPS ---
 
@@ -273,7 +273,7 @@ async function generateFilamentUserModel(fullSchema, basePath) {
         const userData = tables.users;
 
         if (!userData) {
-            console.warn("Skema untuk jadual 'users' tidak ditemui. Melangkau penjanaan User.php.");
+            console.warn("Schema for table 'users' not found. Skipping User.php generation.");
             return { success: true, message: 'User model skipped.' };
         }
 
@@ -382,7 +382,7 @@ async function generateLaravelMigrations(fullSchema, outputBasePath) {
             const fileName = `${timestamp}_create_${tableName}_table.php`;
             const fieldsArr = Object.values(tableData.fields);
             const pkField = fieldsArr.find(f => f.primary_key === 1);
-            // Tambah created_by, updated_by, deleted_by ke dalam senarai yang diabaikan (untuk diuruskan secara manual di bawah)
+            // Add created_by, updated_by, deleted_by to the ignored list (handled manually below)
             const ignoredFields = ['created_at', 'updated_at', 'deleted_at', 'created_by', 'updated_by', 'deleted_by'];
             if (pkField) ignoredFields.push(pkField.field_name);
             const regularFields = fieldsArr.filter(f => !ignoredFields.includes(f.field_name)).sort((a, b) => (a.field_order || 999) - (b.field_order || 999));
@@ -432,17 +432,17 @@ if (tableData.constraints && tableData.constraints.length > 0) {
             const hasUpdatedBy = fieldsArr.some(f => f.field_name === 'updated_by');
             const hasDeletedBy = fieldsArr.some(f => f.field_name === 'deleted_by');
 
-            // Kita letakkan ia sebagai nullable() supaya Seeder / proses sistem (tanpa auth) tidak crash
+            // Keep it nullable() so Seeders / system processes (without auth) don't crash
             if (hasCreatedBy) content += `            $table->unsignedBigInteger('created_by')->nullable();\n`;
             if (hasUpdatedBy) content += `            $table->unsignedBigInteger('updated_by')->nullable();\n`;
             
-            // Sentiasa jana deleted_by (jika wujud dalam table) tidak kira jenis delete
+            // Always generate deleted_by (if present in the table) regardless of delete type
             if (hasDeletedBy) content += `            $table->unsignedBigInteger('deleted_by')->nullable();\n`;
             // --- TAMAT LOGIK MIGRASI USERSTAMPS ---
 
             content += `            $table->timestamps();\n`;
             
-            // ▼▼▼ PEMBAIKAN 2: Guna global projectSettings untuk Soft Deletes ▼▼▼
+            // ▼▼▼ FIX 2: Use global projectSettings for Soft Deletes ▼▼▼
             if (projectSettings && projectSettings.data_delete_type === 'soft') {
                  content += `            $table->softDeletes();\n`;
             }
@@ -465,7 +465,7 @@ content += `        });\n    }\n\n    public function down(): void\n    {\n     
                 let content = `<?php\nuse Illuminate\\Database\\Migrations\\Migration;\nuse Illuminate\\Database\\Schema\\Blueprint;\nuse Illuminate\\Support\\Facades\\Schema;\n\nreturn new class extends Migration\n{\n    public function up(): void\n    {\n        Schema::create('${pivotTable}', function (Blueprint $table) {\n`;
                 content += `            $table->id();\n`;
                 
-                // Cari Primary Key bagi Tenant Table (Biasanya 'id')
+                // Find the Primary Key of the Tenant Table (usually 'id')
                 const tenantPk = tables[tenantTable] ? (Object.values(tables[tenantTable].fields).find(f => f.primary_key === 1)?.field_name || 'id') : 'id';
                 
                 content += `            $table->foreignId('${tenantSingular}_id')->constrained('${tenantTable}', '${tenantPk}')->cascadeOnDelete();\n`;
@@ -509,7 +509,7 @@ content += `        });\n    }\n\n    public function down(): void\n    {\n     
 }
 
 /**
- * Menjana fail Migrasi khusus untuk jadual 'users'.
+ * Generate the dedicated Migration file for the 'users' table.
  * Ia menggabungkan lajur asas Laravel dengan lajur tersuai FiziSysMaker.
  */
 async function generateLaravelUserMigration(fullSchema, basePath) {
@@ -523,7 +523,7 @@ async function generateLaravelUserMigration(fullSchema, basePath) {
         const userData = tables['users'];
 
         if (userData && userData.fields) {
-            // Senarai lajur yang sudah pun ada dalam template asas Laravel. Kita abaikan.
+            // Columns already present in Laravel's base template. Ignore them.
             const standardFields = ['id', 'name', 'email', 'email_verified_at', 'password', 'remember_token', 'created_at', 'updated_at', 'deleted_at'];
             
             const fieldsArr = Object.values(userData.fields).sort((a, b) => (a.field_order || 999) - (b.field_order || 999));
@@ -594,7 +594,7 @@ async function generateLaravelFactories(fullSchema, basePath) {
             if (tableName === 'users') continue;
             const tableData = tables[tableName];
             
-            // UPDATE: Guna Module Name untuk Factory Class Name
+            // UPDATE: Use Module Name for the Factory Class Name
             const modelName = getModelClassName(tableName, tables);
             const className = `${modelName}Factory`;
             
@@ -610,7 +610,7 @@ fieldsArr.forEach(field => {
                 if (tableData.record_owner === 'current_user' && ['created_by', 'updated_by', 'user_id'].includes(field.field_name)) {
                     // Kita paksa ia menjadi 1 (Super Admin) supaya data ini muncul di dashboard admin
                     columns.push(`            '${field.field_name}' => 1,`);
-                    return; // Skip logik di bawah dan teruskan ke medan seterusnya
+                    return; // Skip the logic below and continue to the next field
                 }
                 // ▲▲▲ TAMAT LOGIK RECORD OWNER ▲▲▲
 
@@ -618,12 +618,12 @@ fieldsArr.forEach(field => {
                 const relation = relationships.find(r => r.child_table_name === tableName && r.fk_child_field === field.field_name);
                 
                 if (relation) {
-                    // Dapatkan nama Model bagi jadual Parent
+                    // Get the Model name of the Parent table
                     const parentModelName = getModelClassName(relation.parent_table_name, tables);
                     
-                    // Ajar Factory untuk tarik satu ID secara rawak dari jadual Parent
+                    // Teach the Factory to pull a random ID from the Parent table
                     columns.push(`            '${field.field_name}' => \\App\\Models\\${parentModelName}::inRandomOrder()->value('id'),`);
-                    return; // Selesai untuk medan Foreign Key ini, terus lompat ke medan seterusnya
+                    return; // Done for this Foreign Key field; skip to the next field
                 }
                 // ▲▲▲ TAMAT LOGIK FOREIGN KEY ▲▲▲
 
@@ -633,22 +633,22 @@ fieldsArr.forEach(field => {
                     const optionsArray = field.options_list_values
                         .split(/[\n,;|]+/) // <--- PERUBAHAN DI SINI (Tambah ; dan |)
                         .map(opt => opt.trim())       // Bersihkan ruang kosong
-                        .filter(opt => opt !== '');   // Buang nilai yang kosong
+                        .filter(opt => opt !== '');   // Drop empty values
                         
                     if (optionsArray.length > 0) {
-                        // 2. Formatkan menjadi bentuk tatasusunan (array) PHP yang sah
+                        // 2. Format into a valid PHP array literal
                         const phpArrayString = optionsArray.map(opt => `'${opt.replace(/'/g, "\\'")}'`).join(', ');
                         
                         // 3. Bina sintaks faker randomElement
                         const optionsFakerLogic = `$this->faker->randomElement([${phpArrayString}])`;
                         
                         columns.push(`            '${field.field_name}' => ${optionsFakerLogic},`);
-                        return; // Selesai untuk medan ini, terus lompat ke medan seterusnya!
+                        return; // Done for this field; skip to the next field!
                     }
                 }
                 // ▲▲▲ TAMAT LOGIK OPTIONS LIST ▲▲▲
                 
-                // Dapatkan string asal faker (cth: $this->faker->word()) untuk medan-medan lain
+                // Get the original faker string (e.g. $this->faker->word()) for other fields
                 let fakerLogic = getFakerFormatter(field);
                 
 // ▼▼▼ MULA: LOGIK ARRAY / JSON YANG KETAT ▼▼▼
@@ -656,11 +656,11 @@ fieldsArr.forEach(field => {
                     ['repeater', 'repeater_simple', 'multiple_select', 'checkbox_list', 'tags_input'].includes(field.display_type);
                 
                 if (isArrayType) {
-                    // FUNGSI BANTUAN PINTAR: Menggantikan getFakerFormatter yang gagal baca JSON
+                    // SMART HELPER: Replaces getFakerFormatter which failed to read JSON
                     const getRealFaker = (fieldName, formatAs) => {
                         const nameLower = fieldName.toLowerCase();
                         if (formatAs === 'email' || nameLower.includes('email')) {
-                            return `$this->faker->unique()->safeEmail()`; // Wajib unik untuk elak DB crash!
+                            return `$this->faker->unique()->safeEmail()`; // Must be unique to avoid a DB crash!
                         }
                         if (formatAs === 'tel' || nameLower.includes('tel') || nameLower.includes('phone')) {
                             return `$this->faker->phoneNumber()`;
@@ -695,7 +695,7 @@ fieldsArr.forEach(field => {
                         fakerLogic = `[${assocArray1}, ${assocArray2}]`;
                         
                     } else {
-                        // Untuk Repeater Simple / Tags / Dll: Bina 3 string rawak yang berbeza
+                        // For Simple Repeater / Tags / etc: build 3 distinct random strings
                         const format = field.repeater_simple_format_as;
                         const fake1 = getRealFaker(field.field_name, format);
                         const fake2 = getRealFaker(field.field_name, format);
@@ -748,7 +748,7 @@ async function generateLaravelDatabaseSeeder(fullSchema, basePath) {
         runContent.push(`            ['name' => 'Super Admin', 'password' => bcrypt('password')]`);
         runContent.push(`        );`);
 
-        // Jika modul Authorization (Spatie/Filament Shield) diaktifkan, tugaskan peranan super_admin
+        // If the Authorization module (Spatie/Filament Shield) is enabled, assign the super_admin role
         if (projectSettings.module_authorization === 1) {
             runContent.push(`\n        // Tugaskan Peranan (Role) Super Admin`);
             runContent.push(`        $role = \\Spatie\\Permission\\Models\\Role::firstOrCreate([`);
@@ -810,7 +810,7 @@ async function generateLaravelDatabaseSeeder(fullSchema, basePath) {
     }
 }
 
-// Export functions untuk digunakan di main.js
+// Export functions for use in main.js
 /**
  * Generate the native audit-trail files (Phase 4).
  *

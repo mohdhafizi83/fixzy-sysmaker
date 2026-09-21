@@ -95,7 +95,7 @@ import { resolveVariables } from './js/utils.js';
 import { initDashboardBuilder } from './js/pages/dashboardBuilder.js';
 
 import { SaveManager } from './js/saveManager.js';
-export { SaveManager }; // Eksport semula supaya fail lain tak 'pecah'
+export { SaveManager }; // Re-export so other files don't 'break'
 
 window.VALIDATION_RULES_CONFIG = VALIDATION_RULES_CONFIG;
 window.saveValidationData = saveValidationData;
@@ -108,8 +108,8 @@ function showConfirmationDialog(title, message) {
             title: title,
             message: message,
             showCancelButton: true,
-            onOk: () => resolve(true),      // Jika OK, kembalikan 'true'
-            onCancel: () => resolve(false)  // Jika Cancel, kembalikan 'false'
+            onOk: () => resolve(true),      // If OK, return 'true'
+            onCancel: () => resolve(false)  // If Cancel, return 'false'
         });
     });
 }
@@ -154,20 +154,20 @@ export async function loadProjectData(project, options = {}) {
         }
         
         if (refreshMode === 'full') {
-            // ▼▼▼ PERUBAHAN UTAMA DI SINI ▼▼▼
+            // ▼▼▼ MAIN CHANGE HERE ▼▼▼
             const initialStatus = await window.electronAPI.getInitialProjectStatus(project.project_id);
             if (initialStatus && initialStatus.showTutorial) {
                 document.getElementById('tutorial-modal')?.classList.remove('hidden');
             }
-            // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+            // ▲▲▲ END CHANGE ▲▲▲
         }
 
         appState.isPopulatingData = false;
     } else {
-        console.error("Gagal memuatkan data skema dari backend.");
+        console.error("Failed to load schema data from backend.");
     }
     
-// TAMBAH KOD INI: Pastikan UI Tenancy dipaparkan dengan betul mengikut projek aktif
+// ADD THIS CODE: Make sure the Tenancy UI displays correctly according to the active project
         if (refreshMode === 'full' && typeof tenancyManager.refreshUIState === 'function') {
             tenancyManager.refreshUIState();
         }
@@ -177,7 +177,7 @@ export async function loadProjectData(project, options = {}) {
     }
 }
 
-// Fungsi untuk menguruskan import SQL
+// Function to handle SQL imports
 async function handleSqlImport(importFunction, dialect) {
     const overlay = document.getElementById('loading-overlay');
     try {
@@ -186,7 +186,7 @@ async function handleSqlImport(importFunction, dialect) {
             return;
         }
 
-        // Terus panggil fungsi import. Backend akan menguruskan dialog pengesahan.
+        // Call the import function directly. The backend will handle the confirmation dialog.
         const result = await importFunction();
 
         if (result.success) {
@@ -208,7 +208,7 @@ async function handleSqlImport(importFunction, dialect) {
             showCustomDialog({ title: "Success", message: result.message });
             await loadProjectData(appState.activeProject);
         } else if (result.message !== "Import cancelled by user.") {
-            // Hanya tunjukkan panduan ralat jika ia bukan pembatalan oleh pengguna
+            // Only show the error guide if it wasn't cancelled by the user
             console.error("Import Failed:", result.message);
             showImportErrorGuide(); 
         }
@@ -221,7 +221,7 @@ async function handleSqlImport(importFunction, dialect) {
 }
 
 function initializeFullscreenHandlers() {
-    // Fungsi bantuan untuk mengendalikan klik butang, ia kekal sama.
+    // Helper function to handle button clicks, unchanged.
     const setupClickListener = (buttonId, containerId) => {
         const button = document.getElementById(buttonId);
         const container = document.getElementById(containerId);
@@ -241,37 +241,37 @@ function initializeFullscreenHandlers() {
     setupClickListener('project-fullscreen-btn', 'project-workflow-container');
     setupClickListener('table-fullscreen-btn', 'table-workflow-container');
 
-    // SATU listener tunggal yang menguruskan SEMUA logik fullscreen.
+    // A SINGLE listener that handles ALL fullscreen logic.
     document.addEventListener('fullscreenchange', () => {
         const fullscreenEl = document.fullscreenElement;
         
-        // ▼▼▼ MULA LOGIK PEMINDAHAN MODAL (PEMBAIKAN UTAMA) ▼▼▼
-        // Dapatkan rujukan kepada SEMUA modal yang mungkin perlu dipaparkan.
+        // ▼▼▼ START MODAL MOVEMENT LOGIC (MAIN IMPROVEMENT) ▼▼▼
+        // Get references to ALL modals that may need to be displayed.
         const modalsToManage = [
             document.getElementById('algorithm-builder-modal'),
             document.getElementById('custom-alert-modal'),
             document.getElementById('query-helper-modal')
-            // Tambah ID modal lain di sini jika perlu pada masa hadapan
+            // Add other modal IDs here if needed in the future
         ];
 
         if (fullscreenEl) {
-            // Apabila masuk fullscreen, pindahkan semua modal ke dalam elemen fullscreen.
+            // When entering fullscreen, move all modals into the fullscreen element.
             modalsToManage.forEach(modal => {
                 if (modal) {
                     fullscreenEl.appendChild(modal);
                 }
             });
         } else {
-            // Apabila keluar fullscreen, kembalikan semua modal ke body.
+            // When exiting fullscreen, return all modals to the body.
             modalsToManage.forEach(modal => {
                 if (modal) {
                     document.body.appendChild(modal);
                 }
             });
         }
-        // ▲▲▲ TAMAT LOGIK PEMINDAHAN MODAL ▲▲▲
+        // ▲▲▲ END MODAL MOVEMENT LOGIC ▲▲▲
 
-        // --- Logik sedia ada untuk menukar ikon (kini akan berfungsi dengan betul) ---
+        // --- Existing logic for swapping the icon (now works correctly) ---
         const project = {
             container: document.getElementById('project-workflow-container'),
             icon: document.querySelector('#project-fullscreen-btn i')
@@ -297,10 +297,10 @@ function initializeFullscreenHandlers() {
     });
 }
 
-// Inisialisasi Aplikasi
+// Initialize the app
 document.addEventListener('DOMContentLoaded', async () => {
 
-// FUNGSI BUTANG SHOW PREVIEW
+// SHOW PREVIEW BUTTON FUNCTION
 const btnShowPreview = document.getElementById('btn-show-preview');
 if (btnShowPreview) {
     btnShowPreview.addEventListener('click', async () => {
@@ -308,9 +308,9 @@ if (btnShowPreview) {
         const loadingText = overlay ? overlay.querySelector('.loading-text') || { textContent: '' } : null;
 
         if (overlay) overlay.classList.remove('loading-overlay-hidden');
-        if (loadingText) loadingText.textContent = "Menjana skrip dan menyediakan Persekitaran Pralihat...";
+        if (loadingText) loadingText.textContent = "Generating scripts and preparing the Preview environment...";
 
-        // Panggil API Instant Preview dari main.js
+        // Call the Instant Preview API from main.js
         const result = await window.electronAPI.runInstantPreview();
 
         if (overlay) overlay.classList.add('loading-overlay-hidden');
@@ -318,7 +318,7 @@ if (btnShowPreview) {
 
         if (result.success) {
             // =========================================================
-            // MULA: LOGIK MODAL IFRAME (Gantikan pelayar luar)
+            // START: IFRAME MODAL LOGIC (replaces the external browser)
             // =========================================================
             const previewModal = document.getElementById('app-preview-modal');
             const previewIframe = document.getElementById('app-preview-iframe');
@@ -331,38 +331,38 @@ if (btnShowPreview) {
             const forwardBtn = document.getElementById('app-preview-forward-btn');
 
             if (previewModal && previewIframe) {
-                // Paparkan modal gergasi dan tunjuk animasi loading putih
+                // Show the giant modal and display the white loading animation
                 previewModal.classList.remove('hidden');
                 previewIframe.style.display = 'none';
                 if (previewLoading) previewLoading.style.display = 'flex';
                 
-                // Semak URL terakhir webview sebelum ini
+                // Check the webview's last URL
                 let currentUrl = "";
                 try {
                     currentUrl = previewIframe.getURL();
                 } catch (e) {}
 
-                // Jika webview sudah ada URL projek (contoh: sedang edit rekod), muat semula sahaja!
+                // If the webview already has a project URL (e.g. editing a record), just reload it!
                 if (currentUrl && currentUrl.includes('127.0.0.1')) {
                     previewIframe.reload(); 
                 } else {
-                    // Jika webview kosong (baru pertama kali buka), muatkan URL lalai (Dashboard)
+                    // If the webview is empty (first time opening), load the default URL (Dashboard)
                     previewIframe.src = result.url;
                 }
 
 // ==========================================
-                // PENGESAN STATUS LOADING WEBVIEW
+                // WEBVIEW LOADING STATUS TRACKER
                 // ==========================================
                 
-                // 1. Apabila Webview MULA memuatkan halaman (Klik link / Refresh / Back / Forward)
+                // 1. When the webview STARTS loading a page (link click / refresh / back / forward)
                 previewIframe.addEventListener('did-start-loading', () => {
                     if (previewLoading) previewLoading.style.display = 'flex';
                 });
 
-                // 2. Apabila Webview SELESAI memuatkan halaman
+                // 2. When the webview FINISHES loading a page
                 previewIframe.addEventListener('did-stop-loading', () => {
                     if (previewLoading) previewLoading.style.display = 'none';
-                    // Pastikan webview dipaparkan
+                    // Make sure the webview is displayed
                     previewIframe.style.display = 'flex'; 
                 });
 
@@ -374,19 +374,19 @@ if (btnShowPreview) {
                     refreshBtn.onclick = () => {
                         previewIframe.style.display = 'none';
                         if (previewLoading) previewLoading.style.display = 'flex';
-                        // [UBAH SUAI 2]: Webview ada fungsi .reload() yang sebenar!
+                        // [CUSTOMIZATION 2]: The webview has a real .reload() function!
                         previewIframe.reload(); 
                     };
                 }
                 
-// Logik Butang Undur (Back)
+// Back button logic
                 if (backBtn) {
                     backBtn.onclick = () => {
                         if (previewIframe.canGoBack()) previewIframe.goBack();
                     };
                 }
 
-                // Logik Butang Maju (Forward)
+                // Forward button logic
                 if (forwardBtn) {
                     forwardBtn.onclick = () => {
                         if (previewIframe.canGoForward()) previewIframe.goForward();
@@ -395,41 +395,41 @@ if (btnShowPreview) {
 
                     if (closeBtn) {
                     closeBtn.onclick = () => {
-                        // 1. Sembunyikan modal
+                        // 1. Hide the modal
                         previewModal.classList.add('hidden');
                         
-                        // 2. Hentikan webview daripada berjalan di latar belakang
+                        // 2. Stop the webview from running in the background
                         //previewIframe.src = "about:blank"; 
                         
-                        // 3. BUNUH PELAYAN PHP!
+                        // 3. KILL THE PHP SERVER!
                         //if (window.electronAPI.stopPreviewServer) {
                         //    window.electronAPI.stopPreviewServer();
                         //}
                     };
                 }
             } else {
-                console.error("Elemen Modal Iframe tidak dijumpai di index.html!");
+                console.error("Iframe modal element not found in index.html!");
             }
             // =========================================================
-            // TAMAT: LOGIK MODAL IFRAME
+            // END: IFRAME MODAL LOGIC
             // =========================================================
             
         } else {
             showCustomDialog({
-                title: "Ralat Pralihat",
-                message: `Gagal memulakan pelayan: ${result.message}`
+                title: "Preview Error",
+                message: `Failed to start the server: ${result.message}`
             });
         }
     });
 }
     
-// Jaring keselamatan untuk menghalang kehilangan data semasa reload/tutup
+// Safety net to prevent data loss on reload/close
 window.addEventListener('beforeunload', (event) => {
-    // Periksa jika ada sebarang perubahan yang sedang menunggu di dalam queue
+    // Check if there are any changes waiting in the queue
     if (!SaveManager.isQueueEmpty()) {
-        // Baris ini akan menyebabkan pelayar memaparkan dialog pengesahan
+        // This line makes the browser show a confirmation dialog
         event.preventDefault();
-        event.returnValue = ''; // Diperlukan untuk sesetengah pelayar
+        event.returnValue = ''; // Required for some browsers
     }
 });
 	
@@ -438,16 +438,16 @@ window.addEventListener('beforeunload', (event) => {
         if (settings && settings.font_size) {
             applyFontSize(settings.font_size);
         }
-        // KOD BARU:
+        // NEW CODE:
         if (settings && settings.lock_core_components) {
-            // Kita panggil fungsi setter yang diimport dari state.js
+            // We call the setter function imported from state.js
             setIsCoreLockingEnabled(settings.lock_core_components === '1'); 
         }
     } catch (error) {
-        console.error("Gagal memuatkan tetapan awal:", error);
+        console.error("Failed to load initial settings:", error);
     }
 
-    // Inisialisasi semua sistem UI
+    // Initialize all UI systems
     initializeTabSystems();
     initializeModalHandlers();
     initializeMediaTabHandlers();
@@ -528,7 +528,7 @@ initializeTableSaveHandlers();
             const input = document.getElementById('new-project-name');
             if (modal && input) {
                 modal.classList.remove('hidden');
-                setTimeout(() => input.focus(), 50); // Tambah fokus selepas modal dipaparkan
+                setTimeout(() => input.focus(), 50); // Add focus after the modal is shown
             }
         });
     }
@@ -557,7 +557,7 @@ initializeTableSaveHandlers();
 
     if (closeTutorialBtn) closeTutorialBtn.addEventListener('click', () => tutorialModal.classList.add('hidden'));
 
-    // Pengendali Import SQL yang diperbaharui
+    // Updated SQL import handler
     const importSqlModal = document.getElementById('import-sql-modal');
     const importSqlModalTitle = document.getElementById('import-sql-modal-title');
     const importSqlCloseBtn = document.getElementById('import-sql-modal-close');
@@ -611,9 +611,9 @@ if (importSqlImportBtn) {
     });
 }
 
-	    // Aktifkan butang sidebar
-    initializeSidebarButtons(); // <-- TAMBAH PANGGILAN INI	
-    initializeSidebarInteractivity(); // PASTIKAN PANGGILAN INI WUJUD DI SINI
+	    // Enable the sidebar buttons
+    initializeSidebarButtons(); // <-- ADD THIS CALL	
+    initializeSidebarInteractivity(); // MAKE SURE THIS CALL EXISTS HERE
 	
 // =================================================================
 // Generator functions will be put here
@@ -627,34 +627,34 @@ const generateAppBtn = document.getElementById('app-generate_app');
                 loadingOverlay.classList.remove('loading-overlay-hidden');
             }
             try {
-                // Panggil backend
+                // Call the backend
                 const result = await window.electronAPI.generateApp();
                 
                 if (result.success) {
-                    // Papar dialog kejayaan yang ringkas
-                    // Pastikan guna 'result.folderPath' untuk elak 'undefined'
+                    // Show a simple success dialog
+                    // Make sure to use 'result.folderPath' to avoid 'undefined'
                     showCustomDialog({
                         title: "Success",
-                        message: `Aplikasi berjaya dijana!\n\nLokasi fail:\n${result.folderPath}`
+                        message: `Application generated successfully!\n\nFile location:\n${result.folderPath}`
                     });
 
-                    // Buka folder secara automatik
+                    // Open the folder automatically
                     if (result.folderPath) {
                         window.electronAPI.openFolder(result.folderPath);
                     }
 
                 } else {
-                    // Papar ralat jika gagal
+                    // Show an error if it failed
                     showCustomDialog({
                         title: "Error",
-                        message: `Gagal menjana aplikasi: ${result.message}`
+                        message: `Failed to generate the application: ${result.message}`
                     });
                 }
             } catch (error) {
-                console.error("Ralat IPC semasa menjana aplikasi:", error);
+                console.error("IPC error while generating the application:", error);
                 showCustomDialog({
                     title: "System Error",
-                    message: `Ralat tidak dijangka: ${error.message}`
+                    message: `Unexpected error: ${error.message}`
                 });
             } finally {
                 if (loadingOverlay) {
@@ -665,14 +665,14 @@ const generateAppBtn = document.getElementById('app-generate_app');
     }
 // =================================================================	
 	
-    // Mulakan aplikasi dengan cuba mendapatkan projek aktif dari DB
+    // Start the app by trying to get the active project from the DB
     const project = await window.electronAPI.getActiveProject();
     SaveManager.init(loadProjectData);
     await loadProjectData(project);
 	initializeWorkflowBuilder();
     initializeFullscreenHandlers();
 
-// Pasang pendengar untuk mesej 'show-overlay' dari proses utama
+// Attach a listener for 'show-overlay' messages from the main process
     if (window.electronAPI && typeof window.electronAPI.onShowOverlay === 'function') {
         window.electronAPI.onShowOverlay((data) => {
             const overlay = document.getElementById('loading-overlay');
@@ -682,24 +682,24 @@ const generateAppBtn = document.getElementById('app-generate_app');
                 const textEl = document.getElementById('loading-text');
                 const progContainer = document.getElementById('loading-progress-container');
                 const progFill = document.getElementById('loading-progress-fill');
-                const progText = document.getElementById('loading-progress-text'); // Tangkap elemen teks peratusan
+                const progText = document.getElementById('loading-progress-text'); // Capture the percentage text element
                 
-                // Kemas kini teks dinamik
+                // Update the dynamic text
                 if (textEl) {
                     textEl.textContent = (data && data.message) ? data.message : "Loading...";
                 }
                 
-                // Papar dan gerakkan Progress Bar serta Teks Peratusan
+                // Show and animate the progress bar and percentage text
                 if (data && data.progress !== undefined && data.progress !== null) {
                     if (progContainer) progContainer.style.display = 'block';
                     if (progFill) progFill.style.width = data.progress + '%';
                     
                     if (progText) {
                         progText.style.display = 'block';
-                        progText.textContent = data.progress + '%'; // Masukkan nilai peratusan (cth: "45%")
+                        progText.textContent = data.progress + '%'; // Insert the percentage value (e.g. "45%")
                     }
                 } else {
-                    // Sembunyikan bar dan teks peratusan jika operasi biasa
+                    // Hide the bar and percentage text for regular operations
                     if (progContainer) progContainer.style.display = 'none';
                     if (progFill) progFill.style.width = '0%';
                     if (progText) progText.style.display = 'none';
@@ -708,7 +708,7 @@ const generateAppBtn = document.getElementById('app-generate_app');
         });
     }
     
-    // Pasang pendengar untuk menutup overlay
+    // Attach a listener to close the overlay
     if (window.electronAPI && typeof window.electronAPI.onHideOverlay === 'function') {
         window.electronAPI.onHideOverlay(() => {
             const overlay = document.getElementById('loading-overlay');
@@ -733,27 +733,27 @@ async function finalizeGeneratedApp(pathKeProjekBaharu) {
     const overlay = document.getElementById('loading-overlay');
     if (overlay) overlay.classList.remove('loading-overlay-hidden');
     
-    // Tukar teks loading supaya pengguna tahu status terkini
+    // Change the loading text so the user knows the current status
     const loadingText = overlay.querySelector('.loading-text') || { textContent: '' };
-    loadingText.textContent = "Memasang dependensi Composer (Ini mungkin mengambil masa)...";
+    loadingText.textContent = "Installing Composer dependencies (this may take a while)...";
     
     const success = await window.electronAPI.runComposer(pathKeProjekBaharu);
     
     if (success) {
         if (overlay) overlay.classList.add('loading-overlay-hidden');
-        loadingText.textContent = "Loading..."; // Reset teks
+        loadingText.textContent = "Loading..."; // Reset the text
         
-        // Tanya pengguna jika mereka mahu terus membuat paparan (Preview)
+        // Ask the user if they want to go straight to the Preview
         const isPreview = await showCustomDialog({
-            title: "Janaan Berjaya!",
-            message: "Aplikasi Filament anda telah siap dibina berserta dependensi.\n\nAdakah anda mahu melancarkan 'Preview Server' sekarang untuk menguji aplikasi ini?",
+            title: "Generation Successful!",
+            message: "Your Filament app has been built with its dependencies.\n\nWould you like to launch the 'Preview Server' now to test this app?",
             showCancelButton: true
         });
 
         if (isPreview) {
             if (overlay) {
                 overlay.classList.remove('loading-overlay-hidden');
-                loadingText.textContent = "Menyediakan Pangkalan Data & Menghidupkan Pelayan...";
+                loadingText.textContent = "Preparing the Database & Starting the Server...";
             }
             
             const serverResult = await window.electronAPI.startPreview(pathKeProjekBaharu);
@@ -762,25 +762,25 @@ async function finalizeGeneratedApp(pathKeProjekBaharu) {
             loadingText.textContent = "Loading...";
 
             if (serverResult.success) {
-                // Tunjuk mesej beritahu kredensial log masuk
+                // Show a message with the login credentials
                 await showCustomDialog({
-                    title: "Server Sedang Berjalan",
-                    message: "Aplikasi anda akan dibuka di pelayar (browser) sekarang.\n\nSila log masuk menggunakan:\nE-mel: admin@admin.com\nKatalaluan: password",
+                    title: "Server Running",
+                    message: "Your app will now open in the browser.\n\nPlease log in using:\nEmail: admin@admin.com\nPassword: password",
                 });
-                // Buka url di Chrome/Edge pengguna
+                // Open the URL in the user's Chrome/Edge
                 window.electronAPI.openUrl(serverResult.url);
             } else {
                 showCustomDialog({
-                    title: "Ralat Server",
-                    message: `Gagal menghidupkan preview: ${serverResult.message}`
+                    title: "Server Error",
+                    message: `Failed to start the preview: ${serverResult.message}`
                 });
             }
         }
     } else {
         if (overlay) overlay.classList.add('loading-overlay-hidden');
         showCustomDialog({
-            title: "Ralat Composer",
-            message: "Gagal memasang dependensi. Sila semak konsol untuk maklumat lanjut."
+            title: "Composer Error",
+            message: "Failed to install dependencies. Please check the console for more information."
         });
     }
 }

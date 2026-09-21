@@ -6,13 +6,13 @@ import { showCustomDialog } from '../ui/modalHandlers.js';
 
 // --- FIELD SAVE HANDLER ---
 export function initializeFieldSaveHandlers() {
-    // 1. Pantau kedua-dua rumah lama dan rumah baharu
+    // 1. Watch both the old and the new container
     const containers = [
         document.getElementById('field-settings-page'),
         document.getElementById('module-field-settings')
     ];
 
-    // --- HELPER FUNCTION: UPDATE UI & SAVE KE DATABASE SERENTAK ---
+    // --- HELPER FUNCTION: UPDATE THE UI & SAVE TO THE DATABASE AT ONCE ---
     const updateAndSave = (fieldId, elementId, value, dbColumnName = null, tableName = null) => {
         const el = document.getElementById(elementId);
         if (el) {
@@ -23,7 +23,7 @@ export function initializeFieldSaveHandlers() {
         const key = dbColumnName || elementId.replace('fld-', '').replace(/-/g, '_');
         let dbValue = typeof value === 'boolean' ? (value ? 1 : 0) : value;
 
-        console.log(`[Auto-Fix] Mengemas kini & Menyimpan: ${key} = ${dbValue}`);
+        console.log(`[Auto-Fix] Updating & Saving: ${key} = ${dbValue}`);
         SaveManager.addToQueue('field', fieldId, { [key]: dbValue });
     };
 
@@ -42,7 +42,7 @@ export function initializeFieldSaveHandlers() {
                 
 
                 // =========================================================
-                // MENGENAL PASTI KONTEKS (Jadual & Medan yang sedang aktif)
+                // IDENTIFY THE CONTEXT (currently active table & field)
                 // =========================================================
                 let tableName = '';
                 let fieldNameText = '';
@@ -78,7 +78,7 @@ export function initializeFieldSaveHandlers() {
                 } else value = input.value;
 
                 // =========================================================
-                // ROUTING PENYIMPANAN DATA (Default vs Custom)
+                // DATA SAVE ROUTING (Default vs Custom)
                 // =========================================================
                 const badgeText = document.getElementById('workspace-module-badge')?.textContent;
                 const isCustomModule = isWorkspaceActive && badgeText === 'Custom';
@@ -86,7 +86,7 @@ export function initializeFieldSaveHandlers() {
                 if (isCustomModule) {
                     const moduleId = parseInt(document.getElementById('workspace-module-title').dataset.moduleId);
                     
-                    // 1. Dapatkan Data Modul dari AppState
+                    // 1. Get the module data from AppState
                     const tableData = appState.jsonData.database.table[tableName];
                     const moduleIndex = tableData.custom_modules.findIndex(m => m.module_id === moduleId);
                     
@@ -95,25 +95,25 @@ export function initializeFieldSaveHandlers() {
                         return;
                     }
 
-                    // 2. Cari jika medan ini sudah ada rekod dalam 'custom_module_fields'
-                    // Nota: Kita simpan array fields dalam objek module di AppState
+                    // 2. Look for an existing record for this field in 'custom_module_fields'
+                    // Note: we store the fields array inside the module object in AppState
                     if (!tableData.custom_modules[moduleIndex].fields) {
                         tableData.custom_modules[moduleIndex].fields = [];
                     }
                     
                     let fieldRecord = tableData.custom_modules[moduleIndex].fields.find(f => f.field_id === fieldId);
                     
-                    // Jika belum ada, cipta objek baharu untuk medan ini
+                    // If none exists yet, create a new object for this field
                     if (!fieldRecord) {
                         fieldRecord = {
                             field_id: fieldId,
                             module_id: moduleId,
-                            settings_override: "{}" // JSON String asal kosong
+                            settings_override: "{}" // Initially empty JSON string
                         };
                         tableData.custom_modules[moduleIndex].fields.push(fieldRecord);
                     }
 
-                    // 3. Parse JSON sedia ada, kemas kini nilai, dan Stringify semula
+                    // 3. Parse the existing JSON, update the value, and Stringify again
                     let currentSettings = {};
                     try {
                         currentSettings = JSON.parse(fieldRecord.settings_override || "{}");
@@ -121,43 +121,43 @@ export function initializeFieldSaveHandlers() {
                         currentSettings = {};
                     }
 
-                    // Kemas kini nilai (Override)
+                    // Update the value (Override)
                     currentSettings[key] = value;
                     const jsonString = JSON.stringify(currentSettings);
                     
-                    // Simpan balik ke AppState (RAM)
+                    // Save back to AppState (RAM)
                     fieldRecord.settings_override = jsonString;
 
-                    console.log(`[CUSTOM MODULE] Menyimpan Override -> Field ID: ${fieldId} | ${key}: ${value}`);
+                    console.log(`[CUSTOM MODULE] Saving Override -> Field ID: ${fieldId} | ${key}: ${value}`);
                     console.log("Updated JSON:", jsonString);
 
-                    // 4. Hantar ke Backend (Database)
+                    // 4. Send to the backend (database)
                     window.electronAPI.saveCustomFieldOverride({
                         module_id: moduleId,
                         field_id: fieldId,
                         settings_override: jsonString
                     }).then(res => {
                         if(res.success) {
-                            // Pilihan: Tunjuk indikator simpanan kecil jika perlu
+                            // Optional: show a small save indicator if needed
                         } else {
-                            console.error("Gagal menyimpan override:", res.message);
+                            console.error("Failed to save override:", res.message);
                         }
                     });
 
-                    return; // Hentikan dari menyimpan ke DB jadual utama
+                    return; // Stop it from saving to the main table DB
                     } else {
-                    console.log(`[DEFAULT MODULE FIELD] Menyimpan -> Jadual: ${tableName}, Medan: ${fieldNameText} | ${key}: ${value}`);
+                    console.log(`[DEFAULT MODULE FIELD] Saving -> Table: ${tableName}, Field: ${fieldNameText} | ${key}: ${value}`);
                     SaveManager.addToQueue('field', fieldId, { [key]: value });
 
-// ▼▼▼ PENYEGERAKAN MEMORI & UI (SILENT RELOAD) ▼▼▼
-                    // PEMBETULAN: Gunakan 'focusout' untuk input teks
+// ▼▼▼ MEMORY & UI SYNCHRONIZATION (SILENT RELOAD) ▼▼▼
+                    // FIX: use 'focusout' for text inputs
                     if (eventType === 'focusout' && key === 'field_name') {
                         const oldFieldName = fieldNameText;
                         const newFieldName = value;
                         
-                        console.log(`[Silent Reload] Mengemas kini Medan: ${oldFieldName} -> ${newFieldName} (ID: ${fieldId})`);
+                        console.log(`[Silent Reload] Updating Field: ${oldFieldName} -> ${newFieldName} (ID: ${fieldId})`);
 
-                        // 1. Kemas kini Kunci (Key) di dalam AppState
+                        // 1. Update the key in AppState
                         const tData = appState.jsonData.database.table[tableName];
                         if (tData && tData.fields[oldFieldName]) {
                             tData.fields[newFieldName] = tData.fields[oldFieldName];
@@ -165,21 +165,21 @@ export function initializeFieldSaveHandlers() {
                             delete tData.fields[oldFieldName];
                         }
 
-                        // 2. Kemas kini UI Sidebar secara TEPAT menggunakan data-field-id
+                        // 2. Update the Sidebar UI precisely using data-field-id
                         const fieldSpan = document.querySelector(`li[data-field-id="${fieldId}"] > a > span`);
                         if (fieldSpan) {
                             fieldSpan.textContent = newFieldName;
                             fieldSpan.parentElement.title = `Field Name: ${newFieldName}`;
                         }
 
-                        // 3. Kemas kini Breadcrumb
+                        // 3. Update the breadcrumb
                         const titleField = container.querySelector('.field-name');
                         if (titleField) titleField.textContent = `${tableName}.${newFieldName}`;
                         
                         const workspaceField = document.getElementById('current-module-field-name');
                         if (workspaceField) workspaceField.textContent = newFieldName;
                     }
-                    // ▲▲▲ TAMAT PENYEGERAKAN ▲▲▲
+                    // ▲▲▲ END SYNCHRONIZATION ▲▲▲
                 }
 
                 // =========================================================
@@ -807,7 +807,7 @@ export function initializeLookupFieldHandlers() {
 
     if (!parentTableSelect || !caption1Select) return;
 
-    // Fungsi untuk menghantar data secara manual ke SaveManager
+    // Function to send data manually to SaveManager
     const triggerManualSave = (fieldName, value) => {
         if (appState.isPopulatingData || !appState.isAutoSaveEnabled) return;
 
@@ -824,7 +824,7 @@ export function initializeLookupFieldHandlers() {
         if (tableData && tableData.fields[fieldNameText]) {
             const fieldId = tableData.fields[fieldNameText].field_id;
             
-            console.log(`[LookupHandler] Trigger manual untuk '${fieldName}': ${value}`);
+            console.log(`[LookupHandler] Manual trigger for '${fieldName}': ${value}`);
             
             SaveManager.addToQueue('field', fieldId, { 
                 [fieldName]: value 
@@ -832,7 +832,7 @@ export function initializeLookupFieldHandlers() {
         }
     };
 
-    // 1. LISTENER: PARENT TABLE SAHAJA (Ini sahaja yang trigger Upsert Relationship)
+    // 1. LISTENER: PARENT TABLE ONLY (this alone triggers the Upsert Relationship)
     parentTableSelect.addEventListener('change', () => {
         const selectedTable = parentTableSelect.value;
         
@@ -841,7 +841,7 @@ export function initializeLookupFieldHandlers() {
         
         // Auto-select caption (UI logic)
         if (selectedTable && appState.jsonData.database.table[selectedTable]) {
-             // ... (kod auto-select caption anda kekal sama) ...
+             // ... (your auto-select caption code stays the same) ...
              const parentFields = appState.jsonData.database.table[selectedTable].fields;
              const fieldNames = Object.keys(parentFields);
              const integerTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'];
@@ -857,13 +857,13 @@ export function initializeLookupFieldHandlers() {
              }
         }
 
-        // Hantar perubahan 'lookup_parent_table' ke SaveManager
+        // Send the 'lookup_parent_table' change to SaveManager
         triggerManualSave('lookup_parent_table', selectedTable);
     });
 
-    // NOTA: Listener untuk Caption 1 & 2 DIBUANG dari sini.
-    // Ia akan diuruskan oleh 'initializeFieldSaveHandlers' (generic handler) 
-    // untuk menyimpan data ke table 'fields' sahaja, tanpa trigger upsert relationship.
+    // NOTE: Listeners for Caption 1 & 2 were REMOVED from here.
+    // They are handled by 'initializeFieldSaveHandlers' (generic handler) 
+    // to save data to the 'fields' table only, without triggering an upsert relationship.
 
     const toggleDropdownOptions = () => {
         const selectedRadio = document.querySelector('input[name="fld-lookup-display-as"]:checked');
@@ -1153,27 +1153,27 @@ export function initializeUniqueFieldHandler() {
                 action = 'doNothing';
             } else if (relevantConstraints.length > 0) {
                 action = 'revert';
-                message = `Medan ini sudah pun menjadi sebahagian daripada kekangan unik komposit. Menjadikannya unik secara individu mungkin tidak perlu.\n\nPerubahan dibatalkan.`;
+                message = `This field is already part of a composite unique constraint. Making it individually unique may be unnecessary.\n\nChange reverted.`;
             } else if (relationship) {
                 action = 'confirmAndUpdate';
                 newType = 'one-to-one';
-                message = `Anda pasti mahu menukar hubungan dengan jadual '${relationship.parent_table_name}' kepada 'one-to-one'?`;
+                message = `Are you sure you want to change the relationship with the '${relationship.parent_table_name}' table to 'one-to-one'?`;
             }
         } else { 
             if (singleUniqueConstraint && relationship) {
                 action = 'confirmAndUpdate';
                 newType = 'one-to-many';
-                message = `Anda pasti mahu menukar hubungan dengan jadual '${relationship.parent_table_name}' kepada 'one-to-many'?`;
+                message = `Are you sure you want to change the relationship with the '${relationship.parent_table_name}' table to 'one-to-many'?`;
             } else if (relevantConstraints.length > 0) {
                 action = 'revert';
-                message = `Medan ini adalah sebahagian daripada kekangan unik komposit. Untuk membuang status uniknya, anda perlu mengubah suai definisi jadual.\n\nPerubahan dibatalkan.`;
+                message = `This field is part of a composite unique constraint. To remove its unique status, you need to modify the table definition.\n\nChange reverted.`;
             }
         }
 
         switch (action) {
             case 'confirmAndUpdate':
                 showCustomDialog({
-                    title: "Pengesahan Perubahan Hubungan",
+                    title: "Confirm Relationship Change",
                     message: message,
                     showCancelButton: true,
                     onOk: () => {
@@ -1188,7 +1188,7 @@ export function initializeUniqueFieldHandler() {
                 });
                 break;
             case 'revert':
-                showCustomDialog({ title: "Makluman", message: message });
+                showCustomDialog({ title: "Notice", message: message });
                 uniqueCheckbox.checked = previousValue; 
                 break;
             case 'doNothing':

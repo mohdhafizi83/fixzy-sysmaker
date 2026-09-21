@@ -1,18 +1,18 @@
 // js/state.js
 
-// Objek tunggal untuk menyimpan semua data aplikasi
+// Single object that holds all application data
 export const appState = {
     isCoreLockingEnabled: true,
-    jsonData: null,          // Data skema projek yang sangat penting
-    allTableNames: [],       // Senarai nama jadual
-    activeProject: null,     // Maklumat projek semasa
+    jsonData: null,          // Critical project schema data
+    allTableNames: [],       // List of table names
+    activeProject: null,     // Current project info
     isAutoSaveEnabled: true,
-    isPopulatingData: false, // Flag untuk elak auto-save semasa loading
+    isPopulatingData: false, // Flag to prevent auto-save while loading
     lastActiveChildTable: null,
     isAwaitingMenuGroupSave: false
 };
 
-// --- Helper Functions untuk menetapkan nilai (Setters) ---
+// --- Helper functions for setting values (Setters) ---
 
 export function setAwaitingMenuGroupSave(value) {
     appState.isAwaitingMenuGroupSave = value;
@@ -26,7 +26,7 @@ export function setIsCoreLockingEnabled(value) {
     appState.isCoreLockingEnabled = value;
 }
 
-// Fungsi helper untuk kemas kini data utama (berguna untuk debug nanti)
+// Helper function to update the main data (useful for debugging later)
 export function setProjectData(data) {
     appState.jsonData = data;
     if (data && data.database && data.database.table) {

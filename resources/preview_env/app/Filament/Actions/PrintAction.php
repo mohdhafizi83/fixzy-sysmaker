@@ -15,15 +15,15 @@ class PrintAction extends Action
             ->url('#') // Halang tindakan server-side
             ->extraAttributes([
                 'onclick' => <<<JS
-                    // Tambah kelas CSS pada body untuk mod cetakan
+                    // Add a CSS class to the body for print mode
                     document.body.classList.add('filament-print-mode');
 
-                    // Selepas tetingkap cetakan ditutup, buang kelas CSS
+                    // After the print window closes, remove the CSS class
                     window.onafterprint = () => {
                         document.body.classList.remove('filament-print-mode');
                     };
 
-                    // Tunggu sekejap untuk pastikan CSS dimuatkan sebelum mencetak
+                    // Brief pause to ensure CSS is loaded before printing
                     setTimeout(() => {
                         window.print();
                     }, 300);

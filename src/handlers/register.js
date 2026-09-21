@@ -21,7 +21,7 @@ const { spawn } = require('child_process');
 const { Parser } = require('node-sql-parser');
 const pluralize = require('pluralize');
 
-// IMPORT FUNGSI BANTUAN DARI UTILS
+// IMPORT HELPER FUNCTIONS FROM UTILS
 const { 
     convertDateFormatToPhp,
     toPascalCase,
@@ -36,7 +36,7 @@ const {
 } = require('../utils');
 
 // =================================================================
-// IMPORT GENERATORS (STRUKTUR MODULAR BARU)
+// IMPORT GENERATORS (NEW MODULAR STRUCTURE)
 // =================================================================
 
 // 1. Resources Induk
@@ -68,7 +68,7 @@ const {
     generateFilamentRelationManagers 
 } = require('../generators/laravelRelationManagersGenerator');
 
-// 6. Tables (Jadual)
+// 6. Tables
 const { 
     generateFilamentTablesTable, 
     generateFilamentTablesCustomModules 
@@ -80,7 +80,7 @@ const {
     generateFilamentSchemasCustomModules 
 } = require('../generators/laravelSchemasGenerator');
 
-// 8. Database Layer (Kekal Sama)
+// 8. Database Layer (Remains the Same)
 const { 
     generateFilamentModels,
     generateFilamentUserModel,
@@ -139,7 +139,7 @@ async function copyDirWithProgress(src, dest, onProgress) {
             if (entry.isDirectory()) {
                 await copyRecursive(srcPath, destPath);
             } else {
-                await fs.promises.copyFile(srcPath, destPath); // Salinan fizikal sebenar
+                await fs.promises.copyFile(srcPath, destPath); // Actual physical copy
                 copiedFiles++;
                 
                 if (copiedFiles % 100 === 0 || copiedFiles === totalFiles) {
@@ -154,20 +154,20 @@ async function copyDirWithProgress(src, dest, onProgress) {
 }
 
 //app.whenReady().then(() => {
-//  // 2. TAMBAH BARIS INI sebelum mencipta tetingkap
+//  // 2. ADD THIS LINE before creating the window
 //  Menu.setApplicationMenu(null);
 //  
 //  createWindow();
 //});
 // =================================================================
-// ▼▼▼ SEMUA IPC HANDLER DIKUMPULKAN DI SINI UNTUK KONSISTENSI ▼▼▼
+// ▼▼▼ ALL IPC HANDLERS GROUPED HERE FOR CONSISTENCY ▼▼▼
 // =================================================================
 
 ipcMain.handle('database:batch-update', async (event, queue) => {
     if (!queue) return { success: false, message: 'Queue is empty.' };
 
     const transaction = db.transaction(() => {
-        // Kemas kini Projek
+        // Update Project
         if (queue.project && Object.keys(queue.project).length > 0) {
             const activeProject = db.prepare("SELECT project_id FROM projects WHERE is_active = 1").get();
             if (activeProject) {
@@ -180,14 +180,14 @@ ipcMain.handle('database:batch-update', async (event, queue) => {
             }
         }
 
-        // Kemas kini Jadual (DIPERBAIKI DENGAN LOGIK KEMAS KINI MENU)
+        // Update Table (IMPROVED WITH MENU UPDATE LOGIC)
 if (queue.tables && Object.keys(queue.tables).length > 0) {
     for (const id in queue.tables) {
         const fieldsToUpdate = queue.tables[id];
         const newTableName = fieldsToUpdate.table_name;
         let oldTableName = null;
 
-        // Semak jika nama jadual sedang dikemas kini
+        // Check if the table name is being updated
         if (newTableName) {
             const tableInfo = db.prepare('SELECT table_name FROM tables WHERE table_id = ?').get(id);
             if (tableInfo) {
@@ -195,28 +195,28 @@ if (queue.tables && Object.keys(queue.tables).length > 0) {
             }
         }
 
-        // Bina dan laksanakan kemas kini untuk jadual 'tables'
+        // Build and execute the update for the 'tables' table
         const setClause = Object.keys(fieldsToUpdate).map(key => `${key} = ?`).join(', ');
         const values = Object.values(fieldsToUpdate);
         if (setClause) {
             db.prepare(`UPDATE tables SET ${setClause} WHERE table_id = ?`).run(...values, id);
         }
 
-        // ▼▼▼ KAWASAN INI TELAH DIPERBAIKI ▼▼▼
-        // Jika nama jadual telah ditukar, kemas kini juga 'menu_items'
+        // ▼▼▼ THIS AREA HAS BEEN IMPROVED ▼▼▼
+        // If the table name was changed, also update 'menu_items'
         if (oldTableName && newTableName && oldTableName !== newTableName) {
             const newUrl = `${newTableName} Module`;
 
-            // KEMAS KINI DIPERBAIKI: Kemas kini label dan URL berdasarkan table_id,
-            // tanpa mengira apa nilai lama mereka. Ini memastikan konsistensi.
+            // IMPROVED UPDATE: Update label and URL based on table_id,
+            // regardless of their old values. This ensures consistency.
             db.prepare(
                 'UPDATE menu_items SET item_label = ?, item_detail = ? WHERE table_id = ?'
             ).run(newTableName, newUrl, id);
         }
-        // ▲▲▲ TAMAT KAWASAN PEMBAIKAN ▲▲▲
+        // ▲▲▲ END OF IMPROVEMENT AREA ▲▲▲
     }
 }
-        // Kemas kini Medan
+        // Update Field
         if (queue.fields && Object.keys(queue.fields).length > 0) {
             for (const id in queue.fields) {
                 const { ...fieldsToUpdate } = queue.fields[id];
@@ -228,7 +228,7 @@ if (queue.tables && Object.keys(queue.tables).length > 0) {
             }
         }
         
-        // Kemas kini Hubungan Parent/Child
+        // Update Parent/Child Relationship
         if (queue.relationships && Object.keys(queue.relationships).length > 0) {
              for (const id in queue.relationships) {
                 const { ...fieldsToUpdate } = queue.relationships[id];
@@ -240,7 +240,7 @@ if (queue.tables && Object.keys(queue.tables).length > 0) {
             }
         }
         
-        // Cipta/Kemas kini Hubungan (Upsert)
+        // Create/Update Relationship (Upsert)
         if (queue.upserts && queue.upserts.length > 0) {
             const findStmt = db.prepare('SELECT relationship_id FROM parent_child_relationships WHERE fk_child_field = ? AND child_table_id = (SELECT table_id FROM tables WHERE table_name = ?)');
             const updateStmt = db.prepare('UPDATE parent_child_relationships SET parent_table_id = (SELECT table_id FROM tables WHERE table_name = ?) WHERE relationship_id = ?');
@@ -256,7 +256,7 @@ if (queue.tables && Object.keys(queue.tables).length > 0) {
             }
         }
 
-        // Padam Hubungan
+        // Delete Relationship
         if (queue.relationshipDeletes && queue.relationshipDeletes.length > 0) {
             const deleteStmt = db.prepare(`
                 DELETE FROM parent_child_relationships 
@@ -273,7 +273,7 @@ if (queue.tables && Object.keys(queue.tables).length > 0) {
         transaction();
         return { success: true };
     } catch (error) {
-        console.error("Ralat semasa kemas kini berkelompok:", error);
+        console.error("Error during batch update:", error);
         return { success: false, message: error.message };
     }
 });
@@ -304,7 +304,7 @@ ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, lab
                 throw new Error("Label is required for a new menu item.");
             }
 
-            // ... (kod sedia ada untuk mendapatkan nextOrder tidak berubah) ...
+            // ... (existing code to get nextOrder unchanged) ...
             let nextOrder;
             if (menu_group_id) {
                 const maxOrderResult = db.prepare('SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id = ?').get(project_id, menu_group_id);
@@ -321,7 +321,7 @@ ipcMain.handle('menu:save-custom-item', async (event, { item_id, project_id, lab
         }
         return { success: true };
     } catch (error) {
-        console.error("Gagal menyimpan item menu:", error);
+        console.error("Failed to save menu item:", error);
         return { success: false, message: error.message };
     }
 });
@@ -340,7 +340,7 @@ ipcMain.handle('menu:update-individual-order', async (event, orderedItems) => {
         transaction();
         return { success: true };
     } catch (error) {
-        console.error("Gagal mengemas kini susunan menu individu:", error);
+        console.error("Failed to update individual menu order:", error);
         return { success: false, message: error.message };
     }
 });
@@ -352,15 +352,15 @@ ipcMain.handle('menu:delete-group', async (event, { groupId }) => {
     }
     try {
         const transaction = db.transaction(() => {
-            // Padam semua item yang tergolong dalam kumpulan ini
+            // Delete all items belonging to this group
             db.prepare('DELETE FROM menu_items WHERE menu_group_id = ?').run(groupId);
-            // Padam kumpulan itu sendiri
+            // Delete the group itself
             db.prepare('DELETE FROM menu_groups WHERE menu_group_id = ?').run(groupId);
         });
         transaction();
         return { success: true };
     } catch (error) {
-        console.error("Gagal memadam kumpulan menu:", error);
+        console.error("Failed to delete menu group:", error);
         return { success: false, message: error.message };
     }
 });
@@ -384,26 +384,26 @@ ipcMain.handle('menu:create-group', async (event, { projectId, groupName }) => {
         
         return { success: true, group: newGroup };
     } catch (error) {
-        console.error("Gagal mencipta kumpulan menu:", error);
+        console.error("Failed to create menu group:", error);
         return { success: false, message: error.message };
     }
 });
 
 ipcMain.handle('sql:parse-calculation-query', (event, sql) => {
-    // ▼▼▼ TAMBAH DUA BARIS INI UNTUK DIAGNOSIS ▼▼▼
+    // ▼▼▼ ADD THESE TWO LINES FOR DIAGNOSIS ▼▼▼
     console.log("--- SQL received by backend parser ---");
     //console.log(sql);
-    // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
+    // ▲▲▲ END OF ADDITION ▲▲▲
 
     if (!sql) {
         return { success: false, error: 'Empty query string.' };
     }
     try {
         const ast = parser.astify(sql, { database: 'MySQL' });
-        // Hantar pokok sintaks (AST) kembali ke frontend
+        // Send the syntax tree (AST) back to the frontend
         return { success: true, data: ast };
     } catch (error) {
-        // Hantar mesej ralat jika penterjemahan gagal
+        // Send error message if translation fails
         console.warn('SQL parsing failed:', error.message);
         return { success: false, error: error.message };
     }
@@ -422,7 +422,7 @@ ipcMain.handle('table:update-order', async (event, orderData) => {
         transaction();
         return { success: true };
     } catch (error) {
-        console.error("Gagal mengemas kini susunan jadual:", error);
+        console.error("Failed to update table order:", error);
         return { success: false, message: error.message };
     }
 });
@@ -440,44 +440,44 @@ ipcMain.handle('field:update-order', async (event, orderData) => {
         transaction();
         return { success: true };
     } catch (error) {
-        console.error("Gagal mengemas kini susunan medan:", error);
+        console.error("Failed to update field order:", error);
         return { success: false, message: error.message };
     }
 });
 
 ipcMain.handle('field:delete', async (event, { fieldId, tableName, fieldName }) => {
-    // 1. PENAPIS KESELAMATAN (PROTECTED FIELDS)
+    // 1. SECURITY FILTER (PROTECTED FIELDS)
     const protectedFields = ['id', 'created_at', 'updated_at', 'deleted_at', 'created_by', 'updated_by', 'deleted_by'];
     
     if (protectedFields.includes(fieldName)) {
-        console.warn(`[Keselamatan] Cubaan memadam medan sistem dikesan: ${fieldName}`);
-        return { success: false, message: "Akses Ditolak: Medan sistem asas ini tidak boleh dipadam kerana ia penting untuk operasi teras Laravel Filament." };
+        console.warn(`[Security] Attempt to delete system field detected: ${fieldName}`);
+        return { success: false, message: "Access Denied: This core system field cannot be deleted because it is essential for core Laravel Filament operations." };
     }
 
     try {
         const transaction = db.transaction(() => {
-            // Dapatkan ID jadual anak
+            // Get the child table ID
             const childTable = db.prepare('SELECT table_id FROM tables WHERE table_name = ?').get(tableName);
             if (!childTable) return;
 
-            // 1. Padam hubungan di mana medan ini adalah kunci asing (foreign key)
+            // 1. Delete relationships where this field is a foreign key
             db.prepare('DELETE FROM parent_child_relationships WHERE child_table_id = ? AND fk_child_field = ?')
               .run(childTable.table_id, fieldName);
 
-            // 2. Kosongkan rujukan 'lookup_caption' yang menggunakan medan ini
+            // 2. Clear 'lookup_caption' references that use this field
             db.prepare("UPDATE fields SET lookup_caption_1 = '' WHERE lookup_caption_1 = ?")
               .run(fieldName);
             db.prepare("UPDATE fields SET lookup_caption_2 = '' WHERE lookup_caption_2 = ?")
               .run(fieldName);
 
-            // 3. Akhir sekali, padam medan itu sendiri
+            // 3. Finally, delete the field itself
             db.prepare('DELETE FROM fields WHERE field_id = ?').run(fieldId);
         });
 
         transaction();
         return { success: true };
     } catch (error){
-        console.error("Gagal memadam medan:", error);
+        console.error("Failed to delete field:", error);
         return { success: false, message: error.message };
     }
 });
@@ -529,14 +529,14 @@ ipcMain.handle('field:create', async (event, tableId) => {
                 isRangeFilterDefault = 1;
             }
 
-            // ▼▼▼ UBAH SUAI 'INSERT' DI SINI ▼▼▼
+            // ▼▼▼ MODIFY 'INSERT' HERE ▼▼▼
             const info = db.prepare(
                 `INSERT INTO fields (
                     table_id, field_name, caption, data_type, length, field_order, 
                     enable_global_filter, enable_individual_filter, enable_range_filter, allow_sorting
                  ) VALUES (?, ?, ?, ?, ?, ?, 1, 0, ?, 1)`
             ).run(tableId, newName, newName, defaultType, defaultLength, targetOrder, isRangeFilterDefault);
-            // ▲▲▲ TAMAT UBAH SUAI ▲▲▲
+            // ▲▲▲ END OF MODIFICATION ▲▲▲
 
             return info.lastInsertRowid;
         });
@@ -545,7 +545,7 @@ ipcMain.handle('field:create', async (event, tableId) => {
         return db.prepare('SELECT * FROM fields WHERE field_id = ?').get(newFieldId);
 
     } catch (error) {
-        console.error("Gagal mencipta medan baharu:", error);
+        console.error("Failed to create new field:", error);
         return null;
     }
 });
@@ -553,27 +553,27 @@ ipcMain.handle('field:create', async (event, tableId) => {
 ipcMain.handle('table:delete', async (event, { projectId, tableNamesToDelete }) => {
     try {
         if (!projectId || !tableNamesToDelete || tableNamesToDelete.length === 0) {
-            throw new Error("ID Projek atau nama jadual tidak dibekalkan.");
+            throw new Error("Project ID or table name not supplied.");
         }
 
         const transaction = db.transaction(() => {
             const getTableId = db.prepare('SELECT table_id FROM tables WHERE project_id = ? AND table_name = ?');
             
-            // ▼▼▼ MULA PERUBAHAN ▼▼▼
+            // ▼▼▼ START CHANGES ▼▼▼
             const deleteMenuItem = db.prepare('DELETE FROM menu_items WHERE table_id = ?');
-            // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+            // ▲▲▲ END CHANGES ▲▲▲
             
             const deleteTable = db.prepare('DELETE FROM tables WHERE table_id = ?');
 
             for (const tableName of tableNamesToDelete) {
                 const table = getTableId.get(projectId, tableName);
                 if (table) {
-                    // ▼▼▼ MULA LOGIK BAHARU ▼▼▼
-                    // 1. Padam item menu terlebih dahulu
+                    // ▼▼▼ START NEW LOGIC ▼▼▼
+                    // 1. Delete the menu item first
                     deleteMenuItem.run(table.table_id);
-                    // 2. Kemudian, padam jadual (akan mengaktifkan ON DELETE CASCADE untuk medan, dll.)
+                    // 2. Then, drop the table (will trigger ON DELETE CASCADE for fields, etc.)
                     deleteTable.run(table.table_id);
-                    // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
+                    // ▲▲▲ END NEW LOGIC ▲▲▲
                 }
             }
         });
@@ -582,7 +582,7 @@ ipcMain.handle('table:delete', async (event, { projectId, tableNamesToDelete }) 
         return { success: true };
 
     } catch (error) {
-        console.error("Gagal memadam jadual:", error);
+        console.error("Failed to delete table:", error);
         return { success: false, message: error.message };
     }
 });
@@ -611,19 +611,19 @@ ipcMain.handle('table:create', async (event, projectId) => {
             ).run(projectId, newName, newName, newName, nextOrder);
             const tableId = info.lastInsertRowid;
 
-// Tambah `hide_in_tv` dan `hide_in_dv` pada senarai lajur
+// Add `hide_in_tv` and `hide_in_dv` to the column list
             const insertFieldStmt = db.prepare(`
                 INSERT INTO fields (table_id, field_name, caption, data_type, length, primary_key, auto_increment, unsigned, read_only, field_order, hide_in_tv, hide_in_dv)
                 VALUES (@table_id, @field_name, @caption, @data_type, @length, @primary_key, @auto_increment, @unsigned, @read_only, @field_order, @hide_in_tv, @hide_in_dv)
             `);
 
-            // 1a. Cipta medan 'id' (Sembunyikan dari TV dan DV)
+            // 1a. Create the 'id' field (Hide from TV and DV)
             insertFieldStmt.run({
                 table_id: tableId, field_name: 'id', caption: 'ID', data_type: 'INT',
                 length: 11, primary_key: 1, auto_increment: 1, unsigned: 1, read_only: 1, field_order: 0, hide_in_tv: 1, hide_in_dv: 1
             });
 
-            // 1b. Cipta medan Timestamps & Userstamps (Blameable)
+            // 1b. Create Timestamps & Userstamps fields (Blameable)
             const systemFields = [
                 { name: 'created_at', caption: 'Created At', type: 'DATETIME', length: null, order: 1 },
                 { name: 'updated_at', caption: 'Updated At', type: 'DATETIME', length: null, order: 2 },
@@ -642,8 +642,8 @@ ipcMain.handle('table:create', async (event, projectId) => {
                     length: sysFld.length, 
                     primary_key: 0, 
                     auto_increment: 0, 
-                    unsigned: sysFld.type === 'BIGINT' ? 1 : 0, // Unsigned untuk ID Pengguna
-                    read_only: 1, // Userstamps adalah read_only
+                    unsigned: sysFld.type === 'BIGINT' ? 1 : 0, // Unsigned for User ID
+                    read_only: 1, // Userstamps are read_only
                     field_order: sysFld.order, 
                     hide_in_tv: 1, 
                     hide_in_dv: 1
@@ -667,53 +667,53 @@ ipcMain.handle('table:create', async (event, projectId) => {
         return db.prepare('SELECT * FROM tables WHERE table_id = ?').get(newTableId);
 
     } catch (error) {
-        console.error("Gagal mencipta jadual baharu:", error);
+        console.error("Failed to create new table:", error);
         return null;
     }
 });
 
 ipcMain.handle("project:get-full-schema", async (event, projectId) => {
-    // Panggilan ini kini akan menggunakan fungsi yang lebih berkuasa di atas
+    // This call will now use the more powerful function above
     return getFullProjectSchema(projectId);
 });
 
 
 ipcMain.handle('menu:save-unified-structure', async (event, { projectId, menuStructure }) => {
     if (!projectId || !Array.isArray(menuStructure)) {
-        return { success: false, message: "Data tidak sah." };
+        return { success: false, message: "Invalid data." };
     }
     
     const transaction = db.transaction(() => {
         const updateGroupStmt = db.prepare('UPDATE menu_groups SET group_name = ?, group_order = ? WHERE menu_group_id = ?');
         const updateItemStmt = db.prepare('UPDATE menu_items SET item_order = ?, menu_group_id = ? WHERE item_id = ?');
 
-        // Set semua item sebagai peringkat atasan dahulu untuk mengendalikan item yang dialihkan keluar dari kumpulan.
+        // Set all items as top-level first to handle items moved out of groups.
         db.prepare('UPDATE menu_items SET menu_group_id = NULL WHERE project_id = ?').run(projectId);
         
-        // ▼▼▼ MULA LOGIK PEMBETULAN ▼▼▼
-        // Gunakan satu indeks tunggal (topIndex) untuk KEDUA-DUA jadual.
+        // ▼▼▼ START FIX LOGIC ▼▼▼
+        // Use a single index (topIndex) for BOTH tables.
         menuStructure.forEach((topLevelItem, topIndex) => {
             if (topLevelItem.type === 'group') {
-                // Gunakan 'topIndex' untuk group_order
+                // Use 'topIndex' for group_order
                 updateGroupStmt.run(topLevelItem.name, topIndex, topLevelItem.id);
 
-                // Kemas kini item di dalam kumpulan (susunan dalaman)
+                // Update items inside the group (internal order)
                 topLevelItem.items.forEach((childItem, childIndex) => {
                     updateItemStmt.run(childIndex, topLevelItem.id, childItem.id);
                 });
-            } else { // type 'table_item' atau 'custom_item'
-                // Gunakan 'topIndex' untuk item_order
+            } else { // type 'table_item' or 'custom_item'
+                // Use 'topIndex' for item_order
                 updateItemStmt.run(topIndex, null, topLevelItem.id);
             }
         });
-        // ▲▲▲ TAMAT LOGIK PEMBETULAN ▲▲▲
+        // ▲▲▲ END FIX LOGIC ▲▲▲
     });
 
     try {
         transaction();
         return { success: true };
     } catch (error) {
-        console.error("Gagal menyimpan struktur menu bersepadu:", error);
+        console.error("Failed to save integrated menu structure:", error);
         return { success: false, message: error.message };
     }
 });
@@ -725,28 +725,28 @@ ipcMain.handle("project:get-active", async () => {
 ipcMain.handle("project:create", async (event, projectName) => {
   try {
     const createProjectTransaction = db.transaction(() => {
-        // 1. Set semua projek lain sebagai tidak aktif
+        // 1. Set all other projects as inactive
         db.prepare("UPDATE projects SET is_active = 0").run();
 
-        // 2. Cipta rekod projek baharu
+        // 2. Create the new project record
         const projectInfo = db.prepare("INSERT INTO projects (app_title, is_active) VALUES (?, 1)").run(projectName);
         const projectId = projectInfo.lastInsertRowid;
 
-        // ▼▼▼ MULA LOGIK BAHARU: Cipta jadual 'users' secara automatik ▼▼▼
+        // ▼▼▼ START NEW LOGIC: Automatically create the 'users' table ▼▼▼
 
-        // 3. Cipta rekod untuk jadual 'users'
+        // 3. Create the record for the 'users' table
         const tableInfo = db.prepare(
             'INSERT INTO tables (project_id, table_name, module_name, table_view_title, table_order) VALUES (?, ?, ?, ?, ?)'
         ).run(projectId, 'users', 'Users', 'Users', 0);
         const tableId = tableInfo.lastInsertRowid;
 
-        // 4. Cipta item menu untuk jadual 'users'
+        // 4. Create the menu item for the 'users' table
         const menuUrl = 'users Module';
         db.prepare(
             'INSERT INTO menu_items (project_id, table_id, item_label, item_detail, item_order) VALUES (?, ?, ?, ?, ?)'
         ).run(projectId, tableId, 'Users', menuUrl, 0);
 
-        // 5. Definisikan dan cipta semua medan untuk jadual 'users'
+        // 5. Define and create all fields for the 'users' table
         const fieldsToCreate = [
             { name: 'id', caption: 'ID', type: 'BIGINT', length: 20, unsigned: 1, pk: 1, auto_increment: 1, read_only: 1, order: 0 },
             { name: 'name', caption: 'Name', type: 'VARCHAR', length: 255, required: 1, order: 1 },
@@ -785,7 +785,7 @@ ipcMain.handle("project:create", async (event, projectName) => {
                 field_order: field.order
             });
         }
-        // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
+        // ▲▲▲ END NEW LOGIC ▲▲▲
 
         return projectId;
     });
@@ -794,7 +794,7 @@ ipcMain.handle("project:create", async (event, projectName) => {
     return db.prepare("SELECT * FROM projects WHERE project_id = ?").get(newProjectId);
 
   } catch (error) {
-    console.error("Gagal mencipta projek:", error);
+    console.error("Failed to create project:", error);
     return null;
   }
 });
@@ -808,10 +808,10 @@ ipcMain.handle("project:delete-schema", async (event, projectId) => {
       db.prepare("DELETE FROM tables WHERE project_id = ?").run(projectId);
     });
     deleteSchema();
-    return { success: true, message: "Skema lama berjaya dipadam." };
+    return { success: true, message: "Old schema deleted successfully." };
   } catch (error) {
-    console.error("Gagal memadam skema:", error);
-    return { success: false, message: `Ralat: ${error.message}` };
+    console.error("Failed to delete schema:", error);
+    return { success: false, message: `Error: ${error.message}` };
   }
 });
 
@@ -821,7 +821,7 @@ ipcMain.handle("tables:get-by-project", async (event, projectId) => {
       .prepare("SELECT * FROM tables WHERE project_id = ? ORDER BY table_name")
       .all(projectId);
   } catch (error) {
-    console.error("Gagal mendapatkan senarai jadual:", error);
+    console.error("Failed to get table list:", error);
     return [];
   }
 });
@@ -845,7 +845,7 @@ ipcMain.handle("sql:import-file", async (event, { projectId, dialect }) => {
 
   const sqlContent = fs.readFileSync(filePaths[0], "utf8");
   
-  // Logik pra-penerbangan baharu
+  // New pre-flight logic
   const canProceed = await handleImportPreflight(win, projectId, sqlContent);
   if (!canProceed) {
       return { success: false, message: "Import cancelled by user." };
@@ -858,7 +858,7 @@ ipcMain.handle("sql:import-file", async (event, { projectId, dialect }) => {
 ipcMain.handle("sql:import-text", async (event, { sql, projectId, dialect }) => {
   const win = ctx.getWindow(event);
 
-  // Logik pra-penerbangan baharu
+  // New pre-flight logic
   const canProceed = await handleImportPreflight(win, projectId, sql);
   if (!canProceed) {
       return { success: false, message: "Import cancelled by user." };
@@ -883,7 +883,7 @@ ipcMain.handle("open-url", (event, url) => {
 ipcMain.handle("settings:get-all", async () => {
   try {
     const settingsArray = db.prepare("SELECT * FROM fizisys_settings").all();
-    // Tukar array of objects kepada satu object key-value untuk akses mudah
+    // Convert array of objects into a single key-value object for easy access
     // Cth: { check_updates: '1', autosave_interval: '15', ... }
     const settingsObject = settingsArray.reduce((acc, setting) => {
       acc[setting.setting_name] = setting.setting_value;
@@ -891,7 +891,7 @@ ipcMain.handle("settings:get-all", async () => {
     }, {});
     return settingsObject;
   } catch (error) {
-    console.error("Gagal mendapatkan tetapan FiziSysMaker:", error);
+    console.error("Failed to get FiziSysMaker settings:", error);
     return null;
   }
 });
@@ -900,7 +900,7 @@ ipcMain.handle('projects:get-all', async () => {
     try {
         return db.prepare('SELECT project_id, app_title, is_active FROM projects ORDER BY app_title').all();
     } catch (error) {
-        console.error("Gagal mendapatkan senarai projek:", error);
+        console.error("Failed to get project list:", error);
         return [];
     }
 });
@@ -908,13 +908,13 @@ ipcMain.handle('projects:get-all', async () => {
 ipcMain.handle('project:set-active', async (event, projectId) => {
     try {
         const setActiveTransaction = db.transaction(() => {
-            db.prepare('UPDATE projects SET is_active = 0').run(); // Set semua sebagai tidak aktif
-            db.prepare('UPDATE projects SET is_active = 1 WHERE project_id = ?').run(projectId); // Aktifkan yang dipilih
+            db.prepare('UPDATE projects SET is_active = 0').run(); // Set all as inactive
+            db.prepare('UPDATE projects SET is_active = 1 WHERE project_id = ?').run(projectId); // Activate the selected one
         });
         setActiveTransaction();
         return db.prepare('SELECT * FROM projects WHERE project_id = ?').get(projectId);
     } catch (error) {
-        console.error(`Gagal menetapkan projek aktif (ID: ${projectId}):`, error);
+        console.error(`Failed to set active project (ID: ${projectId}):`, error);
         return null;
     }
 });
@@ -923,7 +923,7 @@ ipcMain.handle('project:update', async (event, data) => {
     try {
         const { project_id, ...fieldsToUpdate } = data;
         if (!project_id) {
-            throw new Error("Project ID tidak dibekalkan.");
+            throw new Error("Project ID not supplied.");
         }
 
         const allowedColumns = [
@@ -943,7 +943,7 @@ ipcMain.handle('project:update', async (event, data) => {
             .join(', ');
 
         if (!setClause) {
-            return { success: true, message: 'Tiada medan yang sah untuk dikemas kini.' };
+            return { success: true, message: 'No valid fields to update.' };
         }
 
         const values = Object.keys(fieldsToUpdate)
@@ -955,7 +955,7 @@ ipcMain.handle('project:update', async (event, data) => {
 
         return { success: true };
     } catch (error) {
-        console.error("Gagal mengemas kini projek:", error);
+        console.error("Failed to update project:", error);
         return { success: false, message: error.message };
     }
 });
@@ -964,21 +964,21 @@ ipcMain.handle('table:update', async (event, data) => {
     try {
         const { table_id, ...fieldsToUpdate } = data;
         if (!table_id) {
-            throw new Error("Table ID tidak dibekalkan.");
+            throw new Error("Table ID not supplied.");
         }
 
-        // ▼▼▼ MULA PERUBAHAN ▼▼▼
+        // ▼▼▼ START CHANGES ▼▼▼
         const transaction = db.transaction(() => {
             let oldTableName = null;
 
-            // Jika nama jadual hendak ditukar, lakukan validasi dan sediakan untuk kemas kini menu
+            // If the table name is to be changed, validate and prepare for the menu update
             if (fieldsToUpdate.hasOwnProperty('table_name')) {
                 const newTableName = fieldsToUpdate.table_name;
                 
-                // Dapatkan nama jadual lama SEBELUM ia dikemas kini
+                // Get the old table name BEFORE it is updated
                 const tableInfo = db.prepare('SELECT table_name, project_id FROM tables WHERE table_id = ?').get(table_id);
                 if (!tableInfo) {
-                    throw new Error(`Jadual dengan ID ${table_id} tidak ditemui.`);
+                    throw new Error(`Table with ID ${table_id} not found.`);
                 }
                 oldTableName = tableInfo.table_name;
 
@@ -997,7 +997,7 @@ ipcMain.handle('table:update', async (event, data) => {
                 }
             }
 
-            // Bina klausa SET untuk jadual 'tables'
+            // Build the SET clause for the 'tables' table
             const allowedColumns = [
                 'table_name', 'module_name', 'table_view_title', 'table_description', 'show_quick_search', 'allow_pagination', 'pagination_type', 'default_sort_by', 'sort_descending', 'allow_csv_export', 'allow_csv_import', 'allow_print_view', 'allow_mass_delete', 'show_edit_button', 'show_delete_button', 'allow_restore_delete', 'allow_force_delete', 'tv_template', 'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input', 'detail_view_classes_input', 'detail_view_title', 'record_owner', 'default_focus', 'redirect_after_insert', 'enable_detail_view', 'delete_with_children', 'dv_allow_print_view', 'dv_separate_page', 'dv_hide_save_as_copy', 'dv_sticky_buttons', 'dv_allow_add_from_homepage', 'column_grid_type', 'static_grid_columns', 'table_hook_workflow', 'feature_source'
             ];
@@ -1010,22 +1010,22 @@ ipcMain.handle('table:update', async (event, data) => {
                 const values = Object.keys(fieldsToUpdate)
                     .filter(key => allowedColumns.includes(key))
                     .map(key => fieldsToUpdate[key]);
-                // 1. Kemas kini jadual 'tables'
+                // 1. Update the 'tables' table
                 db.prepare(`UPDATE tables SET ${setClause} WHERE table_id = ?`).run(...values, table_id);
             }
 console.log(setClause);
-            // 2. Jika nama jadual ditukar, kemas kini juga 'menu_items'
+            // 2. If the table name changed, also update 'menu_items'
             if (oldTableName && fieldsToUpdate.table_name) {
                 const newTableName = fieldsToUpdate.table_name;
                 const newUrl = `${newTableName} Module`;
                 const oldUrl = `${oldTableName} Module`;
 
-                // Kemas kini label HANYA jika ia sepadan dengan nama jadual lama
+                // Update the label ONLY if it matches the old table name
                 db.prepare(
                     'UPDATE menu_items SET item_label = ? WHERE table_id = ? AND item_label = ?'
                 ).run(newTableName, table_id, oldTableName);
                 
-                // Kemas kini URL HANYA jika ia sepadan dengan format 'Module' yang lama
+                // Update the URL ONLY if it matches the old 'Module' format
                 db.prepare(
                     'UPDATE menu_items SET item_detail = ? WHERE table_id = ? AND item_detail = ?'
                 ).run(newUrl, table_id, oldUrl);
@@ -1034,41 +1034,41 @@ console.log(setClause);
 
         transaction();
         return { success: true };
-        // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+        // ▲▲▲ END CHANGES ▲▲▲
 
     } catch (error) {
-        console.error("Gagal mengemas kini jadual:", error);
+        console.error("Failed to update table:", error);
         return { success: false, message: error.message };
     }
 });
 
 ipcMain.handle('field:update', async (event, data) => {
     try {
-		//console.log('Data diterima dari frontend:', data);
+		//console.log('Data received from frontend:', data);
         const { field_id, ...fieldsToUpdate } = data;
         if (!field_id) {
-            throw new Error("Field ID tidak dibekalkan.");
+            throw new Error("Field ID not supplied.");
         }
 
 if (fieldsToUpdate.hasOwnProperty('field_name')) {
-            // 1. Bersihkan ruang kosong di awal dan akhir perkataan (PENTING!)
+            // 1. Trim whitespace at the start and end of the word (IMPORTANT!)
             const newFieldName = fieldsToUpdate.field_name.trim();
-            fieldsToUpdate.field_name = newFieldName; // Simpan semula nilai yang telah dibersihkan
+            fieldsToUpdate.field_name = newFieldName; // Store the cleaned value back
             
             let isNameValid = true;
             let errorMessage = "";
 
-            // 2. Semak jika null atau kosong
+            // 2. Check if null or empty
             if (!newFieldName || newFieldName === '') {
                 isNameValid = false;
-                errorMessage = "Nama medan tidak boleh kosong.";
+                errorMessage = "Field name cannot be empty.";
             }
-            // 3. Semak jika mengandungi aksara tidak sah
+            // 3. Check if it contains invalid characters
             else if (!/^[a-zA-Z_]+$/.test(newFieldName)) {
                 isNameValid = false;
-                errorMessage = "Nama medan hanya boleh mengandungi huruf dan garis bawah (_). Ruang kosong tidak dibenarkan.";
+                errorMessage = "Field name may only contain letters and underscores (_). Spaces are not allowed.";
             }
-            // 4. Semak jika nama sudah wujud dalam jadual yang sama
+            // 4. Check if the name already exists in the same table
             else {
                 const tableInfo = db.prepare('SELECT table_id FROM fields WHERE field_id = ?').get(field_id);
                 if (tableInfo) {
@@ -1078,30 +1078,30 @@ if (fieldsToUpdate.hasOwnProperty('field_name')) {
                     
                     if (existingField) {
                         isNameValid = false;
-                        errorMessage = `Nama medan '${newFieldName}' sudah wujud di dalam jadual ini!`;
+                        errorMessage = `Field name '${newFieldName}' already exists in this table!`;
                     }
                 }
             }
             
-            // ▼▼▼ PERUBAHAN UTAMA: Jangan padam secara senyap. Berikan ralat! ▼▼▼
+            // ▼▼▼ MAIN CHANGE: Don't delete silently. Raise an error! ▼▼▼
             if (!isNameValid) {
-                // Return terus supaya UI SaveManager anda menerima ralat ini dan boleh paparkan di konsol/amaran
+                // Return immediately so your UI SaveManager receives this error and can display it in the console/warning
                 return { success: false, message: errorMessage };
             }
         }
 		
-        // Senarai lajur yang dibenarkan untuk dikemas kini dalam jadual 'fields'
+        // List of columns allowed to be updated in the 'fields' table
         const allowedColumns = [
 		    'field_name', 'caption', 'description', 'data_type', 'length', 'precision', 'alignment', 'default_value', 'read_only', 'helper_text', 'placeholder', 'min_length', 'max_length', 'min_value', 'max_value', 'primary_key', 'zero_fill', 'required', 'display_type', 'auto_increment', 'unique', 'not_null', 'is_indexed', 'show_sum', 'show_avg_summary', 'show_count_summary', 'show_range_summary', 'allow_sorting', 'tv_wrap_header', 'tv_wrap_text', 'tv_enable_toggle', 'tv_description_tooltips', 'tv_text_limit', 'tv_text_size', 'tv_font_weight', 'tv_date_time_format', 'tv_alignment', 'tv_text_color', 'tv_icon', 'tv_icon_color', 'tv_currency_code', 'unsigned', 'enable_global_filter', 'enable_individual_filter', 'enable_range_filter', 'binary', 'hide_in_tv', 'editable_in_tv', 'hide_in_dv', 'media_type', 'media_link_behavior', 'media_link_display_as', 'media_link_other_field', 'allow_image_uploads', 'image_storage_provider', 'max_file_size', 'delete_image_server', 'dont_rename_image', 'tv_thumb_shape', 'tv_thumb_width', 'tv_thumb_height', 'tv_enable_zooming', 'tv_show_full_size', 'dv_thumb_shape', 'dv_thumb_width', 'dv_thumb_height', 'dv_enable_zooming', 'dv_show_full_size', 'allow_file_uploads', 'file_storage_provider', 'file_types', 'file_max_size', 'delete_file_server', 'dont_rename_file', 'file_behavior', 'file_display_as', 'file_other_field', 'display_gmap', 'gmap_type', 'gmap_tv_width', 'gmap_tv_height', 'gmap_dv_height', 'accept_video_url', 'youtube_tv_width', 'youtube_tv_height', 'youtube_dv_width', 'youtube_dv_height', 'lookup_parent_table', 'lookup_caption_1', 'lookup_separator', 'lookup_caption_2', 'lookup_display_as', 'lookup_inherit_permissions', 'lookup_link_behavior', 'lookup_searchable', 'lookup_preload', 'options_list_values', 'options_display', 'options_quick_list', 'boolean_label_true', 'boolean_label_false', 'format_as', 'format_mask', 'off_autocomplete', 'column_span_full', 'repeater_simple_display_as', 'repeater_simple_format_as', 'repeater_simple_list_values', 'repeater_1_display_as', 'repeater_1_format_as', 'repeater_1_list_values', 'repeater_2_display_as', 'repeater_2_format_as', 'repeater_2_list_values', 'repeater_3_display_as', 'repeater_3_format_as', 'repeater_3_list_values', 'repeater_simple_required', 'repeater_1_required', 'repeater_2_required', 'repeater_3_required', 'prefix', 'suffix', 'suffix_icon', 'suffix_icon_color', 'calculated_enable', 'calculated_query', 'lookup_custom_query', 'algorithm_enable', 'algorithm_logic', 'calculation_builder_state', 'hook_functions'
         ];
  
         const setClause = Object.keys(fieldsToUpdate)
             .filter(key => allowedColumns.includes(key))
-            .map(key => `"${key}" = ?`) // Guna petikan berganda untuk kata kunci 'unique'
+            .map(key => `"${key}" = ?`) // Use double quotes for the 'unique' keyword
             .join(', ');
 
         if (!setClause) {
-            return { success: true, message: 'Tiada medan yang sah untuk dikemas kini.' };
+            return { success: true, message: 'No valid fields to update.' };
         }
 
         const values = Object.keys(fieldsToUpdate)
@@ -1113,7 +1113,7 @@ if (fieldsToUpdate.hasOwnProperty('field_name')) {
 
         return { success: true };
     } catch (error) {
-        console.error("Gagal mengemas kini medan:", error);
+        console.error("Failed to update field:", error);
         return { success: false, message: error.message };
     }
 });
@@ -1131,14 +1131,14 @@ ipcMain.handle('settings:save-all', async (event, settingsData) => {
         saveTransaction();
         return { success: true, message: 'Settings saved successfully.' };
     } catch (error) {
-        console.error("Gagal menyimpan tetapan FiziSysMaker:", error);
+        console.error("Failed to save FiziSysMaker settings:", error);
         return { success: false, message: error.message };
     }
 });
 
 ipcMain.handle('menu:save-structure', async (event, { projectId, menuData }) => {
     if (!projectId) {
-        return { success: false, message: 'Project ID tidak dibekalkan.' };
+        return { success: false, message: 'Project ID not supplied.' };
     }
     try {
         const deleteItemsStmt = db.prepare('DELETE FROM menu_items WHERE menu_group_id IN (SELECT menu_group_id FROM menu_groups WHERE project_id = ?)');
@@ -1147,11 +1147,11 @@ ipcMain.handle('menu:save-structure', async (event, { projectId, menuData }) => 
         const insertItemStmt = db.prepare('INSERT INTO menu_items (menu_group_id, table_id, item_order) VALUES (?, (SELECT table_id FROM tables WHERE table_name = ? AND project_id = ?), ?)');
 
         const transaction = db.transaction(() => {
-            // Padam semua data menu lama untuk projek ini
+            // Delete all old menu data for this project
             deleteItemsStmt.run(projectId);
             deleteGroupsStmt.run(projectId);
 
-            // Masukkan semula data baharu
+            // Re-insert the new data
             menuData.forEach((group, groupIndex) => {
                 const info = insertGroupStmt.run(projectId, group.group_name, groupIndex);
                 const newGroupId = info.lastInsertRowid;
@@ -1165,7 +1165,7 @@ ipcMain.handle('menu:save-structure', async (event, { projectId, menuData }) => 
         transaction();
         return { success: true };
     } catch (error) {
-        console.error("Gagal menyimpan struktur menu:", error);
+        console.error("Failed to save menu structure:", error);
         return { success: false, message: error.message };
     }
 });
@@ -1190,7 +1190,7 @@ ipcMain.handle('menu:update-order', async (event, { projectId, orderData }) => {
         transaction();
         return { success: true };
     } catch (error) {
-        console.error("Gagal menyimpan susunan menu:", error);
+        console.error("Failed to save menu order:", error);
         return { success: false, message: error.message };
     }
 });
@@ -1198,21 +1198,21 @@ ipcMain.handle('menu:update-order', async (event, { projectId, orderData }) => {
 
 ipcMain.handle('relationship:update', async (event, data) => {
     try {
-		// LOG #1: Tunjuk data penuh yang diterima dari frontend
-        //console.log('--- RELATIONSHIP UPDATE: Data Diterima ---', data);
+		// LOG #1: Show full data received from frontend
+        //console.log('--- RELATIONSHIP UPDATE: Data Received ---', data);
 		
         const { relationship_id, ...fieldsToUpdate } = data;
         if (!relationship_id) {
-            throw new Error("Relationship ID tidak dibekalkan.");
+            throw new Error("Relationship ID not supplied.");
         }
 		
-        // LOG #2: Tunjuk relationship_id dan data yang akan diupdate
+        // LOG #2: Show relationship_id and data to be updated
         //console.log(`--- RELATIONSHIP UPDATE: ID Sasaran: ${relationship_id} ---`, fieldsToUpdate);
 
         const allowedColumns = [
                     'show_tab', 'show_icon', 'autoclose_modal', 'tab_title', 'copy_records',
                     'show_link_above', 'show_count_in_tv', 'allow_add_from_tv',
-                    'on_delete', 'on_update' // <--- TAMBAH DUA MEDAN INI
+                    'on_delete', 'on_update' // <--- ADD THESE TWO FIELDS
                 ];
 
         const setClause = Object.keys(fieldsToUpdate)
@@ -1221,56 +1221,56 @@ ipcMain.handle('relationship:update', async (event, data) => {
             .join(', ');
 
         if (!setClause) {
-            //console.log('--- RELATIONSHIP UPDATE: Tiada medan sah untuk dikemas kini. Operasi dihentikan.');
-            return { success: true, message: 'Tiada medan yang sah untuk dikemas kini.' };
+            //console.log('--- RELATIONSHIP UPDATE: No valid fields to update. Operation halted.');
+            return { success: true, message: 'No valid fields to update.' };
         }
 
-        // LOG #3: Tunjuk klausa SET SQL yang dibina
-        //console.log('--- RELATIONSHIP UPDATE: Klausa SET yang dibina ---', setClause);
+        // LOG #3: Show the built SQL SET clause
+        //console.log('--- RELATIONSHIP UPDATE: Built SET clause ---', setClause);
 		
         const values = Object.keys(fieldsToUpdate)
             .filter(key => allowedColumns.includes(key))
             .map(key => fieldsToUpdate[key]);
 
-        // LOG #4: Tunjuk nilai-nilai yang akan digunakan dalam query
-        //console.log('--- RELATIONSHIP UPDATE: Nilai yang akan dimasukkan ---', values);
+        // LOG #4: Show the values to be used in the query
+        //console.log('--- RELATIONSHIP UPDATE: Values to be inserted ---', values);
 
         const stmt = db.prepare(`UPDATE parent_child_relationships SET ${setClause} WHERE relationship_id = ?`);
         stmt.run(...values, relationship_id);
 
-        // LOG #5: Pengesahan selepas operasi run()
-        //console.log(`--- RELATIONSHIP UPDATE: Operasi UPDATE untuk relationship_id ${relationship_id} telah dilaksanakan.`);
+        // LOG #5: Confirmation after the run() operation
+        //console.log(`--- RELATIONSHIP UPDATE: UPDATE operation for relationship_id ${relationship_id} executed.`);
 
         return { success: true };
     } catch (error) {
-        console.error("Gagal mengemas kini hubungan:", error);
+        console.error("Failed to update relationship:", error);
         return { success: false, message: error.message };
     }
 });
 
-// HANDLER UNTUK UPSERT RELATIONSHIP
+// HANDLER FOR UPSERT RELATIONSHIP
 ipcMain.handle('relationship:upsert', async (event, data) => {
-    console.log("--- [MAIN] Menerima Request Upsert Relationship ---", data);
+    console.log("--- [MAIN] Received Upsert Relationship Request ---", data);
     
     try {
         const { parentTableName, childTableName, fk_child_field } = data;
         
         // 1. Validasi Input
         if (!parentTableName || !childTableName || !fk_child_field) {
-             return { success: false, message: "Data tidak lengkap." };
+             return { success: false, message: "Incomplete data." };
         }
 
-        // 2. Dapatkan ID Jadual & Module Name
+        // 2. Get Table ID & Module Name
         const parentTable = db.prepare("SELECT table_id FROM tables WHERE table_name = ?").get(parentTableName);
         
-        // Kita ambil 'module_name' sekali untuk Child Table
+        // We also fetch 'module_name' for the Child Table
         const childTable = db.prepare("SELECT table_id, module_name FROM tables WHERE table_name = ?").get(childTableName);
 
         if (!parentTable || !childTable) {
             return { success: false, message: `Table not found.` };
         }
 
-        // 3. Cari Relationship Sedia Ada
+        // 3. Find Existing Relationship
         const existingRel = db.prepare(`
             SELECT relationship_id FROM parent_child_relationships 
             WHERE fk_child_field = ? AND child_table_id = ?
@@ -1278,19 +1278,19 @@ ipcMain.handle('relationship:upsert', async (event, data) => {
 
         const transaction = db.transaction(() => {
             if (existingRel) {
-                // UPDATE: Hanya kemaskini parent_table_id. 
-                // Kita TIDAK update tab_title di sini untuk elak overwrite custom title pengguna.
-                console.log(`--- [MAIN] Mengemaskini Relationship ID: ${existingRel.relationship_id}`);
+                // UPDATE: Only update parent_table_id. 
+                // We do NOT update tab_title here to avoid overwriting the user's custom title.
+                console.log(`--- [MAIN] Updating Relationship ID: ${existingRel.relationship_id}`);
                 db.prepare(`
                     UPDATE parent_child_relationships 
                     SET parent_table_id = ? 
                     WHERE relationship_id = ?
                 `).run(parentTable.table_id, existingRel.relationship_id);
             } else {
-                // INSERT: Logik Title Case di sini
-                console.log("--- [MAIN] Mencipta Relationship Baharu");
+                // INSERT: Title Case logic here
+                console.log("--- [MAIN] Creating New Relationship");
                 
-                // Cari parent field
+                // Find parent field
                 const pkField = db.prepare(`
                     SELECT field_name FROM fields 
                     WHERE table_id = ? AND primary_key = 1 
@@ -1298,7 +1298,7 @@ ipcMain.handle('relationship:upsert', async (event, data) => {
                 `).get(parentTable.table_id);
                 const parentFieldName = pkField ? pkField.field_name : 'id';
 
-                // Jana tab_title dari module_name (atau table_name jika module_name tiada)
+                // Generate tab_title from module_name (or table_name if module_name is missing)
                 const rawName = childTable.module_name || childTableName;
                 const formattedTitle = toTitleCase(rawName);
 
@@ -1316,12 +1316,12 @@ ipcMain.handle('relationship:upsert', async (event, data) => {
         return { success: true };
 
     } catch (error) {
-        console.error("--- [MAIN] Ralat SQL:", error);
+        console.error("--- [MAIN] SQL Error:", error);
         return { success: false, message: error.message };
     }
 });
 
-// HANDLER UNTUK DELETE RELATIONSHIP
+// HANDLER FOR DELETE RELATIONSHIP
 ipcMain.handle('relationship:delete', async (event, data) => {
     try {
         const { childTableName, fk_child_field } = data;
@@ -1332,18 +1332,18 @@ ipcMain.handle('relationship:delete', async (event, data) => {
         `);
         deleteStmt.run(fk_child_field, childTableName);
         
-        // Opsional: Kosongkan lookup settings pada field tersebut
+        // Optional: Clear lookup settings on that field
         // db.prepare("UPDATE fields SET lookup_parent_table = NULL, lookup_caption_1 = NULL WHERE field_name = ? AND table_id = (SELECT table_id FROM tables WHERE table_name = ?)").run(fk_child_field, childTableName);
         
         return { success: true };
     } catch (error) {
-        console.error("Gagal memadam hubungan:", error);
+        console.error("Failed to delete relationship:", error);
         return { success: false, message: error.message };
     }
 });
 
 ipcMain.handle('custom-module:save', async (event, data) => {
-    // 1. Destructuring - kita tangkap project_id dan settings_override
+    // 1. Destructuring - we capture project_id and settings_override
     const { project_id, module_id, table_id, module_name, menu_icon, filter_rules, included_relations, fields, settings_override } = data;
     
     if (!table_id || !module_name) {
@@ -1372,7 +1372,7 @@ ipcMain.handle('custom-module:save', async (event, data) => {
 
         db.prepare('DELETE FROM custom_module_fields WHERE module_id = ?').run(viewId);
         
-        // Dapatkan statement untuk mencari ID medan berdasarkan nama
+        // Get the statement to find field ID by name
         const getFieldIdStmt = db.prepare('SELECT field_id FROM fields WHERE table_id = ? AND field_name = ?');
         
         const insertFieldStmt = db.prepare(
@@ -1384,18 +1384,18 @@ if (fields && Array.isArray(fields)) {
             fields.forEach((field, index) => {
                 let actualFieldId = field.field_id;
                 
-                // Jika data datang dari UI (Create Modal), ia tiada field_id tapi ada sourceName
+                // If data comes from the UI (Create Modal), it has no field_id but has sourceName
                 if (!actualFieldId && (field.sourceName || field.field_source_name)) {
                     const fData = getFieldIdStmt.get(table_id, field.sourceName || field.field_source_name);
                     if (fData) actualFieldId = fData.field_id;
                 }
 
                 if (actualFieldId) {
-                    // Tangkap format dari RAM (Auto-Save) atau format dari UI (Create)
+                    // Capture the format from RAM (Auto-Save) or the format from the UI (Create)
                     const isReadonly = field.isReadonly !== undefined ? (field.isReadonly ? 1 : 0) : (field.is_readonly ? 1 : 0);
                     
                     let finalSettingsOverride = field.settings_override || "{}";
-                    // Jika dari UI (ada label), kita bina JSON override
+                    // If from the UI (has label), we build the JSON override
                     if (field.label !== undefined) {
                         const currentOverrides = {};
                         if (field.label.trim() !== '') currentOverrides.caption = field.label;
@@ -1409,8 +1409,8 @@ if (fields && Array.isArray(fields)) {
             });
         }
         
-// Cipta item menu jika ia adalah modul baharu
-        let newMenuItemObj = null; // Pembolehubah untuk memegang data menu baharu
+// Create menu item if it is a new module
+        let newMenuItemObj = null; // Variable to hold the new menu data
 
         if (isNewView) {
             const tableInfo = db.prepare('SELECT table_name, project_id FROM tables WHERE table_id = ?').get(table_id);
@@ -1420,26 +1420,26 @@ if (fields && Array.isArray(fields)) {
                 ).get(tableInfo.project_id);
                 const nextMenuOrder = (maxMenuOrderResult?.max_order ?? -1) + 1;
                 
-                // Cipta item menu jika ia adalah modul baharu
+                // Create menu item if it is a new module
                 const menuLabel = module_name; 
                 const menuUrl = `${tableInfo.table_name} Custom Module`;
 
-                // KITA GUNAKAN module_id AGAR SAMA DENGAN FRONTEND
+                // WE USE module_id TO MATCH THE FRONTEND
                 const menuInfo = db.prepare(
                     `INSERT INTO menu_items (project_id, module_id, item_label, item_detail, item_order) VALUES (?, ?, ?, ?, ?)`
                 ).run(tableInfo.project_id, viewId, menuLabel, menuUrl, nextMenuOrder);
                 
-                // Dapatkan rekod menu yang baru sahaja dicipta
+                // Get the menu record that was just created
                 newMenuItemObj = db.prepare('SELECT * FROM menu_items WHERE item_id = ?').get(menuInfo.lastInsertRowid);
             }
         }
         
-// 1. KITA PULANGKAN KEDUA-DUANYA DARI DALAM TRANSAKSI
+// 1. WE RETURN BOTH FROM INSIDE THE TRANSACTION
         return { viewId, newMenuItemObj };
     });
 
     try {
-        // 2. TANGKAP KEDUA-DUANYA DI LUAR TRANSAKSI
+        // 2. CAPTURE BOTH OUTSIDE THE TRANSACTION
         const { viewId, newMenuItemObj } = transaction();
         
         const savedView = db.prepare('SELECT * FROM custom_modules WHERE module_id = ?').get(viewId);
@@ -1451,18 +1451,18 @@ if (fields && Array.isArray(fields)) {
 });
 
 // ---------------------------------------------------------
-    // 1. BAIKI: Simpan Override Medan (Field) - Fix "no such column: id"
+    // 1. FIX: Save the Field Override - Fix "no such column: id"
     // ---------------------------------------------------------
     ipcMain.handle('custom-module:save-field-override', async (event, data) => {
         try {
             const { module_id, field_id, settings_override } = data;
             
-            // Semak kewujudan menggunakan composite key (module_id + field_id)
-            // Kita tidak guna 'SELECT id' untuk elak ralat jika lajur id tiada
+            // Check existence using the composite key (module_id + field_id)
+            // We don't use 'SELECT id' to avoid errors if the id column is missing
             const check = db.prepare("SELECT count(*) as count FROM custom_module_fields WHERE module_id = ? AND field_id = ?").get(module_id, field_id);
 
             if (check.count > 0) {
-                // UPDATE: Guna module_id dan field_id sebagai syarat
+                // UPDATE: Use module_id and field_id as the condition
                 db.prepare("UPDATE custom_module_fields SET settings_override = ? WHERE module_id = ? AND field_id = ?").run(settings_override, module_id, field_id);
             } else {
                 // INSERT
@@ -1477,14 +1477,14 @@ if (fields && Array.isArray(fields)) {
     });
 
     // ---------------------------------------------------------
-    // 2. TAMBAH: Simpan Override Jadual (Table) - Untuk Bug 1 & 2
+    // 2. ADD: Save the Table Override - For Bug 1 & 2
     // ---------------------------------------------------------
     ipcMain.handle('custom-module:save-table-override', async (event, data) => {
         try {
             const { module_id, settings_override } = data;
             
-            // Kita simpan override table ke dalam lajur 'settings_override' di table 'custom_modules'
-            // Pastikan lajur ini wujud. Jika belum, kita cuba update sahaja.
+            // We store the table override in the 'settings_override' column of the 'custom_modules' table
+            // Make sure this column exists. If not, we just try to update.
             
             const stmt = db.prepare("UPDATE custom_modules SET settings_override = ? WHERE module_id = ?");
             const info = stmt.run(settings_override, module_id);
@@ -1495,12 +1495,12 @@ if (fields && Array.isArray(fields)) {
 
             return { success: true };
         } catch (err) {
-            // Jika ralat "no such column: settings_override" berlaku
+            // If the "no such column: settings_override" error occurs
             if (err.message.includes('no such column: settings_override')) {
-                // Auto-fix: Tambah lajur tersebut (SQLite)
+                // Auto-fix: Add the column (SQLite)
                 try {
                     db.prepare("ALTER TABLE custom_modules ADD COLUMN settings_override TEXT").run();
-                    // Cuba simpan semula
+                    // Try saving again
                     db.prepare("UPDATE custom_modules SET settings_override = ? WHERE module_id = ?").run(settings_override, module_id);
                     return { success: true, message: "Column created and saved." };
                 } catch (alterErr) {
@@ -1518,9 +1518,9 @@ ipcMain.handle('custom-module:delete', async (event, viewId) => {
     }
     try {
         const transaction = db.transaction(() => {
-            // Padam item menu yang berkaitan dahulu
+            // Delete the related menu item first
             db.prepare('DELETE FROM menu_items WHERE module_id = ?').run(viewId);
-            // Kemudian padam custom view (akan memadam custom_module_fields melalui CASCADE)
+            // Then delete the custom view (will delete custom_module_fields via CASCADE)
             db.prepare('DELETE FROM custom_modules WHERE module_id = ?').run(viewId);
         });
         transaction();
@@ -1535,14 +1535,14 @@ ipcMain.handle('project:get-initial-status', async (event, projectId) => {
   try {
     const tables = db.prepare('SELECT table_name FROM tables WHERE project_id = ?').all(projectId);
 
-    // Tunjukkan tutorial jika tiada jadual, ATAU jika hanya ada 1 jadual dan namanya 'users'
+    // Show the tutorial if there are no tables, OR if there is only 1 table named 'users'
     if (tables.length === 0 || (tables.length === 1 && tables[0].table_name === 'users')) {
       return { showTutorial: true };
     }
 
     return { showTutorial: false };
   } catch (error) {
-    console.error("Gagal mendapatkan status awal projek:", error);
+    console.error("Failed to get initial project status:", error);
     return { showTutorial: false };
   }
 });
@@ -1550,77 +1550,77 @@ ipcMain.handle('project:get-initial-status', async (event, projectId) => {
 //ipcMain.handle('generate-app', async () => {
 //    const win = BrowserWindow.getFocusedWindow();
 //    try {
-//        // 1. Dapatkan Projek Aktif
+//        // 1. Get Active Project
 //        const activeProject = db.prepare("SELECT * FROM projects WHERE is_active = 1 LIMIT 1").get();
-//        if (!activeProject) throw new Error("Tiada projek aktif dijumpai.");
+//        if (!activeProject) throw new Error("No active project found.");
 //
 //        const projectId = activeProject.project_id;
 //        
-//        // Dapatkan Schema Penuh
+//        // Get the Full Schema
 //        const fullSchema = await getFullProjectSchema(projectId);
-//        if (!fullSchema) throw new Error("Gagal mendapatkan schema projek penuh.");
+//        if (!fullSchema) throw new Error("Failed to get full project schema.");
 //
-//        // Tentukan Stack Pilihan (Berdasarkan HTML <select> anda)
-//        // Default ke 'core_php' ikut schema, tapi kita handle fallback ke laravel jika perlu
+//        // Determine the Chosen Stack (Based on your HTML <select>)
+//        // Default to 'core_php' per schema, but we handle fallback to laravel if needed
 //        const selectedStack = activeProject.stack_base || 'core_php';
 //        
-//        console.log(`Memulakan janaan untuk Project ID: ${projectId} | Stack: ${selectedStack}`);
-//        win?.webContents.send('show-overlay', { message: `Menjana aplikasi (${selectedStack})...` });
+//        console.log(`Starting generation for Project ID: ${projectId} | Stack: ${selectedStack}`);
+//        win?.webContents.send('show-overlay', { message: `Generating app (${selectedStack})...` });
 //
-//        // 2. Tentukan Folder Sementara (Staging Area)
+//        // 2. Determine the Temporary Folder (Staging Area)
 //        const tempBasePath = getGeneratedFolderPath(); 
-//        // Nama folder staging unik untuk elak konflik
+//        // Unique staging folder name to avoid conflicts
 //        const stagingFolderName = `${activeProject.app_title.replace(/[^a-zA-Z0-9_-]/g, '_')}_staging`;
 //        const stagingPath = path.join(tempBasePath, stagingFolderName);
 //
-//        // Bersihkan folder staging (Reset)
+//        // Clean the staging folder (Reset)
 //        if (fs.existsSync(stagingPath)) {
 //            fs.rmSync(stagingPath, { recursive: true, force: true });
 //        }
 //        fs.mkdirSync(stagingPath, { recursive: true });
 //
-//        // 3. SUIS LOGIK GENERATOR (Dispatcher)
+//        // 3. GENERATOR LOGIC SWITCH (Dispatcher)
 //        let generateResult;
 //
 //        switch (selectedStack) {
 //            case 'laravel_filament':
-//                // Panggil Orchestrator Laravel Filament
+//                // Call the Laravel Filament Orchestrator
 //                generateResult = await generateLaravelFilamentStack(fullSchema, stagingPath);
 //                break;
 //
 //            case 'laravel_backpack':
-//                generateResult = { success: false, message: "Generator Laravel Backpack belum tersedia." };
+//                generateResult = { success: false, message: "Laravel Backpack generator not yet available." };
 //                break;
 //            
 //            case 'core_php':
-//                generateResult = { success: false, message: "Generator Core PHP sedang dalam pembangunan." };
+//                generateResult = { success: false, message: "Core PHP generator under development." };
 //                break;
 //
 //            case 'ci4':
 //            case 'ci3':
-//                generateResult = { success: false, message: "Generator CodeIgniter akan datang." };
+//                generateResult = { success: false, message: "CodeIgniter generator coming soon." };
 //                break;
 //            
 //            case 'django':
 //            case 'flask':
-//                generateResult = { success: false, message: "Generator Python belum tersedia." };
+//                generateResult = { success: false, message: "Python generator not yet available." };
 //                break;
 //
-//            // ... Tambah case lain berdasarkan HTML anda (aspnet_core, ror, java_spring, mean, dll) ...
+//            // ... Add other cases based on your HTML (aspnet_core, ror, java_spring, mean, etc.) ...
 //
 //            default:
-//                // Fallback keselamatan
-//                console.warn(`Stack '${selectedStack}' tidak dikenali. Mencuba Laravel Filament sebagai default.`);
+//                // Safety fallback
+//                console.warn(`Stack '${selectedStack}' unknown. Trying Laravel Filament as default.`);
 //                generateResult = await generateLaravelFilamentStack(fullSchema, stagingPath);
 //                break;
 //        }
 //
-//        // Jika janaan GAGAL di peringkat staging, berhenti di sini.
+//        // If generation FAILS at the staging stage, stop here.
 //        if (!generateResult.success) {
 //            throw new Error(generateResult.message);
 //        }
 //
-//        // 4. LOGIK PEMINDAHAN KE DOC_ROOT (Deployment)
+//        // 4. MOVE-TO-DOC_ROOT LOGIC (Deployment)
 //        let finalPath = stagingPath; 
 //        
 //        // Baca setting doc_root
@@ -1628,54 +1628,54 @@ ipcMain.handle('project:get-initial-status', async (event, projectId) => {
 //
 //        if (docRootSetting && docRootSetting.setting_value && docRootSetting.setting_value.trim() !== '') {
 //            const docRoot = docRootSetting.setting_value;
-//            // Sanitasi nama folder projek
+//            // Sanitize the project folder name
 //            const appFolderName = activeProject.app_title.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
 //            const destinationPath = path.join(docRoot, appFolderName);
 //
-//            console.log(`Memindahkan fail ke Doc Root: ${destinationPath}`);
-//            win?.webContents.send('show-overlay', { message: 'Memindahkan fail ke folder pelayan...' });
+//            console.log(`Moving files to Doc Root: ${destinationPath}`);
+//            win?.webContents.send('show-overlay', { message: 'Moving files to the server folder...' });
 //
 //            try {
 //                if (!fs.existsSync(destinationPath)) {
 //                    fs.mkdirSync(destinationPath, { recursive: true });
 //                }
 //                
-//                // Salin dari Staging ke Doc Root (Overwrite)
+//                // Copy from Staging to Doc Root (Overwrite)
 //                fs.cpSync(stagingPath, destinationPath, { recursive: true, force: true });
 //                
-//                // Set finalPath ke lokasi sebenar untuk dibuka oleh frontend
+//                // Set finalPath to the actual location to be opened by the frontend
 //                finalPath = destinationPath;
 //
 //            } catch (moveError) {
-//                console.error("Gagal memindahkan fail:", moveError);
-//                // Jangan throw error di sini, supaya user masih boleh akses fail di folder temp
-//                ctx.dialog.showErrorBox("Amaran Pemindahan", `Aplikasi berjaya dijana tetapi gagal disalin ke Doc Root.\nSila semak permission folder.\nLokasi fail: ${stagingPath}`);
+//                console.error("Failed to move files:", moveError);
+//                // Don't throw an error here, so the user can still access files in the temp folder
+//                ctx.dialog.showErrorBox("Move Warning", `App generated successfully but failed to copy to Doc Root.\nPlease check folder permissions.\nFile location: ${stagingPath}`);
 //            }
 //        }
 //
 //        return { 
 //            success: true, 
-//            message: 'Aplikasi berjaya dijana!',
-//            folderPath: finalPath // Ini penting untuk butang "Open Folder" di frontend
+//            message: 'App generated successfully!',
+//            folderPath: finalPath // This is important for the "Open Folder" button in the frontend
 //        };
 //
 //    } catch (error) {
-//        console.error('Ralat Proses Janaan:', error);
+//        console.error('Generation Process Error:', error);
 //        return { success: false, message: error.message };
 //    } finally {
 //        win?.webContents.send('hide-overlay');
 //    }
 //});
 
-ipcMain.handle('generate-app', async (event) => { // Perhatikan 'event' ditambah di sini
+ipcMain.handle('generate-app', async (event) => { // Note 'event' added here
     const win = ctx.getWindow(event);
     try {
-        // 1. Dapatkan Data Projek & Schema
+        // 1. Get Project Data & Schema
         const activeProject = db.prepare("SELECT * FROM projects WHERE is_active = 1 LIMIT 1").get();
-        if (!activeProject) throw new Error("Tiada projek aktif dijumpai.");
+        if (!activeProject) throw new Error("No active project found.");
 
         const fullSchema = await getFullProjectSchema(activeProject.project_id);
-        if (!fullSchema) throw new Error("Gagal mendapatkan schema projek penuh.");
+        if (!fullSchema) throw new Error("Failed to get full project schema.");
 
         // IR validation (Phase 1): export + validate before generating.
         // Non-fatal during migration: warns but proceeds (legacy data may have
@@ -1697,68 +1697,68 @@ ipcMain.handle('generate-app', async (event) => { // Perhatikan 'event' ditambah
 
         const selectedStack = activeProject.stack_base || 'core_php';
 
-        win?.webContents.send('show-overlay', { message: `Menjana fail aplikasi (${selectedStack})...` });
+        win?.webContents.send('show-overlay', { message: `Generating app files (${selectedStack})...` });
 
-        // 2. FASA 1: JANA SCRIPT KE FOLDER STAGING (AppData)
+        // 2. PHASE 1: GENERATE SCRIPT TO THE STAGING FOLDER (AppData)
         const tempBasePath = getGeneratedFolderPath(); 
         const stagingFolderName = `${activeProject.app_title.replace(/[^a-zA-Z0-9_-]/g, '_')}_staging`;
         const stagingPath = path.join(tempBasePath, stagingFolderName);
 
-        // Bersihkan folder staging
+        // Clean the staging folder
         if (fs.existsSync(stagingPath)) {
             fs.rmSync(stagingPath, { recursive: true, force: true });
         }
         fs.mkdirSync(stagingPath, { recursive: true });
 
-        // Jalankan Generator berdasarkan Stack
+        // Run the Generator based on the Stack
         let generateResult;
         switch (selectedStack) {
             case 'laravel_filament':
                 generateResult = await generateLaravelFilamentStack(fullSchema, stagingPath);
                 break;
             case 'laravel_backpack':
-                generateResult = { success: false, message: "Generator Laravel Backpack belum tersedia." };
+                generateResult = { success: false, message: "Laravel Backpack generator not yet available." };
                 break;
             
             case 'core_php':
-                generateResult = { success: false, message: "Generator Core PHP sedang dalam pembangunan." };
+                generateResult = { success: false, message: "Core PHP generator under development." };
                 break;
 
             case 'ci4':
             case 'ci3':
-                generateResult = { success: false, message: "Generator CodeIgniter akan datang." };
+                generateResult = { success: false, message: "CodeIgniter generator coming soon." };
                 break;
             
             case 'django':
             case 'flask':
-                generateResult = { success: false, message: "Generator Python belum tersedia." };
+                generateResult = { success: false, message: "Python generator not yet available." };
                 break;            default:
-                console.warn(`Stack '${selectedStack}' belum disokong sepenuhnya. Menggunakan Laravel Filament.`);
+                console.warn(`Stack '${selectedStack}' not fully supported yet. Using Laravel Filament.`);
                 generateResult = await generateLaravelFilamentStack(fullSchema, stagingPath);
                 break;
         }
 
         if (!generateResult.success) {
-            throw new Error(`Ralat Janaan: ${generateResult.message}`);
+            throw new Error(`Generation Error: ${generateResult.message}`);
         }
 
-        // 3. FASA 2: TENTUKAN LOKASI PROJEK SEBENAR (DOC_ROOT)
-        // Dapatkan tetapan global
+        // 3. PHASE 2: DETERMINE THE ACTUAL PROJECT LOCATION (DOC_ROOT)
+        // Get the global settings
         const settings = db.prepare("SELECT setting_name, setting_value FROM fizisys_settings").all();
         const config = settings.reduce((acc, curr) => ({ ...acc, [curr.setting_name]: curr.setting_value }), {});
 
         const docRoot = config.doc_root;
         
-        // Jika doc_root tidak ditetapkan, kita hanya mampu bagi folder staging sahaja
+        // If doc_root is not set, we can only provide the staging folder
         if (!docRoot || docRoot.trim() === '') {
             return { 
                 success: true, 
-                message: 'Aplikasi berjaya dijana di folder sementara (Doc Root tidak ditetapkan).',
+                message: 'App generated successfully in the temporary folder (Doc Root not set).',
                 folderPath: stagingPath 
             };
         }
 
-        // Tentukan path destinasi
+        // Determine the destination path
         const appFolderName = activeProject.app_title.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
         const destinationPath = path.join(docRoot, appFolderName);
 
@@ -1769,46 +1769,46 @@ ipcMain.handle('generate-app', async (event) => { // Perhatikan 'event' ditambah
             const { validateOutputPath } = require('../core/pathGuard');
             const guard = validateOutputPath(destinationPath, { env: process.env });
             if (!guard.ok) {
-                throw new Error(`Doc Root ditolak (path allowlist): ${guard.reason}`);
+                throw new Error(`Doc Root rejected (path allowlist): ${guard.reason}`);
             }
         }
         
         let finalActionMessage = "";
 
-        // 4. FASA 3: SEMAK KEWUJUDAN PROJEK & LAKSANAKAN FUNGSI
+        // 4. PHASE 3: CHECK PROJECT EXISTENCE & EXECUTE THE FUNCTION
         if (fs.existsSync(destinationPath)) {
             // ========================================================
-            // KES A: FOLDER WUJUD -> JALANKAN UPDATE
+            // CASE A: FOLDER EXISTS -> RUN UPDATE
             // ========================================================
-            console.log(`Projek dikesan di ${destinationPath}. Menjalankan fungsi UPDATE...`);
-            win?.webContents.send('show-overlay', { message: 'Mengemaskini aplikasi sedia ada...' });
+            console.log(`Project detected at ${destinationPath}. Running UPDATE...`);
+            win?.webContents.send('show-overlay', { message: 'Updating existing app...' });
 
             const updateConfig = {
                 projectPath: destinationPath,
                 generatedPath: stagingPath
             };
 
-            // Panggil fungsi dari deploymentHandler.js
-            // Kita hantar 'event' supaya ia boleh hantar log ke UI
+            // Call the function from deploymentHandler.js
+            // We pass 'event' so it can send logs to the UI
             const updateResult = await updateApp(event, updateConfig);
             
             if (!updateResult.success) throw new Error(updateResult.message);
-            finalActionMessage = "Aplikasi berjaya dikemaskini!";
+            finalActionMessage = "App updated successfully!";
 
         } else {
             // ========================================================
-            // KES B: FOLDER TIADA -> JALANKAN DEPLOY
+            // CASE B: FOLDER MISSING -> RUN DEPLOY
             // ========================================================
-            console.log(`Projek belum wujud di ${destinationPath}. Menjalankan fungsi DEPLOY...`);
-            win?.webContents.send('show-overlay', { message: 'Memulakan pemasangan baru (Deploy)...' });
+            console.log(`Project does not exist yet at ${destinationPath}. Running DEPLOY...`);
+            win?.webContents.send('show-overlay', { message: 'Starting new installation (Deploy)...' });
 
-            // Sediakan konfigurasi Deploy
+            // Prepare the Deploy configuration
             const dbName = `db_${appFolderName}`;
-            const dbUser = `user_${appFolderName.substring(0, 10)}`; // Hadkan panjang user
-            const dbPass = 'password123'; // IDEALNYA: Generate random password atau ambil dari setting
+            const dbUser = `user_${appFolderName.substring(0, 10)}`; // Limit the user name length
+            const dbPass = 'password123'; // IDEALLY: Generate a random password or take it from settings
 
             const deployConfig = {
-                gitRepoUrl: config.git_repo_url || 'https://github.com/mohdhafizi83/FiziSysMaker-Laravel-Filament-Boilerplate.git', // Default jika tiada setting
+                gitRepoUrl: config.git_repo_url || 'https://github.com/mohdhafizi83/FiziSysMaker-Laravel-Filament-Boilerplate.git', // Default if no setting exists
                 projectPath: destinationPath,
                 generatedPath: stagingPath,
                 dbConfig: {
@@ -1816,14 +1816,14 @@ ipcMain.handle('generate-app', async (event) => { // Perhatikan 'event' ditambah
                     user: dbUser,
                     password: dbPass,
                     dbName: dbName,
-                    rootPassword: config.db_root_password || '' // PENTING: Perlu ada untuk create DB
+                    rootPassword: config.db_root_password || '' // IMPORTANT: Required for creating the DB
                 }
             };
 
             const deployResult = await deployApp(event, deployConfig);
 
             if (!deployResult.success) throw new Error(deployResult.message);
-            finalActionMessage = "Aplikasi baru berjaya dipasang!";
+            finalActionMessage = "New app installed successfully!";
         }
 
         return { 
@@ -1833,19 +1833,19 @@ ipcMain.handle('generate-app', async (event) => { // Perhatikan 'event' ditambah
         };
 
     } catch (error) {
-        console.error('Ralat Generate App:', error);
+        console.error('Generate App Error:', error);
         return { success: false, message: error.message };
     } finally {
         win?.webContents.send('hide-overlay');
     }
 });
 
-// Handler untuk membuka folder (biasanya dipanggil selepas generate berjaya)
+// Handler for opening a folder (usually called after a successful generate)
 ipcMain.on('open-folder', (event, folderPath) => {
     if (folderPath && fs.existsSync(folderPath)) {
         shell.openPath(folderPath);
     } else {
-        console.error(`Gagal membuka folder: ${folderPath} tidak wujud.`);
+        console.error(`Failed to open folder: ${folderPath} does not exist.`);
     }
 });
 
@@ -1865,13 +1865,13 @@ ipcMain.handle('table:save-constraint', async (event, { table_id, constraint_typ
 
     try {
         const transaction = db.transaction(() => {
-            // 1. Simpan definisi kekangan baharu
+            // 1. Save the new constraint definition
             const columnsJson = JSON.stringify(columns);
             db.prepare(
                 `INSERT INTO table_constraints (table_id, constraint_type, columns) VALUES (?, ?, ?)`
             ).run(table_id, constraint_type, columnsJson);
 
-            // 2. Kemas kini status 'unique' untuk setiap medan yang terlibat
+            // 2. Update the 'unique' status for each involved field
             const updateStmt = db.prepare(`UPDATE fields SET "unique" = 1 WHERE table_id = ? AND field_name = ?`);
             for (const fieldName of columns) {
                 updateStmt.run(table_id, fieldName);
@@ -1881,7 +1881,7 @@ ipcMain.handle('table:save-constraint', async (event, { table_id, constraint_typ
         transaction();
         return { success: true };
     } catch (error) {
-        console.error("Gagal menyimpan kekangan jadual:", error);
+        console.error("Failed to save table constraints:", error);
         return { success: false, message: error.message };
     }
 });
@@ -1893,7 +1893,7 @@ ipcMain.handle('table:delete-constraint', async (event, { constraint_id }) => {
     
     try {
         const transaction = db.transaction(() => {
-            // 1. Dapatkan maklumat kekangan sebelum memadam
+            // 1. Get constraint info before deleting
             const constraint = db.prepare('SELECT * FROM table_constraints WHERE constraint_id = ?').get(constraint_id);
             if (!constraint) {
                 throw new Error('Constraint not found.');
@@ -1901,18 +1901,18 @@ ipcMain.handle('table:delete-constraint', async (event, { constraint_id }) => {
             const { table_id, columns: columnsJson } = constraint;
             const columns = JSON.parse(columnsJson);
 
-            // 2. Padam kekangan itu sendiri
+            // 2. Delete the constraint itself
             db.prepare('DELETE FROM table_constraints WHERE constraint_id = ?').run(constraint_id);
 
-            // 3. Semak semula setiap medan yang terlibat
+            // 3. Re-check each involved field
             const checkStmt = db.prepare('SELECT 1 FROM table_constraints WHERE table_id = ? AND columns LIKE ? LIMIT 1');
             const updateStmt = db.prepare(`UPDATE fields SET "unique" = 0 WHERE table_id = ? AND field_name = ?`);
             
             for (const fieldName of columns) {
-                // Semak jika medan ini masih sebahagian daripada KEKANGAN UNIK LAIN
+                // Check if this field is still part of ANOTHER UNIQUE CONSTRAINT
                 const isStillUnique = checkStmt.get(table_id, `%"${fieldName}"%`);
                 
-                // Jika tidak, buang status 'unique' daripadanya
+                // If not, remove the 'unique' status from it
                 if (!isStillUnique) {
                     updateStmt.run(table_id, fieldName);
                 }
@@ -1922,7 +1922,7 @@ ipcMain.handle('table:delete-constraint', async (event, { constraint_id }) => {
         transaction();
         return { success: true };
     } catch (error) {
-        console.error("Gagal memadam kekangan jadual:", error);
+        console.error("Failed to delete table constraints:", error);
         return { success: false, message: error.message };
     }
 });
@@ -1932,7 +1932,7 @@ ipcMain.handle('field:update-index', async (event, { field_id, is_indexed }) => 
         db.prepare('UPDATE fields SET is_indexed = ? WHERE field_id = ?').run(is_indexed ? 1 : 0, field_id);
         return { success: true };
     } catch (error) {
-        console.error("Gagal mengemas kini indeks medan:", error);
+        console.error("Failed to update field index:", error);
         return { success: false, message: error.message };
     }
 });
@@ -1941,47 +1941,47 @@ ipcMain.handle('app:deploy', deployApp);
 ipcMain.handle('app:update', updateApp);
 
 // =================================================================
-// FUNGSI BUILT-IN PREVIEW SERVER
+// BUILT-IN PREVIEW SERVER FUNCTIONS
 // =================================================================
 
 ipcMain.handle('preview:start', async (event, projectPath) => {
     return new Promise((resolve, reject) => {
         try {
-            // 1. Tentukan laluan PHP (Sama seperti runComposer)
+            // 1. Determine the PHP path (Same as runComposer)
             const baseBinPath = ctx.isPackaged 
                 ? path.join(process.resourcesPath, 'app.asar.unpacked', 'bin')
                 : path.join(__dirname, '../../bin');
             const phpPath = require('../core/phpResolver').resolvePhpBinary(baseBinPath);
 
-            // 2. Bunuh pelayan sedia ada jika sedang berjalan
+            // 2. Kill the existing server if it is running
             if (previewServerProcess) {
                 previewServerProcess.kill();
                 previewServerProcess = null;
-                console.log("Pelayan preview terdahulu telah dihentikan.");
+                console.log("Previous preview server has been stopped.");
             }
 
-            // 3. Pastikan fail database.sqlite wujud (Elak prompt Laravel)
+            // 3. Make sure the database.sqlite file exists (Avoid Laravel prompt)
             const dbPath = path.join(projectPath, 'database', 'database.sqlite');
             if (!fs.existsSync(dbPath)) {
-                fs.writeFileSync(dbPath, ''); // Cipta fail kosong
+                fs.writeFileSync(dbPath, ''); // Create an empty file
             }
 
-            console.log(`Menyediakan pangkalan data di: ${projectPath}`);
+            console.log(`Preparing the database at: ${projectPath}`);
 
-            // 4. Jalankan Migrate & Seed (Bina jadual dan masukkan data test)
+            // 4. Run Migrate & Seed (Build tables and insert test data)
             const migrateProcess = spawn(phpPath, ['artisan', 'migrate:fresh', '--seed', '--force'], {
                 cwd: projectPath,
-                stdio: 'pipe' // Abaikan output untuk percepatkan
+                stdio: 'pipe' // Ignore output to speed things up
             });
 
             migrateProcess.on('close', (code) => {
                 if (code !== 0) {
-                    return resolve({ success: false, message: "Ralat semasa menjalankan migrasi pangkalan data." });
+                    return resolve({ success: false, message: "Error while running database migration." });
                 }
 
-                console.log("Migrasi berjaya! Menghidupkan pelayan Laravel...");
+                console.log("Migration successful! Starting Laravel server...");
 
-                // 5. Hidupkan PHP Built-in Server
+                // 5. Start the PHP Built-in Server
                 const port = 8080;
                 previewServerProcess = spawn(phpPath, ['artisan', 'serve', `--port=${port}`], {
                     cwd: projectPath,
@@ -1992,7 +1992,7 @@ ipcMain.handle('preview:start', async (event, projectPath) => {
                     const output = data.toString();
                     console.log(`[Server]: ${output}`);
                     
-                    // Jika server berjaya dihidupkan, Laravel akan paparkan "Server running on..."
+                    // If the server starts successfully, Laravel will display "Server running on..."
                     if (output.includes('running') || output.includes('127.0.0.1')) {
                         resolve({ success: true, url: `http://127.0.0.1:${port}/admin` });
                     }
@@ -2003,7 +2003,7 @@ ipcMain.handle('preview:start', async (event, projectPath) => {
                 });
 
                 previewServerProcess.on('error', (err) => {
-                    resolve({ success: false, message: `Gagal menghidupkan pelayan: ${err.message}` });
+                    resolve({ success: false, message: `Failed to start server: ${err.message}` });
                 });
             });
 
@@ -2013,33 +2013,33 @@ ipcMain.handle('preview:start', async (event, projectPath) => {
     });
 });
 
-// Fungsi untuk memberhentikan pelayan (Boleh dipanggil jika pengguna tutup FiziSysMaker)
+// Function to stop the server (Can be called when the user closes FiziSysMaker)
 ipcMain.handle('preview:stop', () => {
     if (previewServerProcess) {
         previewServerProcess.kill();
         previewServerProcess = null;
-        console.log("Pelayan preview telah dihentikan oleh pengguna.");
+        console.log("Preview server has been stopped by the user.");
         return true;
     }
     return false;
 });
 
 // =================================================================
-// SISTEM PENGESAN PERUBAHAN (DIFF CHECKER) UNTUK HOT RELOAD
+// CHANGE DETECTION SYSTEM (DIFF CHECKER) FOR HOT RELOAD
 // =================================================================
 
 /**
- * Membandingkan Skema Lama dan Baharu untuk menentukan Senario Pralihat
- * Pulangan:
- * 1 = Tiada Perubahan (Hanya buka modal semula)
- * 2 = Perubahan UI/Tetapan (Jana kod UI + Clear Cache)
- * 3 = Perubahan Pangkalan Data (Jana semua + Migrate DB)
- * 4 = Perubahan Pangkalan Data terhad (pilihan options_list / array type)
- * Pulangan Object: { scenario: 1|2|3|4, targets: ['nama_jadual'] }
+ * Compares the Old and New Schemas to determine the Preview Scenario
+ * Returns:
+ * 1 = No Changes (Just reopen the modal)
+ * 2 = UI/Settings Changes (Generate UI code + Clear Cache)
+ * 3 = Database Changes (Regenerate everything + Migrate DB)
+ * 4 = Limited Database Changes (options_list / array type choice)
+ * Returned Object: { scenario: 1|2|3|4, targets: ['table_name'] }
  */
 function analyzeSchemaDiff(oldSchema, newSchema) {
     if (!oldSchema) {
-        console.log("[Diff Checker] Tiada memori lama. Paksa Senario 3 (First Run).");
+        console.log("[Diff Checker] No old memory. Force Scenario 3 (First Run).");
         return { scenario: 3, targets: [] }; 
     }
 
@@ -2047,18 +2047,18 @@ function analyzeSchemaDiff(oldSchema, newSchema) {
     const newStr = JSON.stringify(newSchema);
     
     if (oldStr === newStr) {
-        console.log("[Diff Checker] Skema 100% sama. Masuk Senario 1.");
+        console.log("[Diff Checker] Schemas 100% identical. Entering Scenario 1.");
         return { scenario: 1, targets: [] };
     }
 
-    // Ujian Senario 3 (Perubahan Pangkalan Data)
+    // Scenario 3 Test (Database Changes)
     const isDbChanged = checkDatabaseChanges(oldSchema, newSchema);
     if (isDbChanged) {
-        console.log("[Diff Checker] Perubahan struktur pangkalan data dikesan. Masuk Senario 3.");
+        console.log("[Diff Checker] Database structure change detected. Entering Scenario 3.");
         return { scenario: 3, targets: [] };
     }
 
-    // ▼▼▼ MULA: UJIAN SENARIO 4 (TARGETED REFRESH UNTUK OPTIONS LIST & ARRAY) ▼▼▼
+    // ▼▼▼ START: SCENARIO 4 TEST (TARGETED REFRESH FOR OPTIONS LIST & ARRAY) ▼▼▼
     let targetedTables = [];
     const oldTables = oldSchema.database.table;
     const newTables = newSchema.database.table;
@@ -2076,26 +2076,26 @@ function analyzeSchemaDiff(oldSchema, newSchema) {
             const oldOptions = oldField.options_list_values || '';
             const newOptions = newField.options_list_values || '';
             
-            // 1. Adakah jenis paparan berubah?
+            // 1. Did the display type change?
             const isDisplayTypeChanged = oldField.display_type !== newField.display_type;
             
-            // 2. Adakah ia melibatkan options_list (sama ada DARI atau KEPADA)?
+            // 2. Does it involve options_list (either FROM or TO)?
             const involvesOptionsList = oldField.display_type === 'options_list' || newField.display_type === 'options_list';
             
-            // 3. Adakah ia melibatkan komponen Array/JSON?
+            // 3. Does it involve Array/JSON components?
             const arrayTypes = ['multiple_select', 'checkbox_list', 'tags_input', 'repeater', 'repeater_simple'];
             const involvesArrayType = arrayTypes.includes(oldField.display_type) || arrayTypes.includes(newField.display_type);
 
-            // LOGIK PENCETUS SENARIO 4:
+            // SCENARIO 4 TRIGGER LOGIC:
             if (
-                // Kes A: Tukar DARI atau KEPADA options_list/array_type
+                // Case A: Switch FROM or TO options_list/array_type
                 (isDisplayTypeChanged && (involvesOptionsList || involvesArrayType)) ||
                 
-                // Kes B: Kekal options_list, tetapi nilainya (options_list_values) berubah
+                // Case B: Stays options_list, but its values (options_list_values) changed
                 (newField.display_type === 'options_list' && oldOptions !== newOptions)
             ) {
                 requiresFakeDataRefresh = true;
-                break; // Cukup satu field berubah, kita refresh jadual ini
+                break; // One changed field is enough; we refresh this table
             }
         }
         
@@ -2105,42 +2105,42 @@ function analyzeSchemaDiff(oldSchema, newSchema) {
     }
 
     if (targetedTables.length > 0) {
-        console.log(`[Diff Checker] Perubahan format data UI dikesan. Masuk Senario 4 untuk jadual: ${targetedTables.join(', ')}`);
+        console.log(`[Diff Checker] UI data format change detected. Entering Scenario 4 for tables: ${targetedTables.join(', ')}`);
         return { scenario: 4, targets: targetedTables };
     }
-    // ▲▲▲ TAMAT UJIAN SENARIO 4 ▲▲▲
+    // ▲▲▲ END SCENARIO 4 TEST ▲▲▲
 
-    console.log("[Diff Checker] Hanya perubahan UI/Tetapan dikesan. Masuk Senario 2.");
+    console.log("[Diff Checker] Only UI/Settings changes detected. Entering Scenario 2.");
     return { scenario: 2, targets: [] };
 }
 
 /**
- * Fungsi bantuan untuk memeriksa hanya ciri fizikal Pangkalan Data
+ * Helper function to check only the physical characteristics of the Database
  */
 function checkDatabaseChanges(oldS, newS) {
-    // A. Semak bilangan atau nama jadual
+    // A. Check the number or names of tables
     const oldTables = Object.keys(oldS.database.table);
     const newTables = Object.keys(newS.database.table);
     if (oldTables.length !== newTables.length) return true;
 
     for (const tName of newTables) {
-        if (!oldS.database.table[tName]) return true; // Jadual baharu ditambah
+        if (!oldS.database.table[tName]) return true; // New table added
 
         const oldFields = oldS.database.table[tName].fields;
         const newFields = newS.database.table[tName].fields;
 
-        // B. Semak bilangan atau nama medan (fields)
+        // B. Check the number or names of fields
         const oldFieldNames = Object.keys(oldFields);
         const newFieldNames = Object.keys(newFields);
         if (oldFieldNames.length !== newFieldNames.length) return true;
 
         for (const fName of newFieldNames) {
-            if (!oldFields[fName]) return true; // Medan baharu ditambah
+            if (!oldFields[fName]) return true; // New field added
 
             const oF = oldFields[fName];
             const nF = newFields[fName];
 
-            // C. Semak ciri FIZIKAL medan (Jika berubah, wajib migrate DB)
+            // C. Check the PHYSICAL characteristics of fields (If changed, DB migration is mandatory)
             if (oF.data_type !== nF.data_type) return true;
             if (oF.length !== nF.length) return true;
             if (oF.primary_key !== nF.primary_key) return true;
@@ -2152,17 +2152,17 @@ function checkDatabaseChanges(oldS, newS) {
         }
     }
 
-    // D. Semak perubahan pada Relationships (One-to-Many, dll)
-    // Perubahan relationship melibatkan Foreign Key di DB, wajib migrate
+    // D. Check changes to Relationships (One-to-Many, etc.)
+    // Relationship changes involve Foreign Keys in the DB; migration is mandatory
     if (JSON.stringify(oldS.database.relationships) !== JSON.stringify(newS.database.relationships)) {
         return true;
     }
 
-    return false; // Tiada perubahan pada tapak fizikal DB
+    return false; // No changes to the physical DB footprint
 }
 
 // =================================================================
-// FUNGSI BUILT-IN PREVIEW SERVER (SMART REBUILD / HOT RELOAD)
+// BUILT-IN PREVIEW SERVER FUNCTIONS (SMART REBUILD / HOT RELOAD)
 // =================================================================
 ipcMain.handle('preview:instant-run', async (event) => { 
     const win = ctx.getWindow(event); 
@@ -2172,24 +2172,24 @@ ipcMain.handle('preview:instant-run', async (event) => {
             const userDataPath = ctx.getPath('userData'); 
             const workingPreviewPath = path.join(userDataPath, 'preview_env');
 
-            // 1. SALINAN KALI PERTAMA (Fizikal)
+            // 1. FIRST-TIME COPY (Physical)
             if (!fs.existsSync(workingPreviewPath)) {
-                if (!fs.existsSync(templatePreviewPath)) return resolve({ success: false, message: `Template tidak dijumpai: ${templatePreviewPath}` });
+                if (!fs.existsSync(templatePreviewPath)) return resolve({ success: false, message: `Template not found: ${templatePreviewPath}` });
 
                 const { response } = await ctx.dialog.showMessageBox(win, {
-                    type: 'info', buttons: ['OK', 'Batal'], title: 'Persediaan Persekitaran Pralihat',
-                    message: 'Pemasangan Kali Pertama',
-                    detail: 'Ini adalah kali pertama anda menggunakan fungsi Show Preview.\nProses ini melibatkan penyalinan fail asas sistem dan mungkin memakan masa 1 hingga 3 minit.\n\nAdakah anda mahu meneruskan?'
+                    type: 'info', buttons: ['OK', 'Cancel'], title: 'Preview Environment Setup',
+                    message: 'First-Time Installation',
+                    detail: 'This is your first time using the Show Preview feature.\nThis process involves copying the base system files and may take 1 to 3 minutes.\n\nDo you want to continue?'
                 });
 
-                if (response !== 0) return resolve({ success: false, message: 'Dibatalkan oleh pengguna.' });
+                if (response !== 0) return resolve({ success: false, message: 'Cancelled by user.' });
 
-                win?.webContents.send('show-overlay', { message: 'Mengira fail sistem. Sila tunggu...', progress: 0 });
+                win?.webContents.send('show-overlay', { message: 'Counting system files. Please wait...', progress: 0 });
                 await copyDirWithProgress(templatePreviewPath, workingPreviewPath, (copied, total, percentage) => {
-                    win?.webContents.send('show-overlay', { message: `Menyediakan persekitaran (Menyalin fail ${copied}/${total})...`, progress: Math.round(percentage * 0.90) });
+                    win?.webContents.send('show-overlay', { message: `Preparing environment (Copying files ${copied}/${total})...`, progress: Math.round(percentage * 0.90) });
                 });
             } else {
-                win?.webContents.send('show-overlay', { message: 'Menyemak perubahan skema...', progress: 90 });
+                win?.webContents.send('show-overlay', { message: 'Checking schema changes...', progress: 90 });
             }
 
             const previewPath = workingPreviewPath;
@@ -2198,23 +2198,23 @@ ipcMain.handle('preview:instant-run', async (event) => {
             const port = 8080;
 
             // ========================================================
-            // 2. DAPATKAN DATA SKEMA TERKINI & LOAD MEMORI CAKERA TEPAT (HARD DISK)
+            // 2. GET THE LATEST SCHEMA DATA & LOAD FROM THE PHYSICAL DISK (HARD DISK)
             // ========================================================
             const activeProject = db.prepare("SELECT * FROM projects WHERE is_active = 1 LIMIT 1").get();
-            if (!activeProject) return resolve({ success: false, message: "Tiada projek aktif dijumpai." });
+            if (!activeProject) return resolve({ success: false, message: "No active project found." });
 
             const fullSchema = await getFullProjectSchema(activeProject.project_id);
-            if (!fullSchema) return resolve({ success: false, message: "Gagal mendapatkan schema projek." });
+            if (!fullSchema) return resolve({ success: false, message: "Failed to get project schema." });
             
-// --- MULA: KEMAS KINI NAMA PROJEK & TETAPAN DI DALAM .ENV ---
+// --- START: UPDATE PROJECT NAME & SETTINGS IN .ENV ---
             const envPath = path.join(previewPath, '.env');
             let envChanged = false;
             
             if (fs.existsSync(envPath)) {
-                // envContent diisytiharkan di sini (dalam skop 'if')
+                // envContent is declared here (inside the 'if' scope)
                 let envContent = fs.readFileSync(envPath, 'utf8');
                 
-                // 1. Logik Kemas Kini APP_NAME
+                // 1. APP_NAME Update Logic
                 const rawAppName = activeProject.app_title || 'FiziSysMakerApp';
                 const safeAppName = rawAppName.includes(' ') ? `"${rawAppName}"` : rawAppName;
                 const currentAppNameMatch = envContent.match(/^APP_NAME=(.*)$/m);
@@ -2224,25 +2224,25 @@ ipcMain.handle('preview:instant-run', async (event) => {
                     envContent = envContent.replace(/^APP_NAME=.*$/m, `APP_NAME=${safeAppName}`);
                     envContent = envContent.replace(/^VITE_APP_NAME=.*$/m, `VITE_APP_NAME=${safeAppName}`);
                     envChanged = true;
-                    console.log(`[Preview] APP_NAME dikemas kini kepada: ${safeAppName}`);
+                    console.log(`[Preview] APP_NAME updated to: ${safeAppName}`);
                 }
 
-                // 2. Logik Kemas Kini APP_DEBUG & DEBUGBAR_ENABLED
-                // Menggunakan activeProject.debug_mode (dari Checkbox UI)
+                // 2. APP_DEBUG & DEBUGBAR_ENABLED Update Logic
+                // Uses activeProject.debug_mode (from the Checkbox UI)
                 const isDebugEnabled = activeProject.debug_mode == 1 || activeProject.debug_mode === 'true';
                 const targetDebugMode = isDebugEnabled ? 'true' : 'false'; 
                 
-                // A. Kemas kini APP_DEBUG (Ralat terperinci)
+                // A. Update APP_DEBUG (Detailed errors)
                 const currentAppDebugMatch = envContent.match(/^APP_DEBUG=(.*)$/m);
                 const currentAppDebug = currentAppDebugMatch ? currentAppDebugMatch[1].trim() : null;
 
                 if (currentAppDebug !== targetDebugMode) {
                     envContent = envContent.replace(/^APP_DEBUG=.*$/m, `APP_DEBUG=${targetDebugMode}`);
                     envChanged = true;
-                    console.log(`[Preview] APP_DEBUG dikemas kini kepada: ${targetDebugMode}`);
+                    console.log(`[Preview] APP_DEBUG updated to: ${targetDebugMode}`);
                 }
 
-                // B. Kemas kini atau Tambah DEBUGBAR_ENABLED (Bar Merah di bawah skrin)
+                // B. Update or Add DEBUGBAR_ENABLED (Red Bar at the bottom of the screen)
                 const currentDebugbarMatch = envContent.match(/^DEBUGBAR_ENABLED=(.*)$/m);
                 
                 if (currentDebugbarMatch) {
@@ -2250,29 +2250,29 @@ ipcMain.handle('preview:instant-run', async (event) => {
                     if (currentDebugbar !== targetDebugMode) {
                         envContent = envContent.replace(/^DEBUGBAR_ENABLED=.*$/m, `DEBUGBAR_ENABLED=${targetDebugMode}`);
                         envChanged = true;
-                        console.log(`[Preview] DEBUGBAR_ENABLED dikemas kini kepada: ${targetDebugMode}`);
+                        console.log(`[Preview] DEBUGBAR_ENABLED updated to: ${targetDebugMode}`);
                     }
                 } else {
                     envContent += `\nDEBUGBAR_ENABLED=${targetDebugMode}\n`;
                     envChanged = true;
-                    console.log(`[Preview] DEBUGBAR_ENABLED disuntik baharu sebagai: ${targetDebugMode}`);
+                    console.log(`[Preview] DEBUGBAR_ENABLED newly injected as: ${targetDebugMode}`);
                 }
 
-                // 3. Simpan fail jika ada sebarang pertukaran
+                // 3. Save the file if there were any changes
                 if (envChanged) {
                     fs.writeFileSync(envPath, envContent, 'utf8');
                 }
             }
-            // --- TAMAT: KEMAS KINI .ENV ---
+            // --- END: UPDATE .ENV ---
 
-            // MULA PEMBAIKAN: Baca dari Hard Disk jika RAM kosong (App baru dibuka)
+            // START IMPROVEMENT: Read from Hard Disk if RAM is empty (App just opened)
             const schemaCachePath = path.join(userDataPath, 'last_schema_cache.json');
             if (!lastGeneratedSchema && fs.existsSync(schemaCachePath)) {
                 try {
                     lastGeneratedSchema = JSON.parse(fs.readFileSync(schemaCachePath, 'utf8'));
-                    console.log("[Preview] Memori skema dari sesi lepas berjaya dimuatkan dari cakera.");
+                    console.log("[Preview] Schema memory from the previous session loaded successfully from disk.");
                 } catch (e) {
-                    console.warn("[Preview] Gagal membaca cache skema, menganggap ia sesi baharu.");
+                    console.warn("[Preview] Failed to read schema cache, treating it as a new session.");
                 }
             }
 
@@ -2283,46 +2283,46 @@ ipcMain.handle('preview:instant-run', async (event) => {
             let scenario = diffResult.scenario;
             let targetedTables = diffResult.targets;
             
-            // Jika .env berubah, paksa sistem masuk ke Senario 2 supaya arahan 'optimize:clear' membersihkan cache Laravel
+            // If .env changed, force the system into Scenario 2 so the 'optimize:clear' command clears the Laravel cache
             if (scenario === 1 && envChanged) {
                 scenario = 2;
-                console.log("[Preview] Memaksa Senario 2 (Clear Cache) kerana APP_NAME telah dikemas kini.");
+                console.log("[Preview] Forcing Scenario 2 (Clear Cache) because APP_NAME was updated.");
             }
             
-            // Paksa Senario 3 jika fail database.sqlite ghaib (dipadam manual oleh pengguna)
+            // Force Scenario 3 if the database.sqlite file is missing (manually deleted by the user)
             const dbSqlitePath = path.join(previewPath, 'database', 'database.sqlite');
             if (!fs.existsSync(dbSqlitePath)) {
                 scenario = 3;
-                console.log("[Preview] Pangkalan data SQLite hilang. Memaksa Senario 3.");
+                console.log("[Preview] SQLite database missing. Forcing Scenario 3.");
             }
 
-            // Fungsi bantuan untuk menghidupkan pelayan secara seragam
+            // Helper function to start the server uniformly
             const startServerAndResolve = () => {
-                win?.webContents.send('show-overlay', { message: 'Menghidupkan Pelayan Tempatan...', progress: 99 });
+                win?.webContents.send('show-overlay', { message: 'Starting Local Server...', progress: 99 });
                 previewServerProcess = spawn(phpPath, ['artisan', 'serve', `--port=${port}`], { cwd: previewPath });
-                previewServerProcess.on('error', (err) => resolve({ success: false, message: `Gagal menghidupkan pelayan: ${err.message}` }));
+                previewServerProcess.on('error', (err) => resolve({ success: false, message: `Failed to start server: ${err.message}` }));
                 previewServerProcess.stdout.on('data', (data) => {
                     if (data.toString().includes('running') || data.toString().includes('127.0.0.1')) {
-                        win?.webContents.send('show-overlay', { message: 'Pralihat Sedia Dilancarkan!', progress: 100 });
+                        win?.webContents.send('show-overlay', { message: 'Preview Ready!', progress: 100 });
                         setTimeout(() => resolve({ success: true, url: `http://127.0.0.1:${port}/admin` }), 500);
                     }
                 });
             };
 
-            // --- SENARIO 1: TIADA PERUBAHAN ---
+            // --- SCENARIO 1: NO CHANGES ---
             if (scenario === 1) {
-                console.log("[Preview] Senario 1: Tiada perubahan skema.");
+                console.log("[Preview] Scenario 1: No schema changes.");
                 if (previewServerProcess) {
-                    // Pelayan dah hidup, terus buka
-                    win?.webContents.send('show-overlay', { message: 'Pralihat Sedia Dilancarkan!', progress: 100 });
+                    // Server is already running, just open it
+                    win?.webContents.send('show-overlay', { message: 'Preview Ready!', progress: 100 });
                     return setTimeout(() => resolve({ success: true, url: `http://127.0.0.1:${port}/admin` }), 300);
                 } else {
-                    // App baru buka, pelayan mati. Hanya hidupkan pelayan.
+                    // App just opened, server is dead. Just start the server.
                     return startServerAndResolve();
                 }
             }
 
-            // Bunuh pelayan lama JIKA senario 3 (untuk lepaskan fail kunci DB)
+            // Kill the old server IF scenario 3 (to release the DB lock file)
             if (scenario === 3 && previewServerProcess) {
                 if (process.platform === 'win32') spawn('taskkill', ['/pid', previewServerProcess.pid, '/f', '/t']);
                 else previewServerProcess.kill();
@@ -2330,7 +2330,7 @@ ipcMain.handle('preview:instant-run', async (event) => {
             }
 
             // ========================================================
-            // 4. PEMBERSIHAN FOLDER PINTAR
+            // 4. SMART FOLDER CLEANUP
             // ========================================================
             const modelsPath = path.join(previewPath, 'app', 'Models');
             const migrationsPath = path.join(previewPath, 'database', 'migrations');
@@ -2362,9 +2362,9 @@ ipcMain.handle('preview:instant-run', async (event) => {
             }
 
             // ============================================================
-            // 5. TRIGGER PENJANA (GENERATORS)
+            // 5. GENERATOR TRIGGER
             // ============================================================
-            console.log(`[Preview] Menjana fail untuk Senario ${scenario}...`);
+            console.log(`[Preview] Generating files for Scenario ${scenario}...`);
             
             if (scenario === 3) {
                 await generateLaravelUserMigration(fullSchema, previewPath);
@@ -2373,7 +2373,7 @@ ipcMain.handle('preview:instant-run', async (event) => {
                 await generateFilamentUserModel(fullSchema, previewPath);
             }
             
-            // Factory wajib dijana untuk Senario 3 DAN Senario 4
+            // Factory must be regenerated for Scenario 3 AND Scenario 4
             if (scenario === 3 || scenario === 4) {
                 await generateLaravelFactories(fullSchema, previewPath);
             }
@@ -2396,24 +2396,24 @@ ipcMain.handle('preview:instant-run', async (event) => {
             await generateFilamentImporters(fullSchema, previewPath);
             await generateAdminPanelProvider(fullSchema, previewPath);
 
-            // Simpan memori skema selepas kod berjaya dijana ke RAM dan Cakera Keras
+            // Save the schema memory after code is successfully generated to RAM and Hard Disk
             lastGeneratedSchema = JSON.parse(JSON.stringify(fullSchema));
             fs.writeFileSync(schemaCachePath, JSON.stringify(lastGeneratedSchema), 'utf8');
 
             // ============================================================
-            // --- SENARIO 4: TARGETED REFRESH (KHAS UNTUK OPTIONS LIST & ARRAY) ---
+            // --- SCENARIO 4: TARGETED REFRESH (SPECIFICALLY FOR OPTIONS LIST & ARRAY) ---
             // ============================================================
             if (scenario === 4) {
-                console.log(`[Preview] Senario 4: Mencuci cache & membina semula fake data untuk ${targetedTables.join(', ')}...`);
-                win?.webContents.send('show-overlay', { message: 'Mencuci cache sistem...', progress: 93 });
+                console.log(`[Preview] Scenario 4: Flushing cache & rebuilding fake data for ${targetedTables.join(', ')}...`);
+                win?.webContents.send('show-overlay', { message: 'Flushing system cache...', progress: 93 });
                 
-                // LANGKAH 1: Cuci Cache Dahulu (Sama macam Senario 2)
+                // STEP 1: Flush the Cache First (Same as Scenario 2)
                 const cacheProcess = spawn(phpPath, ['artisan', 'optimize:clear'], { cwd: previewPath });
                 
                 cacheProcess.on('close', () => {
-                    win?.webContents.send('show-overlay', { message: 'Menjana semula data ujian untuk jadual yang terlibat...', progress: 96 });
+                    win?.webContents.send('show-overlay', { message: 'Regenerating test data for the involved tables...', progress: 96 });
                     
-                    // LANGKAH 2: Bina kod PHP untuk Tinker (Padam rekod lama & Cipta rekod baharu)
+                    // STEP 2: Build the PHP code for Tinker (Delete old records & Create new records)
                     let tinkerCode = `\\Illuminate\\Support\\Facades\\Schema::disableForeignKeyConstraints(); `;
                     
                     targetedTables.forEach(tableName => {
@@ -2430,35 +2430,35 @@ ipcMain.handle('preview:instant-run', async (event) => {
                     
                     tinkerCode += ` \\Illuminate\\Support\\Facades\\Schema::enableForeignKeyConstraints();`;
 
-                    // Jalankan perintah Tinker di latar belakang
+                    // Run the Tinker command in the background
                     const tinkerProcess = spawn(phpPath, ['artisan', 'tinker', '--execute', tinkerCode], { cwd: previewPath });
                     
                     tinkerProcess.on('close', () => {
                         if (previewServerProcess) {
-                            win?.webContents.send('show-overlay', { message: 'Antaramuka & Data berjaya dikemas kini!', progress: 100 });
+                            win?.webContents.send('show-overlay', { message: 'Interface & Data updated successfully!', progress: 100 });
                             setTimeout(() => resolve({ success: true, url: `http://127.0.0.1:${port}/admin` }), 500);
                         } else {
                             startServerAndResolve();
                         }
                     });
                 });
-                return; // Tamatkan proses kerana Senario 4 sudah selesai!
+                return; // End the process because Scenario 4 is complete!
             }
             
             // ============================================================
             // 6. --- SENARIO 2: HOT RELOAD (CLEAR CACHE) ---
             // ============================================================
             if (scenario === 2) {
-                console.log(`[Preview] Senario 2: Mengemaskini Cache...`);
-                win?.webContents.send('show-overlay', { message: 'Mengemaskini Antaramuka (Menjana Semula Cache)...', progress: 96 });
+                console.log(`[Preview] Scenario 2: Updating Cache...`);
+                win?.webContents.send('show-overlay', { message: 'Updating Interface (Regenerating Cache)...', progress: 96 });
                 
                 const cacheProcess = spawn(phpPath, ['artisan', 'optimize:clear'], { cwd: previewPath });
                 cacheProcess.on('close', () => {
                     if (previewServerProcess) {
-                        win?.webContents.send('show-overlay', { message: 'Pralihat Dikemaskini!', progress: 100 });
+                        win?.webContents.send('show-overlay', { message: 'Preview Updated!', progress: 100 });
                         setTimeout(() => resolve({ success: true, url: `http://127.0.0.1:${port}/admin` }), 500);
                     } else {
-                        // Jika pelayan mati waktu S2 (sebab app baru buka), kita hidupkan lepas cache dicuci
+                        // If the server died during S2 (because the app just opened), we start it after the cache is flushed
                         startServerAndResolve();
                     }
                 });
@@ -2470,9 +2470,9 @@ ipcMain.handle('preview:instant-run', async (event) => {
             // ============================================================
             if (!fs.existsSync(dbSqlitePath)) fs.writeFileSync(dbSqlitePath, ''); 
 
-            console.log(`[Preview] Menjalankan Migrasi & Seeder...`);
+            console.log(`[Preview] Running Migration & Seeder...`);
             let currentProgress = 90;
-            win?.webContents.send('show-overlay', { message: 'Memulakan Migrasi Pangkalan Data...', progress: currentProgress });
+            win?.webContents.send('show-overlay', { message: 'Starting Database Migration...', progress: currentProgress });
 
             const migrateProcess = spawn(phpPath, ['artisan', 'migrate:fresh', '--seed', '--force'], { cwd: previewPath });
             let migrateLog = '';
@@ -2481,16 +2481,16 @@ ipcMain.handle('preview:instant-run', async (event) => {
                 migrateLog += data.toString(); 
                 if (currentProgress < 95) {
                     currentProgress += 1; 
-                    win?.webContents.send('show-overlay', { message: 'Membina jadual dan data ujian (Seeder)...', progress: currentProgress });
+                    win?.webContents.send('show-overlay', { message: 'Building tables and test data (Seeder)...', progress: currentProgress });
                 }
             });
             migrateProcess.stderr.on('data', (data) => { migrateLog += data.toString(); });
-            migrateProcess.on('error', (err) => { resolve({ success: false, message: `Gagal mencari fail PHP: ${err.message}` }); });
+            migrateProcess.on('error', (err) => { resolve({ success: false, message: `Failed to find PHP file: ${err.message}` }); });
 
             migrateProcess.on('close', (code) => {
-                if (code !== 0) return resolve({ success: false, message: `Gagal menjalankan migrasi pangkalan data.\n\nLog Terminal:\n...${migrateLog.slice(-1000)}` });
+                if (code !== 0) return resolve({ success: false, message: `Failed to run database migration.\n\nTerminal Log:\n...${migrateLog.slice(-1000)}` });
 
-                win?.webContents.send('show-overlay', { message: 'Menjana Polisi Keselamatan & Hak Akses...', progress: 96 });
+                win?.webContents.send('show-overlay', { message: 'Generating Security Policy & Access Rights...', progress: 96 });
 
                 const shieldProcess = spawn(phpPath, ['artisan', 'shield:generate', '--all', '--panel=admin', '--no-interaction'], { cwd: previewPath });
                 let shieldLog = '';
@@ -2499,42 +2499,42 @@ ipcMain.handle('preview:instant-run', async (event) => {
 
                 shieldProcess.on('close', (shieldCode) => {
                     if (shieldCode !== 0 || shieldLog.toLowerCase().includes('error') || shieldLog.toLowerCase().includes('exception')) {
-                        return resolve({ success: false, message: `Gagal menjana Polisi Shield!\n\nSebab Ralat:\n${shieldLog.trim()}` });
+                        return resolve({ success: false, message: `Failed to generate Shield Policy!\n\nError Reason:\n${shieldLog.trim()}` });
                     }
                     startServerAndResolve();
                 }); 
             }); 
 
         } catch (error) {
-            console.error('Ralat Instant Preview:', error);
+            console.error('Instant Preview Error:', error);
             resolve({ success: false, message: error.message });
         }
     });
 });
 
-// Pastikan pelayan dibunuh apabila aplikasi ditutup
+// Make sure the server is killed when the app closes
 if (typeof ctx.onQuit === 'function') ctx.onQuit(() => {
     if (previewServerProcess) {
         previewServerProcess.kill();
     }
 });
 
-// Tambahkan ini untuk mematikan pelayan pralihat (Preview Server) ke akar umbi!
+// Added this to kill the preview server at the root!
 ipcMain.on('stop-preview-server', () => {
     if (typeof previewServerProcess !== 'undefined' && previewServerProcess !== null) {
         
-        // Semak adakah OS pengguna adalah Windows
+        // Check if the user's OS is Windows
         if (process.platform === 'win32') {
             const { spawn } = require('child_process');
             // /pid = Process ID, /f = Force kill, /t = Kill whole tree (Induk & Anak)
             spawn('taskkill', ['/pid', previewServerProcess.pid, '/f', '/t']);
         } else {
-            // Untuk pengguna Mac/Linux, .kill() biasa sudah mencukupi untuk membunuh tree
+            // For Mac/Linux users, a plain .kill() is enough to kill the tree
             previewServerProcess.kill(); 
         }
 
         previewServerProcess = null;
-        console.log('[Preview] Pelayan PHP dan keturunannya telah dibasmi sepenuhnya.');
+        console.log('[Preview] PHP server and its children have been fully terminated.');
     }
 });
 
@@ -2542,26 +2542,26 @@ ipcMain.on('stop-preview-server', () => {
 // ▼▼▼ VALIDATION HANDLERS (BETTER-SQLITE3 COMPATIBLE) ▼▼▼
 // =================================================================
 
-// Load validations untuk column tertentu
+// Load validations for a specific column
 ipcMain.handle('get-field-validations', (event, columnId) => {
     try {
-        // Guna .all() untuk better-sqlite3
+        // Use .all() for better-sqlite3
         return db.prepare("SELECT * FROM field_validations WHERE column_id = ?").all(columnId);
     } catch (error) {
-        console.error("Gagal mendapatkan validasi:", error);
+        console.error("Failed to get validations:", error);
         return [];
     }
 });
 
-// Save validations (Padam lama, insert baru untuk update pukal)
+// Save validations (Delete old, insert new for bulk update)
 ipcMain.handle('save-field-validations', (event, { columnId, validations }) => {
     try {
-        // Guna Transaction untuk better-sqlite3 (lebih laju & selamat)
+        // Use a Transaction for better-sqlite3 (faster & safer)
         const saveTransaction = db.transaction(() => {
-            // 1. Padam rekod lama
+            // 1. Delete old records
             db.prepare("DELETE FROM field_validations WHERE column_id = ?").run(columnId);
 
-            // 2. Masukkan rekod baru jika ada
+            // 2. Insert new records if any
             if (validations && validations.length > 0) {
                 const insertStmt = db.prepare(
                     "INSERT INTO field_validations (column_id, rule_type, rule_value_1, rule_value_2, is_active) VALUES (?, ?, ?, ?, 1)"
@@ -2577,7 +2577,7 @@ ipcMain.handle('save-field-validations', (event, { columnId, validations }) => {
         return { success: true };
 
     } catch (error) {
-        console.error("Gagal menyimpan validasi:", error);
+        console.error("Failed to save validations:", error);
         return { success: false, message: error.message };
     }
 });
@@ -2586,13 +2586,13 @@ ipcMain.handle('save-field-validations', (event, { columnId, validations }) => {
 // IPC: PENGURUSAN WIDGET DASHBOARD
 // ==========================================
 
-// 1. Simpan atau Kemas Kini Widget
+// 1. Save or Update Widget
 ipcMain.handle('widget:save', (event, data) => {
     try {
         let savedData;
         
         if (data.id) {
-            // Kemas kini (Update) - Tambah 5 medan baharu
+            // Update - Add 5 new fields
             const stmt = db.prepare(`
                 UPDATE project_widgets 
                 SET title = ?, widget_type = ?, target_table = ?, aggregate_type = ?, target_field = ?, width_span = ?, color = ?, icon = ?,
@@ -2606,7 +2606,7 @@ data.id, data.project_id
             
             savedData = { ...data, id: parseInt(data.id) };
         } else {
-            // Cipta Baru (Insert) - Tambah 5 medan baharu
+            // Create New (Insert) - Add 5 new fields
             const orderStmt = db.prepare(`SELECT MAX(sort_order) as max_order FROM project_widgets WHERE project_id = ?`);
             const orderResult = orderStmt.get(data.project_id);
             const nextOrder = (orderResult && orderResult.max_order !== null) ? orderResult.max_order + 1 : 1;
@@ -2628,12 +2628,12 @@ data.id, data.project_id
         
         return { success: true, data: savedData };
     } catch (error) {
-        console.error('Ralat widget:save:', error);
+        console.error('widget:save error:', error);
         return { success: false, message: error.message };
     }
 });
 
-// 2. Padam Widget
+// 2. Delete Widget
 ipcMain.handle('widget:delete', (event, id) => {
     try {
         const stmt = db.prepare("DELETE FROM project_widgets WHERE id = ?");
@@ -2650,13 +2650,13 @@ async function getFullProjectSchema(projectId) {
       .prepare("SELECT * FROM projects WHERE project_id = ?")
       .get(projectId);
     if (!project)
-      throw new Error(`Projek dengan ID ${projectId} tidak ditemui.`);
+      throw new Error(`Project with ID ${projectId} not found.`);
 
-    // ▼▼▼ TAMBAHAN BARU: Ambil Data Dashboard Widgets ▼▼▼
+    // ▼▼▼ NEW ADDITION: Fetch Dashboard Widgets Data ▼▼▼
     const widgets = db
       .prepare("SELECT * FROM project_widgets WHERE project_id = ? ORDER BY sort_order ASC")
       .all(projectId);
-    // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
+    // ▲▲▲ END OF ADDITION ▲▲▲
 
     const tables = db
       .prepare("SELECT * FROM tables WHERE project_id = ? ORDER BY table_order, table_id")
@@ -2666,7 +2666,7 @@ async function getFullProjectSchema(projectId) {
     if (tableIds.length === 0) {
         return {
             project,
-            // Kemas kini: Masukkan widgets walaupun jadual belum ada
+            // Update: Insert widgets even if the table doesn't exist yet
             database: { name: project.app_title, table: {}, relationships: [], unified_menu: [], widgets: widgets },
         };
     }
@@ -2684,7 +2684,7 @@ async function getFullProjectSchema(projectId) {
         customViewFields = db.prepare(`SELECT * FROM custom_module_fields WHERE module_id IN (${viewPlaceholder}) ORDER BY display_order`).all(...viewIds);
     }
 
-    // Field Validations (Dari Test)
+    // Field Validations (From Test)
     const validations = db.prepare(`
         SELECT fv.*, f.table_id, f.field_name 
         FROM field_validations fv
@@ -2725,7 +2725,7 @@ async function getFullProjectSchema(projectId) {
         )
         .all(...tableIds, ...tableIds);
     
-    // Logik Unified Menu
+    // Unified Menu Logic
     const allItems = db.prepare(`
         SELECT mi.*, t.table_name 
         FROM menu_items mi 
@@ -2782,23 +2782,23 @@ async function getFullProjectSchema(projectId) {
         table: structuredTables,
         relationships: relationships,
         unified_menu: unifiedMenu,
-        // ▼▼▼ TAMBAHAN BARU: Masukkan widgets ke dalam payload JSON akhir ▼▼▼
+        // ▼▼▼ NEW ADDITION: Insert widgets into the final JSON payload ▼▼▼
         widgets: widgets,
-        // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
+        // ▲▲▲ END OF ADDITION ▲▲▲
       },
     };
   } catch (error) {
-    console.error("Gagal mengambil skema penuh:", error);
+    console.error("Failed to fetch full schema:", error);
     return null;
   }
 }
 
 /**
- * Mengendalikan semakan pra-import: memberi amaran kepada pengguna dan memadam jadual lama jika perlu.
- * @param {BrowserWindow} win - Tetingkap utama aplikasi untuk melampirkan ctx.dialog.
- * @param {number} projectId - ID projek semasa.
- * @param {string} sqlContent - Kandungan penuh skrip SQL yang akan diimport.
- * @returns {Promise<boolean>} - Mengembalikan 'true' jika import boleh diteruskan, 'false' jika dibatalkan.
+ * Handles the pre-import check: warns the user and deletes old tables if needed.
+ * @param {BrowserWindow} win - The app's main window to attach ctx.dialog to.
+ * @param {number} projectId - The current project ID.
+ * @param {string} sqlContent - The full content of the SQL script to be imported.
+ * @returns {Promise<boolean>} - Returns 'true' if the import can proceed, 'false' if cancelled.
  */
 
 async function handleImportPreflight(win, projectId, sqlContent) {
@@ -2824,7 +2824,7 @@ async function handleImportPreflight(win, projectId, sqlContent) {
       return true;
   }
 
-  // ▼▼▼ MULA PERUBAHAN: Gantikan dialog natif dengan sistem modal custom ▼▼▼
+  // ▼▼▼ START CHANGE: Replace the native dialog with a custom modal system ▼▼▼
   const userConfirmed = await new Promise(resolve => {
       ipcMain.once('custom-dialog-response', (event, response) => {
           resolve(response); // response will be true for OK, false for Cancel
@@ -2841,7 +2841,7 @@ async function handleImportPreflight(win, projectId, sqlContent) {
   if (!userConfirmed) { // User clicked 'Cancel' or closed the modal
     return false;
   }
-  // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+  // ▲▲▲ END CHANGES ▲▲▲
 
   // Proceed with deletion
   try {
@@ -2861,7 +2861,7 @@ async function handleImportPreflight(win, projectId, sqlContent) {
     deleteTransaction();
     return true;
   } catch (error) {
-    console.error("Gagal memadam skema lama:", error);
+    console.error("Failed to delete old schema:", error);
     // Since we can't use the native dialog easily here, we'll rely on console logs for this specific error
     return false;
   }
@@ -2908,11 +2908,11 @@ function importSchema(sql, projectId, dialect) {
     const toTitleCase = (str) => {
         if (!str) return '';
         return str
-            // Ganti snake_case (cth: bas_sekolah) dan kebab-case (cth: bas-sekolah) dengan ruang
+            // Replace snake_case (e.g. school_bus) and kebab-case (e.g. school-bus) with spaces
             .replace(/[_-]/g, ' ')
-            // Masukkan ruang untuk camelCase (cth: basSekolah -> bas Sekolah)
+            // Insert spaces for camelCase (e.g. schoolBus -> school Bus)
             .replace(/([a-z])([A-Z])/g, '$1 $2')
-            // Jadikan semua huruf pertama bagi setiap perkataan huruf besar
+            // Capitalize the first letter of every word
             .replace(/\b\w/g, char => char.toUpperCase());
     };
     
@@ -2924,7 +2924,7 @@ function importSchema(sql, projectId, dialect) {
         return (name || '').trim() || null;
     };
 
-    // ▼▼▼ PETA PENTERJEMAHAN JENIS DATA (DATA TYPE NORMALIZATION MAP) ▼▼▼
+    // ▼▼▼ DATA TYPE TRANSLATION / NORMALIZATION MAP ▼▼▼
     const dataTypeNormalizationMap = {
         'INTEGER': 'INT',
         'SERIAL': 'INT',
@@ -2943,7 +2943,7 @@ function importSchema(sql, projectId, dialect) {
         'FLOAT4': 'FLOAT',
         'FLOAT8': 'DOUBLE',
     };
-    // ▲▲▲ TAMAT PETA PENTERJEMAHAN ▲▲▲
+    // ▲▲▲ END TRANSLATION MAP ▲▲▲
 	
     let tableOrder = 0;
 
@@ -2951,7 +2951,7 @@ function importSchema(sql, projectId, dialect) {
         const insertConstraintStmt = db.prepare('INSERT INTO table_constraints (table_id, constraint_name, constraint_type, columns) VALUES (?, ?, ?, ?)');
         const getMaxMenuOrderStmt = db.prepare('SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL');
         const insertMenuItemStmt = db.prepare('INSERT INTO menu_items (project_id, table_id, item_label, item_detail, item_order, menu_group_id) VALUES (?, ?, ?, ?, ?, NULL)');
-        // Dalam fungsi importSchema
+        // Inside the importSchema function
         const insertFieldStmt = db.prepare(`INSERT INTO fields (table_id, field_name, data_type, length, precision, required, auto_increment, unsigned, zero_fill, primary_key, "unique", not_null, is_indexed, read_only, default_value, caption, field_order) VALUES (@table_id, @field_name, @data_type, @length, @precision, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @not_null, @is_indexed, @read_only, @default_value, @caption, @field_order)`);
 
         
@@ -2981,7 +2981,7 @@ function importSchema(sql, projectId, dialect) {
                     const fieldName = getFieldNameFromAST(definition.column).trim();
                     const caption = toTitleCase(fieldName);
                     
-                    // ▼▼▼ MULA LOGIK PENORMALAN JENIS DATA ▼▼▼
+                    // ▼▼▼ START DATA TYPE NORMALIZATION LOGIC ▼▼▼
                     let rawDataType = (definition.definition.dataType || '').trim().toUpperCase();
                     const isSerial = ['SERIAL', 'BIGSERIAL'].includes(rawDataType);
                     let normalizedDataType = dataTypeNormalizationMap[rawDataType] || rawDataType;
@@ -2993,7 +2993,7 @@ function importSchema(sql, projectId, dialect) {
                         }
                     }
                     if (!normalizedDataType) normalizedDataType = 'TEXT';
-                    // ▲▲▲ TAMAT LOGIK PENORMALAN ▲▲▲
+                    // ▲▲▲ END NORMALIZATION LOGIC ▲▲▲
                     
                     const fieldData = {
                         table_id: tableId,
@@ -3004,7 +3004,7 @@ function importSchema(sql, projectId, dialect) {
                         length: definition.definition.length || null,
                         precision: definition.definition.scale || null,
                         required: 0, auto_increment: 0, unsigned: 0, zero_fill: 0, primary_key: 0, "unique": 0,
-                        not_null: 0, // <--- TAMBAH INI
+                        not_null: 0, // <--- ADD THIS
                         is_indexed: 0, read_only: 0, default_value: null,
                     };
                     
@@ -3016,7 +3016,7 @@ function importSchema(sql, projectId, dialect) {
 
                     if (isNotNull) {
                         fieldData.not_null = 1;
-                        // Jika bukan auto_increment, kita anggap ia required (wajib diisi dalam borang)
+                        // If not auto_increment, we treat it as required (must be filled in the form)
                         if (!fieldData.auto_increment) fieldData.required = 1;
                     }
                     if (definition.unsigned) fieldData.unsigned = 1;
@@ -3036,11 +3036,11 @@ function importSchema(sql, projectId, dialect) {
                         if (type === "unique key" || type === "unique") { fieldData.unique = 1; }
                         if (type === "not null") { 
                                 fieldData.required = 1; 
-                                fieldData.not_null = 1; // <--- Tambah ini
+                                fieldData.not_null = 1; // <--- Add this
                             }
                     });
                     
-// Tetapkan hide_in_tv = 1, hide_in_dv = 1, dan read_only = 1 secara lalai untuk medan sistem
+// Set hide_in_tv = 1, hide_in_dv = 1, and read_only = 1 by default for system fields
                     const protectedFields = ['id', 'created_at', 'updated_at', 'deleted_at', 'created_by', 'updated_by', 'deleted_by'];
                     
                     if (fieldData.primary_key === 1 || protectedFields.includes(fieldName)) {
@@ -3057,7 +3057,7 @@ function importSchema(sql, projectId, dialect) {
                 }
             });
 
-            // ... (baki kod di bawah ini tidak berubah) ...
+            // ... (rest of the code below unchanged) ...
             
             tableLevelRules.forEach(rule => {
                 const ruleType = rule.constraint_type?.toLowerCase() || rule.keyword;
@@ -3075,7 +3075,7 @@ function importSchema(sql, projectId, dialect) {
                 } else if (ruleType === "foreign key") {
                     const ref = rule.reference_definition;
                     if (ref) { 
-                        // Ekstrak ON DELETE dan ON UPDATE dari AST
+                        // Extract ON DELETE and ON UPDATE from the AST
                         let onDelete = 'NO ACTION';
                         let onUpdate = 'NO ACTION';
 
@@ -3083,12 +3083,12 @@ function importSchema(sql, projectId, dialect) {
                             ref.on_action.forEach(action => {
                                 const type = action.type.toLowerCase();
                                 
-                                // PEMBETULAN: Semak jenis data 'value' sebelum guna .toUpperCase()
+                                // FIX: Check the data type of 'value' before using .toUpperCase()
                                 let valStr = 'NO ACTION';
                                 if (typeof action.value === 'string') {
                                     valStr = action.value;
                                 } else if (action.value && typeof action.value === 'object' && action.value.value) {
-                                    // Kadang-kadang parser bungkus dalam objek { type: 'origin', value: 'CASCADE' }
+                                    // Sometimes the parser wraps it in an object { type: 'origin', value: 'CASCADE' }
                                     valStr = action.value.value;
                                 }
 
@@ -3104,8 +3104,8 @@ function importSchema(sql, projectId, dialect) {
                             parentTableName: ref.table[0].table, 
                             fkChildField: columns[0], 
                             parentField: getFieldNameFromAST(ref.definition[0]),
-                            onDelete: onDelete, // Simpan data ini
-                            onUpdate: onUpdate  // Simpan data ini
+                            onDelete: onDelete, // Save this data
+                            onUpdate: onUpdate  // Save this data
                         }); 
                     }
                 }
@@ -3145,7 +3145,7 @@ function importSchema(sql, projectId, dialect) {
 const checkPKStmt = db.prepare('SELECT 1 FROM fields WHERE table_id = ? AND primary_key = 1 LIMIT 1');
         const checkFieldExistsStmt = db.prepare('SELECT 1 FROM fields WHERE table_id = ? AND field_name = ? LIMIT 1');
         
-        // Tambah hide_in_tv dan hide_in_dv pada statement SQL
+        // Add hide_in_tv and hide_in_dv to the SQL statement
         const insertStandardFieldStmt = db.prepare(`INSERT INTO fields (table_id, field_name, caption, data_type, length, primary_key, auto_increment, unsigned, read_only, is_indexed, field_order, hide_in_tv, hide_in_dv) VALUES (@table_id, @field_name, @caption, @data_type, @length, @primary_key, @auto_increment, @unsigned, @read_only, @is_indexed, @field_order, @hide_in_tv, @hide_in_dv)`);
         
         for (const tableName in tableMap) {
@@ -3239,13 +3239,13 @@ const checkPKStmt = db.prepare('SELECT 1 FROM fields WHERE table_id = ? AND prim
     }
 }
 function getGeneratedFolderPath() {
-  // Laluan ini akan berbeza untuk setiap pengguna dan OS, cth:
-  // Windows: C:\Users\NamaAnda\AppData\Roaming\fizisysmaker
+  // This path will differ for each user and OS, e.g.:
+  // Windows: C:\Users\YourName\AppData\Roaming\fizisysmaker
   const userDataPath = ctx.getPath('userData');
   
   const generatedPath = path.join(userDataPath, 'generated');
 
-  // Pastikan folder ini wujud. Jika tidak, ciptakannya.
+  // Make sure this folder exists. If not, create it.
   if (!fs.existsSync(generatedPath)) {
     fs.mkdirSync(generatedPath, { recursive: true });
   }
@@ -3254,11 +3254,11 @@ function getGeneratedFolderPath() {
 }
 async function runComposerInstall(projectPath) {
   return new Promise((resolve, reject) => {
-    // Tentukan laluan ke PHP dan Composer berdasarkan mod aplikasi
+    // Determine the path to PHP and Composer based on the app mode
     const isPackaged = ctx.isPackaged;
     const baseBinPath = isPackaged
       ? path.join(process.resourcesPath, 'app.asar.unpacked', 'bin')
-      : path.join(__dirname, '../../bin'); // Keluar dari src/main
+      : path.join(__dirname, '../../bin'); // Exit from src/main
 
     const phpPath = require('../core/phpResolver').resolvePhpBinary(baseBinPath);
     const composerPath = path.join(baseBinPath, 'composer.phar');
@@ -3266,16 +3266,16 @@ async function runComposerInstall(projectPath) {
     console.log(`Running composer in: ${projectPath}`);
     console.log(`Using PHP: ${phpPath}`);
 
-    // Gunakan spawn untuk kawalan yang lebih baik
+    // Use spawn for better control
     const composerProcess = spawn(phpPath, [composerPath, 'install'], {
-      cwd: projectPath, // Tetapkan direktori kerja ke folder projek yang dijana
+      cwd: projectPath, // Set the working directory to the generated project folder
       stdio: 'pipe' // Tangkap output
     });
 
-    // Dengar output untuk dipaparkan (cth., di konsol atau hantar ke UI)
+    // Listen to the output for display (e.g., in the console or send to the UI)
     composerProcess.stdout.on('data', (data) => {
       console.log(`Composer: ${data.toString()}`);
-      // Di sini anda boleh hantar kemajuan ke tetingkap UI
+      // Here you can send progress to the UI window
       // mainWindow.webContents.send('composer-output', data.toString());
     });
 

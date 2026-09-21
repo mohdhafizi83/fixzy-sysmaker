@@ -17,7 +17,7 @@ class ProfilPelajarFactory extends Factory
 	public function definition(): array
 	{
 		return [
-			// pelajar_id akan diisi secara automatik nanti
+			// pelajar_id will be filled in automatically later
 			'alamat' => fake()->address(),
 			'no_telefon' => fake()->phoneNumber(),
 			'tarikh_lahir' => fake()->date(),

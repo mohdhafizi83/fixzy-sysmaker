@@ -1,11 +1,11 @@
 // js/ui/tabHandlers.js
 
 export function initializeTabSystems() {
-    // Cari semua bekas tab dalam dokumen
+    // Find all tab containers in the document
     const allTabContainers = document.querySelectorAll('.tabs-container');
 
     allTabContainers.forEach(container => {
-        // :scope memastikan kita hanya memilih anak-anak terus dari bekas ini
+        // :scope ensures we only select direct children of this container
         const tabLinks = container.querySelectorAll(':scope > .tabs-nav > .tab-link');
         
         tabLinks.forEach(link => {
@@ -14,22 +14,22 @@ export function initializeTabSystems() {
                 const contentContainer = container.querySelector(':scope > .tabs-content');
                 const targetPane = contentContainer.querySelector(`#${tabId}`);
 
-                // Nyahaktifkan semua link dan pane pada tahap yang sama
+                // Deactivate all links and panes at the same level
                 link.closest('.tabs-nav').querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
                 contentContainer.querySelectorAll(':scope > .tab-pane').forEach(p => p.classList.remove('active'));
 
-                // Aktifkan link yang diklik dan panel sasarannya
+                // Activate the clicked link and its target panel
                 link.classList.add('active');
                 if (targetPane) {
                     targetPane.classList.add('active');
 
-                    // Selepas mengaktifkan panel utama, semak jika ia mempunyai sub-tab.
+                    // After activating the main panel, check whether it has sub-tabs.
                     const nestedTabs = targetPane.querySelector('.tabs-container');
                     if (nestedTabs) {
-                        // Jika ada, cari pautan tab pertama dalam sub-tab itu.
+                        // If so, find the first tab link inside that sub-tab.
                         const firstSubTabLink = nestedTabs.querySelector('.tabs-nav .tab-link');
                         if (firstSubTabLink) {
-                            // Cetuskan klik pada pautan sub-tab pertama untuk mengaktifkannya.
+                            // Fire a click on the first sub-tab link to activate it.
                             firstSubTabLink.click();
                         }
                     }
@@ -37,7 +37,7 @@ export function initializeTabSystems() {
             });
         });
 
-        // Pastikan tab pertama sentiasa aktif semasa permulaan
+        // Make sure the first tab is always active on startup
         if (tabLinks.length > 0 && !container.querySelector('.tabs-nav > .tab-link.active')) {
             tabLinks[0].click();
         }

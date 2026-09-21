@@ -29,7 +29,7 @@ async function generateFilamentExports(fullSchema, basePath) {
         // AMBIL DATA DARI STRUKTUR YANG BETUL
         const { database: { table: tables, relationships } } = fullSchema;
 
-        // Loop setiap jadual
+        // Loop over every table
         for (const tableName in tables) {
             const tableData = tables[tableName];
             
@@ -44,10 +44,10 @@ async function generateFilamentExports(fullSchema, basePath) {
             // Cth: StudentInfo
             const modelName = toSingularPascalCase(nameSource);
             
-            // Frasa untuk Tajuk
+            // Phrase for the Title
             const fraseModelName = toTitleCase(nameSource);
 
-            // Dapatkan senarai medan (fields)
+            // Get the list of fields
             const columns = Object.values(tableData.fields);
 
             // Rule 2: Bina Kod Column
@@ -135,7 +135,7 @@ async function generateFilamentExports(fullSchema, basePath) {
         return { success: true };
 
     } catch (error) {
-        console.error("Gagal menjana Filament Exports:", error);
+        console.error("Failed to generate Filament Exports:", error);
         return { success: false, message: error.message };
     }
 }

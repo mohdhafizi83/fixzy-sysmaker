@@ -19,7 +19,7 @@ export function initializeFormDisplayRules() {
     const dataTypeSelect = document.getElementById('fld-data-type');
     if (displayTypeRadios.length === 0 || !dataTypeSelect) return;
 
-    // Fungsi bantuan untuk menyemak keserasian dengan jenis data TEXT
+    // Helper function to check compatibility with TEXT data types
     const checkTextCompatibility = () => {
         const selectedRadio = document.querySelector('input[name="fld-display-type"]:checked');
         if (!selectedRadio) return;
@@ -35,7 +35,7 @@ export function initializeFormDisplayRules() {
         }
     };
     
-    // Pasang listener pada setiap radio button
+    // Attach a listener to each radio button
     displayTypeRadios.forEach(radio => {
         radio.addEventListener('change', checkTextCompatibility);
     });
@@ -52,7 +52,7 @@ export function initializeOptionsListRules() {
     const checkCompatibility = (event) => {
         const currentDataType = dataTypeSelect.value.toUpperCase();
         
-        // Senarai jenis data yang dibenarkan untuk pelbagai pilihan
+        // Data types allowed for multiple-choice options
         const allowedTypes = ['TEXT', 'LONGTEXT'];
         const isAllowed = allowedTypes.some(type => currentDataType.includes(type));
 
@@ -68,19 +68,19 @@ export function initializeOptionsListRules() {
     checkboxesRadio.addEventListener('click', checkCompatibility);
 }
 
-// Function untuk Load Tab Validation (Versi Auto-Save & Tanpa jQuery)
+// Function to load the Validation tab (Auto-Save & jQuery-free version)
 export async function loadValidationTab(columnId, tableName) {
     const container = document.getElementById('validationRulesContainer');
     if (!container) return;
     
-    // Tunjuk spinner loading
+    // Show the loading spinner
     container.innerHTML = '<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Loading rules...</div>';
 
     try {
-        // 1. Dapatkan Data dari Database
+        // 1. Get data from the database
         const existingValidations = await window.electronAPI.getFieldValidations(columnId);
         
-        // 2. Dapatkan Senarai Column (untuk dropdown)
+        // 2. Get the column list (for the dropdown)
         const tableData = appState.jsonData.database.table[tableName];
         const allCols = [];
         const dateCols = [];
@@ -96,7 +96,7 @@ export async function loadValidationTab(columnId, tableName) {
             });
         }
 
-        // 3. Bina HTML (Tanpa Inline Event Handlers untuk elak isu CSP)
+        // 3. Build the HTML (no inline event handlers to avoid CSP issues)
         let html = '<div class="accordion" id="accordionValidation">';
         
         window.VALIDATION_RULES_CONFIG.forEach((rule, index) => {
@@ -133,14 +133,14 @@ export async function loadValidationTab(columnId, tableName) {
 
         html += '</div>';
         
-        // Tambah status indikator (untuk tunjuk "Saving...")
+        // Add a status indicator (to show "Saving...")
         html += `<div id="val-save-status" class="text-right mt-2 text-muted small" style="min-height:20px;"></div>`;
 
         container.innerHTML = html;
 
-        // 4. PASANG EVENT LISTENERS UNTUK AUTO-SAVE
+        // 4. ATTACH EVENT LISTENERS FOR AUTO-SAVE
         
-        // Helper function untuk trigger save
+        // Helper function to trigger save
         const triggerAutoSave = async () => {
             const statusEl = document.getElementById('val-save-status');
             if (statusEl) statusEl.innerHTML = '<span class="text-info"><i class="fas fa-sync fa-spin"></i> Saving...</span>';
@@ -153,22 +153,22 @@ export async function loadValidationTab(columnId, tableName) {
             }
         };
 
-        // A. Listener untuk Checkbox (Klik = Toggle UI + Save)
+        // A. Listener for checkboxes (click = toggle UI + save)
         const checkboxes = container.querySelectorAll('.validation-checkbox');
         checkboxes.forEach(cb => {
             cb.addEventListener('change', async (e) => {
                 const type = e.target.getAttribute('data-type');
                 
-                // 1. Toggle UI (Buka/Tutup accordion)
+                // 1. Toggle the UI (open/close accordion)
                 window.toggleValidationInputs(type);
                 
-                // 2. Simpan ke Database
+                // 2. Save to the database
                 await triggerAutoSave();
             });
         });
 
-        // B. Listener untuk Inputs (Ubah Nilai = Save)
-        // Kita guna 'change' supaya save berlaku bila user selesai edit (blur/enter)
+        // B. Listener for inputs (value change = save)
+        // We use 'change' so the save happens when the user finishes editing (blur/enter)
         const inputs = container.querySelectorAll('.val-input-1, .val-input-2, select');
         inputs.forEach(input => {
             input.addEventListener('change', async () => {
@@ -182,27 +182,27 @@ export async function loadValidationTab(columnId, tableName) {
     }
 }
 
-// Helper untuk bina Input HTML berdasarkan Config
+// Helper to build input HTML based on the config
 function renderValidationInputs(rule, allCols, dateCols, savedVal1, savedVal2) {
     if (rule.inputs === 'none') return '';
 
     let inputHtml = '';
 
-    // 1. Dropdown Date (Hanya column tarikh)
+    // 1. Date dropdown (date columns only)
     if (rule.inputs === 'dropdown_date') {
         inputHtml += `<select class="form-control form-control-sm val-input-1" data-rule="${rule.type}">
             <option value="">-- Select Date Field --</option>
             ${dateCols.map(c => `<option value="${c.column_name}" ${c.column_name === savedVal1 ? 'selected' : ''}>${c.column_name}</option>`).join('')}
         </select>`;
     } 
-    // 2. Dropdown Field (Semua column) - INI YANG DITAMBAH
+    // 2. Field dropdown (all columns) - THIS WAS ADDED
     else if (rule.inputs === 'dropdown_field') {
         inputHtml += `<select class="form-control form-control-sm val-input-1" data-rule="${rule.type}">
             <option value="">-- Select Field --</option>
             ${allCols.map(c => `<option value="${c.column_name}" ${c.column_name === savedVal1 ? 'selected' : ''}>${c.column_name}</option>`).join('')}
         </select>`;
     }
-    // 3. Dropdown Field + Textbox (cth: required_if)
+    // 3. Field dropdown + textbox (e.g. required_if)
     else if (rule.inputs === 'dropdown_field_text') {
         inputHtml += `<div class="row">
             <div class="col-6">
@@ -216,7 +216,7 @@ function renderValidationInputs(rule, allCols, dateCols, savedVal1, savedVal2) {
             </div>
         </div>`;
     }
-    // 4. Textbox biasa
+    // 4. Plain textbox
     else if (rule.inputs === 'textbox') {
         inputHtml += `<input type="text" class="form-control form-control-sm val-input-1" data-rule="${rule.type}" placeholder="${rule.placeholder || ''}" value="${savedVal1}">`;
     }

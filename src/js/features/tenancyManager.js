@@ -7,18 +7,18 @@ class TenancyManager {
     constructor() {
         this.initialized = false;
         this.currentTenancyType = 'standard';
-        // Rujukan DOM Modal
+        // Modal DOM references
         this.modal = document.getElementById('tenancy-wizard-modal');
         this.closeBtn = document.getElementById('tenancy-wizard-close');
         this.cancelBtn = document.getElementById('tenancy-wizard-cancel');
         this.saveBtn = document.getElementById('tenancy-wizard-save');
         
-        // Rujukan DOM UI
+        // UI DOM references
         this.radioHasTable = document.querySelectorAll('input[name="wizard_has_table"]');
         this.groupExistingTable = document.getElementById('wizard-existing-table-group');
         this.groupNewTable = document.getElementById('wizard-new-table-group');
         
-        // Rujukan DOM Dashboard
+        // Dashboard DOM references
         this.btnConfigure = document.getElementById('btn-configure-tenancy');
         this.btnEdit = document.getElementById('btn-edit-tenancy');
         this.summaryContainer = document.getElementById('tenancy-summary-container');
@@ -26,7 +26,7 @@ class TenancyManager {
 
     init() {
         if (this.initialized) return;
-// Sinkronisasi penjejak dalaman dengan pangkalan data semasa dibuka
+// Sync the internal tracker with the database when opened
         this.currentTenancyType = appState.activeProject?.tenancy_type || 'standard';
         
         this.attachEventListeners();
@@ -36,13 +36,13 @@ class TenancyManager {
 
     attachEventListeners() {
         
-// Guna Event Delegation pada document.body supaya ia kalis-refresh
+// Use event delegation on document.body so it survives refreshes
         document.body.addEventListener('change', (e) => {
             if (e.target && e.target.name === 'app-tenancy_type') {
                 this.handleTenancyTypeChange(e);
             }
         });
-        // Togol jenis jadual (Existing vs New)
+        // Toggle table type (Existing vs New)
         this.radioHasTable.forEach(radio => {
             radio.addEventListener('change', (e) => {
                 if (e.target.value === 'yes') {
@@ -55,32 +55,32 @@ class TenancyManager {
             });
         });
 
-        // Buka Modal
+        // Open the modal
         if (this.btnConfigure) this.btnConfigure.addEventListener('click', () => this.openWizard());
         if (this.btnEdit) this.btnEdit.addEventListener('click', () => this.openWizard());
 
-        // Tutup Modal
+        // Close the modal
         if (this.closeBtn) this.closeBtn.addEventListener('click', () => this.closeWizard());
         if (this.cancelBtn) this.cancelBtn.addEventListener('click', () => this.closeWizard());
 
-        // Simpan Data
+        // Save data
         if (this.saveBtn) this.saveBtn.addEventListener('click', () => this.processTenancySetup());
     }
         
-    // Fungsi untuk memastikan kotak rumusan (Read-only) dipaparkan bila projek mula-mula dimuatkan
+    // Function to make sure the summary box (read-only) shows when the project first loads
     refreshUIState() {
         const tenantTable = appState.activeProject?.tenant_table;
         const tenancyType = appState.activeProject?.tenancy_type;
 
         if (tenantTable && tenancyType !== 'standard') {
-            // Dapatkan senarai jadual privasi secara dinamik
+            // Get the list of privacy tables dynamically
             const securedTables = Object.keys(appState.jsonData?.database?.table || {}).filter(tableName => {
                 const fields = appState.jsonData.database.table[tableName].fields || {};
                 return fields[`${tenantTable}_id`] !== undefined;
             });
             this.updateDashboardSummary(tenantTable, securedTables);
         } else {
-            // Paparkan butang Configure yang besar
+            // Show the large Configure button
             this.summaryContainer.classList.add('hidden');
             this.btnConfigure.classList.remove('hidden');
         }
@@ -91,7 +91,7 @@ openWizard() {
         const dropdownExisting = document.getElementById('wizard-existing-table');
         const privacyContainer = document.getElementById('wizard-privacy-tables-container');
         
-        // Baca tetapan sedia ada dari database/state
+        // Read the existing settings from the database/state
         const currentTenant = appState.activeProject?.tenant_table;
         const fkFieldName = currentTenant ? `${currentTenant}_id` : null;
 
@@ -102,14 +102,14 @@ openWizard() {
             privacyContainer.innerHTML = '<p style="color: #888; text-align: center; margin: 10px 0;">No tables available in your project yet.</p>';
         } else {
             allTables.forEach(tableName => {
-                // Dropdown Tenant
+                // Tenant dropdown
                 const option = document.createElement('option');
                 option.value = tableName;
                 option.textContent = tableName;
-                if (tableName === currentTenant) option.selected = true; // Auto-select pilihan lama
+                if (tableName === currentTenant) option.selected = true; // Auto-select the previous choice
                 dropdownExisting.appendChild(option);
 
-                // Semak jika jadual ini pernah ditanda (mempunyai FK tenant_id)
+                // Check if this table was previously marked (has a tenant_id FK)
                 const tableData = appState.jsonData.database.table[tableName];
                 const hasPrivacy = fkFieldName && tableData.fields && tableData.fields[fkFieldName];
                 const isChecked = hasPrivacy ? 'checked' : '';
@@ -124,7 +124,7 @@ openWizard() {
             });
         }
 
-        // Auto-Togol Radio Button jika pengguna sudah ada tenant
+        // Auto-toggle the radio button if the user already has a tenant
         if (currentTenant) {
             document.querySelector('input[name="wizard_has_table"][value="yes"]').checked = true;
             this.groupExistingTable.classList.remove('hidden');
@@ -138,22 +138,22 @@ async handleTenancyTypeChange(event) {
         const newType = event.target.value;
         const currentTenant = appState.activeProject?.tenant_table;
 
-        // Bandingkan dengan penjejak dalaman KITA, elakkan konflik dashboard.js
+        // Compare against OUR internal tracker to avoid conflicts with dashboard.js
         if (newType === this.currentTenancyType) return;
 
         if (newType === 'standard') {
             if (currentTenant) {
-                // GUNA CUSTOM MODAL
+                // USE THE CUSTOM MODAL
                 const isConfirm = await showCustomDialog({
-                    title: "Amaran Pemadaman Skema",
-                    message: "Menukar ke mod 'Standard' akan memadamkan jadual Pivot dan membuang semua lajur Foreign Key (Privasi) dari projek anda.\n\nAdakah anda pasti mahu meneruskan pembersihan ini?",
+                    title: "Schema Deletion Warning",
+                    message: "Switching to 'Standard' mode will delete the Pivot table and remove all Foreign Key (privacy) columns from your project.\n\nAre you sure you want to proceed with this cleanup?",
                     showCancelButton: true
                 });
 
                 if (isConfirm) {
                     await this.rollbackTenancy(currentTenant);
                 } else {
-                    // Jika pengguna batal, kembalikan UI ke keadaan asal
+                    // If the user cancels, revert the UI to its original state
                     this.revertRadioToCurrentState();
                 }
             } else {
@@ -162,24 +162,24 @@ async handleTenancyTypeChange(event) {
                 this.btnConfigure.classList.remove('hidden');
             }
         } else {
-            // Jika pilih One-to-Many atau Many-to-Many, terus buka wizard
+            // If One-to-Many or Many-to-Many is chosen, open the wizard right away
             this.openWizard();
         }
     }
 
-    // FUNGSI BAHARU: Paksa antaramuka dan baris gilir kembali ke pangkal jalan
+    // NEW FUNCTION: Force the interface and the queue back to the starting point
     revertRadioToCurrentState() {
         const correctRadio = document.querySelector(`input[name="app-tenancy_type"][value="${this.currentTenancyType}"]`);
         if (correctRadio) correctRadio.checked = true;
         
-        // Tindan sebarang perubahan silap yang dibuat oleh skrip lain
+        // Overwrite any accidental changes made by other scripts
         appState.activeProject.tenancy_type = this.currentTenancyType;
         SaveManager.addToQueue('project', appState.activeProject.project_id, { tenancy_type: this.currentTenancyType });
     }
 
     closeWizard() {
         this.modal.classList.add('hidden');
-        // Jika wizard ditutup (batal), pastikan radio UI undur kembali
+        // If the wizard is closed (cancelled), make sure the UI radio reverts
         this.revertRadioToCurrentState();
     }
 
@@ -190,18 +190,18 @@ async processTenancySetup() {
 if (tenancyType === 'standard') {
             const oldTenant = appState.activeProject.tenant_table;
             if (oldTenant) {
-                // Jika pengguna ada tetapan lama, lakukan pembersihan (Rollback)
+                // If the user has old settings, perform the cleanup (rollback)
                 await this.rollbackTenancy(oldTenant);
                 this.closeWizard();
             } else {
-                showCustomDialog({ title: "Info", message: "Projek anda sudah berada dalam mod Standard." });
+                showCustomDialog({ title: "Info", message: "Your project is already in Standard mode." });
             }
             return;
         }
 
         const hasTable = document.querySelector('input[name="wizard_has_table"]:checked').value === 'yes';
         let tenantTable = '';
-        let tenantTableId = null; // Diperlukan untuk daftar Relationship
+        let tenantTableId = null; // Needed to register the Relationship
         const rawName = document.getElementById('wizard-new-table-name').value.trim();
         
         if (hasTable) {
@@ -209,17 +209,17 @@ if (tenancyType === 'standard') {
         } else {
             tenantTable = rawName.toLowerCase().replace(/\s+/g, '_');
             if (!tenantTable) {
-                showCustomDialog({ title: "Ralat", message: "Sila masukkan nama Entiti Tenant yang sah." });
+                showCustomDialog({ title: "Error", message: "Please enter a valid Tenant Entity name." });
                 return;
             }
         }
 
         if (!tenantTable) {
-            showCustomDialog({ title: "Ralat", message: "Sila pilih atau masukkan Jadual Tenant." });
+            showCustomDialog({ title: "Error", message: "Please select or enter a Tenant Table." });
             return;
         }
 
-        // --- MULA PROSES PANGKALAN DATA ---
+        // --- START DATA PROVISIONING PROCESS ---
         try {
             const overlay = document.getElementById('loading-overlay');
             if (overlay) overlay.classList.remove('loading-overlay-hidden');
@@ -227,7 +227,7 @@ if (tenancyType === 'standard') {
             const projectId = appState.activeProject.project_id;
             const fkFieldName = `${tenantTable}_id`;
 
-            // A. Simpan tetapan jenis tenancy
+            // A. Save the tenancy type settings
             appState.activeProject.tenancy_type = tenancyType;
             appState.activeProject.tenant_table = tenantTable;
             SaveManager.addToQueue('project', projectId, {
@@ -242,7 +242,7 @@ if (tenancyType === 'standard') {
                 await window.electronAPI.updateField(updatedField);
             };
 
-            // B. Dapatkan atau Cipta Jadual Tenant
+            // B. Get or create the Tenant Table
             if (!hasTable && !appState.jsonData.database.table[tenantTable]) {
                 const newTable = await window.electronAPI.createTable(projectId);
                 newTable.table_name = tenantTable;
@@ -258,7 +258,7 @@ if (tenancyType === 'standard') {
                 tenantTableId = appState.jsonData.database.table[tenantTable].table_id;
             }
 
-            // C. Suntik FK ke dalam Jadual Privasi (Sembunyikan dari UI)
+            // C. Inject the FK into the privacy tables (hidden from the UI)
             const checkboxes = document.querySelectorAll('input[name="wizard_privacy_tables"]:checked');
             const securedTables = Array.from(checkboxes).map(cb => cb.value);
 
@@ -271,19 +271,19 @@ if (tenancyType === 'standard') {
                         unsigned: 1,
                         is_indexed: 1,
                         caption: `${tenantTable.charAt(0).toUpperCase() + tenantTable.slice(1)} ID`,
-                        hide_in_tv: 1, // <--- PENAMBAHBAIKAN 1: Sorok di Table View
-                        hide_in_dv: 1  // <--- PENAMBAHBAIKAN 1: Sorok di Record Form
+                        hide_in_tv: 1, // <--- IMPROVEMENT 1: Hide in Table View
+                        hide_in_dv: 1  // <--- IMPROVEMENT 1: Hide in Record Form
                     });
                 }
             }
 
-            // D. Selesaikan Keperluan Pengguna (Users / Pivot Table)
+            // D. Fulfill the user's requirements (Users / Pivot Table)
             if (tenancyType === 'one_to_many') {
                 const usersTable = appState.jsonData.database.table['users'];
                 if (usersTable && !usersTable.fields[fkFieldName]) {
                     await createAndSetupField(usersTable.table_id, {
                         field_name: fkFieldName, data_type: 'BIGINT', unsigned: 1, is_indexed: 1,
-                        hide_in_tv: 1, hide_in_dv: 1 // FK dalam jadual Users juga disorok
+                        hide_in_tv: 1, hide_in_dv: 1 // The FK in the Users table is hidden too
                     });
                 }
             } else if (tenancyType === 'many_to_many') {
@@ -295,12 +295,12 @@ if (tenancyType === 'standard') {
                     pivotTable.feature_source = 'multi_tenancy';
                     await window.electronAPI.updateTable(pivotTable);
 
-                    // FK ke Tenant (Disorok)
+                    // FK to the Tenant (hidden)
                     await createAndSetupField(pivotTable.table_id, { 
                         field_name: fkFieldName, data_type: 'BIGINT', unsigned: 1, is_indexed: 1, hide_in_tv: 1, hide_in_dv: 1 
                     });
                     
-                    // FK ke User (Dipaparkan dengan Dropdown Lookup)
+                    // FK to the User (shown with a lookup dropdown)
                     await createAndSetupField(pivotTable.table_id, { 
                         field_name: 'user_id', data_type: 'BIGINT', unsigned: 1, is_indexed: 1,
                         lookup_parent_table: 'users',
@@ -309,23 +309,23 @@ if (tenancyType === 'standard') {
                         options_display: 'dropdown'
                     });
 
-                    // <--- PENAMBAHBAIKAN 2: Daftar Relationship untuk Pivot Table --->
+                    // <--- IMPROVEMENT 2: Register the Relationship for the Pivot Table --->
                     if (window.electronAPI.upsertRelationship) {
                         await window.electronAPI.upsertRelationship({
                             parent_table_id: tenantTableId,
                             child_table_id: pivotTable.table_id,
                             fk_child_field: fkFieldName,
-                            show_tab: 1, // Tunjuk tab di bawah borang Parent
+                            show_tab: 1, // Show the tab under the Parent form
                             show_icon: 1,
-                            tab_title: 'Senarai Pengguna',
+                            tab_title: 'User List',
                             allow_add_from_tv: 1
                         });
-                        console.log(`[Auto-Inject] Relationship didaftar: ${tenantTable} -> ${pivotTableName}`);
+                        console.log(`[Auto-Inject] Relationship registered: ${tenantTable} -> ${pivotTableName}`);
                     }
                 }
             }
 
-            // E. Muat semula aplikasi (Refresh State & UI)
+            // E. Reload the app (refresh state & UI)
             this.currentTenancyType = tenancyType;
             await loadProjectData(appState.activeProject, { refreshMode: 'full' });
             this.closeWizard();
@@ -334,16 +334,16 @@ if (tenancyType === 'standard') {
             if (overlay) overlay.classList.add('loading-overlay-hidden');
 
             showCustomDialog({
-                title: "Konfigurasi Berjaya",
-                message: `Tetapan Multi-Tenancy (Gred Perusahaan) telah disuntik ke dalam skema.\n\nSistem telah menyorokkan medan privasi (${fkFieldName}) dan menguruskan relationship pivot secara automatik.`
+                title: "Configuration Successful",
+                message: `Enterprise-grade Multi-Tenancy settings have been injected into the schema.\n\nThe system has hidden the privacy field (${fkFieldName}) and managed the pivot relationship automatically.`
             });
 
         } catch (error) {
-            console.error("Ralat menyimpan Tenancy:", error);
+            console.error("Error saving tenancy:", error);
             const overlay = document.getElementById('loading-overlay');
             if (overlay) overlay.classList.add('loading-overlay-hidden');
             
-            showCustomDialog({ title: "Ralat Pangkalan Data", message: "Gagal menyimpan konfigurasi: " + error.message });
+            showCustomDialog({ title: "Database Error", message: "Failed to save configuration: " + error.message });
         }
     }
 
@@ -356,25 +356,25 @@ async rollbackTenancy(tenantTableName) {
             const pivotTableName = `${tenantTableName}_user`;
             const projectId = appState.activeProject.project_id;
 
-            console.log(`[Rollback] Membuang kesan Multi-Tenancy untuk entiti: ${tenantTableName}`);
+            console.log(`[Rollback] Removing Multi-Tenancy traces for entity: ${tenantTableName}`);
 
             const tablesToDelete = [];
 
-            // 1. Semak Pivot Table
+            // 1. Check the Pivot Table
             const pivotTableData = appState.jsonData.database.table[pivotTableName];
             if (pivotTableData) {
                 tablesToDelete.push(pivotTableName);
             }
 
-// 2. Semak Jadual Tenant (Adakah ia auto-generated?)
+// 2. Check the Tenant Table (is it auto-generated?)
             const tenantTableData = appState.jsonData.database.table[tenantTableName];
             if (tenantTableData && tenantTableData.feature_source === 'multi_tenancy') {
                 if (overlay) overlay.classList.add('loading-overlay-hidden');
                 
-                // GUNA CUSTOM MODAL UNTUK PADAM JADUAL TENANT
+                // USE THE CUSTOM MODAL TO DELETE THE TENANT TABLE
                 const isConfirm = await showCustomDialog({
-                    title: "Padam Jadual Entiti Utama?",
-                    message: `Jadual '${tenantTableName}' telah dibina secara automatik oleh sistem sebelum ini.\n\nAdakah anda mahu memadam jadual ini sepenuhnya (termasuk rekod di dalamnya)?\n\n- Klik YES untuk PADAM jadual ini.\n- Klik CANCEL untuk KEKALKAN ia dalam pangkalan data.`,
+                    title: "Delete Main Entity Table?",
+                    message: `The '${tenantTableName}' table was built automatically by the system earlier.\n\nDo you want to delete this table completely (including its records)?\n\n- Click YES to DELETE this table.\n- Click CANCEL to KEEP it in the database.`,
                     showCancelButton: true
                 });
                 
@@ -385,16 +385,16 @@ async rollbackTenancy(tenantTableName) {
                 if (overlay) overlay.classList.remove('loading-overlay-hidden');
             }
 
-            // 3. Jalankan pemadaman jadual-jadual yang dikumpulkan
+            // 3. Delete the collected tables
             if (tablesToDelete.length > 0) {
                 await window.electronAPI.deleteTables({
                     projectId: projectId,
                     tableNamesToDelete: tablesToDelete
                 });
-                console.log(`[Rollback] Jadual dipadam: ${tablesToDelete.join(', ')}`);
+                console.log(`[Rollback] Tables deleted: ${tablesToDelete.join(', ')}`);
             }
 
-            // 4. Buang lajur FK (syarikat_id) dari semua jadual privasi dan jadual users
+            // 4. Remove the FK column (e.g. company_id) from all privacy tables and the users table
             for (const tableName in appState.jsonData.database.table) {
                 const tableData = appState.jsonData.database.table[tableName];
                 
@@ -406,11 +406,11 @@ async rollbackTenancy(tenantTableName) {
                         tableName: tableName, 
                         fieldName: fkFieldName 
                     });
-                    console.log(`[Rollback] Lajur ${fkFieldName} dipadam dari jadual: ${tableName}`);
+                    console.log(`[Rollback] Column ${fkFieldName} deleted from table: ${tableName}`);
                 }
             }
 
-            // 5. Kemas kini status Projek ke 'standard'
+            // 5. Update the project status to 'standard'
             this.currentTenancyType = 'standard';
             appState.activeProject.tenancy_type = 'standard';
             appState.activeProject.tenant_table = '';
@@ -420,7 +420,7 @@ async rollbackTenancy(tenantTableName) {
             });
             await SaveManager.processQueue();
 
-            // 6. Muat semula aplikasi dan UI
+            // 6. Reload the app and UI
             await loadProjectData(appState.activeProject, { refreshMode: 'full' });
             
             this.summaryContainer.classList.add('hidden');
@@ -429,19 +429,19 @@ async rollbackTenancy(tenantTableName) {
             if (overlay) overlay.classList.add('loading-overlay-hidden');
 
             showCustomDialog({
-                title: "Rollback Berjaya",
-                message: `Projek dikembalikan ke mod Standard.\n\nSegala automasi skema telah dicuci dengan selamat mengikut pilihan anda.`
+                title: "Rollback Successful",
+                message: `The project has been returned to Standard mode.\n\nAll schema automation was safely unwound according to your choice.`
             });
 
         } catch (error) {
-            console.error("Gagal melakukan rollback tenancy:", error);
-            showCustomDialog({ title: "Ralat Sistem", message: "Gagal mengundurkan perubahan: " + error.message });
+            console.error("Failed to roll back tenancy:", error);
+            showCustomDialog({ title: "System Error", message: "Failed to revert changes: " + error.message });
             const overlay = document.getElementById('loading-overlay');
             if (overlay) overlay.classList.add('loading-overlay-hidden');
         }
     }
     
-    // Mengemas kini UI paparan rumusan di tab Architecture
+    // Updates the summary display UI in the Architecture tab
     updateDashboardSummary(tenantName, securedTables) {
         const typeRadios = document.querySelector('input[name="app-tenancy_type"]:checked');
         const tenancyType = typeRadios ? typeRadios.value : 'Unknown';

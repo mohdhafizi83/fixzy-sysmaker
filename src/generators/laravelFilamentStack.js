@@ -46,7 +46,7 @@ const { generateAdminPanelProvider } = require('./laravelAdminPanelGenerator');
 const { generateDeploymentGuidePage } = require('./laravelDocsGenerator');
 
 /**
- * ORCHESTRATOR: Menguruskan urutan penjanaan penuh untuk stack Laravel Filament.
+ * ORCHESTRATOR: Manages the full generation sequence for the Laravel Filament stack.
  */
 async function generateLaravelFilamentStack(fullSchema, outputDir) {
     try {
@@ -122,7 +122,7 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         // 3. Relation Managers
         await generateFilamentRelationManagers(fullSchema, outputDir);
 
-        // 4. Resource Induk (Menghubungkan semua di atas)
+        // 4. Parent Resources (ties everything above together)
         const resourceResult = await generateFilamentResources(fullSchema, outputDir);
         if (!resourceResult.success) throw new Error(`Resources (Standard): ${resourceResult.message}`);
 
@@ -144,7 +144,7 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         await generateFilamentCreateCustomModules(fullSchema, outputDir);
         await generateFilamentEditCustomModules(fullSchema, outputDir);
 
-        // 3. Resource Custom Module (Tiada Relation Manager khas, guna standard)
+        // 3. Custom Module Resources (no special Relation Manager, use standard)
         const cvResourceResult = await generateFilamentResourcesCustomModules(fullSchema, outputDir);
         if (!cvResourceResult.success) console.warn(`Custom Resources Warning: ${cvResourceResult.message}`);
 
@@ -166,8 +166,8 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         const guideResult = await generateDeploymentGuidePage(fullSchema, outputDir);
         if (!guideResult.success) console.warn(`Guide Warning: ${guideResult.message}`); // Warning sahaja, bukan error
 
-        console.log("Selesai menjana stack Laravel Filament.");
-        return { success: true, message: "Aplikasi berjaya dijana sepenuhnya." };
+        console.log("Finished generating the Laravel Filament stack.");
+        return { success: true, message: "The application was fully generated." };
 
     } catch (error) {
         console.error("Ralat Kritikal Orchestrator:", error);

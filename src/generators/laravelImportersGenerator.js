@@ -6,7 +6,7 @@ const { renderTemplate } = require('../render/engine');
 const TEMPLATE = 'app/Filament/Imports/Importer.php.njk';
 
 /**
- * Bina senarai context column untuk template Importer.
+ * Build the context column list for the Importer template.
  */
 function buildColumnContext(fields, tables) {
     const columns = [];
@@ -88,7 +88,7 @@ function buildColumnContext(fields, tables) {
 }
 
 /**
- * Fungsi Pintar untuk menjana logik resolveRecord() berdasarkan senario constraint.
+ * Smart function that generates resolveRecord() logic based on constraint scenarios.
  */
 function generateResolveRecordLogic(tableData, modelName, tables) {
     const fields = tableData.fields;
@@ -170,7 +170,7 @@ async function generateFilamentImporters(fullSchema, basePath) {
             const importerClassName = `${modelName}Importer`;
             const fraseModelName = toTitleCase(nameSource);
 
-            // Import parent models untuk relationship (skip own model — dup fatal)
+            // Import parent models for the relationship (skip own model — duplicate is fatal)
             const parentRels = relationships.filter(r => r.child_table_name === tableName);
             const useStatements = new Set();
             parentRels.forEach(rel => {

@@ -1435,12 +1435,12 @@
 <div id="tab-field-algorithm" class="tab-pane">
     <div class="card">
         <div class="card-body">
-            <!-- ▼▼▼ KAWASAN INI DIUBAH SUAI ▼▼▼ -->
+            <!-- ▼▼▼ THIS AREA HAS BEEN CUSTOMIZED ▼▼▼ -->
             <label class="checkbox-label" style="margin-bottom: 1.5rem;">
                 <input type="checkbox" id="fld-algorithm-enable" name="fld-algorithm-enable">
                 Automatically calculate the value of this field using the following algorithm
             </label>
-            <!-- Bekas untuk Algorithm Builder akan diletakkan di sini oleh JavaScript -->
+            <!-- Container for the Algorithm Builder will be placed here by JavaScript -->
             <div id="algorithm-builder-container" class="hidden"></div>
             <!-- ▲▲▲ TAMAT UBAH SUAI ▲▲▲ -->
             <input type="hidden" id="fld-algorithm-logic" name="fld-algorithm-logic">
@@ -1688,7 +1688,7 @@
                                             <input type="text" id="tbl-detail-view-title" name="tbl-detail-view-title" value="Detail Record">
                                         </div>
 <div class="form-group">
-                <label for="tbl-record-owner" title="Tentukan kebolehcapaian (accessibility) atau skop data ini.">Data Accessibility (Scoping)</label>
+                <label for="tbl-record-owner" title="Define the accessibility or data scope for this table.">Data Accessibility (Scoping)</label>
                 <select id="tbl-record-owner" class="form-control">
                     <option value="">Anybody (with auth)</option>
                     <option value="current_user">Current User Only</option>
@@ -1700,7 +1700,7 @@
                 <select id="tbl-owner-by-fk" class="form-control">
                     <option value="">-- Please Select --</option>
                 </select>
-                <small class="form-text text-muted">Pilih rekod spesifik dari jadual rujukan (Parent Table) sebagai pemilik data ini.</small>
+                <small class="form-text text-muted">Select a specific record from the reference table (Parent Table) as the owner of this data.</small>
             </div>
                                         <div class="form-group">
                                             <label for="tbl-default-focus">Default focus field</label>
@@ -3000,7 +3000,7 @@
             <button id="algorithm-builder-close" class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
-            <!-- Kandungan modal kini kosong, akan diisi oleh JavaScript jika perlu -->
+            <!-- The modal content is now empty; it will be filled by JavaScript if needed -->
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" id="algorithm-builder-cancel-btn">Close</button>
@@ -3020,7 +3020,7 @@
     </div>
 </div>
 
-<!-- ▼▼▼ TEMPLATE UNTUK LOGIC BUILDER (Diletakkan di hujung body) ▼▼▼ -->
+<!-- ▼▼▼ TEMPLATE FOR THE LOGIC BUILDER (Placed at the end of body) ▼▼▼ -->
 <template id="logic-builder-template">
     <div class="algorithm-builder-grid">
         <div class="algorithm-palette">
@@ -3276,12 +3276,12 @@
             </div>
             <div class="form-group">
                 <label for="custom-menu-url-input">URL</label>
-                <input type="text" id="custom-menu-url-input" placeholder="https://... atau pilih jadual di bawah">
+                <input type="text" id="custom-menu-url-input" placeholder="https://... or select a table below">
             </div>
             <div class="form-group">
-                <label for="custom-menu-url-table-select">Atau, jana pautan ke 'Record Form' jadual:</label>
+                <label for="custom-menu-url-table-select">Or, generate a link to a table's 'Record Form':</label>
                 <select id="custom-menu-url-table-select">
-                    <option value="">-- Pilih Jadual --</option>
+                    <option value="">-- Select Table --</option>
                     </select>
             </div>
         </div>
@@ -3677,9 +3677,9 @@
                 <button id="app-preview-back-btn" class="btn btn-secondary" style="padding: 5px 12px;" title="Undur (Back)"><i class="fas fa-arrow-left"></i></button>
                 <button id="app-preview-forward-btn" class="btn btn-secondary" style="padding: 5px 12px;" title="Maju (Forward)"><i class="fas fa-arrow-right"></i></button>
                 
-                <button id="app-preview-external-btn" class="btn btn-secondary" style="padding: 5px 12px;" title="Buka di Browser Chrome/Edge"><i class="fas fa-external-link-alt"></i></button>
-                <button id="app-preview-refresh-btn" class="btn btn-primary" style="padding: 5px 12px;" title="Muat Semula (Refresh)"><i class="fas fa-sync-alt"></i></button>
-                <button id="app-preview-modal-close" class="btn" style="padding: 5px 12px; background: #ef4444; color: white;" title="Tutup Preview"><i class="fas fa-times"></i></button>
+                <button id="app-preview-external-btn" class="btn btn-secondary" style="padding: 5px 12px;" title="Open in Chrome/Edge browser"><i class="fas fa-external-link-alt"></i></button>
+                <button id="app-preview-refresh-btn" class="btn btn-primary" style="padding: 5px 12px;" title="Reload (Refresh)"><i class="fas fa-sync-alt"></i></button>
+                <button id="app-preview-modal-close" class="btn" style="padding: 5px 12px; background: #ef4444; color: white;" title="Close Preview"><i class="fas fa-times"></i></button>
             </div>
         </div>
         

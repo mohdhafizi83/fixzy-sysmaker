@@ -4,8 +4,8 @@ import { setIsCoreLockingEnabled } from '../state.js';
 import { applyFontSize } from './formHelpers.js';
 
 /**
- * Memaparkan dialog tersuai (Alert/Confirm).
- * Menyokong Promise (await) dan Callback lama.
+ * Displays a custom dialog (Alert/Confirm).
+ * Supports Promises (await) and legacy callbacks.
  */
 export function showCustomDialog({ title, message, onOk, onCancel, showCancelButton = false }) {
     return new Promise((resolve) => {
@@ -52,7 +52,7 @@ export function showCustomDialog({ title, message, onOk, onCancel, showCancelBut
 }
 
 /**
- * Menguruskan Modal Konfigurasi (Preferences).
+ * Manages the Configuration (Preferences) modal.
  */
 export function initializeModalHandlers() {
     const configBtn = document.getElementById('config-btn');
@@ -108,7 +108,7 @@ export function initializeModalHandlers() {
         return settings;
     };
     
-    // Fungsi bantuan dalaman untuk populate settings (asalnya populateSettingsModal)
+    // Internal helper to populate settings (originally populateSettingsModal)
     const populateSettingsModalInternal = async () => {
         const settings = await window.electronAPI.getAllSettings();
         if (!settings) return;
@@ -121,8 +121,8 @@ export function initializeModalHandlers() {
             }
         };
         
-        // Loop ringkas untuk mengisi data (boleh rujuk kod asal untuk senarai penuh jika perlu)
-        // Saya ringkaskan di sini untuk keterbacaan, anda boleh copy paste logik penuh dari uiHandlers.js
+        // Simple loop to fill the data (refer to the original code for the full list if needed)
+        // Summarized here for readability; you can copy the full logic from uiHandlers.js
         const settingIds = [
             'check-updates', 'autosave-interval', 'show-begin-box', 'lock-core-components',
             'doc-root', 'base-url', 'field-default-type', 'field-default-length', 
@@ -171,7 +171,7 @@ export function initializeModalHandlers() {
 async function populateSettingsModal() {
     const settings = await window.electronAPI.getAllSettings();
     if (!settings) {
-        console.error("Tidak dapat memuatkan tetapan.");
+        console.error("Could not load settings.");
         return;
     }
 

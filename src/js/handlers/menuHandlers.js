@@ -60,7 +60,7 @@ const createItemElement = (item) => {
         const itemEl = document.createElement('div');
         itemEl.className = 'custom-menu-item';
         
-        // ▼▼▼ PEMBAIKAN LOGIK: Semak jenis menu berdasarkan database ▼▼▼
+        // ▼▼▼ LOGIC IMPROVEMENT: Determine the menu type from the database ▼▼▼
         const computedType = item.table_id ? 'table_item' : (item.module_id ? 'custom_view_item' : 'custom_item');
         
         itemEl.dataset.type = computedType;
@@ -68,14 +68,14 @@ const createItemElement = (item) => {
         itemEl.dataset.label = item.item_label;
         itemEl.dataset.url = item.item_detail || '';
 
-        // Masukkan nama jadual jika ia adalah jadual atau custom module
+        // Store the table name if it's a table or custom module
         if (computedType === 'table_item' || computedType === 'custom_view_item') {
             itemEl.dataset.tableName = item.table_name || '';
         }
 
-        // Tentukan ikon yang betul
+        // Determine the correct icon
         const icon = computedType === 'table_item' ? 'fa-table' : (computedType === 'custom_view_item' ? 'fa-eye' : 'fa-link');
-        // ▲▲▲ TAMAT PEMBAIKAN ▲▲▲
+        // ▲▲▲ END IMPROVEMENT ▲▲▲
         
         itemEl.innerHTML = `
             <i class="fas ${icon}" style="margin: 0 0.5rem; color: var(--secondary-color);"></i>
@@ -122,7 +122,7 @@ export function initializeMenuManagementHandlers() {
     const menuManagementTab = document.getElementById('tab-menu-appearance');
     if (!menuManagementTab) return;
 
-    // Rujukan kepada elemen UI
+    // References to the UI elements
     const addGroupBtn = document.getElementById('app-add_menu_group');
     const addCustomMenuBtn = document.getElementById('app-add_custom_menu');
     const unifiedMenuList = document.getElementById('unified-menu-list');
@@ -230,10 +230,10 @@ function openCustomMenuModal(itemEl = null) {
         const itemType = itemEl.dataset.type;
         const allItems = [...appState.jsonData.database.unified_menu.flatMap(i => i.type === 'group' ? i.items : i)];
         
-        // ▼▼▼ KOD CARIAN YANG TELAH DIPERBAIKI SEPENUHNYA ▼▼▼
+        // ▼▼▼ FULLY FIXED SEARCH CODE ▼▼▼
         const itemIdToFind = parseInt(itemEl.dataset.itemId, 10);
         const itemData = allItems.find(i => (i.item_id || i.id) === itemIdToFind);
-        // ▲▲▲ TAMAT PEMBAIKAN ▲▲▲
+        // ▲▲▲ END IMPROVEMENT ▲▲▲
 
         const radioValueMap = { 'custom_item': 'custom', 'table_item': 'table', 'custom_view_item': 'custom_view' };
         const radioToSelect = document.querySelector(`input[name="menu-item-type"][value="${radioValueMap[itemType]}"]`);
@@ -245,20 +245,20 @@ function openCustomMenuModal(itemEl = null) {
         } else if (itemType === 'custom_view_item') {
             elements.cvLabelInput.value = itemEl.dataset.label;
 
-            // ▼▼▼ BLOK DEBUGGING DITAMBAH DI SINI ▼▼▼
+            // ▼▼▼ DEBUGGING BLOCK ADDED HERE ▼▼▼
             console.log("--- DEBUGGING CUSTOM VIEW EDIT ---");
-            console.log("1. Data Item Menu (dari appState.jsonData):", itemData);
-            console.log("2. ID yang dicari:", itemData?.module_id, "(Jenis:", typeof itemData?.module_id, ")");
-            console.log("3. Mencari di dalam senarai ini (allCustomViews):", allCustomViews);
+            console.log("1. Menu item data (from appState.jsonData):", itemData);
+            console.log("2. ID being searched:", itemData?.module_id, "(type:", typeof itemData?.module_id, ")");
+            console.log("3. Searching inside this list (allCustomViews):", allCustomViews);
             
             const cvData = allCustomViews.find(v => {
-                console.log(`- Membandingkan: Menu Item CV ID ${itemData?.module_id} (jenis: ${typeof itemData?.module_id}) dengan View ID ${v.module_id} (jenis: ${typeof v.module_id})`);
+                console.log(`- Comparing: Menu item CV ID ${itemData?.module_id} (type: ${typeof itemData?.module_id}) with View ID ${v.module_id} (type: ${typeof v.module_id})`);
                 return v.module_id == itemData?.module_id;
             }) || { table_name: 'Unknown', module_name: 'View' };
             
-            console.log("4. Hasil carian (cvData):", cvData);
-            console.log("--- TAMAT DEBUGGING ---");
-            // ▲▲▲ TAMAT BLOK DEBUGGING ▲▲▲
+            console.log("4. Search result (cvData):", cvData);
+            console.log("--- END DEBUGGING ---");
+            // ▲▲▲ END DEBUGGING BLOCK ▲▲▲
             
             elements.cvListUl.innerHTML = `<li class="active" data-cv-id="${cvData.module_id}">${cvData.table_name} - ${cvData.module_name}</li>`;
             elements.cvListUl.style.pointerEvents = 'none';
@@ -304,9 +304,9 @@ function openCustomMenuModal(itemEl = null) {
             if (!tableLabel) { showCustomDialog({ title: "Input Required", message: "Menu Label is required." }); return; }
             
             let tableNameForSave;
-            if (itemId) { // Mod Edit
+            if (itemId) { // Edit mode
                 tableNameForSave = itemEl.dataset.tableName;
-            } else { // Mod Tambah Baru
+            } else { // Add-new mode
                 const activeLi = elements.tableListUl.querySelector('li.active');
                 tableNameForSave = activeLi ? activeLi.dataset.tableName : null;
             }
@@ -320,9 +320,9 @@ function openCustomMenuModal(itemEl = null) {
             const cvLabel = elements.cvLabelInput.value.trim();
             if (!cvLabel) { showCustomDialog({ title: "Input Required", message: "Menu Label is required." }); return; }
 
-            // ▼▼▼ BLOK PEMBAIKAN UTAMA ▼▼▼
-            // Dapatkan ID terus dari elemen senarai yang aktif.
-            // Logik ini berfungsi untuk kedua-dua mod Tambah Baru (selepas diklik) dan mod Edit (sudah sedia aktif).
+            // ▼▼▼ MAIN IMPROVEMENT BLOCK ▼▼▼
+            // Get the ID directly from the active list element.
+            // This logic works for both add-new mode (after clicking) and edit mode (already active).
             const activeLi = elements.cvListUl.querySelector('li.active');
             const cvIdForSave = activeLi ? activeLi.dataset.cvId : null;
 
@@ -330,7 +330,7 @@ function openCustomMenuModal(itemEl = null) {
                 showCustomDialog({ title: "Input Required", message: "Please select a Custom Module." });
                 return;
             }
-            // ▲▲▲ TAMAT BLOK PEMBAIKAN ▲▲▲
+            // ▲▲▲ END IMPROVEMENT BLOCK ▲▲▲
 
             const cvData = allCustomViews.find(v => v.module_id == cvIdForSave);
             if (!cvData) { showCustomDialog({ title: "Error", message: "Custom Module data not found." }); return; }
@@ -376,7 +376,7 @@ function openCustomMenuModal(itemEl = null) {
             showCustomDialog({ title: "Save Error", message: "Failed to save menu structure: " + result.message });
         }
     };
-    // Pengendali Acara untuk Butang
+    // Event handlers for the buttons
     addCustomMenuBtn.addEventListener('click', () => openCustomMenuModal());
     addGroupBtn.addEventListener('click', async () => {
         const result = await window.electronAPI.menuCreateGroup({ projectId: appState.activeProject.project_id, groupName: "New Group" });
@@ -390,13 +390,13 @@ function openCustomMenuModal(itemEl = null) {
     let currentTargetMenuSelector = null;
     menuManagementTab.addEventListener('click', (e) => {
         const target = e.target;
-        // ▼▼▼ MULA PERUBAHAN: Tambah rujukan kepada item bersarang (nested) ▼▼▼
+        // ▼▼▼ START CHANGE: Add references to nested items ▼▼▼
         const customItem = target.closest('.custom-menu-item');
         const groupItem = target.closest('.menu-group-item');
         const nestedItem = target.closest('.nested-menu-item');
-        // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+        // ▲▲▲ END CHANGE ▲▲▲
 
-        // ▼▼▼ MULA PERUBAHAN: Tambah logik untuk butang pada item bersarang ▼▼▼
+        // ▼▼▼ START CHANGE: Add logic for buttons on nested items ▼▼▼
         if (target.closest('.nested-menu-delete-btn') && nestedItem) {
             showCustomDialog({
                 title: "Confirm Deletion",
@@ -408,7 +408,7 @@ function openCustomMenuModal(itemEl = null) {
                 }
             });
         }
-        // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+        // ▲▲▲ END CHANGE ▲▲▲
         if (target.closest('.group-delete-btn') && groupItem) {
             showCustomDialog({
                 title: "Confirm Group Deletion",
@@ -431,17 +431,17 @@ function openCustomMenuModal(itemEl = null) {
                 }
             });
         } 
-        // ▼▼▼ MULA PERUBAHAN: Tambah logik untuk butang pada item bersarang ▼▼▼
+        // ▼▼▼ START CHANGE: Add logic for buttons on nested items ▼▼▼
         else if (target.closest('.nested-menu-edit-btn') && nestedItem) {
             openCustomMenuModal(nestedItem);
         }
-        // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+        // ▲▲▲ END CHANGE ▲▲▲
         else if (target.closest('.custom-menu-edit-btn') && customItem) {
             openCustomMenuModal(customItem);
         }
     });
 
-    // Simpan Nama Kumpulan serta-merta
+    // Save the group name immediately
     let debounceTimer;
     menuManagementTab.addEventListener('input', (e) => {
         if (e.target.matches('.group-name-input')) {
@@ -450,7 +450,7 @@ function openCustomMenuModal(itemEl = null) {
         }
     });
 
-    // ▼▼▼ SISTEM BAHARU: PENGURUSAN SUSUNAN GUNA BUTANG NAIK/TURUN ▼▼▼
+    // ▼▼▼ NEW SYSTEM: ORDER MANAGEMENT USING UP/DOWN BUTTONS ▼▼▼
     const updateMoveButtonStates = () => {
         const items = unifiedMenuList.querySelectorAll('.menu-group-item, .custom-menu-item');
         items.forEach((item, index) => {
@@ -462,13 +462,13 @@ function openCustomMenuModal(itemEl = null) {
     };
 
     unifiedMenuList.addEventListener('click', async (e) => {
-        // ▼▼▼ MULA LOGIK BAHARU: Butang naik/turun untuk item di dalam kumpulan ▼▼▼
+        // ▼▼▼ START NEW LOGIC: Up/down buttons for items inside groups ▼▼▼
         const nestedUpBtn = e.target.closest('.nested-menu-move-up-btn');
         const nestedDownBtn = e.target.closest('.nested-menu-move-down-btn');
 
         if (nestedUpBtn || nestedDownBtn) {
             const currentItem = e.target.closest('.nested-menu-item');
-            const container = currentItem.parentElement; // Ini adalah .menu-selector
+            const container = currentItem.parentElement; // This is the .menu-selector
             if (!currentItem || !container) return;
 
             if (nestedUpBtn) {
@@ -481,9 +481,9 @@ function openCustomMenuModal(itemEl = null) {
 
             updateNestedMoveButtonStates(container);
             await saveUnifiedStructure();
-            return; // Hentikan proses selanjutnya untuk klik ini
+            return; // Stop further processing for this click
         }
-        // ▲▲▲ TAMAT LOGIK BAHARU ▲▲▲
+        // ▲▲▲ END NEW LOGIC ▲▲▲
 
         const upBtn = e.target.closest('.menu-move-up-btn');
         const downBtn = e.target.closest('.menu-move-down-btn');
@@ -505,13 +505,13 @@ function openCustomMenuModal(itemEl = null) {
             }
         }
 
-        // Kemas kini keadaan butang selepas pergerakan
+        // Update button states after the move
         updateMoveButtonStates();
 
-        // Simpan struktur baharu
+        // Save the new structure
         await saveUnifiedStructure();
     });
-    // ▲▲▲ TAMAT SISTEM BAHARU ▲▲▲
+    // ▲▲▲ END NEW SYSTEM ▲▲▲
 }
 
 export function initializeHomepageMenuHandlers() {
@@ -523,15 +523,15 @@ export function initializeHomepageMenuHandlers() {
     const toggleOptionsVisibility = () => {
         const isChecked = menuAtHomepageCheckbox.checked;
         dependentOptions.forEach(option => {
-            // Gunakan style.display untuk kawalan terus
+            // Use style.display for direct control
             option.style.display = isChecked ? '' : 'none';
         });
     };
 
-    // Tambah listener pada checkbox
+    // Add a listener to the checkbox
     menuAtHomepageCheckbox.addEventListener('change', toggleOptionsVisibility);
 
-    // Panggil sekali semasa muat untuk menetapkan keadaan awal yang betul
+    // Call once on load to set the correct initial state
     toggleOptionsVisibility();
 }
 

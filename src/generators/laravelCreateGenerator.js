@@ -87,7 +87,7 @@ async function generateFilamentCreateCustomModules(fullSchema, basePath) {
                     
                     await generateSingleCreatePage(tableName, tableData, fullSchema, basePath, {
                         modelName: standardModelName,
-                        resourceFolder: viewSafeNamePlural, // Simpan dalam folder Plural
+                        resourceFolder: viewSafeNamePlural, // Save in the Plural folder
                         customPageName: viewSafeNameSingular // Nama Class CreateSingular
                     });
                     count++;

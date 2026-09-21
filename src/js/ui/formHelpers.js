@@ -7,14 +7,14 @@
 }; */
 
 /**
- * Helper untuk menetapkan nilai input Radio.
- * @param {string} name - Nama attribute 'name' pada radio group.
- * @param {any} value - Nilai yang hendak dipilih.
+ * Helper to set the value of a radio input.
+ * @param {string} name - The 'name' attribute of the radio group.
+ * @param {any} value - The value to select.
  */
 export function setRadioValue(name, value) {
     const radios = document.querySelectorAll(`input[name="${name}"]`);
     radios.forEach(radio => {
-        // Bandingkan sebagai string untuk keselamatan
+        // Compare as strings for safety
         radio.checked = (radio.value === String(value));
     });
 }
@@ -31,28 +31,28 @@ export function setElementValue(id, value) {
         if (element.type === 'checkbox' || element.type === 'radio') {
             element.checked = !!value;
         } else if (element.multiple) {
-            // Mengendalikan dropdown multi-select
+            // Handle multi-select dropdowns
             if (typeof value === 'string' && value) {
                 const selectedValues = new Set(value.split(','));
                 for (const option of element.options) {
                     option.selected = selectedValues.has(option.value);
                 }
             } else {
-                // Nyahpilih semua jika tiada nilai
+                // Deselect all if there is no value
                 for (const option of element.options) {
                     option.selected = false;
                 }
             }
         } else {
-            // Mengendalikan semua elemen lain
+            // Handle all other elements
             element.value = value || '';
         }
     }
 }
 
 /**
- * Helper untuk mendapatkan nilai dari elemen borang (Get Value).
- * Anda mungkin perlukan ini juga nanti.
+ * Helper to get the value of a form element (Get Value).
+ * You may need this later too.
  */
 export function getElementValue(id) {
     const element = document.getElementById(id);
@@ -65,9 +65,9 @@ export function getElementValue(id) {
 }
 
 /**
- * Mengaplikasikan saiz fon pada elemen akar (<html>).
- * Dipindahkan dari uiHandlers.js untuk mengelakkan circular dependency.
- * @param {string} size - Pilihan saiz ('small', 'medium', 'large').
+ * Applies the font size to the root element (<html>).
+ * Moved from uiHandlers.js to avoid a circular dependency.
+ * @param {string} size - Size choice ('small', 'medium', 'large').
  */
 export function applyFontSize(size) {
     let fontSizeValue = '16px';

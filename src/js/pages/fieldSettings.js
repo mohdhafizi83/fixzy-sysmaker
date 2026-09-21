@@ -28,7 +28,7 @@ export function populateFieldSettings(tableName, fieldName) {
     const fieldData = appState.jsonData.database.table[tableName]?.fields[fieldName];
 
     if (!fieldData) {
-        console.error(`Tiada data ditemui untuk medan: ${tableName}.${fieldName}`);
+        console.error(`No data found for field: ${tableName}.${fieldName}`);
         return;
     }
     populateParentTableDropdown(tableName);
@@ -53,8 +53,8 @@ export function populateFieldSettings(tableName, fieldName) {
     setElementValue('fld-helper-text', fieldData.helper_text);
     setElementValue('fld-placeholder', fieldData.placeholder);
     setElementValue('fld-min-length', fieldData.min_length);
-    // Jika max_length tiada nilai (cth: selepas import SQL), guna nilai length sebagai lalai.
-    // Jika ada, guna nilai yang disimpan.
+    // If max_length has no value (e.g. after an SQL import), use the length value as the default.
+    // If it does, use the stored value.
 const maxLengthValue = fieldData.length;
     setElementValue('fld-max-length', maxLengthValue);
     setElementValue('fld-min-value', fieldData.min_value);
@@ -130,7 +130,7 @@ const maxLengthValue = fieldData.length;
             textSize: document.getElementById('fld-tv-text-size-group'),
             fontWeight: document.getElementById('fld-tv-font-weight-group'),
             textColor: document.getElementById('fld-tv-text-color-group'),
-            // ▼▼▼ TAMBAHAN BAHARU DI SINI ▼▼▼
+            // ▼▼▼ NEW ADDITION HERE ▼▼▼
             iconGroup: document.getElementById('fld-tv-icon-group'),
             iconColorGroup: document.getElementById('fld-tv-icon-color-group')
         };
@@ -149,14 +149,14 @@ const maxLengthValue = fieldData.length;
             if (el) el.classList.toggle('hidden', isNotLinkType);
         });
         
-        // ▼▼▼ PERUBAHAN DI SINI: Blok logik khas untuk 'Icon' dan 'Icon color' ▼▼▼
+        // ▼▼▼ CHANGE HERE: Special logic block for 'Icon' and 'Icon color' ▼▼▼
         if (elementsToControl.iconGroup) {
             elementsToControl.iconGroup.classList.toggle('hidden', isImageType);
         }
         if (elementsToControl.iconColorGroup) {
             elementsToControl.iconColorGroup.classList.toggle('hidden', isImageType);
         }
-        // ▲▲▲ TAMAT PERUBAHAN ▲▲▲
+        // ▲▲▲ END CHANGE ▲▲▲
         
         if (!shouldHideDisplayGroups) {
             const selectedDisplayRadio = document.querySelector('input[name="fld-display-type"]:checked');
@@ -246,7 +246,7 @@ const maxLengthValue = fieldData.length;
     setElementValue('fld-lookup-searchable', fieldData.lookup_searchable);
     setElementValue('fld-lookup-preload', fieldData.lookup_preload);
 
-    // Cetuskan event 'change' untuk menjalankan logik tunjuk/sembunyi
+    // Fire a 'change' event to run the show/hide logic
     const displayAsRadios = document.querySelectorAll('input[name="fld-lookup-display-as"]');
     if (displayAsRadios.length > 0) {
         displayAsRadios[0].dispatchEvent(new Event('change', { bubbles: true }));
@@ -298,12 +298,12 @@ const maxLengthValue = fieldData.length;
     
     setElementValue('fld-format-mask', fieldData.format_mask);
     
-    // Isi data untuk Repeater-Simple
+    // Fill in the data for Repeater-Simple
     setElementValue('fld-repeater-simple-display-as', fieldData.repeater_simple_display_as);
     setElementValue('fld-repeater-simple-format-as', fieldData.repeater_simple_format_as);
     setElementValue('fld-repeater-simple-list-values', fieldData.repeater_simple_list_values);
     
-    // Isi data untuk Repeater (3 set)
+    // Fill in the data for Repeater (3 sets)
     for (let i = 1; i <= 3; i++) {
         setElementValue(`fld-repeater-${i}-display-as`, fieldData[`repeater_${i}_display_as`]);
         setElementValue(`fld-repeater-${i}-format-as`, fieldData[`repeater_${i}_format_as`]);
@@ -313,13 +313,13 @@ const maxLengthValue = fieldData.length;
 
     setElementValue('fld-repeater-simple-required', fieldData.repeater_simple_required);
 
-    // Cetuskan event untuk memastikan visibility bersarang adalah betul semasa data dimuatkan
+    // Fire events to make sure nested visibility is correct when data loads
     document.getElementById('fld-repeater-simple-display-as')?.dispatchEvent(new Event('change'));
     for (let i = 1; i <= 3; i++) {
         document.getElementById(`fld-repeater-${i}-display-as`)?.dispatchEvent(new Event('change'));
     }
     
-    // Cetuskan event 'change' untuk memastikan 'Mask' dipaparkan dengan betul semasa data dimuatkan
+    // Fire a 'change' event to make sure 'Mask' displays correctly when data loads
     const formatAsSelect = document.getElementById('fld-format-as');
     if (formatAsSelect) {
         formatAsSelect.dispatchEvent(new Event('change', { bubbles: true }));
@@ -346,35 +346,35 @@ const maxLengthValue = fieldData.length;
         behaviorSelect.dispatchEvent(new Event('change'));
     }
     
-// ▼▼▼ PEMBETULAN DI SINI ▼▼▼
-    // Panggil fungsi loadValidationTab dengan tableName (bukan tableId)
+// ▼▼▼ FIX HERE ▼▼▼
+    // Call loadValidationTab with tableName (not tableId)
     const currentTableData = appState.jsonData.database.table[tableName];
     const currentFieldData = currentTableData?.fields[fieldName];
 
     if (currentTableData && currentFieldData) {
-        // Hantar columnId dan tableName
+        // Send columnId and tableName
         loadValidationTab(currentFieldData.field_id, tableName); 
     }
-    // ▲▲▲ TAMAT PEMBETULAN ▲▲▲
+    // ▲▲▲ END FIX ▲▲▲
     
 // ========================================================
-    // PERLINDUNGAN VISUAL BUTANG DELETE GLOBAL (UI)
+    // VISUAL PROTECTION FOR THE GLOBAL DELETE BUTTON (UI)
     // ========================================================
     const deleteBtn = document.getElementById('btn-delete');
     
     if (deleteBtn) {
-        // Senarai medan sistem yang dilarang padam
+        // List of system fields that must not be deleted
         const protectedFields = ['id', 'created_at', 'updated_at', 'deleted_at', 'created_by', 'updated_by', 'deleted_by'];
         
-        // 'fieldName' diambil terus dari parameter fungsi di atas
+        // 'fieldName' comes straight from the function parameter above
         if (protectedFields.includes(fieldName)) {
-            // MATIKAN BUTANG (Kelabukan)
+            // DISABLE THE BUTTON (grey it out)
             deleteBtn.disabled = true;
             deleteBtn.style.opacity = '0.4';
             deleteBtn.style.cursor = 'not-allowed';
-            deleteBtn.title = "Akses Ditolak: Medan sistem asas ini tidak boleh dipadam.";
+            deleteBtn.title = "Access Denied: This core system field cannot be deleted.";
         } else {
-            // HIDUPKAN SEMULA BUTANG (Untuk medan biasa)
+            // RE-ENABLE THE BUTTON (for regular fields)
             deleteBtn.disabled = false;
             deleteBtn.style.opacity = '1';
             deleteBtn.style.cursor = 'pointer';
@@ -384,15 +384,15 @@ const maxLengthValue = fieldData.length;
 }
 
 /**
- * Memastikan tab Media mempunyai keadaan lalai yang bersih apabila dibuka.
- * Fungsi ini dipanggil dari sidebar.js apabila pengguna mengklik pada medan.
+ * Ensures the Media tab has a clean default state when opened.
+ * This function is called from sidebar.js when the user clicks on a field.
  */
 export function setupMediaTab(tableName, fieldName) {
-    // Isi dropdown 'The other field' untuk kedua-dua panel Link dan File
+    // Populate the 'The other field' dropdown for both the Link and File panels
     populateOtherFieldDropdown(tableName, fieldName);
     populateFileOtherFieldDropdown(tableName, fieldName);
 
-    // Sembunyikan panel bersyarat secara lalai
+    // Hide the conditional panels by default
     const gmapDetails = document.getElementById('gmap-details');
     const youtubeDetails = document.getElementById('youtube-details');
     if (gmapDetails) gmapDetails.classList.add('hidden');

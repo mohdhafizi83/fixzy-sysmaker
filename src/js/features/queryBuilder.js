@@ -1,15 +1,15 @@
 import { showConfigurableQueryBuilder } from '../handlers/logicBuilderHandlers.js';
 /**
- * Membuka Query Builder dalam mod 'general'.
- * Kini menyokong parameter khusus untuk Dashboard Builder.
+ * Opens the Query Builder in 'general' mode.
+ * Now supports custom parameters for the Dashboard Builder.
  */
 export function openGeneralQueryBuilder(targetTextarea, overrideTableName = null, customCallback = null) {
-    let tableName = overrideTableName; // Guna jadual yang dihantar jika ada
+    let tableName = overrideTableName; // Use the passed-in table if provided
     
     const fieldPage = document.getElementById('field-settings-page');
     const tablePage = document.getElementById('table-settings-page');
 
-    // Jika tiada overrideTableName, guna logik asal untuk cari di UI
+    // If no overrideTableName, use the original logic to find it in the UI
     if (!tableName) {
         if (fieldPage && !fieldPage.classList.contains('hidden')) {
             [tableName] = fieldPage.querySelector('.field-name')?.textContent.split('.') || [];
@@ -25,12 +25,12 @@ export function openGeneralQueryBuilder(targetTextarea, overrideTableName = null
 
     let initialState = null;
     if (targetTextarea) {
-        // Logik asal: Cari input state tersembunyi
+        // Original logic: look for the hidden state input
         const stateInput = targetTextarea.parentElement ? targetTextarea.parentElement.querySelector('.query-builder-state') : null;
         if (stateInput) {
             initialState = stateInput.value || null;
         } else {
-            // Logik baharu untuk Dashboard: Baca terus dari input itu sendiri
+            // New logic for Dashboard: read directly from the input itself
             initialState = targetTextarea.value || null;
         }
     }
@@ -41,10 +41,10 @@ export function openGeneralQueryBuilder(targetTextarea, overrideTableName = null
         initialState: initialState,
         onComplete: (sql, state) => {
             if (customCallback) {
-                // Jika ada callback (untuk Dashboard), gunakan ini
+                // If there's a callback (for Dashboard), use it
                 customCallback(sql, state);
             } else if (targetTextarea) {
-                // Logik asal
+                // Original logic
                 targetTextarea.value = sql;
                 const stateInput = targetTextarea.parentElement ? targetTextarea.parentElement.querySelector('.query-builder-state') : null;
                 if (stateInput) stateInput.value = state;

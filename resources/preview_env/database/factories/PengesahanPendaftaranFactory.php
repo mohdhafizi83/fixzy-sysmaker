@@ -17,7 +17,7 @@ class PengesahanPendaftaranFactory extends Factory
 	public function definition(): array
 	{
         return [
-            // pendaftaran_id dan user_id akan diisi oleh Seeder
+            // pendaftaran_id and user_id will be filled by the Seeder
             'status_baharu' => fake()->randomElement(['Lulus', 'Gagal', 'Rayuan']),
             'catatan' => fake()->sentence(),
             'tarikh_tindakan' => fake()->dateTimeThisYear(),

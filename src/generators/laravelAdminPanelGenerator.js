@@ -53,7 +53,7 @@ async function generateAdminPanelProvider(fullSchema, basePath) {
         fs.writeFileSync(outputPath, fileContent);
         return { success: true };
     } catch (error) {
-        console.error("Gagal menjana AdminPanelProvider:", error);
+        console.error("Failed to generate AdminPanelProvider:", error);
         return { success: false, message: error.message };
     }
 }

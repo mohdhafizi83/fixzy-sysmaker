@@ -1,4 +1,4 @@
-// src/js/saveManager.js (VERSI FINAL & STABIL)
+// src/js/saveManager.js (FINAL & STABLE VERSION)
 
 import { appState, setAwaitingMenuGroupSave } from './state.js';
 import { showToast } from './ui/toast.js';
@@ -15,22 +15,22 @@ export const SaveManager = {
 
 async refreshState() {
         if (_refreshProjectDataCallback) {
-            console.log("[SaveManager] Memuat semula data projek...");
+            console.log("[SaveManager] Reloading project data...");
             await _refreshProjectDataCallback();
         } else {
-            console.warn("[SaveManager] Callback refresh belum diinisialisasi.");
+            console.warn("[SaveManager] Refresh callback not initialized yet.");
         }
     },
     
     addToQueue(type, id, data) {
         if (!id) {
-            console.error("[SaveManager] RALAT: ID tidak sah.");
+            console.error("[SaveManager] ERROR: Invalid ID.");
             return;
         }
         if (appState.isPopulatingData && type !== 'force_save') return;
         if (!appState.isAutoSaveEnabled && type !== 'force_save') return;
 
-        // Auto-fix: Tukar 'relationships' -> 'relationship'
+        // Auto-fix: Convert 'relationships' -> 'relationship'
         if (type === 'relationships') type = 'relationship';
         
         const key = `${type}_${id}`;
@@ -58,7 +58,7 @@ async refreshState() {
         delete this.timeouts[key];
 
         try {
-            console.log(`[SaveManager] Memproses: ${item.type} (ID: ${item.id})`);
+            console.log(`[SaveManager] Processing: ${item.type} (ID: ${item.id})`);
             let result;
 
             // 1. PROJECT
@@ -77,25 +77,25 @@ async refreshState() {
             } 
             // 3. FIELD
             else if (item.type === 'field' || item.type === 'fields') {
-// ▼▼▼ LOG DIAGNOSIS (TAMBAH INI) ▼▼▼
-                console.log("[SaveManager-DEBUG] Data diterima:", item.data);
-                console.log("[SaveManager-DEBUG] Senarai Key:", Object.keys(item.data));
-                // ▲▲▲ TAMAT LOG DIAGNOSIS ▲▲▲                
+// ▼▼▼ DIAGNOSTIC LOG (ADDED) ▼▼▼
+                console.log("[SaveManager-DEBUG] Data received:", item.data);
+                console.log("[SaveManager-DEBUG] Key list:", Object.keys(item.data));
+                // ▲▲▲ END DIAGNOSTIC LOG ▲▲▲                
                 result = await window.electronAPI.updateField({ 
                     field_id: item.id, 
                     ...item.data 
                 });
 console.log(item.data.hasOwnProperty('lookup_parent_table'));
-// ▼▼▼ INTERCEPTOR YANG DIPERBAIKI (Single-Trigger) ▼▼▼
+// ▼▼▼ IMPROVED INTERCEPTOR (Single-Trigger) ▼▼▼
                 const dataKeys = Object.keys(item.data);
                 
-                // KITA HANYA MONITOR SATU FIELD INI SAHAJA SEKARANG
+                // WE ONLY MONITOR THIS ONE FIELD NOW
                 const triggers = ['lookup_parent_table']; 
                 
                 const isRelationshipUpdate = dataKeys.some(key => triggers.includes(key));
 
                 if (result && result.success && isRelationshipUpdate) {
-                    console.log("[SaveManager] Perubahan Parent Table dikesan. Mengemas kini Relationship...");
+                    console.log("[SaveManager] Parent Table change detected. Updating Relationship...");
                     
                     const fieldId = item.id;
                     const tables = appState.jsonData.database.table;
@@ -116,14 +116,14 @@ console.log(item.data.hasOwnProperty('lookup_parent_table'));
 
                     if (childTableName && fkFieldName && currentFieldData) {
                         
-                        // Ambil value direct dari item.data sebab kita pasti trigger dia adalah lookup_parent_table
+                        // Take the value directly from item.data since we know the trigger is lookup_parent_table
                         const parentTable = item.data.lookup_parent_table;
 
                         console.log(`[SaveManager] Data -> Parent: ${parentTable}, Child: ${childTableName}.${fkFieldName}`);
 
                         if (parentTable) {
                             // UPSERT
-                            console.log(`[SaveManager] Menghantar IPC Upsert...`);
+                            console.log(`[SaveManager] Sending IPC Upsert...`);
                             const upsertResult = await window.electronAPI.upsertRelationship({
                                 parentTableName: parentTable,
                                 childTableName: childTableName,
@@ -131,15 +131,15 @@ console.log(item.data.hasOwnProperty('lookup_parent_table'));
                             });
 
                             if (upsertResult && upsertResult.success) {
-                                console.log("[SaveManager] ✅ Upsert Relationship BERJAYA.");
+                                console.log("[SaveManager] ✅ Upsert Relationship SUCCEEDED.");
                                 showToast('Relationship updated successfully', 'success');
                             } else {
-                                console.error("[SaveManager] ❌ Upsert GAGAL:", upsertResult);
+                                console.error("[SaveManager] ❌ Upsert FAILED:", upsertResult);
                                 showToast('Failed to update relationship', 'error');
                             }
 
                         } else {
-                            // DELETE (Jika value kosong)
+                            // DELETE (if the value is empty)
                             console.log(`[SaveManager] Trigger Delete...`);
                             await window.electronAPI.deleteRelationship({
                                 childTableName: childTableName,
@@ -148,7 +148,7 @@ console.log(item.data.hasOwnProperty('lookup_parent_table'));
                         }
                     }
                 }
-                // ▲▲▲ TAMAT INTERCEPTOR ▲▲▲
+                // ▲▲▲ END INTERCEPTOR ▲▲▲
             } 
             // 4. MENU GROUP
             else if (item.type === 'menu_group') {
@@ -156,11 +156,11 @@ console.log(item.data.hasOwnProperty('lookup_parent_table'));
                 result = await window.electronAPI.updateMenuGroup(item.id, item.data);
                 setAwaitingMenuGroupSave(false);
             }
-            // 5. RELATIONSHIP (Terima singular & plural)
+            // 5. RELATIONSHIP (accepts singular & plural)
             else if (item.type === 'relationship' || item.type === 'relationships') {
-                // Pastikan fungsi ini wujud dalam preload.js!
+                // Make sure this function exists in preload.js!
                 if (!window.electronAPI.updateRelationship) {
-                    console.error("[SaveManager] Ralat: window.electronAPI.updateRelationship tiada!");
+                    console.error("[SaveManager] Error: window.electronAPI.updateRelationship is missing!");
                     throw new Error("Missing preload bridge for relationship");
                 }
 
@@ -179,18 +179,18 @@ console.log(item.data.hasOwnProperty('lookup_parent_table'));
                  result = await window.electronAPI.deleteRelationship(item.data);
             }
             
-            // ▲▲▲ TAMAT TAMBAHAN ▲▲▲
+            // ▲▲▲ END ADDITIONS ▲▲▲
 
-            // 8. JIKA TIADA YANG PADAN (Else asal ditukar menjadi else if terakhir atau else)
+            // 8. IF NOTHING MATCHES (original else converted to the final else)
             else {
-                console.error(`[SaveManager] JENIS TIDAK DIKENALI: ${item.type}`);
+                console.error(`[SaveManager] UNKNOWN TYPE: ${item.type}`);
                 showToast(`Error: Unknown save type '${item.type}'`, 'error');
                 return;
             }
 
-            // KEMAS KINI STATE (Tanpa Reload)
+            // UPDATE STATE (Without reload)
             if (result && result.success) {
-                console.log(`[SaveManager] ✅ Disimpan: ${key}`);
+                console.log(`[SaveManager] ✅ Saved: ${key}`);
                 showToast('Changes saved successfully', 'success');
 
                 // Update Local State Logic
@@ -218,16 +218,16 @@ console.log(item.data.hasOwnProperty('lookup_parent_table'));
                 }
 
             } else {
-                // Log Ralat Terperinci
-                console.error(`[SaveManager] ❌ Gagal Simpan ${key}. Result:`, result);
+                // Detailed error log
+                console.error(`[SaveManager] ❌ Failed to save ${key}. Result:`, result);
                 if (result === undefined) {
-                    console.warn("TIP: Result adalah 'undefined'. Sila semak fail 'src/preload.js' anda. Adakah anda tertinggal 'return'?");
+                    console.warn("TIP: Result is 'undefined'. Please check your 'src/preload.js' file. Did you forget a 'return'?");
                 }
                 showToast('Failed to save changes', 'error');
             }
 
         } catch (error) {
-            console.error(`[SaveManager] Ralat Sistem:`, error);
+            console.error(`[SaveManager] System Error:`, error);
             showToast('System Error', 'error');
         }
     }

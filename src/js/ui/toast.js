@@ -1,7 +1,7 @@
 // src/js/ui/toast.js
 
 export function showToast(message, type = 'success') {
-    // 1. Cari atau Cipta Container
+    // 1. Find or create the container
     let container = document.getElementById('toast-container');
     if (!container) {
         container = document.createElement('div');
@@ -9,31 +9,31 @@ export function showToast(message, type = 'success') {
         document.body.appendChild(container);
     }
 
-    // 2. Cipta Elemen Toast
+    // 2. Create the toast element
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     
-    // Ikon berdasarkan jenis
+    // Icon based on type
     let iconClass = 'fa-check-circle';
     if (type === 'error') iconClass = 'fa-exclamation-circle';
     if (type === 'info') iconClass = 'fa-spinner fa-spin';
 
     toast.innerHTML = `<i class="fas ${iconClass}"></i> <span>${message}</span>`;
 
-    // 3. Masukkan ke dalam DOM
+    // 3. Insert into the DOM
     container.appendChild(toast);
 
-    // 4. Animasi Masuk
+    // 4. Entry animation
     requestAnimationFrame(() => {
         toast.classList.add('show');
     });
 
-    // 5. Auto-Hapus selepas 3 saat (kecuali error mungkin nak lama sikit)
+    // 5. Auto-remove after 3 seconds (errors stay a bit longer)
     const duration = type === 'error' ? 5000 : 3000;
 
     setTimeout(() => {
         toast.classList.remove('show');
-        // Tunggu animasi CSS tamat baru buang dari DOM
+        // Wait for the CSS animation to finish before removing from the DOM
         toast.addEventListener('transitionend', () => {
             toast.remove();
         });

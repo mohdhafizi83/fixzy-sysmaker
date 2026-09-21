@@ -76,7 +76,7 @@ class PelajarTestsTable
                     ->formatStateUsing(function (array|string|null $state): ?string {
             if (blank($state)) { return null; }
             
-            // Jaring Keselamatan: Jika Eloquent memulangkan String (gagal cast automatik), decode secara manual
+            // Safety net: if Eloquent returns a String (auto-cast failed), decode manually
             if (is_string($state)) {
                 $decoded = json_decode($state, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
@@ -86,7 +86,7 @@ class PelajarTestsTable
                 }
             }
             
-            // Proses data yang telah disahkan sebagai Array
+            // Process data verified to be an Array
             if (is_array($state)) {
                 // Senario A: Baca format Repeater Simple / Tags (Flat Array)
                 // Cth: ["ali@gmail.com", "abu@gmail.com"]

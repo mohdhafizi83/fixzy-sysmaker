@@ -5,7 +5,7 @@ const Database = require('better-sqlite3');
 
 function connectToDatabase() {
     // 1. Tentukan Path Database
-    // Sila pastikan path ini betul mengikut PC anda
+    // Make sure this path is correct for your PC
     const appDataPath = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + '/Library/Application Support' : process.env.HOME + "/.local/share");
     const dbPath = path.join(appDataPath, 'FiziSysMaker', 'FiziSysMaker.db'); // <--- PASTIKAN FOLDER INI BETUL
 
@@ -14,7 +14,7 @@ function connectToDatabase() {
     // 2. Semak Kewujudan Fail Secara Manual
     if (!fs.existsSync(dbPath)) {
         console.error("❌ RALAT KRITIKAL: Fail database TIDAK WUJUD di laluan tersebut!");
-        console.error("   Sila semak folder AppData anda atau ubah path dalam testUtils.js");
+        console.error("   Check your AppData folder or change the path in testUtils.js");
         return null;
     }
 
@@ -34,19 +34,19 @@ function connectToDatabase() {
 
 function getFullProjectSchema(db, projectId) {
     try {
-        console.log(`🔍 Mengambil schema untuk Project ID: ${projectId}...`);
+        console.log(`🔍 Fetching schema for Project ID: ${projectId}...`);
 
         const project = db.prepare("SELECT * FROM projects WHERE project_id = ?").get(projectId);
         if (!project) {
-            console.error("❌ Projek tidak dijumpai dalam DB.");
+            console.error("❌ Project not found in the DB.");
             return null;
         }
 
         const tables = db.prepare("SELECT * FROM tables WHERE project_id = ? ORDER BY table_order, table_id").all(projectId);
-        console.log(`📊 Jumpa ${tables.length} jadual dalam database.`);
+        console.log(`📊 Found ${tables.length} tables in the database.`);
         
         if (tables.length === 0) {
-            console.warn("⚠️ AMARAN: Projek ini tiada jadual. Tiada apa untuk dijana.");
+            console.warn("⚠️ WARNING: This project has no tables. Nothing to generate.");
             return {
                 project,
                 database: { name: project.app_title, table: {}, relationships: [], unified_menu: [] },
@@ -57,7 +57,7 @@ function getFullProjectSchema(db, projectId) {
         const placeholder = tableIds.map(() => "?").join(",");
         
         const fields = db.prepare(`SELECT * FROM fields WHERE table_id IN (${placeholder}) ORDER BY field_order, field_id`).all(...tableIds);
-        console.log(`📝 Jumpa ${fields.length} medan (fields) secara keseluruhan.`);
+        console.log(`📝 Found ${fields.length} fields overall.`);
 
         const constraints = db.prepare(`SELECT * FROM table_constraints WHERE table_id IN (${placeholder})`).all(...tableIds);
         
@@ -70,7 +70,7 @@ function getFullProjectSchema(db, projectId) {
             customViewFields = db.prepare(`SELECT * FROM custom_module_fields WHERE module_id IN (${viewPlaceholder}) ORDER BY display_order`).all(...viewIds);
         }
   
-        // Validation Rules (Logik sedia ada yang betul - dikekalkan)
+        // Validation Rules (existing correct logic - preserved)
         const validations = db.prepare(`
             SELECT fv.*, f.table_id, f.field_name 
             FROM field_validations fv
@@ -126,7 +126,7 @@ function getFullProjectSchema(db, projectId) {
             const groupItems = allItems
                 .filter(item => item.menu_group_id === group.menu_group_id)
                 .map(item => {
-                    // Logik penentuan jenis item yang lebih tepat
+                    // More precise item type determination logic
                     let itemType = 'custom_item';
                     if (item.table_id) itemType = 'table_item';
                     else if (item.module_id) itemType = 'custom_view_item';

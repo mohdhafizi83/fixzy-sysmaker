@@ -1,8 +1,8 @@
 // js/features/validation.js
 
 /**
- * Menginisialisasi pendengar acara untuk input validasi.
- * Contoh: Menyalin nilai 'Length' ke 'Max Length' secara automatik.
+ * Initializes event listeners for validation inputs.
+ * Example: automatically copies the 'Length' value to 'Max Length'.
  */
 export function initializeValidationInputHandlers() {
     const lengthInput = document.getElementById('fld-length');
@@ -10,7 +10,7 @@ export function initializeValidationInputHandlers() {
 
     if (!lengthInput || !maxLengthInput) return;
 
-    // Fungsi ini menyalin nilai dari 'Length' ke 'Max length'
+    // This function copies the value from 'Length' to 'Max length'
     const syncLengthValue = () => {
         maxLengthInput.value = lengthInput.value;
     };
@@ -19,9 +19,9 @@ export function initializeValidationInputHandlers() {
 }
 
 /**
- * [DIPERBETULKAN] Menguruskan paparan UI apabila checkbox validasi ditanda.
- * Nama dikembalikan kepada asal: toggleValidationInputs
- * @param {string} ruleType - Jenis peraturan (cth: 'unique', 'required')
+ * [FIXED] Manages the UI display when a validation checkbox is ticked.
+ * Name restored to the original: toggleValidationInputs
+ * @param {string} ruleType - Rule type (e.g. 'unique', 'required')
  */
 export function toggleValidationInputs(ruleType) {
     const checkbox = document.getElementById(`val_check_${ruleType}`);
@@ -39,19 +39,19 @@ export function toggleValidationInputs(ruleType) {
 }
 
 /**
- * Menyimpan data validasi ke pangkalan data melalui API Electron.
- * @param {string|number} columnId - ID lajur/medan yang sedang diedit.
+ * Saves validation data to the database via the Electron API.
+ * @param {string|number} columnId - ID of the column/field being edited.
  */
 export async function saveValidationData(columnId) {
     const validationsToSave = [];
-    // Cari semua checkbox yang DITANDA sahaja
+    // Find only the CHECKED checkboxes
     const checkboxes = document.querySelectorAll('.validation-checkbox:checked');
 
     checkboxes.forEach(cb => {
         const type = cb.getAttribute('data-type');
         const collapseDiv = document.getElementById(`collapse_${type}`);
         
-        // Ambil nilai input tambahan jika wujud (cth: min value, max value)
+        // Grab extra input values if present (e.g. min value, max value)
         const input1 = collapseDiv ? collapseDiv.querySelector(`.val-input-1`) : null;
         const input2 = collapseDiv ? collapseDiv.querySelector(`.val-input-2`) : null;
 

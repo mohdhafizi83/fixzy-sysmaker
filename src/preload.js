@@ -10,7 +10,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   createField: (tableId) => ipcRenderer.invoke('field:create', tableId),
   deleteTables: (data) => ipcRenderer.invoke('table:delete', data),
   deleteField: (data) => ipcRenderer.invoke('field:delete', data),
-  
+	
 	updateFieldOrder: (orderData) => ipcRenderer.invoke('field:update-order', orderData),
 	updateTableOrder: (orderData) => ipcRenderer.invoke('table:update-order', orderData),
 	
@@ -37,7 +37,7 @@ updateIndividualMenuOrder: (data) => ipcRenderer.invoke('menu:update-individual-
   getFieldValidations: (columnId) => ipcRenderer.invoke('get-field-validations', columnId),
   saveFieldValidations: (data) => ipcRenderer.invoke('save-field-validations', data),
   getFullSchema: (projectId) => ipcRenderer.invoke('project:get-full-schema', projectId),
-  // Fungsi sedia ada
+  // Existing functions
   getTablesByProject: (projectId) => ipcRenderer.invoke('tables:get-by-project', projectId),
   importSqlFile: (data) => ipcRenderer.invoke('sql:import-file', data),
   importSqlText: (data) => ipcRenderer.invoke('sql:import-text', data),
@@ -50,11 +50,11 @@ updateIndividualMenuOrder: (data) => ipcRenderer.invoke('menu:update-individual-
 // --- CUSTOM MODULE API ---
   saveCustomModule: (data) => ipcRenderer.invoke('custom-module:save', data),
   deleteCustomModule: (viewId) => ipcRenderer.invoke('custom-module:delete', viewId),
-  //Untuk menyimpan override medan individu
+  // For saving individual field overrides
   saveCustomTableOverride: (data) => ipcRenderer.invoke('custom-module:save-table-override', data),
   saveCustomFieldOverride: (data) => ipcRenderer.invoke('custom-module:save-field-override', data),
   
-  // (Pilihan) Alias lama dikekalkan sementara waktu sekiranya ada fail lain belum ditukar
+  // (Optional) Old aliases kept temporarily in case other files have not been updated yet
   saveCustomView: (data) => ipcRenderer.invoke('custom-module:save', data),
   deleteCustomView: (viewId) => ipcRenderer.invoke('custom-module:delete', viewId),
 
@@ -69,13 +69,13 @@ updateIndividualMenuOrder: (data) => ipcRenderer.invoke('menu:update-individual-
 // =================================================================  
     startPreview: (projectPath) => ipcRenderer.invoke('preview:start', projectPath),
     stopPreview: () => ipcRenderer.invoke('preview:stop'),
-    // API untuk Instant Preview
+    // API for Instant Preview
     runInstantPreview: () => ipcRenderer.invoke('preview:instant-run'),
     stopPreviewServer: () => ipcRenderer.send('stop-preview-server'),
     generateApp: () => ipcRenderer.invoke('generate-app'),
     openFolder: (path) => ipcRenderer.send('open-folder', path),
 	runComposer: (projectPath) => ipcRenderer.invoke('run-composer', projectPath),
-    // --- PENGURUSAN WIDGET DASHBOARD ---
+    // --- DASHBOARD WIDGET MANAGEMENT ---
   saveWidget: (data) => ipcRenderer.invoke('widget:save', data),
   deleteWidget: (widgetId) => ipcRenderer.invoke('widget:delete', widgetId),
 });

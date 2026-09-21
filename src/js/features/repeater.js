@@ -13,14 +13,14 @@ export function initializeRepeaterHandlers() {
         const toggleVisibility = () => {
             const selected = displayAsSelect.value;
             
-            // Gaya Asal (Lebih Ringkas & Moden)
+            // Original style (simpler & modern)
             formatAsGroup.classList.toggle('hidden', selected !== 'text_input');
             listValuesGroup.classList.toggle('hidden', selected !== 'dropdown_list');
         };
 
         displayAsSelect.addEventListener('change', toggleVisibility);
         
-        // Pembaikan Saya: Pastikan UI betul sebaik sahaja ia dimuatkan
+        // My fix: make sure the UI is correct as soon as it loads
         toggleVisibility(); 
     };
 

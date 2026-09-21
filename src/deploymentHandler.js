@@ -22,20 +22,20 @@ function resolveWindow(event) {
 const path = require('path');
 const fs = require('fs');
 const spawn = require('cross-spawn');
-const mysql = require('mysql2/promise'); // Diperlukan untuk Deploy
+const mysql = require('mysql2/promise'); // Required for Deploy
 
 /**
- * Helper untuk menjalankan command shell/terminal.
- * Dikongsi oleh fungsi Deploy dan Update.
- * * @param {string} command - Perintah (cth: 'php', 'composer')
- * @param {string[]} args - Hujah perintah
- * @param {string} cwd - Direktori kerja (Current Working Directory)
- * @param {BrowserWindow} win - Tetingkap Electron untuk hantar log
- * @param {string} logChannel - Nama channel IPC untuk log ('deploy-log' atau 'update-log')
+ * Helper to run a shell/terminal command.
+ * Shared by the Deploy and Update functions.
+ * * @param {string} command - Command (e.g. 'php', 'composer')
+ * @param {string[]} args - Command arguments
+ * @param {string} cwd - Working directory (Current Working Directory)
+ * @param {BrowserWindow} win - Electron window to send logs to
+ * @param {string} logChannel - IPC channel name for logs ('deploy-log' or 'update-log')
  */
 function runCommand(command, args, cwd, win, logChannel) {
     return new Promise((resolve, reject) => {
-        // Hantar log arahan yang dijalankan
+        // Send a log of the command being run
         win.webContents.send(logChannel, `> ${command} ${args.join(' ')}`);
 
         const child = spawn(command, args, { cwd, shell: true });
@@ -47,7 +47,7 @@ function runCommand(command, args, cwd, win, logChannel) {
 
         child.stderr.on('data', (data) => {
             const message = data.toString().trim();
-            // Tapis amaran 'Deprecation' supaya tidak menakutkan pengguna
+            // Filter out 'Deprecation' warnings so users are not scared
             if (message && !message.includes('Deprecation')) {
                 win.webContents.send(logChannel, `[INFO/WARN]: ${message}`);
             }
@@ -61,7 +61,7 @@ function runCommand(command, args, cwd, win, logChannel) {
 }
 
 /**
- * Fungsi untuk DEPLOY (Pemasangan Baru)
+ * Function to DEPLOY (New Installation)
  */
 async function deployApp(event, deployConfig) {
     const win = resolveWindow(event);
@@ -76,9 +76,9 @@ async function deployApp(event, deployConfig) {
     } = deployConfig;
 
     try {
-        win.webContents.send(STATUS_CHANNEL, { step: 1, message: 'Memuat turun Template...' });
+        win.webContents.send(STATUS_CHANNEL, { step: 1, message: 'Downloading Template...' });
 
-        // --- LANGKAH 1: Git Clone ---
+        // --- STEP 1: Git Clone ---
         if (fs.existsSync(projectPath)) {
             fs.rmSync(projectPath, { recursive: true, force: true });
         }
@@ -87,12 +87,12 @@ async function deployApp(event, deployConfig) {
         
         await runCommand('git', ['clone', gitRepoUrl, projectPath], parentDir, win, LOG_CHANNEL);
 
-        // --- LANGKAH 2: Salin Fail ---
-        win.webContents.send(STATUS_CHANNEL, { step: 2, message: 'Menyalin fail janaan...' });
+        // --- STEP 2: Copy Files ---
+        win.webContents.send(STATUS_CHANNEL, { step: 2, message: 'Copying generated files...' });
         fs.cpSync(generatedPath, projectPath, { recursive: true, force: true });
 
-        // --- LANGKAH 3: Konfigurasi .env ---
-        win.webContents.send(STATUS_CHANNEL, { step: 3, message: 'Konfigurasi .env...' });
+        // --- STEP 3: Configure .env ---
+        win.webContents.send(STATUS_CHANNEL, { step: 3, message: 'Configuring .env...' });
         const envExamplePath = path.join(projectPath, '.env.example');
         const envPath = path.join(projectPath, '.env');
 
@@ -105,11 +105,11 @@ async function deployApp(event, deployConfig) {
             envContent = envContent.replace(/^DB_PASSWORD=.*$/m, `DB_PASSWORD=${dbConfig.password}`);
             fs.writeFileSync(envPath, envContent);
         } else {
-            throw new Error('.env.example tidak ditemui!');
+            throw new Error('.env.example not found!');
         }
 
-        // --- LANGKAH 4: Setup Database ---
-        win.webContents.send(STATUS_CHANNEL, { step: 4, message: 'Mencipta Pangkalan Data...' });
+        // --- STEP 4: Database Setup ---
+        win.webContents.send(STATUS_CHANNEL, { step: 4, message: 'Creating Database...' });
         const connection = await mysql.createConnection({
             host: 'localhost',
             user: 'root',
@@ -121,42 +121,42 @@ async function deployApp(event, deployConfig) {
         await connection.query(`FLUSH PRIVILEGES;`);
         await connection.end();
 
-        // --- LANGKAH 5: Composer ---
+        // --- STEP 5: Composer ---
         win.webContents.send(STATUS_CHANNEL, { step: 5, message: 'Install Composer & Key...' });
         await runCommand('composer', ['install', '--optimize-autoloader'], projectPath, win, LOG_CHANNEL);
         await runCommand('php', ['artisan', 'key:generate'], projectPath, win, LOG_CHANNEL);
 
-        // --- LANGKAH 6: Migrasi & Shield ---
-        win.webContents.send(STATUS_CHANNEL, { step: 6, message: 'Migrasi Database...' });
+        // --- STEP 6: Migration & Shield ---
+        win.webContents.send(STATUS_CHANNEL, { step: 6, message: 'Migrating Database...' });
         await runCommand('php', ['artisan', 'migrate', '--force'], projectPath, win, LOG_CHANNEL);
         await runCommand('php', ['artisan', 'shield:generate', '--all', '--panel=admin', '--no-interaction'], projectPath, win, LOG_CHANNEL);
         await runCommand('php', ['artisan', 'db:seed'], projectPath, win, LOG_CHANNEL);
 
-        // --- LANGKAH 7: NPM ---
+        // --- STEP 7: NPM ---
         win.webContents.send(STATUS_CHANNEL, { step: 7, message: 'Build Frontend Assets...' });
         await runCommand('npm', ['install'], projectPath, win, LOG_CHANNEL);
         await runCommand('npm', ['run', 'build'], projectPath, win, LOG_CHANNEL);
 
-        // --- LANGKAH 8: Optimize ---
-        win.webContents.send(STATUS_CHANNEL, { step: 8, message: 'Mengoptimumkan Aplikasi...' });
+        // --- STEP 8: Optimize ---
+        win.webContents.send(STATUS_CHANNEL, { step: 8, message: 'Optimizing Application...' });
         await runCommand('php', ['artisan', 'storage:link'], projectPath, win, LOG_CHANNEL);
         await runCommand('php', ['artisan', 'config:cache'], projectPath, win, LOG_CHANNEL);
         await runCommand('php', ['artisan', 'route:cache'], projectPath, win, LOG_CHANNEL);
         await runCommand('php', ['artisan', 'view:cache'], projectPath, win, LOG_CHANNEL);
 
-        win.webContents.send(STATUS_CHANNEL, { step: 9, message: 'Selesai!', success: true });
+        win.webContents.send(STATUS_CHANNEL, { step: 9, message: 'Done!', success: true });
         return { success: true };
 
     } catch (error) {
         console.error(error);
         win.webContents.send(LOG_CHANNEL, `ERROR: ${error.message}`);
-        win.webContents.send(STATUS_CHANNEL, { step: 0, message: 'Gagal', success: false, error: error.message });
+        win.webContents.send(STATUS_CHANNEL, { step: 0, message: 'Failed', success: false, error: error.message });
         return { success: false, message: error.message };
     }
 }
 
 /**
- * Fungsi untuk UPDATE (Kemaskini Projek Sedia Ada)
+ * Function to UPDATE (Refresh an Existing Project)
  */
 async function updateApp(event, updateConfig) {
     const win = resolveWindow(event);
@@ -169,65 +169,65 @@ async function updateApp(event, updateConfig) {
     } = updateConfig;
 
     try {
-        win.webContents.send(STATUS_CHANNEL, { step: 1, message: 'Memeriksa folder projek...' });
+        win.webContents.send(STATUS_CHANNEL, { step: 1, message: 'Checking project folder...' });
 
-        // 1. Validasi
+        // 1. Validation
         if (!fs.existsSync(projectPath)) {
-            throw new Error(`Folder projek tidak ditemui di: ${projectPath}`);
+            throw new Error(`Project folder not found at: ${projectPath}`);
         }
         if (!fs.existsSync(path.join(projectPath, 'artisan'))) {
-            throw new Error("Folder ini bukan projek Laravel yang sah.");
+            throw new Error("This folder is not a valid Laravel project.");
         }
 
-        // 2. Mod Penyelenggaraan
-        win.webContents.send(STATUS_CHANNEL, { step: 2, message: 'Mengaktifkan mod penyelenggaraan...' });
+        // 2. Maintenance Mode
+        win.webContents.send(STATUS_CHANNEL, { step: 2, message: 'Enabling maintenance mode...' });
         try {
             await runCommand('php', ['artisan', 'down', '--render="errors::503"'], projectPath, win, LOG_CHANNEL);
-        } catch (e) { console.warn("Gagal set mode down, meneruskan...", e); }
+        } catch (e) { console.warn("Failed to set down mode, continuing...", e); }
 
-        // 3. Salin Fail Baru (Smart Overwrite)
-        win.webContents.send(STATUS_CHANNEL, { step: 3, message: 'Menyalin fail kemaskini...' });
+        // 3. Copy New Files (Smart Overwrite)
+        win.webContents.send(STATUS_CHANNEL, { step: 3, message: 'Copying update files...' });
         fs.cpSync(generatedPath, projectPath, { 
             recursive: true, 
             force: true,
             filter: (src) => {
-                // Jangan overwrite .env
+                // Do not overwrite .env
                 if (path.basename(src) === '.env') return false; 
                 return true;
             }
         });
 
         // 4. Update Dependencies
-        win.webContents.send(STATUS_CHANNEL, { step: 4, message: 'Mengemaskini Autoloader...' });
+        win.webContents.send(STATUS_CHANNEL, { step: 4, message: 'Updating Autoloader...' });
         await runCommand('composer', ['dump-autoload'], projectPath, win, LOG_CHANNEL);
 
-        // 5. Migrasi Database
-        win.webContents.send(STATUS_CHANNEL, { step: 5, message: 'Menjalankan Migrasi...' });
+        // 5. Database Migration
+        win.webContents.send(STATUS_CHANNEL, { step: 5, message: 'Running Migration...' });
         try {
             await runCommand('php', ['artisan', 'migrate', '--force'], projectPath, win, LOG_CHANNEL);
         } catch (dbError) {
-            win.webContents.send(LOG_CHANNEL, `[AMARAN DB]: ${dbError.message}`);
+            win.webContents.send(LOG_CHANNEL, `[DB WARNING]: ${dbError.message}`);
         }
 
         // 6. Filament Upgrade & Cache Clearing
-        win.webContents.send(STATUS_CHANNEL, { step: 6, message: 'Mengoptimumkan Aset & Cache...' });
+        win.webContents.send(STATUS_CHANNEL, { step: 6, message: 'Optimizing Assets & Cache...' });
         await runCommand('php', ['artisan', 'filament:upgrade'], projectPath, win, LOG_CHANNEL);
         await runCommand('php', ['artisan', 'optimize:clear'], projectPath, win, LOG_CHANNEL);
         await runCommand('php', ['artisan', 'config:cache'], projectPath, win, LOG_CHANNEL);
         await runCommand('php', ['artisan', 'route:cache'], projectPath, win, LOG_CHANNEL);
         await runCommand('php', ['artisan', 'view:cache'], projectPath, win, LOG_CHANNEL);
 
-        // 7. Matikan Mod Penyelenggaraan
-        win.webContents.send(STATUS_CHANNEL, { step: 7, message: 'Membuka semula aplikasi...' });
+        // 7. Turn Off Maintenance Mode
+        win.webContents.send(STATUS_CHANNEL, { step: 7, message: 'Reopening application...' });
         await runCommand('php', ['artisan', 'up'], projectPath, win, LOG_CHANNEL);
 
-        win.webContents.send(STATUS_CHANNEL, { step: 8, message: 'Kemaskini Selesai!', success: true });
+        win.webContents.send(STATUS_CHANNEL, { step: 8, message: 'Update Complete!', success: true });
         return { success: true };
 
     } catch (error) {
         console.error(error);
         win.webContents.send(LOG_CHANNEL, `ERROR: ${error.message}`);
-        win.webContents.send(STATUS_CHANNEL, { step: 0, message: 'Gagal', success: false, error: error.message });
+        win.webContents.send(STATUS_CHANNEL, { step: 0, message: 'Failed', success: false, error: error.message });
         try { await runCommand('php', ['artisan', 'up'], projectPath, win, LOG_CHANNEL); } catch(e){}
         return { success: false, message: error.message };
     }

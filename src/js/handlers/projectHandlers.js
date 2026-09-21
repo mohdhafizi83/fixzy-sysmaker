@@ -4,7 +4,7 @@ import { appState, setIsCoreLockingEnabled } from '../state.js';
 import { SaveManager } from '../saveManager.js';
 import { showCustomDialog } from '../ui/modalHandlers.js';
 import { setElementValue, setRadioValue } from '../ui/formHelpers.js';
-//import { loadProjectData } from '../../renderer.js'; // Ikut path yang anda betulkan tadi
+//import { loadProjectData } from '../../renderer.js'; // Follow the path you fixed earlier
 
 export function initializeThemeHandlers() {
     const themeSelect = document.getElementById('app-theme-select');
@@ -18,7 +18,7 @@ export function initializeThemeHandlers() {
         radio.addEventListener('change', updatePreviewImage);
     });
 
-    // Panggil sekali untuk tetapkan imej yang betul semasa aplikasi dimuatkan
+    // Call once to set the correct image when the app loads
     updatePreviewImage();
 }
 
@@ -34,7 +34,7 @@ export function initializeLocalizationHandlers() {
 
     const currentYear = new Date().getFullYear();
     
-    // Opsyen untuk dropdown
+    // Options for the dropdown
     const dateFormats = [
         `31/12/${currentYear}`,
         `12/31/${currentYear}`,
@@ -46,22 +46,22 @@ export function initializeLocalizationHandlers() {
     ];
     const timeFormats = [ '11:59 PM', '11:59:59 PM', '23:59', '23:59:59' ];
 
-    // Isi dropdown secara dinamik
+    // Populate the dropdown dynamically
     dateFormatSelect.innerHTML = dateFormats.map(f => `<option value="${f}">${f}</option>`).join('');
     timeFormatSelect.innerHTML = timeFormats.map(f => `<option value="${f}">${f}</option>`).join('');
 
-    // Fungsi untuk mengemas kini pratonton
+    // Function to update the preview
     const updateDateTimePreview = () => {
         const selectedDate = dateFormatSelect.value;
         const selectedTime = timeFormatSelect.value;
         previewInput.value = `${selectedDate} ${selectedTime}`;
     };
 
-    // Pasang event listener
+    // Attach event listeners
     dateFormatSelect.addEventListener('change', updateDateTimePreview);
     timeFormatSelect.addEventListener('change', updateDateTimePreview);
 
-    // Panggil sekali untuk tetapan awal
+    // Call once for the initial setting
     updateDateTimePreview();
 }
 
@@ -91,9 +91,9 @@ export function initializeSecurityTabHandlers() {
     openBrowserBtn.addEventListener('click', () => {
         const url = appUrlInput.value.trim();
 
-        // Pastikan URL tidak kosong sebelum cuba membukanya
+        // Make sure the URL isn't empty before trying to open it
         if (url) {
-            // Panggil fungsi yang didedahkan oleh preload.js
+            // Call the function exposed by preload.js
             window.electronAPI.openUrl(url);
         } else {
                 showCustomDialog({
@@ -105,29 +105,29 @@ export function initializeSecurityTabHandlers() {
 }
 
 export function initializeClassSelectorHandlers() {
-    // Kumpulan untuk Table View
+    // Group for Table View
     const tvSelect = document.getElementById('table-view-classes-select');
     const tvInput = document.getElementById('tbl-table-view-classes-input');
 
-    // Kumpulan untuk Detail View
+    // Group for Detail View
     const dvSelect = document.getElementById('detail-view-classes-select');
     const dvInput = document.getElementById('tbl-detail-view-classes-input');
 
     if (tvSelect && tvInput) {
         tvSelect.addEventListener('change', () => {
             tvInput.value = tvSelect.value;
-            // ▼▼▼ KEMAS KINI: Cetuskan event 'input' secara manual ▼▼▼
+            // ▼▼▼ UPDATE: Fire the 'input' event manually ▼▼▼
             tvInput.dispatchEvent(new Event('input', { bubbles: true }));
-            // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
+            // ▲▲▲ END UPDATE ▲▲▲
         });
     }
 
     if (dvSelect && dvInput) {
         dvSelect.addEventListener('change', () => {
             dvInput.value = dvSelect.value;
-            // ▼▼▼ KEMAS KINI: Cetuskan event 'input' secara manual ▼▼▼
+            // ▼▼▼ UPDATE: Fire the 'input' event manually ▼▼▼
             dvInput.dispatchEvent(new Event('input', { bubbles: true }));
-            // ▲▲▲ TAMAT KEMAS KINI ▲▲▲
+            // ▲▲▲ END UPDATE ▲▲▲
         });
     }
 }
@@ -164,8 +164,8 @@ export async function populateProjectDropdown() {
                     await SaveManager.refreshState();
                 }
             } catch (error) {
-                console.error("Gagal menukar projek:", error);
-                showCustomDialog({ title: "Error", message: `Gagal menukar projek: ${error.message}` });
+                console.error("Failed to switch project:", error);
+                showCustomDialog({ title: "Error", message: `Failed to switch project: ${error.message}` });
             } finally {
                 if (overlay) overlay.classList.add('loading-overlay-hidden');
             }
@@ -174,11 +174,11 @@ export async function populateProjectDropdown() {
         projectListContainer.appendChild(projectLink);
     });
 
-    // Guna kaedah cloneNode untuk membuang semua event listener lama dari butang
-    // sebelum menambah event listener yang baharu dan terkini.
+    // Use the cloneNode method to remove all old event listeners from the button
+    // before adding the new, up-to-date event listener.
     const newProjectBtnClone = newProjectBtn.cloneNode(true);
     newProjectBtn.parentNode.replaceChild(newProjectBtnClone, newProjectBtn);
-    newProjectBtn = newProjectBtnClone; // Sasarkan semula pembolehubah kepada klon yang baharu
+    newProjectBtn = newProjectBtnClone; // Repoint the variable to the new clone
 
     newProjectBtn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -187,14 +187,14 @@ export async function populateProjectDropdown() {
 }
 
 export function updateActionButtonsState() {
-    // Tukar carian dari sidebar kepada #table-list
+    // Changed the search from the sidebar to #table-list
     const activeLink = document.querySelector('#table-list a.active');
     const newFieldBtn = document.getElementById('btn-new-field');
     const moveUpBtn = document.getElementById('btn-move-up');
     const moveDownBtn = document.getElementById('btn-move-down');
     const deleteBtn = document.getElementById('btn-delete');
     
-    // Logik: Hanya aktifkan butang Field, Up, Down, Delete jika ada item dipilih
+    // Logic: only enable the Field, Up, Down, Delete buttons if an item is selected
     const isDisabled = !(activeLink && activeLink.closest('.submenu, .has-submenu'));
     
     if (newFieldBtn) newFieldBtn.disabled = isDisabled;
@@ -204,26 +204,26 @@ export function updateActionButtonsState() {
 }
 
 /**
- * Memaparkan atau menyembunyikan lapisan kunci pada borang tetapan.
- * @param {('table'|'field')} pageType - Jenis halaman ('table' atau 'field').
- * @param {boolean} isLocked - Tetapkan 'true' untuk kunci, 'false' untuk buka.
- * @param {string} [message] - Mesej untuk dipaparkan apabila dikunci.
+ * Shows or hides the lock overlay on the settings form.
+ * @param {('table'|'field')} pageType - Page type ('table' or 'field').
+ * @param {boolean} isLocked - Set 'true' to lock, 'false' to unlock.
+ * @param {string} [message] - Message to display when locked.
  */
 export function applyFormLock(pageType, isLocked, message = '') {
     const pageId = `${pageType}-settings-page`;
     const overlay = document.querySelector(`#${pageId} .form-lock-overlay`);
     const messageEl = document.getElementById(`${pageType}-lock-message`);
-    const mainContent = document.querySelector('.main-content'); // <-- Rujukan kepada kandungan utama
+    const mainContent = document.querySelector('.main-content'); // <-- Reference to the main content
 
     if (!overlay || !messageEl || !mainContent) return;
 
     if (isLocked) {
         messageEl.textContent = message;
         overlay.classList.remove('hidden');
-        mainContent.classList.add('no-scroll'); // <-- Kunci skrol
+        mainContent.classList.add('no-scroll'); // <-- Lock scrolling
     } else {
         overlay.classList.add('hidden');
-        mainContent.classList.remove('no-scroll'); // <-- Buka skrol
+        mainContent.classList.remove('no-scroll'); // <-- Unlock scrolling
     }
 }
 
@@ -325,7 +325,7 @@ export function initializeAuthRadioLogic() {
 }
 
 export function showNewProjectModal() {
-    configureNewProjectModal('user-initiated'); // <-- TAMBAH BARIS INI
+    configureNewProjectModal('user-initiated'); // <-- ADD THIS LINE
 
     const modal = document.getElementById('new-project-modal');
     const input = document.getElementById('new-project-name');
@@ -339,8 +339,8 @@ export function showNewProjectModal() {
 }
 
 /**
- * Mengkonfigurasi modal 'New Project' berdasarkan senario.
- * @param {string} scenario - 'first-run' atau 'user-initiated'.
+ * Configures the 'New Project' modal based on the scenario.
+ * @param {string} scenario - 'first-run' or 'user-initiated'.
  */
 export function configureNewProjectModal(scenario) {
     const modal = document.getElementById('new-project-modal');
@@ -351,15 +351,15 @@ export function configureNewProjectModal(scenario) {
 
     if (scenario === 'first-run') {
         if (titleEl) titleEl.textContent = 'Welcome! Please Create Your First Project';
-        if (closeBtn) closeBtn.style.display = 'none'; // Sembunyikan butang X
+        if (closeBtn) closeBtn.style.display = 'none'; // Hide the X button
     } else { // 'user-initiated'
         if (titleEl) titleEl.textContent = 'Create New Project';
-        if (closeBtn) closeBtn.style.display = 'block'; // Paparkan butang X
+        if (closeBtn) closeBtn.style.display = 'block'; // Show the X button
     }
 }
 
 /**
- * Memaparkan modal panduan penyelesaian ralat untuk Import SQL.
+ * Shows the SQL import error troubleshooting guide modal.
  */
 export function showImportErrorGuide() {
     const modal = document.getElementById('sql-import-error-modal');
@@ -368,7 +368,7 @@ export function showImportErrorGuide() {
     const okBtn = document.getElementById('sql-import-error-ok-btn');
     const closeModal = () => modal.classList.add('hidden');
     
-    // Guna cloneNode untuk memastikan event listener lama dibuang
+    // Use cloneNode to make sure old event listeners are removed
     const newOkBtn = okBtn.cloneNode(true);
     okBtn.parentNode.replaceChild(newOkBtn, okBtn);
     newOkBtn.addEventListener('click', closeModal);
@@ -381,16 +381,16 @@ function updatePreviewImage() {
     const previewImage = document.getElementById('theme-preview-image');
     const selectedViewRadio = document.querySelector('input[name="view_mode"]:checked');
 
-    // Pastikan semua elemen wujud
+    // Make sure all elements exist
     if (!themeSelect || !previewImage || !selectedViewRadio) {
         console.warn("Theme preview elements not found.");
         return;
     }
 
-    const theme = themeSelect.value; // cth: "bootstrap", "darkly"
-    const viewMode = selectedViewRadio.value === 'table_view' ? 'TV' : 'DV'; // Tukar kepada 'TV' atau 'DV'
+    const theme = themeSelect.value; // e.g. "bootstrap", "darkly"
+    const viewMode = selectedViewRadio.value === 'table_view' ? 'TV' : 'DV'; // Convert to 'TV' or 'DV'
 
-    // Bina nama fail imej yang baharu
+    // Build the new image filename
     previewImage.src = `../assets/images/northwind-${theme}-${viewMode}.png`;
 }
 

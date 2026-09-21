@@ -15,17 +15,17 @@ class ShieldSeeder extends Seeder
         // Reset cached roles and permissions
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // 1. Cipta peranan 'super_admin'
+        // 1. Create the 'super_admin' role
         $superAdminRole = Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
 
-        // 2. Dapatkan SEMUA kebenaran yang wujud dalam pangkalan data
+        // 2. Fetch ALL permissions that exist in the database
         $allPermissions = Permission::all();
 
-        // 3. Berikan semua kebenaran ini kepada peranan 'super_admin'
-        // Ini akan memastikan semua checkbox ditandakan (checked) di UI
+        // 3. Grant all these permissions to the 'super_admin' role
+        // This ensures all checkboxes are marked (checked) in the UI
         $superAdminRole->syncPermissions($allPermissions);
 
-        // 4. Berikan peranan 'super_admin' kepada pengguna lalai anda
+        // 4. Assign the 'super_admin' role to the default user
         $user = User::where('email', 'test@example.com')->first();
         if ($user) {
             $user->assignRole($superAdminRole);

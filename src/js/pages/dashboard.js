@@ -1,13 +1,13 @@
 // js/pages/dashboard.js
 
-// Import Helpers UI
+// Import UI helpers
 import { setElementValue, setRadioValue } from '../ui/formHelpers.js';
 import { appState } from '../state.js';
 import { loadProjectData, SaveManager } from '../../renderer.js';
 
 export function populateMainDashboard(projectData) {
     if (!projectData) {
-        console.warn("Tiada data projek untuk dipaparkan di papan pemuka.");
+        console.warn("No project data to display on the dashboard.");
         return;
     }
 
@@ -34,10 +34,10 @@ export function populateMainDashboard(projectData) {
     setElementValue('app-debug-mode', projectData.debug_mode);
 	setRadioValue('app-data_delete_type', projectData.data_delete_type || 'hard');
 	
-    // ▼▼▼ MULA: LOGIK ARCHITECTURE & TENANCY ▼▼▼
+    // ▼▼▼ START: ARCHITECTURE & TENANCY LOGIC ▼▼▼
     setRadioValue('app-tenancy_type', projectData.tenancy_type || 'standard');
 
-    // 1. Bina pilihan dropdown untuk Tenant Table berdasarkan senarai jadual semasa
+    // 1. Build the Tenant Table dropdown options based on the current table list
     const tenantTableSelect = document.getElementById('app-tenant_table');
     if (tenantTableSelect && appState.jsonData?.database?.table) {
         tenantTableSelect.innerHTML = '<option value="">-- Please Select --</option>';
@@ -47,11 +47,11 @@ export function populateMainDashboard(projectData) {
             option.textContent = tableName;
             tenantTableSelect.appendChild(option);
         });
-        // Tetapkan nilai yang telah disimpan di DB
+        // Set the value already stored in the DB
         setElementValue('app-tenant_table', projectData.tenant_table || '');
     }
 
-    // 2. Logik untuk paparkan/sembunyikan dropdown Tenant Table
+    // 2. Logic to show/hide the Tenant Table dropdown
     const toggleTenantTableVisibility = () => {
         const fgTenant = document.getElementById('fg-tenant-table');
         const selectedTenancy = document.querySelector('input[name="app-tenancy_type"]:checked')?.value;
@@ -65,15 +65,15 @@ export function populateMainDashboard(projectData) {
         }
     };
 
-    // 3. Pasang event listener pada butang radio Tenancy Type
+    // 3. Attach event listeners to the Tenancy Type radio buttons
     document.querySelectorAll('input[name="app-tenancy_type"]').forEach(radio => {
-        radio.removeEventListener('change', toggleTenantTableVisibility); // Elak duplicate listener
+        radio.removeEventListener('change', toggleTenantTableVisibility); // Avoid duplicate listeners
         radio.addEventListener('change', toggleTenantTableVisibility);
     });
 
-    // 4. Panggil sekali semasa memuatkan halaman
+    // 4. Call once when the page loads
     toggleTenantTableVisibility();
-    // ▲▲▲ TAMAT: LOGIK ARCHITECTURE & TENANCY ▲▲▲
+    // ▲▲▲ END: ARCHITECTURE & TENANCY LOGIC ▲▲▲
 
     // Tab: Localization
     setElementValue('app-title', projectData.app_title);
@@ -82,7 +82,7 @@ export function populateMainDashboard(projectData) {
     setElementValue('app-language-select', projectData.language_select);
     setElementValue('app-timezone-select', projectData.timezone_select);
 
-    // Kemas kini pratonton tarikh (Safe addition)
+    // Update the date preview (safe addition)
     const dateFormatSelect = document.getElementById('app-date-format');
     const timeFormatSelect = document.getElementById('app-time-format');
     const previewInput = document.getElementById('app-date-preview');
@@ -114,7 +114,7 @@ export function populateMainDashboard(projectData) {
     setElementValue('app-url', projectData.url);
     setElementValue('app-hook-logic', projectData.project_hook_workflow); 
     
-    // Cetuskan event
+    // Fire events
     document.getElementById('app-date-order')?.dispatchEvent(new Event('change'));
     document.getElementById('app-theme-select')?.dispatchEvent(new Event('change'));
 	
@@ -126,7 +126,7 @@ export function populateMainDashboard(projectData) {
 
 export function initializeProjectSaveHandlers() {
     const form = document.getElementById('main-dashboard-page');
-    // 'app-title' berada di luar 'main-dashboard-page', jadi kita perlu sasarkannya secara berasingan
+    // 'app-title' sits outside 'main-dashboard-page', so we need to target it separately
     const header = document.querySelector('.main-header'); 
     if (!form || !header) return;
 
@@ -155,11 +155,11 @@ export function initializeProjectSaveHandlers() {
             value = input.value;
         }
 
-        // Guna SaveManager yang diimport
+        // Use the imported SaveManager
         SaveManager.addToQueue('project', appState.activeProject.project_id, { [key]: value });
     };
 
-    // Pasang event listener
+    // Attach event listeners
     header.querySelectorAll('input, select').forEach(input => {
         if (input.id === 'app-title') {
             input.addEventListener('input', handleInputChange);

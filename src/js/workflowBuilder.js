@@ -3,15 +3,15 @@
 import { openModalLogicBuilder } from './uiHandlers.js';
 import { appState } from './state.js';
 import { resolveVariables } from './utils.js';
-import { SaveManager } from './saveManager.js'; // ✅ Import yang betul (elak circular dependency)
+import { SaveManager } from './saveManager.js'; // ✅ Correct import (avoids circular dependency)
 
 /**
- * Fungsi teras yang boleh diguna semula untuk menyediakan satu instans workflow builder.
+ * Reusable core function that sets up one workflow builder instance.
  */
 function setupBuilderInstance(config) {
     const container = document.getElementById(config.containerId);
     if (!container) {
-        console.error(`🔍 DEBUG_HOOK: Container ${config.containerId} tidak ditemui!`);
+        console.error(`🔍 DEBUG_HOOK: Container ${config.containerId} not found!`);
         return;
     }
 
@@ -29,7 +29,7 @@ function setupBuilderInstance(config) {
         offsetY: 0,
     };
 
-    // --- FUNGSI SAVE STATE (TITIK A) ---
+    // --- SAVE STATE FUNCTION (POINT A) ---
     const saveState = () => {
         const workflowData = {
             blocks: state.blocks,
@@ -39,7 +39,7 @@ function setupBuilderInstance(config) {
         const targetInput = document.getElementById(config.hiddenInputId);
 
         if(targetInput) {
-            // Log 1: Builder cuba simpan
+            // Log 1: Builder tries to save
             console.log(`🔍 DEBUG_HOOK: [Builder] Menyimpan state ke input #${config.hiddenInputId}`);
             
             targetInput.value = workflowJson;
@@ -48,7 +48,7 @@ function setupBuilderInstance(config) {
             console.log(`🔍 DEBUG_HOOK: [Builder] Dispatching event 'change'...`);
             targetInput.dispatchEvent(new Event('change', { bubbles: true }));
         } else {
-            console.error(`🔍 DEBUG_HOOK: [Critical] Input sasaran #${config.hiddenInputId} TIDAK DITEMUI!`);
+            console.error(`🔍 DEBUG_HOOK: [Critical] Target input #${config.hiddenInputId} NOT FOUND!`);
         }
     };
 
@@ -1024,7 +1024,7 @@ function setupBuilderInstance(config) {
         }
         state.connections = workflowData.connections || [];
     } catch (e) { 
-        console.warn(`🔍 DEBUG_HOOK: Gagal memuatkan workflow state untuk ${config.containerId}:`, e);
+        console.warn(`🔍 DEBUG_HOOK: Failed to load workflow state for ${config.containerId}:`, e);
         state.blocks = {};
         state.connections = [];
     }
@@ -1039,10 +1039,10 @@ function setupBuilderInstance(config) {
 }
 
 /**
- * Fungsi utama untuk memulakan kedua-dua workflow builder.
+ * Main function to initialize both workflow builders.
  */
 export function initializeWorkflowBuilder() {
-    // 1. Setup untuk Project Hook
+    // 1. Setup for the Project Hook
     setupBuilderInstance({
         containerId: 'project-workflow-container',
         hiddenInputId: 'app-hook-logic',
@@ -1052,13 +1052,13 @@ export function initializeWorkflowBuilder() {
     // --- PEMBAIKAN MUKTAMAD: PROJECT HOOK AUTO-SAVE ---
     const projectHookInput = document.getElementById('app-hook-logic');
     if (projectHookInput) {
-        // Buang listener lama (jika ada) dengan cloneNode
+        // Remove old listeners (if any) with cloneNode
         const newInput = projectHookInput.cloneNode(true);
         projectHookInput.parentNode.replaceChild(newInput, projectHookInput);
         
         newInput.addEventListener('change', () => {
             if (appState.activeProject?.project_id) {
-                // Gunakan nama lajur yang telah disahkan melalui log debug tadi
+                // Use the column name verified via the debug log earlier
                 const payloadKey = 'project_hook_workflow'; 
                 
                 console.log(`💾 Auto-Saving Project Hook (Column: ${payloadKey})...`);
@@ -1071,7 +1071,7 @@ export function initializeWorkflowBuilder() {
     }
     // --------------------------------------------------
 
-    // 2. Setup untuk Table Hook (Melalui Observer)
+    // 2. Setup for the Table Hook (via Observer)
     const observer = new MutationObserver((mutations) => {
         for (const mutation of mutations) {
             if (mutation.type === 'attributes' && mutation.attributeName === 'class') {

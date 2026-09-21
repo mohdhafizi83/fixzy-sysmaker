@@ -1,5 +1,5 @@
-// Konfigurasi Jenis Validation untuk Filament/Laravel
-// Digunakan oleh uiHandlers.js untuk menjana UI form validation
+// Validation type configuration for Filament/Laravel
+// Used by uiHandlers.js to generate the validation UI form
 
 export const VALIDATION_RULES_CONFIG = [
     // --- Basic Rules ---

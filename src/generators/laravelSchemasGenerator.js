@@ -12,12 +12,12 @@ const { renderTemplate } = require('../render/engine');
 const { buildFormFieldContext } = require('./fieldContext');
 
 /**
- * [HELPER] Menjana string schema untuk form. 
+ * [HELPER] Generates the schema string for a form. 
  * Mengandungi 100% logik ASAL + sokongan Custom Module (readonly).
  */
 function generateFormSchemaString(tableData, relationships, tableName, fullSchema) {
     const formFieldsCode = [];
-    const modelNameSingular = toSingularPascalCase(tableName); // Kekal guna tableName untuk variable dalaman
+    const modelNameSingular = toSingularPascalCase(tableName); // Keep using tableName for the internal variable
 
     // --- MULA: LOGIK PENGESANAN TENANT FK ---
     const projectSettings = fullSchema.project || {};
@@ -37,7 +37,7 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
     }
     // --- TAMAT LOGIK PENGESANAN TENANT FK ---
 
-    // Dapatkan medan yang visible & sort
+    // Get visible & sorted fields
     // LOGIK ASAL: filter visibleFields
     const visibleFields = Object.values(tableData.fields)
         .filter(field => {
@@ -46,7 +46,7 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
 
             // Logik Custom Module: Jika forced readonly, sentiasa paparkan
             if (field.is_forced_readonly) return true;
-            // Jika tidak, ikut setting hide_in_dv
+            // Otherwise, follow the hide_in_dv setting
             return field.hide_in_dv !== 1;
         })
         .sort((a, b) => (a.field_order ?? 999) - (b.field_order ?? 999));
@@ -256,7 +256,7 @@ ViewField::make('${field.field_name}')
 }
 
 /**
- * [FUNGSI UTAMA] Menjana fail Form Schema untuk Resources standard.
+ * [MAIN FUNCTION] Generates the Form Schema file for standard Resources.
  */
 async function generateFilamentSchemasForm(fullSchema, basePath) {
     try {
@@ -377,12 +377,12 @@ async function generateFilamentSchemasForm(fullSchema, basePath) {
 }
 
 /**
- * [HELPER] Menjana satu fail Schema Class (untuk Custom Module).
+ * [HELPER] Generates a single Schema Class file (for Custom Module).
  */
 function generateSingleSchemaClass(basePath, resourceFolder, className, tableData, fullSchema, tableName) {
     const { project: projectSettings, database: { relationships } } = fullSchema;
 
-    // Gunakan Module Name untuk Model
+    // Use Module Name for the Model
     const nameSource = (tableData.module_name && tableData.module_name.trim() !== '')
                         ? tableData.module_name
                         : tableName;
@@ -406,7 +406,7 @@ function generateSingleSchemaClass(basePath, resourceFolder, className, tableDat
     // Render outer template (custom class name, custom namespace folder)
     let formContent = renderTemplate('app/Filament/Resources/SchemasForm.php.njk', {
         table_name_singular: modelNameSingular,
-        table_name_plural: resourceFolder, // Namespace guna custom folder
+        table_name_plural: resourceFolder, // Namespace uses the custom folder
         form_class_name: className,
         import_resources: Array.from(importResources).join('\n'),
         grid_column_control: `->columns(fn (Page $livewire) => $livewire->gridColumns ?? 2)`,
@@ -456,7 +456,7 @@ async function generateFilamentSchemasCustomModules(fullSchema, basePath) {
                     // ▼▼▼ PEMBAIKAN GENERATOR: SALIN DEFAULT DAHULU, KEMUDIAN OVERRIDE ▼▼▼
                     const virtualFields = {};
                     
-                    // 1. Salin SEMUA medan dari jadual asal (Default Module)
+                    // 1. Copy ALL fields from the original table (Default Module)
                     for (const [fName, fData] of Object.entries(tableData.fields)) {
                         virtualFields[fName] = { ...fData }; // Deep copy
                     }
@@ -466,7 +466,7 @@ async function generateFilamentSchemasCustomModules(fullSchema, basePath) {
                         moduleObj.fields.forEach(f => {
                             const fieldId = parseInt(f.field_id, 10);
                             
-                            // Cari nama medan berdasarkan ID (Elak isu DataType String vs Int)
+                            // Find the field name by ID (avoids DataType String vs Int issues)
                             let fieldName = null;
                             for (const [fName, fData] of Object.entries(tableData.fields)) {
                                 if (parseInt(fData.field_id, 10) === fieldId) {
@@ -492,7 +492,7 @@ async function generateFilamentSchemasCustomModules(fullSchema, basePath) {
                                         const overrides = typeof f.settings_override === 'string' ? JSON.parse(f.settings_override) : f.settings_override;
                                         Object.assign(virtualFields[fieldName], overrides);
                                     } catch (e) {
-                                        console.warn(`Gagal memproses settings_override untuk medan: ${fieldName}`);
+                                        console.warn(`Failed to process settings_override for field: ${fieldName}`);
                                     }
                                 }
                             }

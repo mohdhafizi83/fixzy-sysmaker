@@ -17,7 +17,7 @@ class DokumenPelajarFactory extends Factory
 	public function definition(): array
 	{
 		return [
-			// pelajar_id akan diisi secara automatik
+			// pelajar_id will be filled in automatically
 			'nama_fail' => fake()->sentence(3),
 			'path_fail' => fake()->imageUrl(),
 		];

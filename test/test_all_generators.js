@@ -98,25 +98,25 @@ async function runFullTest() {
 
     try {
         const activeProject = db.prepare("SELECT * FROM projects WHERE is_active = 1 LIMIT 1").get();
-        if (!activeProject) throw new Error("Tiada projek aktif dijumpai.");
+        if (!activeProject) throw new Error("No active project found.");
         
         console.log(`📂 Projek: ${activeProject.app_title} (ID: ${activeProject.project_id})`);
         
         const fullSchema = await getFullProjectSchema(db, activeProject.project_id);
-        console.log(`📊 Schema dimuatkan: ${Object.keys(fullSchema.database.table).length} jadual.`);
+        console.log(`📊 Schema loaded: ${Object.keys(fullSchema.database.table).length} tables.`);
 
         // ▼▼▼ DEBUG: DUMP FULL SCHEMA KE FAIL ▼▼▼
         const debugFilePath = path.join(__dirname, 'debug_schema_output.json');
-        console.log(`\n🔍 [DEBUG] Menyimpan fullSchema ke fail untuk semakan:`);
+        console.log(`\n🔍 [DEBUG] Saving fullSchema to file for review:`);
         console.log(`   📂 ${debugFilePath}`);
         
-        // Simpan sebagai JSON yang cantik (indented)
+        // Save as pretty-printed (indented) JSON
         fs.writeFileSync(debugFilePath, JSON.stringify(fullSchema, null, 4));
         
-        // Cetak ringkasan ringkas di console untuk pengesahan pantas
+        // Print a brief summary to the console for quick verification
         if (fullSchema.database.unified_menu) {
             console.log(`   ✅ Unified Menu: Ditemui (${fullSchema.database.unified_menu.length} item peringkat atasan)`);
-            // Paparkan sampel item pertama untuk memastikan struktur 'type' wujud
+            // Show the first sample item to confirm the 'type' structure exists
             if (fullSchema.database.unified_menu.length > 0) {
                  console.log("   👉 Sampel Menu Item Pertama:", fullSchema.database.unified_menu[0]);
             }
@@ -131,7 +131,7 @@ async function runFullTest() {
                 if (f.validations && f.validations.length > 0) validationCount++;
             });
         });
-        console.log(`   ✅ Validations: Ditemui pada ${validationCount} medan.`);
+        console.log(`   ✅ Validations: Found on ${validationCount} fields.`);
         console.log("--------------------------------------------------\n");
         // ▲▲▲ TAMAT DEBUG ▲▲▲
         // ============================================================
@@ -156,10 +156,10 @@ async function runFullTest() {
             { name: 'Standard: Create Pages', func: generateFilamentCreatePages },
             { name: 'Standard: Edit Pages', func: generateFilamentEditPages },
             { name: 'Standard: Relation Managers', func: generateFilamentRelationManagers },
-            { name: 'Standard: Resources (Main)', func: generateFilamentResources }, // Akhir sekali sebab ia 'link' semua
+            { name: 'Standard: Resources (Main)', func: generateFilamentResources }, // Last, because it 'links' everything
 
             // 4. Custom Modules (FASA 3)
-            // Nota: Custom Modules menggunakan semula Relation Manager standard, jadi tiada generator khas untuk itu.
+            // Note: Custom Modules reuse the standard Relation Manager, so there is no dedicated generator for that.
             { name: 'Custom Modules: Tables', func: generateFilamentTablesCustomModules },
             { name: 'Custom Modules: Forms', func: generateFilamentSchemasCustomModules },
             { name: 'Custom Modules: List Pages', func: generateFilamentListCustomModules },

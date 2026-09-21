@@ -14,12 +14,12 @@ const {
 const { renderTemplate } = require('../render/engine');
 
 /**
- * [HELPER] Menjana string PHP untuk lajur-lajur jadual.
+ * [HELPER] Generates the PHP string for the table columns.
  * Mengandungi SEMUA logik asal (Media, Relationships, Formatting, Summaries, dll).
  */
 function generateTableColumnsString(tableData, relationships, tableName, projectSettings, modelNameSingular) {
     const columnsCode = [];
-    // Nota: modelNameSingular diterima sebagai argumen (Module Name) untuk type hinting yang betul
+    // Note: modelNameSingular is passed in as an argument (Module Name) for correct type hinting
 
     // --- MULA: LOGIK PENGESANAN TENANT FK ---
     const isOneToMany = projectSettings && projectSettings.tenancy_type === 'one_to_many';
@@ -38,8 +38,8 @@ function generateTableColumnsString(tableData, relationships, tableName, project
     }
     // --- TAMAT LOGIK PENGESANAN TENANT FK ---
 
-    // Ambil fields yang visible dan susun ikut order
-    // (Logik ini akan digunakan oleh Standard Generator. Custom Module akan pass tableData yang dah dimanipulasi)
+    // Take visible fields and sort them by order
+    // (This logic is used by the Standard Generator. Custom Module passes pre-manipulated tableData)
     const visibleFields = Object.values(tableData.fields)
         .filter(field => {
             // Sembunyikan Tenant FK dari pandangan table list secara automatik
@@ -58,7 +58,7 @@ function generateTableColumnsString(tableData, relationships, tableName, project
         else controller = 'TextColumn';
         
         let fieldName;
-        // Logic Dot Notation untuk Relationship
+        // Dot-notation logic for Relationships
         const fkRelationship = relationships.find(r => r.child_table_name === tableName && r.fk_child_field === field.field_name);
         if (fkRelationship) {
             const parentCamel = fkRelationship.parent_table_name === fkRelationship.child_table_name ? 'parent' : toSingularCamelCase(fkRelationship.parent_table_name);
@@ -165,7 +165,7 @@ if (field.data_type === 'JSON') {
             const jsonFormatter = `->formatStateUsing(function (array|string|null \$state): ?string {
             if (blank(\$state)) { return null; }
             
-            // Jaring Keselamatan: Jika Eloquent memulangkan String (gagal cast automatik), decode secara manual
+            // Safety net: if Eloquent returns a String (auto-cast failed), decode manually
             if (is_string(\$state)) {
                 \$decoded = json_decode(\$state, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
@@ -175,7 +175,7 @@ if (field.data_type === 'JSON') {
                 }
             }
             
-            // Proses data yang telah disahkan sebagai Array
+            // Process data verified to be an Array
             if (is_array(\$state)) {
                 // Senario A: Baca format Repeater Simple / Tags (Flat Array)
                 // Cth: ["ali@gmail.com", "abu@gmail.com"]
@@ -348,7 +348,7 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
             const modelNameSingular = toSingularPascalCase(nameSource); // StudentInfo
             const modelNamePlural = toPluralPascalCase(nameSource); // StudentInfos
 
-            // 1. Jana Columns (Pass modelNameSingular untuk type hinting)
+            // 1. Generate Columns (pass modelNameSingular for type hinting)
             const columnsCode = generateTableColumnsString(tableData, relationships, tableName, projectSettings, modelNameSingular);
 
             // 2. Render template with settings context
@@ -389,25 +389,25 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
 }
 
 /**
- * [BARU] Menjana fail Table Class khas untuk Custom Module.
+ * [NEW] Generates a dedicated Table Class file for Custom Module.
  */
 function generateSingleTableClass(basePath, resourceFolder, className, tableData, fullSchema, tableName) {
     const { project: projectSettings, database: { relationships } } = fullSchema;
 
-    // Custom Module guna Model Standard (Module Name)
+    // Custom Module uses the Standard Model (Module Name)
     const nameSource = (tableData.module_name && tableData.module_name.trim() !== '')
                         ? tableData.module_name
                         : tableName;
     const modelNameSingular = toSingularPascalCase(nameSource);
 
-    // Namespace untuk table class ini adalah custom folder
+    // The namespace for this table class is the custom folder
     // namespace App\Filament\Resources\PendingRegistrations\Tables;
 
     // 1. Render template (custom class name, custom namespace folder)
     const columnsCode = generateTableColumnsString(tableData, relationships, tableName, projectSettings, modelNameSingular);
     let tableContent = renderTemplate('app/Filament/Resources/TablesTable.php.njk', {
         table_name_singular: modelNameSingular,
-        table_name_plural: resourceFolder, // Namespace guna custom folder
+        table_name_plural: resourceFolder, // Namespace uses the custom folder
         table_class_name: className,
         all_columns: columnsCode,
         ...buildTableSettingsContext(tableData, relationships, tableName, projectSettings, modelNameSingular),
@@ -456,7 +456,7 @@ async function generateFilamentTablesCustomModules(fullSchema, basePath) {
                         try {
                             tableOverrides = JSON.parse(moduleObj.settings_override);
                         } catch (e) {
-                            console.warn(`Gagal memproses settings_override jadual untuk modul: ${moduleObj.module_name}`);
+                            console.warn(`Failed to process table settings_override for module: ${moduleObj.module_name}`);
                         }
                     }
 
@@ -464,7 +464,7 @@ async function generateFilamentTablesCustomModules(fullSchema, basePath) {
 // ▼▼▼ PEMBAIKAN GENERATOR: SALIN DEFAULT DAHULU, KEMUDIAN OVERRIDE ▼▼▼
                     const virtualFields = {};
                     
-                    // 1. Salin SEMUA medan dari jadual asal (Default Module)
+                    // 1. Copy ALL fields from the original table (Default Module)
                     for (const [fName, fData] of Object.entries(tableData.fields)) {
                         virtualFields[fName] = { ...fData }; // Deep copy
                     }
@@ -500,7 +500,7 @@ async function generateFilamentTablesCustomModules(fullSchema, basePath) {
                                         const overrides = typeof f.settings_override === 'string' ? JSON.parse(f.settings_override) : f.settings_override;
                                         Object.assign(virtualFields[fieldName], overrides);
                                     } catch (e) {
-                                        console.warn(`Gagal memproses settings_override untuk medan: ${fieldName}`);
+                                        console.warn(`Failed to process settings_override for field: ${fieldName}`);
                                     }
                                 }
                             }
@@ -508,12 +508,12 @@ async function generateFilamentTablesCustomModules(fullSchema, basePath) {
                     }
                     // ▲▲▲ TAMAT PEMBAIKAN GENERATOR ▲▲▲
 
-                    // Gabungkan override jadual ke dalam table data
+                    // Merge the table override into the table data
                     const virtualTableData = { 
                         ...tableData, 
                         ...tableOverrides,
                         fields: virtualFields, 
-                        module_name: tableData.module_name // PENTING: Kekalkan rujukan nama asal untuk Standard Model
+                        module_name: tableData.module_name // IMPORTANT: Preserve the original name reference for the Standard Model
                     };
 
                     generateSingleTableClass(

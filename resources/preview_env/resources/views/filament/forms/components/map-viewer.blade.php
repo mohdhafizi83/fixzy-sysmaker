@@ -10,7 +10,7 @@
         $responsiveCode = str_replace('height="450"', 'height="450px"', $responsiveCode);
     @endphp
 
-    {{-- Paparkan kod iframe yang telah diubah suai --}}
+    {{-- Display the modified iframe code --}}
     {!! $responsiveCode !!}
 @else
    <!-- <div class="fi-input-wrp">
