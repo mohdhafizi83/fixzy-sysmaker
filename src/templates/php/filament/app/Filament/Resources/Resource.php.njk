@@ -56,7 +56,7 @@ class {{ model_name }}Resource extends Resource
         ];
 		
 
-    // Hanya tambah AuditsRelationManager jika pengguna boleh melihatnya
+    // Only add AuditsRelationManager if the user is allowed to view it
     {{ relations_audit }}
 	
 	return $relations;

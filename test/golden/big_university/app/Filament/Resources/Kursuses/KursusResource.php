@@ -67,7 +67,7 @@ ExportAction::make()->exporter(KursusExporter::class)
         ];
 		
 
-    // Hanya tambah AuditsRelationManager jika pengguna boleh melihatnya
+    // Only add AuditsRelationManager if the user is allowed to view it
     
         if (auth()->check() && auth()->user()->can('view_any_audit')) {
             $relations[] = AuditsRelationManager::class;

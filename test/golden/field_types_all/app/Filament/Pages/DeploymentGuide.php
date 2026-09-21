@@ -11,7 +11,7 @@ class DeploymentGuide extends Page
     
     protected static ?string $navigationLabel = 'Deployment Guide';
     
-    protected static ?string $title = 'Panduan Deployment & Database';
+    protected static ?string $title = 'Deployment & Database Guide';
 
     protected static ?string $slug = 'deployment-guide';
 
@@ -26,7 +26,7 @@ class DeploymentGuide extends Page
 
     public function mount()
     {
-        // Logik ini berjalan secara runtime (semasa aplikasi dibuka)
+        // This logic runs at runtime (when the application is opened)
         $this->currentConnection = Config::get('database.default');
         $this->isSqlite = $this->currentConnection === 'sqlite';
     }

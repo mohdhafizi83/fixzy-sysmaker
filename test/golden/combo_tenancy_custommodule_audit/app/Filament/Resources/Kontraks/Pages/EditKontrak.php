@@ -40,10 +40,10 @@ class EditKontrak extends EditRecord
                 ReplicateAction::make()
                     ->label('Save As Copy')
                     ->mutateRecordDataUsing(function (array $data): array {
-                        // Kosongkan medan unik untuk mengelakkan ralat pangkalan data
+                        // Empty the unique fields to avoid database errors
                                 $data['no_rujukan'] = '';;
                         
-                        // Secara pilihan, tambah penanda pada nama untuk menunjukkan ia adalah salinan
+                        // Optionally, add a marker to the name to indicate it is a copy
                         $data['no_rujukan'] = ($data['no_rujukan'] ?? '') . ' (Copy)';
                         
                         return $data;

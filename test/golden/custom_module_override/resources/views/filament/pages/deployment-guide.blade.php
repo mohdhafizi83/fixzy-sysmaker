@@ -1,9 +1,9 @@
 <x-filament-panels::page>
     
-    {{-- STATUS DATABASE SEMASA --}}
+    {{-- CURRENT DATABASE STATUS --}}
     <x-filament::section>
         <x-slot name="heading">
-            Status Pangkalan Data Semasa
+            Current Database Status
         </x-slot>
 
         <div class="flex items-center gap-4">
@@ -17,50 +17,50 @@
                 </div>
                 <p class="mt-2 text-sm">
                     @if($isSqlite)
-                        Anda sedang menggunakan <strong>SQLite</strong>. Ini sesuai untuk pembangunan dan demo, tetapi 
-                        <strong>TIDAK DISYORKAN</strong> untuk penggunaan sebenar (Production) yang mempunyai trafik tinggi.
+                        You are currently using <strong>SQLite</strong>. This is suitable for development and demos, but 
+                        <strong>NOT RECOMMENDED</strong> for real-world (production) use with high traffic.
                     @else
-                        Syabas! Anda menggunakan pangkalan data gred produksi.
+                        Well done! You are using a production-grade database.
                     @endif
                 </p>
             </div>
         </div>
     </x-filament::section>
 
-    {{-- PANDUAN MIGRASI KE MYSQL --}}
+    {{-- MIGRATION GUIDE TO MYSQL --}}
     @if($isSqlite)
     <x-filament::section collapsible collapsed>
         <x-slot name="heading">
-            Cara Tukar ke MySQL / MariaDB (Production)
+            How to Switch to MySQL / MariaDB (Production)
         </x-slot>
         <x-slot name="description">
-            Ikuti langkah ini apabila anda bersedia untuk melancarkan aplikasi ini di pelayan sebenar.
+            Follow these steps when you are ready to launch this application on a real server.
         </x-slot>
 
         <div class="prose max-w-none dark:prose-invert text-sm">
             <ol class="list-decimal pl-5 space-y-2">
                 <li>
-                    <strong>Sediakan Database Kosong:</strong><br>
-                    Buka phpMyAdmin atau terminal database anda, dan cipta database baru (contoh: <code>custom_module_override</code>).
+                    <strong>Prepare an Empty Database:</strong><br>
+                    Open phpMyAdmin or your database terminal, and create a new database (example: <code>custom_module_override</code>).
                 </li>
                 <li>
-                    <strong>Kemaskini fail <code>.env</code>:</strong><br>
-                    Buka fail <code>.env</code> di folder utama projek anda dan ubah bahagian ini:
+                    <strong>Update the <code>.env</code> file:</strong><br>
+                    Open the <code>.env</code> file in your project's root folder and change this section:
                     <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 border border-gray-300 dark:border-gray-700"><code>DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_DATABASE=custom_module_override
 DB_USERNAME=root
-DB_PASSWORD=kata_laluan_anda</code></pre>
+DB_PASSWORD=your_password</code></pre>
                 </li>
                 <li>
-                    <strong>Jalankan Migrasi:</strong><br>
-                    Buka terminal di folder projek dan jalankan arahan berikut untuk membina struktur jadual:
+                    <strong>Run Migrations:</strong><br>
+                    Open a terminal in the project folder and run the following command to build the table structure:
                     <pre class="bg-black text-green-400 p-2 rounded mt-1"><code>php artisan migrate --force</code></pre>
                 </li>
                 <li>
-                    <strong>Masukkan Data Awal (Seeding):</strong><br>
-                    Untuk memasukkan pengguna admin dan data asas:
+                    <strong>Insert Initial Data (Seeding):</strong><br>
+                    To insert the admin user and base data:
                     <pre class="bg-black text-green-400 p-2 rounded mt-1"><code>php artisan db:seed</code></pre>
                 </li>
             </ol>
@@ -68,26 +68,26 @@ DB_PASSWORD=kata_laluan_anda</code></pre>
     </x-filament::section>
     @endif
 
-    {{-- PANDUAN DEPLOYMENT UMUM --}}
+    {{-- GENERAL DEPLOYMENT GUIDE --}}
     <x-filament::section collapsible collapsed>
         <x-slot name="heading">
-            Panduan Upload ke cPanel / Shared Hosting
+            Uploading to cPanel / Shared Hosting Guide
         </x-slot>
 
         <div class="prose max-w-none dark:prose-invert text-sm">
             <ul class="list-disc pl-5 space-y-2">
-                <li>Pastikan server anda menyokong <strong>PHP 8.1</strong> atau ke atas.</li>
-                <li>Pastikan sambungan PHP (Extensions) ini diaktifkan: <code>bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, tokenizer, xml</code>.</li>
+                <li>Make sure your server supports <strong>PHP 8.1</strong> or above.</li>
+                <li>Make sure these PHP extensions are enabled: <code>bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, tokenizer, xml</code>.</li>
                 <li>
-                    Struktur folder yang disyorkan:
+                    Recommended folder structure:
                     <ul class="list-circle pl-5 mt-1">
-                        <li>Letakkan kandungan folder <code>public</code> ke dalam <code>public_html</code>.</li>
-                        <li>Letakkan fail projek selebihnya di luar <code>public_html</code> (contoh: folder <code>project_core</code>) untuk keselamatan.</li>
-                        <li>Kemaskini fail <code>index.php</code> di <code>public_html</code> untuk menghalakan path ke folder <code>project_core</code>.</li>
+                        <li>Place the contents of the <code>public</code> folder into <code>public_html</code>.</li>
+                        <li>Place the rest of the project files outside <code>public_html</code> (example: a <code>project_core</code> folder) for security.</li>
+                        <li>Update the <code>index.php</code> file in <code>public_html</code> to point the path to the <code>project_core</code> folder.</li>
                     </ul>
                 </li>
                 <li>
-                    Jangan lupa setkan <code>APP_ENV=production</code> dan <code>APP_DEBUG=false</code> di dalam fail <code>.env</code> pelayan anda.
+                    Don't forget to set <code>APP_ENV=production</code> and <code>APP_DEBUG=false</code> in the <code>.env</code> file on your server.
                 </li>
             </ul>
         </div>

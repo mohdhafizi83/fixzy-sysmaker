@@ -40,10 +40,10 @@ class EditProfilPelajar extends EditRecord
                 ReplicateAction::make()
                     ->label('Save As Copy')
                     ->mutateRecordDataUsing(function (array $data): array {
-                        // Kosongkan medan unik untuk mengelakkan ralat pangkalan data
+                        // Empty the unique fields to avoid database errors
                                 $data['pelajar_id'] = '';;
                         
-                        // Secara pilihan, tambah penanda pada nama untuk menunjukkan ia adalah salinan
+                        // Optionally, add a marker to the name to indicate it is a copy
                         $data['alamat'] = ($data['alamat'] ?? '') . ' (Copy)';
                         
                         return $data;

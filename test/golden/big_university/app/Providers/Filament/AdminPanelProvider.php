@@ -78,7 +78,7 @@ class AdminPanelProvider extends PanelProvider
     }
 	
     /**
-     * Daftarkan mana-mana komponen panel di sini.
+     * Register any panel components here.
      */
     public function boot(): void
     {
