@@ -143,15 +143,62 @@ Fix commit: 98cddf2d.
 
 **Objective:** Systematically cover the combination space that produced live bugs; every reproduced bug becomes a permanent fixture.
 
-- [ ] **3.1** Enumerate feature axes from IR: tenancy (none/1:m/m:m), row ownership, custom modules (+overrides), relation types (hasMany/hasManyThrough/belongsTo/morph), field types (all supported), import/export/print, auditing, soft delete, computed/calculation queries, repeaters, indexes/constraints, multi-tenant menu scoping.
+**STATUS: COMPLETE (2026-09-21, commits ab34f05d + e83e6169)**
+
+- [x] **3.1** Enumerate feature axes from IR: tenancy (none/1:m/m:m), row ownership, custom modules (+overrides), relation types (hasMany/hasManyThrough/belongsTo/morph), field types (all supported), import/export/print, auditing, soft delete, computed/calculation queries, repeaters, indexes/constraints, multi-tenant menu scoping.
   - Deliverable: `docs/FEATURE_MATRIX.md` — axes × values, which fixtures cover which combos.
-- [ ] **3.2** Create ~12 more fixtures (single-axis first): `tenancy_1m`, `tenancy_mm`, `row_owner`, `custom_module_basic`, `custom_module_override`, `relations_all`, `field_types_all`, `import_export_print`, `auditing_on`, `soft_delete`, `calc_queries`, `menus_complex`.
-- [ ] **3.3** Add stress-combo fixtures (2–3): `combo_tenancy_custommodule_audit`, `combo_owner_relations_export`.
-- [ ] **3.4** Run matrix; every failure = a bug ticket in `docs/BUGS.md` (reproduce command + fixture + expected vs actual). Fix each with TDD: failing golden → fix generator → green.
-- [ ] **3.5** Ask owner to list past live bug scenarios from their real testing; encode each as a fixture. (Owner input required — do not skip.)
-- [ ] **3.6** CI: GitHub Actions workflow `.github/workflows/ci.yml` — `npm ci && node test/golden.js` on push/PR.
+  - Result: DONE — 8 axes documented (tenancy/ownership, relation types, field
+    types, table features, auditing/soft-delete, custom modules, navigation,
+    auth/fake-data) with fixture mapping. Gaps documented: morph relations not
+    representable in current dump shape; calculated fields = generator gap.
+- [x] **3.2** Create ~12 more fixtures (single-axis first): `tenancy_1m`, `tenancy_mm`, `row_owner`, `custom_module_basic`, `custom_module_override`, `relations_all`, `field_types_all`, `import_export_print`, `auditing_on`, `soft_delete`, `calc_queries`, `menus_complex`.
+  - Result: DONE — all 12 created via `test/fixtures/gen_phase3_fixtures.py`
+    (deterministic generator script committed so fixtures are reproducible/
+    editable). Live-dump shape (arrays for relationships, unified_menu present).
+- [x] **3.3** Add stress-combo fixtures (2–3): `combo_tenancy_custommodule_audit`, `combo_owner_relations_export`.
+  - Result: DONE — both combos as specified.
+- [x] **3.4** Run matrix; every failure = a bug ticket in `docs/BUGS.md` (reproduce command + fixture + expected vs actual). Fix each with TDD: failing golden → fix generator → green.
+  - Result: DONE — 3 tickets logged:
+    BUG-001 calculated fields silently ignored (OPEN, needs product decision);
+    BUG-002 zero_fill ignored (OPEN, low);
+    BUG-003 m:m relation emitted FK to nonexistent column -> migrate:fresh
+    crash (FIXED e83e6169, golden rebaselined, e2e verified).
+    Also fixed harness: auto-discovery skipped `*_ir.json` (IR fixtures belong
+    to ir_test).
+- [x] **3.5** Ask owner to list past live bug scenarios from their real testing; encode each as a fixture. (Owner input required — do not skip.)
+  - Result: ASKED 2026-09-21 — owner replied no additional scenarios for now.
+    Matrix proceeds as-is; can extend later via gen script.
+- [x] **3.6** CI: GitHub Actions workflow `.github/workflows/ci.yml` — `npm ci && node test/golden.js` on push/PR.
+  - Result: DONE — workflow runs node --check, ir_test, render_validate_test,
+    audit_headless, golden matrix (PHP 8.3 + Node 20). All steps verified
+    passing locally.
 
 **Exit criterion:** 15+ fixtures, 100% green, matrix doc shows every axis value covered.
+- MET: 16 full-schema fixtures (base_simple, big_university + 14 new), 16/16 golden PASS.
+
+### Phase 3 AUDIT (2026-09-21) — PASSED
+
+1. All layers green: golden 16/16 PASS, ir_test PASS, render_validate 11/11,
+   audit_headless 45 files 6/6, `node --check src/main.js` OK, ci.yml valid YAML.
+2. Read-back verification of new goldens (not just "harness says pass"):
+   - tenancy_1m: Kela model boot() auto-fills sekolah_id from auth user ✓
+   - tenancy_mm: User has belongsToMany pivot `organisasi_user`, HasTenants ✓
+   - soft_delete: SoftDeletes trait + deleted_by deleting hook ✓
+   - auditing_on: OwenIt Auditable contract+trait on model ✓
+   - field_types_all: all 21 field kinds render expected Filament components
+     (Select for dropdown/multi, DatePicker, Repeater simple+complex, etc.) ✓
+3. Runtime hunt: e2e_smoke booted ALL 14 new fixtures (7+7 batches) against
+   preview_env — every one reached HTTP 200 /admin/login after migrate:fresh.
+   This caught BUG-003 (php -l could not: valid PHP, invalid SQL).
+4. Sabotage tests: tampered tenancy_1m golden -> harness FAIL with diff;
+   tampered field_types_all Select->TextInput -> harness FAIL; restore -> PASS.
+5. big_university relationship types confirmed (one-to-one/one-to-many only)
+   — BUG-003 fix cannot regress existing goldens (16/16 re-verified after fix).
+6. Known accepted: BUG-001/002 remain OPEN by decision (need product input,
+   not silent re-baseline); unused-import warn-level noise persists (tracked
+   since P2).
+
+Next: Phase 4 (native feature code — kill 3rd-party peripheral plugins).
 
 ---
 
@@ -237,3 +284,5 @@ P4/P5/P6 can interleave after P3, but P7 requires all. Recommended order: 0→1�
 - 2026-09-21 06:30 UTC — P1-AUDIT — passed — see Phase 1 AUDIT section. Sabotage tests confirm validator + round-trip strictness. Next: Phase 2 (Nunjucks + validator layer).
 - 2026-09-21 08:57 UTC — P2 (2.1–2.5) — done — commits 5b0ee7a..a865b684 (10 commits). Nunjucks engine (src/render/engine.js, autoescape off, explicit tags), post-gen validator (src/render/validate.js, severity error/warn), ALL 12 generators migrated to .php.njk templates (docs, relationmanagers, exports, create, edit, list, importers, adminpanel, resource, schemas, tables, database models/users-migration). <<PLACEHOLDER>> machinery + readTemplate() deleted from utils. Per-field inline template extracted to src/generators/fieldContext.js + schemas/FormField.php.njk. Bug fixed during migration: Edit page copy-marker used string-replace so 2nd <<FIRST_STRING_FIELD>> stayed empty ($data['']) — golden rebaselined with note. Second fixture added: big_university (10 tables, custom modules, tenancy, iframe relations).
 - 2026-09-21 09:00 UTC — P2-AUDIT — passed. (1) All layers green: golden base_simple PASS (19 files), golden big_university PASS (134 files), php -l all pass, validate 19/19 + 134/134 hard rules, ir_test PASS, render_validate 11/11, audit_headless 6/6. (2) E2E both fixtures boot: artisan OK, tables present, HTTP /admin/login 200. (3) Sabotage tests: template whitespace change -> golden FAIL; unknown template -> engine throws fail-fast; leftover {{ }} in output -> leftover-nunjucks error; <<LEFTOVER>> injected -> golden FAIL. (4) Fresh clone /tmp/fsm_fresh2: npm ci + golden both fixtures PASS (reproducible, CRLF-safe via .gitattributes text=auto). (5) Read-back verified .njk tails byte-match golden (User.php tenant_methods/relationship_functions semantics: legacy replace('','') leaves whitespace lines -> plain 1:1 conversion, no {% if %} trimming). Known: unused-import warnings (pre-existing legacy imports) tracked as warn, cleanup in Phase 3+. Next: Phase 3.
+- 2026-09-21 15:55 UTC — P3 (3.1–3.6) — done — commits ab34f05d + e83e6169. FEATURE_MATRIX.md (8 axes), 14 new fixtures via committed gen script (12 single-axis + 2 stress combos), BUGS.md: BUG-001 calculated gap OPEN, BUG-002 zero_fill OPEN, BUG-003 m:m bogus FK -> migrate crash FIXED (skip m:m in FK pass). Owner asked 3.5: no extra scenarios. CI workflow added (ir/render/audit/golden). 16/16 golden PASS.
+- 2026-09-21 16:05 UTC — P3-AUDIT — passed. All layers green (golden 16/16, ir_test, render_validate 11/11, audit_headless 45/6-6, node --check, ci.yml YAML valid). Read-back of tenancy_1m/tenancy_mm/soft_delete/auditing_on/field_types_all goldens verified semantics. e2e_smoke booted ALL 14 new fixtures -> HTTP 200 (BUG-003 only catchable this way). Sabotage: tampered goldens FAIL, restore PASS. big_university has no m:m rels so BUG-003 fix is regression-safe. Next: Phase 4.
