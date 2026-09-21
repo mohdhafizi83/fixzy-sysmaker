@@ -96,4 +96,29 @@ if (!fs.existsSync(composerPhar)) {
 } else {
     log('bin/composer.phar already present.');
 }
+
+// Preview env: fresh clones have no .env (untracked). Copy the example,
+// then generate a local APP_KEY so live preview works out of the box.
+const previewDir = path.join(__dirname, '..', 'resources', 'preview_env');
+const previewEnv = path.join(previewDir, '.env');
+const previewExample = path.join(previewDir, '.env.example');
+if (!fs.existsSync(previewEnv) && fs.existsSync(previewExample)) {
+    fs.copyFileSync(previewExample, previewEnv);
+    log('Copied .env.example -> .env for resources/preview_env');
+}
+if (fs.existsSync(previewEnv)) {
+    const env = fs.readFileSync(previewEnv, 'utf8');
+    if (/^APP_KEY=$/m.test(env)) {
+        log('Generating APP_KEY for resources/preview_env ...');
+        try {
+            execFileSync('php', [path.join(previewDir, 'artisan'), 'key:generate', '--force'],
+                { cwd: previewDir, stdio: 'inherit' });
+        } catch (e) {
+            log('key:generate failed (preview needs a key): ' + e.message);
+            log('Run manually: cd resources/preview_env && php artisan key:generate');
+        }
+    } else {
+        log('preview_env APP_KEY already set.');
+    }
+}
 log('Done.');

@@ -48,6 +48,12 @@ function run(cmd, opts = {}) {
     // 2. Fresh skeleton copy (plain cp: hardlinks fail across filesystems)
     fs.rmSync(appDir, { recursive: true, force: true });
     run(`cp -a ${path.join(REPO, 'resources/preview_env')} ${appDir}`);
+    // Fresh clones have no .env (untracked since Phase 7 secret hygiene)
+    if (!fs.existsSync(path.join(appDir, '.env'))) {
+        fs.copyFileSync(path.join(appDir, '.env.example'), path.join(appDir, '.env'));
+        run(`php ${path.join(appDir, 'artisan')} key:generate --force -q`, { cwd: appDir });
+        console.log('.env created from example + APP_KEY generated');
+    }
     console.log('skeleton copied');
 
     // 3. Overlay generated files onto skeleton
