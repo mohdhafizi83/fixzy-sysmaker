@@ -260,10 +260,24 @@ Next: Phase 6 (macOS + packaging).
 
 ## Phase 6 — macOS + packaging
 
-- [ ] **6.1** Test Electron app on macOS (owner hardware or CI macos runner): `npm start`, generators, bundled binaries situation.
-- [ ] **6.2** `bin/` binaries: platform-specific. Move to per-platform download/setup script (`npm run setup:binaries`) keyed by `process.platform`; keep git slim. Document in README.
-- [ ] **6.3** electron-builder config for Win + mac targets (unsigned first). Codesign/notarize documented as optional (needs Apple Developer account — owner decision).
-- [ ] **6.4** CI matrix: ubuntu + macos golden tests.
+**Objective:** Ship-able packages for Win + macOS without committing platform binaries.
+
+**STATUS: COMPLETE except 6.1 macOS hardware verification (delegated to CI macos runner) (2026-09-21, commit 29179493)**
+
+- [~] **6.1** macOS runtime test: cannot run macOS locally on this box — delegated to CI matrix (macos-latest runs the full golden/IR/validator suite). Electron packaged boot verified on Linux (xvfb). Owner: watch first CI macos run; report any darwin-specific failures.
+- [x] **6.2** `bin/` binaries platform-specific: `src/core/phpResolver.js` (FSM_PHP_BIN env → bundled → system PATH) replaces 3 hardcoded `php.exe` paths. `npm run setup:binaries` (scripts/setup-binaries.js) provisions PHP + composer.phar per platform. Git was already slim (89MB PHP bundle never tracked); `bin/php-8.4.12/` now gitignored.
+- [x] **6.3** `electron-builder.yml`: win nsis x64 + mac dmg x64/arm64, unsigned (`identity` unset). preview_env + composer.phar asarUnpacked. Codesign/notarize documented as optional owner decision (needs Apple Developer account).
+- [x] **6.4** CI matrix: ubuntu-latest + macos-latest (fail-fast: false) running ir/render/audit/pathguard/golden.
+
+### Phase 6 AUDIT (2026-09-21) — PASSED (with 6.1 caveat)
+
+1. `electron-builder --dir` packages successfully (Linux smoke of the config); packaged `fizisysmaker` boots clean under xvfb — zero errors/exceptions.
+2. Binary resolution read-back: `resolvePhpBinary('./bin')` returns system php on Linux; bundled php.exe path only on win32; FSM_PHP_BIN override honored. No `php.exe` literals remain in src (grep verified).
+3. All layers green after changes: golden 16/16, audit_headless 6/6, pathguard 10/10, ir/render OK.
+4. Git hygiene: dist/ + bin/php-8.4.12/ gitignored; no new large binaries tracked (composer.phar 3MB was already tracked).
+5. CAVEAT (honest): 6.1 darwin runtime unverified locally — first CI macos run is the gate. electron-builder mac targets cross-compile config validated only syntactically (dmg build requires macOS host; CI can build if owner wants artifact).
+
+Next: Phase 7 (Public MVP gate).
 
 ---
 
@@ -315,3 +329,5 @@ P4/P5/P6 can interleave after P3, but P7 requires all. Recommended order: 0→1�
 - 2026-09-21 17:55 UTC — P4-AUDIT — passed. (1) All layers green: golden 16/16, ir_test, render_validate, audit_headless 45/6-6, node --check. (2) Read-back: native audit files in auditing_on golden; tenancy_1m uses BelongsToTenant; tenancy_mm User first-party HasTenants only; grep Tapp|OwenIt = 0 (non-.bak, src + golden). (3) Functional: tinker create/update/delete -> audits rows created/updated/deleted. (4) Audit-off fixture -> zero audit files generated. (5) Sabotage: tampered AuditObserver golden -> FAIL, restore -> PASS. (6) composer validate OK on preview_env (ignore-platform-reqs needed only for this box's PHP 8.5 w/o ext-intl). (7) e2e ALL 16 fixtures HTTP 200. Next: Phase 5.
 - 2026-09-21 18:30 UTC — P5 (5.1–5.7) — done — commit 27568b31. 53 handlers extracted to src/handlers/register.js (ctx-based); main.js slimmed to lifecycle; src/core/{store,pathGuard,webServer,web-shim}.js; bin/fizisysmaker.js CLI (serve/generate/list/fixtures, --zip). deploymentHandler resolveWindow() fallback. docs/HEADLESS_WEB.md.
 - 2026-09-21 18:55 UTC — P5-AUDIT — passed. (1) All layers green: golden 16/16, ir/render/audit/pathguard 10/10, node --check. (2) Electron xvfb boot: clean after fixing destructure bug (register.js exports function directly — 3 call sites had {destructure}). (3) Browser live test: UI loads with injected shim, electronAPI.getActiveProject() round-trip OK, 0 JS errors, malformed JSON rejected, SSE connects. (4) Security: traversal/symlink/outside-root rejected (unit + live CLI); remote bind refused without FSM_ALLOW_REMOTE=1. (5) 53-handler parity verified. (6) ABI: better-sqlite3 rebuild per runtime documented (Electron 143 vs Node 127). Next: Phase 6.
+- 2026-09-21 19:30 UTC — P6 (6.2–6.4) — done — commit 29179493. phpResolver (env→bundled→PATH), setup:binaries script, electron-builder.yml (win nsis + mac dmg unsigned), CI matrix ubuntu+macos. 6.1 macOS runtime delegated to CI runner (no darwin hardware here).
+- 2026-09-21 19:40 UTC — P6-AUDIT — passed (6.1 caveat). electron-builder --dir packages OK; packaged binary boots clean (xvfb). No php.exe literals in src. All layers green. Git slim. Next: Phase 7.
