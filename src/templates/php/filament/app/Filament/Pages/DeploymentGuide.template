@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Config;
 
 class DeploymentGuide extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-rocket-launch';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-rocket-launch';
     
     protected static ?string $navigationLabel = 'Deployment Guide';
     
@@ -15,11 +15,11 @@ class DeploymentGuide extends Page
 
     protected static ?string $slug = 'deployment-guide';
 
-    protected static string $view = 'filament.pages.deployment-guide';
+    protected string $view = 'filament.pages.deployment-guide';
     
     protected static ?int $navigationSort = 999;
 
-    protected static ?string $navigationGroup = 'System';
+    protected static string | \UnitEnum | null $navigationGroup = 'System';
 
     public $currentConnection;
     public $isSqlite;
