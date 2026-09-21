@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Filament\Resources\{{ resource_folder }}\Pages;
+
+use App\Filament\Resources\{{ resource_folder }}\{{ page_class_base }}Resource;
+use Filament\Resources\Pages\CreateRecord;
+
+class Create{{ page_class_base }} extends CreateRecord
+{
+    protected static string $resource = {{ page_class_base }}Resource::class;
+
+    {% if dynamic_grid %}public int $gridColumns = 2;{% endif %}
+    
+    protected function getHeaderActions(): array
+    {
+        return [
+            $this->getCreateFormAction()
+                 ->formId('form'),
+            $this->getCreateAnotherFormAction()
+                 ->formId('form'),
+            $this->getCancelFormAction(),
+        ];
+    }
+    
+    {% if iframe_layout %}
+    public function getLayout(): string
+    {
+        if (session('is_in_iframe')) {
+            return 'filament.layouts.custom-iframe-layout';
+        }
+        
+        return parent::getLayout();
+    }
+{% endif %}
+
+    protected function getFormActions(): array
+    {
+        return [];
+    }
+}

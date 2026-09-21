@@ -1,12 +1,15 @@
 const fs = require('fs');
 const path = require('path');
-const { toSingularPascalCase, toPluralPascalCase, readTemplate } = require('../utils');
+const { toSingularPascalCase, toPluralPascalCase } = require('../utils');
+const { renderTemplate } = require('../render/engine');
+
+const TEMPLATE = 'app/Filament/Resources/PagesCreate.php.njk';
 
 /**
  * [HELPER] Menjana satu fail Create Page.
  * Digunakan oleh Generator Standard dan Custom Module.
  */
-async function generateSingleCreatePage(tableName, tableData, fullSchema, basePath, templateContent, options = {}) {
+async function generateSingleCreatePage(tableName, tableData, fullSchema, basePath, options = {}) {
     const { database: { relationships } } = fullSchema;
 
     const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
@@ -25,53 +28,20 @@ async function generateSingleCreatePage(tableName, tableData, fullSchema, basePa
         pageClassName = `Create${options.customPageName}`;
     }
 
-    let createContent = templateContent;
-
-    // Replacement Standard (Ini sudah cukup untuk menetapkan nama Class dengan betul)
-    if (options.customPageName) {
-        createContent = createContent.replace(/<<TABLE_NAME_SINGULAR>>/g, options.customPageName);    
-    } else {
-        createContent = createContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);    
-    }
-    
-    createContent = createContent.replace(/<<TABLE_NAME_PLURAL>>/g, resourceFolder); 
-
-    // [DIBUANG]: Blok "Fix Class Name untuk Custom Module" telah dipadam dari sini untuk mengelak bug double-replace.
-
-    // ... (Logik lain kekal sama) ...
-    if (tableData && tableData.column_grid_type === 'dynamic') {
-        createContent = createContent.replace('<<GRIDCOLUMN_VAR>>', 'public int $gridColumns = 2;');
-    } else {
-        createContent = createContent.replace('<<GRIDCOLUMN_VAR>>', '');
-    }
-
     const isChildInIframeContext = relationships.some(r => 
         r.child_table_name === tableName && r.show_count_in_tv === 1
     );
 
-    if (isChildInIframeContext) {
-        const iframeLayoutCode = `
-    public function getLayout(): string
-    {
-        if (session('is_in_iframe')) {
-            return 'filament.layouts.custom-iframe-layout';
-        }
-        
-        return parent::getLayout();
-    }
-`;
-        createContent = createContent.replace('<<IFRAME_LAYOUT>>', iframeLayoutCode);
-    } else {
-        createContent = createContent.replace('<<IFRAME_LAYOUT>>', '');
-    }
-
-    createContent = createContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
-    createContent = createContent.replace(/<<.*?>>/g, '');
+    const createContent = renderTemplate(TEMPLATE, {
+        page_class_base: options.customPageName || modelNameSingular,
+        resource_folder: resourceFolder,
+        dynamic_grid: !!(tableData && tableData.column_grid_type === 'dynamic'),
+        iframe_layout: isChildInIframeContext,
+    });
 
     const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'Pages');
     fs.mkdirSync(outputFolderPath, { recursive: true });
 
-    // Guna pageClassName
     const fileName = `${pageClassName}.php`;
     const outputFilePath = path.join(outputFolderPath, fileName);
     
@@ -83,10 +53,9 @@ async function generateSingleCreatePage(tableName, tableData, fullSchema, basePa
 async function generateFilamentCreatePages(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;
-        const templateContent = readTemplate('app/Filament/Resources/PagesCreate.template');
         for (const tableName in tables) {
             if (tableName === 'users') continue;
-            await generateSingleCreatePage(tableName, tables[tableName], fullSchema, basePath, templateContent);
+            await generateSingleCreatePage(tableName, tables[tableName], fullSchema, basePath);
         }
         return { success: true, message: 'Filament Create Pages generated successfully.' };
     } catch (error) {
@@ -97,7 +66,6 @@ async function generateFilamentCreatePages(fullSchema, basePath) {
 async function generateFilamentCreateCustomModules(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;
-        const templateContent = readTemplate('app/Filament/Resources/PagesCreate.template');
         let count = 0;
 
         for (const tableName in tables) {
@@ -117,7 +85,7 @@ async function generateFilamentCreateCustomModules(fullSchema, basePath) {
                     // FAIL: Singular
                     const viewSafeNameSingular = toSingularPascalCase(viewNameClean);
                     
-                    await generateSingleCreatePage(tableName, tableData, fullSchema, basePath, templateContent, {
+                    await generateSingleCreatePage(tableName, tableData, fullSchema, basePath, {
                         modelName: standardModelName,
                         resourceFolder: viewSafeNamePlural, // Simpan dalam folder Plural
                         customPageName: viewSafeNameSingular // Nama Class CreateSingular
