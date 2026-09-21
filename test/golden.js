@@ -236,6 +236,9 @@ async function main() {
         }
         fixtures = fs.readdirSync(FIXTURES_DIR)
             .filter((f) => f.endsWith('.json'))
+            // *_ir.json files are IR-format fixtures exercised by test/ir_test.js,
+            // not full-schema dumps — skip them in the golden harness.
+            .filter((f) => !f.endsWith('_ir.json'))
             .map((f) => f.replace(/\.json$/, ''));
     }
     if (fixtures.length === 0) {

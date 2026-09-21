@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  golden:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Set up PHP (lint + generator validation)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Syntax check main process
+        run: node --check src/main.js
+
+      - name: IR round-trip test
+        run: node test/ir_test.js
+
+      - name: Render validator unit tests
+        run: node test/render_validate_test.js
+
+      - name: Headless audit (generators + php -l)
+        run: node test/audit_headless.js
+
+      - name: Golden snapshot matrix (all fixtures)
+        run: node test/golden.js

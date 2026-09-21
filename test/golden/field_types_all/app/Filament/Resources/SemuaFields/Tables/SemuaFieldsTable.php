@@ -1,0 +1,259 @@
+<?php
+
+namespace App\Filament\Resources\SemuaFields\Tables;
+
+
+
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\RestoreAction;
+use Filament\Tables\Table;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TrashedFilter;
+use Illuminate\Contracts\View\View;
+
+
+class SemuaFieldsTable
+{
+    public static function configure(Table $table): Table
+    {
+        return $table
+            
+            
+            
+            
+            
+            ->description('')
+            ->columns([
+                TextColumn::make('id')
+                    ->label('Id')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                TextColumn::make('teks_biasa')
+                    ->label('Teks Biasa')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('emel')
+                    ->label('Emel')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('katalaluan')
+                    ->label('Katalaluan')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('telefon')
+                    ->label('Telefon')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('pautan')
+                    ->label('Pautan')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('berkas_topeng')
+                    ->label('Berkas Topeng')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('umur')
+                    ->label('Umur')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                TextColumn::make('gaji')
+                    ->label('Gaji')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                TextColumn::make('kod_zero')
+                    ->label('Kod Zero')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                TextColumn::make('unik_kod')
+                    ->label('Unik Kod')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('cerita')
+                    ->label('Cerita')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('rich_teks')
+                    ->label('Rich Teks')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->html(),
+                IconColumn::make('aktif')
+                    ->label('Aktif')
+                    ->boolean()
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('status')
+                    ->label('Status')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->badge()->color(fn (string $state): string => match ($state) {
+        'aktif' => 'gray',
+        'tidak aktif' => 'info',
+        'senarai hitam' => 'primary',
+        }),
+                TextColumn::make('tag_multi')
+                    ->label('Tag Multi')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->badge()->color(fn (string $state): string => match ($state) {
+        'penting' => 'gray',
+        'segera' => 'info',
+        'biasa' => 'primary',
+        }),
+                TextColumn::make('tarikh_masa')
+                    ->label('Tarikh Masa')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->dateTime('d F Y h:i A'),
+                TextColumn::make('emel_berulang')
+                    ->label('Emel Berulang')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->formatStateUsing(function (array|string|null $state): ?string {
+            if (blank($state)) { return null; }
+            
+            // Jaring Keselamatan: Jika Eloquent memulangkan String (gagal cast automatik), decode secara manual
+            if (is_string($state)) {
+                $decoded = json_decode($state, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $state = $decoded;
+                } else {
+                    return $state; // Jika bukan JSON, pulangkan teks mentah
+                }
+            }
+            
+            // Proses data yang telah disahkan sebagai Array
+            if (is_array($state)) {
+                // Senario A: Baca format Repeater Simple / Tags (Flat Array)
+                // Cth: ["ali@gmail.com", "abu@gmail.com"]
+                if (isset($state[0]) && !is_array($state[0])) {
+                    return implode(', ', $state);
+                }
+                
+                // Senario B: Baca format Repeater (Array of Objects)
+                // Cth: [["email_1" => "ali..."], ["email_1" => "abu..."]]
+                $values = [];
+                foreach ($state as $item) {
+                    if (is_array($item)) {
+                        $values = array_merge($values, array_values($item));
+                    }
+                }
+                return implode(', ', array_filter($values));
+            }
+            
+            return '';
+        }),
+                TextColumn::make('butiran')
+                    ->label('Butiran')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->formatStateUsing(function (array|string|null $state): ?string {
+            if (blank($state)) { return null; }
+            
+            // Jaring Keselamatan: Jika Eloquent memulangkan String (gagal cast automatik), decode secara manual
+            if (is_string($state)) {
+                $decoded = json_decode($state, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $state = $decoded;
+                } else {
+                    return $state; // Jika bukan JSON, pulangkan teks mentah
+                }
+            }
+            
+            // Proses data yang telah disahkan sebagai Array
+            if (is_array($state)) {
+                // Senario A: Baca format Repeater Simple / Tags (Flat Array)
+                // Cth: ["ali@gmail.com", "abu@gmail.com"]
+                if (isset($state[0]) && !is_array($state[0])) {
+                    return implode(', ', $state);
+                }
+                
+                // Senario B: Baca format Repeater (Array of Objects)
+                // Cth: [["email_1" => "ali..."], ["email_1" => "abu..."]]
+                $values = [];
+                foreach ($state as $item) {
+                    if (is_array($item)) {
+                        $values = array_merge($values, array_values($item));
+                    }
+                }
+                return implode(', ', array_filter($values));
+            }
+            
+            return '';
+        }),
+                TextColumn::make('helper_cara')
+                    ->label('Helper Cara')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('auto_off')
+                    ->label('Auto Off')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+            ])
+            ->when((bool) request()->query('print'), fn (Table $table) => $table->paginated(false),)
+            ->filters([
+                TrashedFilter::make(),
+            ])
+            ->recordActions([
+
+                   
+                    
+                
+                
+                ForceDeleteAction::make(),
+                RestoreAction::make(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                DeleteBulkAction::make(),
+            ]),
+            ]);
+    }
+}

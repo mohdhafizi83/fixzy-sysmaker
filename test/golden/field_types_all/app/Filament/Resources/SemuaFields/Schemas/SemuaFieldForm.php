@@ -1,0 +1,163 @@
+<?php
+namespace App\Filament\Resources\SemuaFields\Schemas;
+
+
+
+use Illuminate\Contracts\View\View;
+use Filament\Schemas\Schema;
+use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
+use Filament\Actions\Action;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\Repeater;
+
+class SemuaFieldForm
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema->components([
+            Section::make("Detail View")
+                ->columns(fn (Page $livewire) => $livewire->gridColumns)
+    ->headerActions([
+        Action::make('1 Kolum')
+            ->icon('heroicon-o-queue-list')
+            ->iconButton()
+            ->color('gray')
+            ->tooltip('Display 1 column')
+            ->action(fn (Page $livewire) => $livewire->gridColumns = 1),
+
+        Action::make('2 Kolum')
+            ->icon('heroicon-o-view-columns')
+            ->iconButton()
+            ->color('gray')
+            ->tooltip('Display 2 column')
+            ->action(fn (Page $livewire) => $livewire->gridColumns = 2),
+
+        Action::make('3 Kolum')
+            ->icon('heroicon-o-table-cells')
+            ->iconButton()
+            ->color('gray')
+            ->tooltip('Display 3 column')
+            ->action(fn (Page $livewire) => $livewire->gridColumns = 3),
+    ])
+                ->schema([
+				TextInput::make('id')
+    ->integer()
+    ->readOnly()
+    ->maxLength(255)
+    ->label('Id')
+    ->trim(),
+                TextInput::make('teks_biasa')
+    ->maxLength(120)
+    ->required()->markAsRequired()
+    ->label('Teks Biasa')
+    ->trim(),
+                TextInput::make('emel')
+    ->email()
+    ->maxLength(150)
+    ->label('Emel')
+    ->trim(),
+                TextInput::make('katalaluan')
+    ->password()->revealable()
+    ->maxLength(100)
+    ->label('Katalaluan')
+    ->trim(),
+                TextInput::make('telefon')
+    ->tel()->telRegex('/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\.\/0-9]*$/')
+    ->maxLength(30)
+    ->label('Telefon')
+    ->trim(),
+                TextInput::make('pautan')
+    ->url()
+    ->maxLength(255)
+    ->label('Pautan')
+    ->trim(),
+                TextInput::make('berkas_topeng')
+    ->maxLength(20)
+    ->mask('AAA-9999')
+    ->label('Berkas Topeng')
+    ->trim(),
+                TextInput::make('umur')
+    ->integer()
+    ->maxLength(255)
+    ->maxValue(150)
+    ->label('Umur')
+    ->trim(),
+                TextInput::make('gaji')
+    ->numeric()
+    ->maxLength(12)
+    ->label('Gaji')
+    ->trim(),
+                TextInput::make('kod_zero')
+    ->integer()
+    ->maxLength(6)
+    ->label('Kod Zero')
+    ->trim(),
+                TextInput::make('unik_kod')
+    ->maxLength(40)
+    ->unique(ignoreRecord: true)
+    ->label('Unik Kod')
+    ->trim(),
+                Textarea::make('cerita')
+    ->maxLength(255)
+    ->placeholder('Cersa di sini')
+    ->columnSpanFull()
+    ->label('Cerita')
+    ->trim(),
+                RichEditor::make('rich_teks')
+    ->maxLength(255)
+    ->columnSpanFull()
+    ->label('Rich Teks')
+    ,
+                Checkbox::make('aktif')
+    ->label('Aktif')
+    ,
+                Select::make('status')
+    ->label('Status')
+    ->options(['aktif' => 'Aktif', 'tidak aktif' => 'Tidak Aktif', 'senarai hitam' => 'Senarai Hitam'])
+    ,
+                Select::make('tag_multi')
+    ->label('Tag Multi')
+    ->multiple()
+->options(['penting' => 'Penting', 'segera' => 'Segera', 'biasa' => 'Biasa'])
+    ,
+                DatePicker::make('tarikh_masa')
+    ->label('Tarikh Masa')
+    ,
+                Repeater::make('emel_berulang')
+    ->label('Emel Berulang')
+    ->simple(
+        TextInput::make('emel_berulang')->email()->unique(ignoreRecord: true),
+    )
+    ->reorderable(false),
+                Repeater::make('butiran')
+    ->label('Butiran')
+    ->schema([
+        TextInput::make('butiran_1')
+            ->label('Item 1')->required(),
+        Select::make('butiran_2')
+            ->label('Item 2')->options(['a' => 'A', 'b' => 'B', 'c' => 'C']),
+        TextInput::make('butiran_3')
+            ->label('Item 3')->url(),
+    ])
+    ->reorderable(false),
+                TextInput::make('helper_cara')
+    ->maxLength(80)
+    ->helperText('Isi mengikut panduan')
+    ->label('Helper Cara')
+    ->trim(),
+                TextInput::make('auto_off')
+    ->maxLength(50)
+    ->autocomplete(false)
+    ->label('Auto Off')
+    ->trim(),
+                ])
+                ->columnSpanFull(),
+        ]);
+    }
+}

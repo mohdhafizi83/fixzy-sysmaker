@@ -1,0 +1,41 @@
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('semua_field', function (Blueprint $table) {
+            $table->id();
+            $table->string('teks_biasa', 120);
+            $table->string('emel', 150);
+            $table->string('katalaluan', 100);
+            $table->string('telefon', 30);
+            $table->string('pautan', 255);
+            $table->string('berkas_topeng', 20);
+            $table->integer('umur');
+            $table->decimal('gaji', 10, 2);
+            $table->integer('kod_zero');
+            $table->string('unik_kod', 40)->unique();
+            $table->text('cerita');
+            $table->text('rich_teks');
+            $table->boolean('aktif');
+            $table->string('status', 255);
+            $table->string('tag_multi', 255);
+            $table->dateTime('tarikh_masa');
+            $table->json('emel_berulang');
+            $table->json('butiran');
+            $table->string('helper_cara', 80);
+            $table->string('auto_off', 50);
+            $table->timestamps();
+            $table->softDeletes();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('semua_field');
+    }
+};

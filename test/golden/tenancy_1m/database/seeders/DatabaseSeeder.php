@@ -1,0 +1,47 @@
+<?php
+namespace Database\Seeders;
+use Illuminate\Database\Seeder;
+use App\Models\User;
+use App\Models\Sekolah;
+use App\Models\Kela;
+
+class DatabaseSeeder extends Seeder {
+    public function run(): void {
+        // 1. Cipta Pengguna Ujian (Super Admin)
+        $user = User::firstOrCreate(
+            ['email' => 'admin@admin.com'],
+            ['name' => 'Super Admin', 'password' => bcrypt('password')]
+        );
+
+        // Tugaskan Peranan (Role) Super Admin
+        $role = \Spatie\Permission\Models\Role::firstOrCreate([
+            'name' => 'super_admin',
+            'guard_name' => 'web'
+        ]);
+        $user->assignRole($role);
+
+
+        // Seed Sekolah (Kalis Ralat Unique Constraint)
+        for ($i = 0; $i < 20; $i++) {
+            try {
+                Sekolah::factory()->create();
+            } catch (\Exception $e) {
+                // Abaikan jika data duplikat atau langgar Unique Constraint
+            }
+        }
+
+        // Seed Kela (Kalis Ralat Unique Constraint)
+        for ($i = 0; $i < 20; $i++) {
+            try {
+                Kela::factory()->create([
+                    'sekolah_id' => Sekolah::inRandomOrder()->first()?->id ?? null
+                ]);
+            } catch (\Exception $e) {
+                // Abaikan jika data duplikat atau langgar Unique Constraint
+            }
+        }
+
+        // Filament Shield Security
+        $this->call(ShieldSeeder::class);
+    }
+}

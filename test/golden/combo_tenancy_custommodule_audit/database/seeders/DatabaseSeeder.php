@@ -1,0 +1,47 @@
+<?php
+namespace Database\Seeders;
+use Illuminate\Database\Seeder;
+use App\Models\User;
+use App\Models\Syarikat;
+use App\Models\Kontrak;
+
+class DatabaseSeeder extends Seeder {
+    public function run(): void {
+        // 1. Cipta Pengguna Ujian (Super Admin)
+        $user = User::firstOrCreate(
+            ['email' => 'admin@admin.com'],
+            ['name' => 'Super Admin', 'password' => bcrypt('password')]
+        );
+
+        // Tugaskan Peranan (Role) Super Admin
+        $role = \Spatie\Permission\Models\Role::firstOrCreate([
+            'name' => 'super_admin',
+            'guard_name' => 'web'
+        ]);
+        $user->assignRole($role);
+
+
+        // Seed Syarikat (Kalis Ralat Unique Constraint)
+        for ($i = 0; $i < 20; $i++) {
+            try {
+                Syarikat::factory()->create();
+            } catch (\Exception $e) {
+                // Abaikan jika data duplikat atau langgar Unique Constraint
+            }
+        }
+
+        // Seed Kontrak (Kalis Ralat Unique Constraint)
+        for ($i = 0; $i < 20; $i++) {
+            try {
+                Kontrak::factory()->create([
+                    'syarikat_id' => Syarikat::inRandomOrder()->first()?->id ?? null
+                ]);
+            } catch (\Exception $e) {
+                // Abaikan jika data duplikat atau langgar Unique Constraint
+            }
+        }
+
+        // Filament Shield Security
+        $this->call(ShieldSeeder::class);
+    }
+}

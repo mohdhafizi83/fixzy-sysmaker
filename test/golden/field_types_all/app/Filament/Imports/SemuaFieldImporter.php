@@ -1,0 +1,208 @@
+<?php
+
+namespace App\Filament\Imports;
+
+use App\Models\SemuaField;
+
+use Filament\Actions\Imports\ImportColumn;
+use Filament\Actions\Imports\Importer;
+use Filament\Actions\Imports\Models\Import;
+use Illuminate\Support\Number;
+use Filament\Forms\Components\Checkbox;
+
+class SemuaFieldImporter extends Importer
+{
+    protected static ?string $model = SemuaField::class;
+
+    public static function getColumns(): array
+    {
+        return [
+            ImportColumn::make('id')
+                ->label('Id')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Id'),
+
+            ImportColumn::make('teks_biasa')
+                ->label('Teks Biasa')
+                ->requiredMapping()
+                ->ignoreBlankState()
+                ->rules(['required', 'max:120'])
+                ->examples(['Sample Teks Biasa 1', 'Sample Teks Biasa 2'])
+                ->exampleHeader('Teks Biasa'),
+
+            ImportColumn::make('emel')
+                ->label('Emel')
+                ->ignoreBlankState()
+                ->rules(['max:150', 'email'])
+                ->examples(['user1@example.com', 'user2@example.com'])
+                ->exampleHeader('Emel'),
+
+            ImportColumn::make('katalaluan')
+                ->label('Katalaluan')
+                ->ignoreBlankState()
+                ->rules(['max:100'])
+                ->examples(['Sample Katalaluan 1', 'Sample Katalaluan 2'])
+                ->exampleHeader('Katalaluan'),
+
+            ImportColumn::make('telefon')
+                ->label('Telefon')
+                ->ignoreBlankState()
+                ->rules(['max:30'])
+                ->examples(['Sample Telefon 1', 'Sample Telefon 2'])
+                ->exampleHeader('Telefon'),
+
+            ImportColumn::make('pautan')
+                ->label('Pautan')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Pautan 1', 'Sample Pautan 2'])
+                ->exampleHeader('Pautan'),
+
+            ImportColumn::make('berkas_topeng')
+                ->label('Berkas Topeng')
+                ->ignoreBlankState()
+                ->rules(['max:20'])
+                ->examples(['Sample Berkas Topeng 1', 'Sample Berkas Topeng 2'])
+                ->exampleHeader('Berkas Topeng'),
+
+            ImportColumn::make('umur')
+                ->label('Umur')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer', 'min:0', 'max:150'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Umur'),
+
+            ImportColumn::make('gaji')
+                ->label('Gaji')
+                ->numeric()
+                ->ignoreBlankState()
+                ->rules(['max:12'])
+                ->examples(['Sample Gaji 1', 'Sample Gaji 2'])
+                ->exampleHeader('Gaji'),
+
+            ImportColumn::make('kod_zero')
+                ->label('Kod Zero')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Kod Zero'),
+
+            ImportColumn::make('unik_kod')
+                ->label('Unik Kod')
+                ->ignoreBlankState()
+                ->rules(['max:40'])
+                ->examples(['Sample Unik Kod 1', 'Sample Unik Kod 2'])
+                ->exampleHeader('Unik Kod'),
+
+            ImportColumn::make('cerita')
+                ->label('Cerita')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Cerita 1', 'Sample Cerita 2'])
+                ->exampleHeader('Cerita'),
+
+            ImportColumn::make('rich_teks')
+                ->label('Rich Teks')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Rich Teks 1', 'Sample Rich Teks 2'])
+                ->exampleHeader('Rich Teks'),
+
+            ImportColumn::make('aktif')
+                ->label('Aktif')
+                ->boolean()
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['1', '0'])
+                ->exampleHeader('Aktif'),
+
+            ImportColumn::make('status')
+                ->label('Status')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Status 1', 'Sample Status 2'])
+                ->exampleHeader('Status'),
+
+            ImportColumn::make('tag_multi')
+                ->label('Tag Multi')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Tag Multi 1', 'Sample Tag Multi 2'])
+                ->exampleHeader('Tag Multi'),
+
+            ImportColumn::make('tarikh_masa')
+                ->label('Tarikh Masa')
+                ->ignoreBlankState()
+                ->rules(['max:255', 'datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Tarikh Masa'),
+
+            ImportColumn::make('emel_berulang')
+                ->label('Emel Berulang')
+                ->multiple(',')
+                ->ignoreBlankState()
+                ->rules(['max:255', 'array'])
+                ->examples(['Sample Emel Berulang 1', 'Sample Emel Berulang 2'])
+                ->exampleHeader('Emel Berulang'),
+
+            ImportColumn::make('butiran')
+                ->label('Butiran')
+                ->multiple(',')
+                ->ignoreBlankState()
+                ->rules(['max:255', 'array'])
+                ->examples(['Sample Butiran 1', 'Sample Butiran 2'])
+                ->exampleHeader('Butiran'),
+
+            ImportColumn::make('helper_cara')
+                ->label('Helper Cara')
+                ->helperText('Isi mengikut panduan')
+                ->ignoreBlankState()
+                ->rules(['max:80'])
+                ->examples(['Sample Helper Cara 1', 'Sample Helper Cara 2'])
+                ->exampleHeader('Helper Cara'),
+
+            ImportColumn::make('auto_off')
+                ->label('Auto Off')
+                ->ignoreBlankState()
+                ->rules(['max:50'])
+                ->examples(['Sample Auto Off 1', 'Sample Auto Off 2'])
+                ->exampleHeader('Auto Off'),
+        ];
+    }
+
+    public function resolveRecord(): ?SemuaField
+    {
+    
+        return SemuaField::firstOrNew([
+            'unik_kod' => $this->data['unik_kod']
+        ]);
+    }
+
+    public static function getCompletedNotificationBody(Import $import): string
+    {
+        $body = 'Your Semua Field import has completed and ' . Number::format($import->successful_rows) . ' ' . str('row')->plural($import->successful_rows) . ' imported.';
+
+        if ($failedRowsCount = $import->getFailedRowsCount()) {
+            $body .= ' ' . Number::format($failedRowsCount) . ' ' . str('row')->plural($failedRowsCount) . ' failed to import.';
+        }
+
+        return $body;
+    }
+    
+    public static function getOptionsFormComponents(): array
+    {
+        return [
+            Checkbox::make('updateExisting')
+                ->label('Update existing records'),
+        ];
+    }
+
+}

@@ -1,0 +1,22 @@
+<?php
+namespace Database\Factories;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\Dokuman;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Dokuman>
+ */
+class DokumanFactory extends Factory
+{
+    protected $model = Dokuman::class;
+
+    public function definition(): array
+    {
+        return [
+            'tajuk_dokumen' => fake()->sentence(4),
+            'created_by' => fake()->randomNumber(),
+            'updated_by' => fake()->randomNumber(),
+            'deleted_by' => fake()->randomNumber(),
+        ];
+    }
+}

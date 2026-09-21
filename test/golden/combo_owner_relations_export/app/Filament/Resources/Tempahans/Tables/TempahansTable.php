@@ -1,0 +1,92 @@
+<?php
+
+namespace App\Filament\Resources\Tempahans\Tables;
+
+use App\Filament\Resources\ItemTempahans\ItemTempahanResource;
+
+use App\Models\Tempahan;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Tables\Table;
+use Filament\Tables\Columns\TextColumn;
+use Illuminate\Contracts\View\View;
+
+
+class TempahansTable
+{
+    public static function configure(Table $table): Table
+    {
+        return $table
+            
+            
+            
+            
+            
+            ->description('')
+            ->columns([
+                TextColumn::make('id')
+                    ->label('Id')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                TextColumn::make('pelanggan_id')
+                    ->label('Pelanggan Id')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                TextColumn::make('no_tempahan')
+                    ->label('No Tempahan')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('created_by')
+                    ->label('Created By')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                TextColumn::make('updated_by')
+                    ->label('Updated By')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric()
+            ])
+            ->when((bool) request()->query('print'), fn (Table $table) => $table->paginated(false),)
+            ->filters([
+                
+            ])
+            ->recordActions([
+
+                
+                Action::make('showItemTempahan')
+                    ->label(fn (Tempahan $record): string => 'Item Tempahan: ' . $record->item_tempahans_count)
+                    ->button()->outlined()->color('info')
+                    ->tooltip('Show total of item tempahan')
+                    ->visible(fn (Tempahan $record): bool => $record->item_tempahans_count > 0)
+                    ->modalHeading(fn (Tempahan $record) => 'No Tempahan: ' . $record->no_tempahan)
+                    ->modalSubmitAction(false)->modalCancelAction(false)->modalWidth('6xl')
+                    ->modalContent(fn (Tempahan $record): View =>
+                        view('filament.components.modal-iframe', ['src' => ItemTempahanResource::getUrl('index', ['tempahan_id' => $record->id, 'iframe' => 1])])
+                    ),   
+                    
+                
+                
+                
+                
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                DeleteBulkAction::make(),
+            ]),
+            ]);
+    }
+}
