@@ -2,66 +2,51 @@ const fs = require('fs');
 const path = require('path');
 
 // IMPORT FUNGSI BANTUAN DARI UTILS
-const { 
+const {
     toSingularPascalCase,
     toPluralPascalCase,
     toPluralCamelCase,
     toSingularCamelCase,
     toFlatCase,
-    readTemplate,
-    buildEloquentQueryFromRules 
 } = require('../utils');
+const { renderTemplate } = require('../render/engine');
+
+const TEMPLATE = 'app/Filament/Resources/Resource.php.njk';
 
 /**
- * [HELPER] Menjana satu fail Resource.
- * Logik dibahagikan kepada dua: Standard (Asal) dan Custom Module.
+ * [HELPER] Generate one Resource file.
+ * Standard (table-backed) and Custom Module modes share one template; all
+ * substitutions are supplied as a plain context object (1:1 with the former
+ * <<PLACEHOLDER>> names).
  */
-async function generateSingleResource(tableName, tableData, fullSchema, basePath, templateContent, options = {}) {
-    const { project: projectSettings, database: { relationships, unified_menu, table: allTables } } = fullSchema; 
-    
-    // ========================================================================
-    // 1. TENTUKAN NAMA ASAS (GUNAKAN MODULE NAME JIKA ADA)
-    // ========================================================================
-    const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
-                        ? tableData.module_name 
+async function generateSingleResource(tableName, tableData, fullSchema, basePath, _unused, options = {}) {
+    const { project: projectSettings, database: { relationships, unified_menu, table: allTables } } = fullSchema;
+
+    const nameSource = (tableData.module_name && tableData.module_name.trim() !== '')
+                        ? tableData.module_name
                         : tableName;
 
-    // Nama Model (Class)
     const modelName = options.modelName || toSingularPascalCase(nameSource);
     const singularFileName = options.singularFileName || '';
-    
-    // Nama Folder Resource Standard (Plural)
+
     const modelNamePlural = toPluralPascalCase(nameSource);
-    
     const isCustomModule = options.isCustomModule || false;
 
-    // ========================================================================
-    // 2. TENTUKAN NAMA FAIL & KELAS RESOURCE
-    // ========================================================================
     let resourceClassName, resourceFileName, outputFolder;
 
     if (isCustomModule) {
         resourceClassName = options.resourceClassName;
-        resourceFileName = options.resourceFileName; 
-        outputFolder = options.resourceFileName;     
+        resourceFileName = options.resourceFileName;
+        outputFolder = options.resourceFileName;
     } else {
         resourceClassName = `${modelName}Resource`;
         resourceFileName = `${modelName}Resource`;
-        outputFolder = modelNamePlural;              
+        outputFolder = modelNamePlural;
     }
 
-    let resourceContent = templateContent;
-
-    // ========================================================================
-    // 3. PENGGANTIAN STANDARD (LOGIK ASAL + MODULE NAME)
-    // ========================================================================
-    
-    resourceContent = resourceContent.replace(/<<MODEL_NAME>>/g, modelName);
-    
     const namespaceFolder = isCustomModule ? outputFolder : modelNamePlural;
-    resourceContent = resourceContent.replace(/<<MODEL_NAME_PLURAL>>/g, namespaceFolder);
 
-    // --- MULA: LOGIK PENAPISAN TENANT (TENANT SCOPING PROPERTY) ---
+    // --- Tenant scoping property ---
     const isOneToMany = projectSettings.tenancy_type === 'one_to_many';
     const isManyToMany = projectSettings.tenancy_type === 'many_to_many';
     const tenantTable = projectSettings.tenant_table;
@@ -78,31 +63,26 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
     }
 
     let tenantScopingProperty = '';
-    if (isManyToMany) {
-        // Jika ia adalah jadual tenant itu sendiri, atau jadual yang TIADA foreign key ke tenant
-        if (tableName === tenantTable || !tenantFkField) {
-            tenantScopingProperty = `    protected static bool $isScopedToTenant = false;\n`;
-        }
+    if (isManyToMany && (tableName === tenantTable || !tenantFkField)) {
+        tenantScopingProperty = `    protected static bool $isScopedToTenant = false;\n`;
     }
-    resourceContent = resourceContent.replace('<<TENANT_SCOPING_PROPERTY>>', tenantScopingProperty);
-    // --- TAMAT LOGIK PENAPISAN TENANT ---
 
-    // --- MULA: LOGIK ELOQUENT QUERY KESELURUHAN (COUNT, OWNER & FILTER) ---
+    // --- Eloquent query (count, owner, filter, tenant scope) ---
     const childrenWithCount = relationships.filter(r => r.parent_table_name === tableName && r.show_count_in_tv === 1);
     const hasWithCount = childrenWithCount.length > 0;
-    const isOwnerOnly = tableData.record_owner === 'current_user'; 
+    const isOwnerOnly = tableData.record_owner === 'current_user';
 
     let filterQueryStr = '';
     if (isCustomModule && options.filterRules) {
         try {
             const parsed = typeof options.filterRules === 'string' ? JSON.parse(options.filterRules) : options.filterRules;
-            
+
             function buildQueryString(group, depth = 3) {
                 if (!group || !group.rules || group.rules.length === 0) return '';
                 let condition = group.condition || 'AND';
                 let indent = '    '.repeat(depth);
                 let inner = '';
-                
+
                 group.rules.forEach((rule, index) => {
                     let method = (index === 0) ? 'where' : (condition === 'OR' ? 'orWhere' : 'where');
                     if (rule.condition !== undefined && rule.rules !== undefined) {
@@ -133,16 +113,18 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
 
     const needsTenantScope = (isOneToMany && tenantFkField);
 
+    let importShowCount = '';
+    let functionShowCount = '';
     if (hasWithCount || isOwnerOnly || filterQueryStr || needsTenantScope) {
-        resourceContent = resourceContent.replace('<<IMPORT_SHOW_COUNT_IN_TV>>', 'use Illuminate\\Database\\Eloquent\\Builder;');
-        
+        importShowCount = 'use Illuminate\\Database\\Eloquent\\Builder;';
+
         let queryBody = 'parent::getEloquentQuery()';
-        
+
         if (hasWithCount) {
             const childPluralCamelNames = childrenWithCount.map(r => {
                 const childTableData = allTables[r.child_table_name];
                 const childNameSource = (childTableData && childTableData.module_name && childTableData.module_name.trim() !== '') ? childTableData.module_name : r.child_table_name;
-                return `'${toPluralCamelCase(childNameSource)}'`; 
+                return `'${toPluralCamelCase(childNameSource)}'`;
             }).join(', ');
             queryBody += `->withCount([${childPluralCamelNames}])`;
         }
@@ -159,84 +141,74 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
             queryBody += filterQueryStr;
         }
 
-        const queryFunction = `\n    public static function getEloquentQuery(): Builder\n    {\n        return ${queryBody};\n    }`;
-        resourceContent = resourceContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', queryFunction);
-    } else {
-        resourceContent = resourceContent.replace('<<IMPORT_SHOW_COUNT_IN_TV>>', '');
-        resourceContent = resourceContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', '');
+        functionShowCount = `\n    public static function getEloquentQuery(): Builder\n    {\n        return ${queryBody};\n    }`;
     }
 
-    // --- LOGIK: PRINT ACTION ---
+    // --- Print action ---
+    let importPrintAction = '';
+    let printAction = '';
     if (tableData.allow_print_view === 1) {
-        resourceContent = resourceContent.replace('<<IMPORT_PRINTACTION>>', 'use Filament\\Actions\\Action;\nuse App\\Filament\\Actions\\PrintAction;');
-        const printAction = `Action::make('print')
+        importPrintAction = 'use Filament\\Actions\\Action;\nuse App\\Filament\\Actions\\PrintAction;';
+        printAction = `Action::make('print')
                     ->label('Print')
                     ->icon('heroicon-o-printer')
                     ->color('gray')
                     ->url(fn (): string => request()->fullUrlWithQuery(['print' => 1]))
                     ->openUrlInNewTab(),`;
-        resourceContent = resourceContent.replace('<<PRINT_ACTION>>', printAction);
-    } else {
-        resourceContent = resourceContent.replace('<<IMPORT_PRINTACTION>>', '');
-        resourceContent = resourceContent.replace('<<PRINT_ACTION>>', '');
     }
 
-    // --- LOGIK: EXPORT ---
+    // --- Export ---
+    let importExportData = '';
+    let exportAction = '';
     if (tableData.allow_csv_export === 1) {
-        const importExport = `use App\\Filament\\Exports\\${modelName}Exporter;\nuse Filament\\Actions\\ExportAction;`;
-        const exportAction = `ExportAction::make()->exporter(${modelName}Exporter::class)\n                /*->enableVisibleTableColumnsByDefault()*/,`;
-        resourceContent = resourceContent.replace('<<IMPORT_EXPORTDATA>>', importExport);
-        resourceContent = resourceContent.replace('<<EXPORT_ACTION>>', exportAction);
-    } else {
-        resourceContent = resourceContent.replace('<<IMPORT_EXPORTDATA>>', '');
-        resourceContent = resourceContent.replace('<<EXPORT_ACTION>>', '');
+        importExportData = `use App\\Filament\\Exports\\${modelName}Exporter;\nuse Filament\\Actions\\ExportAction;`;
+        exportAction = `ExportAction::make()->exporter(${modelName}Exporter::class)\n                /*->enableVisibleTableColumnsByDefault()*/,`;
     }
 
-    // --- LOGIK: IMPORT ---
+    // --- Import ---
+    let importImportData = '';
+    let importAction = '';
     if (tableData.allow_csv_import === 1 && !isCustomModule) {
-        const importImport = `use App\\Filament\\Imports\\${modelName}Importer;\nuse Filament\\Actions\\ImportAction;`;
-        const importAction = `ImportAction::make()->importer(${modelName}Importer::class),`;
-        resourceContent = resourceContent.replace('<<IMPORT_IMPORTDATA>>', importImport);
-        resourceContent = resourceContent.replace('<<IMPORT_ACTION>>', importAction);
-    } else {
-        resourceContent = resourceContent.replace('<<IMPORT_IMPORTDATA>>', '');
-        resourceContent = resourceContent.replace('<<IMPORT_ACTION>>', '');
+        importImportData = `use App\\Filament\\Imports\\${modelName}Importer;\nuse Filament\\Actions\\ImportAction;`;
+        importAction = `ImportAction::make()->importer(${modelName}Importer::class),`;
     }
 
-    // --- LOGIK: RELATION MANAGERS (STANDARD & CUSTOM MODULE) ---
+    // --- Relation managers ---
     let childrenForRelationManager = [];
 
     if (isCustomModule) {
         let includedRels = [];
         try {
-            includedRels = typeof options.includedRelations === 'string' 
-                ? JSON.parse(options.includedRelations || "[]") 
+            includedRels = typeof options.includedRelations === 'string'
+                ? JSON.parse(options.includedRelations || "[]")
                 : (options.includedRelations || []);
         } catch (e) {
             includedRels = [];
         }
 
-        childrenForRelationManager = relationships.filter(r => 
-            r.parent_table_name === tableName && 
+        childrenForRelationManager = relationships.filter(r =>
+            r.parent_table_name === tableName &&
             r.relationship_type !== 'one-to-one' &&
             includedRels.includes(r.child_table_name)
         );
     } else {
-        childrenForRelationManager = relationships.filter(r => 
-            r.parent_table_name === tableName && 
-            r.show_tab === 1 && 
+        childrenForRelationManager = relationships.filter(r =>
+            r.parent_table_name === tableName &&
+            r.show_tab === 1 &&
             r.relationship_type !== 'one-to-one'
         );
     }
 
+    let importRelationManagers = '';
+    let relationRelationManagers = '';
     if (childrenForRelationManager.length > 0) {
         const baseTableData = allTables[tableName];
-        const baseNameSource = (baseTableData && baseTableData.module_name && baseTableData.module_name.trim() !== '') 
-                        ? baseTableData.module_name 
+        const baseNameSource = (baseTableData && baseTableData.module_name && baseTableData.module_name.trim() !== '')
+                        ? baseTableData.module_name
                         : tableName;
-        const originalResourceFolder = toPluralPascalCase(baseNameSource); 
-        
-        const importManagers = childrenForRelationManager.map(r => {
+        const originalResourceFolder = toPluralPascalCase(baseNameSource);
+
+        importRelationManagers = childrenForRelationManager.map(r => {
             const childTableData = allTables[r.child_table_name];
             const childNameSource = (childTableData && childTableData.module_name && childTableData.module_name.trim() !== '')
                                     ? childTableData.module_name
@@ -245,7 +217,7 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
             return `use App\\Filament\\Resources\\${originalResourceFolder}\\RelationManagers\\${childManagerClass};`;
         }).join('\n');
 
-        const relationManagers = childrenForRelationManager.map(r => {
+        relationRelationManagers = childrenForRelationManager.map(r => {
             const childTableData = allTables[r.child_table_name];
             const childNameSource = (childTableData && childTableData.module_name && childTableData.module_name.trim() !== '')
                                     ? childTableData.module_name
@@ -253,21 +225,15 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
             const childManagerClass = `${toSingularPascalCase(childNameSource)}RelationManager`;
             return `            ${childManagerClass}::class,`;
         }).join('\n');
-        
-        resourceContent = resourceContent.replace('<<IMPORT_RELATIONMANAGERS>>', importManagers);
-        resourceContent = resourceContent.replace('<<RELATION_RELATIONMANAGERS>>', relationManagers);
-    } else {
-        resourceContent = resourceContent.replace('<<IMPORT_RELATIONMANAGERS>>', '');
-        resourceContent = resourceContent.replace('<<RELATION_RELATIONMANAGERS>>', '');
     }
 
-    // --- LOGIK: MENU ---
+    // --- Menu ---
     let menuItem = null;
     let menuGroup = null;
 
     for (const topLevelItem of unified_menu) {
         if (topLevelItem.type === 'group') {
-            const foundItem = topLevelItem.items.find(item => 
+            const foundItem = topLevelItem.items.find(item =>
                 isCustomModule ? item.module_id == options.moduleId : item.table_id == tableData.table_id
             );
             if (foundItem) { menuItem = foundItem; menuGroup = topLevelItem; break; }
@@ -277,64 +243,79 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         }
     }
 
+    let functionGetNavigationGroup = '';
+    let functionGetNavigationSort = '';
+    let shortcutMenuOrder = '';
+    let menuName;
+
     if (menuItem) {
-        if (menuGroup) { 
-            const groupFunction = `\n    public static function getNavigationGroup(): string\n    {\n        return '${menuGroup.name}';\n    }`;
-            const sortFunction = `\n    public static function getNavigationSort(): int\n    {\n        return ${menuItem.item_order};\n    }`;
-            resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONGROUP>>', groupFunction);
-            resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONSORT>>', sortFunction);
-            resourceContent = resourceContent.replace('<<SHORTCUT_MENU_ORDER>>', '');
-        } else { 
-            const sortProperty = `protected static ?int $navigationSort = ${menuItem.item_order};`;
-            resourceContent = resourceContent.replace('<<SHORTCUT_MENU_ORDER>>', sortProperty);
-            resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONGROUP>>', '');
-            resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONSORT>>', '');
+        if (menuGroup) {
+            functionGetNavigationGroup = `\n    public static function getNavigationGroup(): string\n    {\n        return '${menuGroup.name}';\n    }`;
+            functionGetNavigationSort = `\n    public static function getNavigationSort(): int\n    {\n        return ${menuItem.item_order};\n    }`;
+        } else {
+            shortcutMenuOrder = `protected static ?int $navigationSort = ${menuItem.item_order};`;
         }
-        resourceContent = resourceContent.replace('<<MENU_NAME>>', menuItem.item_label);
+        menuName = menuItem.item_label;
     } else {
-        resourceContent = resourceContent.replace('<<SHORTCUT_MENU_ORDER>>', '');
-        resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONGROUP>>', '');
-        resourceContent = resourceContent.replace('<<FUNCTION_GETNAVIGATIONSORT>>', '');
-        resourceContent = resourceContent.replace('<<MENU_NAME>>', isCustomModule ? options.customModuleName : (tableData.table_view_title || toPluralPascalCase(nameSource))); 
-    }
-    
-    // --- LOGIK: AUDIT ---
-    if (projectSettings.module_log_audit === 1) {
-        const auditRelation = `\n        if (auth()->check() && auth()->user()->can('view_any_audit')) {\n            $relations[] = AuditsRelationManager::class;\n        }`;
-        resourceContent = resourceContent.replace('<<RELATIONS_AUDIT>>', auditRelation);
-    } else {
-        resourceContent = resourceContent.replace('<<RELATIONS_AUDIT>>', '');
+        menuName = isCustomModule ? options.customModuleName : (tableData.table_view_title || toPluralPascalCase(nameSource));
     }
 
-    // --- LOGIK: SET SLUG (GABUNGAN STANDARD & CUSTOM MODULE) ---
-    const finalSlug = isCustomModule 
-        ? toFlatCase(options.customModuleName || resourceFileName) 
+    // --- Slug ---
+    const finalSlug = isCustomModule
+        ? toFlatCase(options.customModuleName || resourceFileName)
         : toFlatCase(nameSource);
-        
-    resourceContent = resourceContent.replace('<<MODEL_NAME_FLATCASE>>', finalSlug);
+
+    // --- Audit ---
+    let relationsAudit = '';
+    if (projectSettings.module_log_audit === 1) {
+        relationsAudit = `\n        if (auth()->check() && auth()->user()->can('view_any_audit')) {\n            $relations[] = AuditsRelationManager::class;\n        }`;
+    }
+
+    const context = {
+        model_name: modelName,
+        model_name_plural: namespaceFolder,
+        tenant_scoping_property: tenantScopingProperty,
+        import_show_count_in_tv: importShowCount,
+        function_show_count_in_tv: functionShowCount,
+        import_printaction: importPrintAction,
+        print_action: printAction,
+        import_exportdata: importExportData,
+        export_action: exportAction,
+        import_importdata: importImportData,
+        import_action: importAction,
+        import_relationmanagers: importRelationManagers,
+        relation_relationmanagers: relationRelationManagers,
+        function_getnavigationgroup: functionGetNavigationGroup,
+        function_getnavigationsort: functionGetNavigationSort,
+        shortcut_menu_order: shortcutMenuOrder,
+        menu_name: menuName,
+        relations_audit: relationsAudit,
+        model_name_flatcase: finalSlug,
+    };
+
+    let resourceContent = renderTemplate(TEMPLATE, context);
 
     // ========================================================================
-    // 4. PENGUBAHSUAIAN KHAS UNTUK CUSTOM VIEW
+    // Custom module post-processing (mirrors legacy string overrides)
     // ========================================================================
-    
     if (isCustomModule) {
         // 1. Override Class Name
         resourceContent = resourceContent.replace(`class ${modelName}Resource`, `class ${resourceClassName}`);
 
         // 2. Override Form & Table Call
         const standardFormClass = `${modelName}Form`;
-        const customFormClass = `${singularFileName}Form`; 
-        const standardTableClass = `${modelNamePlural}Table`; 
-        const customTableClass = `${resourceFileName}Table`; 
+        const customFormClass = `${singularFileName}Form`;
+        const standardTableClass = `${modelNamePlural}Table`;
+        const customTableClass = `${resourceFileName}Table`;
 
         resourceContent = resourceContent.replace(new RegExp(`\\b${standardFormClass}\\b`, 'g'), customFormClass);
         resourceContent = resourceContent.replace(new RegExp(`\\b${standardTableClass}\\b`, 'g'), customTableClass);
 
-        // 3. Override Pages Import 
+        // 3. Override Pages Import
         const standardCreatePage = `Create${modelName}`;
-        const customCreatePage = `Create${singularFileName}`; 
+        const customCreatePage = `Create${singularFileName}`;
         const standardEditPage = `Edit${modelName}`;
-        const customEditPage = `Edit${singularFileName}`; 
+        const customEditPage = `Edit${singularFileName}`;
 
         resourceContent = resourceContent.replace(new RegExp(`\\b${standardCreatePage}\\b`, 'g'), customCreatePage);
         resourceContent = resourceContent.replace(new RegExp(`\\b${standardEditPage}\\b`, 'g'), customEditPage);
@@ -344,36 +325,26 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
             resourceContent = resourceContent.replace(/icon\s*=\s*'.*?'/, `icon = '${options.menuIcon}'`);
         }
     }
-    
-    resourceContent = resourceContent.replace('<<CUSTOM_QUERY_PLACEHOLDER>>', '');
-
-    // ========================================================================
-    // 5. PEMBERSIHAN AKHIR
-    // ========================================================================
-    resourceContent = resourceContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
-    resourceContent = resourceContent.replace(/<<.*?>>/g, '');
 
     const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', outputFolder);
     fs.mkdirSync(outputFolderPath, { recursive: true });
-    
+
     const outputFilePath = path.join(outputFolderPath, `${resourceClassName}.php`);
     fs.writeFileSync(outputFilePath, resourceContent);
     console.log(`Resource generated: ${outputFilePath}`);
 }
 
 // ===================================================================================
-// FUNGSI UTAMA (LOOP)
+// MAIN FUNCTIONS (LOOP)
 // ===================================================================================
 
 async function generateFilamentResources(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;
-        const templateContent = readTemplate('app/Filament/Resources/Resource.template');
 
         for (const tableName in tables) {
             if (tableName === 'users') continue;
-            // Panggil helper dengan mode STANDARD
-            await generateSingleResource(tableName, tables[tableName], fullSchema, basePath, templateContent, { isCustomModule: false });
+            await generateSingleResource(tableName, tables[tableName], fullSchema, basePath, null, { isCustomModule: false });
         }
         return { success: true, message: 'Filament Resources generated successfully.' };
     } catch (error) {
@@ -384,26 +355,17 @@ async function generateFilamentResources(fullSchema, basePath) {
 async function generateFilamentResourcesCustomModules(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;
-        const templateContent = readTemplate('app/Filament/Resources/Resource.template');
         let count = 0;
 
         for (const tableName in tables) {
             const tableData = tables[tableName];
             if (tableData.custom_modules && tableData.custom_modules.length > 0) {
-                // Tukar pembolehubah 'view' kepada 'moduleObj'
                 for (const moduleObj of tableData.custom_modules) {
-                    
-                    // Guna module_name bukan view_name
                     const moduleNameClean = moduleObj.module_name.replace(/[^a-zA-Z0-9]/g, '');
-                    
-                    // FOLDER: Plural
                     const moduleSafeNamePlural = toPluralPascalCase(moduleNameClean);
-                    
-                    // FAIL: Singular
                     const moduleSafeNameSingular = toSingularPascalCase(moduleNameClean);
                     const customResourceClassName = `${moduleSafeNameSingular}Resource`;
 
-                    // BACA TETAPAN OVERRIDE PERINGKAT JADUAL 
                     let tableOverrides = {};
                     if (moduleObj.settings_override) {
                         try {
@@ -413,22 +375,20 @@ async function generateFilamentResourcesCustomModules(fullSchema, basePath) {
                         }
                     }
 
-                    // Bina virtualTableData supaya logic generateSingleResource baca nilai override
                     const virtualTableData = {
                         ...tableData,
                         ...tableOverrides,
-                        module_name: tableData.module_name // PENTING: Kekalkan rujukan nama asal
+                        module_name: tableData.module_name
                     };
 
-                    // Hantar virtualTableData menggantikan tableData asal
-                    await generateSingleResource(tableName, virtualTableData, fullSchema, basePath, templateContent, {
+                    await generateSingleResource(tableName, virtualTableData, fullSchema, basePath, null, {
                         isCustomModule: true,
-                        moduleId: moduleObj.module_id, // <--- 1. TAMBAH BARIS INI
-                        resourceClassName: customResourceClassName, 
-                        resourceFileName: moduleSafeNamePlural,       
-                        singularFileName: moduleSafeNameSingular, 
-                        customModuleName: moduleObj.module_name,    
-                        customModuleOrder: moduleObj.module_order,  
+                        moduleId: moduleObj.module_id,
+                        resourceClassName: customResourceClassName,
+                        resourceFileName: moduleSafeNamePlural,
+                        singularFileName: moduleSafeNameSingular,
+                        customModuleName: moduleObj.module_name,
+                        customModuleOrder: moduleObj.module_order,
                         menuIcon: moduleObj.menu_icon,
                         filterRules: moduleObj.filter_rules,
                         includedRelations: moduleObj.included_relations

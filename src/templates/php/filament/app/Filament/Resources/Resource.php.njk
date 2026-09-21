@@ -1,0 +1,93 @@
+<?php
+
+namespace App\Filament\Resources\{{ model_name_plural }};
+
+use App\Filament\Resources\{{ model_name_plural }}\Pages\Create{{ model_name }};
+use App\Filament\Resources\{{ model_name_plural }}\Pages\Edit{{ model_name }};
+use App\Filament\Resources\{{ model_name_plural }}\Pages\List{{ model_name_plural }};
+use App\Filament\Resources\{{ model_name_plural }}\Schemas\{{ model_name }}Form;
+use App\Filament\Resources\{{ model_name_plural }}\Tables\{{ model_name_plural }}Table;
+use App\Models\{{ model_name }};
+use BackedEnum;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Table;
+{{ import_show_count_in_tv }}
+{{ import_printaction }}
+
+{{ import_importdata }}
+{{ import_exportdata }}
+
+{{ import_relationmanagers }}
+
+use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+
+class {{ model_name }}Resource extends Resource
+{
+    protected static ?string $model = {{ model_name }}::class;
+    
+    {{ tenant_scoping_property }}
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    {{ shortcut_menu_order }}
+    
+    {{ function_show_count_in_tv }}
+
+    public static function form(Schema $schema): Schema
+    {
+        return {{ model_name }}Form::configure($schema);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return {{ model_name_plural }}Table::configure($table)
+		        ->headerActions([
+{{ import_action }}
+{{ export_action }}
+			{{ print_action }}
+        ]);
+    }
+
+    public static function getRelations(): array
+    {
+        $relations = [
+            {{ relation_relationmanagers }}
+        ];
+		
+
+    // Hanya tambah AuditsRelationManager jika pengguna boleh melihatnya
+    {{ relations_audit }}
+	
+	return $relations;
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => List{{ model_name_plural }}::route('/'),
+            'create' => Create{{ model_name }}::route('/create'),
+            'edit' => Edit{{ model_name }}::route('/{record}/edit'),
+        ];
+    }
+	
+    // 1. Set the URL
+    protected static ?string $slug = '{{ model_name_flatcase }}';
+
+    // 2. Set the label for a single record
+    public static function getModelLabel(): string
+    {
+        return '{{ model_name }}';
+    }
+
+    // 3. Set the label for multiple records (main resource page title)
+    public static function getPluralModelLabel(): string
+    {
+        return '{{ menu_name }}';
+    }
+	
+    {{ function_getnavigationgroup }}
+
+    {{ function_getnavigationsort }}
+}
