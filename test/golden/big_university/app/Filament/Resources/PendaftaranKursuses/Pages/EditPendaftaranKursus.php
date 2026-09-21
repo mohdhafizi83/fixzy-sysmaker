@@ -44,7 +44,7 @@ class EditPendaftaranKursus extends EditRecord
                         ;
                         
                         // Secara pilihan, tambah penanda pada nama untuk menunjukkan ia adalah salinan
-                        $data['gred'] = ($data[''] ?? '') . ' (Copy)';
+                        $data['gred'] = ($data['gred'] ?? '') . ' (Copy)';
                         
                         return $data;
                     })

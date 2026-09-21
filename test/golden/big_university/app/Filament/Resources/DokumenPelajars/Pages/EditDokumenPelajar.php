@@ -44,7 +44,7 @@ class EditDokumenPelajar extends EditRecord
                         ;
                         
                         // Secara pilihan, tambah penanda pada nama untuk menunjukkan ia adalah salinan
-                        $data['nama_fail'] = ($data[''] ?? '') . ' (Copy)';
+                        $data['nama_fail'] = ($data['nama_fail'] ?? '') . ' (Copy)';
                         
                         return $data;
                     })

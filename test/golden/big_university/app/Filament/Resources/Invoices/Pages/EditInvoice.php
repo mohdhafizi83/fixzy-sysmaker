@@ -44,7 +44,7 @@ class EditInvoice extends EditRecord
                         ;
                         
                         // Secara pilihan, tambah penanda pada nama untuk menunjukkan ia adalah salinan
-                        $data['fakulti_id'] = ($data[''] ?? '') . ' (Copy)';
+                        $data['fakulti_id'] = ($data['fakulti_id'] ?? '') . ' (Copy)';
                         
                         return $data;
                     })

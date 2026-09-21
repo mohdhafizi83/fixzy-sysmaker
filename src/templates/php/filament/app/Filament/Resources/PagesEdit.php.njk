@@ -1,26 +1,26 @@
 <?php
 
-namespace App\Filament\Resources\PelajarTests\Pages;
+namespace App\Filament\Resources\{{ resource_folder }}\Pages;
 
-use App\Filament\Resources\PelajarTests\PelajarTestResource;
+use App\Filament\Resources\{{ resource_folder }}\{{ page_class_base }}Resource;
 use App\Filament\Actions\PrintAction;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ReplicateAction;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\EditRecord;
-use Filament\Support\Facades\FilamentView;
-use Illuminate\Contracts\View\View;
+{% if iframe_child %}use Filament\Support\Facades\FilamentView;
+use Illuminate\Contracts\View\View;{% endif %}
 
-class EditPelajarTest extends EditRecord
+class Edit{{ page_class_base }} extends EditRecord
 {
-    protected static string $resource = PelajarTestResource::class;
+    protected static string $resource = {{ page_class_base }}Resource::class;
     
-        public int $gridColumns = 2;
+    {% if dynamic_grid %}    public int $gridColumns = 2;{% endif %}
     
     protected function getHeaderActions(): array
     {
-        $nextRecord = static::getResource()::getModel()::where('id', '>', $this->record->id)->orderBy('id', 'asc')->first();   
+        $nextRecord = static::getResource()::getModel()::where('{{ primary_key }}', '>', $this->record->{{ primary_key }})->orderBy('{{ primary_key }}', 'asc')->first();   
         return [
 
         $this->getCancelFormAction()
@@ -41,11 +41,10 @@ class EditPelajarTest extends EditRecord
                     ->label('Save As Copy')
                     ->mutateRecordDataUsing(function (array $data): array {
                         // Kosongkan medan unik untuk mengelakkan ralat pangkalan data
-                                $data['no_matrik'] = '';
-        $data['email'] = '';;
+                        {{ unique_empty }};
                         
                         // Secara pilihan, tambah penanda pada nama untuk menunjukkan ia adalah salinan
-                        $data['nama_penuh'] = ($data['nama_penuh'] ?? '') . ' (Copy)';
+                        $data['{{ first_string_field }}'] = ($data['{{ first_string_field }}'] ?? '') . ' (Copy)';
                         
                         return $data;
                     })
@@ -55,7 +54,7 @@ class EditPelajarTest extends EditRecord
         ];
     }
     
-
+{% if iframe_parent %}
     public function mount(string|int $record): void
     {
         parent::mount($record);
@@ -72,8 +71,8 @@ class EditPelajarTest extends EditRecord
             return 'filament.layouts.custom-iframe-layout';
         }
         return parent::getLayout();
-    }
-
+    }{% endif %}
+{% if iframe_child %}
     public function render(): View
     {
         FilamentView::registerRenderHook(
@@ -91,8 +90,17 @@ class EditPelajarTest extends EditRecord
             HTML
         );
         return parent::render();
+    }{% endif %}
+{% if iframe_child_layout %}
+    public function getLayout(): string
+    {
+        if (session('is_in_iframe')) {
+            return 'filament.layouts.custom-iframe-layout';
+        }
+        
+        return parent::getLayout();
     }
-
+{% endif %}
 
     protected function getFormActions(): array
     {

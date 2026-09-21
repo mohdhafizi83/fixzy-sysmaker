@@ -44,7 +44,7 @@ class EditKursus extends EditRecord
                                 $data['kod_kursus'] = '';;
                         
                         // Secara pilihan, tambah penanda pada nama untuk menunjukkan ia adalah salinan
-                        $data['nama_kursus'] = ($data[''] ?? '') . ' (Copy)';
+                        $data['nama_kursus'] = ($data['nama_kursus'] ?? '') . ' (Copy)';
                         
                         return $data;
                     })

@@ -43,7 +43,7 @@ class EditFakulti extends EditRecord
                         ;
                         
                         // Secara pilihan, tambah penanda pada nama untuk menunjukkan ia adalah salinan
-                        $data['nama_fakulti'] = ($data[''] ?? '') . ' (Copy)';
+                        $data['nama_fakulti'] = ($data['nama_fakulti'] ?? '') . ' (Copy)';
                         
                         return $data;
                     })

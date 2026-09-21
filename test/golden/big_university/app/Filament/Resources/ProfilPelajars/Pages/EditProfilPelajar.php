@@ -44,7 +44,7 @@ class EditProfilPelajar extends EditRecord
                                 $data['pelajar_id'] = '';;
                         
                         // Secara pilihan, tambah penanda pada nama untuk menunjukkan ia adalah salinan
-                        $data['alamat'] = ($data[''] ?? '') . ' (Copy)';
+                        $data['alamat'] = ($data['alamat'] ?? '') . ' (Copy)';
                         
                         return $data;
                     })

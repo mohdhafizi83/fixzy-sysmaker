@@ -44,7 +44,7 @@ class EditPengesahanPendaftaran extends EditRecord
                                 $data['pendaftaran_id'] = '';;
                         
                         // Secara pilihan, tambah penanda pada nama untuk menunjukkan ia adalah salinan
-                        $data['status'] = ($data[''] ?? '') . ' (Copy)';
+                        $data['status'] = ($data['status'] ?? '') . ' (Copy)';
                         
                         return $data;
                     })

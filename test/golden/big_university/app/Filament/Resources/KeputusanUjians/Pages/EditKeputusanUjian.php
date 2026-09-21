@@ -44,7 +44,7 @@ class EditKeputusanUjian extends EditRecord
                         ;
                         
                         // Secara pilihan, tambah penanda pada nama untuk menunjukkan ia adalah salinan
-                        $data['pelajar_id'] = ($data[''] ?? '') . ' (Copy)';
+                        $data['pelajar_id'] = ($data['pelajar_id'] ?? '') . ' (Copy)';
                         
                         return $data;
                     })
