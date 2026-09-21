@@ -483,7 +483,10 @@ content += `        });\n    }\n\n    public function down(): void\n    {\n     
         sequence += 20;
         for (const tableName in tables) {
             if (tableName === 'users') continue;
-            const childRels = relationships.filter(r => r.child_table_name === tableName);
+            // many-to-many relationships are backed by the pivot table, not a
+            // direct FK column on the child table — skip them here or the FK
+            // references a column that was never created (SQL error on migrate).
+            const childRels = relationships.filter(r => r.child_table_name === tableName && r.relationship_type !== 'many-to-many');
             if (childRels.length === 0) continue;
             sequence++;
             const timestamp = getFormattedTimestamp(now, sequence);

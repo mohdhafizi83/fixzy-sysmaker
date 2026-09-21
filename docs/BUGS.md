@@ -40,6 +40,21 @@ or regenerate: `node test/golden.js <fixture> --update`.
   fallthrough for unknown options_display values is worth a warn-level rule
   later (tracked as improvement, not a bug).
 
+## BUG-003 — many-to-many relation emits FK to a column that doesn't exist (FIXED)
+- Severity: HIGH (migrate:fresh crashes — generated app unusable)
+- Axis: relationship types — `relationship_type = "many-to-many"`
+- Fixture: `tenancy_mm` (organisasi ↔ produk via pivot `organisasi_user`)
+- Reproduce (before fix): `node test/e2e_smoke.js tenancy_mm` →
+  `SQLSTATE[HY000]: unknown column "organisasi_id" in foreign key definition`
+- Cause: `generateLaravelMigrations` FK pass emitted
+  `$table->foreign(['organisasi_id'])` for every child relation regardless of
+  type; m:m relations have no direct FK column (pivot-backed).
+- Fix: FK pass now skips `relationship_type === 'many-to-many'`
+  (src/generators/laravelDatabaseGenerator.js). Golden rebaselined for
+  tenancy_mm (bogus `add_foreign_keys_to_produk` migration removed).
+- Verified: e2e_smoke tenancy_mm PASS (migrate + boot + HTTP 200).
+- Status: FIXED (this commit)
+
 ## Fixed during fixture bring-up
 - (2026-09-21) golden harness auto-discovery picked up `base_simple_ir.json`
   (IR-format, not full-schema dump) and crashed. Fixed: harness skips
