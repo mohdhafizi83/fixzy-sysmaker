@@ -36,5 +36,8 @@ jobs:
       - name: Headless audit (generators + php -l)
         run: node test/audit_headless.js
 
+      - name: Path allowlist guard tests
+        run: node test/pathguard_test.js
+
       - name: Golden snapshot matrix (all fixtures)
         run: node test/golden.js

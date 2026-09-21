@@ -1,4 +1,24 @@
-const { BrowserWindow } = require('electron');
+/**
+ * Resolve a window-like object for progress broadcasting.
+ * In Electron: real BrowserWindow. In headless/web mode (no sender or no
+ * electron module): a console-logging stub so the deploy pipeline still runs.
+ */
+function resolveWindow(event) {
+    try {
+        if (event && event.sender) {
+            const { BrowserWindow } = require('electron');
+            const win = resolveWindow(event);
+            if (win) return win;
+        }
+    } catch {
+        // electron not available (headless/CLI/web mode)
+    }
+    return {
+        webContents: {
+            send: (channel, data) => console.log(`[${channel}]`, typeof data === 'string' ? data : JSON.stringify(data)),
+        },
+    };
+}
 const path = require('path');
 const fs = require('fs');
 const spawn = require('cross-spawn');
@@ -44,7 +64,7 @@ function runCommand(command, args, cwd, win, logChannel) {
  * Fungsi untuk DEPLOY (Pemasangan Baru)
  */
 async function deployApp(event, deployConfig) {
-    const win = BrowserWindow.fromWebContents(event.sender);
+    const win = resolveWindow(event);
     const LOG_CHANNEL = 'deploy-log';
     const STATUS_CHANNEL = 'deploy-status';
     
@@ -139,7 +159,7 @@ async function deployApp(event, deployConfig) {
  * Fungsi untuk UPDATE (Kemaskini Projek Sedia Ada)
  */
 async function updateApp(event, updateConfig) {
-    const win = BrowserWindow.fromWebContents(event.sender);
+    const win = resolveWindow(event);
     const LOG_CHANNEL = 'update-log';
     const STATUS_CHANNEL = 'update-status';
 

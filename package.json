@@ -1,24 +1,31 @@
 {
-    "name": "fizisysmaker",
-    "version": "1.0.0",
-    "description": "",
-    "main": "src/main.js",
-    "scripts": {
-        "start": "electron ."
-    },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "devDependencies": {
-        "electron": "^40.1.0",
-        "electron-rebuild": "^3.2.9"
-    },
-    "dependencies": {
-        "better-sqlite3": "^12.6.2",
-        "cross-spawn": "^7.0.6",
-        "mysql2": "^3.16.1",
-        "node-sql-parser": "^5.3.11",
-        "nunjucks": "^3.2.4",
-        "pluralize": "^8.0.0"
-    }
+  "name": "fizisysmaker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^40.1.0",
+    "electron-rebuild": "^3.2.9"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.6.2",
+    "cross-spawn": "^7.0.6",
+    "mysql2": "^3.16.1",
+    "node-sql-parser": "^5.3.11",
+    "nunjucks": "^3.2.4",
+    "pluralize": "^8.0.0"
+  },
+  "allowScripts": {
+    "better-sqlite3@12.6.2": true,
+    "electron@40.1.0": true
+  },
+  "bin": {
+    "fizisysmaker": "bin/fizisysmaker.js"
+  }
 }
