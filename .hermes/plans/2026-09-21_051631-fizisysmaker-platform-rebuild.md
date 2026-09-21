@@ -206,13 +206,27 @@ Next: Phase 4 (native feature code — kill 3rd-party peripheral plugins).
 
 **Objective:** Generated apps depend on Filament core + first-party packages ONLY. Auditing, tenancy, and other peripheral features are generated as native app code, zero-config.
 
-- [ ] **4.1** Inventory every 3rd-party plugin reference in templates/output (grep `Tapp\`, `composer.json` additions, provider registrations). Deliverable: table in `docs/NATIVE_FEATURES.md`: plugin → what it does → native replacement plan.
-- [ ] **4.2** **Auditing native**: generate `audits` migration, `Audit` model, `AuditObserver` (boot in AppServiceProvider or via generated service provider), `AuditsRelationManager` — replacing `Tapp\FilamentAuditing`. Feature-flagged in IR (`features.auditing`).
-  - TDD: fixture `auditing_on` golden includes native files and NO `Tapp\` string.
-- [ ] **4.3** **Tenancy native**: formalize the existing scoping-property approach into generated traits (`BelongsToTenant` trait with global scope + creating hook) instead of relying on any package. Verify both 1:m and m:m fixtures.
-- [ ] **4.4** Any remaining plugin (print, etc.): same pattern — native generated code or documented exception.
-- [ ] **4.5** Generated `composer.json` audit: `composer require --dry-run` (bundled composer.phar) against a real Laravel skeleton to prove dependency resolution.
-- [ ] **4.6** Full golden re-run + one real end-to-end: generate app into `resources/preview_env` clone, `composer install`, migrate, smoke-test in preview.
+**STATUS: COMPLETE (2026-09-21, commit 0a253f05)**
+
+- [x] **4.1** Inventory every 3rd-party plugin reference in templates/output. Deliverable: `docs/NATIVE_FEATURES.md` — plugin → function → native replacement table.
+- [x] **4.2** **Auditing native**: generated `audits` migration, `Audit` model, `AuditObserver` (booted via `HasAudits` trait), `AuditsRelationManager` — replaces `Tapp\FilamentAuditing` + `owen-it/laravel-auditing`. Feature-flagged via `module_log_audit`.
+  - TDD: `auditing_on` golden includes native files, NO `Tapp\` string. Live-verified: create/update/delete recorded in `audits` (tinker).
+- [x] **4.3** **Tenancy native**: `BelongsToTenant` trait generated when 1:m tenancy present; models use trait instead of inline boot hooks. m:m keeps first-party Filament `HasTenants` on User. Both fixtures verified.
+- [x] **4.4** Print: native `App\Filament\Actions\PrintAction` generated when any resource enables print. grep `Tapp|OwenIt` = 0 across src/ and test/golden/ (non-.bak).
+- [x] **4.5** `composer validate` passes on preview_env (json+lock consistent; owen-it/tapp purged from lock+vendor autoload). Full `composer update` needs `--ignore-platform-reqs` on this box only (PHP 8.5, no ext-intl) — resolution itself sound.
+- [x] **4.6** Golden 16/16 + real e2e: ALL 16 fixtures → preview_env clone, migrate:fresh --seed, HTTP 200 /admin/login. Audit trail functionally verified in e2e workdir.
+
+### Phase 4 AUDIT (2026-09-21) — PASSED
+
+1. All layers green: golden 16/16 (php -l + validator inside harness), ir_test OK, render_validate OK, audit_headless 45 files / 6-of-6 generators, `node --check src/main.js` OK.
+2. Read-back: `auditing_on` golden has native HasAudits/Audit/AuditObserver/AuditsRelationManager + audits migration; `tenancy_1m` models use `BelongsToTenant`; `tenancy_mm` User uses first-party `HasTenants` only; grep `Tapp|OwenIt` = 0 (non-.bak).
+3. Functional proof: tinker in e2e workdir — create/update/delete on audited model produced `created, updated, deleted` rows in `audits` with auditable_type/id.
+4. Audit-off path: `module_log_audit=0` fixture generates zero audit files (fresh generate into temp dir).
+5. Sabotage: tampered `AuditObserver.php` golden → harness FAIL (2 diff markers); restore → PASS.
+6. Skeleton parity: preview_env composer.json/lock/vendor purged of owen-it + tapp; `package:discover` clean; artisan boots.
+7. e2e batch re-confirmed PASS: field_types_all, relations_all, soft_delete, custom_module_override, combo_tenancy_custommodule_audit, combo_owner_relations_export (exit 0).
+
+Next: Phase 5 (Headless + Web UI delivery mode).
 
 ---
 
@@ -286,3 +300,5 @@ P4/P5/P6 can interleave after P3, but P7 requires all. Recommended order: 0→1�
 - 2026-09-21 09:00 UTC — P2-AUDIT — passed. (1) All layers green: golden base_simple PASS (19 files), golden big_university PASS (134 files), php -l all pass, validate 19/19 + 134/134 hard rules, ir_test PASS, render_validate 11/11, audit_headless 6/6. (2) E2E both fixtures boot: artisan OK, tables present, HTTP /admin/login 200. (3) Sabotage tests: template whitespace change -> golden FAIL; unknown template -> engine throws fail-fast; leftover {{ }} in output -> leftover-nunjucks error; <<LEFTOVER>> injected -> golden FAIL. (4) Fresh clone /tmp/fsm_fresh2: npm ci + golden both fixtures PASS (reproducible, CRLF-safe via .gitattributes text=auto). (5) Read-back verified .njk tails byte-match golden (User.php tenant_methods/relationship_functions semantics: legacy replace('','') leaves whitespace lines -> plain 1:1 conversion, no {% if %} trimming). Known: unused-import warnings (pre-existing legacy imports) tracked as warn, cleanup in Phase 3+. Next: Phase 3.
 - 2026-09-21 15:55 UTC — P3 (3.1–3.6) — done — commits ab34f05d + e83e6169. FEATURE_MATRIX.md (8 axes), 14 new fixtures via committed gen script (12 single-axis + 2 stress combos), BUGS.md: BUG-001 calculated gap OPEN, BUG-002 zero_fill OPEN, BUG-003 m:m bogus FK -> migrate crash FIXED (skip m:m in FK pass). Owner asked 3.5: no extra scenarios. CI workflow added (ir/render/audit/golden). 16/16 golden PASS.
 - 2026-09-21 16:05 UTC — P3-AUDIT — passed. All layers green (golden 16/16, ir_test, render_validate 11/11, audit_headless 45/6-6, node --check, ci.yml YAML valid). Read-back of tenancy_1m/tenancy_mm/soft_delete/auditing_on/field_types_all goldens verified semantics. e2e_smoke booted ALL 14 new fixtures -> HTTP 200 (BUG-003 only catchable this way). Sabotage: tampered goldens FAIL, restore PASS. big_university has no m:m rels so BUG-003 fix is regression-safe. Next: Phase 4.
+- 2026-09-21 17:40 UTC — P4 (4.1–4.6) — done — commit 0a253f05. Native audit trail (audits migration + Audit model + AuditObserver via HasAudits trait + AuditsRelationManager in app/Filament/RelationManagers to dodge Filament resource-dir scan), native BelongsToTenant trait for 1:m, native PrintAction generated on demand. owen-it + tapp purged from preview_env composer.json/lock/vendor/bootstrap cache; stale .template files deleted. docs/NATIVE_FEATURES.md written. Pitfall hit: patch tool mangled backslashes in import_tenant template string — restored exact line from git via python. Pitfall: /tmp quota filled by e2e workdirs — cleanup loop added.
+- 2026-09-21 17:55 UTC — P4-AUDIT — passed. (1) All layers green: golden 16/16, ir_test, render_validate, audit_headless 45/6-6, node --check. (2) Read-back: native audit files in auditing_on golden; tenancy_1m uses BelongsToTenant; tenancy_mm User first-party HasTenants only; grep Tapp|OwenIt = 0 (non-.bak, src + golden). (3) Functional: tinker create/update/delete -> audits rows created/updated/deleted. (4) Audit-off fixture -> zero audit files generated. (5) Sabotage: tampered AuditObserver golden -> FAIL, restore -> PASS. (6) composer validate OK on preview_env (ignore-platform-reqs needed only for this box's PHP 8.5 w/o ext-intl). (7) e2e ALL 16 fixtures HTTP 200. Next: Phase 5.
