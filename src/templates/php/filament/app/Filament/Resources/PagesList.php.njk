@@ -1,0 +1,111 @@
+<?php
+
+namespace App\Filament\Resources\{{ resource_folder }}\Pages;
+
+use App\Filament\Resources\{{ resource_folder }}\{{ page_class_base }}Resource;
+use Filament\Actions\CreateAction;
+use Filament\Resources\Pages\ListRecords;
+{% if iframe_logic %}use Illuminate\Database\Eloquent\Builder;{% endif %}
+use Filament\Support\Facades\FilamentView;
+use Illuminate\Contracts\View\View;
+use Illuminate\Contracts\Support\Htmlable;
+
+class List{{ resource_folder }} extends ListRecords
+{
+    protected static string $resource = {{ page_class_base }}Resource::class;
+
+    public function getTitle(): string | Htmlable
+    {
+        return '{{ page_title }}'; 
+    }
+    
+    protected function getHeaderActions(): array
+    {
+        return [
+            {% if iframe_logic %}CreateAction::make()
+    ->when(
+        session('is_in_iframe'),
+        fn (CreateAction $action) => $action->url(fn (): string => static::getResource()::getUrl('create', [
+                    '{{ foreign_key }}' => request()->query('{{ foreign_key }}')
+                ]))
+    ){% else %}CreateAction::make(),{% endif %}
+        ];
+    }
+    
+    {% if iframe_logic %}
+    protected function getTableQuery(): Builder
+    {
+        $query = parent::getTableQuery();
+        
+        if ($fkValue = request()->query('{{ foreign_key }}')) {
+            $query->where('{{ foreign_key }}', $fkValue);
+        }
+        return $query;
+    }{% endif %}
+    
+    public function render(): View
+    {
+        {% if vertical_css %}
+        FilamentView::registerRenderHook(
+            'panels::body.end',
+            fn (): string => <<<HTML
+                <style>
+                    td.fi-ta-cell > .fi-ta-actions {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: flex-start; 
+                        gap: 0.5rem; 
+                    }
+                </style>
+            HTML
+        );{% endif %}
+
+        {% if print_css %}
+        if ((bool) request()->query('print')) {
+            FilamentView::registerRenderHook(
+                'panels::body.end',
+                fn (): string => <<<HTML
+                    <style>
+                        @media print {
+                            body { visibility: hidden; }
+                            .fi-ta-content-ctn, .fi-ta-content-ctn * { visibility: visible; }
+                            .fi-ta-content-ctn { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; margin: 0 !important; }
+                            body { font-size: 12pt !important; background-color: #fff !important; }
+                            .fi-ta-cell .fi-ta-actions { display: none !important; }
+                        }
+                    </style>
+                    <script>
+                        window.onload = () => {
+                            window.print();
+                            window.onafterprint = () => { window.close(); };
+                        };
+                    </script>
+                HTML
+            );
+        }{% endif %}
+
+        return parent::render();
+    }
+    
+    {% if iframe_logic %}
+    public function mount(): void
+    {
+        parent::mount();
+
+        if (request()->has('iframe')) {
+            session(['is_in_iframe' => true]);
+            session(['foreignkey' => '{{ foreign_key }}']);
+        } else {
+            session()->forget('is_in_iframe');
+            session()->forget('foreignkey');
+        }
+    }
+    
+    public function getLayout(): string
+    {
+        if (session('is_in_iframe')) {
+            return 'filament.layouts.custom-iframe-layout';
+        }
+        return parent::getLayout();
+    }{% endif %}
+}
