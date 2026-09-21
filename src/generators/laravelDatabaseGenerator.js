@@ -9,9 +9,9 @@ const {
     toSingularCamelCase,
     getFieldDefinitionForMigration,
     getFakerFormatter,
-    readTemplate,
     toPascalCase // Ditambah
 } = require('../utils');
+const { renderTemplate } = require('../render/engine');
 
 // ========================================================================
 // HELPER: LOGIK PENAMAAN (MODULE NAME vs TABLE NAME)
@@ -54,7 +54,6 @@ async function generateFilamentModels(fullSchema, basePath) {
     try {
         const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
 
-        const templateContent = readTemplate('app/Models/Model.template');
         const modelsPath = path.join(basePath, 'app', 'Models');
         fs.mkdirSync(modelsPath, { recursive: true });
 
@@ -62,37 +61,20 @@ async function generateFilamentModels(fullSchema, basePath) {
             if (tableName === 'users') continue;
 
             const tableData = tables[tableName];
-            let modelContent = templateContent;
-            
+
             // Logik Traits (SoftDelete, Factory, Audit)
-            if (projectSettings.module_fake_data === 1) modelContent = modelContent.replace('<<IMPORT_FACTORY>>', 'use Illuminate\\Database\\Eloquent\\Factories\\HasFactory;').replace('<<TRAIT_FACTORY>>', 'use HasFactory;');
-            else modelContent = modelContent.replace('<<IMPORT_FACTORY>>', '').replace('<<TRAIT_FACTORY>>', '');
+            const fakeData = projectSettings.module_fake_data === 1;
+            const softDelete = projectSettings.data_delete_type === 'soft';
+            const audit = projectSettings.module_log_audit === 1;
 
-            if (projectSettings.data_delete_type === 'soft') modelContent = modelContent.replace('<<IMPORT_SOFTDELETE>>', 'use Illuminate\\Database\\Eloquent\\SoftDeletes;').replace('<<TRAIT_SOFTDELETE>>', 'use SoftDeletes;');
-            else modelContent = modelContent.replace('<<IMPORT_SOFTDELETE>>', '').replace('<<TRAIT_SOFTDELETE>>', '');
-
-            if (projectSettings.module_log_audit === 1) {
-                const importAudit = `use OwenIt\\Auditing\\Contracts\\Auditable;\nuse OwenIt\\Auditing\\Auditable as AuditableTrait;`;
-                modelContent = modelContent.replace('<<IMPORT_AUDIT>>', importAudit).replace('<<CLASS_IMPLEMENTS_AUDIT>>', 'implements Auditable').replace('<<TRAIT_AUDIT>>', 'use AuditableTrait;');
-            } else {
-                modelContent = modelContent.replace('<<IMPORT_AUDIT>>', '').replace('<<CLASS_IMPLEMENTS_AUDIT>>', '').replace('<<TRAIT_AUDIT>>', '');
-            }
-            
             // --- 1. Tentukan Nama Kelas (Guna Module Name) ---
             const className = getModelClassName(tableName, tables);
-            modelContent = modelContent.replace(/<<CLASS_NAME>>/g, className);
-            
-            // --- 2. Tentukan Table Name Sebenar (Untuk properti protected $table) ---
-            // Template mesti ada: protected $table = '<<TABLE_NAME>>';
-            modelContent = modelContent.replace('<<TABLE_NAME>>', tableName);
 
             // Setup Fields
             const primaryKeyField = Object.values(tableData.fields).find(f => f.primary_key === 1);
-            modelContent = modelContent.replace('<<PRIMARY_KEY>>', primaryKeyField ? primaryKeyField.field_name : 'id');
-            
+
             const excludedFields = ['created_at', 'updated_at', 'deleted_at', primaryKeyField?.field_name];
             const fillableFields = Object.values(tableData.fields).filter(field => !excludedFields.includes(field.field_name) && field.read_only !== 1).map(field => `\n        '${field.field_name}'`).join(',');
-            modelContent = modelContent.replace('<<ARRAY_EDITABLE_BYUSER_FIELDS>>', fillableFields ? `${fillableFields}\n    ` : '');
             
 // ==========================================
             // LOGIK CASTS (DIKEMASKINI UNTUK LARAVEL 11 & ARRAY UI)
@@ -104,6 +86,7 @@ async function generateFilamentModels(fullSchema, basePath) {
                 ['repeater', 'repeater_simple'].includes(field.display_type)
             );
             
+            let modelCasts = '';
             if (castableFields.length > 0) {
                 const castLines = castableFields.map(field => {
                     let castType = '';
@@ -118,10 +101,7 @@ async function generateFilamentModels(fullSchema, basePath) {
                 }).join('');
                 
                 // Menggunakan standard fungsi Laravel 11: protected function casts(): array
-                const castsBlock = `\n    protected function casts(): array\n    {\n        return [${castLines}\n        ];\n    }\n`;
-                modelContent = modelContent.replace('<<MODEL_CASTS>>', castsBlock);
-            } else {
-                modelContent = modelContent.replace('<<MODEL_CASTS>>', '');
+                modelCasts = `\n    protected function casts(): array\n    {\n        return [${castLines}\n        ];\n    }\n`;
             }
 
             // ▼▼▼ BLOK HUBUNGAN (DIKEMASKINI GUNA MODULE NAME) ▼▼▼
@@ -174,8 +154,6 @@ async function generateFilamentModels(fullSchema, basePath) {
             });
             // ▲▲▲ TAMAT BLOK UBAH SUAI ▲▲▲
 
-            modelContent = modelContent.replace('<<RELATIONSHIP_FUNCTIONS>>', relationshipFunctions.join(''));
-            
             // Helper Methods (Accessors & Youtube)
             let accessorFunctions = [];
             const uniqueAccessors = new Set();
@@ -197,8 +175,7 @@ async function generateFilamentModels(fullSchema, basePath) {
                     accessorFunctions.push(accessorCode);
                 }
             }
-            modelContent = modelContent.replace('<<COMBINE_FIELDS_VALUE>>', accessorFunctions.join('\n'));
-            
+
 let helperMethods = [];
             const hasYoutubeField = Object.values(tableData.fields).some(field => field.media_type === 'youtube');
             if (hasYoutubeField) {
@@ -258,11 +235,24 @@ let helperMethods = [];
             }
             // --- TAMAT LOGIK USERSTAMPS ---
 
-            // Cantumkan semua function (Youtube + Boot) dan masukkan ke placeholder template
-            modelContent = modelContent.replace('<<HELPER_METHODS>>', helperMethods.join('\n'));
-
-            modelContent = modelContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
-            modelContent = modelContent.replace(/<<.*?>>/g, '');
+            // Render model template dengan context penuh
+            const modelContent = renderTemplate('app/Models/Model.php.njk', {
+                import_factory: fakeData ? 'use Illuminate\\Database\\Eloquent\\Factories\\HasFactory;' : '',
+                trait_factory: fakeData ? 'use HasFactory;' : '',
+                import_softdelete: softDelete ? 'use Illuminate\\Database\\Eloquent\\SoftDeletes;' : '',
+                trait_softdelete: softDelete ? 'use SoftDeletes;' : '',
+                import_audit: audit ? `use OwenIt\\Auditing\\Contracts\\Auditable;\nuse OwenIt\\Auditing\\Auditable as AuditableTrait;` : '',
+                class_implements_audit: audit ? 'implements Auditable' : '',
+                trait_audit: audit ? 'use AuditableTrait;' : '',
+                class_name: className,
+                table_name: tableName,
+                primary_key: primaryKeyField ? primaryKeyField.field_name : 'id',
+                array_editable_byuser_fields: fillableFields ? `${fillableFields}\n    ` : '',
+                model_casts: modelCasts,
+                relationship_functions: relationshipFunctions.join(''),
+                combine_fields_value: accessorFunctions.join('\n'),
+                helper_methods: helperMethods.join('\n'),
+            });
 
             const outputFilePath = path.join(modelsPath, `${className}.php`);
             fs.writeFileSync(outputFilePath, modelContent);
@@ -289,46 +279,26 @@ async function generateFilamentUserModel(fullSchema, basePath) {
             return { success: true, message: 'User model skipped.' };
         }
 
-        const templateContent = readTemplate('app/Models/User.template');
-        let userModelContent = templateContent;
+        const softDelete = projectSettings.data_delete_type === 'soft';
+        const audit = projectSettings.module_log_audit === 1;
+        const authorization = projectSettings.module_authorization === 1;
+        const tenantMtm = projectSettings.tenancy_type === 'many_to_many' && projectSettings.tenant_table;
 
-        // --- KEKAL 100% LOGIK ASAL ANDA ---
-        if (projectSettings.data_delete_type === 'soft') {
-            userModelContent = userModelContent.replace('<<IMPORT_SOFTDELETE>>', 'use Illuminate\\Database\\Eloquent\\SoftDeletes;');
-            userModelContent = userModelContent.replace('<<TRAIT_SOFTDELETE>>', ', SoftDeletes');
-        } else {
-             userModelContent = userModelContent.replace('<<IMPORT_SOFTDELETE>>', '').replace('<<TRAIT_SOFTDELETE>>', '');
-        }
-
-        if (projectSettings.module_log_audit === 1) {
-            const importAudit = `use OwenIt\\Auditing\\Contracts\\Auditable;\nuse OwenIt\\Auditing\\Auditable as AuditableTrait;`;
-            userModelContent = userModelContent.replace('<<IMPORT_AUDIT>>', importAudit);
-            userModelContent = userModelContent.replace('<<CLASS_IMPLEMENTS_AUDIT>>', 'implements Auditable');
-            userModelContent = userModelContent.replace('<<TRAIT_AUDIT>>', ', AuditableTrait');
-        } else {
-             userModelContent = userModelContent.replace('<<IMPORT_AUDIT>>', '').replace('<<CLASS_IMPLEMENTS_AUDIT>>', '').replace('<<TRAIT_AUDIT>>', '');
-        }
-
-        if (projectSettings.module_authorization === 1) {
-            userModelContent = userModelContent.replace('<<IMPORT_SHIELD>>', 'use Spatie\\Permission\\Traits\\HasRoles;');
-            userModelContent = userModelContent.replace('<<TRAIT_SHIELD>>', ', HasRoles');
-        } else {
-             userModelContent = userModelContent.replace('<<IMPORT_SHIELD>>', '').replace('<<TRAIT_SHIELD>>', '');
-        }
-
-        // --- MULA: LOGIK IMPORT TENANCY UNTUK USER (DIKEMASKINI) ---
-        if (projectSettings.tenancy_type === 'many_to_many' && projectSettings.tenant_table) {
-            const importTenant = `use Filament\\Models\\Contracts\\HasTenants;\nuse Illuminate\\Support\\Collection;\nuse Illuminate\\Database\\Eloquent\\Model;\nuse Filament\\Panel;\nuse Illuminate\\Database\\Eloquent\\Relations\\BelongsToMany;`;
-            userModelContent = userModelContent.replace('<<IMPORT_TENANT>>', importTenant);
-            
+        // --- KEKAL 100% LOGIK ASAL ANDA (kini sebagai context values) ---
+        const userContext = {
+            import_softdelete: softDelete ? 'use Illuminate\\Database\\Eloquent\\SoftDeletes;' : '',
+            trait_softdelete: softDelete ? ', SoftDeletes' : '',
+            import_audit: audit ? `use OwenIt\\Auditing\\Contracts\\Auditable;\nuse OwenIt\\Auditing\\Auditable as AuditableTrait;` : '',
+            class_implements_audit: audit ? 'implements Auditable' : '',
+            trait_audit: audit ? ', AuditableTrait' : '',
+            import_shield: authorization ? 'use Spatie\\Permission\\Traits\\HasRoles;' : '',
+            trait_shield: authorization ? ', HasRoles' : '',
+            import_tenant: tenantMtm ? `use Filament\\Models\\Contracts\\HasTenants;\nuse Illuminate\\Support\\Collection;\nuse Illuminate\\Database\\Eloquent\\Model;\nuse Filament\\Panel;\nuse Illuminate\\Database\\Eloquent\\Relations\\BelongsToMany;` : '',
             // Pastikan tiada ralat sintaks (, HasTenants) jika Audit off
-            const implementsStr = (projectSettings.module_log_audit === 1) ? ', HasTenants' : 'implements HasTenants';
-            userModelContent = userModelContent.replace('<<CLASS_IMPLEMENTS_TENANT>>', implementsStr);
-        } else {
-            userModelContent = userModelContent.replace('<<IMPORT_TENANT>>', '');
-            userModelContent = userModelContent.replace('<<CLASS_IMPLEMENTS_TENANT>>', '');
-        }
-        // --- TAMAT LOGIK IMPORT TENANCY ---
+            class_implements_tenant: tenantMtm ? ((audit) ? ', HasTenants' : 'implements HasTenants') : '',
+            tenant_methods: '',
+            relationship_functions: '',
+        };
 
         // ▼▼▼ HUBUNGAN USER GUNA MODULE NAME (KEKAL 100% ASAL) ▼▼▼
         let relationshipFunctions = [];
@@ -380,9 +350,8 @@ async function generateFilamentUserModel(fullSchema, basePath) {
         // --- TAMAT FUNGSI WAJIB TENANCY ---
         // ▲▲▲ TAMAT HUBUNGAN USER ▲▲▲
 
-        userModelContent = userModelContent.replace('<<RELATIONSHIP_FUNCTIONS>>', relationshipFunctions.join(''));
-        userModelContent = userModelContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
-        userModelContent = userModelContent.replace(/<<.*?>>/g, '');
+        userContext.relationship_functions = relationshipFunctions.join('').replace(/^\n/, '');
+        const userModelContent = renderTemplate('app/Models/User.php.njk', userContext);
 
         const outputFilePath = path.join(basePath, 'app', 'Models', 'User.php');
         fs.writeFileSync(outputFilePath, userModelContent);
@@ -547,10 +516,7 @@ async function generateLaravelUserMigration(fullSchema, basePath) {
         const migrationsPath = path.join(basePath, 'database', 'migrations');
         if (!fs.existsSync(migrationsPath)) fs.mkdirSync(migrationsPath, { recursive: true });
 
-        // Sila pastikan laluan templat ini tepat dengan struktur folder anda
-        const templateContent = readTemplate('database/migrations/create_users_table.template');
-        let content = templateContent;
-
+        // (template kini Nunjucks; content dibina selepas kitaran lajur)
         let customFieldsCode = '';
         const userData = tables['users'];
 
@@ -599,18 +565,12 @@ async function generateLaravelUserMigration(fullSchema, basePath) {
             });
         }
 
-        // Gantikan Placeholder Lajur Tersuai
-        content = content.replace('<<CUSTOM_FIELDS>>', customFieldsCode ? customFieldsCode : '');
-
-        // Gantikan Placeholder Soft Deletes
-        if (projectSettings && projectSettings.data_delete_type === 'soft') {
-            content = content.replace('<<SOFT_DELETES>>', '            $table->softDeletes();');
-        } else {
-            content = content.replace('<<SOFT_DELETES>>', '');
-        }
-
-        // Buang barisan kosong (jika ada placeholder yang tiada isi)
-        content = content.replace(/^\s*<<.*?>>\s*\r?\n/gm, '');
+        // Render template migrasi users dengan context
+        const content = renderTemplate('database/migrations/create_users_table.php.njk', {
+            custom_fields: customFieldsCode || '',
+            soft_deletes: (projectSettings && projectSettings.data_delete_type === 'soft')
+                ? '            $table->softDeletes();' : '',
+        });
 
         // Tulis fail dengan nama rasmi migrasi Laravel supaya ia kekal berjalan paling awal
         const fileName = '0001_01_01_000000_create_users_table.php';

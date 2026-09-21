@@ -9,8 +9,7 @@ const {
     toPluralCamelCase,
     toTitleCase,
     toSingularPascalCase,
-    toSingularCamelCase,
-    readTemplate
+    toSingularCamelCase
 } = require('../utils');
 const { renderTemplate } = require('../render/engine');
 

@@ -1,0 +1,37 @@
+{{ element_type }}::make('{{ field_name }}')
+{% if is_email %}    {{ is_email }}
+{% endif %}{% if is_numeric %}    {{ is_numeric }}
+{% endif %}{% if is_integer %}    {{ is_integer }}
+{% endif %}{% if is_password %}    {{ is_password }}
+{% endif %}{% if is_phone %}    {{ is_phone }}
+{% endif %}{% if is_url %}    {{ is_url }}
+{% endif %}{% if is_readonly %}    {{ is_readonly }}
+{% endif %}{% if is_min_length %}    {{ is_min_length }}
+{% endif %}{% if is_max_length %}    {{ is_max_length }}
+{% endif %}{% if is_fixed_length %}    {{ is_fixed_length }}
+{% endif %}{% if is_min_value %}    {{ is_min_value }}
+{% endif %}{% if is_max_value %}    {{ is_max_value }}
+{% endif %}{% if is_required %}    {{ is_required }}
+{% endif %}{% if is_off_autocomplete %}    {{ is_off_autocomplete }}
+{% endif %}{% if is_prefix %}    {{ is_prefix }}
+{% endif %}{% if is_suffix %}    {{ is_suffix }}
+{% endif %}{% if suffix_icon_text %}    {{ suffix_icon_text }}
+{% endif %}{% if suffix_coloricon_text %}    {{ suffix_coloricon_text }}
+{% endif %}{% if is_mask %}    {{ is_mask }}
+{% endif %}{% if is_placeholder %}    {{ is_placeholder }}
+{% endif %}{% if is_column_span_full %}    {{ is_column_span_full }}
+{% endif %}{% if is_unique %}    {{ is_unique }}
+{% endif %}{% if is_autofocus %}    {{ is_autofocus }}
+{% endif %}{% if is_helper_text %}    {{ is_helper_text }}
+{% endif %}{% if is_default_value %}    {{ is_default_value }}
+{% endif %}{% if is_caption %}    {{ is_caption }}
+{% endif %}{% if is_searchable %}    {{ is_searchable }}
+{% endif %}{% if is_preload %}    {{ is_preload }}
+{% endif %}{% if options_list_dropdown %}    {{ options_list_dropdown }}
+{% endif %}{% if disabled_edit_dropdown_relationship %}    {{ disabled_edit_dropdown_relationship }}
+{% endif %}{% if is_relationship_normal %}    {{ is_relationship_normal }}
+{% endif %}{% if parent_fields_caption %}    {{ parent_fields_caption }}
+{% endif %}{% if is_relationship_self_ref %}    {{ is_relationship_self_ref }}
+{% endif %}{% if link_to_parent_record %}    {{ link_to_parent_record }}
+{% endif %}{% if multiple_validation %}    {{ multiple_validation }}
+{% endif %}{% if keep_trim %}    ->trim(),{% else %}    ,{% endif %}

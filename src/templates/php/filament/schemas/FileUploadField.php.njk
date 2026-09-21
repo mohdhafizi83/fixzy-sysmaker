@@ -1,0 +1,8 @@
+FileUpload::make('{{ field_name }}')
+    ->label('{{ label }}')
+    ->image()
+{% if avatar_crop %}    {{ avatar_crop }}
+{% endif %}    ->imageEditor()
+    ->directory('{{ kebab_field_name }}')
+    ->disk('{{ disk }}')
+    ->downloadable(),

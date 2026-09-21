@@ -247,14 +247,8 @@ function getFilesRecursive(dir, fileList = [], relativePath = '') {
     return fileList;
 }
 
-// Fungsi helper untuk membaca template (konsisten dengan generator lain)
-function readTemplate(relativePath) {
-    const templatePath = path.join(__dirname, 'templates', 'php', 'filament', relativePath);
-        if (!fs.existsSync(templatePath)) {
-            throw new Error(`Template file not found at: ${templatePath}`);
-        }
-    return fs.readFileSync(templatePath, 'utf8');
-}
+// Fungsi helper untuk membaca template kini di src/render/engine.js (Nunjucks).
+// readTemplate (string-replacement era) telah dibuang selepas migrasi Fasa 2.
 
 /**
  * Menukar JSON Filter Rules kepada kod PHP Eloquent.
@@ -317,6 +311,5 @@ module.exports = {
     getFakerFormatter,
     getFilesRecursive,
     runStep,
-    readTemplate,
     buildEloquentQueryFromRules
 };

@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Models;
+
+{{ import_factory }}
+use Illuminate\Database\Eloquent\Model;
+{{ import_softdelete }}
+{{ import_audit }}
+
+class {{ class_name }} extends Model {{ class_implements_audit }}
+{
+	{{ trait_factory }}
+    {{ trait_audit }}
+    {{ trait_softdelete }}
+    /**
+     *
+     * @var string
+     */
+    protected $table = '{{ table_name }}';
+    /**
+     *
+     * @var string
+     */
+    protected $primaryKey = '{{ primary_key }}';
+    /**
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        {{ array_editable_byuser_fields }}
+    ];
+    
+{{ model_casts }}    
+
+{{ relationship_functions }}	
+
+{{ combine_fields_value }}
+
+{{ helper_methods }}
+}

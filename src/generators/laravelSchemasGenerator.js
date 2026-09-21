@@ -6,10 +6,10 @@ const {
     toPluralPascalCase,
     toTitleCase,
     toSingularPascalCase,
-    toSingularCamelCase,
-    readTemplate
+    toSingularCamelCase
 } = require('../utils');
 const { renderTemplate } = require('../render/engine');
+const { buildFormFieldContext } = require('./fieldContext');
 
 /**
  * [HELPER] Menjana string schema untuk form. 
@@ -63,260 +63,45 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
         const isRepeater = ['repeater', 'repeater_simple'].includes(field.display_type);
 
         if (isStandardMedia && !isRepeater) {
-            let fieldCode = `<<ELEMENT_TYPE>>::make('${field.field_name}')
-    <<IS_EMAIL>>
-    <<IS_NUMERIC>>
-    <<IS_INTEGER>>
-    <<IS_PASSWORD>>
-    <<IS_PHONE>>
-    <<IS_URL>>
-    <<IS_READONLY>>
-    <<IS_MIN_LENGTH>>
-    <<IS_MAX_LENGTH>>
-    <<IS_FIXED_LENGTH>>
-    <<IS_MIN_VALUE>>
-    <<IS_MAX_VALUE>>
-    <<IS_REQUIRED>>
-    <<IS_OFFAUTOCOMPLETE>>
-    <<IS_PREFIX>>
-    <<IS_SUFFIX>>
-    <<SUFFIX_ICON_TEXT>>
-    <<SUFFIX_COLORICON_TEXT>>
-    <<IS_MASK>>
-    <<IS_PLACEHOLDER>>
-    <<IS_COLUMN_SPAN_FULL>>
-    <<IS_UNIQUE>>
-    <<IS_AUTOFOCUS>>
-    <<IS_HELPER_TEXT>>
-    <<IS_DEFAULT_VALUE>>
-    <<IS_CAPTION>>
-    <<IS_SEARCHABLE>>
-    <<IS_PRELOAD>>
-    <<OPTIONS_LIST_DROPDOWN>>
-    <<DISABLED_EDIT_DROPDOWN_RELATIONSHIP>>
-    <<IS_RELATIONSHIP_NORMAL>>
-    <<PARENT_FIELDS_CAPTION>>
-    <<IS_RELATIONSHIP_SELF_REF>>
-    <<LINK_TO_PARENT_RECORD>>
-    <<MULTIPLE_VALIDATION>>
-    ->trim(),`;
-
-            let elementType = 'TextInput'; 
-
+            // Resolve element type (Filament component)
+            let elementType = 'TextInput';
             if (field.lookup_parent_table) {
-                if (field.lookup_display_as === 'radios') {
-                    elementType = 'Radio';
-                } else {
-                    elementType = 'Select';
-                }
+                if (field.lookup_display_as === 'radios') elementType = 'Radio';
+                else elementType = 'Select';
             } else {
-                if (field.display_type === 'datetime_input') elementType = 'DatePicker'; 
-                else if (field.display_type === 'text_area') elementType = 'Textarea'; 
-                else if (field.display_type === 'rich_html') elementType = 'RichEditor'; 
-                else if (field.display_type === 'check_box') elementType = 'Checkbox'; 
+                if (field.display_type === 'datetime_input') elementType = 'DatePicker';
+                else if (field.display_type === 'text_area') elementType = 'Textarea';
+                else if (field.display_type === 'rich_html') elementType = 'RichEditor';
+                else if (field.display_type === 'check_box') elementType = 'Checkbox';
                 else if (field.display_type === 'options_list') {
-                    if (['dropdown', 'multi'].includes(field.options_display)) elementType = 'Select'; 
-                    else if (field.options_display === 'radios') elementType = 'Radio'; 
-                    else if (field.options_display === 'checkboxes') elementType = 'CheckboxList'; 
-                }
-            }
-            
-            fieldCode = fieldCode.replace('<<ELEMENT_TYPE>>', elementType);
-
-            // Buang trim untuk jenis bukan teks
-            if (['Select', 'Checkbox', 'Radio', 'CheckboxList', 'DatePicker', 'RichEditor'].includes(elementType)) {
-                fieldCode = fieldCode.replace('->trim()', '');
-            }
-
-            // ... (SEMUA LOGIK PENGGANTIAN PLACEHOLDER DIKEKALKAN SEADANYA DARI KOD ASAL) ...
-            if (field.display_type === 'text_input') {
-                if (field.format_as === 'email') fieldCode = fieldCode.replace('<<IS_EMAIL>>', "->email()");
-                else if (field.format_as === 'password') fieldCode = fieldCode.replace('<<IS_PASSWORD>>', "->password()->revealable()");
-                else if (field.format_as === 'tel') fieldCode = fieldCode.replace('<<IS_PHONE>>', "->tel()->telRegex('/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\\s\\.\\/0-9]*$/')");
-                else if (field.format_as === 'url') fieldCode = fieldCode.replace('<<IS_URL>>', "->url()");
-                else if (field.format_as === 'custom' && field.format_mask) fieldCode = fieldCode.replace('<<IS_MASK>>', `->mask('${field.format_mask}')`);
-            }
-
-// Mengaplikasikan maxLength/minLength HANYA jika komponen akhir adalah komponen teks
-            if (['TextInput', 'Textarea', 'RichEditor'].includes(elementType)) {
-                if (field.min_length && field.min_length === field.length) fieldCode = fieldCode.replace('<<IS_FIXED_LENGTH>>', `->length(${field.min_length})`);
-                else {
-                    if (field.min_length) fieldCode = fieldCode.replace('<<IS_MIN_LENGTH>>', `->minLength(${field.min_length})`);
-                    if (field.length) fieldCode = fieldCode.replace('<<IS_MAX_LENGTH>>', `->maxLength(${field.length})`);
+                    if (['dropdown', 'multi'].includes(field.options_display)) elementType = 'Select';
+                    else if (field.options_display === 'radios') elementType = 'Radio';
+                    else if (field.options_display === 'checkboxes') elementType = 'CheckboxList';
                 }
             }
 
-            if (field.display_type === 'text_input') {
-                if (field.min_value) fieldCode = fieldCode.replace('<<IS_MIN_VALUE>>', `->minValue(${field.min_value})`);
-                if (field.max_value) fieldCode = fieldCode.replace('<<IS_MAX_VALUE>>', `->maxValue(${field.max_value})`);
-            }
-
-            if (field.display_type === 'text_input') {
-                if (field.read_only === 1) fieldCode = fieldCode.replace('<<IS_READONLY>>', "->readOnly()");
-                if (field.required === 1) fieldCode = fieldCode.replace('<<IS_REQUIRED>>', "->required()->markAsRequired()");
-                if (['INT', 'BIGINT'].includes(field.data_type)) fieldCode = fieldCode.replace('<<IS_INTEGER>>', "->integer()");
-                if (field.data_type === 'DECIMAL') fieldCode = fieldCode.replace('<<IS_NUMERIC>>', "->numeric()");
-                if (field.off_autocomplete === 1) fieldCode = fieldCode.replace('<<IS_OFFAUTOCOMPLETE>>', "->autocomplete(false)");
-            }
-
-            if (field.helper_text) fieldCode = fieldCode.replace('<<IS_HELPER_TEXT>>', `->helperText('${field.helper_text}')`);
-            if (['text_input', 'text_area', 'rich_html'].includes(field.display_type) && field.placeholder) {
-                fieldCode = fieldCode.replace('<<IS_PLACEHOLDER>>', `->placeholder('${field.placeholder}')`);
-            }
-            if (['text_area', 'rich_html'].includes(field.display_type) && field.column_span_full === 1) {
-                fieldCode = fieldCode.replace('<<IS_COLUMN_SPAN_FULL>>', "->columnSpanFull()");
-            }
-
-            if (field.unique === 1) fieldCode = fieldCode.replace('<<IS_UNIQUE>>', "->unique(ignoreRecord: true)");
-            if (field.default_value) fieldCode = fieldCode.replace('<<IS_DEFAULT_VALUE>>', `->default('${field.default_value}')`);
-            fieldCode = fieldCode.replace('<<IS_CAPTION>>', `->label('${field.caption || toTitleCase(field.field_name)}')`);
-
-            if (field.display_type === 'options_list') {
-                if (field.data_type !== 'BOOLEAN') {
-                    let optionsCode = '';
-                    if (field.options_display === 'multi') optionsCode += "->multiple()\n";
-                    if (field.options_list_values) {
-                        const optionsArr = field.options_list_values.split(';;').map(opt => `'${opt}' => '${toTitleCase(opt)}'`).join(', ');
-                        optionsCode += `->options([${optionsArr}])`;
-                    } else {
-                        optionsCode += `->options([])`;
-                    }
-                    fieldCode = fieldCode.replace('<<OPTIONS_LIST_DROPDOWN>>', optionsCode);
-                } else {
-                    const trueLabel = field.boolean_label_true || 'True';
-                    const falseLabel = field.boolean_label_false || 'False';
-                     fieldCode = fieldCode.replace('<<OPTIONS_LIST_DROPDOWN>>', ``); 
-                }
-            }
-
+            // Build render context for the field template
+            let parentOpts = {};
             if (field.lookup_parent_table) {
                 const parentTable = field.lookup_parent_table;
-                const caption1 = field.lookup_caption_1;
-                
-                // UPDATE: Guna Module Name Parent untuk nama relationship (CamelCase)
                 const parentTableData = fullSchema.database.table[parentTable];
                 const parentNameSource = (parentTableData && parentTableData.module_name && parentTableData.module_name.trim() !== '')
                                         ? parentTableData.module_name
                                         : parentTable;
-                const relationshipName = toSingularCamelCase(parentNameSource);
-
-                if (parentTable === tableName) { 
-                    const parentIdField = 'id';
-                    const selfRefCode = `->relationship(\n    name: 'parent',\n    titleAttribute: '${caption1}',\n    modifyQueryUsing: fn (Builder $query, ?Model $record) => $query->where('${parentIdField}', '!=', $record?->${parentIdField})\n)`;
-                    fieldCode = fieldCode.replace('<<IS_RELATIONSHIP_SELF_REF>>', selfRefCode);
-                } else {
-                    fieldCode = fieldCode.replace('<<IS_RELATIONSHIP_NORMAL>>', `->relationship('${relationshipName}', '${caption1}')`);
-                }
-
-                if (field.lookup_caption_2) {
-                    const caption2 = field.lookup_caption_2;
-                    const separator = field.lookup_separator || ' ';
-                    fieldCode = fieldCode.replace('<<PARENT_FIELDS_CAPTION>>', `->getOptionLabelFromRecordUsing(fn (Model $record) => "{$record->${caption1}} ${separator} {$record->${caption2}}")`);
-                }
-
-                const parentRelation = relationships.find(r => r.child_table_name === tableName && r.fk_child_field === field.field_name);
-                if (parentRelation && parentRelation.show_count_in_tv === 1) {
-                    fieldCode = fieldCode.replace('<<DISABLED_EDIT_DROPDOWN_RELATIONSHIP>>', `->disabled(session('foreignkey') === '${field.field_name}')`);
-                }
-
-                if (field.lookup_searchable === 1) fieldCode = fieldCode.replace('<<IS_SEARCHABLE>>', "->searchable()");
-                if (field.lookup_preload === 1) fieldCode = fieldCode.replace('<<IS_PRELOAD>>', "->preload()");
-
-                if (field.lookup_link_behavior === 'modal') {
-                    // UPDATE: Guna Module Name untuk Resource URL
-                    const parentResourceSingular = toSingularPascalCase(parentNameSource);
-                    
-                    const suffixActionCode = `->suffixActions([
-    Action::make('view_${parentTable}')
-        ->icon('heroicon-o-eye')
-        ->modalContent(fn (Get $get): ?View => $get('${field.field_name}') ? view('filament.components.modal-iframe', ['src' => ${parentResourceSingular}Resource::getUrl('edit', ['record' => $get('${field.field_name}')]) . '?iframe=1']) : null)
-        ->modalWidth('6xl')
-        ->modalSubmitAction(false)
-        ->hidden(fn (Get $get): bool => !$get('${field.field_name}')),
-
-    Action::make('create_${parentTable}')
-        ->icon('heroicon-o-plus')
-        ->modalContent(fn (): View => view('filament.components.modal-iframe', ['src' => ${parentResourceSingular}Resource::getUrl('create') . '?iframe=1']))
-        ->modalWidth('6xl')
-        ->modalSubmitAction(false),
-])`;
-                    fieldCode = fieldCode.replace('<<LINK_TO_PARENT_RECORD>>', suffixActionCode);
-                }
+                parentOpts = {
+                    parentTable,
+                    isSelfRef: parentTable === tableName,
+                    relationshipName: toSingularCamelCase(parentNameSource),
+                    parentResourceSingular: toSingularPascalCase(parentNameSource),
+                    parentRelation: relationships.find(r => r.child_table_name === tableName && r.fk_child_field === field.field_name),
+                };
             }
 
-            if (field.display_type === 'text_input') {
-                if (field.prefix) fieldCode = fieldCode.replace('<<IS_PREFIX>>', `->prefix('${field.prefix}')`);
-                if (field.suffix) fieldCode = fieldCode.replace('<<IS_SUFFIX>>', `->suffix('${field.suffix}')`);
-                if (field.suffix_icon) fieldCode = fieldCode.replace('<<SUFFIX_ICON_TEXT>>', `->suffixIcon('heroicon-o-${field.suffix_icon}')`);
-                if (field.suffix_icon_color) fieldCode = fieldCode.replace('<<SUFFIX_COLORICON_TEXT>>', `->suffixIconColor('${field.suffix_icon_color}')`);
-            }
-
-            if (elementType === 'Select') {
-                fieldCode = fieldCode.replace('->integer()', '');
-            }
-
-            // MULTIPLE VALIDATION RULES (LOGIK ASAL)
-            let multiValCode = '';
-            if (field.validations && Array.isArray(field.validations)) {
-                field.validations.forEach(val => {
-                    const type = val.rule_type;
-                    const v1 = val.rule_value_1;
-                    const v2 = val.rule_value_2;
-
-                    const toPhpArray = (str) => {
-                        if (!str) return "[]";
-                        const items = str.split(',').map(s => `'${s.trim()}'`).join(', ');
-                        return `[${items}]`;
-                    };
-
-                    if (type === 'string') multiValCode += "->string()";
-                    else if (type === 'alpha') multiValCode += "->alpha()";
-                    else if (type === 'alpha_dash') multiValCode += "->alphaDash()";
-                    else if (type === 'alpha_num') multiValCode += "->alphaNum()";
-                    else if (type === 'ascii') multiValCode += "->ascii()";
-                    else if (type === 'active_url') multiValCode += "->activeUrl()";
-                    else if (type === 'ip') multiValCode += "->ip()";
-                    else if (type === 'ipv4') multiValCode += "->ipv4()";
-                    else if (type === 'ipv6') multiValCode += "->ipv6()";
-                    else if (type === 'mac_address') multiValCode += "->macAddress()";
-                    else if (type === 'hex_color') multiValCode += "->hexColor()";
-                    else if (type === 'json') multiValCode += "->json()";
-                    else if (type === 'ulid') multiValCode += "->ulid()";
-                    else if (type === 'uuid') multiValCode += "->uuid()";
-                    else if (type === 'same') multiValCode += `->same('${v1}')`;
-                    else if (type === 'different') multiValCode += `->different('${v1}')`;
-                    else if (type === 'gt') multiValCode += `->gt('${v1}')`;
-                    else if (type === 'gte') multiValCode += `->gte('${v1}')`;
-                    else if (type === 'lt') multiValCode += `->lt('${v1}')`;
-                    else if (type === 'lte') multiValCode += `->lte('${v1}')`;
-                    else if (type === 'after') multiValCode += `->after('${v1}')`;
-                    else if (type === 'after_or_equal') multiValCode += `->afterOrEqual('${v1}')`;
-                    else if (type === 'before') multiValCode += `->before('${v1}')`;
-                    else if (type === 'before_or_equal') multiValCode += `->beforeOrEqual('${v1}')`;
-                    else if (type === 'in') multiValCode += `->in(${toPhpArray(v1)})`;
-                    else if (type === 'not_in') multiValCode += `->notIn(${toPhpArray(v1)})`;
-                    else if (type === 'starts_with') multiValCode += `->startsWith(${toPhpArray(v1)})`;
-                    else if (type === 'doesnt_start_with') multiValCode += `->doesntStartWith(${toPhpArray(v1)})`;
-                    else if (type === 'ends_with') multiValCode += `->endsWith(${toPhpArray(v1)})`;
-                    else if (type === 'doesnt_end_with') multiValCode += `->doesntEndWith(${toPhpArray(v1)})`;
-                    else if (type === 'regex') multiValCode += `->regex('${v1}')`;
-                    else if (type === 'not_regex') multiValCode += `->notRegex('${v1}')`;
-                    else if (type === 'multiple_of') multiValCode += `->multipleOf('${v1}')`;
-                    else if (type === 'required_if') multiValCode += `->requiredIf('${v1}', '${v2}')`;
-                    else if (type === 'required_unless') multiValCode += `->requiredUnless('${v1}', '${v2}')`;
-                    else if (type === 'required_with') multiValCode += `->requiredWith('${v1}')`;
-                    else if (type === 'required_with_all') multiValCode += `->requiredWithAll('${v1}')`;
-                    else if (type === 'required_without') multiValCode += `->requiredWithout('${v1}')`; 
-                    else if (type === 'required_without_all') multiValCode += `->requiredWithoutAll('${v1}')`;
-                    else if (type === 'required_if_accepted') multiValCode += `->requiredIfAccepted('${v1}')`;
-                    else if (type === 'prohibited') multiValCode += "->prohibited()";
-                    else if (type === 'prohibited_if') multiValCode += `->prohibitedIf('${v1}', '${v2}')`;
-                    else if (type === 'prohibited_unless') multiValCode += `->prohibitedUnless('${v1}', '${v2}')`;
-                    else if (type === 'prohibits') multiValCode += `->prohibits(${toPhpArray(v1)})`;
-                    else if (type === 'exists') multiValCode += "->exists()";
-                });
-            }
-            fieldCode = fieldCode.replace('<<MULTIPLE_VALIDATION>>', multiValCode);
+            const ctx = buildFormFieldContext(field, elementType, parentOpts);
+            // Legacy cleanup: drop blank lines left by empty multi-line values
+            let fieldCode = renderTemplate('schemas/FormField.php.njk', ctx)
+                .replace(/^\s*[\r\n]/gm, '')
+                .replace(/\n+$/, '');
 
             // --- TAMBAHAN UNTUK CUSTOM VIEW: FORCED READONLY ---
             if (field.is_forced_readonly) {
@@ -327,8 +112,6 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
                 }
             }
 
-            fieldCode = fieldCode.replace(/<<.*?>>/g, '');
-            fieldCode = fieldCode.replace(/^\s*[\r\n]/gm, '');
             formFieldsCode.push(fieldCode);
         }
 
@@ -336,27 +119,18 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
         // LOGIK 2: MEDIA (IMAGE, UPLOAD, MAP, YOUTUBE)
         // ============================================================
         else if (field.media_type === 'image') {
-            const kebabFieldName = field.field_name.replace(/_/g, '-');
-            let imageCode = `FileUpload::make('${field.field_name}')
-    ->label('${field.caption || toTitleCase(field.field_name)}')
-    ->image()
-    <<IMAGE_SHARP>>
-    ->imageEditor()
-    ->directory('${kebabFieldName}')
-    ->disk('${field.image_storage_provider || 'public'}')
-    ->downloadable(),`;
+            let imageCode = renderTemplate('schemas/FileUploadField.php.njk', {
+                field_name: field.field_name,
+                label: field.caption || toTitleCase(field.field_name),
+                avatar_crop: field.dv_thumb_shape === 'circular' ? '->avatar()->circleCropper()' : '',
+                kebab_field_name: field.field_name.replace(/_/g, '-'),
+                disk: field.image_storage_provider || 'public',
+            }).replace(/^\s*[\r\n]/gm, '').replace(/\n+$/, '');
 
-            if (field.dv_thumb_shape === 'circular') {
-                imageCode = imageCode.replace('<<IMAGE_SHARP>>', '->avatar()->circleCropper()');
-            } else {
-                imageCode = imageCode.replace('<<IMAGE_SHARP>>', '');
-            }
-            
             if (field.is_forced_readonly) {
                  imageCode = imageCode.replace(',', '->disabled()->dehydrated(false),');
             }
 
-            imageCode = imageCode.replace(/<<.*?>>/g, '').replace(/^\s*[\r\n]/gm, '');
             formFieldsCode.push(imageCode);
         }
 
