@@ -1,0 +1,364 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://fizisysmaker.dev/ir.schema.json",
+  "title": "FiziSysMaker Intermediate Representation (IR)",
+  "description": "Stack-neutral app model. Generators consume ONLY this. No Filament/stack vocabulary allowed in core zones; presentation hints are optional and stack-ignorable.",
+  "type": "object",
+  "required": ["ir_version", "meta", "entities"],
+  "properties": {
+    "ir_version": { "type": "integer", "const": 1 },
+    "_source": { "type": "object", "additionalProperties": true, "description": "Reserved: lossless pre-IR dump for the staged-migration adapter. Not for generator use." },
+    "meta": {
+      "type": "object",
+      "required": ["app_name", "target_stack"],
+      "properties": {
+        "id": { "type": ["integer", "string"] },
+        "app_name": { "type": "string" },
+        "target_stack": { "type": "string", "enum": ["laravel_filament", "laravel_backpack", "core_php", "codeigniter4", "codeigniter3", "django", "flask"] },
+        "database_engine": { "type": "string", "enum": ["mysql_mariadb", "postgresql", "sqlite", "mssql"] },
+        "formats": {
+          "type": "object",
+          "properties": {
+            "date": { "type": "string" },
+            "time": { "type": "string" }
+          }
+        },
+        "locale": { "type": "string" },
+        "timezone": { "type": "string" },
+        "base_url": { "type": ["string", "null"] }
+      }
+    },
+    "features": {
+      "type": "object",
+      "properties": {
+        "auth": {
+          "type": "object",
+          "properties": {
+            "login_enabled": { "type": "boolean" },
+            "email": { "type": "boolean" },
+            "email_2fa": { "type": "boolean" },
+            "email_captcha": { "type": "boolean" },
+            "ldap": { "type": "boolean" },
+            "google_sso": { "type": "boolean" }
+          }
+        },
+        "authorization": { "type": "boolean" },
+        "auditing": { "type": "boolean" },
+        "seeders": { "type": "boolean" },
+        "soft_delete": {
+          "type": "object",
+          "properties": {
+            "mode": { "type": "string", "enum": ["hard", "soft"] },
+            "restore_allowed": { "type": "boolean" },
+            "force_delete_allowed": { "type": "boolean" }
+          }
+        },
+        "ownership": {
+          "type": "object",
+          "properties": {
+            "model": { "type": "string", "enum": ["none", "tenant_single", "tenant_multi"] },
+            "tenant_entity": { "type": ["string", "null"] },
+            "row_owner": { "type": ["string", "null"], "enum": [null, "authenticated_user"] }
+          }
+        },
+        "tools": {
+          "type": "object",
+          "properties": {
+            "sql_tool": { "type": "boolean" },
+            "server_status": { "type": "boolean" }
+          }
+        },
+        "replication": {
+          "type": "object",
+          "properties": {
+            "copy_children_async": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "fields"],
+        "properties": {
+          "id": { "type": ["integer", "string"] },
+          "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "display_name": { "type": ["string", "null"] },
+          "titles": {
+            "type": "object",
+            "properties": {
+              "list": { "type": ["string", "null"] },
+              "detail": { "type": ["string", "null"] },
+              "description": { "type": ["string", "null"] }
+            }
+          },
+          "capabilities": {
+            "type": "object",
+            "properties": {
+              "search": { "type": "boolean" },
+              "pagination": { "type": ["boolean", "string"] },
+              "import": { "type": "boolean" },
+              "export": { "type": "boolean" },
+              "print": { "type": "boolean" },
+              "bulk_delete": { "type": "boolean" },
+              "detail_view": { "type": "boolean" }
+            }
+          },
+          "default_sort": {
+            "type": ["object", "null"],
+            "properties": {
+              "field": { "type": "string" },
+              "direction": { "type": "string", "enum": ["asc", "desc"] }
+            }
+          },
+          "cascade": {
+            "type": "object",
+            "properties": {
+              "delete_children": { "type": "boolean" }
+            }
+          },
+          "ownership": {
+            "type": "object",
+            "properties": {
+              "row_owner": { "type": ["string", "null"], "enum": [null, "authenticated_user"] },
+              "owner_fk_value": { "type": ["string", "null"] }
+            }
+          },
+          "constraints": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["type", "columns"],
+              "properties": {
+                "name": { "type": ["string", "null"] },
+                "type": { "type": "string", "enum": ["unique", "primary"] },
+                "columns": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          },
+          "fields": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/field" }
+          },
+          "presentation": { "$ref": "#/definitions/presentationBag" }
+        }
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["parent", "child", "fk", "kind"],
+        "properties": {
+          "id": { "type": ["integer", "string"] },
+          "parent": { "type": "string" },
+          "child": { "type": "string" },
+          "fk": { "type": "string" },
+          "owner_key": { "type": "string" },
+          "kind": { "type": "string", "enum": ["one_to_one", "one_to_many", "many_to_many"] },
+          "integrity": {
+            "type": "object",
+            "properties": {
+              "on_delete": { "type": "string", "enum": ["cascade", "set_null", "restrict", "no_action"] },
+              "on_update": { "type": "string", "enum": ["cascade", "set_null", "restrict", "no_action"] }
+            }
+          },
+          "metrics": {
+            "type": "object",
+            "properties": {
+              "count_in_list": { "type": "boolean" }
+            }
+          },
+          "replication": {
+            "type": "object",
+            "properties": {
+              "copy_related": { "type": "boolean" }
+            }
+          },
+          "presentation": { "$ref": "#/definitions/presentationBag" }
+        }
+      }
+    },
+    "navigation": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": { "type": "string", "enum": ["group", "entity", "module", "url"] },
+          "id": { "type": ["integer", "string", "null"] },
+          "group": { "type": ["string", "integer", "null"] },
+          "target": { "type": ["string", "null"] },
+          "label": { "type": ["string", "null"] },
+          "detail": { "type": ["string", "null"] },
+          "order": { "type": ["integer", "null"] },
+          "show_record_count": { "type": "boolean" }
+        }
+      }
+    },
+    "modules": {
+      "type": "array",
+      "description": "Saved views over an entity: filter + field selection + overrides.",
+      "items": {
+        "type": "object",
+        "required": ["name", "base_entity"],
+        "properties": {
+          "id": { "type": ["integer", "string"] },
+          "name": { "type": "string" },
+          "base_entity": { "type": "string" },
+          "order": { "type": ["integer", "null"] },
+          "filter_rules": { "type": ["object", "string", "null"] },
+          "included_relations": { "type": "array", "items": { "type": "string" } },
+          "entity_override": { "type": ["object", "null"] },
+          "field_selection": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["field"],
+              "properties": {
+                "field": { "type": "string" },
+                "readonly": { "type": "boolean" },
+                "order": { "type": ["integer", "null"] },
+                "overrides": { "type": ["object", "null"] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "widgets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title", "type", "target_entity"],
+        "properties": {
+          "id": { "type": ["integer", "string"] },
+          "title": { "type": "string" },
+          "type": { "type": "string" },
+          "target_entity": { "type": "string" },
+          "target_field": { "type": ["string", "null"] },
+          "aggregate": { "type": ["string", "null"] },
+          "filter": {
+            "type": ["object", "null"],
+            "properties": {
+              "field": { "type": ["string", "null"] },
+              "operator": { "type": ["string", "null"] },
+              "value": { "type": ["string", "null"] },
+              "timeframe": { "type": ["string", "null"] }
+            }
+          },
+          "advanced_query": { "type": ["object", "string", "null"] },
+          "presentation": { "$ref": "#/definitions/presentationBag" }
+        }
+      }
+    },
+    "workflows": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "description": "Top-level workflow spec (JSON blocks). Opaque to IR v1; carried through for generator use."
+    }
+  },
+  "definitions": {
+    "field": {
+      "type": "object",
+      "required": ["name", "input_kind", "data_type"],
+      "properties": {
+        "id": { "type": ["integer", "string"] },
+        "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "caption": { "type": ["string", "null"] },
+        "description": { "type": ["string", "null"] },
+        "input_kind": {
+          "type": "string",
+          "enum": ["text", "textarea", "number", "decimal", "integer", "boolean", "select", "multiselect", "date", "time", "datetime", "file", "image", "repeater", "calculated", "lookup", "email", "url", "password", "hidden", "json", "color", "other"]
+        },
+        "data_type": { "type": "string", "description": "SQL-ish type: VARCHAR, INT, TEXT, DATE, ..." },
+        "length": { "type": ["integer", "null"] },
+        "precision": { "type": ["integer", "null"] },
+        "required": { "type": "boolean" },
+        "primary_key": { "type": "boolean" },
+        "auto_increment": { "type": "boolean" },
+        "unique": { "type": "boolean" },
+        "not_null": { "type": "boolean" },
+        "unsigned": { "type": "boolean" },
+        "binary": { "type": "boolean" },
+        "indexed": { "type": "boolean" },
+        "read_only": { "type": "boolean" },
+        "default_value": { "type": ["string", "null"] },
+        "helper_text": { "type": ["string", "null"] },
+        "placeholder": { "type": ["string", "null"] },
+        "min_length": { "type": ["integer", "null"] },
+        "max_length": { "type": ["integer", "null"] },
+        "min_value": { "type": ["number", "null"] },
+        "max_value": { "type": ["number", "null"] },
+        "options": {
+          "type": ["object", "null"],
+          "properties": {
+            "values": { "type": ["array", "string", "null"] },
+            "display": { "type": ["string", "null"] },
+            "true_label": { "type": ["string", "null"] },
+            "false_label": { "type": ["string", "null"] }
+          }
+        },
+        "format": {
+          "type": ["object", "null"],
+          "properties": {
+            "as": { "type": ["string", "null"] },
+            "mask": { "type": ["string", "null"] },
+            "prefix": { "type": ["string", "null"] },
+            "suffix": { "type": ["string", "null"] },
+            "currency": { "type": ["string", "null"] }
+          }
+        },
+        "calculation": {
+          "type": ["object", "null"],
+          "properties": {
+            "query": { "type": ["string", "null"] },
+            "algorithm": { "type": ["string", "null"] },
+            "builder_state": { "type": ["object", "string", "null"] }
+          }
+        },
+        "lookup": {
+          "type": ["object", "null"],
+          "properties": {
+            "parent_entity": { "type": ["string", "null"] },
+            "caption_fields": { "type": "array", "items": { "type": "string" } },
+            "separator": { "type": ["string", "null"] },
+            "searchable": { "type": "boolean" },
+            "preload": { "type": "boolean" },
+            "custom_query": { "type": ["string", "null"] }
+          }
+        },
+        "media": {
+          "type": ["object", "null"],
+          "properties": {
+            "kind": { "type": "string", "enum": ["image", "file"] },
+            "storage": { "type": ["string", "null"] },
+            "max_size_kb": { "type": ["integer", "null"] },
+            "allowed_types": { "type": ["string", "null"] },
+            "delete_on_remove": { "type": "boolean" },
+            "keep_original_name": { "type": "boolean" }
+          }
+        },
+        "validations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["rule"],
+            "properties": {
+              "rule": { "type": "string" },
+              "params": { "type": "array", "items": { "type": "string" } },
+              "active": { "type": "boolean" }
+            }
+          }
+        },
+        "presentation": { "$ref": "#/definitions/presentationBag" }
+      }
+    },
+    "presentationBag": {
+      "type": "object",
+      "description": "Optional display hints any stack may ignore. Keys are maker-neutral after normalization.",
+      "additionalProperties": true
+    }
+  }
+}

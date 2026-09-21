@@ -1688,6 +1688,24 @@ ipcMain.handle('generate-app', async (event) => { // Perhatikan 'event' ditambah
         const fullSchema = await getFullProjectSchema(activeProject.project_id);
         if (!fullSchema) throw new Error("Gagal mendapatkan schema projek penuh.");
 
+        // IR validation (Phase 1): export + validate before generating.
+        // Non-fatal during migration: warns but proceeds (legacy data may have
+        // edge shapes). Becomes a hard gate in Phase 2 once generators read IR.
+        try {
+            const { exportIR } = require('./ir/exporter');
+            const { validateIR } = require('./ir/validate');
+            const ir = exportIR(fullSchema);
+            const { valid, errors } = validateIR(ir);
+            if (!valid) {
+                console.warn(`[IR] ${errors.length} validation issue(s):`);
+                for (const e of errors.slice(0, 10)) console.warn(`  ${e.path}: ${e.message}`);
+            } else {
+                console.log('[IR] schema exported and validated OK');
+            }
+        } catch (irErr) {
+            console.warn('[IR] export/validation failed (non-fatal):', irErr.message);
+        }
+
         const selectedStack = activeProject.stack_base || 'core_php';
 
         win?.webContents.send('show-overlay', { message: `Menjana fail aplikasi (${selectedStack})...` });
