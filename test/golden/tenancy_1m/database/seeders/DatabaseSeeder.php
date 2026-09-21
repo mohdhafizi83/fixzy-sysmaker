@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder {
             try {
                 Sekolah::factory()->create();
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 
@@ -37,7 +37,7 @@ class DatabaseSeeder extends Seeder {
                     'sekolah_id' => Sekolah::inRandomOrder()->first()?->id ?? null
                 ]);
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 

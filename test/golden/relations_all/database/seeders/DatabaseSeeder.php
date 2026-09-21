@@ -28,7 +28,7 @@ class DatabaseSeeder extends Seeder {
             try {
                 Projek::factory()->create();
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 
@@ -39,7 +39,7 @@ class DatabaseSeeder extends Seeder {
                     'projek_id' => Projek::inRandomOrder()->first()?->id ?? null
                 ]);
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 
@@ -50,7 +50,7 @@ class DatabaseSeeder extends Seeder {
                     'projek_id' => Projek::inRandomOrder()->first()?->id ?? null
                 ]);
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 
@@ -61,7 +61,7 @@ class DatabaseSeeder extends Seeder {
                     'parent_kategori_id' => Kategori::inRandomOrder()->first()?->id ?? null
                 ]);
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 

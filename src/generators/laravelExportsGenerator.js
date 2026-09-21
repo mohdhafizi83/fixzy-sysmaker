@@ -7,7 +7,7 @@ const {
     toPascalCase,
     toCamelCase,
     toTitleCase,
-    toSingularPascalCase, // Tambah ini
+    toSingularPascalCase, // add this
 } = require('../utils');
 const { renderTemplate } = require('../render/engine');
 
@@ -104,7 +104,7 @@ async function generateFilamentExports(fullSchema, basePath) {
                     columnCode = `ExportColumn::make('${fieldName}')`;
                 }
 
-                // Tambah Modifiers
+                // Add Modifiers
                 if (field.tv_text_limit && field.tv_text_limit > 0) {
                     columnCode += `->limit(${field.tv_text_limit})`;
                 }

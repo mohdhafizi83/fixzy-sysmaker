@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder {
             try {
                 LaporanHarian::factory()->create();
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 
@@ -36,7 +36,7 @@ class DatabaseSeeder extends Seeder {
             try {
                 LaporanBulanan::factory()->create();
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 
@@ -45,7 +45,7 @@ class DatabaseSeeder extends Seeder {
             try {
                 CartaJualan::factory()->create();
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 

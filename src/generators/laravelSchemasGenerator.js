@@ -44,7 +44,7 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
             // Sembunyikan Tenant FK dari pandangan form secara automatik
             if (tenantFkField && field.field_name === tenantFkField) return false;
 
-            // Logik Custom Module: Jika forced readonly, sentiasa paparkan
+            // Custom Module logic: if forced readonly, always display
             if (field.is_forced_readonly) return true;
             // Otherwise, follow the hide_in_dv setting
             return field.hide_in_dv !== 1;
@@ -57,7 +57,7 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
         // LOGIK 1: MEDAN STANDARD & HUBUNGAN (LINK)
         // ============================================================
         // KOD ASAL: if (field.media_type === 'link' ...
-        // TERIMA 'link', kosong, atau null sebagai standard media (Text/Select/Date etc)
+        // ACCEPT 'link', empty, or null as standard media (Text/Select/Date etc)
         const mediaType = field.media_type || ''; 
         const isStandardMedia = (mediaType === '' || mediaType === 'link');
         const isRepeater = ['repeater', 'repeater_simple'].includes(field.display_type);
@@ -461,7 +461,7 @@ async function generateFilamentSchemasCustomModules(fullSchema, basePath) {
                         virtualFields[fName] = { ...fData }; // Deep copy
                     }
 
-                    // 2. Tindihkan (Override) dengan tetapan khusus Custom Module jika wujud
+                    // 2. Override with Custom Module-specific settings if present
                     if (moduleObj.fields && Array.isArray(moduleObj.fields)) {
                         moduleObj.fields.forEach(f => {
                             const fieldId = parseInt(f.field_id, 10);
@@ -500,7 +500,7 @@ async function generateFilamentSchemasCustomModules(fullSchema, basePath) {
                     }
                     // ▲▲▲ TAMAT PEMBAIKAN GENERATOR ▲▲▲        
                     
-                    // Perlu pass 'module_name' original supaya helper tahu nama Model
+                    // Must pass the original 'module_name' so the helper knows the Model name
                     const virtualTableData = { 
                         ...tableData, 
                         fields: virtualFields, 

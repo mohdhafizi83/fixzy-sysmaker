@@ -33,7 +33,7 @@ class DatabaseSeeder extends Seeder {
             try {
                 Fakulti::factory()->create();
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 
@@ -44,7 +44,7 @@ class DatabaseSeeder extends Seeder {
                     'fakulti_id' => Fakulti::inRandomOrder()->first()?->id ?? null
                 ]);
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 
@@ -55,7 +55,7 @@ class DatabaseSeeder extends Seeder {
                     'pelajar_id' => Pelajar::inRandomOrder()->first()?->id ?? null
                 ]);
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 
@@ -66,7 +66,7 @@ class DatabaseSeeder extends Seeder {
                     'pelajar_id' => Pelajar::inRandomOrder()->first()?->id ?? null
                 ]);
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 
@@ -77,7 +77,7 @@ class DatabaseSeeder extends Seeder {
                     'prasyarat_kursus_id' => Kursus::inRandomOrder()->first()?->id ?? null
                 ]);
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 
@@ -89,7 +89,7 @@ class DatabaseSeeder extends Seeder {
                     'kursus_id' => Kursus::inRandomOrder()->first()?->id ?? null
                 ]);
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 
@@ -101,7 +101,7 @@ class DatabaseSeeder extends Seeder {
                     'user_id' => 1
                 ]);
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 
@@ -112,7 +112,7 @@ class DatabaseSeeder extends Seeder {
                     'pelajar_id' => Pelajar::inRandomOrder()->first()?->id ?? null
                 ]);
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 
@@ -123,7 +123,7 @@ class DatabaseSeeder extends Seeder {
                     'fakulti_id' => Fakulti::inRandomOrder()->first()?->id ?? null
                 ]);
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 

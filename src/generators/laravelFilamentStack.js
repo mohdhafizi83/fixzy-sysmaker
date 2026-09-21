@@ -107,7 +107,7 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         // ============================================================
         console.log("--- Menjana Standard Resources ---");
 
-        // 1. Components (Table & Form) MESTI dijana dahulu kerana Resource memanggilnya
+        // 1. Components (Table & Form) MUST be generated first because the Resource references them
         const tableResult = await generateFilamentTablesTable(fullSchema, outputDir);
         if (!tableResult.success) throw new Error(`Tables (Standard): ${tableResult.message}`);
 
@@ -152,7 +152,7 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         // ============================================================
         // FASA 4: CIRI TAMBAHAN & KONFIGURASI
         // ============================================================
-        console.log("--- Menjana Ciri Tambahan ---");
+        console.log("--- Generating Additional Features ---");
 
         const exportResult = await generateFilamentExports(fullSchema, outputDir);
         if (!exportResult.success) throw new Error(`Exports: ${exportResult.message}`);

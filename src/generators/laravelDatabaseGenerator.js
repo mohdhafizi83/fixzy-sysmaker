@@ -18,7 +18,7 @@ const { renderTemplate } = require('../render/engine');
 // ========================================================================
 
 /**
- * Mendapatkan Nama Model (Class Name) berdasarkan Module Name (jika ada).
+ * Get the Model Name (Class Name) based on the Module Name (if present).
  */
 function getModelClassName(tableName, tables) {
     if (tableName === 'users') return 'User';
@@ -456,7 +456,7 @@ content += `        });\n    }\n\n    public function down(): void\n    {\n     
             const tenantSingular = toSingularCamelCase(tenantTable);
             const pivotTable = `${tenantSingular}_user`;
             
-            // Jana file migrasi hanya jika user belum membinanya secara manual
+            // Generate the migration file only if the user hasn't built it manually
             if (!tables[pivotTable] && !tables[`user_${tenantSingular}`]) {
                 sequence++;
                 const timestamp = getFormattedTimestamp(now, sequence);
@@ -518,7 +518,7 @@ async function generateLaravelUserMigration(fullSchema, basePath) {
         const migrationsPath = path.join(basePath, 'database', 'migrations');
         if (!fs.existsSync(migrationsPath)) fs.mkdirSync(migrationsPath, { recursive: true });
 
-        // (template kini Nunjucks; content dibina selepas kitaran lajur)
+        // (template is now Nunjucks; content is built after the column loop)
         let customFieldsCode = '';
         const userData = tables['users'];
 
@@ -529,7 +529,7 @@ async function generateLaravelUserMigration(fullSchema, basePath) {
             const fieldsArr = Object.values(userData.fields).sort((a, b) => (a.field_order || 999) - (b.field_order || 999));
 
             fieldsArr.forEach(field => {
-                // Langkau jika ia adalah lajur asas
+                // Skip if it's a base column
                 if (standardFields.includes(field.field_name)) return;
 
                 const isForeignKey = relationships.some(r => r.child_table_name === 'users' && r.fk_child_field === field.field_name);
@@ -574,7 +574,7 @@ async function generateLaravelUserMigration(fullSchema, basePath) {
                 ? '            $table->softDeletes();' : '',
         });
 
-        // Tulis fail dengan nama rasmi migrasi Laravel supaya ia kekal berjalan paling awal
+        // Write the file with Laravel's official migration name so it always runs first
         const fileName = '0001_01_01_000000_create_users_table.php';
         fs.writeFileSync(path.join(migrationsPath, fileName), content);
 
@@ -606,9 +606,9 @@ fieldsArr.forEach(field => {
                 if (['created_at', 'updated_at', 'deleted_at'].includes(field.field_name)) return;
                 
                 // ▼▼▼ MULA: LOGIK RECORD OWNER (SUPER ADMIN ID = 1) ▼▼▼
-                // Jika table ini di set sebagai 'current_user' dan field ini adalah created_by/updated_by
+                // If this table is set as 'current_user' and this field is created_by/updated_by
                 if (tableData.record_owner === 'current_user' && ['created_by', 'updated_by', 'user_id'].includes(field.field_name)) {
-                    // Kita paksa ia menjadi 1 (Super Admin) supaya data ini muncul di dashboard admin
+                    // Force it to 1 (Super Admin) so this data shows on the admin dashboard
                     columns.push(`            '${field.field_name}' => 1,`);
                     return; // Skip the logic below and continue to the next field
                 }
@@ -631,8 +631,8 @@ fieldsArr.forEach(field => {
                 if (field.display_type === 'options_list' && field.options_list_values) {
                     // 1. Pisahkan teks berdasarkan koma (,), baris baharu (\n), titik bertindih (;), atau pipe (|)
                     const optionsArray = field.options_list_values
-                        .split(/[\n,;|]+/) // <--- PERUBAHAN DI SINI (Tambah ; dan |)
-                        .map(opt => opt.trim())       // Bersihkan ruang kosong
+                        .split(/[\n,;|]+/) // <--- CHANGE HERE (added ; and |)
+                        .map(opt => opt.trim())       // Trim whitespace
                         .filter(opt => opt !== '');   // Drop empty values
                         
                     if (optionsArray.length > 0) {
@@ -790,7 +790,7 @@ async function generateLaravelDatabaseSeeder(fullSchema, basePath) {
             }
             
             runContent.push(`            } catch (\\Exception $e) {`);
-            runContent.push(`                // Abaikan jika data duplikat atau langgar Unique Constraint`);
+            runContent.push(`                // Ignore if data is duplicated or violates a Unique Constraint`);
             runContent.push(`            }`);
             runContent.push(`        }`);
             // TAMAT PEMBAIKAN KESTABILAN

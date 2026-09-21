@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder {
             try {
                 Pelanggan::factory()->create();
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 
@@ -38,7 +38,7 @@ class DatabaseSeeder extends Seeder {
                     'pelanggan_id' => Pelanggan::inRandomOrder()->first()?->id ?? null
                 ]);
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 
@@ -49,7 +49,7 @@ class DatabaseSeeder extends Seeder {
                     'tempahan_id' => Tempahan::inRandomOrder()->first()?->id ?? null
                 ]);
             } catch (\Exception $e) {
-                // Abaikan jika data duplikat atau langgar Unique Constraint
+                // Ignore if data is duplicated or violates a Unique Constraint
             }
         }
 

@@ -13,7 +13,7 @@ const { renderTemplate } = require('../render/engine');
 function generateSingleRelationManager(rel, basePath, fullSchema) {
     const { database: { table: tables } } = fullSchema;
 
-    // Logik Asal: Langkau jika 'one-to-one' atau melibatkan 'users'
+    // Original logic: skip if 'one-to-one' or involves 'users'
     if (rel.relationship_type === 'one-to-one' || rel.parent_table_name === 'users' || rel.child_table_name === 'users') {
         return;
     }

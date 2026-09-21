@@ -2183,7 +2183,7 @@ export function openQueryHelperModal(options) {
             return;
         }
 
-        // Isi senarai relationship
+        // Populate the relationship list
         appState.jsonData.database.relationships.forEach(rel => {
             let relatedTable, relText;
             if (rel.parent_table_name === tableName) {
@@ -2255,7 +2255,7 @@ export function openQueryHelperModal(options) {
             });
 
         } else {
-            // Tambah JOIN ke state
+            // Add JOIN to state
             state.activeJoins.add(joinObject);
             li.classList.add('selected');
         }

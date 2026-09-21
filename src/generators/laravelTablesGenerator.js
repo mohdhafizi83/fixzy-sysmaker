@@ -469,7 +469,7 @@ async function generateFilamentTablesCustomModules(fullSchema, basePath) {
                         virtualFields[fName] = { ...fData }; // Deep copy
                     }
 
-                    // 2. Tindihkan (Override) dengan tetapan khusus Custom Module jika wujud
+                    // 2. Override with Custom Module-specific settings if present
                     if (moduleObj.fields && Array.isArray(moduleObj.fields)) {
                         moduleObj.fields.forEach(f => {
                             const fieldId = parseInt(f.field_id, 10);

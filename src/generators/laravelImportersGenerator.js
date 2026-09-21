@@ -18,7 +18,7 @@ function buildColumnContext(fields, tables) {
         let relationship = null;
 
         if (field.lookup_parent_table) {
-            // Nama Relationship perlu ikut standard Model Generator (CamelCase Module Name)
+            // Relationship name must follow the Model Generator standard (CamelCase Module Name)
             const parentTableData = tables[field.lookup_parent_table];
             const parentNameSource = (parentTableData && parentTableData.module_name && parentTableData.module_name.trim() !== '')
                                     ? parentTableData.module_name

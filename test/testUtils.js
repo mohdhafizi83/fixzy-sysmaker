@@ -121,7 +121,7 @@ function getFullProjectSchema(db, projectId) {
         const groups = db.prepare("SELECT * FROM menu_groups WHERE project_id = ? ORDER BY group_order").all(projectId);
         const unifiedMenu = [];
 
-        // Proses kumpulan
+        // Process groups
         groups.forEach(group => {
             const groupItems = allItems
                 .filter(item => item.menu_group_id === group.menu_group_id)
@@ -158,7 +158,7 @@ function getFullProjectSchema(db, projectId) {
             }
         });
 
-        // Susun semula keseluruhan senarai berdasarkan 'order' (PENTING!)
+        // Re-sort the entire list by 'order' (IMPORTANT!)
         unifiedMenu.sort((a, b) => a.order - b.order);
         // ▲▲▲ TAMAT KEMAS KINI MENU ▲▲▲
   

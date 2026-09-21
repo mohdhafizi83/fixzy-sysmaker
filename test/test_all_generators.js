@@ -73,7 +73,7 @@ const TEST_OUTPUT_DIR = path.join(__dirname, 'output_full_app');
 if (!fs.existsSync(TEST_OUTPUT_DIR)) {
     fs.mkdirSync(TEST_OUTPUT_DIR, { recursive: true });
 } else {
-    console.log("🧹 Membersihkan isi folder output lama...");
+    console.log("🧹 Cleaning the old output folder contents...");
     // Jika sudah wujud, kita hanya kosongkan isinya tanpa memadam folder root
     fs.readdirSync(TEST_OUTPUT_DIR).forEach(file => {
         const filePath = path.join(TEST_OUTPUT_DIR, file);
@@ -124,7 +124,7 @@ async function runFullTest() {
             console.error("   ❌ Unified Menu: TIDAK DITEMUI!");
         }
         
-        // Semak sepintas lalu jika validation wujud
+        // Quick check whether validations exist
         let validationCount = 0;
         Object.values(fullSchema.database.table).forEach(t => {
             Object.values(t.fields).forEach(f => {

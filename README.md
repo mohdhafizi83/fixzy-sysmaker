@@ -8,6 +8,20 @@ plain app code — no proprietary runtime, no lock-in.
 Runs three ways from one engine: **desktop (Electron)**, **browser (local web UI)**,
 and **headless CLI**.
 
+## Screenshots
+
+Main configuration — pick stack, database, theme, deletion strategy, core modules:
+
+![Main configuration](docs/screenshots/main-config.png)
+
+Menu management — group and order the generated app's navigation:
+
+![Menu management](docs/screenshots/menu-management.png)
+
+Dashboard builder — stats and chart widgets bound to any table:
+
+![Dashboard builder](docs/screenshots/dashboard-builder.png)
+
 ---
 
 ## Quick start
