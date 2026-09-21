@@ -155,6 +155,31 @@ function lintPhp(outDir) {
     return { passed, failed };
 }
 
+// Post-generation validation (leftover placeholders/njk, unused imports,
+// namespace/path mismatch) on every generated file.
+function validateAll(outDir) {
+    const { validateGeneratedFile } = require('../src/render/validate');
+    let passed = 0, failed = 0;
+    for (const rel of walk(outDir)) {
+        const real = findRealFile(outDir, rel);
+        const res = validateGeneratedFile(real, { basePath: outDir });
+        const hard = res.errors.filter((e) => e.severity !== 'warn');
+        const soft = res.errors.filter((e) => e.severity === 'warn');
+        for (const err of soft) {
+            console.warn(`  [validate warn] ${rel}: [${err.rule}] ${err.message}`);
+        }
+        if (hard.length > 0) {
+            failed++;
+            for (const err of hard) {
+                console.error(`  [validate FAIL] ${rel}: [${err.rule}] ${err.message}`);
+            }
+        } else {
+            passed++;
+        }
+    }
+    return { passed, failed };
+}
+
 async function runFixture(fixtureName, update) {
     console.log(`\n=== Fixture: ${fixtureName} ===`);
     const outDir = await generateFixture(fixtureName);
@@ -164,6 +189,10 @@ async function runFixture(fixtureName, update) {
     const lint = lintPhp(outDir);
     console.log(`  php -l: ${lint.passed} passed, ${lint.failed} failed`);
     if (lint.failed > 0) return false;
+
+    const vres = validateAll(outDir);
+    console.log(`  validate: ${vres.passed} passed, ${vres.failed} failed`);
+    if (vres.failed > 0) return false;
 
     const goldenPath = path.join(GOLDEN_DIR, fixtureName);
     if (update || !fs.existsSync(goldenPath)) {

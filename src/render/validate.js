@@ -48,7 +48,7 @@ function checkPhpLint(filePath, phpBin) {
         return null;
     } catch (e) {
         const msg = (e.stderr ? e.stderr.toString() : e.message).trim().split('\n')[0];
-        return { rule: 'php-lint', message: msg };
+        return { rule: 'php-lint', severity: 'error', message: msg };
     }
 }
 
@@ -56,14 +56,14 @@ function checkLeftoverArtifacts(content, filePath) {
     const errors = [];
     const leftoverPlaceholder = content.match(/<<[A-Z0-9_]+>>/g);
     if (leftoverPlaceholder) {
-        errors.push({ rule: 'leftover-placeholder', message: `unreplaced: ${[...new Set(leftoverPlaceholder)].slice(0, 5).join(', ')}` });
+        errors.push({ rule: 'leftover-placeholder', severity: 'error', message: `unreplaced: ${[...new Set(leftoverPlaceholder)].slice(0, 5).join(', ')}` });
     }
     // Nunjucks artifacts ({{ or {%) — but NOT Blade's own {{ }} which is valid
     // Blade. Blade files (.blade.php) legitimately contain {{ }}.
     if (!/\.blade\.php$/.test(filePath)) {
         const njk = content.match(/\{\{[^}]*\}\}|\{%[^%]*%\}/g);
         if (njk) {
-            errors.push({ rule: 'leftover-nunjucks', message: `unrendered: ${[...new Set(njk)].slice(0, 5).join(', ')}` });
+            errors.push({ rule: 'leftover-nunjucks', severity: 'error', message: `unrendered: ${[...new Set(njk)].slice(0, 5).join(', ')}` });
         }
     }
     return errors;
@@ -83,7 +83,7 @@ function checkUnusedImports(content, filePath) {
         const alias = m[2] || m[1].split('\\').pop();
         const re = new RegExp(`\\b${alias}\\b`);
         if (!re.test(body)) {
-            errors.push({ rule: 'unused-import', message: `use ${m[1]}${m[2] ? ' as ' + m[2] : ''} never referenced` });
+            errors.push({ rule: 'unused-import', severity: 'warn', message: `use ${m[1]}${m[2] ? ' as ' + m[2] : ''} never referenced` });
         }
     }
     return errors;
@@ -101,13 +101,13 @@ function checkNamespacePath(filePath, basePath) {
     const nsSegs = ns.split('\\');
     const dirSegs = dirPart === '.' ? [] : dirPart.split('\\');
     if (nsSegs.length !== dirSegs.length) {
-        return [{ rule: 'namespace-path', message: `namespace '${ns}' (${nsSegs.length} segs) != dir '${dirPart}' (${dirSegs.length} segs)` }];
+        return [{ rule: 'namespace-path', severity: 'error', message: `namespace '${ns}' (${nsSegs.length} segs) != dir '${dirPart}' (${dirSegs.length} segs)` }];
     }
     for (let i = 0; i < nsSegs.length; i++) {
         const a = nsSegs[i].toLowerCase();
         const b = dirSegs[i].toLowerCase();
         if (a !== b) {
-            return [{ rule: 'namespace-path', message: `namespace segment '${nsSegs[i]}' != dir segment '${dirSegs[i]}' (path ${dirPart})` }];
+            return [{ rule: 'namespace-path', severity: 'error', message: `namespace segment '${nsSegs[i]}' != dir segment '${dirSegs[i]}' (path ${dirPart})` }];
         }
     }
     return [];
@@ -131,6 +131,7 @@ function validateGeneratedFile(filePath, opts = {}) {
     errors.push(...checkUnusedImports(content, filePath));
     if (opts.basePath) errors.push(...checkNamespacePath(filePath, opts.basePath));
 
+    for (const e of errors) if (!e.severity) e.severity = 'error';
     return { file: filePath, errors };
 }
 
