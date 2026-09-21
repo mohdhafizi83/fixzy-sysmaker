@@ -12,6 +12,7 @@ const {
     toSingularCamelCase,
     readTemplate
 } = require('../utils');
+const { renderTemplate } = require('../render/engine');
 
 /**
  * [HELPER] Menjana string PHP untuk lajur-lajur jadual.
@@ -230,38 +231,33 @@ if (field.data_type === 'JSON') {
 }
 
 /**
- * [HELPER] Mengaplikasikan tetapan standard jadual (actions, filters, header).
+ * [HELPER] Build the settings context (actions, filters, header) for the
+ * table template. Each key maps to one template variable.
  */
-function applyTableSettings(templateContent, tableData, relationships, tableName, projectSettings, modelNameSingular) {
-    let tableContent = templateContent;
-    // modelNameSingular sudah diterima sebagai argument (Module Name)
+function buildTableSettingsContext(tableData, relationships, tableName, projectSettings, modelNameSingular) {
+    const ctx = {};
 
-    // LOGIK CHILDREN COUNT & MODAL IFRAME
+    // CHILDREN COUNT & MODAL IFRAME LOGIC
     const childrenWithCount = relationships.filter(r => r.parent_table_name === tableName && r.show_count_in_tv === 1);
     if (childrenWithCount.length > 0) {
         const childImports = childrenWithCount.map(r => {
-            // Nota: Import child resource masih agak tricky tanpa data module_name child di sini.
-            // Buat masa ini, kekal guna 'toSingularPascalCase(child_table_name)' 
-            // Jika child module name berbeza, kod ini mungkin perlukan allTables lookup (belum ada di scope ini).
-            // Andaian: Pengguna akan betulkan import jika nama module jauh berbeza.
             const childSingular = toSingularPascalCase(r.child_table_name);
             const childResourceFolder = toPluralPascalCase(r.child_table_name);
             return `use App\\Filament\\Resources\\${childResourceFolder}\\${childSingular}Resource;`;
         }).join('\n');
-        tableContent = tableContent.replace('<<IMPORT_RESOURCES>>', childImports);
+        ctx.import_resources = childImports;
 
         const childPluralCamelNames = childrenWithCount.map(r => {
             const relName = r.parent_table_name === r.child_table_name ? 'children' : toPluralCamelCase(r.child_table_name);
             return `'${relName}'`;
         }).join(', ');
-        const withCountFunction = `\n    public static function getEloquentQuery(): Builder\n    {\n        return parent::getEloquentQuery()->withCount([${childPluralCamelNames}]);\n    }`;
-        tableContent = tableContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', withCountFunction);
+        ctx.function_show_count_in_tv = `\n    public static function getEloquentQuery(): Builder\n    {\n        return parent::getEloquentQuery()->withCount([${childPluralCamelNames}]);\n    }`;
 
         const primaryKeyField = Object.values(tableData.fields).find(f => f.primary_key === 1);
         const stringTypes = ['VARCHAR', 'CHAR', 'TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT'];
         const firstStringField = Object.values(tableData.fields).find(f => stringTypes.includes(f.data_type.toUpperCase()));
         const modalTitleField = firstStringField || primaryKeyField;
-        
+
         if (modalTitleField) {
             const showCountActions = childrenWithCount.map(r => {
                 const childSingular = toSingularPascalCase(r.child_table_name);
@@ -278,59 +274,57 @@ function applyTableSettings(templateContent, tableData, relationships, tableName
                         view('filament.components.modal-iframe', ['src' => ${childSingular}Resource::getUrl('index', ['${r.fk_child_field}' => \$record->${primaryKeyField ? primaryKeyField.field_name : 'id'}, 'iframe' => 1])])
                     ),`;
             }).join('');
-            tableContent = tableContent.replace('<<SHOW_COUNT_IN_TV>>', showCountActions);
+            ctx.show_count_in_tv = showCountActions;
         } else {
-             tableContent = tableContent.replace('<<SHOW_COUNT_IN_TV>>', '');
+            ctx.show_count_in_tv = '';
         }
     } else {
-        tableContent = tableContent.replace('<<IMPORT_RESOURCES>>', '');
-        tableContent = tableContent.replace('<<FUNCTION_SHOW_COUNT_IN_TV>>', '');
-        tableContent = tableContent.replace('<<SHOW_COUNT_IN_TV>>', '');
+        ctx.import_resources = '';
+        ctx.function_show_count_in_tv = '';
+        ctx.show_count_in_tv = '';
     }
 
-    // LOGIK SETTINGS LAIN
-    if (tableData.allow_mass_delete === 1) tableContent = tableContent.replace('<<ACTION_MASS_DELETE>>', 'BulkActionGroup::make([\n                DeleteBulkAction::make(),\n            ]),');
-    else tableContent = tableContent.replace('<<ACTION_MASS_DELETE>>', '');
+    // OTHER SETTINGS
+    ctx.action_mass_delete = tableData.allow_mass_delete === 1
+        ? 'BulkActionGroup::make([\n                DeleteBulkAction::make(),\n            ]),'
+        : '';
 
     if (tableData.show_edit_button === 1 && tableData.enable_detail_view === 1) {
-        tableContent = tableContent.replace('<<DISABLED_ROW_INTERACTION>>', '->recordUrl(null)');
-        if (tableData.dv_separate_page === 1) tableContent = tableContent.replace('<<ACTION_EDIT_BUTTON>>', 'EditAction::make()->openUrlInNewTab(),');
-        else tableContent = tableContent.replace('<<ACTION_EDIT_BUTTON>>', 'EditAction::make(),');
+        ctx.disabled_row_interaction = '->recordUrl(null)';
+        ctx.action_edit_button = tableData.dv_separate_page === 1
+            ? 'EditAction::make()->openUrlInNewTab(),'
+            : 'EditAction::make(),';
     } else {
-         tableContent = tableContent.replace('<<DISABLED_ROW_INTERACTION>>', '');
-         tableContent = tableContent.replace('<<ACTION_EDIT_BUTTON>>', '');
+        ctx.disabled_row_interaction = '';
+        ctx.action_edit_button = '';
     }
 
-    if (tableData.pagination_type === 'simple') tableContent = tableContent.replace('<<PAGINATION_TYPE>>', '->paginationMode(\'simple\')');
-    else if (tableData.pagination_type === 'extreme') tableContent = tableContent.replace('<<PAGINATION_TYPE>>', '->extremePaginationLinks()');
-    else tableContent = tableContent.replace('<<PAGINATION_TYPE>>', '');
+    if (tableData.pagination_type === 'simple') ctx.pagination_type = "->paginationMode('simple')";
+    else if (tableData.pagination_type === 'extreme') ctx.pagination_type = '->extremePaginationLinks()';
+    else ctx.pagination_type = '';
 
-    tableContent = tableContent.replace('<<ADD_DESCRIPTION>>', tableData.table_description || '');
+    ctx.add_description = tableData.table_description || '';
 
-    if (tableData.show_delete_button === 1) tableContent = tableContent.replace('<<ACTION_DELETE_BUTTON>>', 'DeleteAction::make(),');
-    else tableContent = tableContent.replace('<<ACTION_DELETE_BUTTON>>', '');
+    ctx.action_delete_button = tableData.show_delete_button === 1 ? 'DeleteAction::make(),' : '';
 
     if (projectSettings.data_delete_type === 'soft') {
-        if (tableData.allow_restore_delete === 1) tableContent = tableContent.replace('<<ACTION_RESTORE_BUTTON>>', 'RestoreAction::make(),');
-        if (tableData.allow_force_delete === 1) tableContent = tableContent.replace('<<ACTION_FORCEDELETE_BUTTON>>', 'ForceDeleteAction::make(),');
-        if (tableData.allow_restore_delete === 1 || tableData.allow_force_delete === 1) tableContent = tableContent.replace('<<TRASHED_FILTER>>', 'TrashedFilter::make(),');
+        ctx.action_restore_button = tableData.allow_restore_delete === 1 ? 'RestoreAction::make(),' : '';
+        ctx.action_forcedelete_button = tableData.allow_force_delete === 1 ? 'ForceDeleteAction::make(),' : '';
+        ctx.trashed_filter = (tableData.allow_restore_delete === 1 || tableData.allow_force_delete === 1) ? 'TrashedFilter::make(),' : '';
     } else {
-        tableContent = tableContent.replace('<<ACTION_RESTORE_BUTTON>>', '').replace('<<ACTION_FORCEDELETE_BUTTON>>', '').replace('<<TRASHED_FILTER>>', '');
+        ctx.action_restore_button = '';
+        ctx.action_forcedelete_button = '';
+        ctx.trashed_filter = '';
     }
 
-    if (tableData.allow_pagination === 0) tableContent = tableContent.replace('<<DISABLED_PAGINATION>>', '->paginated(false)');
-    else tableContent = tableContent.replace('<<DISABLED_PAGINATION>>', '');
+    ctx.disabled_pagination = tableData.allow_pagination === 0 ? '->paginated(false)' : '';
+    ctx.open_to_new_tab = tableData.dv_separate_page === 1 ? '->openRecordUrlInNewTab()' : '';
+    ctx.disabled_detailview = tableData.enable_detail_view === 0 ? '->recordUrl(null)' : '';
+    ctx.show_all_for_print = tableData.allow_print_view === 1
+        ? `->when((bool) request()->query('print'), fn (Table \$table) => \$table->paginated(false),)`
+        : '';
 
-    if (tableData.dv_separate_page === 1) tableContent = tableContent.replace('<<OPEN_TO_NEW_TAB>>', '->openRecordUrlInNewTab()');
-    else tableContent = tableContent.replace('<<OPEN_TO_NEW_TAB>>', '');
-
-    if (tableData.enable_detail_view === 0) tableContent = tableContent.replace('<<DISABLED_DETAILVIEW>>', '->recordUrl(null)');
-    else tableContent = tableContent.replace('<<DISABLED_DETAILVIEW>>', '');
-
-    if (tableData.allow_print_view === 1) tableContent = tableContent.replace('<<SHOW_ALL_FOR_PRINT>>', `->when((bool) request()->query('print'), fn (Table \$table) => \$table->paginated(false),)`);
-    else tableContent = tableContent.replace('<<SHOW_ALL_FOR_PRINT>>', '');
-
-    return tableContent;
+    return ctx;
 }
 
 /**
@@ -339,36 +333,32 @@ function applyTableSettings(templateContent, tableData, relationships, tableName
 async function generateFilamentTablesTable(fullSchema, basePath) {
     try {
         const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
-        const templateContent = readTemplate('app/Filament/Resources/TablesTable.template');
 
         for (const tableName in tables) {
             if (tableName === 'users') continue;
 
             const tableData = tables[tableName];
-            
+
             // ========================================================================
-            // LOGIK PENAMAAN BARU (MODULE NAME)
+            // NAMING (MODULE NAME)
             // ========================================================================
-            const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
-                                ? tableData.module_name 
+            const nameSource = (tableData.module_name && tableData.module_name.trim() !== '')
+                                ? tableData.module_name
                                 : tableName;
 
             const modelNameSingular = toSingularPascalCase(nameSource); // StudentInfo
             const modelNamePlural = toPluralPascalCase(nameSource); // StudentInfos
 
-            let tableContent = templateContent
-                .replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular)
-                .replace(/<<TABLE_NAME_PLURAL>>/g, modelNamePlural);
-
             // 1. Jana Columns (Pass modelNameSingular untuk type hinting)
             const columnsCode = generateTableColumnsString(tableData, relationships, tableName, projectSettings, modelNameSingular);
-            tableContent = tableContent.replace('<<ALL_COLUMNS>>', columnsCode);
 
-            // 2. Apply Settings
-            tableContent = applyTableSettings(tableContent, tableData, relationships, tableName, projectSettings, modelNameSingular);
-
-            // 3. Clean Up & Save
-            tableContent = tableContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '').replace(/<<.*?>>/g, '');
+            // 2. Render template with settings context
+            let tableContent = renderTemplate('app/Filament/Resources/TablesTable.php.njk', {
+                table_name_singular: modelNameSingular,
+                table_name_plural: modelNamePlural,
+                all_columns: columnsCode,
+                ...buildTableSettingsContext(tableData, relationships, tableName, projectSettings, modelNameSingular),
+            });
 
             // Use Statement Cleanup
             const allUseStatements = tableContent.match(/use (.*?);/g) || [];
@@ -404,37 +394,25 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
  */
 function generateSingleTableClass(basePath, resourceFolder, className, tableData, fullSchema, tableName) {
     const { project: projectSettings, database: { relationships } } = fullSchema;
-    const templateContent = readTemplate('app/Filament/Resources/TablesTable.template');
-    
+
     // Custom Module guna Model Standard (Module Name)
-    const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
-                        ? tableData.module_name 
+    const nameSource = (tableData.module_name && tableData.module_name.trim() !== '')
+                        ? tableData.module_name
                         : tableName;
     const modelNameSingular = toSingularPascalCase(nameSource);
-    
+
     // Namespace untuk table class ini adalah custom folder
-    // Tapi nama model adalah standard
-    // Kita perlu override <<TABLE_NAME_PLURAL>> di sini untuk menjadi resourceFolder supaya namespace betul
     // namespace App\Filament\Resources\PendingRegistrations\Tables;
-    
-    // 1. Init Template
-    let tableContent = templateContent
-        .replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular)
-        .replace(/<<TABLE_NAME_PLURAL>>/g, resourceFolder); // Namespace guna custom folder
-    
-    // 2. Override Class Name
-    // Kita guna regex untuk cari class definisi asal dan ganti dengan yang baru
-    tableContent = tableContent.replace(/class\s+\w+Table/, `class ${className}`);
 
-    // 3. Jana Columns (Guna Helper yang sama)
+    // 1. Render template (custom class name, custom namespace folder)
     const columnsCode = generateTableColumnsString(tableData, relationships, tableName, projectSettings, modelNameSingular);
-    tableContent = tableContent.replace('<<ALL_COLUMNS>>', columnsCode);
-
-    // 4. Apply Settings (Custom view biasanya warisi settings standard)
-    tableContent = applyTableSettings(tableContent, tableData, relationships, tableName, projectSettings, modelNameSingular);
-
-    // 5. Clean Up
-    tableContent = tableContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '').replace(/<<.*?>>/g, '');
+    let tableContent = renderTemplate('app/Filament/Resources/TablesTable.php.njk', {
+        table_name_singular: modelNameSingular,
+        table_name_plural: resourceFolder, // Namespace guna custom folder
+        table_class_name: className,
+        all_columns: columnsCode,
+        ...buildTableSettingsContext(tableData, relationships, tableName, projectSettings, modelNameSingular),
+    });
 
     // 6. --- IMPORT CLEANUP FOR CUSTOM VIEW --- (Pembetulan Rule #2)
     const allUseStatements = tableContent.match(/use (.*?);/g) || [];

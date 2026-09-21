@@ -9,6 +9,7 @@ const {
     toSingularCamelCase,
     readTemplate
 } = require('../utils');
+const { renderTemplate } = require('../render/engine');
 
 /**
  * [HELPER] Menjana string schema untuk form. 
@@ -486,26 +487,21 @@ ViewField::make('${field.field_name}')
 async function generateFilamentSchemasForm(fullSchema, basePath) {
     try {
         const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
-        const templateContent = readTemplate('app/Filament/Resources/SchemasForm.template');
 
         for (const tableName in tables) {
             if (tableName === 'users') continue;
 
-            let formContent = templateContent;
             const tableData = tables[tableName];
-            
+
             // ========================================================================
-            // LOGIK PENAMAAN BARU (MODULE NAME)
+            // NAMING (MODULE NAME)
             // ========================================================================
-            const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
-                                ? tableData.module_name 
+            const nameSource = (tableData.module_name && tableData.module_name.trim() !== '')
+                                ? tableData.module_name
                                 : tableName;
 
             const modelNameSingular = toSingularPascalCase(nameSource); // StudentInfo
             const modelNamePlural = toPluralPascalCase(nameSource); // StudentInfos
-
-            formContent = formContent.replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular);
-            formContent = formContent.replace(/<<TABLE_NAME_PLURAL>>/g, modelNamePlural);
 
             let importResources = new Set();
 
@@ -516,17 +512,16 @@ async function generateFilamentSchemasForm(fullSchema, basePath) {
                     const parentNameSource = (parentTableData && parentTableData.module_name && parentTableData.module_name.trim() !== '')
                                             ? parentTableData.module_name
                                             : f.lookup_parent_table;
-                    
+
                     const parentSingular = toSingularPascalCase(parentNameSource);
                     const parentFolder = toPluralPascalCase(parentNameSource);
                     importResources.add(`use App\\Filament\\Resources\\${parentFolder}\\${parentSingular}Resource;`);
                 }
             });
             
-            formContent = formContent.replace('<<IMPORT_RESOURCES>>', Array.from(importResources).join('\n'));
-
-            // LOGIK GRID (SAMA SEPERTI ASAL)
+            // GRID LOGIC
             const gridType = tableData.column_grid_type || 'dynamic';
+            let gridColumnControl;
             if (gridType === 'static') {
                 const columns = parseInt(tableData.static_grid_columns) || 2;
                 let grid2 = '';
@@ -534,14 +529,13 @@ async function generateFilamentSchemasForm(fullSchema, basePath) {
                 if (columns === 2) { grid2 = "'md' => 2,"; } 
                 else if (columns === 3) { grid2 = "'md' => 2,"; grid3 = "'xl' => 3,"; }
                 
-                const staticGridCode = `->columns([
+                gridColumnControl = `->columns([
         'default' => 1,
         ${grid2}
         ${grid3}
     ])`;
-                formContent = formContent.replace('<<GRID_COLUMN_CONTROL>>', staticGridCode);
             } else {
-                const dynamicGridCode = `->columns(fn (Page $livewire) => $livewire->gridColumns)
+                gridColumnControl = `->columns(fn (Page $livewire) => $livewire->gridColumns)
     ->headerActions([
         Action::make('1 Kolum')
             ->icon('heroicon-o-queue-list')
@@ -564,17 +558,17 @@ async function generateFilamentSchemasForm(fullSchema, basePath) {
             ->tooltip('Display 3 column')
             ->action(fn (Page $livewire) => $livewire->gridColumns = 3),
     ])`;
-                formContent = formContent.replace('<<GRID_COLUMN_CONTROL>>', dynamicGridCode);
             }
 
-            formContent = formContent.replace('<<DETAIL_VIEW_TITLE>>', tableData.detail_view_title || '');
-
-            // Jana Form Fields (Pass fullSchema untuk lookup module_name)
-            const formFieldsString = generateFormSchemaString(tableData, relationships, tableName, fullSchema);
-            formContent = formContent.replace('<<ALL_COLUMNS_FORM>>', formFieldsString);
-
-            // Clean Up & Save
-            formContent = formContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '').replace(/<<.*?>>/g, '');
+            // Render outer template with all context
+            let formContent = renderTemplate('app/Filament/Resources/SchemasForm.php.njk', {
+                table_name_singular: modelNameSingular,
+                table_name_plural: modelNamePlural,
+                import_resources: Array.from(importResources).join('\n'),
+                grid_column_control: gridColumnControl,
+                detail_view_title: tableData.detail_view_title || '',
+                all_columns_form: generateFormSchemaString(tableData, relationships, tableName, fullSchema),
+            });
 
             const allUseStatements = formContent.match(/use (.*?);/g) || [];
             let finalContent = formContent;
@@ -613,20 +607,12 @@ async function generateFilamentSchemasForm(fullSchema, basePath) {
  */
 function generateSingleSchemaClass(basePath, resourceFolder, className, tableData, fullSchema, tableName) {
     const { project: projectSettings, database: { relationships } } = fullSchema;
-    const templateContent = readTemplate('app/Filament/Resources/SchemasForm.template');
-    
-    // Gunakan Module Name untuk Model
-    const nameSource = (tableData.module_name && tableData.module_name.trim() !== '') 
-                        ? tableData.module_name 
-                        : tableName;
-    const modelNameSingular = toSingularPascalCase(nameSource); 
-    
-    let formContent = templateContent
-        .replace(/<<TABLE_NAME_SINGULAR>>/g, modelNameSingular)
-        .replace(/<<TABLE_NAME_PLURAL>>/g, resourceFolder); // Namespace guna custom folder
 
-    // Override Class Name
-    formContent = formContent.replace(/class\s+\w+Form/, `class ${className}`);
+    // Gunakan Module Name untuk Model
+    const nameSource = (tableData.module_name && tableData.module_name.trim() !== '')
+                        ? tableData.module_name
+                        : tableName;
+    const modelNameSingular = toSingularPascalCase(nameSource);
 
     // Import Resources (Copy logic from main function)
     let importResources = new Set();
@@ -642,21 +628,17 @@ function generateSingleSchemaClass(basePath, resourceFolder, className, tableDat
             importResources.add(`use App\\Filament\\Resources\\${parentFolder}\\${parentSingular}Resource;`);
         }
     });
-    formContent = formContent.replace('<<IMPORT_RESOURCES>>', Array.from(importResources).join('\n'));
 
-    // Grid Default untuk Custom Module (Dynamic)
-    const dynamicGridCode = `->columns(fn (Page $livewire) => $livewire->gridColumns ?? 2)`;
-    formContent = formContent.replace('<<GRID_COLUMN_CONTROL>>', dynamicGridCode);
-    
-    // Tajuk Borang
-    formContent = formContent.replace('<<DETAIL_VIEW_TITLE>>', tableData.table_view_title || '');
-
-    // Jana Fields
-    const formFieldsString = generateFormSchemaString(tableData, relationships, tableName, fullSchema);
-    formContent = formContent.replace('<<ALL_COLUMNS_FORM>>', formFieldsString);
-
-    // Clean Up
-    formContent = formContent.replace(/^\s*<<.*?>>\s*\r?\n/gm, '').replace(/<<.*?>>/g, '');
+    // Render outer template (custom class name, custom namespace folder)
+    let formContent = renderTemplate('app/Filament/Resources/SchemasForm.php.njk', {
+        table_name_singular: modelNameSingular,
+        table_name_plural: resourceFolder, // Namespace guna custom folder
+        form_class_name: className,
+        import_resources: Array.from(importResources).join('\n'),
+        grid_column_control: `->columns(fn (Page $livewire) => $livewire->gridColumns ?? 2)`,
+        detail_view_title: tableData.table_view_title || '',
+        all_columns_form: generateFormSchemaString(tableData, relationships, tableName, fullSchema),
+    });
 
     // --- IMPORT CLEANUP FOR CUSTOM VIEW (Rules #1) ---
     const allUseStatements = formContent.match(/use (.*?);/g) || [];
