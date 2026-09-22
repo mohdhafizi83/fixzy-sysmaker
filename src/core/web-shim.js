@@ -90,6 +90,7 @@
         stopPreview: 'preview:stop',
         runInstantPreview: 'preview:instant-run',
         generateApp: 'generate-app',
+        openLatestGenerated: 'generated:open-latest',
         runComposer: 'run-composer',
         saveWidget: 'widget:save',
         deleteWidget: 'widget:delete',

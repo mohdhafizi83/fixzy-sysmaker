@@ -1869,6 +1869,28 @@ ipcMain.on('open-folder', (event, folderPath) => {
     }
 });
 
+// "View files" button: open (or report) the most recent generated app folder.
+ipcMain.handle('generated:open-latest', async () => {
+    try {
+        const generatedRoot = getGeneratedFolderPath();
+        const entries = fs.readdirSync(generatedRoot, { withFileTypes: true })
+            .filter(e => e.isDirectory())
+            .map(e => ({ name: e.name, mtime: fs.statSync(path.join(generatedRoot, e.name)).mtimeMs }))
+            .sort((a, b) => b.mtime - a.mtime);
+        if (entries.length === 0) {
+            return { success: false, message: 'No generated application yet. Generate one first.' };
+        }
+        const latest = path.join(generatedRoot, entries[0].name);
+        if (ctx.shell && typeof ctx.shell.openPath === 'function') {
+            const err = await ctx.shell.openPath(latest);
+            if (err) return { success: false, message: err };
+        }
+        return { success: true, folderPath: latest };
+    } catch (error) {
+        return { success: false, message: error.message };
+    }
+});
+
 ipcMain.handle('run-composer', async (event, projectPath) => {
     try {
         return await runComposerInstall(projectPath);

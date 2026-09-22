@@ -168,3 +168,11 @@ or regenerate: `node test/golden.js <fixture> --update`.
   debug_mode are stored in DB but NO generator reads them -> generated app
   has no 2FA/captcha/LDAP/SSO/debug behavior. Same class as
   project_hook_workflow (workflow builder UI exists, generator emits nothing).
+
+### BUG-010 FIXED (2026-09-22): "View files" now wired
+- New IPC `generated:open-latest`: finds newest dir under userData/generated,
+  opens via ctx.shell.openPath when available, always returns folderPath.
+- Exposed as electronAPI.openLatestGenerated (preload + web-shim).
+- renderer.js wires #app-view_files -> dialog showing latest generated path
+  (and opens it in desktop mode). Verified live: dialog shows
+  /home/fizi/.fixzy/generated/QA_Sweep_Test_staging.

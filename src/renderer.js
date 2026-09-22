@@ -664,7 +664,27 @@ const generateAppBtn = document.getElementById('app-generate_app');
             }
         });
     }
-// =================================================================	
+
+    // "View files" button: open the most recently generated app folder.
+    const viewFilesBtn = document.getElementById('app-view_files');
+    if (viewFilesBtn) {
+        viewFilesBtn.addEventListener('click', async () => {
+            try {
+                const result = await window.electronAPI.openLatestGenerated();
+                if (result.success) {
+                    showCustomDialog({
+                        title: "Generated files",
+                        message: `Latest generated application:\n${result.folderPath}`
+                    });
+                } else {
+                    showCustomDialog({ title: "View files", message: result.message });
+                }
+            } catch (error) {
+                showCustomDialog({ title: "Error", message: `Could not open generated folder: ${error.message}` });
+            }
+        });
+    }
+// =================================================================
 	
     // Start the app by trying to get the active project from the DB
     const project = await window.electronAPI.getActiveProject();

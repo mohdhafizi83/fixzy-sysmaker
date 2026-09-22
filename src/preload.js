@@ -73,6 +73,7 @@ updateIndividualMenuOrder: (data) => ipcRenderer.invoke('menu:update-individual-
     runInstantPreview: () => ipcRenderer.invoke('preview:instant-run'),
     stopPreviewServer: () => ipcRenderer.send('stop-preview-server'),
     generateApp: () => ipcRenderer.invoke('generate-app'),
+    openLatestGenerated: () => ipcRenderer.invoke('generated:open-latest'),
     openFolder: (path) => ipcRenderer.send('open-folder', path),
 	runComposer: (projectPath) => ipcRenderer.invoke('run-composer', projectPath),
     // --- DASHBOARD WIDGET MANAGEMENT ---
