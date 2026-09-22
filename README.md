@@ -121,7 +121,7 @@ CLI environment variables:
 | Data I/O | CSV importers/exporters per table, native print action |
 | Security | Native audit trail (migration + observer), tenancy scoping, Shield-ready |
 | Auth | Optional Google SSO, LDAP / Active Directory, email 2FA, login captcha |
-| Automation | Workflow hooks: observers, listeners, scheduled commands |
+| Automation | **Enterprise:** visual workflow engine — hooks, actions, logic, scheduled jobs |
 | Docs | In-app deployment guide (feature-aware) |
 
 ### Authentication modules (opt-in, plug-and-play)
@@ -145,6 +145,40 @@ implementation — no manual wiring:
 All four combine on one login page as selected. The generated deployment guide
 includes the matching setup checklist (Google Cloud Console steps, LDAP/AD
 requirements, PHP extension notes).
+
+### Workflow & hooks engine (Enterprise tier)
+
+> **Availability:** the visual workflow / hooks engine is an **Enterprise-tier
+> feature** of the no/low-code platform. Standard tiers do not include it.
+
+Design automation visually on the node canvas — no hand-written glue code.
+Workflows attach at two levels:
+
+- **Table / model hooks** — `before/after insert · update · delete` with the
+  changed record in context
+- **Project hooks** — `after_login`, `before_logout`, `on_login_failure`,
+  `after_user_created`, `before_user_deleted`, `on_scheduled_task`,
+  `on_startup`
+
+Every block on the palette compiles to real, readable PHP in the generated
+app (observers, listeners, scheduled commands):
+
+| Block | Compiles to |
+|---|---|
+| Send email | `Mail::raw` with `##variable##` interpolation (to/cc/bcc/subject/body) |
+| Send Telegram | Bot API `sendMessage`; token from in-app settings, never in code |
+| HTTP request | `Http::timeout(15)->withHeaders()->get/post/put/patch/delete` with output capture |
+| Advanced Action | Multi-statement script: insert / update / delete + **parameterized raw SQL** (DDL and multi-statement injection rejected) |
+| If / else-if / else | Nested conditional logic from the visual condition builder |
+| Switch | `switch/case/default` routed by connection points |
+| For-each loop | Iterate lists with per-item actions |
+| Data transformer | Date formatting, case conversion, validated math (never `eval`) |
+| Try / catch | Error branch executes when connected |
+| Variable / terminate / comment | Flow control and documentation |
+
+Runtime secrets (SMTP password, Telegram bot token) are entered by the admin
+on in-app **Mail Settings** / **Telegram Bot Settings** pages after
+deployment — never baked into generated code or git.
 
 ### Target stacks
 
@@ -179,7 +213,9 @@ Shipped:
 - [x] Multi-tenancy, row ownership, native audit trail
 - [x] Dashboard builder with stat/chart widgets
 - [x] Auth modules: Google SSO, LDAP/AD, email 2FA, login captcha (opt-in)
-- [x] Workflow hooks codegen (observers, listeners, scheduled commands)
+- [x] **Enterprise:** visual workflow & hooks engine — full block palette
+  (email, Telegram, HTTP, Advanced Action/raw SQL, logic, loops, try/catch)
+  compiling to real PHP (observers, listeners, scheduled commands)
 - [x] GUI Setup Wizard (one-click environment provisioning)
 - [x] 17-fixture golden test matrix + CI (ubuntu + macOS)
 
