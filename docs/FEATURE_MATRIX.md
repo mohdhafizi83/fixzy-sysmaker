@@ -94,6 +94,20 @@ never baked into generated code or git.
 |---|---|---|---|
 | workflow blocks | `project_hook_workflow` / `table_hook_workflow` JSON (blocks + connections) | Observers, listeners, scheduled commands via `laravelWorkflowGenerator` | workflow_hooks |
 
+### K. Workflow v2 blocks (2026-09-22)
+| Block | Compiles to | Status |
+|---|---|---|
+| send_email | `Mail::raw` + `##variable.x##` interpolation | ✅ generated |
+| http_request | `Http::timeout(15)->withHeaders()->get/post/...` | ✅ generated |
+| data_transformer | date format / upper-lower / validated math (no eval) | ✅ generated |
+| for_each_loop | `foreach ((array) $list as $__wf_loopItem)` | ✅ generated |
+| switch | `switch/case/default` from out-case-N points | ✅ generated |
+| if/then/else_if/else | nested parenthesized ternary | ✅ generated |
+| try_catch | Catch branch executes when connected | ✅ generated |
+| on_startup | `runStartupWorkflow()` in provider boot | ✅ generated |
+| send_whatsapp / send_telegram / delay / advanced action | — | ⚠️ UI badge "not generated" |
+| mail settings (generated app) | `MailSettings` page + `applyMailSettings()` boot override of .env | ✅ generated |
+
 ## Stress combos (2–3 axes at once)
 | Fixture | Combo |
 |---|---|
