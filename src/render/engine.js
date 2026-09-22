@@ -31,7 +31,7 @@ const env = new nunjucks.Environment(
         // migrated templates. Templates control their own whitespace instead.
         trimBlocks: false,
         lstripBlocks: false,
-        throwOnUndefined: false,
+        throwOnUndefined: true,
     }
 );
 
