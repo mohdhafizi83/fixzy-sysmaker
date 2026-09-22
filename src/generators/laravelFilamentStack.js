@@ -109,22 +109,11 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
             );
         }
 
-        // SSO / LDAP integration files + deploy manifest (plug & play).
+        // SSO / LDAP integration files + deploy manifest (plug-and-play).
+        // Provider registration into bootstrap/providers.php is handled
+        // inside the generator itself (idempotent).
         const authIntegrations = await generateAuthIntegrations(fullSchema, outputDir);
         if (!authIntegrations.success) throw new Error(`Auth integrations: ${authIntegrations.message}`);
-        if (authIntegrations.composerPackages.length || authIntegrations.phpExtensions.length) {
-            const providersFile = path.join(outputDir, 'bootstrap', 'providers.php');
-            if (fs.existsSync(providersFile)) {
-                let contents = fs.readFileSync(providersFile, 'utf8');
-                if (!contents.includes('AuthIntegrationsServiceProvider')) {
-                    contents = contents.replace(
-                        /return\s*\[/,
-                        'return [\n    App\\Providers\\AuthIntegrationsServiceProvider::class,'
-                    );
-                    fs.writeFileSync(providersFile, contents);
-                }
-            }
-        }
 
         // Native BelongsToTenant trait — used by 1:m tenancy models.
         if (fullSchema.project && fullSchema.project.tenancy_type === 'one_to_many') {

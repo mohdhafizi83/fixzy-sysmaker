@@ -111,6 +111,19 @@ function generateAuthIntegrations(fullSchema, outputDir) {
             })
         );
 
+        // Register in bootstrap/providers.php when generating into a full app.
+        const providersFile = path.join(outputDir, 'bootstrap', 'providers.php');
+        if (fs.existsSync(providersFile)) {
+            let contents = fs.readFileSync(providersFile, 'utf8');
+            if (!contents.includes('AuthIntegrationsServiceProvider')) {
+                contents = contents.replace(
+                    /return\s*\[/,
+                    'return [\n    App\\Providers\\AuthIntegrationsServiceProvider::class,'
+                );
+                fs.writeFileSync(providersFile, contents);
+            }
+        }
+
         // Manifest for the deploy flow (auto composer require + ext warning).
         fs.writeFileSync(
             path.join(outputDir, 'fixzy-manifest.json'),

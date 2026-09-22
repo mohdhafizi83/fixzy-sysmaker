@@ -861,12 +861,20 @@ async function generateNativeAuditFiles(fullSchema, basePath) {
             fs.writeFileSync(outPath, renderTemplate(tpl, {}));
         }
 
-        // audits table migration (timestamped like other migrations)
+        // audits table migration (timestamped like other migrations).
+        // Idempotent: reuse the existing file if one was generated before,
+        // otherwise repeated scenario-3 runs would stack duplicate
+        // migrations and migrate:fresh fails with "table already exists".
         const migrationsPath = path.join(basePath, 'database', 'migrations');
         fs.mkdirSync(migrationsPath, { recursive: true });
-        const timestamp = getFormattedTimestamp(new Date(), 990);
-        const migPath = path.join(migrationsPath, `${timestamp}_create_audits_table.php`);
-        fs.writeFileSync(migPath, renderTemplate('database/migrations/create_audits_table.php.njk', {}));
+        const existingAuditMig = fs.existsSync(migrationsPath)
+            ? fs.readdirSync(migrationsPath).find((f) => /_create_audits_table\.php$/.test(f))
+            : null;
+        if (!existingAuditMig) {
+            const timestamp = getFormattedTimestamp(new Date(), 990);
+            const migPath = path.join(migrationsPath, `${timestamp}_create_audits_table.php`);
+            fs.writeFileSync(migPath, renderTemplate('database/migrations/create_audits_table.php.njk', {}));
+        }
 
         return { success: true, message: 'Native audit files generated.' };
     } catch (error) {
