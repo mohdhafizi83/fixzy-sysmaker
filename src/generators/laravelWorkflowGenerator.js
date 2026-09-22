@@ -797,10 +797,33 @@ async function generateWorkflowHooks(fullSchema, outputDir) {
             );
         }
 
-        if (tableObservers.length === 0 && projectHooks.length === 0 && !hasScheduled && !(startupBody && startupBody.length)) {
-            return { success: true, message: 'No workflows configured; nothing generated.' };
+        // Settings store + Mail Settings page are ALWAYS generated (before the
+        // early return) so every generated app ships an admin SMTP config page,
+        // whether or not a workflow currently uses it. Same fixed filenames as
+        // the auth integrations generator, so running both is idempotent.
+        const { renderTemplate } = require('../render/engine');
+        const settingsModel = path.join(outputDir, 'app', 'Models', 'FixzySetting.php');
+        if (!fs.existsSync(settingsModel)) {
+            fs.mkdirSync(path.dirname(settingsModel), { recursive: true });
+            fs.writeFileSync(settingsModel, renderTemplate('app/Models/FixzySetting.php.njk', {}));
+            const migDir = path.join(outputDir, 'database', 'migrations');
+            fs.mkdirSync(migDir, { recursive: true });
+            const migFile = path.join(migDir, '2026_09_22_000001_create_fixzy_settings_table.php');
+            if (!fs.existsSync(migFile)) {
+                fs.writeFileSync(migFile, renderTemplate('database/migrations/create_fixzy_settings_table.php.njk', {}));
+            }
+        }
+        const mailPage = path.join(outputDir, 'app', 'Filament', 'Pages', 'MailSettings.php');
+        if (!fs.existsSync(mailPage)) {
+            fs.mkdirSync(path.dirname(mailPage), { recursive: true });
+            fs.writeFileSync(mailPage, renderTemplate('app/Filament/Pages/MailSettings.php.njk', {}));
+            const mailView = path.join(outputDir, 'resources', 'views', 'filament', 'pages', 'mail-settings.blade.php');
+            fs.mkdirSync(path.dirname(mailView), { recursive: true });
+            fs.writeFileSync(mailView, renderTemplate('resources/views/filament/pages/mail-settings.blade.php.njk', {}));
         }
 
+        // The provider is ALWAYS generated: even with no workflow blocks it
+        // carries applyMailSettings(), which the Mail Settings page needs.
         if (projectHooks.length > 0) {
             const listenersDir = path.join(outputDir, 'app', 'Listeners');
             fs.mkdirSync(listenersDir, { recursive: true });
@@ -812,33 +835,6 @@ async function generateWorkflowHooks(fullSchema, outputDir) {
 
         const providersDir = path.join(outputDir, 'app', 'Providers');
         fs.mkdirSync(providersDir, { recursive: true });
-
-        // Ensure the settings store exists (Mail Settings page + applyMailSettings
-        // depend on it). Same fixed filename as the auth integrations generator,
-        // so running both is idempotent.
-        const settingsModel = path.join(outputDir, 'app', 'Models', 'FixzySetting.php');
-        if (!fs.existsSync(settingsModel)) {
-            const { renderTemplate } = require('../render/engine');
-            fs.mkdirSync(path.dirname(settingsModel), { recursive: true });
-            fs.writeFileSync(settingsModel, renderTemplate('app/Models/FixzySetting.php.njk', {}));
-            const migDir = path.join(outputDir, 'database', 'migrations');
-            fs.mkdirSync(migDir, { recursive: true });
-            const migFile = path.join(migDir, '2026_09_22_000001_create_fixzy_settings_table.php');
-            if (!fs.existsSync(migFile)) {
-                fs.writeFileSync(migFile, renderTemplate('database/migrations/create_fixzy_settings_table.php.njk', {}));
-            }
-        }
-
-        // Mail Settings page (admin SMTP config for workflow emails).
-        const mailPage = path.join(outputDir, 'app', 'Filament', 'Pages', 'MailSettings.php');
-        if (!fs.existsSync(mailPage)) {
-            const { renderTemplate } = require('../render/engine');
-            fs.mkdirSync(path.dirname(mailPage), { recursive: true });
-            fs.writeFileSync(mailPage, renderTemplate('app/Filament/Pages/MailSettings.php.njk', {}));
-            const mailView = path.join(outputDir, 'resources', 'views', 'filament', 'pages', 'mail-settings.blade.php');
-            fs.mkdirSync(path.dirname(mailView), { recursive: true });
-            fs.writeFileSync(mailView, renderTemplate('resources/views/filament/pages/mail-settings.blade.php.njk', {}));
-        }
 
         fs.writeFileSync(
             path.join(providersDir, 'WorkflowServiceProvider.php'),
