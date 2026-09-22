@@ -117,16 +117,40 @@ CLI environment variables:
 |---|---|
 | Database | Migrations (FKs, indexes, soft deletes), seeders, factories |
 | Models | Eloquent models with relations, `BelongsToTenant` / `HasAudits` traits |
-| Admin UI | Filament resources: forms, tables, pages, relation managers |
+| Admin UI | Filament 5 resources: forms, tables, pages, relation managers |
 | Data I/O | CSV importers/exporters per table, native print action |
 | Security | Native audit trail (migration + observer), tenancy scoping, Shield-ready |
-| Docs | In-app deployment guide |
+| Auth | Optional Google SSO, LDAP / Active Directory, email 2FA, login captcha |
+| Automation | Workflow hooks: observers, listeners, scheduled commands |
+| Docs | In-app deployment guide (feature-aware) |
+
+### Authentication modules (opt-in, plug-and-play)
+
+Tick a flag in the project settings and the generated app ships with the real
+implementation — no manual wiring:
+
+- **Google SSO** (`laravel/socialite`) — "Sign in with Google" button on the
+  login page, OAuth callback, first-login user provisioning with `google_id`
+  linking. Credentials are entered by the admin on an in-app **Auth Settings**
+  page after deployment — never baked into the generated code.
+- **LDAP / Active Directory** (`directorytree/ldaprecord-laravel`) — bind
+  against your directory, automatic local-account provisioning, relaxed
+  username rules (AD usernames need not be emails), graceful connection-error
+  handling.
+- **Email 2FA** — native Filament multi-factor authentication (no extra
+  package).
+- **Login captcha** — native arithmetic human-check on the login form (no
+  external service).
+
+All four combine on one login page as selected. The generated deployment guide
+includes the matching setup checklist (Google Cloud Console steps, LDAP/AD
+requirements, PHP extension notes).
 
 ### Target stacks
 
 | Stack | Status |
 |---|---|
-| Laravel 11 + Filament (PHP) | ✅ Production-ready — the benchmark |
+| Laravel 12 + Filament 5 (PHP) | ✅ Production-ready — the benchmark |
 | Additional stacks (Node, others) | 🔜 Planned — the IR is stack-neutral by design |
 
 The design model (tables, fields, relationships, menus, widgets) is captured in a
@@ -154,8 +178,10 @@ Shipped:
 - [x] SQL import (MySQL, PostgreSQL, SQL Server, SQLite)
 - [x] Multi-tenancy, row ownership, native audit trail
 - [x] Dashboard builder with stat/chart widgets
+- [x] Auth modules: Google SSO, LDAP/AD, email 2FA, login captcha (opt-in)
+- [x] Workflow hooks codegen (observers, listeners, scheduled commands)
 - [x] GUI Setup Wizard (one-click environment provisioning)
-- [x] 16-fixture golden test matrix + CI (ubuntu + macOS)
+- [x] 17-fixture golden test matrix + CI (ubuntu + macOS)
 
 Next:
 - [ ] Guided project templates (CRM, inventory, booking, helpdesk starters)

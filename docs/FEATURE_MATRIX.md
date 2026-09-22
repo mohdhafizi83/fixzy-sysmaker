@@ -76,6 +76,24 @@ Run one: `node test/golden.js <fixture>`
 | authorization on | `project.module_authorization = 1` | all fixtures (default on) |
 | fake data / factories | `project.module_fake_data = 1` | all fixtures (default on) |
 
+### I. Authentication modules (project-level flags)
+| Value | Trigger | Generated output | Fixture |
+|---|---|---|---|
+| Google SSO | `project.module_auth_google_sso = 1` | GoogleController + routes + `google_id` migration + Auth Settings page + login button (Socialite) | auth_ldap_sso |
+| LDAP / AD | `project.module_auth_ldap = 1` | LdapAuthenticator service + FixzyLogin (AD usernames) + Auth Settings page (ldaprecord) | auth_ldap_sso |
+| Email 2FA | `project.module_auth_email_2fa = 1` | `HasEmailAuthentication` trait + `->multiFactorAuthentication()` (native Filament) | auth_2fa |
+| Login captcha | `project.module_auth_email_captcha = 1` | FixzyLogin arithmetic human-check (native, no service) | auth_captcha |
+| Combinations | any subset | one FixzyLogin page merges captcha + SSO button + LDAP per flags | auth_ldap_sso (SSO+LDAP) |
+
+Credentials model: SSO/LDAP keys are entered by the admin on the in-app
+**Auth Settings** page after deployment (stored in `fixzy_settings` table) —
+never baked into generated code or git.
+
+### J. Workflow hooks (project/table hook_workflow)
+| Value | Trigger | Generated output | Fixture |
+|---|---|---|---|
+| workflow blocks | `project_hook_workflow` / `table_hook_workflow` JSON (blocks + connections) | Observers, listeners, scheduled commands via `laravelWorkflowGenerator` | workflow_hooks |
+
 ## Stress combos (2–3 axes at once)
 | Fixture | Combo |
 |---|---|
