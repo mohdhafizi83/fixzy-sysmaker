@@ -6,7 +6,7 @@ set -e
 # --- KONFIGURASI (Ubah mengikut keperluan) ---
 GIT_REPO_URL="https://github.com/nama-anda/projek-anda.git"
 # Gunakan laluan yang sesuai untuk persekitaran Bash/Linux
-GENERATED_DIR="/path/to/fizisysmaker/generated" 
+GENERATED_DIR="/path/to/fixzy-sysmaker/generated" 
 PROJECT_DIR="/var/www/my-new-project"
 
 # --- MULA PROSES AUTOMASI ---

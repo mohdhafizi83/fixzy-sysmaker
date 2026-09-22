@@ -7,7 +7,7 @@ function connectToDatabase() {
     // 1. Tentukan Path Database
     // Make sure this path is correct for your PC
     const appDataPath = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + '/Library/Application Support' : process.env.HOME + "/.local/share");
-    const dbPath = path.join(appDataPath, 'FiziSysMaker', 'FiziSysMaker.db'); // <--- PASTIKAN FOLDER INI BETUL
+    const dbPath = path.join(appDataPath, 'Fixzy SysMaker', 'Fixzy SysMaker.db'); // <--- PASTIKAN FOLDER INI BETUL
 
     console.log(`🔌 Mencuba sambungan ke: ${dbPath}`);
     

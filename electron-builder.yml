@@ -2,8 +2,8 @@
 # Codesign/notarize: optional, needs Apple Developer account (owner decision).
 # Build: npx electron-builder --win --mac (see README)
 
-appId: com.fizisysmaker.app
-productName: FiziSysMaker
+appId: com.fixzy.app
+productName: Fixzy SysMaker
 copyright: Copyright © 2026 Hafizi
 
 directories:

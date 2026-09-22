@@ -39,7 +39,7 @@ class UserResource extends Resource
         $relations = [];
             
     if (auth()->check() && auth()->user()->can('view_any_audit')) {
-        $relations[] = AuditsRelationManager::class; //fizisysmaker:filament-auditing
+        $relations[] = AuditsRelationManager::class; //fixzy-sysmaker:filament-auditing
     }
 	
 	return $relations;

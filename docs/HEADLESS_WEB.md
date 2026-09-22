@@ -1,12 +1,12 @@
 # Headless + Web Mode (Phase 5)
 
-FiziSysMaker runs in three modes from ONE engine (IR + generators + handler registry):
+Fixzy SysMaker runs in three modes from ONE engine (IR + generators + handler registry):
 
 | Mode | Entry | UI | Store |
 |------|-------|----|-------|
-| Desktop (Electron) | `npm start` | Native window | `%APPDATA%/FiziSysMaker.db` (unchanged) |
-| Web (serve) | `fizisysmaker serve` | Same renderer in browser | `~/.fizisysmaker/FiziSysMaker.db` (`FSM_DATA_DIR`) |
-| Headless CLI | `fizisysmaker generate` | none | same as web |
+| Desktop (Electron) | `npm start` | Native window | `%APPDATA%/Fixzy SysMaker.db` (unchanged) |
+| Web (serve) | `fixzy serve` | Same renderer in browser | `~/.fixzy/Fixzy SysMaker.db` (`FSM_DATA_DIR`) |
+| Headless CLI | `fixzy generate` | none | same as web |
 
 ## Architecture
 
@@ -25,11 +25,11 @@ FiziSysMaker runs in three modes from ONE engine (IR + generators + handler regi
 ## CLI
 
 ```
-fizisysmaker serve [--port 7788] [--host 127.0.0.1]
-fizisysmaker generate --project <name-or-id> --out <dir> [--zip]
-fizisysmaker generate --fixture <name> --out <dir> [--zip]
-fizisysmaker list
-fizisysmaker fixtures
+fixzy serve [--port 7788] [--host 127.0.0.1]
+fixzy generate --project <name-or-id> --out <dir> [--zip]
+fixzy generate --fixture <name> --out <dir> [--zip]
+fixzy list
+fixzy fixtures
 ```
 
 ## Security (Phase 5.4 / 5.6)

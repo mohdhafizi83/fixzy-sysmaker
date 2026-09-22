@@ -8,7 +8,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /**
- * Native audits relation manager (FiziSysMaker generated code).
+ * Native audits relation manager (Fixzy SysMaker generated code).
  *
  * Read-only trail shown on auditable resources. Replaces the 3rd-party
  * filament-auditing plugin's relation manager.

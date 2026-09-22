@@ -62,7 +62,7 @@ export function initializeModalHandlers() {
     const configModalOk = document.getElementById('config-modal-ok');
     
     // Logik checkbox lock core components
-    const lockCoreCheckbox = document.getElementById('fizisys-lock-core-components');
+    const lockCoreCheckbox = document.getElementById('fixzy-lock-core-components');
     if (lockCoreCheckbox) {
         lockCoreCheckbox.addEventListener('click', () => {
             if (!lockCoreCheckbox.checked) {
@@ -77,7 +77,7 @@ export function initializeModalHandlers() {
         });
     }
 
-    const gatherFizisysSettings = () => {
+    const gatherFixzySettings = () => {
         const settings = {};
         const settingIds = [
             'check-updates', 'autosave-interval', 'show-begin-box', 'doc-root',
@@ -89,7 +89,7 @@ export function initializeModalHandlers() {
         ];
 
         settingIds.forEach(id => {
-            const element = document.getElementById(`fizisys-${id}`);
+            const element = document.getElementById(`fixzy-${id}`);
             if (element) {
                 const settingKey = id.replace(/-/g, '_');
                 if (element.type === 'checkbox') {
@@ -100,7 +100,7 @@ export function initializeModalHandlers() {
             }
         });
         
-        const fontSize = document.querySelector('input[name="fizisys-font-size"]:checked');
+        const fontSize = document.querySelector('input[name="fixzy-font-size"]:checked');
         if (fontSize) {
             settings.font_size = fontSize.value;
         }
@@ -132,9 +132,9 @@ export function initializeModalHandlers() {
             'max-entries', 'project-no-trim'
         ];
         
-        settingIds.forEach(id => setValue(`fizisys-${id}`, settings[id.replace(/-/g, '_')]));
+        settingIds.forEach(id => setValue(`fixzy-${id}`, settings[id.replace(/-/g, '_')]));
 
-        const fontSizeRadio = document.querySelector(`input[name="fizisys-font-size"][value="${settings.font_size}"]`);
+        const fontSizeRadio = document.querySelector(`input[name="fixzy-font-size"][value="${settings.font_size}"]`);
         if (fontSizeRadio) fontSizeRadio.checked = true;
     };
     
@@ -152,7 +152,7 @@ export function initializeModalHandlers() {
 
     if (configModalOk) {
         configModalOk.addEventListener('click', async () => {
-            const settingsData = gatherFizisysSettings();
+            const settingsData = gatherFixzySettings();
             const result = await window.electronAPI.saveAllSettings(settingsData);
             
             if (result.success) {
@@ -187,29 +187,29 @@ async function populateSettingsModal() {
     };
     
     // General
-    setValue('fizisys-check-updates', settings.check_updates);
-    setValue('fizisys-autosave-interval', settings.autosave_interval);
-    setValue('fizisys-show-begin-box', settings.show_begin_box);
-	setValue('fizisys-lock-core-components', settings.lock_core_components);
-    const fontSizeRadio = document.querySelector(`input[name="fizisys-font-size"][value="${settings.font_size}"]`);
+    setValue('fixzy-check-updates', settings.check_updates);
+    setValue('fixzy-autosave-interval', settings.autosave_interval);
+    setValue('fixzy-show-begin-box', settings.show_begin_box);
+	setValue('fixzy-lock-core-components', settings.lock_core_components);
+    const fontSizeRadio = document.querySelector(`input[name="fixzy-font-size"][value="${settings.font_size}"]`);
     if (fontSizeRadio) fontSizeRadio.checked = true;
-    setValue('fizisys-doc-root', settings.doc_root);
-    setValue('fizisys-base-url', settings.base_url);
+    setValue('fixzy-doc-root', settings.doc_root);
+    setValue('fixzy-base-url', settings.base_url);
     // Field defaults
-    setValue('fizisys-field-default-type', settings.field_default_type);
-    setValue('fizisys-field-default-length', settings.field_default_length);
+    setValue('fixzy-field-default-type', settings.field_default_type);
+    setValue('fixzy-field-default-length', settings.field_default_length);
     // Table defaults
-    setValue('fizisys-table-suggest-icon', settings.table_suggest_icon);
-    setValue('fizisys-table-allow-csv', settings.table_allow_csv);
-    setValue('fizisys-table-dv-separate-page', settings.table_dv_separate_page);
-    setValue('fizisys-table-hide-save-as-copy', settings.table_hide_save_as_copy);
-    setValue('fizisys-table-allow-add-from-homepage', settings.table_allow_add_from_homepage);
-    setValue('fizisys-table-show-record-count', settings.table_show_record_count);
+    setValue('fixzy-table-suggest-icon', settings.table_suggest_icon);
+    setValue('fixzy-table-allow-csv', settings.table_allow_csv);
+    setValue('fixzy-table-dv-separate-page', settings.table_dv_separate_page);
+    setValue('fixzy-table-hide-save-as-copy', settings.table_hide_save_as_copy);
+    setValue('fixzy-table-allow-add-from-homepage', settings.table_allow_add_from_homepage);
+    setValue('fixzy-table-show-record-count', settings.table_show_record_count);
     // Project defaults
-    setValue('fizisys-project-encoding', settings.project_encoding);
-    setValue('fizisys-project-rtl', settings.project_rtl);
-    setValue('fizisys-project-doxygen', settings.project_doxygen);
-    setValue('fizisys-project-hide-footer', settings.project_hide_footer);
-    setValue('fizisys-max-entries', settings.max_entries);
-    setValue('fizisys-project-no-trim', settings.project_no_trim);
+    setValue('fixzy-project-encoding', settings.project_encoding);
+    setValue('fixzy-project-rtl', settings.project_rtl);
+    setValue('fixzy-project-doxygen', settings.project_doxygen);
+    setValue('fixzy-project-hide-footer', settings.project_hide_footer);
+    setValue('fixzy-max-entries', settings.max_entries);
+    setValue('fixzy-project-no-trim', settings.project_no_trim);
 }

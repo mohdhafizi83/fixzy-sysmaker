@@ -5,7 +5,7 @@ namespace App\Filament\Actions;
 use Filament\Actions\Action;
 
 /**
- * Native print action (FiziSysMaker generated code).
+ * Native print action (Fixzy SysMaker generated code).
  *
  * Triggers the browser print dialog with a print-mode CSS class so the
  * generated print stylesheet can hide chrome. No 3rd-party package needed.

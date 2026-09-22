@@ -510,7 +510,7 @@ content += `        });\n    }\n\n    public function down(): void\n    {\n     
 
 /**
  * Generate the dedicated Migration file for the 'users' table.
- * Ia menggabungkan lajur asas Laravel dengan lajur tersuai FiziSysMaker.
+ * Ia menggabungkan lajur asas Laravel dengan lajur tersuai Fixzy SysMaker.
  */
 async function generateLaravelUserMigration(fullSchema, basePath) {
     try {

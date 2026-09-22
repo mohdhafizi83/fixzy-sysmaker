@@ -11,12 +11,12 @@ const { openStore } = require("./core/store");
 
 // Electron keeps its historical userData location (existing installs upgrade
 // in place). Same pragmas as before (WAL + busy_timeout).
-const dbPath = path.join(app.getPath("userData"), "FiziSysMaker.db");
+const dbPath = path.join(app.getPath("userData"), "Fixzy SysMaker.db");
 const dbExists = fs.existsSync(dbPath);
 const db = openStore(dbPath);
 if (!dbExists) {
     // openStore bootstraps from resources/schema.sql on first run.
-    console.log("FiziSysMaker database created at", dbPath);
+    console.log("Fixzy SysMaker database created at", dbPath);
 }
 
 const registerIpcHandlers = require("./handlers/register");

@@ -2,7 +2,7 @@
  * Core database accessor (Phase 5.1).
  *
  * Electron keeps its userData path; the headless/web mode uses
- * FSM_DATA_DIR (default: ~/.fizisysmaker). Same schema, same better-sqlite3.
+ * FSM_DATA_DIR (default: ~/.fixzy). Same schema, same better-sqlite3.
  */
 'use strict';
 
@@ -12,16 +12,16 @@ const path = require('path');
 const Database = require('better-sqlite3');
 
 function defaultDataDir() {
-    return process.env.FSM_DATA_DIR || path.join(os.homedir(), '.fizisysmaker');
+    return process.env.FSM_DATA_DIR || path.join(os.homedir(), '.fixzy');
 }
 
 /**
- * Open (and bootstrap if needed) the FiziSysMaker SQLite store.
- * @param {string} [dbPath] explicit path; defaults to <dataDir>/FiziSysMaker.db
+ * Open (and bootstrap if needed) the Fixzy SysMaker SQLite store.
+ * @param {string} [dbPath] explicit path; defaults to <dataDir>/Fixzy SysMaker.db
  * @returns {import('better-sqlite3').Database}
  */
 function openStore(dbPath) {
-    const file = dbPath || path.join(defaultDataDir(), 'FiziSysMaker.db');
+    const file = dbPath || path.join(defaultDataDir(), 'Fixzy SysMaker.db');
     fs.mkdirSync(path.dirname(file), { recursive: true });
     const existed = fs.existsSync(file);
     const db = new Database(file);

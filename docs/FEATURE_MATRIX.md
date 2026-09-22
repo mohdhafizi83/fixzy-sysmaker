@@ -1,4 +1,4 @@
-# FiziSysMaker Feature Matrix (Phase 3)
+# Fixzy SysMaker Feature Matrix (Phase 3)
 
 Axes × values from the schema/IR, and which fixture covers each combination.
 Fixtures live in `test/fixtures/<name>.json` (live full-schema dump shape);

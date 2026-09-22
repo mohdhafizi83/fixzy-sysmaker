@@ -8,7 +8,7 @@ Classification key:
 - **U** = Universal semantic concept (any stack generator must honor it)
 - **S** = Stack-specific (currently Filament-shaped vocabulary/behavior; map at
   generator level, do NOT rename into IR core)
-- **I** = App-internal / UI state of FiziSysMaker itself (not part of IR)
+- **I** = App-internal / UI state of Fixzy SysMaker itself (not part of IR)
 
 Design decision (pragmatic): presentation metadata (colors, thumbnails, grid
 spans) is universal to the *maker* but not to every *stack*. The IR therefore
@@ -144,7 +144,7 @@ Dashboard widgets: type, target table/field, aggregate, filters, timeframe,
 advanced_query, span/icon/color. Class U (widgets) + presentation for
 span/color/icon.
 
-## fizisys_settings → NOT in IR
+## fixzy_settings → NOT in IR
 
 App-level maker settings (autosave, font size, doc_root...). Class I.
 Exception: field_default_type/length feed the maker, not generated code.

@@ -1,4 +1,4 @@
-# FiziSysMaker Bug Log (Phase 3)
+# Fixzy SysMaker Bug Log (Phase 3)
 
 Format: ID — severity — axis — reproduce — expected vs actual — status.
 

@@ -93,6 +93,8 @@
         runComposer: 'run-composer',
         saveWidget: 'widget:save',
         deleteWidget: 'widget:delete',
+        setupCheck: 'setup:check',
+        setupRun: 'setup:run',
     };
 
     // Fire-and-forget (ipcRenderer.send in preload) — mirrored as POST, result ignored.
@@ -115,6 +117,7 @@
     api.onShowOverlay = (cb) => on('show-overlay', cb);
     api.onHideOverlay = (cb) => on('hide-overlay', cb);
     api.onShowCustomDialog = (cb) => on('show-custom-dialog', cb);
+    api.onSetupLog = (cb) => on('setup-log', cb);
     api.sendCustomDialogResponse = (response) => {
         invoke('custom-dialog-response', response).catch(() => {});
     };

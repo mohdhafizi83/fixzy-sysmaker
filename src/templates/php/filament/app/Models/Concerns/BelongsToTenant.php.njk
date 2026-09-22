@@ -3,7 +3,7 @@
 namespace App\Models\Concerns;
 
 /**
- * Native tenant ownership trait (FiziSysMaker generated code).
+ * Native tenant ownership trait (Fixzy SysMaker generated code).
  *
  * Models using this trait belong to a tenant (one-to-many tenancy).
  * The tenant foreign key is auto-filled from the authenticated user on create.

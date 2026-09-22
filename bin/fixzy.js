@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * fizisysmaker CLI (Phase 5.2)
+ * fixzy CLI (Phase 5.2)
  *
  * Commands:
  *   serve [--port 7788] [--host 127.0.0.1]   Web UI + IPC-over-HTTP
@@ -30,17 +30,17 @@ function parseArgs(argv) {
 }
 
 function usage() {
-    console.log(`fizisysmaker — Laravel + Filament app generator
+    console.log(`fixzy — Fixzy SysMaker CLI (Laravel + Filament app generator)
 
 Usage:
-  fizisysmaker serve [--port 7788] [--host 127.0.0.1]
-  fizisysmaker generate --project <name-or-id> --out <dir> [--zip]
-  fizisysmaker generate --fixture <name> --out <dir> [--zip]
-  fizisysmaker list
-  fizisysmaker fixtures
+  fixzy serve [--port 7788] [--host 127.0.0.1]
+  fixzy generate --project <name-or-id> --out <dir> [--zip]
+  fixzy generate --fixture <name> --out <dir> [--zip]
+  fixzy list
+  fixzy fixtures
 
 Env:
-  FSM_DATA_DIR       store directory (default ~/.fizisysmaker)
+  FSM_DATA_DIR       store directory (default ~/.fixzy)
   FSM_OUTPUT_ROOTS   allowed output roots (default: ~/projects:$HOME)
   FSM_ALLOW_REMOTE=1 required to bind non-localhost
 `);
@@ -128,7 +128,7 @@ async function cmdGenerate(args) {
         registerIpcHandlers({
             ipcMain: shim,
             db,
-            getPath: () => path.join(require('os').homedir(), '.fizisysmaker'),
+            getPath: () => path.join(require('os').homedir(), '.fixzy'),
             getWindow: () => null,
             dialog: { showOpenDialog: async () => ({ canceled: true, filePaths: [] }), showMessageBox: async () => ({ response: 0 }) },
             shell: { openExternal: async () => {} },
@@ -184,7 +184,7 @@ async function cmdServe(args) {
     const { createWebServer } = require('../src/core/webServer');
     const { server } = createWebServer({ host, port: Number(args.port || 7788) });
     server.listen(Number(args.port || 7788), host, () => {
-        console.log(`FiziSysMaker web UI: http://${host}:${args.port || 7788}`);
+        console.log(`Fixzy SysMaker web UI: http://${host}:${args.port || 7788}`);
         if (host !== '127.0.0.1' && host !== 'localhost') {
             console.warn('*** REMOTE BIND ACTIVE — no authentication. LAN or reverse-proxy only. ***');
         }

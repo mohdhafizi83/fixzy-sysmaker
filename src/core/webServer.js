@@ -113,7 +113,7 @@ function createWebServer(opts = {}) {
         ipcMain: ipc,
         db,
         getPath: (name) => {
-            if (name === 'userData') return opts.userData || path.join(os.homedir(), '.fizisysmaker');
+            if (name === 'userData') return opts.userData || path.join(os.homedir(), '.fixzy');
             return os.homedir();
         },
         getWindow: () => webWindow,

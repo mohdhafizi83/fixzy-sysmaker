@@ -484,7 +484,7 @@ ipcMain.handle('field:delete', async (event, { fieldId, tableName, fieldName }) 
 
 ipcMain.handle('field:create', async (event, tableId) => {
     try {
-        const settings = db.prepare("SELECT setting_name, setting_value FROM fizisys_settings WHERE setting_name IN ('field_default_type', 'field_default_length')").all();
+        const settings = db.prepare("SELECT setting_name, setting_value FROM fixzy_settings WHERE setting_name IN ('field_default_type', 'field_default_length')").all();
         const defaultSettings = settings.reduce((acc, setting) => {
             acc[setting.setting_name] = setting.setting_value;
             return acc;
@@ -882,7 +882,7 @@ ipcMain.handle("open-url", (event, url) => {
 
 ipcMain.handle("settings:get-all", async () => {
   try {
-    const settingsArray = db.prepare("SELECT * FROM fizisys_settings").all();
+    const settingsArray = db.prepare("SELECT * FROM fixzy_settings").all();
     // Convert array of objects into a single key-value object for easy access
     // Cth: { check_updates: '1', autosave_interval: '15', ... }
     const settingsObject = settingsArray.reduce((acc, setting) => {
@@ -891,7 +891,7 @@ ipcMain.handle("settings:get-all", async () => {
     }, {});
     return settingsObject;
   } catch (error) {
-    console.error("Failed to get FiziSysMaker settings:", error);
+    console.error("Failed to get Fixzy SysMaker settings:", error);
     return null;
   }
 });
@@ -1120,7 +1120,7 @@ if (fieldsToUpdate.hasOwnProperty('field_name')) {
 
 ipcMain.handle('settings:save-all', async (event, settingsData) => {
     try {
-        const updateStmt = db.prepare('UPDATE fizisys_settings SET setting_value = ? WHERE setting_name = ?');
+        const updateStmt = db.prepare('UPDATE fixzy_settings SET setting_value = ? WHERE setting_name = ?');
         
         const saveTransaction = db.transaction(() => {
             for (const [key, value] of Object.entries(settingsData)) {
@@ -1131,7 +1131,7 @@ ipcMain.handle('settings:save-all', async (event, settingsData) => {
         saveTransaction();
         return { success: true, message: 'Settings saved successfully.' };
     } catch (error) {
-        console.error("Failed to save FiziSysMaker settings:", error);
+        console.error("Failed to save Fixzy SysMaker settings:", error);
         return { success: false, message: error.message };
     }
 });
@@ -1624,7 +1624,7 @@ ipcMain.handle('project:get-initial-status', async (event, projectId) => {
 //        let finalPath = stagingPath; 
 //        
 //        // Baca setting doc_root
-//        const docRootSetting = db.prepare("SELECT setting_value FROM fizisys_settings WHERE setting_name = 'doc_root'").get();
+//        const docRootSetting = db.prepare("SELECT setting_value FROM fixzy_settings WHERE setting_name = 'doc_root'").get();
 //
 //        if (docRootSetting && docRootSetting.setting_value && docRootSetting.setting_value.trim() !== '') {
 //            const docRoot = docRootSetting.setting_value;
@@ -1744,7 +1744,7 @@ ipcMain.handle('generate-app', async (event) => { // Note 'event' added here
 
         // 3. PHASE 2: DETERMINE THE ACTUAL PROJECT LOCATION (DOC_ROOT)
         // Get the global settings
-        const settings = db.prepare("SELECT setting_name, setting_value FROM fizisys_settings").all();
+        const settings = db.prepare("SELECT setting_name, setting_value FROM fixzy_settings").all();
         const config = settings.reduce((acc, curr) => ({ ...acc, [curr.setting_name]: curr.setting_value }), {});
 
         const docRoot = config.doc_root;
@@ -1808,7 +1808,7 @@ ipcMain.handle('generate-app', async (event) => { // Note 'event' added here
             const dbPass = 'password123'; // IDEALLY: Generate a random password or take it from settings
 
             const deployConfig = {
-                gitRepoUrl: config.git_repo_url || 'https://github.com/mohdhafizi83/FiziSysMaker-Laravel-Filament-Boilerplate.git', // Default if no setting exists
+                gitRepoUrl: config.git_repo_url || 'https://github.com/mohdhafizi83/Fixzy SysMaker-Laravel-Filament-Boilerplate.git', // Default if no setting exists
                 projectPath: destinationPath,
                 generatedPath: stagingPath,
                 dbConfig: {
@@ -2013,7 +2013,7 @@ ipcMain.handle('preview:start', async (event, projectPath) => {
     });
 });
 
-// Function to stop the server (Can be called when the user closes FiziSysMaker)
+// Function to stop the server (Can be called when the user closes Fixzy SysMaker)
 ipcMain.handle('preview:stop', () => {
     if (previewServerProcess) {
         previewServerProcess.kill();
@@ -2215,7 +2215,7 @@ ipcMain.handle('preview:instant-run', async (event) => {
                 let envContent = fs.readFileSync(envPath, 'utf8');
                 
                 // 1. APP_NAME Update Logic
-                const rawAppName = activeProject.app_title || 'FiziSysMakerApp';
+                const rawAppName = activeProject.app_title || 'Fixzy SysMakerApp';
                 const safeAppName = rawAppName.includes(' ') ? `"${rawAppName}"` : rawAppName;
                 const currentAppNameMatch = envContent.match(/^APP_NAME=(.*)$/m);
                 const currentAppName = currentAppNameMatch ? currentAppNameMatch[1] : null;
@@ -3228,7 +3228,7 @@ const checkPKStmt = db.prepare('SELECT 1 FROM fields WHERE table_id = ? AND prim
         transaction(ast);
         let finalMessage = `Successfully imported ${tablesCreated} tables and ${relationshipsCreated} relationships!`;
         if (Object.keys(standardizationLog).length > 0) {
-            finalMessage += "\n\nAdditionally, the following fields were automatically added for standardization purposes required by FiziSysMaker:" + 
+            finalMessage += "\n\nAdditionally, the following fields were automatically added for standardization purposes required by Fixzy SysMaker:" + 
                             Object.entries(standardizationLog).map(([tbl, flds]) => `\n- ${tbl}: ${flds.join(', ')}`).join('');
         }
         return { success: true, message: finalMessage };
@@ -3240,7 +3240,7 @@ const checkPKStmt = db.prepare('SELECT 1 FROM fields WHERE table_id = ? AND prim
 }
 function getGeneratedFolderPath() {
   // This path will differ for each user and OS, e.g.:
-  // Windows: C:\Users\YourName\AppData\Roaming\fizisysmaker
+  // Windows: C:\Users\YourName\AppData\Roaming\fixzy-sysmaker
   const userDataPath = ctx.getPath('userData');
   
   const generatedPath = path.join(userDataPath, 'generated');
@@ -3299,4 +3299,39 @@ async function runComposerInstall(projectPath) {
     });
   });
 }
+
+// =================================================================
+// SETUP WIZARD (GUI-first installation)
+// =================================================================
+// setup:check  -> fast environment probe (no side effects)
+// setup:run    -> provisions PHP/composer/preview_env, streams log lines
+//                via window.webContents.send('setup-log', line)
+ipcMain.handle('setup:check', async () => {
+    try {
+        const { checkSetup } = require('../core/setupRunner');
+        return checkSetup();
+    } catch (e) {
+        return { error: e.message };
+    }
+});
+
+ipcMain.handle('setup:run', async (event) => {
+    const { runSetup } = require('../core/setupRunner');
+    const win = ctx.getWindow ? ctx.getWindow(event) : null;
+    const onLog = (line) => {
+        const text = String(line).replace(/\s+$/, '');
+        if (!text) return;
+        console.log('[setup] ' + text);
+        if (win && win.webContents && !win.webContents.isDestroyed()) {
+            win.webContents.send('setup-log', text);
+        }
+    };
+    try {
+        const result = await runSetup({ onLog });
+        return { success: result.ok, failed: result.failed };
+    } catch (e) {
+        onLog('ERROR: ' + e.message);
+        return { success: false, failed: ['exception'] };
+    }
+});
 };

@@ -78,6 +78,7 @@ import {
 
 import { showCustomDialog, initializeModalHandlers } from './js/ui/modalHandlers.js';
 import { initializeTabSystems } from './js/ui/tabHandlers.js';
+import { initSetupWizard, maybeShowSetupWizard } from './js/setupWizard.js';
 import { populateMainDashboard, initializeProjectSaveHandlers } from './js/pages/dashboard.js';
 
 import { setElementValue, setRadioValue, applyFontSize } from './js/ui/formHelpers.js';
@@ -671,6 +672,11 @@ const generateAppBtn = document.getElementById('app-generate_app');
     await loadProjectData(project);
 	initializeWorkflowBuilder();
     initializeFullscreenHandlers();
+
+    // Setup Wizard: init the header button, then auto-open on first run
+    // if the environment (PHP/Composer/preview env) is not ready yet.
+    initSetupWizard();
+    maybeShowSetupWizard();
 
 // Attach a listener for 'show-overlay' messages from the main process
     if (window.electronAPI && typeof window.electronAPI.onShowOverlay === 'function') {

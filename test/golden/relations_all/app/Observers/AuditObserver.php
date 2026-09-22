@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Native audit observer (FiziSysMaker generated code).
+ * Native audit observer (Fixzy SysMaker generated code).
  *
  * Records create/update/delete events for models using App\Models\Concerns\HasAudits.
  * Sensitive fields (password, remember_token) are never stored.

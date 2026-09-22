@@ -1,4 +1,4 @@
-// Headless audit: run FiziSysMaker generators against the fixture schema
+// Headless audit: run Fixzy SysMaker generators against the fixture schema
 const fs = require('fs');
 const path = require('path');
 

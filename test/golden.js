@@ -1,4 +1,4 @@
-// Golden snapshot harness for FiziSysMaker generators.
+// Golden snapshot harness for Fixzy SysMaker generators.
 //
 // Usage:
 //   node test/golden.js <fixture>            compare generated output vs golden (default)

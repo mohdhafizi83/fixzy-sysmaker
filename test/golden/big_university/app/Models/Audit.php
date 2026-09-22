@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
- * Native audit record (FiziSysMaker generated code).
+ * Native audit record (Fixzy SysMaker generated code).
  *
  * One row per create/update/delete of an auditable model.
  */

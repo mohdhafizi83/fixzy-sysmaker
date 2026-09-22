@@ -1,15 +1,15 @@
 {
-  "name": "fizisysmaker",
+  "name": "fixzy-sysmaker",
   "version": "1.0.0",
-  "description": "",
+  "description": "Visual database designer that builds your admin back office — generate a complete Laravel + Filament admin system from a visual schema.",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
     "setup:binaries": "node scripts/setup-binaries.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["laravel", "filament", "code-generator", "database-designer", "admin-panel", "low-code"],
+  "author": "Mohd Hafizi Mohammad Nor",
+  "license": "SEE LICENSE IN LICENSE.md",
   "devDependencies": {
     "electron": "^40.1.0",
     "electron-builder": "^26.15.3",
@@ -28,6 +28,6 @@
     "electron@40.1.0": true
   },
   "bin": {
-    "fizisysmaker": "bin/fizisysmaker.js"
+    "fixzy": "bin/fixzy.js"
   }
 }

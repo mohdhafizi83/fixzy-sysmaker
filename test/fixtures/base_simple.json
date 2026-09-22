@@ -26,7 +26,7 @@
     "project_hook_workflow": "{\n  \"blocks\": {\n    \"block_1770304262478\": {\n      \"type\": \"hook_trigger\",\n      \"x\": 132.6666259765625,\n      \"y\": 69.33331298828125\n    },\n    \"block_1770304280942\": {\n      \"type\": \"insert_record\",\n      \"x\": 90,\n      \"y\": 240,\n      \"configData\": \"[{\\\"type\\\":\\\"comment\\\",\\\"value\\\":\\\"\\\"}]\"\n    }\n  },\n  \"connections\": [\n    {\n      \"fromBlock\": \"block_1770304262478\",\n      \"fromPoint\": \"out\",\n      \"toBlock\": \"block_1770304280942\",\n      \"toPoint\": \"in\"\n    }\n  ]\n}",
     "stack_base": "laravel_filament",
     "stack_database": "sqlite",
-    "stack_theme": "fiziSys",
+    "stack_theme": "fixzySys",
     "data_delete_type": "soft",
     "module_auth_email": 1,
     "module_auth_email_2fa": 0,

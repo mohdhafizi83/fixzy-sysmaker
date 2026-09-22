@@ -2,7 +2,7 @@
 # == KONFIGURASI (Ubah mengikut keperluan anda)
 # ============================================================================
 $GitRepoUrl   = "https://github.com/nama-anda/projek-anda.git"
-$GeneratedDir = Join-Path -Path $env:APPDATA -ChildPath "fizisysmaker\generated"
+$GeneratedDir = Join-Path -Path $env:APPDATA -ChildPath "fixzy-sysmaker\generated"
 $ProjectDir   = "C:\laragon\www\my-new-project"
 
 # -- KONFIGURASI SQL SERVER --

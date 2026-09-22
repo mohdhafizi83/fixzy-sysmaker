@@ -1,10 +1,10 @@
--- 1. Tetapan untuk aplikasi FiziSysMaker itu sendiri
-CREATE TABLE fizisys_settings (
+-- 1. Tetapan untuk aplikasi Fixzy SysMaker itu sendiri
+CREATE TABLE fixzy_settings (
     setting_name    TEXT PRIMARY KEY,
     setting_value   TEXT
 );
 
--- 2. Jadual induk untuk setiap projek yang diuruskan oleh FiziSysMaker
+-- 2. Jadual induk untuk setiap projek yang diuruskan oleh Fixzy SysMaker
 CREATE TABLE projects (
     project_id                   INTEGER PRIMARY KEY AUTOINCREMENT,
     app_title                    TEXT NOT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE projects (
     project_hook_workflow        TEXT,
     stack_base                   TEXT DEFAULT 'core_php',
     stack_database               TEXT DEFAULT 'mysql_mariadb',
-    stack_theme                  TEXT DEFAULT 'fiziSys',
+    stack_theme                  TEXT DEFAULT 'fixzySys',
 	data_delete_type             TEXT DEFAULT 'hard',
     module_auth_email            INTEGER DEFAULT 1,
     module_auth_email_2fa        INTEGER DEFAULT 0,
@@ -321,8 +321,8 @@ CREATE TABLE table_constraints (
     FOREIGN KEY (table_id) REFERENCES tables(table_id) ON DELETE CASCADE
 );
 
--- 11. Data Awal untuk Tetapan FiziSysMaker
-INSERT INTO fizisys_settings (setting_name, setting_value) VALUES
+-- 11. Data Awal untuk Tetapan Fixzy SysMaker
+INSERT INTO fixzy_settings (setting_name, setting_value) VALUES
 ('check_updates', '1'),
 ('autosave_interval', '15'),
 ('show_begin_box', '1'),

@@ -1,4 +1,4 @@
-// Seed a demo project into the FiziSysMaker store for README screenshots.
+// Seed a demo project into the Fixzy SysMaker store for README screenshots.
 // Idempotent: removes previous "TaskFlow" demo before inserting.
 const { openStore } = require('../src/core/store');
 const db = openStore();
@@ -11,7 +11,7 @@ function run() {
     }
 
     const info = db.prepare(`INSERT INTO projects (app_title, stack_base, stack_database, stack_theme, data_delete_type, module_authorization, module_log_audit, module_fake_data, is_active)
-        VALUES ('TaskFlow', 'laravel_filament', 'mysql_mariadb', 'fiziSys', 'soft', 1, 1, 1, 1)`).run();
+        VALUES ('TaskFlow', 'laravel_filament', 'mysql_mariadb', 'fixzySys', 'soft', 1, 1, 1, 1)`).run();
     const pid = info.lastInsertRowid;
 
     const tables = [

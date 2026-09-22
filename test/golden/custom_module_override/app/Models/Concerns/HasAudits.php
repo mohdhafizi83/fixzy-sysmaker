@@ -6,7 +6,7 @@ use App\Observers\AuditObserver;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
- * Native audit trail (FiziSysMaker generated code — replaces
+ * Native audit trail (Fixzy SysMaker generated code — replaces
  * 3rd-party auditing packages).
  *
  * Attach to any model that should record an audit trail. Every create/update/

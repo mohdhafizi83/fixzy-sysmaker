@@ -6,7 +6,7 @@
     
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FiziSysMaker Platform: Visually build data-driven apps using technology you know and trust in minutes, 100% free, entirely yours.</title>
+    <title>Fixzy SysMaker — Visual database designer that builds your admin back office</title>
     <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="./index.css">
 	<script type="module" src="./renderer.js"></script>
@@ -79,6 +79,7 @@
 </button>
         <button class="btn btn-primary" id="app-generate_app" name="app-generate_app"><i class="fas fa-robot"></i> Generate app</button>
         <button class="btn" id="app-view_files" name="app-view_files"><i class="fas fa-folder-open"></i> View files</button>
+        <button class="btn" id="setup-wizard-open-btn" title="Setup & Environment Check"><i class="fas fa-tools"></i> Setup</button>
         <button class="btn" id="config-btn"  title="Configuration">
             <i class="fas fa-cog"></i>
         </button>
@@ -201,7 +202,7 @@
             <div class="stack-detail-group" data-stack-ref="php-generic python-generic aspnet-core ror java-generic">
                 <h4 class="stack-column-title">Theme</h4>
                 <select class="app-stack-theme">
-                    <option value="fiziSys">fiziSys</option>
+                    <option value="fixzySys">fixzySys</option>
                     <option value="adminlte" disabled>adminLTE</option>
                     <option value="coreui" disabled>CoreUI</option>
                     <option value="tabler" disabled>Tabler</option>
@@ -212,7 +213,7 @@
             <div class="stack-detail-group" data-stack-ref="laravel-backpack">
                 <h4 class="stack-column-title">Theme</h4>
                 <select class="app-stack-theme">
-                    <option value="fiziSys">fiziSys</option>
+                    <option value="fixzySys">fixzySys</option>
                     <option value="coreui" disabled>CoreUI</option>
                     <option value="tabler" disabled>Tabler</option>
                 </select>
@@ -220,7 +221,7 @@
             <div class="stack-detail-group" data-stack-ref="laravel-filament">
                 <h4 class="stack-column-title">Theme</h4>
                 <select class="app-stack-theme">
-                    <option value="fiziSys">fiziSys</option>
+                    <option value="fixzySys">fixzySys</option>
                     <option value="brisk" disabled>Brisk</option>
                     <option value="nord_theme" disabled>Nord Theme</option>
                 </select>
@@ -2697,35 +2698,35 @@
 <div id="config-modal" class="modal-overlay hidden">
     <div class="modal-content large">
         <div class="modal-header">
-            <h3>FiziSysMaker Preferences</h3>
+            <h3>Fixzy SysMaker Preferences</h3>
             <button id="config-modal-close" name="config-modal-close" class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
             <div class="tabs-container">
                 <div class="tabs-nav">
-                    <button class="tab-link active" data-tab="tab-general" id="fizisys-tab-general" name="fizisys-tab-general">General</button>
-                    <button class="tab-link" data-tab="tab-field-defaults" id="fizisys-tab-field-defaults" name="fizisys-tab-field-defaults">Field defaults</button>
-                    <button class="tab-link" data-tab="tab-table-defaults" id="fizisys-tab-table-defaults" name="fizisys-tab-table-defaults">Table defaults</button>
-                    <button class="tab-link" data-tab="tab-project-defaults" id="fizisys-tab-project-defaults" name="fizisys-tab-project-defaults">Project defaults</button>
+                    <button class="tab-link active" data-tab="tab-general" id="fixzy-tab-general" name="fixzy-tab-general">General</button>
+                    <button class="tab-link" data-tab="tab-field-defaults" id="fixzy-tab-field-defaults" name="fixzy-tab-field-defaults">Field defaults</button>
+                    <button class="tab-link" data-tab="tab-table-defaults" id="fixzy-tab-table-defaults" name="fixzy-tab-table-defaults">Table defaults</button>
+                    <button class="tab-link" data-tab="tab-project-defaults" id="fixzy-tab-project-defaults" name="fixzy-tab-project-defaults">Project defaults</button>
                 </div>
                 <div class="tabs-content">
                     <div id="tab-general" class="tab-pane active">
                         <div class="form-grid">
                             <div>
                                 <div class="form-group">
-                                    <label class="checkbox-label"><input type="checkbox" id="fizisys-check-updates" name="fizisys-check-updates" checked> Check for program updates on start up</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="fixzy-check-updates" name="fixzy-check-updates" checked> Check for program updates on start up</label>
                                 </div>
                                 <div class="form-group">
-                                    <label for="fizisys-autosave-interval">Auto-save interval (minutes)</label>
-                                    <input type="number" id="fizisys-autosave-interval" name="fizisys-autosave-interval" value="10" style="max-width: 100px;">
+                                    <label for="fixzy-autosave-interval">Auto-save interval (minutes)</label>
+                                    <input type="number" id="fixzy-autosave-interval" name="fixzy-autosave-interval" value="10" style="max-width: 100px;">
                                 </div>
                                 <div class="form-group">
-                                    <label class="checkbox-label"><input type="checkbox" id="fizisys-show-begin-box" name="fizisys-show-begin-box" checked> Show 'How do you want to begin' box on start up</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="fixzy-show-begin-box" name="fixzy-show-begin-box" checked> Show 'How do you want to begin' box on start up</label>
                                 </div>
 
 <div class="form-group">
     <label class="checkbox-label" title="Prevents accidental changes to the 'users' table, and fields like 'id', 'created_at', etc., which are crucial for the generated application's functionality.">
-        <input type="checkbox" id="fizisys-lock-core-components" name="fizisys-lock-core-components">
+        <input type="checkbox" id="fixzy-lock-core-components" name="fixzy-lock-core-components">
         Lock core system components (Recommended)
     </label>
 </div>
@@ -2733,9 +2734,9 @@
 <div class="form-group">
     <label>User Interface font size</label>
     <div class="radio-group">
-        <label><input type="radio" name="fizisys-font-size" id="fizisys-font-size-small" value="small"> Small size</label>
-        <label><input type="radio" name="fizisys-font-size" id="fizisys-font-size-medium" value="medium" checked> Medium size</label>
-        <label><input type="radio" name="fizisys-font-size" id="fizisys-font-size-large" value="large"> Large size</label>
+        <label><input type="radio" name="fixzy-font-size" id="fixzy-font-size-small" value="small"> Small size</label>
+        <label><input type="radio" name="fixzy-font-size" id="fixzy-font-size-medium" value="medium" checked> Medium size</label>
+        <label><input type="radio" name="fixzy-font-size" id="fixzy-font-size-large" value="large"> Large size</label>
     </div>
     </div>
                             </div>
@@ -2744,12 +2745,12 @@
                                 <fieldset>
                                     <legend>Localhost</legend>
                                     <div class="form-group">
-                                        <label for="fizisys-doc-root">Document root</label>
-                                        <input type="text" id="fizisys-doc-root" name="fizisys-doc-root" placeholder="e.g., C:\xampp\htdocs">
+                                        <label for="fixzy-doc-root">Document root</label>
+                                        <input type="text" id="fixzy-doc-root" name="fixzy-doc-root" placeholder="e.g., C:\xampp\htdocs">
                                     </div>
                                     <div class="form-group">
-                                        <label for="fizisys-base-url">Base URL</label>
-                                        <input type="text" id="fizisys-base-url" name="fizisys-base-url" placeholder="e.g., http://localhost">
+                                        <label for="fixzy-base-url">Base URL</label>
+                                        <input type="text" id="fixzy-base-url" name="fixzy-base-url" placeholder="e.g., http://localhost">
                                     </div>
                                 </fieldset>
                             </div>
@@ -2759,7 +2760,7 @@
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>Default data type</label>
-                                <select id="fizisys-field-default-type" name="fizisys-field-default-type">
+                                <select id="fixzy-field-default-type" name="fixzy-field-default-type">
         <option value="" disabled selected>-- Please Select a Data Type --</option>
         <optgroup label="Numeric Types">
             <option value="TINYINT">TINYINT</option>
@@ -2796,26 +2797,26 @@
                             </div>
                             <div class="form-group">
                                 <label>Default length</label>
-                                <input type="number" id="fizisys-field-default-length" name="fizisys-field-default-length" value="40">
+                                <input type="number" id="fixzy-field-default-length" name="fixzy-field-default-length" value="40">
                             </div>
                         </div>
                     </div>
                     <div id="tab-table-defaults" class="tab-pane">
                         <p>The default settings that apply to new tables, and can be overridden individually.</p>
                         <div class="permission-grid">
-                            <label class="checkbox-label"><input type="checkbox" id="fizisys-table-suggest-icon" name="fizisys-table-suggest-icon" checked> Suggest a table icon based on table name</label>
-                            <label class="checkbox-label"><input type="checkbox" id="fizisys-table-allow-csv" name="fizisys-table-allow-csv" checked> Allow saving data to CSV files</label>
-                            <label class="checkbox-label"><input type="checkbox" id="fizisys-table-dv-separate-page" name="fizisys-table-dv-separate-page" checked> Display 'Record Form' in a separate page</label>
-                            <label class="checkbox-label"><input type="checkbox" id="fizisys-table-hide-save-as-copy" name="fizisys-table-hide-save-as-copy"> Hide "Save as copy" when editing records</label>
-                            <label class="checkbox-label"><input type="checkbox" id="fizisys-table-allow-add-from-homepage" name="fizisys-table-allow-add-from-homepage"> Allow adding new records from homepage</label>
-                            <label class="checkbox-label"><input type="checkbox" id="fizisys-table-show-record-count" name="fizisys-table-show-record-count"> Show record count in homepage</label>
+                            <label class="checkbox-label"><input type="checkbox" id="fixzy-table-suggest-icon" name="fixzy-table-suggest-icon" checked> Suggest a table icon based on table name</label>
+                            <label class="checkbox-label"><input type="checkbox" id="fixzy-table-allow-csv" name="fixzy-table-allow-csv" checked> Allow saving data to CSV files</label>
+                            <label class="checkbox-label"><input type="checkbox" id="fixzy-table-dv-separate-page" name="fixzy-table-dv-separate-page" checked> Display 'Record Form' in a separate page</label>
+                            <label class="checkbox-label"><input type="checkbox" id="fixzy-table-hide-save-as-copy" name="fixzy-table-hide-save-as-copy"> Hide "Save as copy" when editing records</label>
+                            <label class="checkbox-label"><input type="checkbox" id="fixzy-table-allow-add-from-homepage" name="fixzy-table-allow-add-from-homepage"> Allow adding new records from homepage</label>
+                            <label class="checkbox-label"><input type="checkbox" id="fixzy-table-show-record-count" name="fixzy-table-show-record-count"> Show record count in homepage</label>
                         </div>
                     </div>
                     <div id="tab-project-defaults" class="tab-pane">
                         <div class="form-group">
                             <label>Default character encoding</label>
                             <div class="input-group">
-                                <select id="fizisys-project-encoding" name="fizisys-project-encoding">
+                                <select id="fixzy-project-encoding" name="fixzy-project-encoding">
 									<option selected>4-Byte Unicode UTF-8</option>
                                     <option>3-Byte Unicode UTF-8</option>
                                     <option>US Ascii / Western</option>
@@ -2845,16 +2846,16 @@
                                     <option>Turkish (Windows)</option>
                                     <option>Vietnamese</option>
                                 </select>
-                                <label class="checkbox-label" style="margin-left: 1rem;"><input type="checkbox" id="fizisys-project-rtl" name="fizisys-project-rtl"> Right to left</label>
+                                <label class="checkbox-label" style="margin-left: 1rem;"><input type="checkbox" id="fixzy-project-rtl" name="fixzy-project-rtl"> Right to left</label>
                             </div>
                         </div>
-                        <label class="checkbox-label"><input type="checkbox" id="fizisys-project-doxygen" name="fizisys-project-doxygen" checked> Generate Doxygen documentation for hook files</label>
-                        <label class="checkbox-label"><input type="checkbox" id="fizisys-project-hide-footer" name="fizisys-project-hide-footer"> Hide "Powered by FiziSysMaker" footer in generated applications</label>
+                        <label class="checkbox-label"><input type="checkbox" id="fixzy-project-doxygen" name="fixzy-project-doxygen" checked> Generate Doxygen documentation for hook files</label>
+                        <label class="checkbox-label"><input type="checkbox" id="fixzy-project-hide-footer" name="fixzy-project-hide-footer"> Hide "Powered by Fixzy SysMaker" footer in generated applications</label>
                         <div class="form-group mt-2">
-                            <label for="fizisys-max-entries">Maximum entries in "Go to page" dropdown</label>
-                            <input type="number" id="fizisys-max-entries" name="fizisys-max-entries" value="150" style="max-width: 100px;" min="10">
+                            <label for="fixzy-max-entries">Maximum entries in "Go to page" dropdown</label>
+                            <input type="number" id="fixzy-max-entries" name="fixzy-max-entries" value="150" style="max-width: 100px;" min="10">
                         </div>
-                        <label class="checkbox-label"><input type="checkbox" id="fizisys-project-no-trim" name="fizisys-project-no-trim"> Don't trim user input</label>
+                        <label class="checkbox-label"><input type="checkbox" id="fixzy-project-no-trim" name="fixzy-project-no-trim"> Don't trim user input</label>
                     </div>
                 </div>
             </div>
@@ -3577,7 +3578,7 @@
         <div class="modal-body">
             <p style="font-size: 1.1em;"><strong>The import process failed.</strong></p>
             <p>
-                This usually happens not because of a bug in FiziSysMaker, but because your SQL script contains advanced or vendor-specific syntax that cannot be translated. Our parser is designed to understand the core <strong><code>CREATE TABLE</code></strong> structure.
+                This usually happens not because of a bug in Fixzy SysMaker, but because your SQL script contains advanced or vendor-specific syntax that cannot be translated. Our parser is designed to understand the core <strong><code>CREATE TABLE</code></strong> structure.
             </p>
             
             <hr style="margin: 1.5rem 0;">
@@ -3694,6 +3695,52 @@
             
             <webview id="app-preview-iframe" src="" style="flex: 1; width: 100%; border: none; display: none; background: white;"></webview>
             
+        </div>
+    </div>
+</div>
+
+<!-- ============ SETUP WIZARD (GUI-first installation) ============ -->
+<div id="setup-wizard-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 640px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-magic"></i> Setup Wizard</h3>
+            <button id="setup-wizard-close-btn" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin-top:0; color:#475569;">
+                Fixzy SysMaker checks your computer and installs what it needs — no command line required.
+                You can safely re-run this any time.
+            </p>
+            <table style="width:100%; border-collapse:collapse; margin: 12px 0;">
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:8px; width:28px;" id="wiz-node-icon"></td>
+                    <td style="padding:8px;"><strong>Node.js runtime</strong></td>
+                    <td style="padding:8px; color:#475569;" id="wiz-node-detail">checking...</td>
+                </tr>
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:8px;" id="wiz-php-icon"></td>
+                    <td style="padding:8px;"><strong>PHP (live preview)</strong></td>
+                    <td style="padding:8px; color:#475569;" id="wiz-php-detail">checking...</td>
+                </tr>
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:8px;" id="wiz-composer-icon"></td>
+                    <td style="padding:8px;"><strong>Composer</strong></td>
+                    <td style="padding:8px; color:#475569;" id="wiz-composer-detail">checking...</td>
+                </tr>
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:8px;" id="wiz-preview-icon"></td>
+                    <td style="padding:8px;"><strong>Preview environment</strong></td>
+                    <td style="padding:8px; color:#475569;" id="wiz-preview-detail">checking...</td>
+                </tr>
+            </table>
+            <div id="wiz-log" style="height:140px; overflow-y:auto; background:#0f172a; color:#94a3b8; font-family:monospace; font-size:12px; padding:10px; border-radius:6px; margin-bottom:8px;"></div>
+            <div id="wiz-done-note" class="hidden" style="color:#16a34a; font-weight:600; margin-bottom:8px;">
+                <i class="fas fa-check-circle"></i> Everything is ready. You can start designing your app.
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="wiz-skip-btn">Skip for Now</button>
+            <button class="btn btn-primary" id="wiz-run-btn"><i class="fas fa-download"></i> Run Setup Now</button>
         </div>
     </div>
 </div>

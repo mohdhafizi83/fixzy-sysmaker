@@ -176,7 +176,7 @@ CREATE TABLE IF NOT EXISTS "fields" (
 	PRIMARY KEY("field_id" AUTOINCREMENT),
 	FOREIGN KEY("table_id") REFERENCES "tables"("table_id") ON DELETE CASCADE
 );
-CREATE TABLE IF NOT EXISTS "fizisys_settings" (
+CREATE TABLE IF NOT EXISTS "fixzy_settings" (
 	"setting_name"	TEXT,
 	"setting_value"	TEXT,
 	PRIMARY KEY("setting_name")
@@ -253,7 +253,7 @@ CREATE TABLE IF NOT EXISTS "projects" (
 	"project_hook_workflow"	TEXT,
 	"stack_base"	TEXT DEFAULT 'core_php',
 	"stack_database"	TEXT DEFAULT 'mysql_mariadb',
-	"stack_theme"	TEXT DEFAULT 'fiziSys',
+	"stack_theme"	TEXT DEFAULT 'fixzySys',
 	"data_delete_type"	TEXT DEFAULT 'hard',
 	"module_auth_email"	INTEGER DEFAULT 1,
 	"module_auth_email_2fa"	INTEGER DEFAULT 0,
@@ -415,27 +415,27 @@ INSERT INTO "fields" VALUES (405,46,'updated_by',7,'Updated By',NULL,'BIGINT',20
 INSERT INTO "fields" VALUES (406,46,'deleted_by',8,'Deleted By',NULL,'BIGINT',20,NULL,50,'left',NULL,1,0,0,0,'text_input',0,0,0,0,1,0,0,0,0,50,'Normal','Regular','date_and_time','left',NULL,NULL,NULL,NULL,1,1,0,0,0,1,0,1,'link','detail_view','field_contents',NULL,0,'local',250,0,0,'square',50,50,0,0,'square',250,250,0,0,0,'local','images',1074,0,0,'download_link','clickable_icon',NULL,0,'url',50,50,360,0,50,50,480,360,NULL,NULL,NULL,NULL,'dropdown',0,'modal',NULL,'dropdown',NULL,'default',0,NULL,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'0',1,1,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,'Yes','No',0);
 INSERT INTO "fields" VALUES (407,46,'fakulti_id',1,'Fakulti ID',NULL,'VARCHAR',255,NULL,50,'left',NULL,0,0,0,0,'text_input',0,0,0,0,1,0,0,0,0,50,'Normal','Regular','date_and_time','left',NULL,NULL,NULL,NULL,0,1,0,0,0,0,0,0,'link','detail_view','field_contents',NULL,0,'local',250,0,0,'square',50,50,0,0,'square',250,250,0,0,0,'local','images',1074,0,0,'download_link','clickable_icon',NULL,0,'url',50,50,360,0,50,50,480,360,'fakulti','nama_fakulti',NULL,NULL,'dropdown',0,'modal',NULL,'dropdown',NULL,'default',0,NULL,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'0',1,1,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,'Yes','No',0);
 INSERT INTO "fields" VALUES (408,46,'jumlah_bayaran',2,'Jumlah Bayaran',NULL,'DECIMAL',255,NULL,50,'left',NULL,0,0,0,0,'text_input',0,0,0,0,1,0,0,0,0,50,'Normal','Regular','date_and_time','left',NULL,NULL,NULL,NULL,0,1,0,0,0,0,0,0,'link','detail_view','field_contents',NULL,0,'local',250,0,0,'square',50,50,0,0,'square',250,250,0,0,0,'local','images',1074,0,0,'download_link','clickable_icon',NULL,0,'url',50,50,360,0,50,50,480,360,NULL,NULL,NULL,NULL,'dropdown',0,'modal',NULL,'dropdown',NULL,'default',0,NULL,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'0',1,1,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,'Yes','No',0);
-INSERT INTO "fizisys_settings" VALUES ('check_updates','1');
-INSERT INTO "fizisys_settings" VALUES ('autosave_interval','15');
-INSERT INTO "fizisys_settings" VALUES ('show_begin_box','1');
-INSERT INTO "fizisys_settings" VALUES ('font_size','small');
-INSERT INTO "fizisys_settings" VALUES ('doc_root','C:\Users\mohdh\Desktop\janaan');
-INSERT INTO "fizisys_settings" VALUES ('base_url','http://localhost');
-INSERT INTO "fizisys_settings" VALUES ('field_default_type','VARCHAR');
-INSERT INTO "fizisys_settings" VALUES ('field_default_length','255');
-INSERT INTO "fizisys_settings" VALUES ('table_suggest_icon','1');
-INSERT INTO "fizisys_settings" VALUES ('table_allow_csv','1');
-INSERT INTO "fizisys_settings" VALUES ('table_dv_separate_page','1');
-INSERT INTO "fizisys_settings" VALUES ('table_hide_save_as_copy','0');
-INSERT INTO "fizisys_settings" VALUES ('table_allow_add_from_homepage','0');
-INSERT INTO "fizisys_settings" VALUES ('table_show_record_count','0');
-INSERT INTO "fizisys_settings" VALUES ('project_encoding','3-Byte Unicode UTF-8');
-INSERT INTO "fizisys_settings" VALUES ('project_rtl','0');
-INSERT INTO "fizisys_settings" VALUES ('project_doxygen','1');
-INSERT INTO "fizisys_settings" VALUES ('project_hide_footer','0');
-INSERT INTO "fizisys_settings" VALUES ('max_entries','150');
-INSERT INTO "fizisys_settings" VALUES ('project_no_trim','0');
-INSERT INTO "fizisys_settings" VALUES ('lock_core_components','0');
+INSERT INTO "fixzy_settings" VALUES ('check_updates','1');
+INSERT INTO "fixzy_settings" VALUES ('autosave_interval','15');
+INSERT INTO "fixzy_settings" VALUES ('show_begin_box','1');
+INSERT INTO "fixzy_settings" VALUES ('font_size','small');
+INSERT INTO "fixzy_settings" VALUES ('doc_root','C:\Users\mohdh\Desktop\janaan');
+INSERT INTO "fixzy_settings" VALUES ('base_url','http://localhost');
+INSERT INTO "fixzy_settings" VALUES ('field_default_type','VARCHAR');
+INSERT INTO "fixzy_settings" VALUES ('field_default_length','255');
+INSERT INTO "fixzy_settings" VALUES ('table_suggest_icon','1');
+INSERT INTO "fixzy_settings" VALUES ('table_allow_csv','1');
+INSERT INTO "fixzy_settings" VALUES ('table_dv_separate_page','1');
+INSERT INTO "fixzy_settings" VALUES ('table_hide_save_as_copy','0');
+INSERT INTO "fixzy_settings" VALUES ('table_allow_add_from_homepage','0');
+INSERT INTO "fixzy_settings" VALUES ('table_show_record_count','0');
+INSERT INTO "fixzy_settings" VALUES ('project_encoding','3-Byte Unicode UTF-8');
+INSERT INTO "fixzy_settings" VALUES ('project_rtl','0');
+INSERT INTO "fixzy_settings" VALUES ('project_doxygen','1');
+INSERT INTO "fixzy_settings" VALUES ('project_hide_footer','0');
+INSERT INTO "fixzy_settings" VALUES ('max_entries','150');
+INSERT INTO "fixzy_settings" VALUES ('project_no_trim','0');
+INSERT INTO "fixzy_settings" VALUES ('lock_core_components','0');
 INSERT INTO "menu_groups" VALUES (1,1,'Biodata',2);
 INSERT INTO "menu_groups" VALUES (2,1,'Akademik',3);
 INSERT INTO "menu_items" VALUES (1,1,NULL,1,NULL,'Users','users Module',1,0);
@@ -484,7 +484,7 @@ INSERT INTO "projects" VALUES (1,'Sistem Urus Kursus','31 December 2026','11:59 
       "toPoint": "in"
     }
   ]
-}','laravel_filament','sqlite','fiziSys','soft',1,0,0,0,0,1,1,1,'standard','',1);
+}','laravel_filament','sqlite','fixzySys','soft',1,0,0,0,0,1,1,1,'standard','',1);
 INSERT INTO "table_constraints" VALUES (7,42,'pelajar_kursus_unique','UNIQUE','["pelajar_id","kursus_id"]');
 INSERT INTO "tables" VALUES (1,1,'users',0,'Users','Users',NULL,1,1,'standard',NULL,0,1,1,1,1,0,0,1,1,'horizontal',0,0,NULL,NULL,'Detail View','',NULL,NULL,NULL,1,0,1,0,0,1,0,'dynamic',2,NULL,NULL);
 INSERT INTO "tables" VALUES (38,1,'pelajar',0,'Pelajar','Pelajar Kursus','Maklumat tentang pelajar diuruskan disini.',0,1,'standard',NULL,0,1,1,1,0,1,1,1,1,'horizontal',0,0,NULL,NULL,'Detail View','current_user',NULL,NULL,NULL,1,0,1,0,0,1,0,'dynamic',2,NULL,NULL);

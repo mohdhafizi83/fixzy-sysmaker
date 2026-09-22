@@ -78,4 +78,8 @@ updateIndividualMenuOrder: (data) => ipcRenderer.invoke('menu:update-individual-
     // --- DASHBOARD WIDGET MANAGEMENT ---
   saveWidget: (data) => ipcRenderer.invoke('widget:save', data),
   deleteWidget: (widgetId) => ipcRenderer.invoke('widget:delete', widgetId),
+  // --- SETUP WIZARD ---
+  setupCheck: () => ipcRenderer.invoke('setup:check'),
+  setupRun: () => ipcRenderer.invoke('setup:run'),
+  onSetupLog: (callback) => ipcRenderer.on('setup-log', (event, line) => callback(line)),
 });
