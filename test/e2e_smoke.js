@@ -138,6 +138,11 @@ function run(cmd, opts = {}) {
     }
 
     console.log(`\nE2E SMOKE PASS (${fixture}) — workdir ${work}`);
+    // Batch runs (20+ fixtures) overflow tmpfs if every PASS keeps ~134MB.
+    // Keep the workdir only on failure (for inspection).
+    if (process.env.E2E_KEEP_WORKDIR !== '1') {
+        fs.rmSync(work, { recursive: true, force: true });
+    }
 })().catch((e) => {
     console.error('E2E SMOKE FAIL:', e.message);
     console.error(`workdir kept for inspection: ${work}`);

@@ -150,3 +150,21 @@ or regenerate: `node test/golden.js <fixture> --update`.
 - Verified: fresh wipe -> instant-run -> /admin/login HTTP 200 ->
   login admin@admin.com OK -> dashboard renders (screenshot 16).
 - Status: FIXED (this commit)
+
+## S4 Fixture Matrix (2026-09-22)
+
+- Added test/overnight_batch.sh: runs e2e_smoke for every fixture, writes
+  test/overnight_report_TS.md + per-fixture logs.
+- New fixtures: auth_2fa, auth_captcha, auth_ldap_sso, debug_on
+  (base_simple variants toggling previously-uncovered project flags).
+- Batch result: 20/20 PASS (~7-8s each).
+- BUG-014 (e2e harness): every PASS kept a ~134MB /tmp workdir; 20-fixture
+  batch overflowed tmpfs (error -122 ENOSPC) mid-run. Fixed: e2e_smoke.js
+  now removes workdir on PASS (keep only on FAIL; E2E_KEEP_WORKDIR=1 overrides).
+- FEATURE GAP (documented, not a bug): generator consumes only
+  module_log_audit, module_authorization, tenancy_type/tenant_table,
+  app_title, menu_orientation. Flags module_auth_email_2fa,
+  module_auth_email_captcha, module_auth_ldap, module_auth_google_sso,
+  debug_mode are stored in DB but NO generator reads them -> generated app
+  has no 2FA/captcha/LDAP/SSO/debug behavior. Same class as
+  project_hook_workflow (workflow builder UI exists, generator emits nothing).
