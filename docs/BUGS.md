@@ -130,3 +130,23 @@ or regenerate: `node test/golden.js <fixture> --update`.
 - Fix proposal: on instant-run, verify a manifest of key template files in the
   working copy; if mismatch, re-copy (or run composer dump-autoload + migrate).
 - Status: OPEN (needs integrity-check design; workaround = wipe and reprovision)
+
+### BUG-012: instant-run Scenario 3 missing audit files + stale classmap/panel cache
+- Chain of failures found while verifying Show Preview end-to-end:
+  1. Smart Folder Cleanup wipes app/Models/* (kecuali User.php) termasuk
+     Audit.php + Concerns/HasAudits.php, tapi instant-run tak panggil
+     generateNativeAuditFiles -> boot fatal "Trait HasAudits not found"
+     (template User.php uses the trait when module_log_audit=1).
+  2. Template vendor/composer classmap still maps deleted classes (old
+     Resources/Policies from template-build time) -> Filament discovery
+     fatals "Class ...Resource not found".
+  3. Bundled bootstrap/cache/filament/panels/admin.php references old
+     resources; artisan optimize:clear ABORTS at its DB cache-store flush
+     on a fresh unmigrated env, leaving the panel cache stale.
+- Fixes (register.js, instant-run Scenario 3):
+  - call generateNativeAuditFiles after user model/migrations/seeder
+  - composer dump-autoload after generation (uses bundled composer.phar)
+  - fs.rmSync bootstrap/cache/filament (direct; can't rely on optimize:clear pre-migration)
+- Verified: fresh wipe -> instant-run -> /admin/login HTTP 200 ->
+  login admin@admin.com OK -> dashboard renders (screenshot 16).
+- Status: FIXED (this commit)

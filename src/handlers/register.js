@@ -87,7 +87,8 @@ const {
     generateLaravelUserMigration,
     generateLaravelMigrations, 
     generateLaravelFactories, 
-    generateLaravelDatabaseSeeder 
+    generateLaravelDatabaseSeeder,
+    generateNativeAuditFiles
 } = require('../generators/laravelDatabaseGenerator');
 
 const { generateFilamentExports } = require('../generators/laravelExportsGenerator');
@@ -2408,6 +2409,10 @@ ipcMain.handle('preview:instant-run', async (event) => {
                 await generateLaravelMigrations(fullSchema, previewPath);
                 await generateLaravelDatabaseSeeder(fullSchema, previewPath);
                 await generateFilamentUserModel(fullSchema, previewPath);
+                // Native audit files (trait/model/observer/migration) — template
+                // User.php references HasAudits, so these MUST exist when
+                // module_log_audit=1, else boot fatals with "Trait not found".
+                await generateNativeAuditFiles(fullSchema, previewPath);
             }
             
             // Factory must be regenerated for Scenario 3 AND Scenario 4
@@ -2436,6 +2441,28 @@ ipcMain.handle('preview:instant-run', async (event) => {
             // Save the schema memory after code is successfully generated to RAM and Hard Disk
             lastGeneratedSchema = JSON.parse(JSON.stringify(fullSchema));
             fs.writeFileSync(schemaCachePath, JSON.stringify(lastGeneratedSchema), 'utf8');
+
+            // The template's vendor/composer classmap was built at template time
+            // and still maps deleted classes (e.g. old Resources/Policies).
+            // Filament's discovery reads the classmap -> "Class not found".
+            // Regenerate the autoloader (no deps install) after generation.
+            // NOTE: optimize:clear is NOT run here — its cache-store flush needs
+            // the DB tables and aborts before reaching the filament panel cache
+            // on a fresh (unmigrated) env. The clear happens post-migration.
+            const composerPhar = path.join(baseBinPath, 'composer.phar');
+            const composerCmd = fs.existsSync(composerPhar) ? phpPath : 'composer';
+            const composerArgs = fs.existsSync(composerPhar) ? [composerPhar, 'dump-autoload', '-q'] : ['dump-autoload', '-q'];
+            await new Promise((r) => {
+                const dumpProc = spawn(composerCmd, composerArgs, { cwd: previewPath });
+                dumpProc.on('close', r);
+                dumpProc.on('error', r);
+            });
+
+            // Also drop the bundled Filament panel cache directly via fs:
+            // artisan optimize:clear aborts at its DB cache-store flush on a
+            // fresh (unmigrated) env, leaving this file stale. Filament
+            // re-discovers and rebuilds it on next boot.
+            fs.rmSync(path.join(previewPath, 'bootstrap', 'cache', 'filament'), { recursive: true, force: true });
 
             // ============================================================
             // --- SCENARIO 4: TARGETED REFRESH (SPECIFICALLY FOR OPTIONS LIST & ARRAY) ---
