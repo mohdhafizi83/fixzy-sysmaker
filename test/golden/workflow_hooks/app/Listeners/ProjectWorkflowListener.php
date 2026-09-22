@@ -21,6 +21,20 @@ class ProjectWorkflowListener
                 break;
             default:
                 // default path
+                // Advanced Action: audit trail + notify prep
+                \DB::table('sessions')->insert([
+                    'id' => 'wf-adv-1',
+                    'ip_address' => '10.0.0.9',
+                ]);
+                \DB::table('sessions')
+                    ->where('id', '=', 'wf-adv-1')
+                    ->update([
+                        'ip_address' => '10.0.0.1',
+                    ]);
+                // Raw SQL from workflow Advanced Action (parameterized).
+                \DB::select('SELECT id FROM sessions WHERE id = ?', [$wf_marker]);
+                // [fixzy] script step 5: raw SQL rejected — only SELECT/INSERT/UPDATE/DELETE/REPLACE statements are allowed
+                return;
         }
     }
 }

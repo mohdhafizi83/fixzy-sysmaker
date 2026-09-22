@@ -252,3 +252,21 @@ or regenerate: `node test/golden.js <fixture> --update`.
   needs parens (PHP8), bare return; invalid in handle():int (mapped to SUCCESS).
 - Fixture workflow_hooks extended to cover ALL new blocks. php -l 33/33, golden 17/17,
   e2e 21/21 PASS.
+
+### BUG-017 ADVANCED ACTION GENERATOR (2026-09-22): ACTION_SCRIPT_GRAMMAR now compiles
+- Gap: Advanced Action block UI (Algorithm Builder) serialized a script of
+  insert_record/update_record/delete_record/custom_query tokens, but the
+  generator never parsed them — block fell through to skip-comment.
+- Fix: compileInsertStmt/compileUpdateStmt/compileDeleteStmt extracted as
+  shared compilers (standalone blocks reuse them); new case 'action' walks
+  the token list and emits each statement in order.
+- Raw SQL (owner option (a)): allowed, but hardened —
+  * only SELECT/INSERT/UPDATE/DELETE/REPLACE; DDL/admin rejected
+  * multi-statement (internal ;) rejected
+  * ##variable.x## tokens -> ? placeholders with bound PHP vars (no concat)
+  * stray ? without binding rejected
+  * provenance comment on every generated raw-SQL line
+- Guard badge: 'action' removed from NOT_GENERATED_TYPES (telegram only).
+- Fixture: p_19 Advanced Action (comment+insert+update+select+DROP-attempt);
+  golden proves DROP rejected with visible reason. php -l 33/33,
+  golden 17/17, e2e 21/21, preview live 200.

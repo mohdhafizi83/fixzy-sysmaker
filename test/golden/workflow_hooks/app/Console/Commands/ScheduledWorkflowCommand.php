@@ -25,7 +25,6 @@ class ScheduledWorkflowCommand extends Command
                 // loop item failed
             }
         }
-        return self::SUCCESS;
 
         return self::SUCCESS;
     }

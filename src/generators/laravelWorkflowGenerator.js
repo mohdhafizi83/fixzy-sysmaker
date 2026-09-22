@@ -14,7 +14,8 @@
 //              before_user_deleted/on_scheduled_task (project)
 //   actions  : insert_record, update_record, delete_record, variable,
 //              terminate_workflow, comment, send_email, http_request,
-//              data_transformer
+//              data_transformer, action (Advanced Action script:
+//              insert/update/delete + parameterized raw SQL custom_query)
 //   logic    : condition (flat comparison/logical expression),
 //              if/then/else_if/else (nested ternary), for_each_loop,
 //              switch, try_catch (with Catch branch)
@@ -257,6 +258,99 @@ function compileHeaders(headers) {
 
 // Compile one action block's configData (flat token list) into PHP statements.
 // Returns { code, unsupported } where code is an array of lines.
+// ---- DB statement compilers (shared by standalone blocks and Advanced
+// Action scripts). Each takes {table, details} and returns PHP lines or null.
+
+function compileInsertStmt(item) {
+    if (!item.table) return null;
+    const table = safeIdent(item.table, 'table');
+    const details = item.details || {};
+    const values = Array.isArray(details.values) ? details.values : [];
+    if (values.length === 0) return null;
+    const lines = [`\\DB::table(${phpString(table)})->insert([`];
+    values.forEach((p) => {
+        const f = safeIdent(p.field, 'insert field');
+        const v = compileValue(p.value) ?? phpString(p.value ?? '');
+        lines.push(`    ${phpString(f)} => ${v},`);
+    });
+    lines.push(']);');
+    return lines;
+}
+
+function compileUpdateStmt(item) {
+    if (!item.table) return null;
+    const table = safeIdent(item.table, 'table');
+    const details = item.details || {};
+    const set = Array.isArray(details.set) ? details.set : [];
+    if (set.length === 0) return null;
+    const whereChain = details.where ? compileWhere(details.where, '    ') : null;
+    if (!whereChain) return null; // refuse unbounded update
+    const lines = [`\\DB::table(${phpString(table)})`, whereChain];
+    lines.push('    ->update([');
+    set.forEach((p) => {
+        const f = safeIdent(p.field, 'update field');
+        const v = compileValue(p.value) ?? phpString(p.value ?? '');
+        lines.push(`        ${phpString(f)} => ${v},`);
+    });
+    lines.push('    ]);');
+    return lines;
+}
+
+function compileDeleteStmt(item) {
+    if (!item.table) return null;
+    const table = safeIdent(item.table, 'table');
+    const details = item.details || {};
+    const whereChain = details.where ? compileWhere(details.where, '    ') : null;
+    if (!whereChain) return null; // refuse unbounded delete
+    return [`\\DB::table(${phpString(table)})`, whereChain, '    ->delete();'];
+}
+
+// Compile a raw SQL token (Advanced Action -> custom_query) into a safe
+// parameterized call. Owner-approved option (a): raw SQL IS allowed, but:
+//   * DDL / destructive-admin statements are REJECTED (DROP, TRUNCATE, ...)
+//   * multiple statements (internal ;) are REJECTED
+//   * ##variable.x## tokens become ? placeholders with bound PHP variables
+//   * the generated line carries a visible provenance comment
+// Returns { lines: [...] } or { error: 'reason' }.
+const RAW_SQL_FORBIDDEN = /\b(drop|truncate|alter|create|rename|grant|revoke|attach|detach|shutdown|kill|set\s+global|load_file|into\s+outfile|into\s+dumpfile)\b/i;
+
+function compileRawSql(raw) {
+    let sql = String(raw || '').trim();
+    if (!sql) return { error: 'custom_query is empty' };
+    // Strip a single trailing semicolon; internal ones = multi-statement.
+    if (sql.endsWith(';')) sql = sql.slice(0, -1).trim();
+    if (sql.includes(';')) return { error: 'multiple SQL statements are not allowed' };
+    if (!/^(select|insert|update|delete|replace)\b/i.test(sql)) {
+        return { error: 'only SELECT/INSERT/UPDATE/DELETE/REPLACE statements are allowed' };
+    }
+    if (RAW_SQL_FORBIDDEN.test(sql)) return { error: 'forbidden statement detected in SQL' };
+
+    // Interpolate ##var## tokens into ? placeholders + bindings.
+    const bindings = [];
+    TOKEN_RE.lastIndex = 0;
+    sql = sql.replace(TOKEN_RE, (mm, v) => {
+        bindings.push('$' + tokenVarName(v));
+        return '?';
+    });
+    if (/\?/.test(sql) && bindings.length === 0) {
+        return { error: 'unbound ? placeholder in SQL (write ##variable## instead of ?)' };
+    }
+
+    const isSelect = /^\s*select\b/i.test(sql);
+    const lines = [`// Raw SQL from workflow Advanced Action (parameterized).`];
+    if (bindings.length === 0) {
+        lines.push(isSelect
+            ? `\\DB::select(${phpString(sql)})`
+            : `\\DB::statement(${phpString(sql)})`);
+    } else {
+        lines.push(isSelect
+            ? `\\DB::select(${phpString(sql)}, [${bindings.join(', ')}])`
+            : `\\DB::statement(${phpString(sql)}, [${bindings.join(', ')}])`);
+    }
+    lines[lines.length - 1] += ';';
+    return { lines };
+}
+
 function compileAction(block, recordVar) {
     const lines = [];
     let tokens = [];
@@ -272,58 +366,55 @@ function compileAction(block, recordVar) {
 
     switch (block.type) {
         case 'insert_record': {
-            if (!block.table) { pushUnsupported('insert_record without target table'); break; }
-            const table = safeIdent(block.table, 'table');
-            const details = block.details || {};
-            const values = Array.isArray(details.values) ? details.values : [];
-            if (values.length === 0) { pushUnsupported('insert_record with no field values'); break; }
-            const arr = values.map((p) => {
-                const f = safeIdent(p.field, 'insert field');
-                const v = compileValue(p.value) ?? phpString(p.value ?? '');
-                return `${phpString(f)} => ${v}`;
-            });
-            lines.push(`\\DB::table(${phpString(table)})->insert([`);
-            arr.forEach((a) => lines.push(`    ${a},`));
-            lines.push(']);');
+            const item = { table: block.table, details: block.details || (tokens[0] && tokens[0].details) || {} };
+            const stmt = compileInsertStmt(item);
+            if (!stmt) { pushUnsupported('insert_record without target table or field values'); break; }
+            lines.push(...stmt);
             break;
         }
         case 'update_record': {
-            if (!block.table) { pushUnsupported('update_record without target table'); break; }
-            const table = safeIdent(block.table, 'table');
-            const details = block.details || {};
-            const set = Array.isArray(details.set) ? details.set : [];
-            if (set.length === 0) { pushUnsupported('update_record with no SET values'); break; }
-            const setArr = set.map((p) => {
-                const f = safeIdent(p.field, 'update field');
-                const v = compileValue(p.value) ?? phpString(p.value ?? '');
-                return `${phpString(f)} => ${v}`;
-            });
-            lines.push(`\\DB::table(${phpString(table)})`);
-            const whereChain = details.where ? compileWhere(details.where, '    ') : null;
-            if (whereChain) {
-                lines.push(whereChain);
-            } else {
-                pushUnsupported('update_record without WHERE — refusing unbounded update');
-                break;
-            }
-            lines.push(`    ->update([`);
-            setArr.forEach((a) => lines.push(`        ${a},`));
-            lines.push('    ]);');
+            const tok = tokens[0] || {};
+            const item = { table: block.table || tok.table, details: block.details || tok.details || {} };
+            const stmt = compileUpdateStmt(item);
+            if (!stmt) { pushUnsupported('update_record needs SET values and a WHERE clause (unbounded updates are refused)'); break; }
+            lines.push(...stmt);
             break;
         }
         case 'delete_record': {
-            if (!block.table) { pushUnsupported('delete_record without target table'); break; }
-            const table = safeIdent(block.table, 'table');
-            const details = block.details || {};
-            lines.push(`\\DB::table(${phpString(table)})`);
-            const whereChain = details.where ? compileWhere(details.where, '    ') : null;
-            if (whereChain) {
-                lines.push(whereChain);
-            } else {
-                pushUnsupported('delete_record without WHERE — refusing unbounded delete');
-                break;
-            }
-            lines.push('    ->delete();');
+            const tok = tokens[0] || {};
+            const item = { table: block.table || tok.table, details: block.details || tok.details || {} };
+            const stmt = compileDeleteStmt(item);
+            if (!stmt) { pushUnsupported('delete_record needs a WHERE clause (unbounded deletes are refused)'); break; }
+            lines.push(...stmt);
+            break;
+        }
+        case 'action': {
+            // Advanced Action: a script of DB statements authored in the
+            // Algorithm Builder (ACTION_SCRIPT_GRAMMAR). Each token is one
+            // statement: insert_record / update_record / delete_record /
+            // custom_query (raw SQL, parameterized — owner option (a)).
+            if (tokens.length === 0) { pushUnsupported('advanced action with empty script'); break; }
+            tokens.forEach((tok, i) => {
+                if (!tok || typeof tok !== 'object') return;
+                if (tok.type === 'comment') {
+                    lines.push(`// ${String(tok.value ?? '').replace(/\r?\n/g, ' ')}`);
+                } else if (tok.type === 'insert_record') {
+                    const stmt = compileInsertStmt(tok);
+                    lines.push(...(stmt || [`// [fixzy] script step ${i + 1}: insert_record without table/values — skipped.`]));
+                } else if (tok.type === 'update_record') {
+                    const stmt = compileUpdateStmt(tok);
+                    lines.push(...(stmt || [`// [fixzy] script step ${i + 1}: update_record needs SET + WHERE — skipped.`]));
+                } else if (tok.type === 'delete_record') {
+                    const stmt = compileDeleteStmt(tok);
+                    lines.push(...(stmt || [`// [fixzy] script step ${i + 1}: delete_record needs WHERE — skipped.`]));
+                } else if (tok.type === 'custom_query') {
+                    const r = compileRawSql(tok.value);
+                    if (r.error) lines.push(`// [fixzy] script step ${i + 1}: raw SQL rejected — ${r.error}`);
+                    else lines.push(...r.lines);
+                } else {
+                    lines.push(`// [fixzy] script step ${i + 1}: token type '${tok.type}' not supported — skipped.`);
+                }
+            });
             break;
         }
         case 'variable': {

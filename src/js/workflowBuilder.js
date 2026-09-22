@@ -461,7 +461,7 @@ function setupBuilderInstance(config) {
 
         // Blocks the code generator does NOT emit yet — show a visible warning
         // badge so users are never surprised by a silently-skipped step.
-        const NOT_GENERATED_TYPES = ['send_telegram', 'action'];
+        const NOT_GENERATED_TYPES = ['send_telegram'];
         const guardBadge = NOT_GENERATED_TYPES.includes(type)
             ? ' <span class="wf-not-generated-badge" title="This block is not generated into the app yet (planned). It will be skipped.">&#9888; not generated</span>'
             : '';
