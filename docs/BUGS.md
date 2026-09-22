@@ -86,3 +86,47 @@ or regenerate: `node test/golden.js <fixture> --update`.
 - The "Welcome to Your New Project" tutorial modal shows on every fresh page
   load while project is empty — by design? Annoying for repeat visits; consider
   persisting dismissed state. Not a bug per se; UX decision for owner.
+
+## S2 Buttons/Forms Pass (2026-09-22)
+
+### BUG-007: Show Preview broken in dev (web mode) - wrong resource paths
+- Symptom: preview:instant-run -> "Template not found: src/resources/preview_env".
+- Cause: register.js used __dirname/../resources/preview_env but handlers live
+  in src/handlers/ so correct path is ../../resources/preview_env (repo root).
+  Same bug for ../bin (should be ../../bin).
+- Fix: both paths corrected.
+- Status: FIXED (this commit)
+
+### BUG-008: Preview port hardcoded 8080 - collides with other local services
+- Symptom: another service (server-dashboard python) held :8080; artisan serve
+  failed silently, promise never resolved -> UI stuck on loading overlay forever.
+- Fix: findFreePort() helper (net.createServer probe, 8080..8099); preview:start
+  and preview:instant-run both use dynamic port; port tracked in previewServerPort
+  and reused while server alive.
+- Status: FIXED (this commit)
+
+### BUG-009: Stale previewServerProcess after crash -> false "Preview Ready"
+- Symptom: after the PHP child died, Scenario 1 still reported success pointing at
+  a dead port (HTTP connection refused).
+- Fix: liveness probe (kill(pid,0)) in Scenario 1; exit handler clears
+  previewServerProcess/Port so next call re-spawns.
+- Status: FIXED (this commit)
+
+### BUG-010: "View files" button has NO handler
+- Symptom: #app-view_files button exists in index.html but no JS listens to it
+  (grep across src/**/*.js: zero references). Click does nothing.
+- Fix: TBD - should open the generated app folder (reuse generate-app result
+  folderPath / staging path) or show a dialog with the path.
+- Status: OPEN
+
+### BUG-011: preview_env copy drift -> missing files (Concerns/HasAudits.php)
+- Symptom: ~/.fixzy/preview_env copy from earlier session missed app/Models/
+  Concerns/HasAudits.php (present in repo template) -> boot fatal "Trait not
+  found"; also stale generated Resources (DokumenPelajarResource) referenced
+  after cleanup -> Class not found; cache table missing broke optimize:clear.
+- Root cause: first-time copy happened before template had those files / partial
+  state; no integrity check on the working copy.
+- Mitigation now: wiped ~/.fixzy/preview_env + schema cache, re-provisioning.
+- Fix proposal: on instant-run, verify a manifest of key template files in the
+  working copy; if mismatch, re-copy (or run composer dump-autoload + migrate).
+- Status: OPEN (needs integrity-check design; workaround = wipe and reprovision)

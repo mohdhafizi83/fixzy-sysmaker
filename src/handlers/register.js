@@ -109,9 +109,28 @@ module.exports = function registerIpcHandlers(ctx) {
 
     // Module-level state (was top-level in main.js)
     let previewServerProcess = null;
+    let previewServerPort = null;
     let lastGeneratedSchema = null;
     let lastPreviewScenario = 0;
     const parser = new Parser();
+
+    // Find a free TCP port for the preview server (8080 may be taken by other
+    // local services; hardcoding it caused instant-preview to hang forever).
+    const net = require('net');
+    function findFreePort(startPort = 8080, tries = 20) {
+        return new Promise((resolve, reject) => {
+            const tryPort = (p, left) => {
+                const srv = net.createServer();
+                srv.once('error', () => {
+                    if (left <= 0) return reject(new Error(`No free port found in ${startPort}..${startPort + tries - 1}`));
+                    tryPort(p + 1, left - 1);
+                });
+                srv.once('listening', () => srv.close(() => resolve(p)));
+                srv.listen(startPort === p ? p : p, '127.0.0.1');
+            };
+            tryPort(startPort, tries);
+        });
+    }
 
 async function copyDirWithProgress(src, dest, onProgress) {
     let totalFiles = 0;
@@ -1945,7 +1964,7 @@ ipcMain.handle('app:update', updateApp);
 // =================================================================
 
 ipcMain.handle('preview:start', async (event, projectPath) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try {
             // 1. Determine the PHP path (Same as runComposer)
             const baseBinPath = ctx.isPackaged 
@@ -1960,6 +1979,8 @@ ipcMain.handle('preview:start', async (event, projectPath) => {
                 console.log("Previous preview server has been stopped.");
             }
 
+            const port = await findFreePort();
+            previewServerPort = port;
             // 3. Make sure the database.sqlite file exists (Avoid Laravel prompt)
             const dbPath = path.join(projectPath, 'database', 'database.sqlite');
             if (!fs.existsSync(dbPath)) {
@@ -1981,8 +2002,7 @@ ipcMain.handle('preview:start', async (event, projectPath) => {
 
                 console.log("Migration successful! Starting Laravel server...");
 
-                // 5. Start the PHP Built-in Server
-                const port = 8080;
+                // 5. Start the PHP Built-in Server (dynamic free port)
                 previewServerProcess = spawn(phpPath, ['artisan', 'serve', `--port=${port}`], {
                     cwd: projectPath,
                     stdio: 'pipe'
@@ -2168,7 +2188,7 @@ ipcMain.handle('preview:instant-run', async (event) => {
     const win = ctx.getWindow(event); 
     return new Promise(async (resolve, reject) => {
         try {
-            const templatePreviewPath = ctx.isPackaged ? path.join(process.resourcesPath, 'preview_env') : path.join(__dirname, '../resources/preview_env');
+            const templatePreviewPath = ctx.isPackaged ? path.join(process.resourcesPath, 'preview_env') : path.join(__dirname, '../../resources/preview_env');
             const userDataPath = ctx.getPath('userData'); 
             const workingPreviewPath = path.join(userDataPath, 'preview_env');
 
@@ -2193,9 +2213,13 @@ ipcMain.handle('preview:instant-run', async (event) => {
             }
 
             const previewPath = workingPreviewPath;
-            const baseBinPath = ctx.isPackaged ? path.join(process.resourcesPath, 'app.asar.unpacked', 'bin') : path.join(__dirname, '../bin'); 
+            const baseBinPath = ctx.isPackaged ? path.join(process.resourcesPath, 'app.asar.unpacked', 'bin') : path.join(__dirname, '../../bin'); 
             const phpPath = require('../core/phpResolver').resolvePhpBinary(baseBinPath);
-            const port = 8080;
+            // Reuse the live preview port if our server is still up; else pick a free one.
+            const port = (previewServerProcess && previewServerPort)
+                ? previewServerPort
+                : await findFreePort();
+            previewServerPort = port;
 
             // ========================================================
             // 2. GET THE LATEST SCHEMA DATA & LOAD FROM THE PHYSICAL DISK (HARD DISK)
@@ -2300,7 +2324,13 @@ ipcMain.handle('preview:instant-run', async (event) => {
             const startServerAndResolve = () => {
                 win?.webContents.send('show-overlay', { message: 'Starting Local Server...', progress: 99 });
                 previewServerProcess = spawn(phpPath, ['artisan', 'serve', `--port=${port}`], { cwd: previewPath });
-                previewServerProcess.on('error', (err) => resolve({ success: false, message: `Failed to start server: ${err.message}` }));
+                previewServerProcess.on('error', (err) => { previewServerProcess = null; previewServerPort = null; resolve({ success: false, message: `Failed to start server: ${err.message}` }); });
+                previewServerProcess.on('exit', (code) => {
+                    // Server died (before or after resolve) — clear stale state so
+                    // the next call re-spawns instead of trusting a dead process.
+                    previewServerProcess = null; previewServerPort = null;
+                    resolve({ success: false, message: `Preview server exited unexpectedly (code ${code}). Check PHP/preview_env health.` });
+                });
                 previewServerProcess.stdout.on('data', (data) => {
                     if (data.toString().includes('running') || data.toString().includes('127.0.0.1')) {
                         win?.webContents.send('show-overlay', { message: 'Preview Ready!', progress: 100 });
@@ -2312,6 +2342,13 @@ ipcMain.handle('preview:instant-run', async (event) => {
             // --- SCENARIO 1: NO CHANGES ---
             if (scenario === 1) {
                 console.log("[Preview] Scenario 1: No schema changes.");
+                // Verify the tracked process is actually alive (a crashed spawn
+                // leaves a stale object; kill(pid,0) probes liveness).
+                let alive = false;
+                if (previewServerProcess) {
+                    try { process.kill(previewServerProcess.pid, 0); alive = true; } catch (e) { alive = false; }
+                }
+                if (!alive) { previewServerProcess = null; previewServerPort = null; }
                 if (previewServerProcess) {
                     // Server is already running, just open it
                     win?.webContents.send('show-overlay', { message: 'Preview Ready!', progress: 100 });
