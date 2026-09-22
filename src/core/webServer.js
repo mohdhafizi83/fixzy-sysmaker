@@ -90,6 +90,10 @@ function createWebServer(opts = {}) {
     const host = opts.host || '127.0.0.1';
     const port = opts.port || 7788;
     const srcDir = opts.srcDir || path.join(__dirname, '..');
+    // Repo root serves shared static assets (assets/fontawesome, assets/images)
+    // that index.html references via ../assets/ — in Electron these resolve
+    // relative to src/, so mirror them under /assets/ here.
+    const repoRoot = opts.repoRoot || path.join(__dirname, '..', '..');
     const preloadPath = opts.preloadPath || path.join(srcDir, 'preload.js');
 
     const db = opts.db || openStore(opts.dbPath);
@@ -212,9 +216,14 @@ function createWebServer(opts = {}) {
                 return;
             }
             let rel = url.pathname === '/' ? '/index.html' : url.pathname;
-            const filePath = path.join(srcDir, path.normalize(rel));
-            // Containment: never serve outside srcDir
-            if (!filePath.startsWith(srcDir + path.sep) && filePath !== srcDir) {
+            // Shared assets live at repo root (../assets/ from src/index.html).
+            let baseDir = srcDir;
+            if (rel.startsWith('/assets/')) {
+                baseDir = repoRoot;
+            }
+            const filePath = path.join(baseDir, path.normalize(rel));
+            // Containment: never serve outside the allowed base dir
+            if (!filePath.startsWith(baseDir + path.sep) && filePath !== baseDir) {
                 return sendJson(res, 403, { error: 'forbidden' });
             }
             if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {

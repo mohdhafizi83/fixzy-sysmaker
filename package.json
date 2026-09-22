@@ -7,13 +7,21 @@
     "start": "electron .",
     "setup:binaries": "node scripts/setup-binaries.js"
   },
-  "keywords": ["laravel", "filament", "code-generator", "database-designer", "admin-panel", "low-code"],
+  "keywords": [
+    "laravel",
+    "filament",
+    "code-generator",
+    "database-designer",
+    "admin-panel",
+    "low-code"
+  ],
   "author": "Mohd Hafizi Mohammad Nor",
   "license": "SEE LICENSE IN LICENSE.md",
   "devDependencies": {
     "electron": "^40.1.0",
     "electron-builder": "^26.15.3",
-    "electron-rebuild": "^3.2.9"
+    "electron-rebuild": "^3.2.9",
+    "playwright-core": "^1.63.0"
   },
   "dependencies": {
     "better-sqlite3": "^12.6.2",

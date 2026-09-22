@@ -59,3 +59,30 @@ or regenerate: `node test/golden.js <fixture> --update`.
 - (2026-09-21) golden harness auto-discovery picked up `base_simple_ir.json`
   (IR-format, not full-schema dump) and crashed. Fixed: harness skips
   `*_ir.json` (owned by test/ir_test.js). commit: see Phase 3 commit.
+
+## S1 UI Sweep (2026-09-22, web mode)
+
+### BUG-004: Web mode 404 for shared assets (fontawesome, theme preview images)
+- Symptom: `/assets/fontawesome/css/all.min.css` and `/assets/images/*` 404 in
+  `fixzy serve` — icons missing, theme preview broken. index.html references
+  `../assets/` which resolves fine in Electron but not under the web server's
+  srcDir-only static root.
+- Fix: webServer.js now serves `/assets/*` from repo root (containment check
+  per-base-dir; traversal probes `/assets/../../etc/passwd` rejected 404).
+- Status: FIXED (this commit)
+
+### BUG-005: No favicon.ico in repo
+- Symptom: browser requests /favicon.ico -> 404 on every load (cosmetic).
+- Fix: owner to provide icon; add to repo root + serve in webServer static.
+- Status: OPEN (cosmetic, needs owner asset)
+
+### BUG-006: "Configuration" banner button has no visible label target
+- Observed: button labelled "Configuration" present in banner; during S1 pass
+  no configuration panel/modal was identified by that name (Setup wizard covers
+  env config). Needs S2 confirmation whether handler is wired.
+- Status: OPEN (verify in S2)
+
+### QA note: welcome modal reappears on reload
+- The "Welcome to Your New Project" tutorial modal shows on every fresh page
+  load while project is empty — by design? Annoying for repeat visits; consider
+  persisting dismissed state. Not a bug per se; UX decision for owner.
