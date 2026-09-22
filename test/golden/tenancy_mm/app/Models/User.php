@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
+
 class User extends Authenticatable implements HasTenants
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */

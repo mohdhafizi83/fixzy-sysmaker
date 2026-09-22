@@ -10,8 +10,9 @@ use Illuminate\Notifications\Notifiable;
 {{ import_softdelete }}
 {{ import_audit }}
 {{ import_tenant }}
+{{ import_2fa }}
 
-class User extends Authenticatable {{ class_implements_audit }}{{ class_implements_tenant }}
+class User extends Authenticatable {{ implements_clause }}
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable{{ trait_shield }}{{ trait_audit }}{{ trait_softdelete }};
@@ -51,4 +52,4 @@ class User extends Authenticatable {{ class_implements_audit }}{{ class_implemen
     }
 {% if relationship_functions %}{{ relationship_functions }}
 
-{% endif %}}
+{% endif %}{{ methods_2fa }}}

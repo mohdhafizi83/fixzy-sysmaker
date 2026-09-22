@@ -32,9 +32,10 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login({% if login_class %}{{ login_class }}{% endif %})
             ->profile()
-            {% if tenant_model %}->tenant(\App\Models\{{ tenant_model }}::class){% endif %}
+            {% if mfa_provider %}->multiFactorAuthentication({{ mfa_provider }})
+            {% endif %}{% if tenant_model %}->tenant(\App\Models\{{ tenant_model }}::class){% endif %}
             ->colors([
                 'primary' => Color::Amber,
             ])

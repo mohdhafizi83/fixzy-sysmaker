@@ -281,6 +281,7 @@ async function generateFilamentUserModel(fullSchema, basePath) {
         const audit = projectSettings.module_log_audit === 1;
         const authorization = projectSettings.module_authorization === 1;
         const tenantMtm = projectSettings.tenancy_type === 'many_to_many' && projectSettings.tenant_table;
+        const twoFa = Number(projectSettings.module_auth_email_2fa) === 1;
 
         // --- KEKAL 100% LOGIK ASAL ANDA (kini sebagai context values) ---
         const userContext = {
@@ -291,10 +292,32 @@ async function generateFilamentUserModel(fullSchema, basePath) {
             trait_audit: audit ? ', HasAudits' : '',
             import_shield: authorization ? 'use Spatie\\Permission\\Traits\\HasRoles;' : '',
             trait_shield: authorization ? ', HasRoles' : '',
+            import_2fa: twoFa ? 'use Filament\\Auth\\MultiFactor\\Email\\Contracts\\HasEmailAuthentication;' : '',
+            implements_2fa: twoFa ? 'HasEmailAuthentication' : '',
+            methods_2fa: twoFa ? `
+    /**
+     * Email two-factor authentication is enabled project-wide
+     * (Fixzy SysMaker: module_auth_email_2fa).
+     */
+    public function hasEmailAuthentication(): bool
+    {
+        return true;
+    }
+
+    public function toggleEmailAuthentication(bool $condition): void
+    {
+        // Project-wide enforcement: the setting cannot be toggled per user.
+    }
+` : '',
             import_tenant: tenantMtm ? `use Filament\\Models\\Contracts\\HasTenants;\nuse Illuminate\\Support\\Collection;\nuse Illuminate\\Database\\Eloquent\\Model;\nuse Filament\\Panel;\nuse Illuminate\\Database\\Eloquent\\Relations\\BelongsToMany;` : '',
-            // Native audit uses a trait (no interface), so this is always the
-            // first `implements` clause when present.
-            class_implements_tenant: tenantMtm ? 'implements HasTenants' : '',
+            // Combined implements clause: tenant interface first (original
+            // behaviour), then 2FA contract when enabled.
+            implements_clause: (() => {
+                const ifs = [];
+                if (tenantMtm) ifs.push('HasTenants');
+                if (twoFa) ifs.push('HasEmailAuthentication');
+                return ifs.length ? 'implements ' + ifs.join(', ') : '';
+            })(),
             tenant_methods: '',
             relationship_functions: '',
         };

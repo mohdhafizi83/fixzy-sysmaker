@@ -48,6 +48,7 @@ function createWindow() {
         height: 800,
         show: false,
         resizable: false,
+        icon: path.join(__dirname, "..", "assets", "favicon.ico"),
         webPreferences: {
             preload: path.join(__dirname, "./preload.js"),
             webviewTag: true,

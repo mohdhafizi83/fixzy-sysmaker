@@ -47,6 +47,13 @@ async function generateAdminPanelProvider(fullSchema, basePath) {
             top_navigation: project.menu_orientation === 'top',
             tenant_model: tenantModel,
             navigation_groups: navigationGroups,
+            // Auth flags (BUG-015): native Filament 4 email MFA + captcha login.
+            mfa_provider: Number(project.module_auth_email_2fa) === 1
+                ? '\\Filament\\Auth\\MultiFactor\\Email\\EmailAuthentication::make()'
+                : null,
+            login_class: Number(project.module_auth_email_captcha) === 1
+                ? '\\App\\Filament\\Auth\\CaptchaLogin::class'
+                : null,
         });
 
         const outputPath = path.join(providersPath, 'AdminPanelProvider.php');

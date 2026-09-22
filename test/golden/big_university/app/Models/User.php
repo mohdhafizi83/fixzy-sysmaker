@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Concerns\HasAudits;
 
 
+
 class User extends Authenticatable 
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */

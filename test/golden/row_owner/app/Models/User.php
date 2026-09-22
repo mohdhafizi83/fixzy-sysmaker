@@ -11,6 +11,7 @@ use Spatie\Permission\Traits\HasRoles;
 use App\Models\Concerns\HasAudits;
 
 
+
 class User extends Authenticatable 
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */

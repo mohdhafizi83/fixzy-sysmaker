@@ -1,0 +1,8 @@
+Memulakan Orchestrator Laravel Filament...
+--- Menjana Database Layer ---
+Ralat Kritikal Orchestrator: Error: Migrations Users: Unknown system error -122: Unknown system error -122, write
+    at generateLaravelFilamentStack (/home/fizi/projects/FiziSysMaker/src/generators/laravelFilamentStack.js:66:49)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async /home/fizi/projects/FiziSysMaker/test/e2e_smoke.js:44:17
+E2E SMOKE FAIL: generate failed: Migrations Users: Unknown system error -122: Unknown system error -122, write
+workdir kept for inspection: /tmp/fsm-e2e-9ZyeXd

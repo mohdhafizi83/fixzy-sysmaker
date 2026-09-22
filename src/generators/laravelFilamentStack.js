@@ -43,6 +43,7 @@ const {
 const { generateFilamentExports } = require('./laravelExportsGenerator');
 const { generateFilamentImporters } = require('./laravelImportersGenerator');
 const { generateAdminPanelProvider } = require('./laravelAdminPanelGenerator');
+const { generateWorkflowHooks } = require('./laravelWorkflowGenerator');
 const { generateDeploymentGuidePage } = require('./laravelDocsGenerator');
 
 /**
@@ -92,6 +93,13 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
             const printDir = path.join(outputDir, 'app', 'Filament', 'Actions');
             fs.mkdirSync(printDir, { recursive: true });
             fs.writeFileSync(path.join(printDir, 'PrintAction.php'), renderTemplate('app/Filament/Actions/PrintAction.php.njk', {}));
+        }
+
+        // Native captcha login page (BUG-015: module_auth_email_captcha).
+        if (Number((fullSchema.project || {}).module_auth_email_captcha) === 1) {
+            const authDir = path.join(outputDir, 'app', 'Filament', 'Auth');
+            fs.mkdirSync(authDir, { recursive: true });
+            fs.writeFileSync(path.join(authDir, 'CaptchaLogin.php'), renderTemplate('app/Filament/Auth/CaptchaLogin.php.njk', {}));
         }
 
         // Native BelongsToTenant trait — used by 1:m tenancy models.
@@ -162,6 +170,10 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         
         const adminPanelResult = await generateAdminPanelProvider(fullSchema, outputDir);
         if (!adminPanelResult.success) throw new Error(`AdminPanelProvider: ${adminPanelResult.message}`);
+        
+        const workflowResult = await generateWorkflowHooks(fullSchema, outputDir);
+        if (!workflowResult.success) throw new Error(`Workflow hooks: ${workflowResult.message}`);
+        console.log(`[workflow] ${workflowResult.message}`);
         
         const guideResult = await generateDeploymentGuidePage(fullSchema, outputDir);
         if (!guideResult.success) console.warn(`Guide Warning: ${guideResult.message}`); // Warning sahaja, bukan error
