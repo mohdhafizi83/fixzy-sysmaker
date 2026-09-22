@@ -39,6 +39,16 @@ class AuthIntegrationsServiceProvider extends ServiceProvider
     {% if google %}
     protected function applyGoogleConfig(): void
     {
+        // Guard: during migrate:fresh the settings table may not exist yet
+        // while the app still boots (seeders). Skip silently in that window.
+        try {
+            if (! \Illuminate\Support\Facades\Schema::hasTable('fixzy_settings')) {
+                return;
+            }
+        } catch (\Throwable) {
+            return;
+        }
+
         // Push admin-entered keys into Socialite's config at runtime.
         config([
             'services.google.client_id' => GoogleController::clientId(),

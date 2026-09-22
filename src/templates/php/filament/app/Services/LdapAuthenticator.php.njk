@@ -36,8 +36,11 @@ class LdapAuthenticator
 
         try {
             $connection->connect();
-        } catch (ConnectionException $e) {
-            throw new \RuntimeException('Cannot reach the LDAP server. Check the server settings (Auth Settings page).');
+        } catch (\Throwable $e) {
+            // ConnectionException (host down) or BindException (bad service
+            // account) both mean the directory itself is unusable — distinct
+            // from "wrong user password".
+            throw new \RuntimeException('Cannot reach the LDAP server or the service account is invalid. Check the Auth Settings page.');
         }
 
         $usernameField = self::setting('ldap_username_field', 'uid');
@@ -88,7 +91,6 @@ class LdapAuthenticator
             'base_dn' => self::setting('ldap_base_dn', ''),
             'username' => self::setting('ldap_bind_dn', ''),
             'password' => self::setting('ldap_bind_password', ''),
-            'use_ssl' => filter_var(self::setting('ldap_use_ssl', 'false'), FILTER_VALIDATE_BOOLEAN),
             'use_tls' => filter_var(self::setting('ldap_use_tls', 'false'), FILTER_VALIDATE_BOOLEAN),
         ]);
     }
