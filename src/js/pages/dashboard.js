@@ -149,6 +149,18 @@ export function initializeProjectSaveHandlers() {
         if (input.type === 'checkbox') {
             value = input.checked ? 1 : 0;
         } else if (input.type === 'radio') {
+            // The 2FA/Captcha pair is a deselectable radio group mapped to two
+            // integer columns. Persist BOTH columns explicitly on every change:
+            // checking one must zero the other (the browser only fires 'change'
+            // on the newly-checked radio), and deselecting must save 0.
+            if (input.name === 'app-module-auth-extra') {
+                const is2fa = input.id === 'app-module-auth-email-2fa';
+                SaveManager.addToQueue('project', appState.activeProject.project_id, {
+                    [is2fa ? 'module_auth_email_2fa' : 'module_auth_email_captcha']: input.checked ? 1 : 0,
+                    [is2fa ? 'module_auth_email_captcha' : 'module_auth_email_2fa']: 0
+                });
+                return;
+            }
             if (!input.checked) return;
             value = input.value;
         } else {
