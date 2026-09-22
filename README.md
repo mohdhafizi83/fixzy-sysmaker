@@ -35,6 +35,10 @@ Dashboard builder — stats and chart widgets bound to any table:
 
 ![Dashboard builder](docs/screenshots/dashboard-builder.png)
 
+The result — a generated Laravel + Filament admin, live after one click:
+
+![Generated app](docs/screenshots/generated-app.png)
+
 ---
 
 ## Installation

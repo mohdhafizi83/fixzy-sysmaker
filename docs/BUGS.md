@@ -176,3 +176,25 @@ or regenerate: `node test/golden.js <fixture> --update`.
 - renderer.js wires #app-view_files -> dialog showing latest generated path
   (and opens it in desktop mode). Verified live: dialog shows
   /home/fizi/.fixzy/generated/QA_Sweep_Test_staging.
+
+### BUG-005 FIXED (2026-09-22): favicon added
+- Generated assets/favicon.ico (7 sizes 16-256px, FZ mark, slate+amber theme)
+  + favicon.png (256px). Linked in src/index.html <link rel="icon"> and
+  Electron BrowserWindow icon in src/main.js. Verified HTTP 200 via webServer.
+
+### BUG-015 FIXED v1 (2026-09-22): auth flags + workflow hooks now generate code
+- module_auth_email_2fa -> User implements Filament 4 native
+  HasEmailAuthentication + panel ->multiFactorAuthentication(EmailAuthentication::make()).
+- module_auth_email_captcha -> generated App\Filament\Auth\CaptchaLogin
+  (native session arithmetic challenge, no third-party) wired via ->login().
+- project_hook_workflow / table_hook_workflow -> compiled by new
+  src/generators/laravelWorkflowGenerator.js into Observers (table CRUD
+  events), ProjectWorkflowListener (auth/eloquent events),
+  ScheduledWorkflowCommand + WorkflowServiceProvider (auto-registered).
+  v1 vocabulary: insert/update/delete_record (WHERE-guarded), condition,
+  variable, terminate_workflow, try_catch, comment. Unsupported blocks
+  emit visible '// [fixzy] not supported in v1' comments — never broken PHP.
+- REMAINING GAPS (documented, not v1): LDAP, Google SSO (no packages in
+  stack), send_email/whatsapp/telegram/http_request blocks (need external
+  services), for_each_loop/data_transformer/switch (complex control flow).
+- Tests: fixture workflow_hooks.json + goldens; e2e batch 21/21 boots.
