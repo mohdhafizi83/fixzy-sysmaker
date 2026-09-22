@@ -1,0 +1,51 @@
+Memulakan Orchestrator Laravel Filament...
+--- Menjana Database Layer ---
+Pivot Table Migration generated: 2026_09_22_13531003_create_organisasi_user_table.php
+Model generated: /tmp/fsm-e2e-pij1y0/gen/app/Models/Organisasi.php
+Model generated: /tmp/fsm-e2e-pij1y0/gen/app/Models/Produk.php
+User Model generated: /tmp/fsm-e2e-pij1y0/gen/app/Models/User.php
+--- Menjana Standard Resources ---
+Table Class generated (Final): OrganisasisTable.php
+Table Class generated (Final): ProduksTable.php
+Form Schema generated: /tmp/fsm-e2e-pij1y0/gen/app/Filament/Resources/Organisasis/Schemas/OrganisasiForm.php
+Form Schema generated: /tmp/fsm-e2e-pij1y0/gen/app/Filament/Resources/Produks/Schemas/ProdukForm.php
+List Page generated: /tmp/fsm-e2e-pij1y0/gen/app/Filament/Resources/Organisasis/Pages/ListOrganisasis.php
+List Page generated: /tmp/fsm-e2e-pij1y0/gen/app/Filament/Resources/Produks/Pages/ListProduks.php
+Create Page generated: /tmp/fsm-e2e-pij1y0/gen/app/Filament/Resources/Organisasis/Pages/CreateOrganisasi.php
+Create Page generated: /tmp/fsm-e2e-pij1y0/gen/app/Filament/Resources/Produks/Pages/CreateProduk.php
+Edit Page generated: /tmp/fsm-e2e-pij1y0/gen/app/Filament/Resources/Organisasis/Pages/EditOrganisasi.php
+Edit Page generated: /tmp/fsm-e2e-pij1y0/gen/app/Filament/Resources/Produks/Pages/EditProduk.php
+Relation Manager generated: /tmp/fsm-e2e-pij1y0/gen/app/Filament/Resources/Organisasis/RelationManagers/ProdukRelationManager.php
+Resource generated: /tmp/fsm-e2e-pij1y0/gen/app/Filament/Resources/Organisasis/OrganisasiResource.php
+Resource generated: /tmp/fsm-e2e-pij1y0/gen/app/Filament/Resources/Produks/ProdukResource.php
+--- Menjana Custom Modules ---
+--- Generating Additional Features ---
+Menjana Filament Exports Script (dengan Label)...
+   - Generated: UserExporter.php
+   - Generated: OrganisasiExporter.php
+   - Generated: ProdukExporter.php
+Generated Importer: /tmp/fsm-e2e-pij1y0/gen/app/Filament/Imports/UserImporter.php
+Generated Importer: /tmp/fsm-e2e-pij1y0/gen/app/Filament/Imports/OrganisasiImporter.php
+Generated Importer: /tmp/fsm-e2e-pij1y0/gen/app/Filament/Imports/ProdukImporter.php
+[workflow] No workflows configured; nothing generated.
+Generating Deployment Guide from Templates...
+Finished generating the Laravel Filament stack.
+generated OK -> /tmp/fsm-e2e-pij1y0/gen
+$ cp -a /home/fizi/projects/FiziSysMaker/resources/preview_env /tmp/fsm-e2e-pij1y0/app
+skeleton copied
+$ cp -a /tmp/fsm-e2e-pij1y0/gen/. /tmp/fsm-e2e-pij1y0/app/
+generated overlay applied
+$ php /home/fizi/projects/FiziSysMaker/bin/composer.phar dump-autoload --no-scripts -q
+composer dump-autoload done
+filament component cache cleared
+
+  Database\Seeders\ShieldSeeder ...................................... RUNNING  
+Super admin role has been granted all permissions and assigned to the default user.
+  Database\Seeders\ShieldSeeder .................................... 4 ms DONE  
+
+
+artisan boots OK
+all 3 fixture tables present in sqlite
+HTTP /admin/login -> 200 OK
+
+E2E SMOKE PASS (tenancy_mm) — workdir /tmp/fsm-e2e-pij1y0

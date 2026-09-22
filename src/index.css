@@ -4145,3 +4145,17 @@ input.is-invalid:focus {
     color: #fff;
     font-weight: 500;
 }
+/* Guard badge: block types not yet emitted by the code generator */
+.wf-not-generated-badge {
+    display: inline-block;
+    font-size: 0.62em;
+    font-weight: 700;
+    color: #92400e;
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    border-radius: 9999px;
+    padding: 0.05em 0.5em;
+    margin-left: 0.4em;
+    vertical-align: middle;
+    white-space: nowrap;
+}

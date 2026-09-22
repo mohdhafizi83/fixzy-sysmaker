@@ -13,8 +13,50 @@ class WorkflowServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        // on_startup workflow (runs once when the app boots).
+        $this->runStartupWorkflow();
         \App\Models\User::observe(\App\Observers\UserWorkflowObserver::class);
         Event::listen(Illuminate\Auth\Events\Login::class, \App\Listeners\ProjectWorkflowListener::class . '@afterLogin');
         Schedule::command('fixzy:scheduled-workflow')->everyMinute();
+        $this->applyMailSettings();
+    }
+
+    /**
+     * Apply admin-configured SMTP settings (Mail Settings page) over
+     * the .env defaults so workflow emails work without redeploying.
+     */
+    protected function applyMailSettings(): void
+    {
+        if (!\Illuminate\Support\Facades\Schema::hasTable("fixzy_settings")) {
+            return; // migrate:fresh not done yet
+        }
+        $s = fn (string $k, $d = null) => \App\Models\FixzySetting::get($k, $d);
+        if ($s("mail_host")) {
+            config(["mail.default" => "smtp"]);
+            config(["mail.mailers.smtp.host" => $s("mail_host")]);
+            config(["mail.mailers.smtp.port" => (int) $s("mail_port", "587")]);
+            config(["mail.mailers.smtp.username" => $s("mail_username")]);
+            config(["mail.mailers.smtp.password" => $s("mail_password")]);
+            config(["mail.mailers.smtp.encryption" => $s("mail_encryption", "tls") ?: null]);
+        }
+        if ($s("mail_from_address")) {
+            config(["mail.from.address" => $s("mail_from_address")]);
+            config(["mail.from.name" => $s("mail_from_name", config("app.name"))]);
+        }
+    }
+
+    protected function runStartupWorkflow(): void
+    {
+        $harga_sarung = $harga * 1.06;
+        $tier = ($record->total > 100) ? 'BIG' : (($record->total > 50) ? 'MED' : 'SMALL');
+        $api_result = \Illuminate\Support\Facades\Http::timeout(15)
+    ->withHeaders([
+        'Content-Type' => 'application/json',
+        'X-Api-Key' => $api_key,
+    ])
+            ->post('https://example.com/hook?tier=' . $tier, '{"total": ' . $total . '}');
+        if ($api_result->failed()) {
+            // [fixzy] HTTP POST returned an error status; $api_result->status() has the code.
+        }
     }
 }

@@ -494,9 +494,16 @@ function setupBuilderInstance(config) {
             }
         }
 
+        // Blocks the code generator does NOT emit yet — show a visible warning
+        // badge so users are never surprised by a silently-skipped step.
+        const NOT_GENERATED_TYPES = ['send_whatsapp', 'send_telegram', 'delay', 'action'];
+        const guardBadge = NOT_GENERATED_TYPES.includes(type)
+            ? ' <span class="wf-not-generated-badge" title="This block is not generated into the app yet (planned). It will be skipped.">&#9888; not generated</span>'
+            : '';
+
         block.innerHTML = `
             <button class="delete-block-btn" title="Delete Block">&times;</button>
-            <div class="workflow-block-title">${title}</div>
+            <div class="workflow-block-title">${title}${guardBadge}</div>
             <div class="workflow-block-content">${content}</div>
             <div class="connection-point-container">${connectionPoints}</div>
         `;

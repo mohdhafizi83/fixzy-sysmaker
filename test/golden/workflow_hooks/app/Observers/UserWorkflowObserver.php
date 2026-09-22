@@ -18,6 +18,16 @@ class UserWorkflowObserver
                 'id' => 'wf-marker-1',
                 'ip_address' => '127.0.0.1',
             ]);
+            $__wf_to = $user_email;
+            $__wf_subject = 'Welcome ' . $user_name . ' (id ' . $order_id . ')';
+            $__wf_body = 'Hello ' . $user_name . ', your account was created.';
+            if (!empty($__wf_to)) {
+                \Illuminate\Support\Facades\Mail::raw($__wf_body, function ($msg) use ($__wf_to, $__wf_subject) {
+                    $msg->to($__wf_to);
+                    $msg->cc('admin@example.com');
+                    $msg->subject($__wf_subject);
+                });
+            }
         } else {
             return;
         }

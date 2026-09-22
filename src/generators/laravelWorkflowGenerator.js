@@ -7,15 +7,21 @@
 //   * project hooks -> App\Listeners\ProjectWorkflowListener.php
 //   * both         -> App\Providers\WorkflowServiceProvider.php
 //
-// v1 supported block vocabulary:
+// v2 supported block vocabulary:
 //   triggers : before_insert/after_insert/before_update/after_update/
-//              before_delete/after_delete (table), on_startup/after_login/
+//              before_delete/after_delete (table), after_login/
 //              before_logout/on_login_failure/after_user_created/
 //              before_user_deleted/on_scheduled_task (project)
 //   actions  : insert_record, update_record, delete_record, variable,
-//              terminate_workflow, try_catch, comment
-//   logic    : condition (flat comparison/logical expression)
-// Anything else compiles to an explicit `// [fixzy] ... not supported in v1`
+//              terminate_workflow, comment, send_email, http_request,
+//              data_transformer
+//   logic    : condition (flat comparison/logical expression),
+//              if/then/else_if/else (nested ternary), for_each_loop,
+//              switch, try_catch (with Catch branch)
+//   tokens   : ##variable.name## interpolation in text fields
+// Still unsupported (UI shows a "not generated" badge): send_whatsapp,
+// send_telegram, delay, advanced action.
+// Anything unsupported compiles to an explicit `// [fixzy] ... not supported`
 // comment so generated PHP always stays valid and gaps stay visible.
 
 const fs = require('fs');
@@ -33,13 +39,68 @@ function phpString(v) {
     return "'" + String(v).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
 }
 
+// --- ##variable.name## token interpolation -------------------------------
+// UI strings like "Hello ##variable.user_name##" compile to PHP:
+//   'Hello ' . $user_name
+// A lone token compiles to the bare variable (no string concat).
+// Convention: ##variable.item## inside a for-each loop resolves to
+// $__wf_loopItem (the current loop element).
+const TOKEN_RE = /##(?:variable\.)?([a-zA-Z_][a-zA-Z0-9_]*)##/g;
+
+function tokenVarName(raw) {
+    return raw === 'item' ? '__wf_loopItem' : raw;
+}
+
+function compileTokenText(raw) {
+    if (raw === null || raw === undefined) return "''";
+    const s = String(raw);
+    const parts = [];
+    let last = 0;
+    let m;
+    TOKEN_RE.lastIndex = 0;
+    while ((m = TOKEN_RE.exec(s)) !== null) {
+        if (m.index > last) parts.push(phpString(s.slice(last, m.index)));
+        parts.push('$' + tokenVarName(m[1]));
+        last = m.index + m[0].length;
+    }
+    if (parts.length === 0) return phpString(s);
+    if (last < s.length) parts.push(phpString(s.slice(last)));
+    return parts.join(' . ');
+}
+
+// Compile a math expression string (data_transformer) to a PHP expression.
+// Tokens become variables; only arithmetic chars are allowed. Returns null
+// when the expression contains anything else (fail-safe, never raw eval).
+function compileMathExpr(raw) {
+    let s = String(raw || '');
+    TOKEN_RE.lastIndex = 0;
+    s = s.replace(TOKEN_RE, (mm, v) => '$' + tokenVarName(v));
+    if (!/^[\w$+\-*/%().\s]+$/.test(s)) return null;
+    // No stray identifiers: strip valid $vars, then no letters may remain.
+    if (/[a-zA-Z]/.test(s.replace(/\$[a-zA-Z_][a-zA-Z0-9_]*/g, ''))) return null;
+    return s.trim() || null;
+}
+
+// Map UI date format tokens (DD/MM/YYYY style) to PHP date() format chars.
+function mapDateFormat(fmt) {
+    return String(fmt || 'YYYY-MM-DD').replace(
+        /YYYY|MMMM|MMM|MM|DD|HH|hh|mm|ss/g,
+        (t) => ({ YYYY: 'Y', MMMM: 'F', MMM: 'M', MM: 'm', DD: 'd', HH: 'H', hh: 'h', mm: 'i', ss: 's' }[t])
+    );
+}
+
 // Compile one logic-builder value item to a PHP expression.
 // Returns null when the item type is not supported in v1.
 function compileValue(item) {
     if (!item || typeof item !== 'object') return null;
     switch (item.type) {
-        case 'string':
-            return phpString(item.value ?? '');
+        case 'string': {
+            const s = String(item.value ?? '');
+            // Interpolate ##variable.x## tokens inside string values too.
+            if (TOKEN_RE.test(s)) { TOKEN_RE.lastIndex = 0; return compileTokenText(s); }
+            TOKEN_RE.lastIndex = 0;
+            return phpString(s);
+        }
         case 'number': {
             const n = Number(item.value);
             return Number.isFinite(n) ? String(n) : null;
@@ -64,7 +125,7 @@ const LOGIC_OPS = { and: '&&', or: '||' };
 
 // Compile a flat condition token list (value op value [logicop ...]) to a PHP
 // boolean expression. Returns null if unsupported.
-function compileCondition(tokens) {
+function compileFlat(tokens) {
     if (!Array.isArray(tokens) || tokens.length === 0) return null;
     const parts = [];
     let expectValue = true;
@@ -100,6 +161,68 @@ function compileCondition(tokens) {
     return parts.join(' ');
 }
 
+// Compile a logic-builder token list that may contain if / then / else_if / else
+// into a nested PHP ternary: (cond) ? a : (cond2 ? b : c).
+// Falls back to the flat compiler when no control tokens are present.
+function compileCondition(tokens) {
+    if (!Array.isArray(tokens) || tokens.length === 0) return null;
+    const hasControl = tokens.some((t) => t && ['if', 'then', 'else', 'else_if'].includes(t.type));
+    if (!hasControl) return compileFlat(tokens);
+
+    // Split into segments: [if cond1] [then v1] [else_if cond2] [then v2] [else v3]
+    const segments = [];
+    let current = { kind: 'if', tokens: [] };
+    for (const t of tokens) {
+        if (!t) continue;
+        if (t.type === 'if' || t.type === 'then' || t.type === 'else' || t.type === 'else_if') {
+            if (current.tokens.length > 0 || current.kind !== 'if' || segments.length > 0) {
+                segments.push(current);
+            }
+            current = { kind: t.type, tokens: [] };
+        } else {
+            current.tokens.push(t);
+        }
+    }
+    if (current.tokens.length > 0) segments.push(current);
+
+    // Validate: must start with if (or a bare condition), each then needs a value.
+    const ifSeg = segments.find((s) => s.kind === 'if');
+    const thenSegs = segments.filter((s) => s.kind === 'then');
+    const elseSeg = segments.find((s) => s.kind === 'else');
+    const elseIfSegs = segments.filter((s) => s.kind === 'else_if');
+    if (!ifSeg || thenSegs.length === 0) return null;
+
+    const cond = compileFlat(ifSeg.tokens);
+    if (cond === null) return null;
+    const thenVal = compileFlat(thenSegs[0].tokens);
+    if (thenVal === null) return null;
+
+    // Build the else-side: else_if chain first, else segment as final fallback.
+    let elseExpr = null;
+    if (elseIfSegs.length > 0) {
+        const chain = [];
+        for (let i = 0; i < elseIfSegs.length; i++) {
+            const c = compileFlat(elseIfSegs[i].tokens);
+            const t = thenSegs[i + 1] ? compileFlat(thenSegs[i + 1].tokens) : null;
+            if (c === null || t === null) return null;
+            chain.push({ cond: c, val: t });
+        }
+        const base = elseSeg ? compileFlat(elseSeg.tokens) : 'null';
+        if (base === null) return null;
+        elseExpr = chain
+            .slice()
+            .reverse()
+            .reduce((acc, c) => `(${c.cond}) ? ${c.val} : ${acc}`, base);
+    } else if (elseSeg) {
+        elseExpr = compileFlat(elseSeg.tokens);
+        if (elseExpr === null) return null;
+    } else {
+        elseExpr = 'null';
+    }
+
+    return `(${cond}) ? ${thenVal} : (${elseExpr})`;
+}
+
 // Compile a WHERE clause ({logic:'and'|'or', rules:[{field,operator,value}]})
 // into a chain of ->where(...) calls on $query.
 function compileWhere(where, indent) {
@@ -117,6 +240,16 @@ function compileWhere(where, indent) {
         return `${indent}->where(${phpString(field)}, ${phpString(op)}, ${val})`;
     });
     return lines.join('\n');
+}
+
+// Compile http_request header rows [{key,value}] into a ->withHeaders([...]) chain.
+function compileHeaders(headers) {
+    const rows = Array.isArray(headers)
+        ? headers.filter((h) => h && h.key && /^[A-Za-z0-9-]+$/.test(String(h.key)))
+        : [];
+    if (rows.length === 0) return '';
+    const items = rows.map((h) => `        ${phpString(h.key)} => ${compileTokenText(h.value || '')},`);
+    return `\n    ->withHeaders([\n${items.join('\n')}\n    ])`;
 }
 
 // Compile one action block's configData (flat token list) into PHP statements.
@@ -201,6 +334,61 @@ function compileAction(block, recordVar) {
         case 'terminate_workflow':
             lines.push('return;');
             break;
+        case 'send_email': {
+            // Assign to temp vars first: PHP's use() only accepts variables.
+            const to = compileTokenText(block.to || '');
+            const subject = compileTokenText(block.subject || '(no subject)');
+            const body = compileTokenText(block.body || '');
+            lines.push('$__wf_to = ' + to + ';');
+            lines.push('$__wf_subject = ' + subject + ';');
+            lines.push('$__wf_body = ' + body + ';');
+            lines.push('if (!empty($__wf_to)) {');
+            lines.push('    \\Illuminate\\Support\\Facades\\Mail::raw($__wf_body, function ($msg) use ($__wf_to, $__wf_subject) {');
+            lines.push('        $msg->to($__wf_to);');
+            if (block.cc) lines.push(`        $msg->cc(${compileTokenText(block.cc)});`);
+            if (block.bcc) lines.push(`        $msg->bcc(${compileTokenText(block.bcc)});`);
+            lines.push('        $msg->subject($__wf_subject);');
+            lines.push('    });');
+            lines.push('}');
+            break;
+        }
+        case 'http_request': {
+            const method = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(String(block.method || '').toUpperCase())
+                ? String(block.method).toUpperCase() : 'GET';
+            const url = compileTokenText(block.url || '');
+            const outVar = block.outputVariableName ? safeIdent(block.outputVariableName, 'output variable') : null;
+            const body = block.body ? compileTokenText(block.body) : null;
+            const assign = outVar ? `$${outVar} = ` : '';
+            lines.push(`${assign}\\Illuminate\\Support\\Facades\\Http::timeout(15)${compileHeaders(block.headers)}`);
+            lines.push(`    ->${method.toLowerCase()}(${url}${body ? ', ' + body : ''});`);
+            if (outVar) {
+                lines.push(`if ($${outVar}->failed()) {`);
+                lines.push(`    // [fixzy] HTTP ${method} returned an error status; $${outVar}->status() has the code.`);
+                lines.push('}');
+            }
+            break;
+        }
+        case 'data_transformer': {
+            const outVar = block.outputVariableName ? safeIdent(block.outputVariableName, 'output variable') : null;
+            if (!outVar) { pushUnsupported('data_transformer without an output variable name'); break; }
+            const input = compileTokenText(block.inputValue || '');
+            const fn = String(block.selectedFunction || 'format_date');
+            if (fn === 'format_date') {
+                const fmt = mapDateFormat((block.parameters || {}).dateFormat);
+                lines.push(`$${outVar} = \\Illuminate\\Support\\Facades\\Date::parse(${input})->format(${phpString(fmt)});`);
+            } else if (fn === 'text_operation') {
+                const op = String((block.parameters || {}).textOperation || 'uppercase');
+                const phpFn = op === 'lowercase' ? 'strtolower' : 'strtoupper';
+                lines.push(`$${outVar} = ${phpFn}((string) ${input});`);
+            } else if (fn === 'math_operation') {
+                const expr = compileMathExpr((block.parameters || {}).mathExpression);
+                if (expr === null) { pushUnsupported('math expression contains disallowed characters'); break; }
+                lines.push(`$${outVar} = ${expr};`);
+            } else {
+                pushUnsupported(`data_transformer function '${fn}'`);
+            }
+            break;
+        }
         case 'comment': {
             const text = tokens.length === 1 && tokens[0].type === 'comment'
                 ? String(tokens[0].value || '')
@@ -242,12 +430,49 @@ function walkChain(ctx, startId, indentStr, visited) {
             break; // branches own the rest of the flow
         }
 
-        if (block.type === 'try_catch') {
-            const bodyNext = ctx.nextOf(cur, 'out');
-            lines.push(`${indentStr}try {`);
+        if (block.type === 'for_each_loop') {
+            const source = compileTokenText(block.dataSource || '');
+            const bodyNext = ctx.nextOf(cur, 'out-body');
+            const doneNext = ctx.nextOf(cur, 'out-complete');
+            lines.push(`${indentStr}foreach ((array) ${source} as $__wf_loopItem) {`);
             lines.push(...walkChain(ctx, bodyNext, indentStr + '    ', visited));
+            lines.push(`${indentStr}}`);
+            cur = doneNext; // continue after the loop
+            continue;
+        }
+
+        if (block.type === 'switch') {
+            const subject = compileTokenText(block.switchValue || '');
+            const cases = Array.isArray(block.cases) ? block.cases : [];
+            lines.push(`${indentStr}switch (${subject}) {`);
+            cases.forEach((c, i) => {
+                const caseNext = ctx.nextOf(cur, `out-case-${i}`);
+                if (!caseNext) {
+                    lines.push(`${indentStr}    // case ${phpString(c && c.value != null ? c.value : i)}: (not connected)`);
+                    return;
+                }
+                lines.push(`${indentStr}    case ${compileTokenText(c && c.value != null ? c.value : '')}:`);
+                lines.push(...walkChain(ctx, caseNext, indentStr + '        ', visited));
+                lines.push(`${indentStr}        break;`);
+            });
+            const defaultNext = ctx.nextOf(cur, 'out-default');
+            lines.push(`${indentStr}    default:`);
+            lines.push(...walkChain(ctx, defaultNext, indentStr + '        ', visited));
+            lines.push(`${indentStr}}`);
+            break; // switch owns the rest of the flow
+        }
+
+        if (block.type === 'try_catch') {
+            const tryNext = ctx.nextOf(cur, 'out-try');
+            const catchNext = ctx.nextOf(cur, 'out-catch');
+            lines.push(`${indentStr}try {`);
+            lines.push(...walkChain(ctx, tryNext, indentStr + '    ', visited));
             lines.push(`${indentStr}} catch (\\Throwable $e) {`);
-            lines.push(`${indentStr}    // [fixzy] workflow error swallowed by try/catch block.`);
+            if (catchNext) {
+                lines.push(...walkChain(ctx, catchNext, indentStr + '    ', visited));
+            } else {
+                lines.push(`${indentStr}    // [fixzy] workflow error swallowed (no Catch branch connected).`);
+            }
             lines.push(`${indentStr}}`);
             break;
         }
@@ -380,7 +605,7 @@ function buildListenerPhp(projectHooks) {
     return parts.join('\n');
 }
 
-function buildProviderPhp(tableObservers, projectHooks, hasScheduled) {
+function buildProviderPhp(tableObservers, projectHooks, hasScheduled, startupBody) {
     const parts = [];
     parts.push('<?php');
     parts.push('');
@@ -397,8 +622,12 @@ function buildProviderPhp(tableObservers, projectHooks, hasScheduled) {
     parts.push('{');
     parts.push('    public function boot(): void');
     parts.push('    {');
-    if (tableObservers.length === 0 && projectHooks.length === 0 && !hasScheduled) {
+    if (tableObservers.length === 0 && projectHooks.length === 0 && !hasScheduled && !(startupBody && startupBody.length)) {
         parts.push('        // No workflows configured.');
+    }
+    if (startupBody && startupBody.length) {
+        parts.push('        // on_startup workflow (runs once when the app boots).');
+        parts.push('        $this->runStartupWorkflow();');
     }
     tableObservers.forEach((o) => {
         parts.push(`        \\App\\Models\\${o.modelClass}::observe(\\App\\Observers\\${o.observerClass}::class);`);
@@ -409,7 +638,39 @@ function buildProviderPhp(tableObservers, projectHooks, hasScheduled) {
     if (hasScheduled) {
         parts.push("        Schedule::command('fixzy:scheduled-workflow')->everyMinute();");
     }
+    parts.push('        $this->applyMailSettings();');
     parts.push('    }');
+    parts.push('');
+    parts.push('    /**');
+    parts.push('     * Apply admin-configured SMTP settings (Mail Settings page) over');
+    parts.push('     * the .env defaults so workflow emails work without redeploying.');
+    parts.push('     */');
+    parts.push('    protected function applyMailSettings(): void');
+    parts.push('    {');
+    parts.push('        if (!\\Illuminate\\Support\\Facades\\Schema::hasTable("fixzy_settings")) {');
+    parts.push('            return; // migrate:fresh not done yet');
+    parts.push('        }');
+    parts.push('        $s = fn (string $k, $d = null) => \\App\\Models\\FixzySetting::get($k, $d);');
+    parts.push('        if ($s("mail_host")) {');
+    parts.push('            config(["mail.default" => "smtp"]);');
+    parts.push('            config(["mail.mailers.smtp.host" => $s("mail_host")]);');
+    parts.push('            config(["mail.mailers.smtp.port" => (int) $s("mail_port", "587")]);');
+    parts.push('            config(["mail.mailers.smtp.username" => $s("mail_username")]);');
+    parts.push('            config(["mail.mailers.smtp.password" => $s("mail_password")]);');
+    parts.push('            config(["mail.mailers.smtp.encryption" => $s("mail_encryption", "tls") ?: null]);');
+    parts.push('        }');
+    parts.push('        if ($s("mail_from_address")) {');
+    parts.push('            config(["mail.from.address" => $s("mail_from_address")]);');
+    parts.push('            config(["mail.from.name" => $s("mail_from_name", config("app.name"))]);');
+    parts.push('        }');
+    parts.push('    }');
+    if (startupBody && startupBody.length) {
+        parts.push('');
+        parts.push('    protected function runStartupWorkflow(): void');
+        parts.push('    {');
+        parts.push(...startupBody);
+        parts.push('    }');
+    }
     parts.push('}');
     parts.push('');
     return parts.join('\n');
@@ -434,7 +695,12 @@ function buildScheduledCommandPhp(body) {
     if (body.length === 0) {
         parts.push('        // No codegen-supported actions connected to the scheduled hook.');
     } else {
-        parts.push(...body.map((l) => l.replace(/^ {8}/, '        ')));
+        // terminate_workflow compiles to bare `return;` which is invalid in a
+        // method with an int return type — map it to SUCCESS.
+        parts.push(...body.map((l) => {
+            const t = l.replace(/^ {8}/, '        ');
+            return t.trim() === 'return;' ? '        return self::SUCCESS;' : t;
+        }));
     }
     parts.push('');
     parts.push('        return self::SUCCESS;');
@@ -494,6 +760,7 @@ async function generateWorkflowHooks(fullSchema, outputDir) {
         const projectWf = parse(project.project_hook_workflow);
         const projectHooks = [];
         let scheduledBody = null;
+        let startupBody = null;
         if (projectWf) {
             const triggers = findTriggers(projectWf.blocks);
             for (const [tid, tb] of triggers) {
@@ -501,6 +768,10 @@ async function generateWorkflowHooks(fullSchema, outputDir) {
                 const body = walkChain(ctx, ctx.nextOf(tid, 'out'), '        ', new Set([tid]));
                 if (tb.hook_type === 'on_scheduled_task') {
                     scheduledBody = body;
+                    continue;
+                }
+                if (tb.hook_type === 'on_startup') {
+                    startupBody = body;
                     continue;
                 }
                 const mapping = PROJECT_EVENT[tb.hook_type];
@@ -526,7 +797,7 @@ async function generateWorkflowHooks(fullSchema, outputDir) {
             );
         }
 
-        if (tableObservers.length === 0 && projectHooks.length === 0 && !hasScheduled) {
+        if (tableObservers.length === 0 && projectHooks.length === 0 && !hasScheduled && !(startupBody && startupBody.length)) {
             return { success: true, message: 'No workflows configured; nothing generated.' };
         }
 
@@ -541,9 +812,37 @@ async function generateWorkflowHooks(fullSchema, outputDir) {
 
         const providersDir = path.join(outputDir, 'app', 'Providers');
         fs.mkdirSync(providersDir, { recursive: true });
+
+        // Ensure the settings store exists (Mail Settings page + applyMailSettings
+        // depend on it). Same fixed filename as the auth integrations generator,
+        // so running both is idempotent.
+        const settingsModel = path.join(outputDir, 'app', 'Models', 'FixzySetting.php');
+        if (!fs.existsSync(settingsModel)) {
+            const { renderTemplate } = require('../render/engine');
+            fs.mkdirSync(path.dirname(settingsModel), { recursive: true });
+            fs.writeFileSync(settingsModel, renderTemplate('app/Models/FixzySetting.php.njk', {}));
+            const migDir = path.join(outputDir, 'database', 'migrations');
+            fs.mkdirSync(migDir, { recursive: true });
+            const migFile = path.join(migDir, '2026_09_22_000001_create_fixzy_settings_table.php');
+            if (!fs.existsSync(migFile)) {
+                fs.writeFileSync(migFile, renderTemplate('database/migrations/create_fixzy_settings_table.php.njk', {}));
+            }
+        }
+
+        // Mail Settings page (admin SMTP config for workflow emails).
+        const mailPage = path.join(outputDir, 'app', 'Filament', 'Pages', 'MailSettings.php');
+        if (!fs.existsSync(mailPage)) {
+            const { renderTemplate } = require('../render/engine');
+            fs.mkdirSync(path.dirname(mailPage), { recursive: true });
+            fs.writeFileSync(mailPage, renderTemplate('app/Filament/Pages/MailSettings.php.njk', {}));
+            const mailView = path.join(outputDir, 'resources', 'views', 'filament', 'pages', 'mail-settings.blade.php');
+            fs.mkdirSync(path.dirname(mailView), { recursive: true });
+            fs.writeFileSync(mailView, renderTemplate('resources/views/filament/pages/mail-settings.blade.php.njk', {}));
+        }
+
         fs.writeFileSync(
             path.join(providersDir, 'WorkflowServiceProvider.php'),
-            buildProviderPhp(tableObservers, projectHooks, hasScheduled)
+            buildProviderPhp(tableObservers, projectHooks, hasScheduled, startupBody)
         );
 
         // Register in bootstrap/providers.php when generating into a full app.
@@ -568,4 +867,4 @@ async function generateWorkflowHooks(fullSchema, outputDir) {
     }
 }
 
-module.exports = { generateWorkflowHooks, compileCondition, compileValue, modelClassName };
+module.exports = { generateWorkflowHooks, compileCondition, compileValue, compileTokenText, modelClassName };

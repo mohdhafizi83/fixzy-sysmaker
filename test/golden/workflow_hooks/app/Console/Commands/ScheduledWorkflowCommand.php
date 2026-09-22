@@ -15,6 +15,17 @@ class ScheduledWorkflowCommand extends Command
         \DB::table('sessions')
             ->where('last_activity', '<', 100)
             ->delete();
+        foreach ((array) $pending_list as $__wf_loopItem) {
+            try {
+                \DB::table('sessions')->insert([
+                    'id' => 'loop-ok',
+                    'ip_address' => $__wf_loopItem,
+                ]);
+            } catch (\Throwable $e) {
+                // loop item failed
+            }
+        }
+        return self::SUCCESS;
 
         return self::SUCCESS;
     }

@@ -231,3 +231,24 @@ or regenerate: `node test/golden.js <fixture> --update`.
   provider registered), php -l clean on all generated files.
 - Remaining gaps (documented, need external services): send
   email/whatsapp/telegram automation blocks.
+
+### BUG-016 WORKFLOW CODEGEN v2 (2026-09-22): popular blocks now generate real code
+- Owner audit Q: "adakah semua elemen workflow berfungsi sepenuhnya?" Honest answer was NO —
+  8 of 17 palette blocks compiled to skip-comments. Now implemented (Pilihan A + UI guard):
+  * send_email -> Mail::raw with ##variable.x## interpolation (to/cc/bcc/subject/body)
+  * http_request -> Http::timeout(15)->withHeaders(...)->get/post/put/patch/delete
+  * data_transformer -> Date::parse->format / strtoupper-lowercase / math (validated, no eval)
+  * for_each_loop -> foreach ((array) $list as $__wf_loopItem), continues out-complete
+  * switch -> switch/case/default from connected out-case-N points
+  * if/then/else_if/else -> nested parenthesized ternary in variable blocks
+  * try_catch -> Catch branch now executes (was empty swallow)
+  * on_startup -> runStartupWorkflow() in provider boot (was silently unmapped)
+- Mail settings: generated app ships MailSettings page (System > Mail Settings) storing
+  SMTP host/port/user/pass/encryption/from in fixzy_settings; WorkflowServiceProvider
+  applies over .env at boot (Schema::hasTable guard). Test-send button included.
+- UI guard: send_whatsapp, send_telegram, delay, advanced action now show
+  "not generated" warning badge on the block in the designer (no more silent skip).
+- PHP gotchas fixed during golden: use() needs plain vars (temp $__wf_*), nested ternary
+  needs parens (PHP8), bare return; invalid in handle():int (mapped to SUCCESS).
+- Fixture workflow_hooks extended to cover ALL new blocks. php -l 33/33, golden 17/17,
+  e2e 21/21 PASS.
