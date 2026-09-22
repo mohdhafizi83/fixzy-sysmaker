@@ -2,15 +2,21 @@
 
 **Visual database designer that builds your admin back office.**
 
-Describe your database — visually, or by importing an existing SQL dump — and get a
-complete Laravel + Filament admin system: migrations, models, resources, forms,
+Describe your database — visually, or by importing an existing SQL dump — and get
+a complete, production-ready admin system: migrations, models, resources, forms,
 tables, CSV importers/exporters, audit trail, multi-tenancy, factories, and
 deployment docs. Generated code is plain, readable app code — no proprietary
 runtime, no lock-in.
 
+Fixzy SysMaker is a **multi-stack generator**. Your design lives in a
+stack-neutral intermediate representation (IR), and pluggable generators turn it
+into real application code. **Laravel + Filament** is the first production-ready
+target — the benchmark every future stack is measured against — with more stacks
+on the roadmap.
+
 Fixzy SysMaker is built for **semi-technical and non-technical users**: design
 your data and admin screens through a guided interface, then hand clean,
-production-quality Laravel code to your team (or deploy it yourself).
+production-quality code to your team (or deploy it yourself).
 
 Runs three ways from one engine: **desktop app (Electron)**, **local web UI**,
 and **headless CLI** for CI pipelines.
@@ -112,6 +118,17 @@ CLI environment variables:
 | Security | Native audit trail (migration + observer), tenancy scoping, Shield-ready |
 | Docs | In-app deployment guide |
 
+### Target stacks
+
+| Stack | Status |
+|---|---|
+| Laravel 11 + Filament (PHP) | ✅ Production-ready — the benchmark |
+| Additional stacks (Node, others) | 🔜 Planned — the IR is stack-neutral by design |
+
+The design model (tables, fields, relationships, menus, widgets) is captured in a
+stack-neutral IR, so a new target stack is a new generator plugin — not a new app.
+See `docs/IR_SCHEMA.json` and `docs/IR_MAPPING.md`.
+
 ### Live preview
 Click **Show Preview** to run the generated app instantly in a sandboxed local
 environment — log in, click around, and see your design before exporting.
@@ -127,7 +144,8 @@ and per-table overrides.
 ## Roadmap
 
 Shipped:
-- [x] Laravel + Filament generator (full stack: DB, models, resources, I/O)
+- [x] Multi-stack architecture: stack-neutral IR + pluggable generators
+- [x] Laravel + Filament generator (full stack: DB, models, resources, I/O) — benchmark target
 - [x] Desktop (Windows/macOS), local web UI, and headless CLI from one engine
 - [x] SQL import (MySQL, PostgreSQL, SQL Server, SQLite)
 - [x] Multi-tenancy, row ownership, native audit trail

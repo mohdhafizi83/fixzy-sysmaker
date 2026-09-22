@@ -30,7 +30,7 @@ function parseArgs(argv) {
 }
 
 function usage() {
-    console.log(`fixzy — Fixzy SysMaker CLI (Laravel + Filament app generator)
+    console.log(`fixzy — Fixzy SysMaker CLI (multi-stack admin system generator)
 
 Usage:
   fixzy serve [--port 7788] [--host 127.0.0.1]

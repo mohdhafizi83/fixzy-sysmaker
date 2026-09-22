@@ -1,7 +1,7 @@
 {
   "name": "fixzy-sysmaker",
   "version": "1.0.0",
-  "description": "Visual database designer that builds your admin back office — generate a complete Laravel + Filament admin system from a visual schema.",
+  "description": "Visual database designer that builds your admin back office — a multi-stack code generator; Laravel + Filament is the first production-ready target.",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
