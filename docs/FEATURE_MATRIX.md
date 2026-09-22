@@ -105,7 +105,10 @@ never baked into generated code or git.
 | if/then/else_if/else | nested parenthesized ternary | ✅ generated |
 | try_catch | Catch branch executes when connected | ✅ generated |
 | on_startup | `runStartupWorkflow()` in provider boot | ✅ generated |
-| send_whatsapp / send_telegram / delay / advanced action | — | ⚠️ UI badge "not generated" |
+| send_telegram | `Http::post api.telegram.org/bot<token>/sendMessage`; token from `FixzySetting` at runtime | ✅ generated |
+| advanced action | `ACTION_SCRIPT_GRAMMAR` script: insert/update/delete + parameterized raw SQL (DDL rejected) | ✅ generated |
+| send_whatsapp / delay | removed from product (owner decision 2026-09-22) | 🗑 removed |
+| telegram settings (generated app) | `TelegramSettings` page (`/admin/telegram-settings`) + connection test | ✅ generated |
 | mail settings (generated app) | `MailSettings` page + `applyMailSettings()` boot override of .env | ✅ generated |
 
 ## Stress combos (2–3 axes at once)
