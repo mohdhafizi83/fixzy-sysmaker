@@ -19,8 +19,11 @@
 //              if/then/else_if/else (nested ternary), for_each_loop,
 //              switch, try_catch (with Catch branch)
 //   tokens   : ##variable.name## interpolation in text fields
-// Still unsupported (UI shows a "not generated" badge): send_whatsapp,
-// send_telegram, delay, advanced action.
+// Removed from the product (owner decision 2026-09-22, not worth the cost):
+//   send_whatsapp (Meta template-approval policy), delay (needs async queue
+//   infra). Old saved workflows containing these types are skipped safely.
+// Still unsupported (UI shows a "not generated" badge): send_telegram,
+// advanced action.
 // Anything unsupported compiles to an explicit `// [fixzy] ... not supported`
 // comment so generated PHP always stays valid and gaps stay visible.
 

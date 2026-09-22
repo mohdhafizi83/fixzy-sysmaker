@@ -354,26 +354,6 @@ function setupBuilderInstance(config) {
                 connectionPoints += '<div class="connection-point input" data-point-id="in" data-label="In"></div>';
                 break;
             }
-            case 'delay': {
-                const state = blockState || {};
-                const duration = state.delayDuration || 1;
-                const unit = state.delayUnit || 'hours';
-
-                title = '<i class="fas fa-hourglass-half"></i> Wait';
-                content = `
-                    <div class="delay-content">
-                        <input type="number" class="delay-duration-input" min="1" value="${duration}">
-                        <select class="delay-unit-select">
-                            <option value="minutes" ${unit === 'minutes' ? 'selected' : ''}>Minutes</option>
-                            <option value="hours" ${unit === 'hours' ? 'selected' : ''}>Hours</option>
-                            <option value="days" ${unit === 'days' ? 'selected' : ''}>Days</option>
-                        </select>
-                    </div>
-                `;
-                connectionPoints += '<div class="connection-point input" data-point-id="in" data-label="In"></div>';
-                connectionPoints += '<div class="connection-point output" data-point-id="out" data-label="Out"></div>';
-                break;
-            }
             case 'try_catch': {
                 title = '<i class="fas fa-shield-alt"></i> Try / Catch';
                 content = `
@@ -462,21 +442,6 @@ function setupBuilderInstance(config) {
                 connectionPoints += `<div class="connection-point output" data-point-id="out-default" style="top: ${defaultTopPosition}%;"><span class="switch-case-label">Default</span></div>`;
                 break;
             }
-            case 'send_whatsapp': {
-                const state = blockState || {};
-                title = '<i class="fab fa-whatsapp"></i> Send WhatsApp';
-                content = `
-                    <div class="form-group" style="padding: 0.75rem;">
-                        <label>To Phone Number</label>
-                        <input type="text" class="whatsapp-input" data-field="to" placeholder="##variable.phone_no##" value="${state.to || ''}">
-                        <label style="margin-top: 0.5rem;">Message</label>
-                        <textarea class="whatsapp-input" data-field="message" rows="4" placeholder="Hello ##variable.user_name##...">${state.message || ''}</textarea>
-                    </div>
-                `;
-                connectionPoints += '<div class="connection-point input" data-point-id="in" data-label="In"></div>';
-                connectionPoints += '<div class="connection-point output" data-point-id="out" data-label="Out"></div>';
-                break;
-            }
             case 'send_telegram': {
                 const state = blockState || {};
                 title = '<i class="fab fa-telegram-plane"></i> Send Telegram';
@@ -496,7 +461,7 @@ function setupBuilderInstance(config) {
 
         // Blocks the code generator does NOT emit yet — show a visible warning
         // badge so users are never surprised by a silently-skipped step.
-        const NOT_GENERATED_TYPES = ['send_whatsapp', 'send_telegram', 'delay', 'action'];
+        const NOT_GENERATED_TYPES = ['send_telegram', 'action'];
         const guardBadge = NOT_GENERATED_TYPES.includes(type)
             ? ' <span class="wf-not-generated-badge" title="This block is not generated into the app yet (planned). It will be skipped.">&#9888; not generated</span>'
             : '';
@@ -888,7 +853,6 @@ function setupBuilderInstance(config) {
         const fieldMap = {
             'variable-name-input': 'variableName',
             'loop-data-source-input': 'dataSource',
-            'delay-duration-input': 'delayDuration',
             'transformer-input': 'inputValue',
             'transformer-output-name': 'outputVariableName',
             'http-url-input': 'url',
@@ -926,9 +890,6 @@ function setupBuilderInstance(config) {
         else if (e.target.classList.contains('email-input')) {
             const field = e.target.dataset.field;
             if (field) blockState[field] = e.target.value;
-        } else if (e.target.classList.contains('whatsapp-input')) {
-            const field = e.target.dataset.field;
-            if (field) blockState[field] = e.target.value;
         } else if (e.target.classList.contains('telegram-input')) {
             const field = e.target.dataset.field;
             if (field) blockState[field] = e.target.value;
@@ -945,7 +906,6 @@ function setupBuilderInstance(config) {
         if (!blockState) return;
         
         const fieldMap = {
-            'delay-unit-select': 'delayUnit',
             'transformer-function-select': 'selectedFunction'
         };
 
