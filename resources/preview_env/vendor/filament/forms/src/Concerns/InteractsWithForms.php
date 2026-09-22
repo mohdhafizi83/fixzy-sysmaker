@@ -120,7 +120,7 @@ trait InteractsWithForms /** @phpstan-ignore trait.unused */
     /**
      * @return array<string, Schema>
      *
-     *@deprecated Use `getCachedSchemas()` instead.
+     * @deprecated Use `getCachedSchemas()` instead.
      */
     public function getCachedForms(): array
     {
@@ -259,11 +259,6 @@ trait InteractsWithForms /** @phpstan-ignore trait.unused */
      */
     public function unmountFormComponentAction(bool $shouldCancelParentActions = true): void
     {
-        $this->unmountAction($shouldCancelParentActions);
-    }
-
-    public function getDefaultTestingSchemaName(): ?string
-    {
-        return 'form';
+        $this->unmountAction(cancelParentActions: $shouldCancelParentActions ? null : false);
     }
 }

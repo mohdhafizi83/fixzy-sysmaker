@@ -26,6 +26,13 @@ class CreateXlsxFile implements ShouldQueue
 
     public bool $deleteWhenMissingModels = true;
 
+    public ?int $tries = 3;
+
+    public ?int $maxExceptions = 0;
+
+    /** @var array<int> */
+    public array $backoff = [30, 60, 300];
+
     protected Exporter $exporter;
 
     /**
@@ -50,10 +57,12 @@ class CreateXlsxFile implements ShouldQueue
         $writer = app(Writer::class, ['options' => $this->exporter->getXlsxWriterOptions()]);
         $writer->openToFile($temporaryFile = tempnam(sys_get_temp_dir(), $this->export->file_name));
 
+        $this->exporter->configureXlsxWriterAfterOpen($writer);
+
         $csvDelimiter = $this->exporter::getCsvDelimiter();
 
         $writeRowsFromFile = function (string $file, ?Style $style, ?Closure $makeRow) use ($csvDelimiter, $disk, $writer): void {
-            $csvReader = CsvReader::createFromStream($disk->readStream($file));
+            $csvReader = CsvReader::from($disk->readStream($file));
             $csvReader->setDelimiter($csvDelimiter);
             $csvResults = (new Statement)->process($csvReader);
 

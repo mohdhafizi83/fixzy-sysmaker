@@ -4,6 +4,7 @@ namespace Filament;
 
 use Closure;
 use Filament\Actions\Action;
+use Filament\Resources\ResourceConfiguration;
 use Filament\Support\Components\Component;
 use Filament\Support\Facades\FilamentColor;
 use Filament\Support\Facades\FilamentIcon;
@@ -83,9 +84,19 @@ class Panel extends Component
 
     public function boot(): void
     {
-        foreach ($this->getResources() as $resource) {
-            $resource::observeTenancyModelCreation($this);
-            $resource::registerTenancyModelGlobalScope($this);
+        if ($this->hasTenancy()) {
+            $resourceClasses = array_unique([
+                ...$this->getResources(),
+                ...array_map(
+                    static fn (ResourceConfiguration $configuration): string => $configuration->getResource(),
+                    $this->getResourceConfigurations(),
+                ),
+            ]);
+
+            foreach ($resourceClasses as $resource) {
+                $resource::observeTenancyModelCreation($this);
+                $resource::registerTenancyModelGlobalScope($this);
+            }
         }
 
         $this->registerAssets();

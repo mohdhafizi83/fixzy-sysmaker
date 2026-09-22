@@ -14,6 +14,8 @@ trait CanPaginateRecords
 
     protected bool | Closure $isPaginatedWhileReordering = false;
 
+    protected bool | Closure $persistsRecordsPerPageInSession = true;
+
     /**
      * @var array<int | string> | Closure | null
      */
@@ -22,6 +24,20 @@ trait CanPaginateRecords
     protected bool | Closure $hasExtremePaginationLinks = false;
 
     protected PaginationMode | Closure | null $paginationMode = null;
+
+    protected bool | Closure $shouldScrollToTopOnPageChange = false;
+
+    public function scrollToTopOnPageChange(bool | Closure $condition = true): static
+    {
+        $this->shouldScrollToTopOnPageChange = $condition;
+
+        return $this;
+    }
+
+    public function shouldScrollToTopOnPageChange(): bool
+    {
+        return (bool) $this->evaluate($this->shouldScrollToTopOnPageChange);
+    }
 
     public function paginationMode(PaginationMode | Closure | null $mode): static
     {
@@ -60,6 +76,13 @@ trait CanPaginateRecords
     public function paginatedWhileReordering(bool | Closure $condition = true): static
     {
         $this->isPaginatedWhileReordering = $condition;
+
+        return $this;
+    }
+
+    public function persistRecordsPerPageInSession(bool | Closure $condition = true): static
+    {
+        $this->persistsRecordsPerPageInSession = $condition;
 
         return $this;
     }
@@ -114,6 +137,11 @@ trait CanPaginateRecords
     public function isPaginatedWhileReordering(): bool
     {
         return (bool) $this->evaluate($this->isPaginatedWhileReordering);
+    }
+
+    public function persistsRecordsPerPageInSession(): bool
+    {
+        return (bool) $this->evaluate($this->persistsRecordsPerPageInSession);
     }
 
     public function hasExtremePaginationLinks(): bool

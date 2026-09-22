@@ -22,13 +22,15 @@ return [
 
                     'invalid' => 'Hemi code hi a diklo.',
 
+                    'rate_limited' => 'Tumna a tam lutuk. Khawngaihin nakinah tinawn leh rawh.',
+
                 ],
 
             ],
 
             'password' => [
 
-                'label' => 'Or, tun a I password enter rawh',
+                'label' => 'I password hman mek chhut lut rawh',
 
                 'validation_attribute' => 'password',
 

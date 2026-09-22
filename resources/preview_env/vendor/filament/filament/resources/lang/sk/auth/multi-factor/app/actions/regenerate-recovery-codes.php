@@ -22,13 +22,15 @@ return [
 
                     'invalid' => 'Zadaný kód je neplatný.',
 
+                    'rate_limited' => 'Príliš veľa pokusov. Skúste to neskôr.',
+
                 ],
 
             ],
 
             'password' => [
 
-                'label' => 'Alebo zadajte svoje aktuálne heslo',
+                'label' => 'Zadajte svoje aktuálne heslo',
 
                 'validation_attribute' => 'heslo',
 

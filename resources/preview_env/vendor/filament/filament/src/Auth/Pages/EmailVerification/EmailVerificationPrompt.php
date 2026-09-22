@@ -10,9 +10,11 @@ use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Pages\SimplePage;
 use Filament\Schemas\Components\Text;
+use Filament\Schemas\Concerns\RestrictsFileUploadsToSchemaComponents;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\HtmlString;
 use LogicException;
 
@@ -21,11 +23,12 @@ use LogicException;
  */
 class EmailVerificationPrompt extends SimplePage
 {
+    use RestrictsFileUploadsToSchemaComponents;
     use WithRateLimiting;
 
     public function mount(): void
     {
-        if ($this->getVerifiable()->hasVerifiedEmail()) {
+        if ((! Filament::auth()->check()) || $this->getVerifiable()->hasVerifiedEmail()) {
             redirect()->intended(Filament::getUrl());
         }
     }
@@ -71,6 +74,21 @@ class EmailVerificationPrompt extends SimplePage
                     return;
                 }
 
+                $rateLimitingKey = 'filament-resend-email-verification:' . Filament::auth()->id();
+
+                if (RateLimiter::tooManyAttempts($rateLimitingKey, maxAttempts: 2)) {
+                    $this->getRateLimitedNotification(new TooManyRequestsException(
+                        static::class,
+                        'resendNotification',
+                        request()->ip(),
+                        RateLimiter::availableIn($rateLimitingKey),
+                    ))?->send();
+
+                    return;
+                }
+
+                RateLimiter::hit($rateLimitingKey);
+
                 $this->sendEmailVerificationNotification($this->getVerifiable());
 
                 Notification::make()
@@ -99,7 +117,7 @@ class EmailVerificationPrompt extends SimplePage
         return __('filament-panels::auth/pages/email-verification/email-verification-prompt.title');
     }
 
-    public function getHeading(): string | Htmlable
+    public function getHeading(): string | Htmlable | null
     {
         return __('filament-panels::auth/pages/email-verification/email-verification-prompt.heading');
     }

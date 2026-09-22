@@ -6,12 +6,33 @@ return [
 
         'heading' => 'ជួរឈរ',
 
+        'actions' => [
+            'apply' => [
+                'label' => 'អនុវត្ត',
+            ],
+            'reorder' => [
+                'label' => 'តម្រៀបជួរឈរឡើងវិញ',
+            ],
+            'reset' => [
+                'label' => 'កំណត់ឡើងវិញ',
+            ],
+        ],
+
     ],
 
     'columns' => [
 
         'actions' => [
             'label' => 'សកម្មភាព|សកម្មភាព',
+        ],
+
+        'icon' => [
+
+            'boolean' => [
+                'true' => 'បាទ',
+                'false' => 'ទេ',
+            ],
+
         ],
 
         'text' => [
@@ -25,20 +46,29 @@ return [
 
         ],
 
+        'select' => [
+            'loading_message' => 'កំពុងដំណើរការ...',
+            'no_options_message' => 'គ្មានជម្រើស.',
+            'no_search_results_message' => 'រកមិនឃើញទិន្នន័យ.',
+            'placeholder' => 'ជ្រើសរើស',
+            'searching_message' => 'កំពុងស្វែងរក...',
+            'search_prompt' => 'វាយបញ្ចូលដើម្បីស្វែងរក...',
+        ],
+
     ],
 
     'fields' => [
 
         'bulk_select_page' => [
-            'label' => 'ជ្រើសរើស/មិនជ្រើសរើសធាតុទាំងអស់សម្រាប់សកម្មភាពភាគច្រើន.',
+            'label' => 'ជ្រើសរើស/ដកការជ្រើសរើសធាតុទាំងអស់សម្រាប់សកម្មភាពជាដុំ។',
         ],
 
         'bulk_select_record' => [
-            'label' => 'ជ្រើសរើស/មិនជ្រើសរើសធាតុ :key សម្រាប់សកម្មភាពភាគច្រើន.',
+            'label' => 'ជ្រើសរើស/ដកការជ្រើសរើសធាតុ :key សម្រាប់សកម្មភាពជាដុំ។',
         ],
 
         'bulk_select_group' => [
-            'label' => 'ជ្រើសរើស/មិនជ្រើសរើសក្រុម :title សម្រាប់សកម្មភាពភាគច្រើន.',
+            'label' => 'ជ្រើសរើស/ដកការជ្រើសរើសក្រុម :title សម្រាប់សកម្មភាពជាដុំ។',
         ],
 
         'search' => [
@@ -87,6 +117,10 @@ return [
             'label' => 'តម្រៀបកំណត់ត្រាឡើងវិញ',
         ],
 
+        'reorder_record' => [
+            'label' => 'តម្រៀបធាតុ :key ឡើងវិញ',
+        ],
+
         'filter' => [
             'label' => 'តម្រង',
         ],
@@ -96,11 +130,15 @@ return [
         ],
 
         'open_bulk_actions' => [
-            'label' => 'សកម្មភាពភាគច្រើន',
+            'label' => 'សកម្មភាពជាដុំ',
         ],
 
         'column_manager' => [
             'label' => 'បិទ/បើកជួរឈរ',
+        ],
+
+        'toggle_record_content' => [
+            'label' => 'ពង្រីក/បង្រួមធាតុ :key',
         ],
 
     ],
@@ -109,7 +147,7 @@ return [
 
         'heading' => 'គ្មាន​​ :model',
 
-        'description' => 'បង្កើត​ :model មួយដើម្បីចាប់ផ្តើម។.',
+        'description' => 'បង្កើត​ :model មួយដើម្បីចាប់ផ្តើម។',
 
     ],
 
@@ -141,11 +179,14 @@ return [
         'indicator' => 'តម្រងសកម្ម',
 
         'multi_select' => [
-            'placeholder' => 'ទាំងអស់។',
+            'placeholder' => 'ទាំងអស់',
         ],
 
         'select' => [
-            'placeholder' => 'ទាំងអស់។',
+            'placeholder' => 'ទាំងអស់',
+            'relationship' => [
+                'empty_option_label' => 'គ្មាន',
+            ],
         ],
 
         'trashed' => [
@@ -168,7 +209,6 @@ return [
 
             'group' => [
                 'label' => 'ដាក់ជាក្រុមដោយ',
-                'placeholder' => 'ដាក់ជាក្រុមដោយ',
             ],
 
             'direction' => [
@@ -186,11 +226,15 @@ return [
 
     ],
 
+    'loading' => 'កំពុងផ្ទុក...',
+
     'reorder_indicator' => 'អូស និងទម្លាក់កំណត់ត្រាតាមលំដាប់លំដោយ.',
+
+    'result_count' => '{0} គ្មានលទ្ធផល|{1} លទ្ធផល :count|[2,*] លទ្ធផល :count',
 
     'selection_indicator' => [
 
-        'selected_count' => 'បានជ្រើសរើស 1 កំណត់ត្រា|:count រាប់កំណត់ត្រា បានជ្រើសរើស',
+        'selected_count' => 'បានជ្រើសរើស 1 កំណត់ត្រា|បានជ្រើសរើស :count កំណត់ត្រា',
 
         'actions' => [
 
@@ -228,5 +272,7 @@ return [
         ],
 
     ],
+
+    'default_model_label' => 'ទិន្នន័យ',
 
 ];

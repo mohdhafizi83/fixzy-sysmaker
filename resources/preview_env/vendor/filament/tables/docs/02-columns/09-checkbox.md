@@ -13,7 +13,7 @@ use Filament\Tables\Columns\CheckboxColumn;
 CheckboxColumn::make('is_admin')
 ```
 
-<AutoScreenshot name="tables/columns/checkbox/simple" alt="Checkbox column" version="4.x" />
+<AutoScreenshot name="tables/columns/checkbox/simple" alt="Checkbox column" version="5.x" />
 
 ## Lifecycle hooks
 
@@ -28,3 +28,9 @@ CheckboxColumn::make()
         // Runs after the state is saved to the database.
     })
 ```
+
+## Security
+
+### Authorization
+
+The checkbox column does not automatically check Laravel Model Policies before saving changes. When a user updates a value via the checkbox column, Filament checks whether the column is `disabled()` but does not run any `update` policy gate check. This means that if a user can see a record in the table and the column is not disabled, they can update that column's value regardless of any `update` policy you have defined. If you need to restrict who can edit this column, you should use the `disabled()` method to conditionally prevent editing based on your own authorization logic, for example `disabled(fn ($record) => $record->user_id !== auth()->id())`. Alternatively, consider using a full edit page or modal action where Filament's resource authorization is enforced.

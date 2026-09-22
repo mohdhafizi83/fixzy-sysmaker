@@ -42,6 +42,11 @@ return [
 
         'form' => [
 
+            'password' => [
+                'label' => 'Contraseña actual',
+                'validation_attribute' => 'contraseña actual',
+            ],
+
             'code' => [
 
                 'label' => 'Ingrese el código de 6 dígitos de la aplicación de autenticación',
@@ -53,6 +58,8 @@ return [
                 'messages' => [
 
                     'invalid' => 'El código ingresado no es válido.',
+
+                    'rate_limited' => 'Demasiados intentos. Por favor intente más tarde.',
 
                 ],
 

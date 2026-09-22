@@ -13,7 +13,14 @@ use InvalidArgumentException;
 
 class ExportColumn extends Component
 {
+    // Security: Export column values are written to CSV/XLSX without
+    // transformation. Values starting with `=`, `+`, `-`, or `@`
+    // may be interpreted as formulas by spreadsheet software.
+    // Use `formatStateUsing()` to sanitize untrusted user
+    // content, e.g. by prefixing with a single quote.
+
     use CanAggregateRelatedModels;
+    use Concerns\CanBeHidden;
     use Concerns\CanFormatState;
     use HasCellState;
 
@@ -161,7 +168,7 @@ class ExportColumn extends Component
 
     protected function resolveDefaultClosureDependencyForEvaluationByType(string $parameterType): array
     {
-        $record = $this->getRecord();
+        $record = is_a($parameterType, Model::class, allow_string: true) ? $this->getRecord() : null;
 
         return match ($parameterType) {
             Exporter::class => [$this->getExporter()],

@@ -22,13 +22,15 @@ return [
 
                     'invalid' => 'Annettu koodi on väärin.',
 
+                    'rate_limited' => 'Liian monta yritystä. Yritä myöhemmin uudelleen.',
+
                 ],
 
             ],
 
             'password' => [
 
-                'label' => 'Tai anna nykyinen salasana',
+                'label' => 'Syötä nykyinen salasanasi',
 
                 'validation_attribute' => 'salasana',
 

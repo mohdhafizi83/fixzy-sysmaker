@@ -7,6 +7,7 @@ namespace BezhanSalleh\PluginEssentials\Concerns\Resource;
 use BackedEnum;
 use Filament\Pages\Enums\SubNavigationPosition;
 use Illuminate\Contracts\Support\Htmlable;
+use UnitEnum;
 
 trait HasNavigation
 {
@@ -14,144 +15,56 @@ trait HasNavigation
 
     public static function getNavigationLabel(): string
     {
-        $pluginResult = static::delegateToPlugin(
-            'HasNavigation',
-            'getNavigationLabel',
-            null
-        );
-
-        return (! static::isNoPluginResult($pluginResult) && filled($pluginResult))
-            ? $pluginResult
-            : static::getParentResult('getNavigationLabel');
+        return static::pluginOrParent('HasNavigation', 'navigationLabel', 'getNavigationLabel', nullFallsBack: true);
     }
 
     public static function getNavigationIcon(): string | BackedEnum | Htmlable | null
     {
-        $pluginResult = static::delegateToPlugin(
-            'HasNavigation',
-            'getNavigationIcon',
-            null
-        );
-
-        return static::isNoPluginResult($pluginResult)
-            ? static::getParentResult('getNavigationIcon')
-            : $pluginResult;
+        return static::pluginOrParent('HasNavigation', 'navigationIcon', 'getNavigationIcon');
     }
 
     public static function getActiveNavigationIcon(): BackedEnum | Htmlable | null | string
     {
-        $pluginResult = static::delegateToPlugin(
-            'HasNavigation',
-            'getActiveNavigationIcon',
-            null
-        );
-
-        return static::isNoPluginResult($pluginResult)
-            ? static::getParentResult('getActiveNavigationIcon')
-            : $pluginResult;
+        return static::pluginOrParent('HasNavigation', 'activeNavigationIcon', 'getActiveNavigationIcon');
     }
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
-        $pluginResult = static::delegateToPlugin(
-            'HasNavigation',
-            'getNavigationGroup',
-            null
-        );
-
-        return static::isNoPluginResult($pluginResult)
-            ? static::getParentResult('getNavigationGroup')
-            : $pluginResult;
+        return static::pluginOrParent('HasNavigation', 'navigationGroup', 'getNavigationGroup');
     }
 
     public static function getNavigationSort(): ?int
     {
-        $pluginResult = static::delegateToPlugin(
-            'HasNavigation',
-            'getNavigationSort',
-            null
-        );
-
-        return static::isNoPluginResult($pluginResult)
-            ? static::getParentResult('getNavigationSort')
-            : $pluginResult;
+        return static::pluginOrParent('HasNavigation', 'navigationSort', 'getNavigationSort');
     }
 
     public static function getNavigationBadge(): ?string
     {
-        $pluginResult = static::delegateToPlugin(
-            'HasNavigation',
-            'getNavigationBadge',
-            null
-        );
-
-        return static::isNoPluginResult($pluginResult)
-            ? static::getParentResult('getNavigationBadge')
-            : $pluginResult;
+        return static::pluginOrParent('HasNavigation', 'navigationBadge', 'getNavigationBadge');
     }
 
     public static function getNavigationBadgeColor(): string | array | null
     {
-        $pluginResult = static::delegateToPlugin(
-            'HasNavigation',
-            'getNavigationBadgeColor',
-            null
-        );
-
-        return static::isNoPluginResult($pluginResult)
-            ? static::getParentResult('getNavigationBadgeColor')
-            : $pluginResult;
+        return static::pluginOrParent('HasNavigation', 'navigationBadgeColor', 'getNavigationBadgeColor');
     }
 
     public static function getNavigationBadgeTooltip(): ?string
     {
-        $pluginResult = static::delegateToPlugin(
-            'HasNavigation',
-            'getNavigationBadgeTooltip',
-            null
-        );
-
-        return static::isNoPluginResult($pluginResult)
-            ? static::getParentResult('getNavigationBadgeTooltip')
-            : $pluginResult;
+        return static::pluginOrParent('HasNavigation', 'navigationBadgeTooltip', 'getNavigationBadgeTooltip');
     }
 
     public static function shouldRegisterNavigation(): bool
     {
-        $pluginResult = static::delegateToPlugin(
-            'HasNavigation',
-            'shouldRegisterNavigation',
-            null
-        );
-
-        return static::isNoPluginResult($pluginResult)
-            ? static::getParentResult('shouldRegisterNavigation')
-            : $pluginResult;
+        return static::pluginOrParent('HasNavigation', 'shouldRegisterNavigation', 'shouldRegisterNavigation', nullFallsBack: true);
     }
 
     public static function getNavigationParentItem(): ?string
     {
-        $pluginResult = static::delegateToPlugin(
-            'HasNavigation',
-            'getNavigationParentItem',
-            null
-        );
-
-        return static::isNoPluginResult($pluginResult)
-            ? static::getParentResult('getNavigationParentItem')
-            : $pluginResult;
+        return static::pluginOrParent('HasNavigation', 'navigationParentItem', 'getNavigationParentItem');
     }
 
     public static function getSubNavigationPosition(): SubNavigationPosition
     {
-        $pluginResult = static::delegateToPlugin(
-            'HasNavigation',
-            'getSubNavigationPosition',
-            null
-        );
-
-        return static::isNoPluginResult($pluginResult)
-            ? static::getParentResult('getSubNavigationPosition')
-            : $pluginResult;
+        return static::pluginOrParent('HasNavigation', 'subNavigationPosition', 'getSubNavigationPosition', nullFallsBack: true);
     }
 }

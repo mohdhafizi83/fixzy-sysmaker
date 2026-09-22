@@ -6,9 +6,21 @@ use Livewire\Drawer\Utils;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\ViewErrorBag;
 use Livewire\ComponentHook;
+use function Livewire\on;
 
 class SupportValidation extends ComponentHook
 {
+    public static $view;
+
+    public static function provide()
+    {
+        static::$view = null;
+
+        on('flush-state', function () {
+            static::$view = null;
+        });
+    }
+
     function hydrate($memo)
     {
         $this->component->setErrorBag(
@@ -18,13 +30,24 @@ class SupportValidation extends ComponentHook
 
     function render($view, $data)
     {
-        $errors = (new ViewErrorBag)->put('default', $this->component->getErrorBag());
+        $errors = $this->viewErrorBag();
 
         $revert = Utils::shareWithViews('errors', $errors);
 
         return function () use ($revert) {
             // After the component has rendered, let's revert our global
             // sharing of the "errors" variable with blade views...
+            $revert();
+        };
+    }
+
+    function renderIsland($name, $view, $data)
+    {
+        $errors = $this->viewErrorBag();
+
+        $revert = Utils::shareWithViews('errors', $errors);
+
+        return function () use ($revert) {
             $revert();
         };
     }
@@ -51,4 +74,18 @@ class SupportValidation extends ComponentHook
 
         $stopPropagation();
     }
+
+    protected function viewErrorBag(): ViewErrorBag
+    {
+        $view = static::$view ??= app('view');
+
+        $previouslySharedErrors = $view->getShared()['errors'] ?? null;
+
+        $errors = $previouslySharedErrors instanceof ViewErrorBag
+            ? clone $previouslySharedErrors
+            : new ViewErrorBag;
+
+        return $errors->put('default', $this->component->getErrorBag());
+    }
 }
+

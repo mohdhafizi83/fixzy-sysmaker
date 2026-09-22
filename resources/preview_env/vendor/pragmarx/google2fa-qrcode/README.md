@@ -3,23 +3,33 @@
 <p align="center">
     <a href="https://packagist.org/packages/pragmarx/google2fa-qrcode"><img alt="Latest Stable Version" src="https://img.shields.io/packagist/v/pragmarx/google2fa-qrcode.svg?style=flat-square"></a>
     <a href="LICENSE.md"><img alt="License" src="https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square"></a>
-    <a href="https://scrutinizer-ci.com/g/antonioribeiro/google2fa/?branch=master"><img alt="Code Quality" src="https://img.shields.io/scrutinizer/g/antonioribeiro/google2fa.svg?style=flat-square"></a>
-    <a href="https://travis-ci.org/antonioribeiro/google2fa"><img alt="Build" src="https://img.shields.io/travis/antonioribeiro/google2fa.svg?style=flat-square"></a>
+    <a href="https://github.com/antonioribeiro/google2fa-qrcode/actions/workflows/phpunit.yml"><img alt="PHPUnit" src="https://github.com/antonioribeiro/google2fa-qrcode/actions/workflows/phpunit.yml/badge.svg"></a>
+    <a href="https://github.com/antonioribeiro/google2fa-qrcode/actions/workflows/phpstan.yml"><img alt="PHPStan" src="https://github.com/antonioribeiro/google2fa-qrcode/actions/workflows/phpstan.yml/badge.svg"></a>
 </p>
 <p align="center">
     <a href="https://packagist.org/packages/pragmarx/google2fa-qrcode"><img alt="Downloads" src="https://img.shields.io/packagist/dt/pragmarx/google2fa-qrcode.svg?style=flat-square"></a>
-    <a href="https://scrutinizer-ci.com/g/antonioribeiro/google2fa/?branch=master"><img alt="Coverage" src="https://img.shields.io/scrutinizer/coverage/g/antonioribeiro/google2fa.svg?style=flat-square"></a>
-    <a href="https://styleci.io/repos/24296182"><img alt="StyleCI" src="https://styleci.io/repos/24296182/shield"></a>
-    <a href="https://travis-ci.org/antonioribeiro/google2fa"><img alt="PHP" src="https://img.shields.io/badge/PHP-5.4%20--%207.3-brightgreen.svg?style=flat-square"></a>
+    <a href="https://codecov.io/gh/antonioribeiro/google2fa-qrcode"><img alt="Coverage" src="https://codecov.io/gh/antonioribeiro/google2fa-qrcode/branch/4.x/graph/badge.svg"></a>
+    <a href="https://www.php.net"><img alt="PHP" src="https://img.shields.io/badge/PHP-8.1%20--%208.5-brightgreen.svg?style=flat-square"></a>
 </p>
 
 ### QRCode For Google2FA
 
 This is package is [Goole2FA](https://github.com/antonioribeiro/google2fa) integrated with a QRCode generator, providing an easy way to plot QRCode for your two factor authentication. For documentation related to Google2FA, please check the [documentation of the main package](https://github.com/antonioribeiro/google2fa).  
  
-## Requirements
+## Version Compatibility
 
-- PHP 5.4+
+| PHP          | `pragmarx/google2fa-qrcode` |
+| ------------ | --------------------------- |
+| `7.1`        | `3.x`                       |
+| `7.2`        | `3.x`                       |
+| `7.3`        | `3.x`                       |
+| `7.4`        | `3.x`                       |
+| `8.0`        | `3.x`                       |
+| `8.1`        | `4.x`                       |
+| `8.2`        | `4.x`                       |
+| `8.3`        | `4.x`                       |
+| `8.4`        | `4.x`                       |
+| `8.5`        | `4.x`                       |
 
 ## Installing
 
@@ -43,7 +53,7 @@ return $google2fa->generateSecretKey();
 
 ## Generating QRCodes
 
-The securer way of creating QRCode is to do it yourself or using a library. First you have to install the BaconQrCode package, as stated above, then you just have to generate the inline string using:
+The securer way of creating QRCode is to do it yourself or using a library. First you have to install the Chillerlan or BaconQrCode package, then you just have to generate the inline string using:
  
 ```php
 $inlineUrl = $google2fa->getQRCodeInline(
@@ -98,7 +108,7 @@ $valid = $google2fa->verifyKey($user->google2fa_secret, $secret);
 If you want to use a different service, you just have to 
 
 ```php
-$google2fa->setQrcodeService(new YourService())
+$google2fa->setQRCodeService(new YourService())
           ->getQRCodeInline(
               $companyName,
               $companyEmail,
@@ -113,10 +123,10 @@ Beginning on version 2.0 the rendering service is optional, so you have to manua
 - [BaconQrCode](https://github.com/Bacon/BaconQrCode): renders PNG by default, but requires the Imagick PHP extension. You can configure it to use different backends, but you'll have to instantiate it yourself.
 - [chillerlan/php-qrcode](https://github.com/chillerlan/php-qrcode): renders SVG by default and don't require the Imagick PHP extension, but can also generate other formats, which may require Imagick. 
 
-## Using a diffent image backend
+## Using a different image backend
 
 ```php
-$google2fa->setQrcodeService(
+$google2fa->setQRCodeService(
     new \PragmaRX\Google2FAQRCode\QRCode\Bacon(
         new \BaconQrCode\Renderer\Image\SvgImageBackEnd()
     )

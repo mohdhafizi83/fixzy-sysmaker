@@ -55,6 +55,12 @@ trait CanGenerateModelInfolists
 
             $type = $this->parseColumnType($column);
 
+            if (! $this->canGenerateSchemaComponentForColumnType($type)) {
+                $this->recordSkippedColumn($model, $column);
+
+                continue;
+            }
+
             if (in_array($type['name'], [
                 'json',
             ])) {
@@ -145,11 +151,14 @@ trait CanGenerateModelInfolists
                     'double',
                     'money',
                 ]) && blank($guessedRelationshipName)) {
-                    $componentData[in_array($componentName, [
+                    $componentData[(in_array($componentName, [
                         'cost',
                         'money',
                         'price',
-                    ]) || $type['name'] === 'money' ? 'money' : 'numeric'] = [];
+                    ]) || str($componentName)->endsWith([
+                        '_cost',
+                        '_price',
+                    ]) || $type['name'] === 'money') ? 'money' : 'numeric'] = [];
                 }
             }
 

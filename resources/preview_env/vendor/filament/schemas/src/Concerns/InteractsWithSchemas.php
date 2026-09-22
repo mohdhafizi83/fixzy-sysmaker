@@ -5,16 +5,21 @@ namespace Filament\Schemas\Concerns;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Forms\Components\BaseFileUpload;
+use Filament\Forms\Components\Concerns\HasFileAttachments;
+use Filament\Forms\Components\Field;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Schema;
 use Filament\Support\Components\Attributes\ExposedLivewireMethod;
 use Filament\Support\Contracts\TranslatableContentDriver;
+use Filament\Support\Livewire\Partials\PartialsComponentHook;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
+use LogicException;
 use ReflectionMethod;
 use ReflectionNamedType;
 
@@ -43,6 +48,17 @@ trait InteractsWithSchemas
     public array $discoveredSchemaNames = [];
 
     /**
+     * @var array<string, bool>
+     */
+    #[Locked]
+    public array $loadedDeferredSchemas = [];
+
+    /**
+     * @var array<string, Schema>
+     */
+    protected array $renderedDeferredSchemas = [];
+
+    /**
      * @var array<string, ?Schema>
      */
     protected array $cachedSchemas = [];
@@ -50,6 +66,11 @@ trait InteractsWithSchemas
     protected bool $isCachingSchemas = false;
 
     protected ?Schema $currentlyValidatingSchema = null;
+
+    public function renderingInteractsWithSchemas(): void
+    {
+        $this->renderedDeferredSchemas = [];
+    }
 
     public function isCachingSchemas(): bool
     {
@@ -61,6 +82,10 @@ trait InteractsWithSchemas
      */
     public function callSchemaComponentMethod(string $componentKey, string $method, array $arguments = []): mixed
     {
+        // Security: This method is callable from the frontend and dispatches
+        // to `#[ExposedLivewireMethod]` methods on schema components.
+        // Only methods marked with that attribute are allowed.
+
         $component = $this->getSchemaComponent($componentKey);
 
         if (! $component) {
@@ -78,7 +103,24 @@ trait InteractsWithSchemas
         }
 
         if ($methodReflection->getAttributes(Renderless::class)) {
-            $this->skipRender();
+            app(PartialsComponentHook::class)->skipPartialRender($this);
+        } else {
+            $schema = $component->getContainer();
+            $schemaToPartiallyRender = null;
+
+            while ($schema !== null) {
+                if ($schema->shouldPartiallyRender()) {
+                    $schemaToPartiallyRender = $schema;
+                }
+
+                $schema = $schema->getParentComponent()?->getContainer();
+            }
+
+            if ($schemaToPartiallyRender) {
+                app(PartialsComponentHook::class)->renderPartial($this, fn (): array => [
+                    "schema.{$schemaToPartiallyRender->getKey()}" => $schemaToPartiallyRender->toHtml(...),
+                ]);
+            }
         }
 
         return $component->{$method}(...$arguments);
@@ -87,6 +129,136 @@ trait InteractsWithSchemas
     public function partiallyRenderSchemaComponent(string $componentKey): void
     {
         $this->getSchemaComponent($componentKey)?->partiallyRender();
+    }
+
+    /**
+     * @internal Do not use this method outside the internals of Filament. It is subject to breaking changes in minor and patch releases.
+     */
+    public function loadDeferredSchema(string $schemaKey): void
+    {
+        if ($this->loadedDeferredSchemas[$schemaKey] ?? false) {
+            app(PartialsComponentHook::class)->skipPartialRender($this);
+
+            return;
+        }
+
+        $rootSchema = $this->getSchema((string) str($schemaKey)->before('.'));
+
+        if (! $rootSchema) {
+            app(PartialsComponentHook::class)->skipPartialRender($this);
+
+            return;
+        }
+
+        $findSchema = function (Schema $schema) use (&$findSchema, $schemaKey): ?Schema {
+            if ($schema->isHidden()) {
+                return null;
+            }
+
+            if (($schema->getKey() === $schemaKey) && $schema->isLoadingDeferred()) {
+                return $schema;
+            }
+
+            foreach ($schema->getComponents(withActions: false) as $component) {
+                $componentInheritanceKey = $component->getInheritanceKey();
+
+                if (
+                    filled($componentInheritanceKey) &&
+                    ($componentInheritanceKey !== $schemaKey) &&
+                    (! str_starts_with($schemaKey, "{$componentInheritanceKey}."))
+                ) {
+                    continue;
+                }
+
+                foreach ($component->getChildSchemas() as $childSchema) {
+                    $childSchemaKey = $childSchema->getKey();
+
+                    if (
+                        filled($childSchemaKey) &&
+                        ($childSchemaKey !== $schemaKey) &&
+                        (! str_starts_with($schemaKey, "{$childSchemaKey}."))
+                    ) {
+                        continue;
+                    }
+
+                    if ($foundSchema = $findSchema($childSchema)) {
+                        return $foundSchema;
+                    }
+                }
+            }
+
+            return null;
+        };
+
+        $schema = $findSchema($rootSchema);
+
+        if (! $schema) {
+            app(PartialsComponentHook::class)->skipPartialRender($this);
+
+            return;
+        }
+
+        $this->loadedDeferredSchemas[$schemaKey] = true;
+
+        app(PartialsComponentHook::class)->renderPartial($this, fn (): array => [
+            "schema.{$schemaKey}" => function () use ($schema, $schemaKey): string {
+                $html = $schema->toHtml();
+
+                if (filled($html)) {
+                    return $html;
+                }
+
+                return '<div wire:partial="' . e("schema.{$schemaKey}") . '" hidden></div>';
+            },
+        ]);
+    }
+
+    /**
+     * @internal Do not use this method outside the internals of Filament. It is subject to breaking changes in minor and patch releases.
+     */
+    public function isDeferredSchemaLoaded(Schema $schema): bool
+    {
+        $schemaKey = $schema->getKey();
+
+        if (blank($schemaKey) || ($schemaKey === $schema->getParentComponent()?->getContainer()->getKey())) {
+            throw new LogicException('A deferred schema must have a unique key. Set a key on its parent component or on the schema itself.');
+        }
+
+        if (isset($this->renderedDeferredSchemas[$schemaKey])) {
+            throw new LogicException("Multiple deferred schemas are using the key [{$schemaKey}]. Set a unique key on each deferred schema.");
+        }
+
+        $this->renderedDeferredSchemas[$schemaKey] = $schema;
+
+        if ($this->loadedDeferredSchemas[$schemaKey] ?? false) {
+            return true;
+        }
+
+        $errorKeys = array_keys($this->getErrorBag()->getMessages());
+
+        if ($errorKeys === []) {
+            return false;
+        }
+
+        foreach ($schema->getFlatComponents(withActions: false, withHidden: true) as $component) {
+            $componentStatePath = $component->getStatePath();
+
+            if (blank($componentStatePath)) {
+                continue;
+            }
+
+            foreach ($errorKeys as $errorKey) {
+                if (($errorKey !== $componentStatePath) && (! str_starts_with($errorKey, "{$componentStatePath}."))) {
+                    continue;
+                }
+
+                $this->loadedDeferredSchemas[$schemaKey] = true;
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -158,7 +330,10 @@ trait InteractsWithSchemas
         $this->skipRender();
     }
 
-    public function getSchemaComponent(string $key, bool $withHidden = false, ?Component $skipComponentChildContainersWhileSearching = null): Component | Action | ActionGroup | null
+    /**
+     * @param  array<Component>  $skipComponentsChildContainersWhileSearching
+     */
+    public function getSchemaComponent(string $key, bool $withHidden = false, array $skipComponentsChildContainersWhileSearching = []): Component | Action | ActionGroup | null
     {
         if (! str($key)->contains('.')) {
             return null;
@@ -168,7 +343,7 @@ trait InteractsWithSchemas
 
         $schema = $this->getSchema($schemaName);
 
-        return $schema?->getComponent($key, withHidden: $withHidden, isAbsoluteKey: true, skipComponentChildContainersWhileSearching: $skipComponentChildContainersWhileSearching);
+        return $schema?->getComponent($key, withHidden: $withHidden, isAbsoluteKey: true, skipComponentsChildContainersWhileSearching: $skipComponentsChildContainersWhileSearching);
     }
 
     protected function cacheSchema(string $name, Schema | Closure | null $schema = null): ?Schema
@@ -182,7 +357,8 @@ trait InteractsWithSchemas
                 return $this->cachedSchemas[$name] = $schema->key($name);
             }
 
-            // If null was explicitly passed as the schema, unset the cached schema.
+            // If null was explicitly passed as the schema,
+            // unset the cached schema.
             if (func_num_args() === 2) {
                 unset($this->cachedSchemas[$name]);
 
@@ -199,7 +375,7 @@ trait InteractsWithSchemas
                 return null;
             }
 
-            $methodReflection = new ReflectionMethod($this, $name);
+            $methodReflection = new ReflectionMethod($this, $methodName);
             $parameterReflection = $methodReflection->getParameters()[0] ?? null;
 
             if (! $parameterReflection) {
@@ -445,12 +621,12 @@ trait InteractsWithSchemas
     protected function unsetMissingNumericArrayKeys(array &$target, array $state, string $currentStatePath, ?string $schemaStatePath = null): void
     {
         foreach ($target as $key => $value) {
-            $currentStatePath .= ".{$key}";
+            $keyStatePath = "{$currentStatePath}.{$key}";
 
             if (
-                is_numeric($key) &&
+                (is_numeric($key) || array_is_list($state)) &&
                 (! array_key_exists($key, $state)) &&
-                str($currentStatePath)->startsWith($schemaStatePath)
+                str($keyStatePath)->startsWith($schemaStatePath)
             ) {
                 unset($target[$key]);
 
@@ -458,7 +634,7 @@ trait InteractsWithSchemas
             }
 
             if (is_array($value) && is_array($state[$key] ?? null)) {
-                $this->unsetMissingNumericArrayKeys($target[$key], $state[$key], $currentStatePath, $schemaStatePath);
+                $this->unsetMissingNumericArrayKeys($target[$key], $state[$key], $keyStatePath, $schemaStatePath);
             }
         }
     }
@@ -471,5 +647,57 @@ trait InteractsWithSchemas
     public function getDefaultTestingSchemaName(): ?string
     {
         return array_key_first($this->getCachedSchemas());
+    }
+
+    public function isFileUploadForSchemaComponent(string $name): bool
+    {
+        if (str_starts_with($name, 'componentFileAttachments.')) {
+            $name = substr($name, strlen('componentFileAttachments.'));
+        }
+
+        if ($this->getSchemaComponentForFileUpload($name) !== null) {
+            return true;
+        }
+
+        $lastDotPosition = strrpos($name, '.');
+
+        if ($lastDotPosition === false) {
+            return false;
+        }
+
+        return $this->getSchemaComponentForFileUpload(substr($name, 0, $lastDotPosition)) !== null;
+    }
+
+    protected function getSchemaComponentForFileUpload(string $statePath): ?Component
+    {
+        foreach ($this->getCachedSchemas() as $schema) {
+            if (! $schema instanceof Schema) {
+                continue;
+            }
+
+            foreach ($schema->getFlatComponents() as $component) {
+                if (! $component instanceof Field) {
+                    continue;
+                }
+
+                if ($component->getStatePath() !== $statePath) {
+                    continue;
+                }
+
+                if ($component instanceof BaseFileUpload) {
+                    return $component;
+                }
+
+                if (
+                    in_array(HasFileAttachments::class, class_uses_recursive($component), strict: true) &&
+                    method_exists($component, 'hasFileAttachments') &&
+                    $component->hasFileAttachments()
+                ) {
+                    return $component;
+                }
+            }
+        }
+
+        return null;
     }
 }

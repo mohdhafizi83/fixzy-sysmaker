@@ -111,6 +111,8 @@ trait HandlesValidation
         if (method_exists($this, 'rules')) $rulesFromComponent = $this->rules();
         else if (property_exists($this, 'rules')) $rulesFromComponent = $this->rules;
 
+        if ($rulesFromComponent instanceof Arrayable) $rulesFromComponent = $rulesFromComponent->toArray();
+
         $rulesFromOutside = array_merge_recursive(
             ...array_map(
                 fn($i) => value($i),
@@ -128,6 +130,8 @@ trait HandlesValidation
         if (method_exists($this, 'messages')) $messages = $this->messages();
         elseif (property_exists($this, 'messages')) $messages = $this->messages;
 
+        if ($messages instanceof Arrayable) $messages = $messages->toArray();
+
         $messagesFromOutside = array_merge(
             ...array_map(
                 fn($i) => value($i),
@@ -144,6 +148,8 @@ trait HandlesValidation
 
         if (method_exists($this, 'validationAttributes')) $validationAttributes = $this->validationAttributes();
         elseif (property_exists($this, 'validationAttributes')) $validationAttributes = $this->validationAttributes;
+
+        if ($validationAttributes instanceof Arrayable) $validationAttributes = $validationAttributes->toArray();
 
         $validationAttributesFromOutside = array_merge(
             ...array_map(
@@ -484,7 +490,7 @@ trait HandlesValidation
         // Let's make sure there are no form objects that contain them...
         $allRules = $rules;
 
-        if ($this->isRootComponent()) {
+        if (empty($rules) && $this->isRootComponent()) {
             foreach ($this->getFormObjects() as $form) {
                 $allRules = array_merge($allRules, $form->getRules());
             }
@@ -506,6 +512,8 @@ trait HandlesValidation
     protected function unwrapDataForValidation($data)
     {
         return collect($data)->map(function ($value) {
+            // Scalars and arrays are already valid Laravel validation data...
+            if (! is_object($value)) return $value;
 
             $synth = app('livewire')->findSynth($value, $this);
 

@@ -6,18 +6,19 @@ export default function toggleTableColumn({ name, recordKey, state }) {
 
         state,
 
+        unsubscribeLivewireHook: null,
+
         init() {
-            Livewire.hook(
-                'commit',
-                ({ component, commit, succeed, fail, respond }) => {
-                    succeed(({ snapshot, effect }) => {
+            this.unsubscribeLivewireHook = Livewire.interceptMessage(
+                ({ message, onSuccess }) => {
+                    onSuccess(() => {
                         this.$nextTick(() => {
                             if (this.isLoading) {
                                 return
                             }
 
                             if (
-                                component.id !==
+                                message.component.id !==
                                 this.$root.closest('[wire\\:id]')?.attributes[
                                     'wire:id'
                                 ].value
@@ -74,6 +75,10 @@ export default function toggleTableColumn({ name, recordKey, state }) {
             }
 
             return [1, '1'].includes(this.$refs.serverState.value)
+        },
+
+        destroy() {
+            this.unsubscribeLivewireHook?.()
         },
     }
 }

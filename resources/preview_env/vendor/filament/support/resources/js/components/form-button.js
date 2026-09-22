@@ -1,20 +1,42 @@
 export default () => ({
     form: null,
 
+    eventListenersController: null,
+
+    processingCount: 0,
+
     isProcessing: false,
 
     processingMessage: null,
 
     init() {
-        const formElement = this.$el.closest('form')
+        this.form = this.$el.closest('form')
 
-        formElement?.addEventListener('form-processing-started', (event) => {
-            this.isProcessing = true
-            this.processingMessage = event.detail.message
-        })
+        this.eventListenersController = new AbortController()
 
-        formElement?.addEventListener('form-processing-finished', () => {
-            this.isProcessing = false
-        })
+        const { signal } = this.eventListenersController
+
+        this.form?.addEventListener(
+            'form-processing-started',
+            (event) => {
+                this.processingCount++
+                this.isProcessing = true
+                this.processingMessage = event.detail.message
+            },
+            { signal },
+        )
+
+        this.form?.addEventListener(
+            'form-processing-finished',
+            () => {
+                this.processingCount = Math.max(0, this.processingCount - 1)
+                this.isProcessing = this.processingCount > 0
+            },
+            { signal },
+        )
+    },
+
+    destroy() {
+        this.eventListenersController?.abort()
     },
 })

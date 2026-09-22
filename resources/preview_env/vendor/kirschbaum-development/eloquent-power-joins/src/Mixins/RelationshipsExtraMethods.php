@@ -223,7 +223,9 @@ class RelationshipsExtraMethods
     protected function performJoinForEloquentPowerJoinsForMorph()
     {
         return function ($builder, $joinType, $callback = null, $alias = null, bool $disableExtraConditions = false) {
-            $builder->{$joinType}($this->getModel()->getTable(), function ($join) use ($callback, $disableExtraConditions, $alias) {
+            $parentTable = StaticCache::getTableOrAliasForModel($this->parent);
+
+            $builder->{$joinType}($this->getModel()->getTable(), function ($join) use ($callback, $disableExtraConditions, $alias, $parentTable) {
                 if ($alias) {
                     $join->as($alias);
                 }
@@ -231,7 +233,7 @@ class RelationshipsExtraMethods
                 $join->on(
                     "{$this->getModel()->getTable()}.{$this->getForeignKeyName()}",
                     '=',
-                    "{$this->parent->getTable()}.{$this->localKey}"
+                    "{$parentTable}.{$this->localKey}"
                 )->where("{$this->getModel()->getTable()}.{$this->getMorphType()}", '=', $this->getMorphClass());
 
                 if ($disableExtraConditions === false && $this->usesSoftDeletes($this->query->getScopes())) {
@@ -300,8 +302,8 @@ class RelationshipsExtraMethods
                 $fkColumn = $this->getOneOfManySubQuery()->getQuery()->columns[1];
                 $localKey = $this->localKey;
 
-                $builder->where(function ($query) use ($column, $joinType, $joinedModel, $builder, $fkColumn, $parentTable, $localKey) {
-                    $query->whereIn($joinedModel->getQualifiedKeyName(), function ($query) use ($column, $joinedModel, $builder, $fkColumn, $parentTable, $localKey) {
+                $builder->where(function ($query) use ($column, $joinType, $joinedModel, $builder, $fkColumn, $parentTable, $localKey, $disableExtraConditions) {
+                    $query->whereIn($joinedModel->getQualifiedKeyName(), function ($query) use ($column, $joinedModel, $builder, $fkColumn, $parentTable, $localKey, $disableExtraConditions) {
                         $columnValue = $column->getValue($builder->getGrammar());
                         $direction = Str::contains($columnValue, 'min(') ? 'asc' : 'desc';
 
@@ -309,13 +311,17 @@ class RelationshipsExtraMethods
                         $columnName = Str::replace(['"', "'", '`'], '', $columnName);
 
                         if ($builder->getConnection() instanceof MySqlConnection) {
-                            $query->select('*')->from(function ($query) use ($joinedModel, $columnName, $fkColumn, $direction, $parentTable, $localKey) {
+                            $query->select('*')->from(function ($query) use ($joinedModel, $columnName, $fkColumn, $direction, $parentTable, $localKey, $disableExtraConditions) {
                                 $query
                                     ->select($joinedModel->getQualifiedKeyName())
                                     ->from($joinedModel->getTable())
                                     ->whereColumn($fkColumn, "{$parentTable}.{$localKey}")
                                     ->orderBy($columnName, $direction)
                                     ->take(1);
+
+                                if ($disableExtraConditions === false && $this->usesSoftDeletes($this->query->getScopes())) {
+                                    $query->whereNull($this->query->getModel()->getDeletedAtColumn());
+                                }
                             });
                         } else {
                             $query
@@ -325,6 +331,10 @@ class RelationshipsExtraMethods
                                 ->whereColumn($fkColumn, "{$parentTable}.{$localKey}")
                                 ->orderBy($columnName, $direction)
                                 ->take(1);
+
+                            if ($disableExtraConditions === false && $this->usesSoftDeletes($this->query->getScopes())) {
+                                $query->whereNull($this->query->getModel()->getDeletedAtColumn());
+                            }
                         }
                     });
 
@@ -377,10 +387,11 @@ class RelationshipsExtraMethods
                     $join->as($alias1);
                 }
 
+                $farParentTable = StaticCache::getTableOrAliasForModel($this->getFarParent());
                 $join->on(
                     "{$throughTable}.{$this->getFirstKeyName()}",
                     '=',
-                    $this->getQualifiedLocalKeyName()
+                    "{$farParentTable}.{$this->localKey}"
                 );
 
                 if ($disableExtraConditions === false && $this->usesSoftDeletes($this->getThroughParent())) {
@@ -430,6 +441,10 @@ class RelationshipsExtraMethods
     public function performHavingForEloquentPowerJoins()
     {
         return function ($builder, $operator, $count, ?string $morphable = null) {
+            if (is_null($builder->getSelect())) {
+                $builder->select(sprintf('%s.*', $builder->getModel()->getTable()));
+            }
+
             if ($morphable) {
                 $modelInstance = new $morphable();
 

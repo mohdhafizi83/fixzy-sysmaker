@@ -12,10 +12,12 @@ class Table extends ViewComponent
     use HasDefaultDataFormattingSettings;
     use HasExtraAttributes;
     use Table\Concerns\BelongsToLivewire;
+    use Table\Concerns\CanBeStackedOnMobile;
     use Table\Concerns\CanBeStriped;
     use Table\Concerns\CanDeferLoading;
     use Table\Concerns\CanGroupRecords;
     use Table\Concerns\CanPaginateRecords;
+    use Table\Concerns\CanPersistInSession;
     use Table\Concerns\CanPollRecords;
     use Table\Concerns\CanReorderRecords;
     use Table\Concerns\CanSearchRecords;

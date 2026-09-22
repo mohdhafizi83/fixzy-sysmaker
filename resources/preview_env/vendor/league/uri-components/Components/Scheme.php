@@ -13,14 +13,22 @@ declare(strict_types=1);
 
 namespace League\Uri\Components;
 
+use BackedEnum;
 use Deprecated;
+use League\Uri\Contracts\UriComponentInterface;
 use League\Uri\Contracts\UriInterface;
 use League\Uri\Exceptions\SyntaxError;
-use League\Uri\Uri;
+use League\Uri\SchemeType;
+use League\Uri\StringCoercionMode;
+use League\Uri\UriScheme;
+use League\Uri\UriString;
 use Psr\Http\Message\UriInterface as Psr7UriInterface;
 use Stringable;
+use Throwable;
+use Uri\Rfc3986\Uri as Rfc3986Uri;
+use Uri\WhatWg\Url as WhatWgUrl;
 
-use function array_key_exists;
+use function count;
 use function in_array;
 use function preg_match;
 use function sprintf;
@@ -28,29 +36,15 @@ use function strtolower;
 
 final class Scheme extends Component
 {
-    /**
-     * Supported schemes and corresponding default port.
-     *
-     * @var array<string, int|null>
-     */
-    private const SCHEME_DEFAULT_PORT = [
-        'data' => null,
-        'file' => null,
-        'ftp' => 21,
-        'gopher' => 70,
-        'http' => 80,
-        'https' => 443,
-        'ws' => 80,
-        'wss' => 443,
-    ];
-
     private const REGEXP_SCHEME = ',^[a-z]([-a-z0-9+.]+)?$,i';
 
     private readonly ?string $scheme;
+    private readonly ?UriScheme $uriScheme;
 
-    private function __construct(Stringable|string|null $scheme)
+    private function __construct(BackedEnum|Stringable|string|null $scheme)
     {
         $this->scheme = $this->validate($scheme);
+        $this->uriScheme = UriScheme::tryFrom((string) $this->scheme);
     }
 
     public function isWebsocket(): bool
@@ -70,13 +64,30 @@ final class Scheme extends Component
 
     public function isSpecial(): bool
     {
-        return null !== $this->scheme
-            && array_key_exists($this->scheme, self::SCHEME_DEFAULT_PORT);
+        return $this->isWhatWgSpecial() || in_array($this->scheme, ['data', 'file'], true);
+    }
+
+    public function isWhatWgSpecial(): bool
+    {
+        return $this->uriScheme?->isWhatWgSpecial() ?? false;
     }
 
     public function defaultPort(): Port
     {
-        return Port::new(self::SCHEME_DEFAULT_PORT[$this->scheme] ?? null);
+        return Port::new($this->uriScheme?->port());
+    }
+
+    public function hasDefaultPort(): bool
+    {
+        static $emptyPort = null;
+        $emptyPort ??= Port::new();
+
+        return !$emptyPort->equals($this->defaultPort());
+    }
+
+    public function type(): SchemeType
+    {
+        return $this->uriScheme?->type() ?? SchemeType::Unknown;
     }
 
     /**
@@ -84,7 +95,7 @@ final class Scheme extends Component
      *
      * @throws SyntaxError if the scheme is invalid
      */
-    private function validate(Stringable|string|null $scheme): ?string
+    private function validate(BackedEnum|Stringable|string|null $scheme): ?string
     {
         $scheme = self::filterComponent($scheme);
         if (null === $scheme) {
@@ -93,6 +104,7 @@ final class Scheme extends Component
 
         $fScheme = strtolower($scheme);
 
+        /** @var array<string> $inMemoryCache */
         static $inMemoryCache = [];
         if (isset($inMemoryCache[$fScheme])) {
             return $fScheme;
@@ -110,22 +122,35 @@ final class Scheme extends Component
         return $fScheme;
     }
 
-    public static function new(Stringable|string|null $value = null): self
+    public static function new(BackedEnum|Stringable|string|null $value = null): self
     {
         return new self($value);
     }
 
     /**
+     * Create a new instance from a string.or a stringable structure or returns null on failure.
+     */
+    public static function tryNew(BackedEnum|Stringable|string|null $uri = null): ?self
+    {
+        try {
+            return self::new($uri);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
      * Create a new instance from a URI object.
      */
-    public static function fromUri(Stringable|string $uri): self
+    public static function fromUri(WhatWgUrl|Rfc3986Uri|BackedEnum|Stringable|string $uri): self
     {
         $uri = self::filterUri($uri);
 
-        return match (true) {
-            $uri instanceof UriInterface => new self($uri->getScheme()),
-            default => new self(Uri::new($uri)->getScheme()),
-        };
+        return new self(
+            $uri instanceof Psr7UriInterface
+                ? UriString::parse($uri)['scheme']
+                : $uri->getScheme()
+        );
     }
 
     public function value(): ?string
@@ -136,6 +161,22 @@ final class Scheme extends Component
     public function getUriComponent(): string
     {
         return $this->value().(null === $this->scheme ? '' : ':');
+    }
+
+    public function equals(mixed $value): bool
+    {
+        if (!StringCoercionMode::Native->isCoercible($value)) {
+            return false;
+        }
+
+        if (!$value instanceof UriComponentInterface) {
+            $value = self::tryNew(StringCoercionMode::Native->coerce($value));
+            if (null === $value) {
+                return false;
+            }
+        }
+
+        return $value->getUriComponent() === $this->getUriComponent();
     }
 
     /**

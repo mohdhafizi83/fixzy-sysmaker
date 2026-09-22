@@ -29,6 +29,10 @@ class PrepareCsvExport implements ShouldQueue
 
     public bool $deleteWhenMissingModels = true;
 
+    public ?int $tries = 1;
+
+    public ?int $maxExceptions = 0;
+
     protected Exporter $exporter;
 
     /**
@@ -52,7 +56,11 @@ class PrepareCsvExport implements ShouldQueue
 
     public function handle(): void
     {
-        $csv = Writer::createFromFileObject(new SplTempFileObject);
+        if ($this->batch()?->cancelled()) {
+            return;
+        }
+
+        $csv = Writer::from(new SplTempFileObject);
         $csv->setOutputBOM(Bom::Utf8);
         $csv->setDelimiter($this->exporter::getCsvDelimiter());
         $csv->insertOne(array_values($this->columnMap));
@@ -66,6 +74,7 @@ class PrepareCsvExport implements ShouldQueue
 
         /** @var Connection $databaseConnection */
         $databaseConnection = $query->getConnection();
+        $databaseGrammar = $query->getGrammar();
 
         if ($databaseConnection->getDriverName() === 'pgsql') {
             $originalOrders = collect($query->getQuery()->orders)
@@ -76,9 +85,13 @@ class PrepareCsvExport implements ShouldQueue
 
                     return ($order['column'] ?? null) === $qualifiedKeyName;
                 })
-                ->unique(function (array $order): string {
+                ->unique(function (array $order) use ($databaseGrammar): string {
                     if (($order['type'] ?? null) === 'Raw') {
                         return 'raw:' . ($order['sql'] ?? '');
+                    }
+
+                    if ($databaseGrammar->isExpression($order['column'] ?? null)) {
+                        return 'expression:' . $order['column']->getValue($databaseGrammar);
                     }
 
                     return 'column:' . ($order['column'] ?? '');
@@ -91,8 +104,11 @@ class PrepareCsvExport implements ShouldQueue
                 $firstOrder = $originalOrders->first();
 
                 if (($firstOrder['type'] ?? null) === 'Raw') {
+                    /** @var literal-string $sql */
+                    $sql = $firstOrder['sql'];
+
                     $query->reorder();
-                    $query->orderByRaw($firstOrder['sql']);
+                    $query->orderByRaw($sql);
                 } else {
                     $query->reorder($firstOrder['column'], $firstOrder['direction']);
                 }
@@ -104,7 +120,10 @@ class PrepareCsvExport implements ShouldQueue
 
             foreach ($originalOrders as $order) {
                 if (($order['type'] ?? null) === 'Raw') {
-                    $query->orderByRaw($order['sql']);
+                    /** @var literal-string $orderSql */
+                    $orderSql = $order['sql'];
+
+                    $query->orderByRaw($orderSql);
                 } elseif (filled($order['column'] ?? null) && filled($order['direction'] ?? null)) {
                     $query->orderBy($order['column'], $order['direction']);
                 }

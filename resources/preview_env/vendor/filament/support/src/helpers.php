@@ -3,11 +3,15 @@
 namespace Filament\Support;
 
 use BackedEnum;
+use Composer\Autoload\ClassLoader;
+use Composer\InstalledVersions;
+use Filament\Support\Contracts\LoadingIndicator;
 use Filament\Support\Contracts\ScalableIcon;
 use Filament\Support\Enums\IconSize;
 use Filament\Support\Facades\FilamentColor;
 use Filament\Support\Facades\FilamentIcon;
 use Filament\Support\Facades\FilamentView;
+use Filament\Support\View\ComponentAttributeBag as FilamentComponentAttributeBag;
 use Filament\Support\View\Components\Contracts\HasColor;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Connection;
@@ -20,6 +24,7 @@ use Illuminate\Support\Str;
 use Illuminate\Translation\MessageSelector;
 use Illuminate\View\ComponentAttributeBag;
 use Illuminate\View\ComponentSlot;
+use ReflectionClass;
 use Throwable;
 
 if (! function_exists('Filament\Support\format_money')) {
@@ -52,7 +57,9 @@ if (! function_exists('Filament\Support\get_model_label')) {
      */
     function get_model_label(string $model): string
     {
-        return (string) str($model)
+        static $modelLabels = [];
+
+        return $modelLabels[$model] ??= (string) str($model)
             ->classBasename()
             ->kebab()
             ->replace('-', ' ');
@@ -62,7 +69,9 @@ if (! function_exists('Filament\Support\get_model_label')) {
 if (! function_exists('Filament\Support\locale_has_pluralization')) {
     function locale_has_pluralization(): bool
     {
-        return (new MessageSelector)->getPluralIndex(app()->getLocale(), 10) > 0;
+        $locale = app()->getLocale();
+
+        return (new MessageSelector)->getPluralIndex($locale, 10) > 0;
     }
 }
 
@@ -86,13 +95,21 @@ if (! function_exists('Filament\Support\prepare_inherited_attributes')) {
     {
         $originalAttributes = $attributes->getAttributes();
 
-        $attributes->setAttributes(
-            collect($originalAttributes)
-                ->filter(fn ($value, string $name): bool => ! str($name)->startsWith(['x-', 'data-']))
-                ->mapWithKeys(fn ($value, string $name): array => [Str::camel($name) => $value])
-                ->merge($originalAttributes)
-                ->all(),
-        );
+        $preparedAttributes = [];
+
+        foreach ($originalAttributes as $name => $value) {
+            $name = (string) $name;
+
+            if (str_starts_with($name, 'x-') || str_starts_with($name, 'data-')) {
+                continue;
+            }
+
+            $preparedAttributes[Str::camel($name)] = $value;
+        }
+
+        $preparedAttributes = array_merge($preparedAttributes, $originalAttributes);
+
+        $attributes->setAttributes($preparedAttributes);
 
         return $attributes;
     }
@@ -116,26 +133,40 @@ if (! function_exists('Filament\Support\is_slot_empty')) {
 if (! function_exists('Filament\Support\is_app_url')) {
     function is_app_url(string $url): bool
     {
-        return str($url)->startsWith(request()->root());
+        if (str_starts_with($url, '/') && ! str_starts_with($url, '//')) {
+            return true;
+        }
+
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+
+        if ($scheme && (! in_array($scheme, ['http', 'https'], strict: true))) {
+            return false;
+        }
+
+        $urlHost = parse_url($url, PHP_URL_HOST);
+
+        return (! $urlHost) || $urlHost === request()->getHost();
     }
 }
 
 if (! function_exists('Filament\Support\generate_href_html')) {
-    function generate_href_html(?string $url, bool $shouldOpenInNewTab = false, ?bool $shouldOpenInSpaMode = null): Htmlable
+    function generate_href_html(?string $url, bool $shouldOpenInNewTab = false, ?bool $shouldOpenInSpaMode = null, bool $hasNestedClickEventHandler = false): Htmlable
     {
         if (blank($url)) {
             return new HtmlString('');
         }
 
-        $html = "href=\"{$url}\"";
+        $html = 'href="' . e($url) . '"';
 
         if ($shouldOpenInNewTab) {
             $html .= ' target="_blank"';
         } elseif ($shouldOpenInSpaMode ?? (FilamentView::hasSpaMode($url))) {
-            $html .= ' wire:navigate';
-
             if (FilamentView::hasSpaPrefetching()) {
-                $html .= '.hover';
+                $html .= ' wire:navigate.hover';
+            } elseif ($hasNestedClickEventHandler) {
+                $html .= ' x-on:click="if (! ($event.altKey || $event.ctrlKey || $event.metaKey || $event.shiftKey)) { $event.preventDefault(); Alpine.navigate($el.getAttribute(\'href\')) }"';
+            } else {
+                $html .= ' wire:navigate';
             }
         }
 
@@ -159,7 +190,7 @@ if (! function_exists('Filament\Support\generate_icon_html')) {
 
         $size ??= IconSize::Medium;
 
-        $attributes = ($attributes ?? new ComponentAttributeBag)->class([
+        $attributes = ($attributes ?? new FilamentComponentAttributeBag)->class([
             'fi-icon',
             "fi-size-{$size->value}",
         ]);
@@ -173,6 +204,19 @@ if (! function_exists('Filament\Support\generate_icon_html')) {
         }
 
         if (is_string($icon) && str_contains($icon, '/')) {
+            // A custom image-path icon carries no intrinsic accessible name, so it would be announced by
+            // its filename. Default it to decorative (`alt=""`) unless the caller named it, matching the
+            // baked-in `aria-hidden` that the shipped SVG icon sets already carry.
+            if (
+                blank($attributes->get('alt')) &&
+                blank($attributes->get('aria-label')) &&
+                blank($attributes->get('aria-labelledby'))
+            ) {
+                $attributes = $attributes->merge(['alt' => ''], escape: false);
+            }
+
+            $icon = e($icon);
+
             return new HtmlString(<<<HTML
                 <img src="{$icon}" {$attributes->toHtml()} />
                 HTML);
@@ -184,7 +228,7 @@ if (! function_exists('Filament\Support\generate_icon_html')) {
             $icon = $icon->value;
         }
 
-        return svg($icon, $attributes->get('class'), array_filter($attributes->except('class')->getAttributes()));
+        return svg($icon, $attributes->get('class'), array_filter($attributes->except('class')->getAttributes(), static fn ($value): bool => $value !== false && $value !== null));
     }
 }
 
@@ -193,31 +237,16 @@ if (! function_exists('Filament\Support\generate_loading_indicator_html')) {
     {
         $size ??= IconSize::Medium;
 
-        $attributes = ($attributes ?? new ComponentAttributeBag)->class([
+        $attributes = ($attributes ?? new FilamentComponentAttributeBag)->class([
             'fi-icon fi-loading-indicator',
             "fi-size-{$size->value}",
         ]);
 
-        return new HtmlString(<<<HTML
-            <svg
-                fill="none"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-                {$attributes->toHtml()}
-            >
-                <path
-                    clip-rule="evenodd"
-                    d="M12 19C15.866 19 19 15.866 19 12C19 8.13401 15.866 5 12 5C8.13401 5 5 8.13401 5 12C5 15.866 8.13401 19 12 19ZM12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
-                    fill-rule="evenodd"
-                    fill="currentColor"
-                    opacity="0.2"
-                ></path>
-                <path
-                    d="M2 12C2 6.47715 6.47715 2 12 2V5C8.13401 5 5 8.13401 5 12H2Z"
-                    fill="currentColor"
-                ></path>
-            </svg>
-            HTML);
+        static $loadingIndicator = null;
+
+        $loadingIndicator ??= app(LoadingIndicator::class);
+
+        return new HtmlString($loadingIndicator->toHtml($attributes));
     }
 }
 
@@ -228,6 +257,10 @@ if (! function_exists('Filament\Support\generate_search_column_expression')) {
     function generate_search_column_expression(string $column, ?bool $isSearchForcedCaseInsensitive, Connection $databaseConnection): string | Expression
     {
         $driverName = $databaseConnection->getDriverName();
+
+        if ($driverName === 'pgsql' && str_contains($column, '.')) {
+            $column = $databaseConnection->getTablePrefix() . $column;
+        }
 
         $column = match ($driverName) {
             'pgsql' => (
@@ -325,17 +358,91 @@ if (! function_exists('Filament\Support\original_request')) {
     }
 }
 
+if (! function_exists('Filament\Support\get_composer_vendor_directory')) {
+    /** @internal */
+    function get_composer_vendor_directory(): string
+    {
+        static $directory;
+
+        return $directory ??= dirname((new ReflectionClass(InstalledVersions::class))->getFileName(), 2);
+    }
+}
+
+if (! function_exists('Filament\Support\is_path_within_directory')) {
+    /** @internal */
+    function is_path_within_directory(string $path, string $directory): bool
+    {
+        /** @var array<string, array{string, string, bool}> $directoryConfigurations */
+        static $directoryConfigurations = [];
+
+        $path = str_replace('\\', '/', $path);
+
+        if (! isset($directoryConfigurations[$directory])) {
+            $normalizedDirectory = rtrim(str_replace('\\', '/', $directory), '/');
+            $directoryPrefix = $normalizedDirectory . '/';
+
+            $directoryConfigurations[$directory] = [
+                $normalizedDirectory,
+                $directoryPrefix,
+                preg_match('/^(?:[a-z]:\/|\/\/)/i', $directoryPrefix) === 1,
+            ];
+        }
+
+        [$directory, $directoryPrefix, $isCaseInsensitive] = $directoryConfigurations[$directory];
+
+        if ($isCaseInsensitive) {
+            return (strcasecmp($path, $directory) === 0) || (strncasecmp($path, $directoryPrefix, strlen($directoryPrefix)) === 0);
+        }
+
+        return ($path === $directory) || str_starts_with($path, $directoryPrefix);
+    }
+}
+
+if (! function_exists('Filament\Support\is_path_within_vendor_directory')) {
+    /** @internal */
+    function is_path_within_vendor_directory(string $path, string $applicationDirectory): bool
+    {
+        $composerVendorDirectory = get_composer_vendor_directory();
+
+        if (
+            (! is_path_within_directory($applicationDirectory, $composerVendorDirectory)) &&
+            is_path_within_directory($path, $composerVendorDirectory)
+        ) {
+            return true;
+        }
+
+        if (! is_path_within_directory($path, $applicationDirectory)) {
+            return false;
+        }
+
+        $path = str_replace('\\', '/', $path);
+        $applicationDirectory = rtrim(str_replace('\\', '/', $applicationDirectory), '/');
+        $relativePath = ltrim(substr($path, strlen($applicationDirectory)), '/');
+        $isCaseInsensitive = preg_match('/^(?:[a-z]:\/|\/\/)/i', $applicationDirectory . '/') === 1;
+        $vendorDirectoryPattern = $isCaseInsensitive
+            ? '~(?:^|/)vendor(?:/|$)~i'
+            : '~(?:^|/)vendor(?:/|$)~';
+
+        return preg_match($vendorDirectoryPattern, $relativePath) === 1;
+    }
+}
+
 if (! function_exists('Filament\Support\discover_app_classes')) {
     /**
      * @return array<class-string>
      */
     function discover_app_classes(?string $parentClass = null): array
     {
-        $classLoader = require 'vendor/autoload.php';
+        $vendorDirectory = get_composer_vendor_directory();
+        $classLoader = ClassLoader::getRegisteredLoaders()[$vendorDirectory];
+        $applicationPath = (string) InstalledVersions::getRootPackage()['install_path'];
 
         return collect($classLoader->getClassMap())
-            ->filter(function (string $file, string $class) use ($parentClass): bool {
-                if (! str($file)->startsWith(base_path('vendor' . DIRECTORY_SEPARATOR . 'composer/../../'))) {
+            ->filter(function (string $file, string $class) use ($applicationPath, $parentClass): bool {
+                if (
+                    (! is_path_within_directory($file, $applicationPath)) ||
+                    is_path_within_vendor_directory($file, $applicationPath)
+                ) {
                     return false;
                 }
 

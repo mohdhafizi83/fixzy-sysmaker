@@ -1,6 +1,12 @@
 .fi-in-text {
     @apply w-full;
 
+    &.fi-numeric {
+        /* Numeric and money entries use tabular figures, so digits line up
+           down a column of entries. */
+        @apply tabular-nums;
+    }
+
     &.fi-in-text-affixed {
         @apply flex gap-3;
     }
@@ -127,8 +133,8 @@
         @apply line-clamp-(--line-clamp,none);
     }
 
-    &.fi-copyable {
-        @apply cursor-pointer;
+    & > .fi-copyable {
+        @apply focus-visible:ring-primary-600 dark:focus-visible:ring-primary-500 cursor-pointer rounded-md outline-none focus-visible:ring-2;
     }
 
     &.fi-size-xs {
@@ -217,15 +223,12 @@
         }
     }
 
-    & > .fi-icon {
-        @apply shrink-0 text-gray-400 dark:text-gray-500;
+    & > .fi-icon,
+    & > span:not(.fi-badge) > .fi-icon {
+        @apply inline-block shrink-0 text-gray-400 dark:text-gray-500;
 
         &.fi-color {
             @apply text-color-500;
         }
-    }
-
-    & > .fi-icon {
-        @apply -mt-1 inline-block;
     }
 }

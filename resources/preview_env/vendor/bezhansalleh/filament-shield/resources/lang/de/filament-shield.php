@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -72,8 +74,8 @@ return [
         'delete_any' => 'Alle löschen',
         'force_delete' => 'Endgültig löschen',
         'force_delete_any' => 'Alle endgültig löschen',
-        // 'reorder' => 'Reorder',
-        // 'replicate' => 'Replicate',
+        'reorder' => 'Reihenfolge ändern',
+        'replicate' => 'Duplizieren',
         'restore' => 'Wiederherstellen',
         'restore_any' => 'Alle wiederherstellen',
     ],

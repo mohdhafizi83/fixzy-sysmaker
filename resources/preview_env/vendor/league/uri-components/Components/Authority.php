@@ -13,18 +13,23 @@ declare(strict_types=1);
 
 namespace League\Uri\Components;
 
+use BackedEnum;
 use Deprecated;
 use League\Uri\Contracts\AuthorityInterface;
 use League\Uri\Contracts\HostInterface;
 use League\Uri\Contracts\PortInterface;
+use League\Uri\Contracts\UriComponentInterface;
+use League\Uri\Contracts\UriException;
 use League\Uri\Contracts\UriInterface;
 use League\Uri\Contracts\UserInfoInterface;
 use League\Uri\Exceptions\SyntaxError;
-use League\Uri\Uri;
+use League\Uri\StringCoercionMode;
 use League\Uri\UriString;
 use Psr\Http\Message\UriInterface as Psr7UriInterface;
 use SensitiveParameter;
 use Stringable;
+use Uri\Rfc3986\Uri as Rfc3986Uri;
+use Uri\WhatWg\Url as WhatWgUrl;
 
 final class Authority extends Component implements AuthorityInterface
 {
@@ -33,9 +38,9 @@ final class Authority extends Component implements AuthorityInterface
     private readonly UserInfoInterface $userInfo;
 
     public function __construct(
-        Stringable|string|null $host,
-        Stringable|string|int|null $port = null,
-        #[SensitiveParameter] Stringable|string|null $userInfo = null
+        BackedEnum|Stringable|string|null $host,
+        BackedEnum|Stringable|string|int|null $port = null,
+        #[SensitiveParameter] BackedEnum|Stringable|string|null $userInfo = null
     ) {
         $this->host = !$host instanceof HostInterface ? Host::new($host) : $host;
         $this->port = !$port instanceof PortInterface ? Port::new($port) : $port;
@@ -48,7 +53,7 @@ final class Authority extends Component implements AuthorityInterface
     /**
      * @throws SyntaxError If the component contains invalid HostInterface part.
      */
-    public static function new(Stringable|string|null $value = null): self
+    public static function new(BackedEnum|Stringable|string|null $value = null): self
     {
         $components = UriString::parseAuthority(self::filterComponent($value));
 
@@ -63,16 +68,47 @@ final class Authority extends Component implements AuthorityInterface
     }
 
     /**
+     * Create a new instance from a string.or a stringable structure or returns null on failure.
+     */
+    public static function tryNew(BackedEnum|Stringable|string|null $uri = null): ?self
+    {
+        try {
+            return self::new($uri);
+        } catch (UriException) {
+            return null;
+        }
+    }
+
+    /**
      * Create a new instance from a URI object.
      */
-    public static function fromUri(Stringable|string $uri): self
+    public static function fromUri(WhatwgUrl|Rfc3986Uri|BackedEnum|Stringable|string $uri): self
     {
         $uri = self::filterUri($uri);
+        if ($uri instanceof Rfc3986Uri) {
+            return new self($uri->getHost(), $uri->getPort(), $uri->getUserInfo());
+        }
 
-        return match (true) {
-            $uri instanceof UriInterface => self::new($uri->getAuthority()),
-            default => self::new(Uri::new($uri)->getAuthority()),
-        };
+        if ($uri instanceof WhatWgUrl) {
+            $userInfo = $uri->getUsername();
+            if (null !== ($password = $uri->getPassword())) {
+                $userInfo .= ':'.$password;
+            }
+
+            return new self($uri->getUnicodeHost(), $uri->getPort(), $userInfo);
+        }
+
+        if ($uri instanceof Psr7UriInterface) {
+            $components = UriString::parse($uri);
+            $userInfo = $components['user'];
+            if (null !== ($password = $components['pass'])) {
+                $userInfo .= ':'.$password;
+            }
+
+            return new self($components['host'], $components['port'], $userInfo);
+        }
+
+        return self::new($uri->getAuthority());
     }
 
     /**
@@ -146,6 +182,22 @@ final class Authority extends Component implements AuthorityInterface
         return $this->userInfo->value();
     }
 
+    public function equals(mixed $value): bool
+    {
+        if (!StringCoercionMode::Native->isCoercible($value)) {
+            return false;
+        }
+
+        if (!$value instanceof UriComponentInterface) {
+            $value = self::tryNew(StringCoercionMode::Native->coerce($value));
+            if (null === $value) {
+                return false;
+            }
+        }
+
+        return $value->getUriComponent() === $this->getUriComponent();
+    }
+
     /**
      * @return array{user: ?string, pass: ?string, host: ?string, port: ?int}
      */
@@ -157,7 +209,7 @@ final class Authority extends Component implements AuthorityInterface
         ];
     }
 
-    public function withHost(Stringable|string|null $host): AuthorityInterface
+    public function withHost(BackedEnum|Stringable|string|null $host): AuthorityInterface
     {
         if (!$host instanceof HostInterface) {
             $host = Host::new($host);
@@ -169,7 +221,7 @@ final class Authority extends Component implements AuthorityInterface
         };
     }
 
-    public function withPort(Stringable|string|int|null $port): AuthorityInterface
+    public function withPort(BackedEnum|Stringable|string|int|null $port): AuthorityInterface
     {
         if (!$port instanceof PortInterface) {
             $port = Port::new($port);
@@ -181,8 +233,10 @@ final class Authority extends Component implements AuthorityInterface
         };
     }
 
-    public function withUserInfo(Stringable|string|null $user, #[SensitiveParameter] Stringable|string|null $password = null): AuthorityInterface
-    {
+    public function withUserInfo(
+        BackedEnum|Stringable|string|null $user,
+        #[SensitiveParameter] BackedEnum|Stringable|string|null $password = null
+    ): AuthorityInterface {
         $userInfo = new UserInfo($user, $password);
 
         return match ($this->userInfo->value()) {

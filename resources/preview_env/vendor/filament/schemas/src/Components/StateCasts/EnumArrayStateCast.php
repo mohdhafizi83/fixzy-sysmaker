@@ -4,6 +4,8 @@ namespace Filament\Schemas\Components\StateCasts;
 
 use BackedEnum;
 use Filament\Schemas\Components\StateCasts\Contracts\StateCast;
+use Illuminate\Support\Arr;
+use Stringable;
 
 class EnumArrayStateCast implements StateCast
 {
@@ -27,6 +29,9 @@ class EnumArrayStateCast implements StateCast
             $state = json_decode($state, associative: true);
         }
 
+        /** @var array<mixed> $state */
+        $state = Arr::wrap($state);
+
         return array_reduce(
             $state,
             function (array $carry, $stateItem): array {
@@ -37,6 +42,14 @@ class EnumArrayStateCast implements StateCast
                 if ($stateItem instanceof BackedEnum) {
                     $carry[] = $stateItem;
 
+                    return $carry;
+                }
+
+                if ($stateItem instanceof Stringable) {
+                    $stateItem = (string) $stateItem;
+                }
+
+                if (! is_scalar($stateItem)) {
                     return $carry;
                 }
 
@@ -61,6 +74,9 @@ class EnumArrayStateCast implements StateCast
             $state = json_decode($state, associative: true);
         }
 
+        /** @var array<mixed> $state */
+        $state = Arr::wrap($state);
+
         return array_reduce(
             $state,
             function (array $carry, $stateItem): array {
@@ -74,7 +90,7 @@ class EnumArrayStateCast implements StateCast
                     return $carry;
                 }
 
-                $carry[] = $stateItem->value;
+                $carry[] = strval($stateItem->value);
 
                 return $carry;
             },

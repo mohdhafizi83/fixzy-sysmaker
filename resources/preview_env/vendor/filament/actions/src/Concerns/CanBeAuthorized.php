@@ -9,9 +9,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
 use LogicException;
+use UnitEnum;
 
 trait CanBeAuthorized
 {
+    // Security: Actions do not have automatic policy-based authorization.
+    // Authorization defaults to `null` (allowed for all users).
+    // You must explicitly use `authorize()`, `visible()`, or
+    // `hidden()` to restrict access to custom actions.
+
     protected mixed $authorization = null;
 
     protected string | Closure | null $authorizationMessage = null;
@@ -20,16 +26,18 @@ trait CanBeAuthorized
 
     protected bool | Closure $hasAuthorizationNotification = false;
 
-    protected bool | string | Closure | null $authorizeIndividualRecords = null;
+    protected bool | string | UnitEnum | Closure | null $authorizeIndividualRecords = null;
 
     /**
      * @param  Model | class-string | array<mixed> | null  $arguments
      */
     public function authorize(mixed $abilities, Model | string | array | null $arguments = null): static
     {
-        if ($abilities instanceof BackedEnum) {
-            $abilities = $abilities->value;
-        }
+        $abilities = match (true) {
+            $abilities instanceof BackedEnum => $abilities->value,
+            $abilities instanceof UnitEnum => $abilities->name,
+            default => $abilities,
+        };
 
         if (is_string($abilities) || is_array($abilities)) {
             $this->authorization = [
@@ -45,14 +53,16 @@ trait CanBeAuthorized
     }
 
     /**
-     * @param  string | BackedEnum | array<string>  $abilities
+     * @param  string | UnitEnum | array<string | UnitEnum>  $abilities
      * @param  Model | array<mixed> | null  $arguments
      */
-    public function authorizeAny(string | BackedEnum | array $abilities, Model | array | null $arguments = null): static
+    public function authorizeAny(string | UnitEnum | array $abilities, Model | array | null $arguments = null): static
     {
-        if ($abilities instanceof BackedEnum) {
-            $abilities = $abilities->value;
-        }
+        $abilities = match (true) {
+            $abilities instanceof BackedEnum => $abilities->value,
+            $abilities instanceof UnitEnum => $abilities->name,
+            default => $abilities,
+        };
 
         $this->authorization = [
             'type' => 'any',
@@ -79,6 +89,19 @@ trait CanBeAuthorized
     }
 
     public function isAuthorized(): bool
+    {
+        if (! $this->hasTable()) {
+            return $this->resolveIsAuthorized();
+        }
+
+        if (! $this->prepareVisibilityCache()) {
+            return $this->resolveIsAuthorized();
+        }
+
+        return $this->cachedIsAuthorized ??= $this->resolveIsAuthorized();
+    }
+
+    protected function resolveIsAuthorized(): bool
     {
         if ($this->authorization === null) {
             return $this->getHasActionsLivewire()?->getDefaultActionAuthorizationResponse($this)?->allowed() ?? true;
@@ -200,18 +223,33 @@ trait CanBeAuthorized
 
     public function isAuthorizedOrNotHiddenWhenUnauthorized(): bool
     {
-        if ($this->hasAuthorizationTooltip()) {
-            return true;
+        if (! $this->hasTable()) {
+            return $this->resolveIsAuthorizedOrNotHiddenWhenUnauthorized();
         }
 
-        if ($this->hasAuthorizationNotification()) {
-            return true;
+        if (! $this->prepareVisibilityCache()) {
+            return $this->resolveIsAuthorizedOrNotHiddenWhenUnauthorized();
         }
 
-        return $this->isAuthorized();
+        return $this->cachedIsAuthorizedOrNotHiddenWhenUnauthorized ??= $this->resolveIsAuthorizedOrNotHiddenWhenUnauthorized();
     }
 
-    public function authorizeIndividualRecords(bool | string | Closure | null $callback = true): static
+    protected function resolveIsAuthorizedOrNotHiddenWhenUnauthorized(): bool
+    {
+        if (! $this->hasAuthorizationTooltip() && ! $this->hasAuthorizationNotification()) {
+            return $this->isAuthorized();
+        }
+
+        $response = $this->getAuthorizationResponse();
+
+        if ($response->allowed()) {
+            return true;
+        }
+
+        return filled($response->message()) || filled($this->getAuthorizationMessage());
+    }
+
+    public function authorizeIndividualRecords(bool | string | UnitEnum | Closure | null $callback = true): static
     {
         $this->authorizeIndividualRecords = $callback;
 
@@ -220,7 +258,7 @@ trait CanBeAuthorized
 
     public function getIndividualRecordAuthorizationResponse(Model $record): Response
     {
-        if (is_string($this->authorizeIndividualRecords)) {
+        if (is_string($this->authorizeIndividualRecords) || ($this->authorizeIndividualRecords instanceof UnitEnum)) {
             return Gate::inspect($this->authorizeIndividualRecords, Arr::wrap($record));
         }
 
@@ -244,5 +282,14 @@ trait CanBeAuthorized
     public function shouldAuthorizeIndividualRecords(): bool
     {
         return filled($this->authorizeIndividualRecords) && ($this->authorizeIndividualRecords !== false);
+    }
+
+    public function hasAuthorization(): bool
+    {
+        return $this->authorization !== null
+            || $this->authorizeIndividualRecords !== null
+            || $this->hasAuthorizationNotification !== false
+            || $this->hasAuthorizationTooltip !== false
+            || $this->authorizationMessage !== null;
     }
 }

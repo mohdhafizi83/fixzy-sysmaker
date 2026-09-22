@@ -9,25 +9,15 @@ use Filament\Pages\BasePage as Page;
 use Filament\Resources\Resource;
 use Filament\Widgets\TableWidget;
 use Filament\Widgets\Widget;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 trait HasLabelResolver
 {
-    protected function resolveLabel(string $entity): string
-    {
-        $entity = resolve($entity);
-
-        return match (true) {
-            $entity instanceof Resource => $this->getLocalizedResourceLabel($entity),
-            $entity instanceof Page => $this->getLocalizedPageLabel($entity),
-            $entity instanceof Widget => $this->getLocalizedWidgetLabel($entity),
-            default => throw new InvalidArgumentException('Entity must be an instance of Resource, Page, or Widget.'),
-        };
-    }
-
+    /**
+     * Get resource label from Filament's getModelLabel().
+     */
     public function getLocalizedResourceLabel(Resource | string $resource): string
     {
         $resource = is_string($resource) ? resolve($resource) : $resource;
@@ -35,20 +25,22 @@ trait HasLabelResolver
         return Str::of($resource::getModelLabel())->headline()->toString();
     }
 
+    /**
+     * Get page label using Filament's methods with fallback chain.
+     */
     public function getLocalizedPageLabel(Page | string $page): string
     {
         $page = is_string($page) ? resolve($page) : $page;
 
         return $page->getTitle() // @phpstan-ignore-line
-                ?? $page->getHeading() // @phpstan-ignore-line
-                ?? $page->getNavigationLabel() // @phpstan-ignore-line
-                ?? __(Str::of(class_basename($page))
-                    ->snake()
-                    ->prepend(Utils::getConfig()->localization->key . '.')
-                    ->toString())
-                ?? Str::of(class_basename($page))->headline()->toString();
+            ?? $page->getHeading() // @phpstan-ignore-line
+            ?? $page->getNavigationLabel() // @phpstan-ignore-line
+            ?? Str::of(class_basename($page))->headline()->toString();
     }
 
+    /**
+     * Get widget label using Filament's methods with fallback chain.
+     */
     public function getLocalizedWidgetLabel(Widget | string $widget): string
     {
         $widget = is_string($widget) ? resolve($widget) : $widget;
@@ -56,44 +48,130 @@ trait HasLabelResolver
         return match (true) {
             $widget instanceof TableWidget => (string) invade($widget)->makeTable()->getHeading(), // @phpstan-ignore-line
             $this->hasValidHeading($widget) => (string) invade($widget)->getHeading(),
-            default => __(Str::of(class_basename($widget))->snake()->prepend(Utils::getConfig()->localization->key . '.')->toString()) ?? str($widget)
-                ->afterLast('\\')
-                ->headline()
-                ->toString(),
+            default => Str::of(class_basename($widget))->headline()->toString(),
         };
     }
 
-    private function hasValidHeading(Widget $widgetInstance): bool
+    /**
+     * TODO: Just not to get confused later, document steps and remove later if unnecessary.
+     * Get localized label for a permission key.
+     *
+     * Used for: resource affixes, page/widget permissions, custom permissions.
+     *
+     * Fallback chain:
+     * 1. User's translation file (if localization.enabled)
+     * 2. Package's resource_permission_prefixes_labels (for affixes only)
+     * 3. Provided fallback or headline
+     */
+    public function getLocalizedLabel(string $key, ?string $fallback = null): string
     {
-        return $widgetInstance instanceof Widget // @phpstan-ignore-line
-            && method_exists($widgetInstance, 'getHeading')
-            && filled(invade($widgetInstance)->getHeading());
+        $config = Utils::getConfig()->localization;
+        $localizationKey = Utils::toLocalizationKey($key);
+
+        // 1. User's translation (if localization enabled)
+        if ($config->enabled) {
+            $userKey = sprintf('%s.%s', $config->key, $localizationKey);
+            if (Lang::has($userKey)) {
+                return __($userKey);
+            }
+        }
+
+        // 2. Package's default translations for affixes
+        $packageKey = 'filament-shield::filament-shield.resource_permission_prefixes_labels.' . $localizationKey;
+        if (Lang::has($packageKey)) {
+            return __($packageKey);
+        }
+
+        // 3. Fallback
+        return $fallback ?? Str::of($key)->headline()->toString();
     }
 
-    public function getAffixLabel(string $affix, ?string $resource = null): string
+    /**
+     * Get label for a resource permission affix (view, create, update, etc.).
+     */
+    public function getAffixLabel(string $affix): string
     {
-        return Arr::get(
-            array: $this->getLocalizedResourceAffixes($resource),
-            key: Str::of($affix)->camel()->toString(),
-            default: Str::of($affix)->headline()->toString()
-        );
+        return $this->getLocalizedLabel($affix);
     }
 
-    public function getLocalizedResourceAffixes(?string $resource = null): array
+    /**
+     * Get all affix labels for a resource's policy methods.
+     */
+    public function getResourceAffixLabels(?string $resource = null): array
     {
         return collect($this->getDefaultPolicyMethodsOrFor($resource))
-            ->mapWithKeys(fn ($method): array => [
-                $method => $this->getPermissionLabel(Str::of($method)->snake()->toString()),
+            ->mapWithKeys(fn (string $method): array => [
+                $method => $this->getAffixLabel($method),
             ])
             ->toArray();
     }
 
-    public function getPermissionLabel(string $permission): string
+    /**
+     * Get label for a page/widget permission.
+     *
+     * When localization is enabled, checks user's translation file.
+     * Otherwise, uses Filament's entity methods.
+     */
+    public function getEntityPermissionLabel(string $entity, string $permissionKey): string
     {
-        $localizationConfig = Utils::getConfig()->localization;
+        $config = Utils::getConfig()->localization;
 
-        return $localizationConfig->enabled && Lang::has("$localizationConfig->key.$permission")
-            ? __("$localizationConfig->key.$permission")
-            : Str::of($permission)->headline()->toString();
+        // If localization enabled, try user's translation first
+        if ($config->enabled) {
+            $localizationKey = Utils::toLocalizationKey($permissionKey);
+            $userKey = sprintf('%s.%s', $config->key, $localizationKey);
+            if (Lang::has($userKey)) {
+                return __($userKey);
+            }
+        }
+
+        // Fall back to Filament's entity label methods
+        return $this->resolveEntityLabel($entity);
+    }
+
+    /**
+     * Get label for a custom permission.
+     *
+     * When localization is enabled, checks user's translation file.
+     * Otherwise, uses the provided label or headlines the key.
+     */
+    public function getCustomPermissionLabel(string $key, ?string $configLabel = null): string
+    {
+        $config = Utils::getConfig()->localization;
+        $localizationKey = Utils::toLocalizationKey($key);
+
+        // If localization enabled, try user's translation first
+        if ($config->enabled) {
+            $userKey = sprintf('%s.%s', $config->key, $localizationKey);
+            if (Lang::has($userKey)) {
+                return __($userKey);
+            }
+        }
+
+        // Fall back to config label or headline
+        return $configLabel
+            ? Str::of($configLabel)->headline()->toString()
+            : Str::of($key)->headline()->toString();
+    }
+
+    /**
+     * Resolve label for a Filament entity (Resource, Page, or Widget).
+     */
+    protected function resolveEntityLabel(string $entity): string
+    {
+        $instance = resolve($entity);
+
+        return match (true) {
+            $instance instanceof Resource => $this->getLocalizedResourceLabel($instance),
+            $instance instanceof Page => $this->getLocalizedPageLabel($instance),
+            $instance instanceof Widget => $this->getLocalizedWidgetLabel($instance),
+            default => throw new InvalidArgumentException('Entity must be an instance of Resource, Page, or Widget.'),
+        };
+    }
+
+    private function hasValidHeading(Widget $widget): bool
+    {
+        return method_exists($widget, 'getHeading')
+            && filled(invade($widget)->getHeading());
     }
 }

@@ -32,7 +32,14 @@ trait HasKey
             return $this->cachedAbsoluteKey;
         }
 
-        $key = $this->evaluate($this->key) ?? $this->getStatePath(isAbsolute: false);
+        $key = ($this->isKeyInheritable() || (! $this->hasStatePath()))
+            ? ($this->evaluate($this->key) ?? $this->getStatePath(isAbsolute: false))
+            : $this->getStatePath(isAbsolute: false);
+
+        // Security: Strip characters that could break out of a quoted HTML attribute or a JS string, so every downstream sink that embeds this key raw (including `getLivewireKey()` and `getId()`) is safe without per-sink escaping. Legitimate keys never contain these characters.
+        if ($key !== null) {
+            $key = preg_replace('/[<>"\'`\x00-\x1F\x7F]/', '', $key);
+        }
 
         if (! $isAbsolute) {
             return $key;
@@ -60,18 +67,33 @@ trait HasKey
         }
 
         if (! $isAbsolute) {
-            return $this->isKeyInheritable ? $this->getKey(isAbsolute: false) : null;
+            return $this->isKeyInheritable() ? $this->getKey(isAbsolute: false) : $this->getStatePath(isAbsolute: false);
         }
 
-        if ($this->isKeyInheritable) {
+        if ($this->isKeyInheritable()) {
             $key = $this->getKey();
 
             if (filled($key)) {
                 return $this->cacheAbsoluteInheritanceKey($key);
             }
+        } elseif ($this->hasStatePath()) {
+            $keyComponents = [];
+
+            if (filled($containerInheritanceKey = $this->getContainer()->getInheritanceKey())) {
+                $keyComponents[] = $containerInheritanceKey;
+            }
+
+            $keyComponents[] = $this->getStatePath(isAbsolute: false);
+
+            return $this->cacheAbsoluteInheritanceKey(implode('.', $keyComponents));
         }
 
         return $this->cacheAbsoluteInheritanceKey($this->getContainer()->getInheritanceKey());
+    }
+
+    public function isKeyInheritable(): bool
+    {
+        return $this->isKeyInheritable;
     }
 
     protected function cacheAbsoluteKey(?string $key): ?string

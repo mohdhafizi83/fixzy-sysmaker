@@ -11,6 +11,10 @@ return [
         'description' => '¿Seguro que quiere dejar de usar la aplicación de autenticación? Deshabilitarla eliminará una capa adicional de seguridad de su cuenta.',
 
         'form' => [
+            'password' => [
+                'label' => 'Contraseña actual',
+                'validation_attribute' => 'contraseña actual',
+            ],
 
             'code' => [
 
@@ -30,6 +34,8 @@ return [
 
                     'invalid' => 'El código ingresado no es válido.',
 
+                    'rate_limited' => 'Demasiados intentos. Por favor intente más tarde.',
+
                 ],
 
             ],
@@ -43,6 +49,8 @@ return [
                 'messages' => [
 
                     'invalid' => 'El código de recuperación ingresado no es válido.',
+
+                    'rate_limited' => 'Demasiados intentos. Por favor intente más tarde.',
 
                 ],
 

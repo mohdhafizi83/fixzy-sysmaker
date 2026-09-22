@@ -9,14 +9,14 @@
 <h1>Associate users with permissions and roles</h1>
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/spatie/laravel-permission.svg?style=flat-square)](https://packagist.org/packages/spatie/laravel-permission)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/spatie/laravel-permission/run-tests-L8.yml?branch=main&label=Tests)](https://github.com/spatie/laravel-permission/actions?query=workflow%3ATests+branch%3Amain)
+[![GitHub Tests Action Status](https://github.com/spatie/laravel-permission/actions/workflows/run-tests.yml/badge.svg)](https://github.com/spatie/laravel-permission/actions?query=workflow%3ATests+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/spatie/laravel-permission.svg?style=flat-square)](https://packagist.org/packages/spatie/laravel-permission)
     
 </div>
 
 ## Documentation, Installation, and Usage Instructions
 
-See the [documentation](https://spatie.be/docs/laravel-permission/) for detailed installation and usage instructions.
+See the [documentation](https://spatie.be/docs/laravel-permission/) for detailed instructions for how-to-use, as well as installation and upgrade guidance.
 
 ## What It Does
 This package allows you to manage user permissions and roles in a database.
@@ -89,7 +89,7 @@ Special thanks to [Caneco](https://twitter.com/caneco) for the original logo.
 
 ## Alternatives
 
-- [Povilas Korop](https://twitter.com/@povilaskorop) did an excellent job listing the alternatives [in an article on Laravel News](https://laravel-news.com/two-best-roles-permissions-packages). In that same article, he compares laravel-permission to [Joseph Silber](https://github.com/JosephSilber)'s [Bouncer]((https://github.com/JosephSilber/bouncer)), which in our book is also an excellent package.
+- [Povilas Korop](https://twitter.com/@povilaskorop) did an excellent job listing the alternatives [in an article on Laravel News](https://laravel-news.com/two-best-roles-permissions-packages). In that same article, he compares laravel-permission to [Joseph Silber](https://github.com/JosephSilber)'s [Bouncer](https://github.com/JosephSilber/bouncer), which in our book is also an excellent package.
 - [santigarcor/laratrust](https://github.com/santigarcor/laratrust) implements team support
 - [ultraware/roles](https://github.com/ultraware/roles) (archived) takes a slightly different approach to its features.
 - [zizaco/entrust](https://github.com/zizaco/entrust) offers some wildcard pattern matching

@@ -13,13 +13,15 @@ use Filament\Support\Concerns\HasAlignment;
 use Filament\Support\Concerns\HasDefaultDataFormattingSettings;
 use Filament\Support\Concerns\HasExtraAttributes;
 use Filament\Support\Enums\Alignment;
-use Filament\Support\Enums\Width;
+use Filament\Support\Enums\IconSize;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Js;
 use Illuminate\View\ComponentAttributeBag;
 use Livewire\Component as LivewireComponent;
+use LogicException;
+
+use function Filament\Support\generate_loading_indicator_html;
 
 class Schema extends ViewComponent implements HasEmbeddedView
 {
@@ -51,6 +53,8 @@ class Schema extends ViewComponent implements HasEmbeddedView
     protected string $evaluationIdentifier = 'schema';
 
     protected string $viewIdentifier = 'schema';
+
+    protected bool | Closure $isLoadingDeferred = false;
 
     /**
      * @param  (LivewireComponent & HasSchemas) | null  $livewire
@@ -90,7 +94,7 @@ class Schema extends ViewComponent implements HasEmbeddedView
      */
     protected function resolveDefaultClosureDependencyForEvaluationByType(string $parameterType): array
     {
-        $record = $this->getRecord();
+        $record = is_a($parameterType, Model::class, allow_string: true) ? $this->getRecord() : null;
 
         if (! ($record instanceof Model)) {
             return match ($parameterType) {
@@ -100,7 +104,6 @@ class Schema extends ViewComponent implements HasEmbeddedView
         }
 
         return match ($parameterType) {
-            static::class, self::class => [$this],
             Model::class, $record::class => [$record],
             default => parent::resolveDefaultClosureDependencyForEvaluationByType($parameterType),
         };
@@ -146,10 +149,33 @@ class Schema extends ViewComponent implements HasEmbeddedView
             ->alignBetween();
     }
 
+    public function deferLoading(bool | Closure $condition = true): static
+    {
+        $this->isLoadingDeferred = $condition;
+
+        return $this;
+    }
+
+    public function isLoadingDeferred(): bool
+    {
+        return (bool) $this->evaluate($this->isLoadingDeferred);
+    }
+
     public function toEmbeddedHtml(): string
+    {
+        return Component::withVisibilityCache(fn (): string => $this->renderEmbeddedHtml());
+    }
+
+    protected function renderEmbeddedHtml(): string
     {
         if ($this->isDirectlyHidden()) {
             return '';
+        }
+
+        $isLoadingDeferred = $this->isLoadingDeferred();
+
+        if ($isLoadingDeferred && (! $this->isDeferredSchemaLoaded())) {
+            return $this->renderDeferredLoadingHtml();
         }
 
         $hasVisibleComponents = false;
@@ -175,23 +201,16 @@ class Schema extends ViewComponent implements HasEmbeddedView
         $isInline = $this->isInline();
         $isRoot = $this->isRoot();
 
-        $isEmbeddedInParentComponent = $this->isEmbeddedInParentComponent();
-        $parentComponent = $isEmbeddedInParentComponent
-            ? $this->getParentComponent()
-            : null;
-        $statePath = $isEmbeddedInParentComponent
-            ? $parentComponent->getContainer()->getStatePath()
-            : $this->getStatePath();
-
         $attributes = $this->getExtraAttributeBag()
             ->when(
                 ! $isInline,
                 fn (ComponentAttributeBag $attributes) => $attributes->grid($this->getColumns()),
             )
             ->merge([
-                'wire:partial' => $this->shouldPartiallyRender() ? ('schema.' . $this->getKey()) : null,
-                'x-data' => $isRoot ? 'filamentSchema({ livewireId: ' . Js::from($this->getLivewire()->getId()) . ' })' : null,
+                'wire:partial' => ($this->shouldPartiallyRender() || $isLoadingDeferred) ? ('schema.' . $this->getKey()) : null,
+                'x-data' => $isRoot ? 'filamentSchema({ livewireId: ' . Js::from($this->getLivewire()->getId()) . ', schemaKey: ' . Js::from($this->getKey()) . ' })' : null,
                 'x-on:form-validation-error.window' => $isRoot ? 'handleFormValidationError' : null,
+                'x-on:reset-schema-component-state.window' => $isRoot ? 'handleClientSideStateReset' : null,
             ], escape: false)
             ->class([
                 'fi-sc',
@@ -206,82 +225,13 @@ class Schema extends ViewComponent implements HasEmbeddedView
         <div <?= $attributes->toHtml() ?>>
             <?php foreach ($componentsWithVisibility as [$schemaComponent, $isSchemaComponentVisible]) { ?>
                 <?php if (($schemaComponent instanceof Action) || ($schemaComponent instanceof ActionGroup)) { ?>
-                    <div <?php if (! $isSchemaComponentVisible) { ?> class="fi-hidden"<?php } ?>>
+                    <div class="fi-sc-action<?php if (! $isSchemaComponentVisible) { ?> fi-hidden<?php } ?>">
                         <?php if ($isSchemaComponentVisible) { ?>
                             <?= $schemaComponent->toHtml() ?>
                         <?php } ?>
                     </div>
                 <?php } elseif (! $schemaComponent->isLiberatedFromContainerGrid()) { ?>
-                    <?php
-                        /**
-                         * Instead of only rendering the hidden components, we should
-                         * render the `<div>` wrappers for all fields, regardless of
-                         * if they are hidden or not. This is to solve Livewire DOM
-                         * diffing issues.
-                         *
-                         * Additionally, any `<div>` elements that wrap hidden
-                         * components need to have `class="fi-hidden"`, so that they
-                         * don't consume grid space.
-                         */
-                        $hiddenJs = $schemaComponent->getHiddenJs();
-                    $visibleJs = $schemaComponent->getVisibleJs();
-
-                    $maxWidth = $schemaComponent->getMaxWidth();
-
-                    $schemaComponentStatePath = $isEmbeddedInParentComponent
-                        ? $parentComponent->getStatePath()
-                        : $schemaComponent->getStatePath();
-
-                    $attributes = (new ComponentAttributeBag)
-                        ->when(
-                            ! $isInline,
-                            fn (ComponentAttributeBag $attributes) => $attributes->gridColumn($schemaComponent->getColumnSpan(), $schemaComponent->getColumnStart(), $schemaComponent->getColumnOrder(), ! $isSchemaComponentVisible),
-                        )
-                        ->merge([
-                            'wire:key' => $schemaComponent->getLivewireKey(),
-                            ...(($pollingInterval = $schemaComponent->getPollingInterval()) ? ["wire:poll.{$pollingInterval}" => "partiallyRenderSchemaComponent('{$schemaComponent->getKey()}')"] : []),
-                        ], escape: false)
-                        ->class([
-                            ($maxWidth instanceof Width) ? "fi-width-{$maxWidth->value}" : $maxWidth,
-                        ]);
-                    ?>
-                    <div
-                        <?php if ($isSchemaComponentVisible) { ?>
-                            x-data="filamentSchemaComponent({
-                                path: <?= Js::from($schemaComponentStatePath) ?>,
-                                containerPath: <?= Js::from($statePath) ?>,
-                                isLive: <?= Js::from($schemaComponent->isLive()) ?>,
-                                $wire,
-                            })"
-                            <?php if ($afterStateUpdatedJs = $schemaComponent->getAfterStateUpdatedJs()) { ?>
-                                x-init="<?= implode(';', array_map(
-                                    fn (string $js): string => '$wire.watch(' . Js::from($schemaComponentStatePath) . ', ($state, $old) => ($state !== undefined) && eval(' . Js::from($js) . '))',
-                                    $afterStateUpdatedJs,
-                                )) ?>"
-                            <?php } ?>
-                            <?php if (filled($visibilityJs = match ([filled($hiddenJs), filled($visibleJs)]) {
-                                [true, true] => "(! ({$hiddenJs})) && ({$visibleJs})",
-                                [true, false] => "! ({$hiddenJs})",
-                                [false, true] => $visibleJs,
-                                default => null,
-                            })) { ?>
-                                x-bind:class="{ 'fi-hidden': ! (<?= $visibilityJs ?>) }"
-                                x-cloak
-                            <?php } ?>
-                        <?php } ?>
-                        <?= $attributes->toHtml() ?>
-                    >
-                        <?php if ($isSchemaComponentVisible) { ?>
-                            <div
-                                class="<?= Arr::toCssClasses([
-                                    'fi-sc-component',
-                                    'fi-grid-ctn' => $schemaComponent->isGridContainer(),
-                                ]) ?>"
-                            >
-                                <?= $schemaComponent->toHtml() ?>
-                            </div>
-                        <?php } ?>
-                    </div>
+                    <?= $schemaComponent->toSchemaHtml(isVisible: $isSchemaComponentVisible) ?>
                 <?php } elseif ($isSchemaComponentVisible) { ?>
                     <?= $schemaComponent->toHtml() ?>
                 <?php } ?>
@@ -289,5 +239,62 @@ class Schema extends ViewComponent implements HasEmbeddedView
         </div>
 
         <?php return ob_get_clean();
+    }
+
+    /**
+     * @internal This method is not part of the public API and should not be used. Its parameters may change at any time without notice.
+     */
+    protected function isDeferredSchemaLoaded(): bool
+    {
+        $livewire = $this->getLivewire();
+
+        if (! method_exists($livewire, 'isDeferredSchemaLoaded')) {
+            throw new LogicException('Deferred schema loading requires the Livewire component to use the [InteractsWithSchemas] trait.');
+        }
+
+        return $livewire->isDeferredSchemaLoaded($this);
+    }
+
+    /**
+     * @internal This method is not part of the public API and should not be used. Its parameters may change at any time without notice.
+     */
+    protected function renderDeferredLoadingHtml(): string
+    {
+        $schemaKey = $this->getKey();
+
+        $attributes = $this->getExtraAttributeBag()
+            ->merge([
+                'wire:partial' => "schema.{$schemaKey}",
+                'x-data' => 'filamentSchema({ livewireId: ' . Js::from($this->getLivewire()->getId()) . ', schemaKey: ' . Js::from($schemaKey) . ', isLoadingDeferred: true })',
+                'role' => 'status',
+                'aria-busy' => 'true',
+            ], escape: false)
+            ->class([
+                'fi-sc',
+                'fi-sc-loading',
+            ]);
+
+        ob_start(); ?>
+
+        <div <?= $attributes->toHtml() ?>>
+            <?= generate_loading_indicator_html(size: IconSize::Large)->toHtml() ?>
+
+            <span class="fi-sr-only">
+                <?= e(__('filament::components/loading-section.label')) ?>
+            </span>
+        </div>
+
+        <?php return ob_get_clean();
+    }
+
+    public function dispatchClientSideStateReset(): void
+    {
+        $livewire = $this->getLivewire();
+
+        $livewire->dispatch(
+            'reset-schema-component-state',
+            livewireId: $livewire->getId(),
+            schemaKey: $this->getKey(),
+        );
     }
 }

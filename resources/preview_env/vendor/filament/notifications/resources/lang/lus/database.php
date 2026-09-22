@@ -6,6 +6,8 @@ return [
 
         'heading' => 'Hriattîrna',
 
+        'unread_label' => 'Hriattîrna chhiar loh',
+
         'actions' => [
 
             'clear' => [
@@ -20,7 +22,7 @@ return [
 
         'empty' => [
             'heading' => 'Hriattîrna a awmlo',
-            'description' => 'Nakinah ilo check leh dawn nia.',
+            'description' => 'Nakinah ilo en leh dawn nia.',
         ],
 
     ],

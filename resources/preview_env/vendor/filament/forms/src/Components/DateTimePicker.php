@@ -7,14 +7,21 @@ use Carbon\CarbonInterface;
 use Carbon\Exceptions\InvalidFormatException;
 use Closure;
 use DateTime;
-use Filament\Schemas\Components\Contracts\HasAffixActions;
+use Filament\Actions\Action;
+use Filament\Schemas\Components\StateCasts\Contracts\StateCast;
+use Filament\Schemas\Components\StateCasts\DateTimeStateCast;
+use Filament\Support\Components\Contracts\HasEmbeddedView;
 use Filament\Support\Concerns\HasExtraAlpineAttributes;
+use Filament\Support\Enums\VerticalAlignment;
+use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentTimezone;
 use Filament\Support\Icons\Heroicon;
+use Filament\Support\View\ComponentAttributeBag as FilamentComponentAttributeBag;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Js;
 use Illuminate\View\ComponentAttributeBag;
 
-class DateTimePicker extends Field implements HasAffixActions
+class DateTimePicker extends Field implements Contracts\HasAffixes, HasEmbeddedView
 {
     use Concerns\CanBeNative;
     use Concerns\CanBeReadOnly;
@@ -25,10 +32,7 @@ class DateTimePicker extends Field implements HasAffixActions
     use Concerns\HasStep;
     use HasExtraAlpineAttributes;
 
-    /**
-     * @var view-string
-     */
-    protected string $view = 'filament-forms::components.date-time-picker';
+    protected ?string $publishedViewOverrideCheckPath = 'filament-forms::components.date-time-picker';
 
     protected string | Closure | null $displayFormat = null;
 
@@ -84,69 +88,263 @@ class DateTimePicker extends Field implements HasAffixActions
     {
         parent::setUp();
 
-        $this->afterStateHydrated(static function (DateTimePicker $component, $state): void {
-            if (blank($state)) {
-                return;
-            }
-
-            if (! $state instanceof CarbonInterface) {
-                try {
-                    $state = Carbon::createFromFormat($component->getFormat(), (string) $state, config('app.timezone'));
-                } catch (InvalidFormatException $exception) {
-                    try {
-                        $state = Carbon::parse($state, config('app.timezone'));
-                    } catch (InvalidFormatException $exception) {
-                        $component->state(null);
-
-                        return;
-                    }
-                }
-            }
-
-            $state = $state->setTimezone($component->getTimezone());
-
-            if (! $component->isNative()) {
-                $component->state((string) $state);
-
-                return;
-            }
-
-            if (! $component->hasTime()) {
-                $component->state($state->toDateString());
-
-                return;
-            }
-
-            $precision = $component->hasSeconds() ? 'second' : 'minute';
-
-            if (! $component->hasDate()) {
-                $component->state($state->toTimeString($precision));
-
-                return;
-            }
-
-            $component->state($state->toDateTimeString($precision));
-        });
-
-        $this->dehydrateStateUsing(static function (DateTimePicker $component, $state) {
-            if (blank($state)) {
-                return null;
-            }
-
-            if (! $state instanceof CarbonInterface) {
-                $state = Carbon::parse($state);
-            }
-
-            $state->shiftTimezone($component->getTimezone());
-            $state->setTimezone(config('app.timezone'));
-
-            return $state->format($component->getFormat());
-        });
-
         $this->rule(
             'date',
             static fn (DateTimePicker $component): bool => $component->hasDate(),
         );
+    }
+
+    public function toEmbeddedHtml(): string
+    {
+        $datalistOptions = $this->getDatalistOptions();
+        $disabledDates = $this->getDisabledDates();
+        $extraAlpineAttributes = $this->getExtraAlpineAttributes();
+        $extraAttributeBag = $this->getExtraAttributeBag();
+        $extraInputAttributeBag = $this->getExtraInputAttributeBag();
+        $hasDate = $this->hasDate();
+        $hasTime = $this->hasTime();
+        $hasSeconds = $this->hasSeconds();
+        $id = $this->getId();
+        $isDisabled = $this->isDisabled();
+        $isAutofocused = $this->isAutofocused();
+        $isPrefixInline = $this->isPrefixInline();
+        $isSuffixInline = $this->isSuffixInline();
+        $maxDate = $this->getMaxDate();
+        $minDate = $this->getMinDate();
+        $defaultFocusedDate = $this->getDefaultFocusedDate();
+        $prefixActions = $this->getPrefixActions();
+        $prefixIcon = $this->getPrefixIcon();
+        $prefixIconColor = $this->getPrefixIconColor();
+        $prefixLabel = $this->getPrefixLabel();
+        $suffixActions = $this->getSuffixActions();
+        $suffixIcon = $this->getSuffixIcon();
+        $suffixIconColor = $this->getSuffixIconColor();
+        $suffixLabel = $this->getSuffixLabel();
+        $statePath = $this->getStatePath();
+        $placeholder = $this->getPlaceholder();
+        $isReadOnly = $this->isReadOnly();
+        $isRequired = $this->isRequired();
+        $step = $this->getStep();
+        $type = $this->getType();
+        $livewireKey = $this->getLivewireKey();
+        $isNative = $this->isNative();
+
+        // Mirror the snapshot Blade: the input's inline prefix/suffix classes
+        // are computed against the unfiltered prefix/suffix actions, while the
+        // wrapper Blade filtered actions before computing `$hasPrefix` /
+        // `$hasSuffix` for the prefix/suffix div rendering.
+        $hasInlinePrefix = count($prefixActions) || $prefixIcon || filled($prefixLabel);
+        $hasInlineSuffix = count($suffixActions) || $suffixIcon || filled($suffixLabel);
+
+        // Filter visible prefix/suffix actions
+        $prefixActions = array_filter(
+            $prefixActions,
+            static fn (Action $action): bool => $action->isVisible(),
+        );
+        $suffixActions = array_filter(
+            $suffixActions,
+            static fn (Action $action): bool => $action->isVisible(),
+        );
+
+        $hasPrefix = count($prefixActions) || $prefixIcon || filled($prefixLabel);
+        $hasSuffix = count($suffixActions) || $suffixIcon || filled($suffixLabel);
+
+        $wrapperAttributes = $extraAttributeBag
+            ->merge([
+                'x-on:focus-input.stop' => "\$el.querySelector('input:not([type=hidden])')?.focus()",
+            ], escape: false)
+            ->class(['fi-fo-date-time-picker']);
+
+        ob_start(); ?>
+
+
+                <?php if ($isNative) { ?>
+                    <input
+                        <?= $extraInputAttributeBag
+                            ->merge($extraAlpineAttributes, escape: false)
+                            ->merge([
+                                'autofocus' => $isAutofocused,
+                                'disabled' => $isDisabled,
+                                'id' => $id,
+                                'list' => $datalistOptions ? $id . '-list' : null,
+                                'max' => $hasTime ? $maxDate : ($maxDate ? Carbon::parse($maxDate)->toDateString() : null),
+                                'min' => $hasTime ? $minDate : ($minDate ? Carbon::parse($minDate)->toDateString() : null),
+                                'placeholder' => filled($placeholder) ? e($placeholder) : null,
+                                'readonly' => $isReadOnly,
+                                'required' => $isRequired,
+                                'step' => $step,
+                                'type' => $type,
+                                $this->applyStateBindingModifiers('wire:model') => $statePath,
+                                'x-data' => count($extraAlpineAttributes) ? '{}' : null,
+                            ], escape: false)
+                            ->class([
+                                'fi-input',
+                                'fi-input-has-inline-prefix' => $isPrefixInline && $hasInlinePrefix,
+                                'fi-input-has-inline-suffix' => $isSuffixInline && $hasInlineSuffix,
+                            ])
+                            ->toHtml() ?>
+                    />
+                <?php } else { ?>
+                    <div
+                        x-load
+                        x-load-src="<?= e(FilamentAsset::getAlpineComponentSrc('date-time-picker', 'filament/forms')) ?>"
+                        x-data="dateTimePickerFormComponent({
+                                    defaultFocusedDate: <?= Js::from($defaultFocusedDate) ?>,
+                                    displayFormat: <?= Js::from(convert_date_format($this->getDisplayFormat())->to('day.js')) ?>,
+                                    firstDayOfWeek: <?= $this->getFirstDayOfWeek() ?>,
+                                    isAutofocused: <?= Js::from($isAutofocused) ?>,
+                                    locale: <?= Js::from($this->getLocale()) ?>,
+                                    shouldCloseOnDateSelection: <?= Js::from($this->shouldCloseOnDateSelection()) ?>,
+                                    state: $wire.<?= $this->applyStateBindingModifiers("\$entangle('{$statePath}')") ?>,
+                                })"
+                        wire:ignore
+                        wire:key="<?= e($livewireKey) ?>.<?= substr(md5(serialize([$disabledDates, $isDisabled, $isReadOnly, $maxDate, $minDate, $hasDate, $hasTime, $hasSeconds])), 0, 64) ?>"
+                        x-on:keydown.esc="isOpen() && $event.stopPropagation()"
+                        <?= $this->getExtraAlpineAttributeBag()->toHtml() ?>
+                    >
+                        <input x-ref="maxDate" type="hidden" value="<?= e($maxDate) ?>" />
+                        <input x-ref="minDate" type="hidden" value="<?= e($minDate) ?>" />
+                        <input x-ref="disabledDates" type="hidden" value="<?= e(json_encode($disabledDates)) ?>" />
+
+                        <button
+                            x-ref="button"
+                            x-on:click="togglePanelVisibility()"
+                            x-on:keydown.enter.prevent.stop="if (! $el.disabled) { isOpen() ? selectDate() : togglePanelVisibility() }"
+                            x-on:keydown.arrow-left.prevent.stop="if (! $el.disabled) focusPreviousDay()"
+                            x-on:keydown.arrow-right.prevent.stop="if (! $el.disabled) focusNextDay()"
+                            x-on:keydown.arrow-up.prevent.stop="if (! $el.disabled) focusPreviousWeek()"
+                            x-on:keydown.arrow-down.prevent.stop="if (! $el.disabled) focusNextWeek()"
+                            x-on:keydown.backspace.prevent.stop="if (! $el.disabled) clearState()"
+                            x-on:keydown.clear.prevent.stop="if (! $el.disabled) clearState()"
+                            x-on:keydown.delete.prevent.stop="if (! $el.disabled) clearState()"
+                            aria-label="<?= e($placeholder) ?>"
+                            type="button"
+                            tabindex="-1"
+                            <?php if ($isDisabled || $isReadOnly) { ?> disabled <?php } ?>
+                            <?= $this->getExtraTriggerAttributeBag()->class(['fi-fo-date-time-picker-trigger'])->toHtml() ?>
+                        >
+                            <input
+                                <?php if ($isDisabled) { ?> disabled <?php } ?>
+                                readonly
+                                placeholder="<?= e($placeholder) ?>"
+                                wire:key="<?= e($livewireKey) ?>.display-text"
+                                x-model="displayText"
+                                <?php if ($id) { ?> id="<?= e($id) ?>" <?php } ?>
+                                class="fi-fo-date-time-picker-display-text-input"
+                            />
+                        </button>
+
+                        <div
+                            x-ref="panel"
+                            x-cloak
+                            x-float.placement.bottom-start.offset.flip.shift="{ offset: 8 }"
+                            wire:ignore
+                            wire:key="<?= e($livewireKey) ?>.panel"
+                            class="fi-fo-date-time-picker-panel"
+                        >
+                            <?php if ($hasDate) { ?>
+                                <div class="fi-fo-date-time-picker-panel-header">
+                                    <select aria-label="<?= e(__('filament-forms::components.date_time_picker.month_select.label')) ?>" x-model="focusedMonth" class="fi-fo-date-time-picker-month-select">
+                                        <template x-for="(month, index) in months">
+                                            <option x-bind:value="index" x-text="month"></option>
+                                        </template>
+                                    </select>
+                                    <input type="number" inputmode="numeric" aria-label="<?= e(__('filament-forms::components.date_time_picker.year_input.label')) ?>" x-model.debounce="focusedYear" class="fi-fo-date-time-picker-year-input" />
+                                </div>
+
+                                <div class="fi-fo-date-time-picker-calendar-header">
+                                    <template x-for="(day, index) in dayLabels" x-bind:key="index">
+                                        <div x-text="day" class="fi-fo-date-time-picker-calendar-header-day"></div>
+                                    </template>
+                                </div>
+
+                                <div role="grid" class="fi-fo-date-time-picker-calendar">
+                                    <template x-for="day in emptyDaysInFocusedMonth" x-bind:key="day">
+                                        <div></div>
+                                    </template>
+                                    <template x-for="day in daysInFocusedMonth" x-bind:key="day">
+                                        <div
+                                            x-text="day"
+                                            x-on:click="dayIsDisabled(day) || selectDate(day)"
+                                            x-on:mouseenter="setFocusedDay(day)"
+                                            role="option"
+                                            x-bind:aria-selected="focusedDate.date() === day"
+                                            x-bind:class="{
+                                                'fi-fo-date-time-picker-calendar-day-today': dayIsToday(day),
+                                                'fi-focused': focusedDate.date() === day,
+                                                'fi-selected': dayIsSelected(day),
+                                                'fi-disabled': dayIsDisabled(day),
+                                            }"
+                                            class="fi-fo-date-time-picker-calendar-day"
+                                        ></div>
+                                    </template>
+                                </div>
+                            <?php } ?>
+
+                            <?php if ($hasTime) { ?>
+                                <div class="fi-fo-date-time-picker-time-inputs">
+                                    <input max="23" min="0" step="<?= $this->getHoursStep() ?>" type="number" inputmode="numeric" aria-label="<?= e(__('filament-forms::components.date_time_picker.hour_input.label')) ?>" x-on:blur="checkTimeInputValidity" x-on:invalid="timeInputInvalid" x-model.debounce="hour" />
+                                    <span class="fi-fo-date-time-picker-time-input-separator">:</span>
+                                    <input max="59" min="0" step="<?= $this->getMinutesStep() ?>" type="number" inputmode="numeric" aria-label="<?= e(__('filament-forms::components.date_time_picker.minute_input.label')) ?>" x-on:blur="checkTimeInputValidity" x-on:invalid="timeInputInvalid" x-model.debounce="minute" />
+                                    <?php if ($hasSeconds) { ?>
+                                        <span class="fi-fo-date-time-picker-time-input-separator">:</span>
+                                        <input max="59" min="0" step="<?= $this->getSecondsStep() ?>" type="number" inputmode="numeric" aria-label="<?= e(__('filament-forms::components.date_time_picker.second_input.label')) ?>" x-on:blur="checkTimeInputValidity" x-on:invalid="timeInputInvalid" x-model.debounce="second" />
+                                    <?php } ?>
+                                </div>
+                            <?php } ?>
+                        </div>
+                    </div>
+                <?php } ?>
+
+        <?php if ($datalistOptions) { ?>
+            <datalist id="<?= e($id) ?>-list">
+                <?php foreach ($datalistOptions as $option) { ?>
+                    <option value="<?= e($option) ?>" />
+                <?php } ?>
+            </datalist>
+        <?php } ?>
+
+        <?php $slotHtml = ob_get_clean();
+
+        return $this->wrapEmbeddedHtml(
+            $this->wrapInputHtml(
+                $slotHtml,
+                attributes: $wrapperAttributes,
+            ),
+            inlineLabelVerticalAlignment: VerticalAlignment::Center,
+        );
+    }
+
+    /**
+     * @return array<StateCast>
+     */
+    public function getDefaultStateCasts(): array
+    {
+        return [
+            ...parent::getDefaultStateCasts(),
+            app(DateTimeStateCast::class, [
+                'format' => $this->getFormat(),
+                'internalFormat' => $this->getInternalFormat(),
+                'timezone' => $this->getTimezone(),
+            ]),
+        ];
+    }
+
+    public function getInternalFormat(): string
+    {
+        if (! $this->isNative()) {
+            return 'Y-m-d H:i:s';
+        }
+
+        if (! $this->hasTime()) {
+            return 'Y-m-d';
+        }
+
+        if (! $this->hasDate()) {
+            return $this->hasSeconds() ? 'H:i:s' : 'H:i';
+        }
+
+        return $this->hasSeconds() ? 'Y-m-d H:i:s' : 'Y-m-d H:i';
     }
 
     public function displayFormat(string | Closure | null $format): static
@@ -161,10 +359,17 @@ class DateTimePicker extends Field implements HasAffixActions
      */
     public function extraTriggerAttributes(array | Closure $attributes, bool $merge = false): static
     {
+        // Security: Attribute values are not escaped when rendered. Never
+        // pass unsanitized user input as attribute names or values.
+
         if ($merge) {
-            $this->extraAttributes[] = $attributes;
+            if (($attributes instanceof Closure) && in_array($attributes, $this->extraTriggerAttributes, strict: true)) {
+                return $this;
+            }
+
+            $this->extraTriggerAttributes[] = $attributes;
         } else {
-            $this->extraAttributes = [$attributes];
+            $this->extraTriggerAttributes = [$attributes];
         }
 
         return $this;
@@ -441,7 +646,7 @@ class DateTimePicker extends Field implements HasAffixActions
      */
     public function getExtraTriggerAttributes(): array
     {
-        $temporaryAttributeBag = new ComponentAttributeBag;
+        $temporaryAttributeBag = new FilamentComponentAttributeBag;
 
         foreach ($this->extraTriggerAttributes as $extraTriggerAttributes) {
             $temporaryAttributeBag = $temporaryAttributeBag->merge($this->evaluate($extraTriggerAttributes), escape: false);
@@ -452,7 +657,7 @@ class DateTimePicker extends Field implements HasAffixActions
 
     public function getExtraTriggerAttributeBag(): ComponentAttributeBag
     {
-        return new ComponentAttributeBag($this->getExtraTriggerAttributes());
+        return new FilamentComponentAttributeBag($this->getExtraTriggerAttributes());
     }
 
     public function getFirstDayOfWeek(): int

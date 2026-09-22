@@ -33,6 +33,7 @@ trait InteractsWithTable
     use HasRecords;
     use WithPagination {
         WithPagination::resetPage as resetLivewirePage;
+        WithPagination::setPage as setLivewirePage;
     }
 
     protected Table $table;
@@ -45,9 +46,11 @@ trait InteractsWithTable
     {
         $this->table = $this->table($this->makeTable());
 
-        $this->cacheSchema('tableFiltersForm', $this->getTableFiltersForm());
+        $this->cacheSchema('tableFiltersForm', $this->getTableFiltersForm(...));
 
-        $this->cacheMountedActions($this->mountedActions);
+        if (empty($this->cacheMountedActions($this->mountedActions))) {
+            $this->mountedActions = [];
+        }
 
         $this->initTableColumnManager();
 
@@ -88,8 +91,24 @@ trait InteractsWithTable
             );
         }
 
-        if ($this->getTable()->isDefaultGroupSelectable()) {
-            $this->tableGrouping = "{$this->getTable()->getDefaultGroup()->getId()}:asc";
+        $shouldPersistGroupInSession = $this->getTable()->persistsGroupInSession();
+        $groupingSessionKey = $this->getTableGroupingSessionKey();
+        $hasPersistedGroupInSession = $shouldPersistGroupInSession && session()->exists($groupingSessionKey);
+
+        if (blank($this->tableGrouping)) {
+            if ($hasPersistedGroupInSession) {
+                $sessionGrouping = session()->get($groupingSessionKey);
+                $this->tableGrouping = is_string($sessionGrouping) ? $sessionGrouping : null;
+            } elseif ($this->getTable()->isDefaultGroupSelectable()) {
+                $this->tableGrouping = "{$this->getTable()->getDefaultGroup()->getId()}:{$this->getTable()->getDefaultGroupDirection()}";
+            }
+        }
+
+        if ($shouldPersistGroupInSession) {
+            session()->put(
+                $groupingSessionKey,
+                $this->tableGrouping,
+            );
         }
 
         $shouldPersistSearchInSession = $this->getTable()->persistsSearchInSession();
@@ -124,8 +143,11 @@ trait InteractsWithTable
         }
 
         $this->tableColumnSearches = $this->castTableColumnSearches(
-            $this->tableColumnSearches ?? [],
+            $this->tableColumnSearches,
         );
+
+        // Seed individually searchable columns named after a JavaScript array property (e.g. `length`), so `$tableColumnSearches` serializes to a JSON object instead of an array and `wire:model` reads the search value rather than the array property.
+        $this->fillReservedTableColumnSearchKeys();
 
         if ($shouldPersistColumnSearchesInSession) {
             session()->put(
@@ -142,7 +164,8 @@ trait InteractsWithTable
             $shouldPersistSortInSession &&
             session()->has($sortSessionKey)
         ) {
-            $this->tableSort = session()->get($sortSessionKey);
+            $sessionSort = session()->get($sortSessionKey);
+            $this->tableSort = is_string($sessionSort) ? $sessionSort : null;
         }
 
         if ($shouldPersistSortInSession) {
@@ -153,7 +176,7 @@ trait InteractsWithTable
         }
 
         if ($this->getTable()->isPaginated()) {
-            $this->tableRecordsPerPage = $this->getDefaultTableRecordsPerPageSelectOption();
+            $this->tableRecordsPerPage ??= $this->getDefaultTableRecordsPerPageSelectOption();
         }
     }
 
@@ -236,12 +259,22 @@ trait InteractsWithTable
         return null;
     }
 
-    /**
-     * @param  ?string  $pageName
-     */
-    public function resetPage($pageName = null): void
+    public function resetPage(?string $pageName = null): void
     {
         $this->resetLivewirePage($pageName ?? $this->getTablePaginationPageName());
+    }
+
+    public function setPage(int | string $page, ?string $pageName = null): void
+    {
+        $defaultPageName = $this->getTablePaginationPageName();
+
+        $pageName ??= $defaultPageName;
+
+        $this->setLivewirePage($page, $pageName);
+
+        if (($pageName === $defaultPageName) && $this->getTable()->shouldScrollToTopOnPageChange()) {
+            $this->dispatch('scrollToTopOfTable')->self();
+        }
     }
 
     /**

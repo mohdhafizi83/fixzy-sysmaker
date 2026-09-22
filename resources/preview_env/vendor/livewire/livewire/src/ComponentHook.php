@@ -35,10 +35,10 @@ abstract class ComponentHook
         };
     }
 
-    function callCall($method, $params, $returnEarly) {
+    function callCall($method, $params, $returnEarly, $metadata, $componentContext) {
         $callbacks = [];
 
-        if (method_exists($this, 'call')) $callbacks[] = $this->call($method, $params, $returnEarly);
+        if (method_exists($this, 'call')) $callbacks[] = $this->call($method, $params, $returnEarly, $metadata, $componentContext);
 
         return function (...$params) use ($callbacks) {
             foreach ($callbacks as $callback) {
@@ -51,6 +51,30 @@ abstract class ComponentHook
         $callbacks = [];
 
         if (method_exists($this, 'render')) $callbacks[] = $this->render(...$params);
+
+        return function (...$params) use ($callbacks) {
+            foreach ($callbacks as $callback) {
+                if (is_callable($callback)) $callback(...$params);
+            }
+        };
+    }
+
+    function callRenderIsland(...$params) {
+        $callbacks = [];
+
+        if (method_exists($this, 'renderIsland')) $callbacks[] = $this->renderIsland(...$params);
+
+        return function (...$params) use ($callbacks) {
+            foreach ($callbacks as $callback) {
+                if (is_callable($callback)) $callback(...$params);
+            }
+        };
+    }
+
+    function callRenderPlaceholder(...$params) {
+        $callbacks = [];
+
+        if (method_exists($this, 'renderPlaceholder')) $callbacks[] = $this->renderPlaceholder(...$params);
 
         return function (...$params) use ($callbacks) {
             foreach ($callbacks as $callback) {
@@ -94,6 +118,11 @@ abstract class ComponentHook
     function storeGet($key, $default = null)
     {
         return store($this->component)->get($key, $default);
+    }
+
+    function storeFind($key, $iKey = null, $default = null)
+    {
+        return store($this->component)->find($key, $iKey, $default);
     }
 
     function storeHas($key)

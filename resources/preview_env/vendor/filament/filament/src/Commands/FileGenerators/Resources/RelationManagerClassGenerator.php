@@ -2,6 +2,7 @@
 
 namespace Filament\Commands\FileGenerators\Resources;
 
+use Filament\Actions\BulkActionGroup;
 use Filament\Commands\FileGenerators\Resources\Concerns\CanGenerateResourceForms;
 use Filament\Commands\FileGenerators\Resources\Concerns\CanGenerateResourceInfolists;
 use Filament\Commands\FileGenerators\Resources\Concerns\CanGenerateResourceTables;
@@ -9,6 +10,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Support\Commands\Concerns\CanReadModelSchemas;
 use Filament\Support\Commands\FileGenerators\ClassGenerator;
+use Filament\Support\Commands\FileGenerators\Contracts\HasSkippedColumns;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -22,7 +24,7 @@ use Nette\PhpGenerator\Literal;
 use Nette\PhpGenerator\Method;
 use Nette\PhpGenerator\Property;
 
-class RelationManagerClassGenerator extends ClassGenerator
+class RelationManagerClassGenerator extends ClassGenerator implements HasSkippedColumns
 {
     use CanGenerateResourceForms;
     use CanGenerateResourceInfolists;
@@ -191,10 +193,34 @@ class RelationManagerClassGenerator extends ClassGenerator
     protected function addTableMethodToClass(ClassType $class): void
     {
         $relatedResource = $this->getRelatedResourceFqn();
+        $tableFqn = $this->getTableFqn();
+
+        $hasExtraTableConfiguration = $this->hasAttachTableActions() || $this->hasAssociateTableActions();
 
         if ($relatedResource && blank($headerActionsOutput = $this->outputTableHeaderActions())) {
             // If the related resource is set and there are no table header actions to add, we don't need
             // to generate the table method since it will be inherited from the related resource.
+            return;
+        }
+
+        if (filled($tableFqn) && (! $hasExtraTableConfiguration)) {
+            // If a table class is provided and there are no extra actions to add,
+            // we can just delegate to the table class without generating the method.
+            $this->namespace->addUse(Table::class);
+
+            $methodBody = <<<PHP
+                return {$this->simplifyFqn($tableFqn)}::configure(\$table);
+                PHP;
+
+            $method = $class->addMethod('table')
+                ->setPublic()
+                ->setReturnType(Table::class)
+                ->setBody($methodBody);
+            $method->addParameter('table')
+                ->setType(Table::class);
+
+            $this->configureTableMethod($method);
+
             return;
         }
 
@@ -207,14 +233,10 @@ class RelationManagerClassGenerator extends ClassGenerator
                         {$headerActionsOutput}
                     ]);
                 PHP;
+        } elseif (filled($tableFqn)) {
+            $methodBody = $this->generateTableMethodBodyWithTableClass($tableFqn);
         } else {
-            $tableFqn = $this->getTableFqn();
-
-            $methodBody = filled($tableFqn)
-                ? <<<PHP
-                return {$this->simplifyFqn($tableFqn)}::configure(\$table);
-                PHP
-                : $this->generateTableMethodBody($this->getRelatedModelFqn(), exceptColumns: Arr::wrap($this->getForeignKeyColumnToNotGenerate()));
+            $methodBody = $this->generateTableMethodBody($this->getRelatedModelFqn(), exceptColumns: Arr::wrap($this->getForeignKeyColumnToNotGenerate()));
         }
 
         $method = $class->addMethod('table')
@@ -225,6 +247,43 @@ class RelationManagerClassGenerator extends ClassGenerator
             ->setType(Table::class);
 
         $this->configureTableMethod($method);
+    }
+
+    protected function generateTableMethodBodyWithTableClass(string $tableFqn): string
+    {
+        $this->importUnlessPartial(BulkActionGroup::class);
+
+        $recordTitleAttributeOutput = '';
+
+        if (filled($recordTitleAttribute = $this->getRecordTitleAttribute())) {
+            $recordTitleAttributeOutput = new Literal(<<<'PHP'
+
+                ->recordTitleAttribute(?)
+            PHP, [$recordTitleAttribute]);
+        }
+
+        $headerActionsOutput = '';
+
+        if (filled($headerActions = $this->outputTableHeaderActions())) {
+            $headerActionsOutput = <<<PHP
+
+                ->headerActions([
+                    {$headerActions}
+                ])
+            PHP;
+        }
+
+        return <<<PHP
+            return {$this->simplifyFqn($tableFqn)}::configure(\$table){$recordTitleAttributeOutput}{$headerActionsOutput}
+                ->recordActions([
+                    {$this->outputTableActions()}
+                ])
+                ->toolbarActions([
+                    {$this->simplifyFqn(BulkActionGroup::class)}::make([
+                        {$this->outputTableMethodBulkActions()}
+                    ]),
+                ]);
+            PHP;
     }
 
     public function hasCreateTableAction(): bool

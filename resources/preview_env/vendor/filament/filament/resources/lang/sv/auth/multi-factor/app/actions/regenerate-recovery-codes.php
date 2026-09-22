@@ -22,13 +22,15 @@ return [
 
                     'invalid' => 'Koden du angav är ogiltig.',
 
+                    'rate_limited' => 'För många försök inom begränsad tidsintervall. Vänligen försök igen senare.',
+
                 ],
 
             ],
 
             'password' => [
 
-                'label' => 'Eller, ange ditt nuvarande lösenord',
+                'label' => 'Ange ditt nuvarande lösenord',
 
                 'validation_attribute' => 'lösenord',
 

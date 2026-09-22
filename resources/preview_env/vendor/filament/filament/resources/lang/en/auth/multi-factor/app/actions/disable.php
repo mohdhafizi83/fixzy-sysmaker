@@ -11,6 +11,10 @@ return [
         'description' => 'Are you sure you want to stop using the authenticator app? Disabling this will remove an extra layer of security from your account.',
 
         'form' => [
+            'password' => [
+                'label' => 'Current password',
+                'validation_attribute' => 'current password',
+            ],
 
             'code' => [
 
@@ -30,6 +34,8 @@ return [
 
                     'invalid' => 'The code you entered is invalid.',
 
+                    'rate_limited' => 'Too many attempts. Please try again later.',
+
                 ],
 
             ],
@@ -43,6 +49,8 @@ return [
                 'messages' => [
 
                     'invalid' => 'The recovery code you entered is invalid.',
+
+                    'rate_limited' => 'Too many attempts. Please try again later.',
 
                 ],
 

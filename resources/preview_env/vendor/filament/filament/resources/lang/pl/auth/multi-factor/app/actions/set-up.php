@@ -42,6 +42,11 @@ return [
 
         'form' => [
 
+            'password' => [
+                'label' => 'Aktualne hasło',
+                'validation_attribute' => 'aktualne hasło',
+            ],
+
             'code' => [
 
                 'label' => 'Wprowadź 6-cyfrowy kod z aplikacji uwierzytelniającej',
@@ -53,6 +58,8 @@ return [
                 'messages' => [
 
                     'invalid' => 'Wprowadzony kod jest nieprawidłowy.',
+
+                    'rate_limited' => 'Zbyt wiele prób. Spróbuj ponownie później.',
 
                 ],
 

@@ -1,6 +1,7 @@
 ---
 title: Overview
 ---
+import Aside from "@components/Aside.astro"
 import AutoScreenshot from "@components/AutoScreenshot.astro"
 import UtilityInjection from "@components/UtilityInjection.astro"
 
@@ -26,7 +27,7 @@ public function table(Table $table): Table
 }
 ```
 
-<AutoScreenshot name="tables/filters/simple" alt="Table with filter" version="4.x" />
+<AutoScreenshot name="tables/filters/simple" alt="Table with filter" version="5.x" />
 
 ## Available filters
 
@@ -50,7 +51,7 @@ Filter::make('is_featured')
     ->label('Featured')
 ```
 
-<UtilityInjection set="tableFilters" version="4.x">As well as allowing a static value, the `label()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="tableFilters" version="5.x">As well as allowing a static value, the `label()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 Customizing the label in this way is useful if you wish to use a [translation string for localization](https://laravel.com/docs/localization#retrieving-translation-strings):
 
@@ -63,13 +64,13 @@ Filter::make('is_featured')
 
 ## Customizing the filter schema
 
-By default, creating a filter with the `Filter` class will render a [checkbox form component](../../forms/fields/checkbox). When the checkbox is checked, the `query()` function will be applied to the table's query, scoping the records in the table. When the checkbox is unchecked, the `query()` function will be removed from the table's query.
+By default, creating a filter with the `Filter` class will render a [checkbox form component](../../forms/checkbox). When the checkbox is checked, the `query()` function will be applied to the table's query, scoping the records in the table. When the checkbox is unchecked, the `query()` function will be removed from the table's query.
 
 Filters are built entirely on Filament's form fields. They can render any combination of form fields, which users can then interact with to filter the table.
 
 ### Using a toggle button instead of a checkbox
 
-The simplest example of managing the form field that is used for a filter is to replace the [checkbox](../../forms/fields/checkbox) with a [toggle button](../../forms/fields/toggle), using the `toggle()` method:
+The simplest example of managing the form field that is used for a filter is to replace the [checkbox](../../forms/checkbox) with a [toggle button](../../forms/toggle), using the `toggle()` method:
 
 ```php
 use Filament\Tables\Filters\Filter;
@@ -78,7 +79,7 @@ Filter::make('is_featured')
     ->toggle()
 ```
 
-<AutoScreenshot name="tables/filters/toggle" alt="Table with toggle filter" version="4.x" />
+<AutoScreenshot name="tables/filters/toggle" alt="Table with toggle filter" version="5.x" />
 
 ### Customizing the built-in filter form field
 
@@ -92,7 +93,7 @@ Filter::make('is_featured')
     ->modifyFormFieldUsing(fn (Checkbox $field) => $field->inline(false))
 ```
 
-<UtilityInjection set="tableFilters" version="4.x" extras="Field;;Filament\Forms\Components\Field;;$field;;The field object to modify.">The function passed to `modifyFormFieldUsing()` can inject various utilities as parameters.</UtilityInjection>
+<UtilityInjection set="tableFilters" version="5.x" extras="Field;;Filament\Forms\Components\Field;;$field;;The field object to modify.">The function passed to `modifyFormFieldUsing()` can inject various utilities as parameters.</UtilityInjection>
 
 ## Applying the filter by default
 
@@ -200,6 +201,35 @@ TernaryFilter::make('trashed')
     ]))
 ```
 
+## Excluding filters when resolving records
+
+When a user interacts with a table record (e.g., clicking an action button), Filament resolves that record from the database. By default, all active filter conditions are applied, ensuring users cannot access records outside their filter scope.
+
+However, some filters like `TrashedFilter` modify global scopes rather than restricting access. When a record's state changes after the user saw it in the table, you may still want the user to interact with it.
+
+You may mark a filter to be excluded when resolving records using the `excludeWhenResolvingRecord()` method:
+
+```php
+use Filament\Tables\Filters\Filter;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+
+Filter::make('trashed')
+    ->query(fn (Builder $query) => $query->onlyTrashed())
+    ->baseQuery(fn (Builder $query) => $query->withoutGlobalScopes([
+        SoftDeletingScope::class,
+    ]))
+    ->excludeWhenResolvingRecord()
+```
+
+When `excludeWhenResolvingRecord()` is used:
+- The filter's `query()` callback is not applied when resolving records
+- The filter's `baseQuery()` callback is still applied when resolving records
+
+<Aside variant="danger">
+    Do not use `excludeWhenResolvingRecord()` on filters that enforce authorization rules. For example, if you have a filter that restricts records by tenant or user ownership, those filters should remain enforced to prevent unauthorized access.
+</Aside>
+
 ## Customizing the filters trigger action
 
 To customize the filters trigger buttons, you may use the `filtersTriggerAction()` method, passing a closure that returns an action. All methods that are available to [customize action trigger buttons](../../actions/overview) can be used:
@@ -222,7 +252,30 @@ public function table(Table $table): Table
 }
 ```
 
-<AutoScreenshot name="tables/filters/custom-trigger-action" alt="Table with custom filters trigger action" version="4.x" />
+<AutoScreenshot name="tables/filters/custom-trigger-action" alt="Table with custom filters trigger action" version="5.x" />
+
+## Customizing the remove all filters action
+
+To customize the action that removes all active filters from the indicator bar, you may use the `filtersRemoveAllAction()` method, passing a closure that returns an action. All methods that are available to [customize action trigger buttons](../../actions/overview) can be used:
+
+```php
+use Filament\Actions\Action;
+use Filament\Tables\Table;
+
+public function table(Table $table): Table
+{
+    return $table
+        ->filters([
+            // ...
+        ])
+        ->filtersRemoveAllAction(
+            fn (Action $action) => $action
+                ->tooltip('Clear filters'),
+        );
+}
+```
+
+<AutoScreenshot name="tables/filters/custom-remove-all-action" alt="Table with custom filters remove all action" version="5.x" />
 
 ## Filter utility injection
 

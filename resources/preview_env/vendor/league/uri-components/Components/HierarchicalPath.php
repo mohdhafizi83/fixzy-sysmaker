@@ -13,10 +13,12 @@ declare(strict_types=1);
 
 namespace League\Uri\Components;
 
+use BackedEnum;
 use Deprecated;
 use Iterator;
 use League\Uri\Contracts\PathInterface;
 use League\Uri\Contracts\SegmentedPathInterface;
+use League\Uri\Contracts\UriException;
 use League\Uri\Contracts\UriInterface;
 use League\Uri\Encoder;
 use League\Uri\Exceptions\OffsetOutOfBounds;
@@ -24,6 +26,9 @@ use League\Uri\Exceptions\SyntaxError;
 use Psr\Http\Message\UriInterface as Psr7UriInterface;
 use Stringable;
 use TypeError;
+use Uri\Rfc3986\Uri as Rfc3986Uri;
+use Uri\WhatWg\Url as WhatWgUrl;
+use ValueError;
 
 use function array_count_values;
 use function array_filter;
@@ -56,7 +61,7 @@ final class HierarchicalPath extends Component implements SegmentedPathInterface
     /** @var array<string> */
     private readonly array $segments;
 
-    private function __construct(Stringable|string $path)
+    private function __construct(BackedEnum|Stringable|string $path)
     {
         if (!$path instanceof PathInterface) {
             $path = Path::new($path);
@@ -74,15 +79,27 @@ final class HierarchicalPath extends Component implements SegmentedPathInterface
     /**
      * Returns a new instance from a string or a stringable object.
      */
-    public static function new(Stringable|string $value = ''): self
+    public static function new(BackedEnum|Stringable|string $value = ''): self
     {
         return new self($value);
     }
 
     /**
+     * Create a new instance from a string.or a stringable structure or returns null on failure.
+     */
+    public static function tryNew(BackedEnum|Stringable|string $uri = ''): ?self
+    {
+        try {
+            return self::new($uri);
+        } catch (UriException) {
+            return null;
+        }
+    }
+
+    /**
      * Create a new instance from a URI object.
      */
-    public static function fromUri(Stringable|string $uri): self
+    public static function fromUri(WhatWgUrl|Rfc3986Uri|BackedEnum|Stringable|string $uri): self
     {
         return new self(Path::fromUri($uri));
     }
@@ -146,9 +163,19 @@ final class HierarchicalPath extends Component implements SegmentedPathInterface
         return $this->path->value();
     }
 
+    public function equals(mixed $value): bool
+    {
+        return $this->path->equals($value);
+    }
+
     public function decoded(): string
     {
         return $this->path->decoded();
+    }
+
+    public function normalize(): self
+    {
+        return new self((string) $this->path->normalize()->value());
     }
 
     public function getDirname(): string
@@ -181,6 +208,38 @@ final class HierarchicalPath extends Component implements SegmentedPathInterface
         return pathinfo($basename, PATHINFO_EXTENSION);
     }
 
+    public function first(): ?string
+    {
+        return $this->get(0);
+    }
+
+    public function last(): ?string
+    {
+        return $this->get(-1);
+    }
+
+    public function indexOf(BackedEnum|Stringable|string $segment): ?int
+    {
+        return $this->keys($segment)[0] ?? null;
+    }
+
+    public function lastIndexOf(BackedEnum|Stringable|string $segment): ?int
+    {
+        $res = $this->keys($segment);
+
+        return $res[count($res) - 1] ?? null;
+    }
+
+    public function contains(BackedEnum|Stringable|string $segment): bool
+    {
+        return [] !== $this->keys($segment);
+    }
+
+    public function isEmpty(): bool
+    {
+        return '' === $this->path->value();
+    }
+
     public function get(int $offset): ?string
     {
         if ($offset < 0) {
@@ -190,7 +249,7 @@ final class HierarchicalPath extends Component implements SegmentedPathInterface
         return $this->segments[$offset] ?? null;
     }
 
-    public function keys(Stringable|string|null $segment = null): array
+    public function keys(BackedEnum|Stringable|string|null $segment = null): array
     {
         $segment = self::filterComponent($segment);
 
@@ -250,31 +309,59 @@ final class HierarchicalPath extends Component implements SegmentedPathInterface
         };
     }
 
-    public function append(Stringable|string $segment): SegmentedPathInterface
+    public function append(BackedEnum|Stringable|string $path): SegmentedPathInterface
     {
-        /** @var string $segment */
-        $segment = self::filterComponent($segment);
+        /** @var string $path */
+        $path = self::filterComponent($path);
 
         return new self(
             rtrim($this->path->toString(), self::SEPARATOR)
             .self::SEPARATOR
-            .ltrim($segment, self::SEPARATOR)
+            .ltrim($path, self::SEPARATOR)
         );
     }
 
-    public function prepend(Stringable|string $segment): SegmentedPathInterface
+    /**
+     * @param iterable<BackedEnum|Stringable|string> $segments
+     *
+     */
+    public function appendSegments(iterable $segments): SegmentedPathInterface
     {
-        /** @var string $segment */
-        $segment = self::filterComponent($segment);
+        $newSegments = [];
+        foreach ($segments as $segment) {
+            $newSegments[] = str_replace('/', '%2F', self::filterComponent($segment) ?? throw new ValueError('The segment can not be null.'));
+        }
+
+        return $this->append(implode('/', $newSegments));
+    }
+
+    public function prepend(BackedEnum|Stringable|string $path): SegmentedPathInterface
+    {
+        /** @var string $path */
+        $path = self::filterComponent($path);
 
         return new self(
-            rtrim($segment, self::SEPARATOR)
+            rtrim($path, self::SEPARATOR)
             .self::SEPARATOR
             .ltrim($this->path->toString(), self::SEPARATOR)
         );
     }
 
-    public function withSegment(int $key, Stringable|string $segment): SegmentedPathInterface
+    /**
+     * @param iterable<BackedEnum|Stringable|string> $segments
+     *
+     */
+    public function prependSegments(iterable $segments): SegmentedPathInterface
+    {
+        $newSegments = [];
+        foreach ($segments as $segment) {
+            $newSegments[] = str_replace('/', '%2F', self::filterComponent($segment) ?? throw new ValueError('The segment can not be null.'));
+        }
+
+        return $this->prepend(implode('/', $newSegments));
+    }
+
+    public function withSegment(int $key, BackedEnum|Stringable|string $segment): SegmentedPathInterface
     {
         $nbSegments = count($this->segments);
         if ($key < - $nbSegments - 1 || $key > $nbSegments) {
@@ -370,7 +457,7 @@ final class HierarchicalPath extends Component implements SegmentedPathInterface
         };
     }
 
-    public function withDirname(Stringable|string $path): SegmentedPathInterface
+    public function withDirname(BackedEnum|Stringable|string $path): SegmentedPathInterface
     {
         if (!$path instanceof PathInterface) {
             $path = Path::new($path);
@@ -389,7 +476,7 @@ final class HierarchicalPath extends Component implements SegmentedPathInterface
         );
     }
 
-    public function withBasename(Stringable|string $basename): SegmentedPathInterface
+    public function withBasename(BackedEnum|Stringable|string $basename): SegmentedPathInterface
     {
         /** @var string $basename */
         $basename = $this->validateComponent($basename);
@@ -400,7 +487,7 @@ final class HierarchicalPath extends Component implements SegmentedPathInterface
         };
     }
 
-    public function withExtension(Stringable|string $extension): SegmentedPathInterface
+    public function withExtension(BackedEnum|Stringable|string $extension): SegmentedPathInterface
     {
         /** @var string $extension */
         $extension = $this->validateComponent($extension);

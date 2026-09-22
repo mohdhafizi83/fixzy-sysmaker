@@ -6,7 +6,7 @@ return [
 
     'modal' => [
 
-        'heading' => 'Authenticator app siam na',
+        'heading' => 'Authenticator app siamna',
 
         'description' => <<<'BLADE'
             Google Authenticator app (<x-filament::link href="https://itunes.apple.com/us/app/google-authenticator/id388497605" target="_blank">iOS</x-filament::link>, <x-filament::link href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" target="_blank">Android</x-filament::link>) ang chi hi hemi complete nan hian I mamawh ang.
@@ -27,7 +27,7 @@ return [
                 'instruction' => 'emaw nangmahin hemi code hi enter chawp rawh:',
 
                 'messages' => [
-                    'copied' => 'Copied',
+                    'copied' => 'Lâk chhâwn ani e',
                 ],
 
             ],
@@ -42,6 +42,11 @@ return [
 
         'form' => [
 
+            'password' => [
+                'label' => 'Password hman mek',
+                'validation_attribute' => 'password hman mek',
+            ],
+
             'code' => [
 
                 'label' => '6-digit code authenticator app ami enter rawh',
@@ -53,6 +58,8 @@ return [
                 'messages' => [
 
                     'invalid' => 'Hemi code hi a diklo.',
+
+                    'rate_limited' => 'Tumna a tam lutuk. Khawngaihin nakinah tinawn leh rawh.',
 
                 ],
 

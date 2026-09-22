@@ -1,19 +1,17 @@
-@php
-    use Filament\Support\Enums\IconPosition;
-@endphp
-
 @props([
     'active' => false,
     'alpineActive' => null,
+    'alpineDeferredBadgeData' => null,
+    'alpineDeferredBadgeLoading' => null,
     'badge' => null,
     'badgeColor' => null,
     'badgeTooltip' => null,
     'badgeIcon' => null,
-    'badgeIconPosition' => IconPosition::Before,
+    'badgeIconPosition' => null,
     'href' => null,
     'icon' => null,
     'iconColor' => 'gray',
-    'iconPosition' => IconPosition::Before,
+    'iconPosition' => null,
     'spaMode' => null,
     'tag' => 'button',
     'target' => null,
@@ -21,11 +19,19 @@
 ])
 
 @php
+    use Filament\Support\Enums\IconPosition;
+    use Filament\Support\Enums\IconSize;
+    use Illuminate\View\ComponentSlot;
+
+    $badgeIconPosition ??= IconPosition::Before;
+    $iconPosition ??= IconPosition::Before;
+
     if (! $iconPosition instanceof IconPosition) {
         $iconPosition = filled($iconPosition) ? (IconPosition::tryFrom($iconPosition) ?? $iconPosition) : null;
     }
 
     $hasAlpineActiveClasses = filled($alpineActive);
+    $hasDeferredBadge = filled($alpineDeferredBadgeData);
 @endphp
 
 <{{ $tag }}
@@ -42,8 +48,7 @@
     {{
         $attributes
             ->merge([
-                'aria-selected' => $active,
-                'role' => 'tab',
+                'aria-current' => $active ? (($tag === 'a') ? 'page' : 'true') : null,
             ])
             ->class([
                 'fi-tabs-item',
@@ -64,7 +69,7 @@
     @endif
 
     @if (filled($badge))
-        @if ($badge instanceof \Illuminate\View\ComponentSlot)
+        @if ($badge instanceof ComponentSlot)
             {{ $badge }}
         @else
             <x-filament::badge
@@ -77,5 +82,66 @@
                 {{ $badge }}
             </x-filament::badge>
         @endif
+    @elseif ($hasDeferredBadge)
+        <span
+            x-show="{{ $alpineDeferredBadgeLoading }}"
+            x-cloak
+            class="fi-tabs-item-badge-placeholder"
+        >
+            {{ \Filament\Support\generate_loading_indicator_html(size: IconSize::Small) }}
+        </span>
+
+        <template
+            x-if="
+                ! {{ $alpineDeferredBadgeLoading }} &&
+                    {{ $alpineDeferredBadgeData }}?.badge != null
+            "
+        >
+            <span
+                x-bind:class="
+                    'fi-badge fi-size-sm ' +
+                        ({{ $alpineDeferredBadgeData }}?.badgeColorClasses ?? '')
+                "
+                x-bind:style="{{ $alpineDeferredBadgeData }}?.badgeColorStyles ?? ''"
+                x-init="
+                    let tooltip = {{ $alpineDeferredBadgeData }}?.badgeTooltip
+                    if (tooltip) {
+                        window.tippy?.($el, {
+                            content: tooltip,
+                            theme: $store.theme,
+                        })
+                    }
+                "
+            >
+                <template
+                    x-if="
+                        {{ $alpineDeferredBadgeData }}?.badgeIconHtml &&
+                            {{ $alpineDeferredBadgeData }}?.badgeIconPosition !== 'after'
+                    "
+                >
+                    <span
+                        x-html="{{ $alpineDeferredBadgeData }}.badgeIconHtml"
+                    ></span>
+                </template>
+
+                <span class="fi-badge-label-ctn">
+                    <span
+                        class="fi-badge-label"
+                        x-text="{{ $alpineDeferredBadgeData }}?.badge"
+                    ></span>
+                </span>
+
+                <template
+                    x-if="
+                        {{ $alpineDeferredBadgeData }}?.badgeIconHtml &&
+                            {{ $alpineDeferredBadgeData }}?.badgeIconPosition === 'after'
+                    "
+                >
+                    <span
+                        x-html="{{ $alpineDeferredBadgeData }}.badgeIconHtml"
+                    ></span>
+                </template>
+            </span>
+        </template>
     @endif
 </{{ $tag }}>

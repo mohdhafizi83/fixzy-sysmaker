@@ -42,6 +42,11 @@ return [
 
         'form' => [
 
+            'password' => [
+                'label' => 'Nuvarande lösenord',
+                'validation_attribute' => 'nuvarande lösenord',
+            ],
+
             'code' => [
 
                 'label' => 'Ange den 6-siffriga koden från autentiseringsappen',
@@ -53,6 +58,8 @@ return [
                 'messages' => [
 
                     'invalid' => 'Koden du angav är ogiltig.',
+
+                    'rate_limited' => 'För många försök inom begränsad tidsintervall. Vänligen försök igen senare.',
 
                 ],
 

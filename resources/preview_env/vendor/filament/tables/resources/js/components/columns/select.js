@@ -1,13 +1,16 @@
 import { Select } from '../../../../../support/resources/js/utilities/select.js'
 
 export default function selectTableColumn({
+    ariaLabel,
     canOptionLabelsWrap,
     canSelectPlaceholder,
+    clearButtonLabel,
     getOptionLabelUsing,
     getOptionsUsing,
     getSearchResultsUsing,
     hasDynamicOptions,
     hasDynamicSearchResults,
+    hasInitialNoOptionsMessage,
     initialOptionLabel,
     isDisabled,
     isHtmlAllowed,
@@ -15,6 +18,7 @@ export default function selectTableColumn({
     isSearchable,
     loadingMessage,
     name,
+    noOptionsMessage,
     noSearchResultsMessage,
     options,
     optionsLimit,
@@ -24,6 +28,7 @@ export default function selectTableColumn({
     searchableOptionFields,
     searchDebounce,
     searchingMessage,
+    searchLabel,
     searchPrompt,
     state,
 }) {
@@ -36,49 +41,55 @@ export default function selectTableColumn({
 
         state,
 
+        unsubscribeLivewireHook: null,
+
         init() {
             if (!isNative) {
                 this.select = new Select({
-                    element: this.$refs.select,
-                    options,
-                    placeholder,
-                    state: this.state,
+                    ariaLabel,
                     canOptionLabelsWrap,
                     canSelectPlaceholder,
-                    initialOptionLabel,
-                    isHtmlAllowed,
-                    isDisabled,
-                    isSearchable,
+                    clearButtonLabel,
+                    element: this.$refs.select,
                     getOptionLabelUsing,
                     getOptionsUsing,
                     getSearchResultsUsing,
                     hasDynamicOptions,
                     hasDynamicSearchResults,
-                    searchPrompt,
-                    searchDebounce,
+                    hasInitialNoOptionsMessage,
+                    initialOptionLabel,
+                    isDisabled,
+                    isHtmlAllowed,
+                    isSearchable,
                     loadingMessage,
-                    searchingMessage,
+                    noOptionsMessage,
                     noSearchResultsMessage,
-                    optionsLimit,
-                    position,
-                    searchableOptionFields,
                     onStateChange: (newState) => {
                         this.state = newState
                     },
+                    options,
+                    optionsLimit,
+                    placeholder,
+                    position,
+                    searchableOptionFields,
+                    searchDebounce,
+                    searchingMessage,
+                    searchLabel,
+                    searchPrompt,
+                    state: this.state,
                 })
             }
 
-            Livewire.hook(
-                'commit',
-                ({ component, commit, succeed, fail, respond }) => {
-                    succeed(({ snapshot, effect }) => {
+            this.unsubscribeLivewireHook = Livewire.interceptMessage(
+                ({ message, onSuccess }) => {
+                    onSuccess(() => {
                         this.$nextTick(() => {
                             if (this.isLoading) {
                                 return
                             }
 
                             if (
-                                component.id !==
+                                message.component.id !==
                                 this.$root.closest('[wire\\:id]')?.attributes[
                                     'wire:id'
                                 ].value
@@ -163,6 +174,8 @@ export default function selectTableColumn({
         },
 
         destroy() {
+            this.unsubscribeLivewireHook?.()
+
             if (this.select) {
                 this.select.destroy()
                 this.select = null

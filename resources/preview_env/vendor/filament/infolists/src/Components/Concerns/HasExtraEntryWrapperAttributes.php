@@ -3,6 +3,7 @@
 namespace Filament\Infolists\Components\Concerns;
 
 use Closure;
+use Filament\Support\View\ComponentAttributeBag as FilamentComponentAttributeBag;
 use Illuminate\View\ComponentAttributeBag;
 
 trait HasExtraEntryWrapperAttributes
@@ -17,7 +18,14 @@ trait HasExtraEntryWrapperAttributes
      */
     public function extraEntryWrapperAttributes(array | Closure $attributes, bool $merge = false): static
     {
+        // Security: Attribute values are not escaped when rendered. Never
+        // pass unsanitized user input as attribute names or values.
+
         if ($merge) {
+            if (($attributes instanceof Closure) && in_array($attributes, $this->extraEntryWrapperAttributes, strict: true)) {
+                return $this;
+            }
+
             $this->extraEntryWrapperAttributes[] = $attributes;
         } else {
             $this->extraEntryWrapperAttributes = [$attributes];
@@ -31,7 +39,7 @@ trait HasExtraEntryWrapperAttributes
      */
     public function getExtraEntryWrapperAttributes(): array
     {
-        $temporaryAttributeBag = new ComponentAttributeBag;
+        $temporaryAttributeBag = new FilamentComponentAttributeBag;
 
         foreach ($this->extraEntryWrapperAttributes as $extraEntryWrapperAttributes) {
             $temporaryAttributeBag = $temporaryAttributeBag->merge($this->evaluate($extraEntryWrapperAttributes), escape: false);
@@ -42,6 +50,6 @@ trait HasExtraEntryWrapperAttributes
 
     public function getExtraEntryWrapperAttributesBag(): ComponentAttributeBag
     {
-        return new ComponentAttributeBag($this->getExtraEntryWrapperAttributes());
+        return new FilamentComponentAttributeBag($this->getExtraEntryWrapperAttributes());
     }
 }

@@ -48,13 +48,17 @@ return [
 
         'email_change_verification_sent' => [
             'title' => 'Požadavek na změnu e-mailové adresy byl odeslán',
-            'body' => 'Požadavek na změnu Vaší e-mailové adresy byl odeslán na :email. Zkontrolujte si e-mail a potvrďte změnu.',
+            'body' => 'Požadavek na změnu vaší e-mailové adresy byl odeslán na :email. Zkontrolujte si e-mail a potvrďte změnu.',
         ],
 
         'saved' => [
             'title' => 'Uloženo',
         ],
 
+        'throttled' => [
+            'title' => 'Příliš mnoho požadavků. Zkuste to znovu za :seconds s.',
+            'body' => 'Zkuste to znovu za :seconds s.',
+        ],
     ],
 
     'actions' => [

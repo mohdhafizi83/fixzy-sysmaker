@@ -28,7 +28,7 @@ trait CanAskForLivewireComponentLocation
         }
 
         $options = [
-            null => app()->getNamespace() . 'Livewire',
+            '' => app()->getNamespace() . 'Livewire',
             ...array_combine(
                 array_keys($locations),
                 array_keys($locations),
@@ -38,6 +38,7 @@ trait CanAskForLivewireComponentLocation
         $namespace = select(
             label: $question,
             options: $options,
+            default: $this->input->isInteractive() ? null : '',
         );
 
         if (blank($namespace)) {

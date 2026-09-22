@@ -42,6 +42,11 @@ return [
 
         'form' => [
 
+            'password' => [
+                'label' => 'Current password',
+                'validation_attribute' => 'current password',
+            ],
+
             'code' => [
 
                 'label' => 'Enter the 6-digit code from the authenticator app',
@@ -53,6 +58,8 @@ return [
                 'messages' => [
 
                     'invalid' => 'The code you entered is invalid.',
+
+                    'rate_limited' => 'Too many attempts. Please try again later.',
 
                 ],
 

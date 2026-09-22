@@ -279,6 +279,8 @@ class MakeRelationManagerCommand extends Command
                     $this->configureIsSoftDeletable();
 
                     $this->configureRelationshipType();
+                } elseif ($this->option('attach') || $this->option('associate')) {
+                    $this->configureRelationshipType();
                 }
             }
 
@@ -553,6 +555,7 @@ class MakeRelationManagerCommand extends Command
                 MorphToMany::class => 'MorphToMany',
                 'other' => 'Other',
             ],
+            default: $this->input->isInteractive() ? null : 'other',
         );
 
         if ($this->relationshipType === 'other') {

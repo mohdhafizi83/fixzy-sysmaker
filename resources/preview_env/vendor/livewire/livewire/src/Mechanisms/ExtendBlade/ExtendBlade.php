@@ -71,12 +71,16 @@ class ExtendBlade extends Mechanism
         // Reset this singleton between tests and Octane requests...
         on('flush-state', function () {
             app()->singleton(DeterministicBladeKeys::class);
+
+            static::$livewireComponents = [];
         });
 
         // We're using "precompiler" as a hook for the point in time when
         // Laravel compiles a Blade view...
-        app('blade.compiler')->precompiler(function ($value) {
-            app(DeterministicBladeKeys::class)->hookIntoCompile(app('blade.compiler'), $value);
+        $compiler = app('blade.compiler');
+
+        $compiler->precompiler(function ($value) use ($compiler) {
+            app(DeterministicBladeKeys::class)->hookIntoCompile($compiler, $value);
 
             return $value;
         });

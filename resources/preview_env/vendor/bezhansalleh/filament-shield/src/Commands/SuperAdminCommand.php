@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace BezhanSalleh\FilamentShield\Commands;
 
 use BezhanSalleh\FilamentShield\Support\Utils;
+use Closure;
 use Filament\Facades\Filament;
 use Illuminate\Auth\EloquentUserProvider;
 use Illuminate\Console\Command;
@@ -12,6 +13,7 @@ use Illuminate\Console\Prohibitable;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Hash;
 use Symfony\Component\Console\Attribute\AsCommand;
 
@@ -30,28 +32,17 @@ class SuperAdminCommand extends Command
         {--tenant= : Team/Tenant ID to assign role to user.}
     ';
 
+    protected static ?Closure $createSuperAdminUsing = null;
+
     protected Authenticatable $superAdmin;
 
     protected ?string $panel = null;
 
-    protected ?\Illuminate\Database\Eloquent\Model $superAdminRole = null;
+    protected ?Model $superAdminRole = null;
 
-    protected function getAuthGuard(): Guard
+    public static function createSuperAdminUsing(?Closure $callback): void
     {
-        return Filament::getPanel($this->panel)->auth();
-    }
-
-    protected function getUserProvider(): UserProvider
-    {
-        return $this->getAuthGuard()->getProvider();
-    }
-
-    protected function getUserModel(): string
-    {
-        /** @var EloquentUserProvider $provider */
-        $provider = $this->getUserProvider();
-
-        return $provider->getModel();
+        static::$createSuperAdminUsing = $callback;
     }
 
     public function handle(): int
@@ -66,8 +57,25 @@ class SuperAdminCommand extends Command
             required: true
         );
 
-        $usersCount = static::getUserModel()::count();
+        Filament::setCurrentPanel($this->panel);
+
         $tenantId = $this->option('tenant');
+
+        if (Utils::isTenancyEnabled()) {
+            if (blank($tenantId)) {
+                $this->components->error('Please provide the team/tenant id via `--tenant` option to assign the super admin to a team/tenant.');
+
+                return self::FAILURE;
+            }
+
+            if (($tenantModel = Utils::getTenantModel()) && $tenantModel::query()->whereKey($tenantId)->doesntExist()) {
+                $this->components->error(sprintf('The team/tenant [%s] does not exist in [%s].', $tenantId, $tenantModel));
+
+                return self::FAILURE;
+            }
+        }
+
+        $usersCount = static::getUserModel()::count();
 
         if ($this->option('user')) {
             $this->superAdmin = static::getUserModel()::findOrFail($this->option('user'));
@@ -96,18 +104,13 @@ class SuperAdminCommand extends Command
         }
 
         if (Utils::isTenancyEnabled()) {
-            if (blank($tenantId)) {
-                $this->components->error('Please provide the team/tenant id via `--tenant` option to assign the super admin to a team/tenant.');
-
-                return self::FAILURE;
-            }
             setPermissionsTeamId($tenantId);
             $this->superAdminRole = Utils::createRole(tenantId: $tenantId);
-            $this->superAdminRole->syncPermissions(Utils::getPermissionModel()::pluck('id'));
-
         } else {
             $this->superAdminRole = Utils::createRole();
         }
+
+        $this->superAdminRole->syncPermissions(Utils::getPermissionModel()::pluck('id'));
 
         $this->superAdmin
             ->unsetRelation('roles')
@@ -118,12 +121,40 @@ class SuperAdminCommand extends Command
 
         $loginUrl = Filament::getCurrentOrDefaultPanel()?->getLoginUrl();
 
-        $this->components->info("Success! {$this->superAdmin->email} may now log in at {$loginUrl}.");
+        $this->components->info(sprintf('Success! %s may now log in at %s.', $this->superAdmin->email, $loginUrl));
 
         return self::SUCCESS;
     }
 
+    protected function getAuthGuard(): Guard
+    {
+        return Filament::getPanel($this->panel)->auth();
+    }
+
+    protected function getUserProvider(): UserProvider
+    {
+        return $this->getAuthGuard()->getProvider();
+    }
+
+    protected function getUserModel(): string
+    {
+        /** @var EloquentUserProvider $provider */
+        $provider = $this->getUserProvider();
+
+        return $provider->getModel();
+    }
+
     protected function createSuperAdmin(): Authenticatable
+    {
+        if (static::$createSuperAdminUsing instanceof Closure) {
+            return app()->call(static::$createSuperAdminUsing)
+                ?? $this->createSuperAdminInteractively();
+        }
+
+        return $this->createSuperAdminInteractively();
+    }
+
+    protected function createSuperAdminInteractively(): Authenticatable
     {
         return static::getUserModel()::create([
             'name' => text(label: 'Name', required: true),

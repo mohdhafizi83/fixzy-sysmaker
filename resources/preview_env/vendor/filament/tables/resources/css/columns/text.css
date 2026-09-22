@@ -1,6 +1,12 @@
 .fi-ta-text {
     @apply w-full;
 
+    &.fi-numeric {
+        /* Numeric and money columns use tabular figures, so digits line up
+           down the column. */
+        @apply tabular-nums;
+    }
+
     &.fi-ta-text-has-descriptions,
     &.fi-ta-text-list-limited {
         /* Add space between content and descriptions / list limit message. */
@@ -19,6 +25,10 @@
 
     &:not(.fi-inline) {
         @apply px-3 py-4;
+    }
+
+    .fi-ta-table-stacked-on-mobile & {
+        @apply p-0 sm:px-3 sm:py-4;
     }
 
     ul&.fi-bulleted,
@@ -121,8 +131,8 @@
         @apply line-clamp-(--line-clamp,none);
     }
 
-    &.fi-copyable {
-        @apply cursor-pointer;
+    & > .fi-copyable {
+        @apply focus-visible:ring-primary-600 dark:focus-visible:ring-primary-500 cursor-pointer rounded-md outline-none focus-visible:ring-2;
     }
 
     &.fi-size-xs {
@@ -217,23 +227,24 @@
         }
     }
 
-    & > .fi-icon {
-        @apply shrink-0 text-gray-400 dark:text-gray-500;
+    & > .fi-icon,
+    & > span:not(.fi-badge) > .fi-icon {
+        @apply inline-block shrink-0 text-gray-400 dark:text-gray-500;
 
         &.fi-color {
             @apply text-color-500;
         }
     }
 
-    & > .fi-icon {
-        @apply -mt-1 inline-block;
+    &.fi-ta-text-has-badges > .fi-badge {
+        @apply align-middle;
     }
 }
 
 .fi-ta-col-has-column-url .fi-ta-text-item {
     @apply hover:underline focus-visible:underline;
 
-    & > .fi-icon {
+    & .fi-icon {
         @apply hover:no-underline focus-visible:no-underline;
     }
 

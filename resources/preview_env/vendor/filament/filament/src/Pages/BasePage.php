@@ -8,6 +8,7 @@ use Filament\Actions\Contracts\HasActions;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasRenderHookScopes;
 use Filament\Schemas\Contracts\HasSchemas;
+use Filament\Support\Concerns\CanCallHooks;
 use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\Width;
 use Filament\Support\Exceptions\Halt;
@@ -19,6 +20,7 @@ use Livewire\Component;
 
 abstract class BasePage extends Component implements HasActions, HasRenderHookScopes, HasSchemas
 {
+    use CanCallHooks;
     use InteractsWithActions;
     use InteractsWithSchemas;
 
@@ -70,7 +72,7 @@ abstract class BasePage extends Component implements HasActions, HasRenderHookSc
         return static::$layout;
     }
 
-    public function getHeading(): string | Htmlable
+    public function getHeading(): string | Htmlable | null
     {
         return $this->heading ?? $this->getTitle();
     }
@@ -129,15 +131,6 @@ abstract class BasePage extends Component implements HasActions, HasRenderHookSc
     protected function halt(bool $shouldRollbackDatabaseTransaction = false): void
     {
         throw (new Halt)->rollBackDatabaseTransaction($shouldRollbackDatabaseTransaction);
-    }
-
-    protected function callHook(string $hook): void
-    {
-        if (! method_exists($this, $hook)) {
-            return;
-        }
-
-        $this->{$hook}();
     }
 
     public static function stickyFormActions(bool $condition = true): void

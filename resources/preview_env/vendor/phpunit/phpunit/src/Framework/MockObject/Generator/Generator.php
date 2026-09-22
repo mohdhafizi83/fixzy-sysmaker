@@ -88,18 +88,7 @@ final class Generator
     /**
      * @var array<non-empty-string, true>
      */
-    private const EXCLUDED_METHOD_NAMES = [
-        '__CLASS__'       => true,
-        '__DIR__'         => true,
-        '__FILE__'        => true,
-        '__FUNCTION__'    => true,
-        '__LINE__'        => true,
-        '__METHOD__'      => true,
-        '__NAMESPACE__'   => true,
-        '__TRAIT__'       => true,
-        '__clone'         => true,
-        '__halt_compiler' => true,
-    ];
+    private static $excludedMethodNames = [];
 
     /**
      * @var array<non-empty-string, MockClass>
@@ -1014,7 +1003,27 @@ final class Generator
 
     private function isMethodNameExcluded(string $name): bool
     {
-        return isset(self::EXCLUDED_METHOD_NAMES[$name]);
+        if (self::$excludedMethodNames === []) {
+            self::$excludedMethodNames = [
+                '__CLASS__'       => true,
+                '__DIR__'         => true,
+                '__FILE__'        => true,
+                '__FUNCTION__'    => true,
+                '__LINE__'        => true,
+                '__METHOD__'      => true,
+                '__NAMESPACE__'   => true,
+                '__TRAIT__'       => true,
+                '__clone'         => true,
+                '__halt_compiler' => true,
+            ];
+
+            if (version_compare(PHP_VERSION, '8.5', '>=')) {
+                self::$excludedMethodNames['__sleep']  = true;
+                self::$excludedMethodNames['__wakeup'] = true;
+            }
+        }
+
+        return isset(self::$excludedMethodNames[$name]);
     }
 
     /**
@@ -1246,8 +1255,9 @@ final class Generator
                 continue;
             }
 
-            $hasGetHook = false;
-            $hasSetHook = false;
+            $hasGetHook                 = false;
+            $hasSetHook                 = false;
+            $setHookMethodParameterType = null;
 
             if ($property->hasHook(PropertyHookType::Get) &&
                 !$property->getHook(PropertyHookType::Get)->isFinal()) {
@@ -1256,7 +1266,8 @@ final class Generator
 
             if ($property->hasHook(PropertyHookType::Set) &&
                 !$property->getHook(PropertyHookType::Set)->isFinal()) {
-                $hasSetHook = true;
+                $hasSetHook                 = true;
+                $setHookMethodParameterType = $mapper->fromParameterTypes($property->getHook(PropertyHookType::Set))[0]->type();
             }
 
             if (!$hasGetHook && !$hasSetHook) {
@@ -1268,6 +1279,7 @@ final class Generator
                 $mapper->fromPropertyType($property),
                 $hasGetHook,
                 $hasSetHook,
+                $setHookMethodParameterType,
             );
         }
 

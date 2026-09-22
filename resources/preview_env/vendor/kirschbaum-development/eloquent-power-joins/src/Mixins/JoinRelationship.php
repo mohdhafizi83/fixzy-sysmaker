@@ -107,9 +107,21 @@ class JoinRelationship
             JoinsHelper::ensureModelIsUniqueToQuery($this);
             JoinsHelper::clearCacheBeforeQuery($this);
 
-            if (is_null($this->getSelect())) {
-                $this->select(sprintf('%s.*', $this->getModel()->getTable()));
+            // Check if the main table has an alias (e.g., "posts as p") and set it as the main table or alias if it does.
+            $fromClause = $this->getQuery()->from;
+            $mainTableOrAlias = $this->getModel()->getTable();
+            if ($fromClause && is_string($fromClause) && preg_match('/^.+\s+as\s+["\'\`]?(.+?)["\'\`]?$/i', $fromClause, $matches)) {
+                // Register the alias for the main model so joins use it
+                $mainTableOrAlias = $matches[1];
+                StaticCache::setTableAliasForModel($this->getModel(), $mainTableOrAlias);
             }
+
+            $defaultSelect = sprintf('%s.*', $mainTableOrAlias);
+            $this->getQuery()->beforeQuery(function ($queryBuilder) use ($defaultSelect) {
+                if (is_null($queryBuilder->columns) || $queryBuilder->columns === ['*']) {
+                    $queryBuilder->columns = [$defaultSelect];
+                }
+            });
 
             if (Str::contains($relationName, '.')) {
                 $this->joinNestedRelationship($relationName, $callback, $joinType, $useAlias, $disableExtraConditions, $morphable);
@@ -159,7 +171,6 @@ class JoinRelationship
             }
 
             $joinHelper->markRelationshipAsAlreadyJoined($this->getModel(), $relationJoinCache);
-            StaticCache::clear();
 
             $relation->performJoinForEloquentPowerJoins(
                 builder: $this,
@@ -169,6 +180,11 @@ class JoinRelationship
                 disableExtraConditions: $disableExtraConditions,
                 morphable: $morphable,
             );
+
+            // Clear only the related model's alias from cache after join is performed
+            if ($useAlias) {
+                unset(StaticCache::$powerJoinAliasesCache[spl_object_id($relation->getModel())]);
+            }
 
             return $this;
         };
@@ -386,6 +402,10 @@ class JoinRelationship
             }
 
             if ($aggregation) {
+                if (is_null($this->getSelect())) {
+                    $this->select(sprintf('%s.*', $this->getModel()->getTable()));
+                }
+
                 $aliasName = sprintf(
                     '%s_%s_%s',
                     $table,
@@ -517,9 +537,12 @@ class JoinRelationship
     public function powerJoinHas(): Closure
     {
         return function (string $relation, string $operator = '>=', int $count = 1, $boolean = 'and', Closure|array|string|null $callback = null, ?string $morphable = null): static {
-            if (is_null($this->getSelect())) {
-                $this->select(sprintf('%s.*', $this->getModel()->getTable()));
-            }
+            $defaultSelect = sprintf('%s.*', $this->getModel()->getTable());
+            $this->getQuery()->beforeQuery(function ($queryBuilder) use ($defaultSelect) {
+                if (is_null($queryBuilder->columns) || $queryBuilder->columns === ['*']) {
+                    $queryBuilder->columns = [$defaultSelect];
+                }
+            });
 
             if (is_null($this->getGroupBy())) {
                 $this->groupBy($this->getModel()->getQualifiedKeyName());

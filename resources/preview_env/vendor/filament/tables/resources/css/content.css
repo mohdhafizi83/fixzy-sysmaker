@@ -13,11 +13,17 @@
         }
     }
 
+    &:not(.fi-ta-ctn-with-footer .fi-ta-content-ctn) {
+        @apply rounded-b-xl;
+    }
+
     &:not(.fi-ta-ctn-with-header .fi-ta-content-ctn) {
         @apply border-t-0;
     }
 
     & .fi-ta-content {
+        @apply grid;
+
         &.fi-ta-content-grid {
             @apply gap-4 p-4 sm:px-6;
 
@@ -72,7 +78,7 @@
         }
 
         &:not(.fi-ta-content-grid) {
-            @apply gap-y-px bg-gray-200 dark:bg-white/5;
+            @apply divide-y divide-gray-200 dark:divide-white/10;
 
             & .fi-ta-record {
                 &.fi-clickable {
@@ -208,6 +214,35 @@
                 & .fi-ta-record-content {
                     @apply block w-full;
 
+                    & .fi-ta-col {
+                        @apply flex justify-start text-start disabled:pointer-events-none;
+
+                        &.fi-growable {
+                            @apply w-full;
+                        }
+
+                        &.fi-align-center {
+                            @apply justify-center text-center;
+                        }
+
+                        &.fi-align-end {
+                            @apply justify-end text-end;
+                        }
+
+                        &.fi-align-left {
+                            @apply justify-start text-left;
+                        }
+
+                        &.fi-align-right {
+                            @apply justify-end text-right;
+                        }
+
+                        &.fi-align-justify,
+                        &.fi-align-between {
+                            @apply justify-between text-justify;
+                        }
+                    }
+
                     &.fi-collapsible {
                         @apply mt-3;
                     }
@@ -254,35 +289,6 @@
 
                     & .\32xl\:fi-visible {
                         @apply hidden 2xl:block;
-                    }
-
-                    & .fi-ta-col {
-                        @apply flex justify-start text-start disabled:pointer-events-none;
-
-                        &.fi-growable {
-                            @apply w-full;
-                        }
-
-                        &.fi-align-center {
-                            @apply justify-center text-center;
-                        }
-
-                        &.fi-align-end {
-                            @apply justify-end text-end;
-                        }
-
-                        &.fi-align-left {
-                            @apply justify-start text-left;
-                        }
-
-                        &.fi-align-right {
-                            @apply justify-end text-right;
-                        }
-
-                        &.fi-align-justify,
-                        &.fi-align-between {
-                            @apply justify-between text-justify;
-                        }
                     }
                 }
             }

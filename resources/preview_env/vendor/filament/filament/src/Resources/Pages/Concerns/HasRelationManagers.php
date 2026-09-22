@@ -12,6 +12,7 @@ use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Livewire;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Arr;
 use Livewire\Attributes\Url;
 
@@ -19,6 +20,11 @@ trait HasRelationManagers
 {
     #[Url(as: 'relation')]
     public ?string $activeRelationManager = null;
+
+    /**
+     * @var array<class-string<RelationManager> | RelationGroup | RelationManagerConfiguration> | null
+     */
+    protected ?array $cachedRelationManagers = null;
 
     /**
      * @return array<class-string<RelationManager> | RelationGroup | RelationManagerConfiguration>
@@ -31,12 +37,20 @@ trait HasRelationManagers
     /**
      * @return array<class-string<RelationManager> | RelationGroup | RelationManagerConfiguration>
      */
-    public function getRelationManagers(): array
+    public function getCachedRelationManagers(): array
     {
         if (! $this->hasRecord()) {
             return [];
         }
 
+        return $this->cachedRelationManagers ??= $this->getRelationManagers();
+    }
+
+    /**
+     * @return array<class-string<RelationManager> | RelationGroup | RelationManagerConfiguration>
+     */
+    public function getRelationManagers(): array
+    {
         $managers = $this->getAllRelationManagers();
 
         return array_filter(
@@ -66,9 +80,9 @@ trait HasRelationManagers
 
     public function renderingHasRelationManagers(): void
     {
-        $managers = $this->getRelationManagers();
+        $managers = $this->getCachedRelationManagers();
 
-        if (array_key_exists($this->activeRelationManager, $managers)) {
+        if (array_key_exists($this->activeRelationManager ?? '', $managers)) {
             return;
         }
 
@@ -95,7 +109,7 @@ trait HasRelationManagers
         return null;
     }
 
-    public function getContentTabIcon(): string | BackedEnum | null
+    public function getContentTabIcon(): string | BackedEnum | Htmlable | null
     {
         return null;
     }
@@ -107,7 +121,7 @@ trait HasRelationManagers
 
     public function getRelationManagersContentComponent(): Component
     {
-        $managers = $this->getRelationManagers();
+        $managers = $this->getCachedRelationManagers();
         $hasCombinedRelationManagerTabsWithContent = $this->hasCombinedRelationManagerTabsWithContent();
         $ownerRecord = $this->getRecord();
 
@@ -122,8 +136,8 @@ trait HasRelationManagers
 
             if ($hasCombinedRelationManagerTabsWithContent) {
                 match ($this->getContentTabPosition()) {
-                    ContentTabPosition::After => $tabs = array_merge($tabs, [null => null]),
-                    default => $tabs = array_replace([null => null], $tabs),
+                    ContentTabPosition::After => $tabs = array_merge($tabs, ['' => null]),
+                    default => $tabs = array_replace(['' => null], $tabs),
                 };
             }
 
@@ -161,6 +175,7 @@ trait HasRelationManagers
                 ->all();
 
             return Tabs::make()
+                ->key('relationManagerTabs')
                 ->livewireProperty('activeRelationManager')
                 ->contained(false)
                 ->tabs($tabs);

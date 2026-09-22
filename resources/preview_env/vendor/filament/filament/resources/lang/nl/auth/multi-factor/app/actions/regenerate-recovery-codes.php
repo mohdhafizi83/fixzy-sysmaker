@@ -22,13 +22,15 @@ return [
 
                     'invalid' => 'De ingevoerde code is ongeldig.',
 
+                    'rate_limited' => 'Te veel pogingen. Probeer het later opnieuw.',
+
                 ],
 
             ],
 
             'password' => [
 
-                'label' => 'Of voer je huidige wachtwoord in',
+                'label' => 'Voer je huidige wachtwoord in',
 
                 'validation_attribute' => 'wachtwoord',
 

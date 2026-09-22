@@ -2,35 +2,28 @@
 
 namespace PragmaRX\Google2FAQRCode\QRCode;
 
-use Illuminate\Support\Str;
+use chillerlan\QRCode\Common\EccLevel;
+use chillerlan\QRCode\Common\Version;
+use chillerlan\QRCode\Output\QRMarkupSVG;
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
-use BaconQrCode\Writer as BaconQrCodeWriter;
 
 class Chillerlan implements QRCodeServiceContract
 {
+    /**
+     * @var array<string, mixed>
+     */
     protected $options = [];
 
-    /**
-     * Get QRCode options.
-     *
-     * @param int $size
-     * @return \chillerlan\QRCode\QROptions
-     */
-    protected function getOptions()
+    protected function getOptions(): QROptions
     {
-        $options = new QROptions($this->buildOptionsArray());
-
-        return $options;
+        return new QROptions($this->buildOptionsArray());
     }
 
     /**
-     * Set QRCode options.
-     *
-     * @param array $options
-     * @return self
+     * @param array<string, mixed> $options
      */
-    protected function setOptions($options)
+    public function setOptions(array $options): self
     {
         $this->options = $options;
 
@@ -38,20 +31,23 @@ class Chillerlan implements QRCodeServiceContract
     }
 
     /**
-     * Build the options array
-     *
-     * @param null $size
-     * @return array
+     * @return array<string, mixed>
      */
-    public function buildOptionsArray($size = null)
+    public function buildOptionsArray(?int $size = null): array
     {
         $defaults = [
-            'version' => QRCode::VERSION_AUTO,
-            'outputType' => QRCode::OUTPUT_MARKUP_SVG,
-            'eccLevel' => QRCode::ECC_L,
+            'version' => Version::AUTO,
+            'outputInterface' => QRMarkupSVG::class,
+            'eccLevel' => EccLevel::L,
         ];
 
-        return array_merge($defaults, $this->options);
+        $options = array_merge($defaults, $this->options);
+
+        // Let this package handle the base64 wrap so output is deterministic
+        // regardless of chillerlan's per-version defaults. See PR #12.
+        $options['outputBase64'] = false;
+
+        return $options;
     }
 
     /**
@@ -67,14 +63,15 @@ class Chillerlan implements QRCodeServiceContract
     {
         $renderer = new QRCode($this->getOptions());
 
-        $header = "data:image/svg+xml;base64,";
+        $svg = $renderer->render($string);
 
-        $image = $renderer->render($string);
-
-        if (strncmp($image, $header, strlen($header)) === 0) {
-            return $image;
+        // chillerlan's render() is typed as mixed in its source, but with
+        // outputInterface=QRMarkupSVG we always get a string back. Guard
+        // here so PHPStan can narrow the type cleanly.
+        if (!is_string($svg)) {
+            throw new \RuntimeException('chillerlan returned a non-string SVG payload.');
         }
 
-        return $header . base64_encode($image);
+        return 'data:image/svg+xml;base64,' . base64_encode($svg);
     }
 }

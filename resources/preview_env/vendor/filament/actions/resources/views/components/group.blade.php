@@ -3,6 +3,7 @@
     'badge' => null,
     'badgeColor' => null,
     'button' => false,
+    'buttonGroup' => null,
     'color' => null,
     'dropdownMaxHeight' => null,
     'dropdownOffset' => null,
@@ -21,7 +22,9 @@
 ])
 
 @php
-    $group ??= \Filament\Actions\ActionGroup::make($actions)
+    use Filament\Actions\ActionGroup;
+
+    $group ??= ActionGroup::make($actions)
         ->badgeColor($badgeColor)
         ->color($color)
         ->dropdownMaxHeight($dropdownMaxHeight)
@@ -45,6 +48,10 @@
             ->button()
             ->iconPosition($attributes->get('iconPosition') ?? $attributes->get('icon-position'))
             ->outlined($attributes->get('outlined') ?? false);
+    }
+
+    if ($buttonGroup) {
+        $group->buttonGroup();
     }
 
     if ($iconButton) {

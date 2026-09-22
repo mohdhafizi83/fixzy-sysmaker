@@ -18,8 +18,11 @@ use Filament\Auth\Http\Responses\PasswordResetResponse;
 use Filament\Auth\Http\Responses\RegistrationResponse;
 use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
+use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Http\Middleware\IdentifyPageConfiguration;
+use Filament\Http\Middleware\IdentifyResourceConfiguration;
 use Filament\Http\Middleware\IdentifyTenant;
 use Filament\Http\Middleware\SetUpPanel;
 use Filament\Navigation\NavigationManager;
@@ -82,6 +85,8 @@ class FilamentServiceProvider extends PackageServiceProvider
         $this->app->bind(RegistrationResponseContract::class, RegistrationResponse::class);
 
         app(Router::class)->aliasMiddleware('panel', SetUpPanel::class);
+        app(Router::class)->aliasMiddleware('resource-configuration', IdentifyResourceConfiguration::class);
+        app(Router::class)->aliasMiddleware('page-configuration', IdentifyPageConfiguration::class);
     }
 
     public function packageBooted(): void
@@ -100,8 +105,12 @@ class FilamentServiceProvider extends PackageServiceProvider
 
         Livewire::addPersistentMiddleware([
             Authenticate::class,
+            AuthenticateSession::class,
+            \Illuminate\Session\Middleware\AuthenticateSession::class,
             DisableBladeIconComponents::class,
             DispatchServingFilamentEvent::class,
+            IdentifyPageConfiguration::class,
+            IdentifyResourceConfiguration::class,
             IdentifyTenant::class,
             SetUpPanel::class,
         ]);

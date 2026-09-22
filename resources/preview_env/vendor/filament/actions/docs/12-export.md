@@ -2,27 +2,21 @@
 title: Export action
 ---
 import Aside from "@components/Aside.astro"
+import AutoScreenshot from "@components/AutoScreenshot.astro"
 import UtilityInjection from "@components/UtilityInjection.astro"
 
 ## Introduction
 
-Filament includes an action that is able to export rows to a CSV or XLSX file. When the trigger button is clicked, a modal asks for the columns that they want to export, and what they should be labeled. This feature uses [job batches](https://laravel.com/docs/queues#job-batching) and [database notifications](../../notifications/database-notifications), so you need to publish those migrations from Laravel. Also, you need to publish the migrations for tables that Filament uses to store information about exports:
+Filament includes an action that is able to export rows to a CSV or XLSX file. When the trigger button is clicked, a modal asks for the columns that they want to export, and what they should be labeled. This feature uses [job batches](https://laravel.com/docs/queues#job-batching) and [database notifications](../notifications/database-notifications), so you need to publish those migrations from Laravel. Also, you need to publish the migrations for tables that Filament uses to store information about exports:
 
 ```bash
-# Laravel 11 and higher
 php artisan make:queue-batches-table
 php artisan make:notifications-table
-
-# Laravel 10
-php artisan queue:batches-table
-php artisan notifications:table
-```
-
-```bash
-# All apps
 php artisan vendor:publish --tag=filament-actions-migrations
 php artisan migrate
 ```
+
+If you'd like to receive export notifications in a panel, you can enable them in the [panel configuration](../notifications/database-notifications#enabling-database-notifications-in-a-panel).
 
 <Aside variant="info">
     If you're using PostgreSQL, make sure that the `data` column in the notifications migration is using `json()`: `$table->json('data')`.
@@ -41,6 +35,8 @@ use Filament\Actions\ExportAction;
 ExportAction::make()
     ->exporter(ProductExporter::class)
 ```
+
+<AutoScreenshot name="actions/export-action/modal" alt="Export action modal" version="5.x" />
 
 If you want to add this action to the header of a table, you may do so like this:
 
@@ -136,6 +132,49 @@ ExportColumn::make('description')
     ->enabledByDefault(false)
 ```
 
+You can use the `enableVisibleTableColumnsByDefault()` method on the `ExportAction` to enable only the columns that are currently visible in the table by default. Columns that use `enabledByDefault(false)` will also be disabled by default:
+
+```php
+use App\Filament\Exports\ProductExporter;
+use Filament\Actions\ExportAction;
+
+ExportAction::make()
+    ->exporter(ProductExporter::class)
+    ->enableVisibleTableColumnsByDefault()
+```
+
+### Hiding an export column
+
+You may hide a column entirely by using the `hidden()` or `visible()` method. A hidden column is not shown in the column selection form, and is never written to the exported file:
+
+```php
+use Filament\Actions\Exports\ExportColumn;
+
+ExportColumn::make('sku')
+    ->hidden()
+
+ExportColumn::make('sku')
+    ->visible()
+```
+
+To hide a column conditionally, you may pass a boolean value to either method:
+
+```php
+use Filament\Actions\Exports\ExportColumn;
+
+ExportColumn::make('cost_price')
+    ->hidden(fn (): bool => ! auth()->user()->isAdmin())
+
+ExportColumn::make('cost_price')
+    ->visible(fn (): bool => auth()->user()->isAdmin())
+```
+
+<Aside variant="info">
+    Unlike table columns, export columns are resolved without a record, so a `hidden()` or `visible()` closure cannot depend on row data. Use it for schema-level conditions such as the authenticated user, feature flags, or configuration.
+
+    To keep a column selectable but unchecked by default instead of hiding it entirely, use [`enabledByDefault(false)`](#configuring-the-default-column-selection).
+</Aside>
+
 ### Configuring the column selection form layout
 
 By default, the column selection form uses a single column layout. You can change this using the `columnMappingColumns()` method, passing the number of columns you would like to use for the layout on large screens:
@@ -180,7 +219,7 @@ ExportColumn::make('amount_including_vat')
     })
 ```
 
-<UtilityInjection set="exportColumns" version="4.x">As well as `$record`, the `state()` function can inject various utilities as parameters.</UtilityInjection>
+<UtilityInjection set="exportColumns" version="5.x">As well as `$record`, the `state()` function can inject various utilities as parameters.</UtilityInjection>
 
 ### Formatting the value of an export column
 
@@ -193,7 +232,7 @@ ExportColumn::make('status')
     ->formatStateUsing(fn (string $state): string => __("statuses.{$state}"))
 ```
 
-<UtilityInjection set="exportColumns" version="4.x" extras="State;;mixed;;$state;;The state to format.">As well as `$state`, the `formatStateUsing()` function can inject various utilities as parameters.</UtilityInjection>
+<UtilityInjection set="exportColumns" version="5.x" extras="State;;mixed;;$state;;The state to format.">As well as `$state`, the `formatStateUsing()` function can inject various utilities as parameters.</UtilityInjection>
 
 If there are [multiple values](#exporting-multiple-values-in-a-cell) in the column, the function will be called for each value.
 
@@ -208,7 +247,7 @@ ExportColumn::make('description')
     ->limit(50)
 ```
 
-<UtilityInjection set="exportColumns" version="4.x">As well as allowing a static value, the `limit()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="exportColumns" version="5.x">As well as allowing a static value, the `limit()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 #### Limiting word count
 
@@ -221,7 +260,7 @@ ExportColumn::make('description')
     ->words(10)
 ```
 
-<UtilityInjection set="exportColumns" version="4.x">As well as allowing a static value, the `words()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="exportColumns" version="5.x">As well as allowing a static value, the `words()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 #### Adding a prefix or suffix
 
@@ -235,7 +274,7 @@ ExportColumn::make('domain')
     ->suffix('.com')
 ```
 
-<UtilityInjection set="exportColumns" version="4.x">As well as allowing static values, the `prefix()` and `suffix()` methods also accept functions to dynamically calculate them. You can inject various utilities into the functions as parameters.</UtilityInjection>
+<UtilityInjection set="exportColumns" version="5.x">As well as allowing static values, the `prefix()` and `suffix()` methods also accept functions to dynamically calculate them. You can inject various utilities into the functions as parameters.</UtilityInjection>
 
 ### Exporting multiple values in a cell
 
@@ -296,7 +335,7 @@ ExportColumn::make('users_exists')
 
 In this example, `users` is the name of the relationship to check for existence. The name of the column must be `users_exists`, as this is the convention that [Laravel uses](https://laravel.com/docs/eloquent-relationships#other-aggregate-functions) for storing the result.
 
-If you'd like to scope the relationship before checking existance, you can pass an array to the method, where the key is the relationship name and the value is the function to scope the Eloquent query with:
+If you'd like to scope the relationship before checking existence, you can pass an array to the method, where the key is the relationship name and the value is the function to scope the Eloquent query with:
 
 ```php
 use Filament\Actions\Exports\ExportColumn;
@@ -335,7 +374,7 @@ ExportColumn::make('users_avg_age')
 
 ## Configuring the export formats
 
-By default, the export action will allow the user to choose between both CSV and XLSX formats. You can use the `ExportFormat` enum to customize this, by passing an array of formats to the `formats()` method on the action:
+By default, the export action will generate both CSV and XLSX formats and allow user to choose between them in the notification. You can use the `ExportFormat` enum to customize this, by passing an array of formats to the `formats()` method on the action:
 
 ```php
 use App\Filament\Exports\ProductExporter;
@@ -370,6 +409,33 @@ public function getFormats(): array
     ];
 }
 ```
+
+### Customizing how export files are downloaded
+
+By default, each export format uses its own downloader to return a streamed response. You may customize the downloader for an exporter by overriding the `getDownloader()` method:
+
+```php
+use App\Filament\Exports\Downloaders\CustomCsvDownloader;
+use App\Filament\Exports\Downloaders\CustomXlsxDownloader;
+use Filament\Actions\Exports\Downloaders\Contracts\Downloader;
+use Filament\Actions\Exports\Enums\Contracts\ExportFormat as ExportFormatInterface;
+use Filament\Actions\Exports\Enums\ExportFormat;
+
+public static function getDownloader(ExportFormatInterface $format): Downloader
+{
+    return match ($format) {
+        ExportFormat::Csv => app(CustomCsvDownloader::class),
+        ExportFormat::Xlsx => app(CustomXlsxDownloader::class),
+        default => $format->getDownloader(),
+    };
+}
+```
+
+A downloader is an invokable class that accepts the `Export` model and returns a Symfony `Response`. This response may stream a download, return a file, or redirect the user to a temporary URL on a remote filesystem.
+
+Filament's built-in download route only resolves the `ExportFormat::Csv` and `ExportFormat::Xlsx` formats. If you use a custom `ExportFormatInterface` implementation, its `getDownloadNotificationAction()` method must link to a route that handles the custom format.
+
+If your custom downloader only changes how the generated content is delivered, you may use `CsvExportContentGenerator` to iterate over the generated CSV chunks, or `XlsxExportContentGenerator` to write the generated rows to an OpenSpout `Writer`. Filament resolves both classes from the container so that you can reuse the built-in content generation without duplicating it. You must open the `Writer` before passing it to `XlsxExportContentGenerator` and close it afterwards. `XlsxExportContentGenerator` mirrors Filament's on-demand XLSX download and does not apply the writer options, styles, custom row creation, or writer lifecycle hooks that are used when the queued XLSX file is generated.
 
 ## Modifying the export query
 
@@ -418,7 +484,7 @@ public static function modifyQuery(Builder $query): Builder
 
 ### Customizing the storage disk
 
-By default, exported files will be uploaded to the storage disk defined in the [configuration file](../../installation#publishing-configuration), which is `public` by default. You can set the `FILAMENT_FILESYSTEM_DISK` environment variable to change this.
+By default, exported files will be uploaded to the storage disk defined in the [configuration file](../introduction/installation#publishing-configuration), which is `public` by default. You can set the `FILESYSTEM_DISK` environment variable to change this.
 
 While using the `public` disk a good default for many parts of Filament, using it for exports would result in exported files being stored in a public location. As such, if the default filesystem disk is `public` and a `local` disk exists in your `config/filesystems.php`, Filament will use the `local` disk for exports instead. If you override the disk to be `public` for an `ExportAction` or inside an exporter class, Filament will use that.
 
@@ -455,7 +521,7 @@ Export files that are created are the developer's responsibility to delete if th
 
 ### Configuring the export file names
 
-By default, exported files will have a name generated based on the ID and type of the export. You can also use the `fileName()` method on the action to customize the file name:
+By default, exported files are given a name generated based on the export's ID and type. You can customize the file name by using the `fileName()` method on the action:
 
 ```php
 use Filament\Actions\ExportAction;
@@ -463,17 +529,17 @@ use Filament\Actions\Exports\Models\Export;
 
 ExportAction::make()
     ->exporter(ProductExporter::class)
-    ->fileName(fn (Export $export): string => "products-{$export->getKey()}.csv")
+    ->fileName(fn (Export $export): string => "products-{$export->getKey()}")
 ```
 
-Alternatively, you can override the `getFileName()` method on the exporter class, returning a string:
+Alternatively, you can override the `getFileName()` method on the exporter class and return a custom string:
 
 ```php
 use Filament\Actions\Exports\Models\Export;
 
 public function getFileName(Export $export): string
 {
-    return "products-{$export->getKey()}.csv";
+    return "products-{$export->getKey()}";
 }
 ```
 
@@ -507,7 +573,7 @@ ExportAction::make()
     ])
 ```
 
-<UtilityInjection set="actions" version="4.x">As well as allowing a static value, the `options()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="actions" version="5.x">As well as allowing a static value, the `options()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 Now, you can access the data from these options inside the exporter class, by injecting the `$options` argument into any closure function. For example, you might want to use it inside `formatStateUsing()` to [format a column's value](#formatting-the-value-of-an-export-column):
 
@@ -594,7 +660,7 @@ ExportAction::make()
     ->chunkSize(250)
 ```
 
-<UtilityInjection set="actions" version="4.x">As well as allowing a static value, the `chunkSize()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="actions" version="5.x">As well as allowing a static value, the `chunkSize()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 <Aside variant="tip">
     If you are encountering memory or timeout issues when importing large CSV files, you may wish to reduce the chunk size.
@@ -611,7 +677,7 @@ public static function getCsvDelimiter(): string
 }
 ```
 
-<UtilityInjection set="actions" version="4.x">As well as allowing a static value, the `csvDelimiter()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="actions" version="5.x">As well as allowing a static value, the `csvDelimiter()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 You can only specify a single character, otherwise an exception will be thrown.
 
@@ -726,7 +792,29 @@ public function getXlsxWriterOptions(): ?Options
 }
 ```
 
-If you want to customize the XLSX writer before it is closed, you can override the `configureXlsxWriterBeforeClosing()` method on the exporter class. This method receives the `Writer` instance as a parameter, and you can modify it before it is closed:
+If you want to customize the XLSX writer immediately after it is opened, before any rows have been written, you can override the `configureXlsxWriterAfterOpen()` method on the exporter class. This method receives the `Writer` instance as a parameter, and you can modify it before the header and data rows are written. This is useful for adding custom rows, such as a title or sub-header, above the exported table:
+
+```php
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Common\Entity\Style\Style;
+use OpenSpout\Writer\XLSX\Writer;
+
+public function configureXlsxWriterAfterOpen(Writer $writer): Writer
+{
+    $writer->addRow(Row::fromValues(
+        ['This is a custom header added after opening the XLSX writer.'],
+        (new Style())->setShouldWrapText(false),
+    ));
+
+    return $writer;
+}
+```
+
+<Aside variant="warning">
+    Any rows you add here appear above the header row, shifting the exported table down. If you also use `configureXlsxWriterBeforeClose()` to freeze rows, remember to account for the extra rows in `setFreezeRow()`.
+</Aside>
+
+If you want to customize the XLSX writer before it is closed, you can override the `configureXlsxWriterBeforeClose()` method on the exporter class. This method receives the `Writer` instance as a parameter, and you can modify it before it is closed:
 
 ```php
 use OpenSpout\Writer\XLSX\Entity\SheetView;
@@ -745,6 +833,49 @@ public function configureXlsxWriterBeforeClose(Writer $writer): Writer
     return $writer;
 }
 ```
+
+## Customizing the completion notification
+
+When an export finishes, Filament sends a notification to the user who started it. You can customize the title and body of that notification by overriding `getCompletedNotificationTitle()` and `getCompletedNotificationBody()` on your exporter:
+
+```php
+use Filament\Actions\Exports\Models\Export;
+
+public static function getCompletedNotificationTitle(Export $export): string
+{
+    return 'Your product export is ready';
+}
+
+public static function getCompletedNotificationBody(Export $export): string
+{
+    return $export->successful_rows . ' products were exported.';
+}
+```
+
+For anything beyond the title and body — for example, changing the notification color, adding extra actions, or replacing the icon — override `modifyCompletedNotification()`. You can either mutate the `Notification` passed in and return it, or build and return a completely new one:
+
+```php
+use Filament\Actions\Action;
+use Filament\Actions\Exports\Models\Export;
+use Filament\Notifications\Notification;
+
+public static function modifyCompletedNotification(Notification $notification, Export $export): Notification
+{
+    $notification->icon('heroicon-o-shopping-bag');
+
+    if ($export->getOptions()['notifyTeam'] ?? false) {
+        $notification->actions([
+            ...$notification->getActions(),
+            Action::make('shareWithTeam')
+                ->url(route('exports.share', $export)),
+        ]);
+    }
+
+    return $notification;
+}
+```
+
+The `Export` model exposes the column mapping and options the user selected via `$export->getColumnMap()` and `$export->getOptions()`, so you can tailor the notification based on what the user exported.
 
 ## Customizing the export job
 
@@ -885,3 +1016,56 @@ public function view(User $user, Export $export): bool
     return $export->user()->is($user);
 }
 ```
+
+## Security
+
+### Per-record authorization
+
+The export system does not perform per-record authorization checks. When an export is triggered, all records matching the table query (or the model's full dataset, if used outside a table) are included in the export without consulting your application's [Laravel policies](https://laravel.com/docs/authorization#creating-policies). This means that if a user is allowed to trigger an export, they may receive records they would not normally be authorized to view through your application's UI.
+
+If you need to restrict which records are exported, you should scope the query using the [`modifyQueryUsing()` method](#modifying-the-eloquent-query):
+
+```php
+use Illuminate\Database\Eloquent\Builder;
+
+ExportAction::make()
+    ->exporter(ProductExporter::class)
+    ->modifyQueryUsing(fn (Builder $query) => $query->whereBelongsTo(auth()->user()))
+```
+
+You could also apply [global scopes](https://laravel.com/docs/eloquent#global-scopes) to your model to ensure that only authorized records are ever queried.
+
+<Aside variant="danger">
+    If your application has per-record visibility rules, you should scope the export query to ensure users only receive records they are authorized to view.
+</Aside>
+
+### CSV formula injection
+
+Filament's export system writes data to CSV and XLSX files exactly as it is stored in the database, without any transformation. This means that if your database contains values beginning with characters like `=`, `+`, `-`, or `@`, they will appear unchanged in the exported file. When opened in spreadsheet software such as Microsoft Excel or Google Sheets, these values may be interpreted as formulas, which could pose a security risk if your data includes untrusted or user-submitted content. You should ensure that your users are aware of this risk, or sanitize the data before export using the [`formatStateUsing()` method](export#formatting-the-value-of-an-export-column) on each column, for example by prefixing values with a single quote (`'`) to prevent formula interpretation.
+
+Alternatively, you may opt in to Filament's built-in protection. When enabled on a column, any value that begins with a formula-triggering character (`=`, `+`, `-`, `@`, a tab, or a carriage return) is automatically prefixed with a single quote (`'`) so that spreadsheet software treats it as plain text. Enable it using the `preventFormulaInjection()` method on the column:
+
+```php
+use Filament\Actions\Exports\ExportColumn;
+
+ExportColumn::make('description')
+    ->preventFormulaInjection()
+```
+
+If you would like to enable this protection for every export column across your application, you can use the `configureUsing()` method inside the `boot()` method of a service provider. Since this is applied to all columns, you can opt an individual column back out by passing `false` to `preventFormulaInjection()`:
+
+```php
+use Filament\Actions\Exports\ExportColumn;
+
+ExportColumn::configureUsing(function (ExportColumn $column): void {
+    $column->preventFormulaInjection();
+});
+
+// Opt a specific column back out:
+ExportColumn::make('temperature')
+    ->preventFormulaInjection(false)
+```
+
+<Aside variant="warning">
+    This protection is **opt in** and disabled by default, because prefixing a single quote alters legitimate data. For example, values such as `-5` or a phone number like `+44 1234 567890` are valid formula triggers and would be rewritten to `'-5` and `'+44 1234 567890`. Only enable it when you are exporting untrusted or user-submitted content, and make sure the transformation is acceptable for the columns you enable it on.
+</Aside>

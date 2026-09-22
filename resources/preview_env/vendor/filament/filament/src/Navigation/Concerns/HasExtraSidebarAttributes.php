@@ -3,6 +3,7 @@
 namespace Filament\Navigation\Concerns;
 
 use Closure;
+use Filament\Support\View\ComponentAttributeBag as FilamentComponentAttributeBag;
 use Illuminate\View\ComponentAttributeBag;
 
 trait HasExtraSidebarAttributes
@@ -17,7 +18,14 @@ trait HasExtraSidebarAttributes
      */
     public function extraSidebarAttributes(array | Closure $attributes, bool $merge = false): static
     {
+        // Security: Attribute values are not escaped when rendered. Never
+        // pass unsanitized user input as attribute names or values.
+
         if ($merge) {
+            if (($attributes instanceof Closure) && in_array($attributes, $this->extraSidebarAttributes, strict: true)) {
+                return $this;
+            }
+
             $this->extraSidebarAttributes[] = $attributes;
         } else {
             $this->extraSidebarAttributes = [$attributes];
@@ -31,7 +39,7 @@ trait HasExtraSidebarAttributes
      */
     public function getExtraSidebarAttributes(): array
     {
-        $temporaryAttributeBag = new ComponentAttributeBag;
+        $temporaryAttributeBag = new FilamentComponentAttributeBag;
 
         foreach ($this->extraSidebarAttributes as $extraSidebarAttributes) {
             $temporaryAttributeBag = $temporaryAttributeBag->merge($this->evaluate($extraSidebarAttributes), escape: false);
@@ -42,6 +50,6 @@ trait HasExtraSidebarAttributes
 
     public function getExtraSidebarAttributeBag(): ComponentAttributeBag
     {
-        return new ComponentAttributeBag($this->getExtraSidebarAttributes());
+        return new FilamentComponentAttributeBag($this->getExtraSidebarAttributes());
     }
 }

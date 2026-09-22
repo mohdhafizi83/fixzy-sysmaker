@@ -85,6 +85,12 @@ trait CanGenerateModelForms
 
             $type = $this->parseColumnType($column);
 
+            if (! $this->canGenerateSchemaComponentForColumnType($type)) {
+                $this->recordSkippedColumn($model, $column);
+
+                continue;
+            }
+
             $componentData = [];
 
             $componentData['type'] = match (true) {
@@ -198,6 +204,9 @@ trait CanGenerateModelForms
                     'cost',
                     'money',
                     'price',
+                ]) || str($componentName)->endsWith([
+                    '_cost',
+                    '_price',
                 ]) || $type['name'] === 'money') {
                     $componentData['prefix'] = ['$'];
                 }

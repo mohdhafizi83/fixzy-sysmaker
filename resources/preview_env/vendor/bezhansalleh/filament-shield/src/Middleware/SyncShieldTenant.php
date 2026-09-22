@@ -7,6 +7,7 @@ namespace BezhanSalleh\FilamentShield\Middleware;
 use Closure;
 use Filament\Facades\Filament;
 use Illuminate\Http\Request;
+use Spatie\Permission\PermissionRegistrar;
 use Symfony\Component\HttpFoundation\Response;
 
 class SyncShieldTenant
@@ -18,9 +19,18 @@ class SyncShieldTenant
      */
     public function handle(Request $request, Closure $next): Response
     {
+        if (Filament::hasTenancy() && $tenant = Filament::getTenant()) {
 
-        if (Filament::hasTenancy()) {
-            setPermissionsTeamId(Filament::getTenant());
+            setPermissionsTeamId($tenant->getKey());
+
+            if (auth()->hasUser()) {
+                auth()
+                    ->user()
+                    ->unsetRelation('roles')
+                    ->unsetRelation('permissions');
+            }
+
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
         }
 
         return $next($request);

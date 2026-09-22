@@ -10,14 +10,16 @@ class GenerateSignedUploadUrl
 {
     public function forLocal()
     {
-        return URL::temporarySignedRoute(
+        return $this->signedRoute(
             'livewire.upload-file', now()->addMinutes(FileUploadConfiguration::maxUploadTime())
         );
     }
 
     public function forS3($file, $visibility = 'private')
     {
-        $driver = FileUploadConfiguration::storage()->getDriver();
+        $storage = FileUploadConfiguration::storage();
+
+        $driver = $storage->getDriver();
 
         // Flysystem V2+ doesn't allow direct access to adapter, so we need to invade instead.
         $adapter = invade($driver)->adapter;
@@ -46,11 +48,26 @@ class GenerateSignedUploadUrl
             '+' . FileUploadConfiguration::maxUploadTime() . ' minutes'
         );
 
+        $uri = $signedRequest->getUri();
+
+        if (filled($url = $storage->getConfig()['temporary_url'] ?? null)) {
+            $uri = invade($storage)->replaceBaseUrl($uri, $url);
+        }
+
         return [
-            'path' => $fileHashName,
-            'url' => (string) $signedRequest->getUri(),
+            'path' => TemporaryUploadedFile::signPath($fileHashName),
+            'url' => (string) $uri,
             'headers' => $this->headers($signedRequest, $fileType),
         ];
+    }
+
+    // Signs relative so the scheme can't mismatch behind a proxy; re-absolutized
+    // for a normal-looking URL. Validate with `hasValidRelativeSignature()`.
+    public function signedRoute($name, $expiration, $parameters = [])
+    {
+        $relative = URL::temporarySignedRoute($name, $expiration, $parameters, false);
+
+        return URL::to($relative);
     }
 
     protected function headers($signedRequest, $fileType)

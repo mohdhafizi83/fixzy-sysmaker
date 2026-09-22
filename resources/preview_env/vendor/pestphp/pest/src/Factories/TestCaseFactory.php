@@ -17,6 +17,7 @@ use Pest\Factories\Concerns\HigherOrderable;
 use Pest\Support\Reflection;
 use Pest\Support\Str;
 use Pest\TestSuite;
+use PHPUnit\Framework\Attributes\TestDox;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -88,7 +89,8 @@ final class TestCaseFactory
             $filename = (string) preg_replace_callback('~^(?P<drive>[a-z]+:\\\)~i', static fn (array $match): string => strtolower($match['drive']), $filename);
         }
 
-        $filename = str_replace('\\\\', '\\', addslashes((string) realpath($filename)));
+        $realpath = (string) realpath($filename);
+        $filename = str_replace('\\\\', '\\', addslashes($realpath));
         $rootPath = TestSuite::getInstance()->rootPath;
         $relativePath = str_replace($rootPath.DIRECTORY_SEPARATOR, '', $filename);
 
@@ -135,13 +137,15 @@ final class TestCaseFactory
 
         $this->attributes = [
             new Attribute(
-                \PHPUnit\Framework\Attributes\TestDox::class,
+                TestDox::class,
                 [$this->filename],
             ),
             ...$this->attributes,
         ];
 
         $attributesCode = Attributes::code($this->attributes);
+
+        $filenameLiteral = var_export($realpath, true);
 
         $methodsCode = implode('', array_map(
             fn (TestCaseMethodFactory $methodFactory): string => $methodFactory->buildForEvaluation(),
@@ -160,7 +164,7 @@ final class TestCaseFactory
             final class $className extends $baseClass implements $hasPrintableTestCaseClassFQN {
                 $traitsCode
 
-                private static \$__filename = '$filename';
+                private static \$__filename = $filenameLiteral;
 
                 $methodsCode
             }

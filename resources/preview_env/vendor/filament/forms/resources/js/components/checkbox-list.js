@@ -6,6 +6,8 @@ export default function checkboxListFormComponent({ livewireId }) {
 
         search: '',
 
+        unsubscribeLivewireHook: null,
+
         visibleCheckboxListOptions: [],
 
         init() {
@@ -19,12 +21,11 @@ export default function checkboxListFormComponent({ livewireId }) {
                 this.checkIfAllCheckboxesAreChecked()
             })
 
-            Livewire.hook(
-                'commit',
-                ({ component, commit, succeed, fail, respond }) => {
-                    succeed(({ snapshot, effect }) => {
+            this.unsubscribeLivewireHook = Livewire.interceptMessage(
+                ({ message, onSuccess }) => {
+                    onSuccess(() => {
                         this.$nextTick(() => {
-                            if (component.id !== livewireId) {
+                            if (message.component.id !== livewireId) {
                                 return
                             }
 
@@ -72,6 +73,10 @@ export default function checkboxListFormComponent({ livewireId }) {
                     return
                 }
 
+                if (checkbox.checked === inverseAreAllCheckboxesChecked) {
+                    return
+                }
+
                 checkbox.checked = inverseAreAllCheckboxesChecked
                 checkbox.dispatchEvent(new Event('change'))
             })
@@ -103,6 +108,10 @@ export default function checkboxListFormComponent({ livewireId }) {
                         .includes(this.search.toLowerCase())
                 },
             )
+        },
+
+        destroy() {
+            this.unsubscribeLivewireHook?.()
         },
     }
 }

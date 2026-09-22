@@ -4,8 +4,8 @@ namespace Livewire\Features\SupportWireModelingNestedComponents;
 
 use Livewire\ComponentHook;
 use Livewire\Drawer\Utils;
+use Livewire\Exceptions\ModelableRootHasWireModelException;
 use function Livewire\on;
-use function Livewire\store;
 
 class SupportWireModelingNestedComponents extends ComponentHook
 {
@@ -19,8 +19,8 @@ class SupportWireModelingNestedComponents extends ComponentHook
         // with wire:model on it, and that child has already been mounted
         // in a previous request, capture the value being passed in so we
         // can later set the child's property if it exists in this request.
-        on('mount.stub', function ($tag, $id, $params, $parent, $key) {
-            $outer = collect($params)->first(function ($value, $key) {
+        on('mount.stub', function ($tag, $id, $params, $parent, $key, $slots, $attributes) {
+            $outer = collect($attributes)->first(function ($value, $key) {
                 return str($key)->startsWith('wire:model');
             });
 
@@ -38,8 +38,8 @@ class SupportWireModelingNestedComponents extends ComponentHook
         $directives = $memo['bindingsDirectives'];
 
         // Store the bindings for later dehydration...
-        store($this->component)->set('bindings', $bindings);
-        store($this->component)->set('bindings-directives', $directives);
+        $this->storeSet('bindings', $bindings);
+        $this->storeSet('bindings-directives', $directives);
 
         // If this child's parent already rendered its stub, retrieve
         // the memo'd value and set it.
@@ -48,7 +48,7 @@ class SupportWireModelingNestedComponents extends ComponentHook
         $outers = static::$outersByComponentId[$memo['id']];
 
         foreach ($bindings as $outer => $inner) {
-            store($this->component)->set('hasBeenSeeded', true);
+            $this->storeSet('hasBeenSeeded', true);
 
             $this->component->$inner = $outers[$outer];
         }
@@ -57,8 +57,8 @@ class SupportWireModelingNestedComponents extends ComponentHook
     public function render($view, $data)
     {
         return function ($html, $replaceHtml) {
-            $bindings = store($this->component)->get('bindings', false);
-            $directives = store($this->component)->get('bindings-directives', false);
+            $bindings = $this->storeGet('bindings', false);
+            $directives = $this->storeGet('bindings-directives', false);
 
             if (! $bindings) return;
 
@@ -69,6 +69,18 @@ class SupportWireModelingNestedComponents extends ComponentHook
             $outer = array_keys($bindings)[0];
             $inner = array_values($bindings)[0];
             $directive = array_values($directives)[0];
+
+            // Throw if the root element already has wire:model, since HTML
+            // doesn't allow duplicate attributes and the parent binding
+            // would silently break. We extract just the opening tag first
+            // to avoid regex backtracking on long attribute lists.
+            $trimmed = ltrim($html);
+            $tagEnd = strpos($trimmed, '>');
+
+            throw_if(
+                $tagEnd !== false && preg_match('/\bwire:model[=.\s>]/', substr($trimmed, 0, $tagEnd)),
+                new ModelableRootHasWireModelException
+            );
 
             // Attach the necessary Alpine directives so that the child and
             // parent's JS, ephemeral, values are bound.
@@ -81,11 +93,11 @@ class SupportWireModelingNestedComponents extends ComponentHook
 
     public function dehydrate($context)
     {
-        $bindings = store($this->component)->get('bindings', false);
+        $bindings = $this->storeGet('bindings', false);
 
         if (! $bindings) return;
 
-        $directives = store($this->component)->get('bindings-directives');
+        $directives = $this->storeGet('bindings-directives');
 
         // Add the bindings metadata to the paylad for later reference...
         $context->addMemo('bindings', $bindings);

@@ -14,25 +14,52 @@ use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Support\Enums\Width;
+use Filament\Support\Facades\FilamentIcon;
 use Filament\Support\Icons\Heroicon;
+use Filament\View\PanelsIconAlias;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
+use Livewire\Component;
+use SensitiveParameter;
 
 class DisableAppAuthenticationAction
 {
     public static function make(AppAuthentication $appAuthentication): Action
     {
         $isRecoverable = $appAuthentication->isRecoverable();
+        $rateLimitAuthenticationAttempt = static function (string $passwordStatePath): void {
+            $rateLimitingKey = 'filament-disable-app-authentication:' . Filament::auth()->id();
+
+            if (RateLimiter::tooManyAttempts($rateLimitingKey, maxAttempts: 5)) {
+                throw ValidationException::withMessages([
+                    $passwordStatePath => __('filament-panels::auth/multi-factor/app/actions/disable.modal.form.code.messages.rate_limited'),
+                ]);
+            }
+
+            RateLimiter::hit($rateLimitingKey);
+        };
+
+        $passwordInput = TextInput::make('password')
+            ->label(__('filament-panels::auth/multi-factor/app/actions/disable.modal.form.password.label'))
+            ->validationAttribute(__('filament-panels::auth/multi-factor/app/actions/disable.modal.form.password.validation_attribute'))
+            ->currentPassword(guard: Filament::getAuthGuard())
+            ->password()
+            ->revealable(Filament::arePasswordsRevealable())
+            ->required()
+            ->dehydrated(false);
 
         return Action::make('disableAppAuthentication')
             ->label(__('filament-panels::auth/multi-factor/app/actions/disable.label'))
             ->color('danger')
-            ->icon(Heroicon::LockOpen)
+            ->icon(FilamentIcon::resolve(PanelsIconAlias::AUTH_MULTI_FACTOR_APP_ACTIONS_DISABLE) ?? Heroicon::LockOpen)
             ->link()
             ->modalWidth(Width::Medium)
-            ->modalIcon(Heroicon::OutlinedLockOpen)
+            ->modalIcon(FilamentIcon::resolve(PanelsIconAlias::AUTH_MULTI_FACTOR_APP_ACTIONS_DISABLE_MODAL) ?? Heroicon::OutlinedLockOpen)
             ->modalHeading(__('filament-panels::auth/multi-factor/app/actions/disable.modal.heading'))
             ->modalDescription(__('filament-panels::auth/multi-factor/app/actions/disable.modal.description'))
             ->schema([
+                $passwordInput,
                 OneTimeCodeInput::make('code')
                     ->label(__('filament-panels::auth/multi-factor/app/actions/disable.modal.form.code.label'))
                     ->belowContent(fn (Get $get): Action => Action::make('useRecoveryCode')
@@ -41,10 +68,10 @@ class DisableAppAuthenticationAction
                         ->action(fn (Set $set) => $set('useRecoveryCode', true))
                         ->visible(fn (): bool => $isRecoverable && (! $get('useRecoveryCode'))))
                     ->validationAttribute(__('filament-panels::auth/multi-factor/app/actions/disable.modal.form.code.validation_attribute'))
-                    ->required(fn (Get $get): bool => (! $isRecoverable) || blank($get('recoveryCode')))
+                    ->required(fn (Get $get): bool => (! $isRecoverable) || (! $get('useRecoveryCode')) || blank($get('recoveryCode')))
                     ->rule(function () use ($appAuthentication): Closure {
-                        return function (string $attribute, mixed $value, Closure $fail) use ($appAuthentication): void {
-                            if (is_string($value) && $appAuthentication->verifyCode($value)) {
+                        return function (string $attribute, #[SensitiveParameter] mixed $value, Closure $fail) use ($appAuthentication): void {
+                            if (is_string($value) && $appAuthentication->verifyCode($value, shouldPreventCodeReuse: true)) {
                                 return;
                             }
 
@@ -56,8 +83,9 @@ class DisableAppAuthenticationAction
                     ->validationAttribute(__('filament-panels::auth/multi-factor/app/actions/disable.modal.form.recovery_code.validation_attribute'))
                     ->password()
                     ->revealable(Filament::arePasswordsRevealable())
+                    ->autocomplete('one-time-code')
                     ->rule(function () use ($appAuthentication): Closure {
-                        return function (string $attribute, mixed $value, Closure $fail) use ($appAuthentication): void {
+                        return function (string $attribute, #[SensitiveParameter] mixed $value, Closure $fail) use ($appAuthentication): void {
                             if (blank($value)) {
                                 return;
                             }
@@ -72,6 +100,17 @@ class DisableAppAuthenticationAction
                     ->visible(fn (Get $get): bool => $isRecoverable && $get('useRecoveryCode'))
                     ->live(onBlur: true),
             ])
+            ->beforeFormValidated(function (Component $livewire) use ($passwordInput, $rateLimitAuthenticationAttempt): void {
+                $passwordStatePath = $passwordInput->getStatePath();
+
+                $rateLimitAuthenticationAttempt($passwordStatePath);
+
+                $livewire->validateOnly(
+                    $passwordStatePath,
+                    [$passwordStatePath => $passwordInput->getValidationRules()],
+                    attributes: [$passwordStatePath => $passwordInput->getValidationAttribute()],
+                );
+            })
             ->modalSubmitAction(fn (Action $action) => $action
                 ->label(__('filament-panels::auth/multi-factor/app/actions/disable.modal.actions.submit.label')))
             ->action(function () use ($appAuthentication, $isRecoverable): void {
@@ -89,7 +128,7 @@ class DisableAppAuthenticationAction
                 Notification::make()
                     ->title(__('filament-panels::auth/multi-factor/app/actions/disable.notifications.disabled.title'))
                     ->success()
-                    ->icon(Heroicon::OutlinedLockOpen)
+                    ->icon(FilamentIcon::resolve(PanelsIconAlias::AUTH_MULTI_FACTOR_APP_ACTIONS_DISABLE_NOTIFICATION) ?? Heroicon::OutlinedLockOpen)
                     ->send();
             })
             ->rateLimit(5);

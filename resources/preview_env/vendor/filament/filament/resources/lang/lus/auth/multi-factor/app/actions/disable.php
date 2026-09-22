@@ -11,6 +11,10 @@ return [
         'description' => 'Authenticator app hman hi tihtawp i duh tak tak em? Hemi tihtawp hian security dang I account a a pek belh ho a paih dawn ani.',
 
         'form' => [
+            'password' => [
+                'label' => 'Password hman mek',
+                'validation_attribute' => 'password hman mek',
+            ],
 
             'code' => [
 
@@ -30,6 +34,8 @@ return [
 
                     'invalid' => 'Hemi code hi a diklo.',
 
+                    'rate_limited' => 'Tumna a tam lutuk. Khawngaihin nakinah tinawn leh rawh.',
+
                 ],
 
             ],
@@ -43,6 +49,8 @@ return [
                 'messages' => [
 
                     'invalid' => 'Hemi recovery code hi a diklo.',
+
+                    'rate_limited' => 'Tumna a tam lutuk. Khawngaihin nakinah tinawn leh rawh.',
 
                 ],
 

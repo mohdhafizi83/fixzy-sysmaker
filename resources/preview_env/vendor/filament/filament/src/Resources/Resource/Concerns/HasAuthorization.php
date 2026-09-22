@@ -5,11 +5,22 @@ namespace Filament\Resources\Resource\Concerns;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Model;
+use UnitEnum;
 
 use function Filament\get_authorization_response;
 
 trait HasAuthorization
 {
+    // Security: Resource authorization delegates to Laravel Model Policies.
+    // Standard CRUD operations (`viewAny`, `create`, `update`, `view`,
+    // `delete`, `forceDelete`, `restore`, `reorder`) are checked
+    // automatically. Bulk actions use `*Any()` policy methods
+    // (`deleteAny`, `forceDeleteAny`, `restoreAny`) for performance —
+    // use `authorizeIndividualRecords()` if per-record checks are
+    // needed. Inline editable table columns bypass these checks —
+    // they only respect `disabled()`. Custom actions require manual
+    // authorization via `authorize()`, `visible()`, or `hidden()`.
+
     protected static bool $shouldCheckPolicyExistence = true;
 
     protected static bool $shouldSkipAuthorization = false;
@@ -19,7 +30,7 @@ trait HasAuthorization
         return static::canViewAny();
     }
 
-    public static function getAuthorizationResponse(string $action, ?Model $record = null): Response
+    public static function getAuthorizationResponse(string | UnitEnum $action, ?Model $record = null): Response
     {
         if (static::shouldSkipAuthorization()) {
             return Response::allow();
@@ -28,7 +39,7 @@ trait HasAuthorization
         return get_authorization_response($action, $record ?? static::getModel(), static::shouldCheckPolicyExistence());
     }
 
-    public static function can(string $action, ?Model $record = null): bool
+    public static function can(string | UnitEnum $action, ?Model $record = null): bool
     {
         return static::getAuthorizationResponse($action, $record)->allowed();
     }
@@ -36,7 +47,7 @@ trait HasAuthorization
     /**
      * @throws AuthorizationException
      */
-    public static function authorize(string $action, ?Model $record = null): ?Response
+    public static function authorize(string | UnitEnum $action, ?Model $record = null): ?Response
     {
         return static::getAuthorizationResponse($action, $record)->authorize();
     }
@@ -48,6 +59,10 @@ trait HasAuthorization
 
     public static function skipAuthorization(bool $condition = true): void
     {
+        // Security: Disabling authorization removes all policy checks for
+        // this resource. All panel users will be able to perform any
+        // operation. Not recommended for production.
+
         static::$shouldSkipAuthorization = $condition;
     }
 

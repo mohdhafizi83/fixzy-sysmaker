@@ -2,6 +2,158 @@
 
 All notable changes of the PHPUnit 11.5 release series are documented in this file using the [Keep a CHANGELOG](https://keepachangelog.com/) principles.
 
+## [11.5.56] - 2026-07-06
+
+### Changed
+
+* [#6797](https://github.com/sebastianbergmann/phpunit/issues/6797): Adapt code generated for test double of interface with constructor for PHP 8.6
+
+## [11.5.55] - 2026-02-18
+
+### Fixed
+
+* [#6521](https://github.com/sebastianbergmann/phpunit/issues/6521): Performance regression in PHPUnit 11.5.54, PHPUnit 12.5.13, and PHPUnit 13.0.4
+
+## [11.5.54] - 2026-02-18
+
+### Fixed
+
+* [#6489](https://github.com/sebastianbergmann/phpunit/pull/6489): Classification of self/direct/indirect deprecation triggers is not aligned with Symfony's bridge for PHPUnit
+
+## [11.5.53] - 2026-02-10
+
+### Fixed
+
+* [#6503](https://github.com/sebastianbergmann/phpunit/issues/6503): Temporary file used by `SourceMapper` may be deleted prematurely when multiple PHPUnit processes run in parallel
+
+## [11.5.52] - 2026-02-08
+
+### Fixed
+
+* [#6495](https://github.com/sebastianbergmann/phpunit/pull/6495): Source map for issue trigger identification is regenerated in process isolation child processes
+
+## [11.5.51] - 2026-02-05
+
+### Added
+
+* [#6488](https://github.com/sebastianbergmann/phpunit/issues/6488): Allow disabling issue trigger identification for improved performance
+
+### Fixed
+
+* [#6486](https://github.com/sebastianbergmann/phpunit/issues/6486): Incorrect file name reported for errors for test methods declared in traits
+* [#6490](https://github.com/sebastianbergmann/phpunit/pull/6490): Incorrect test count when tests are skipped in before-class method
+
+## [11.5.50] - 2026-01-27
+
+### Changed
+
+* To prevent Poisoned Pipeline Execution (PPE) attacks using prepared `.coverage` files in pull requests, a PHPT test will no longer be run if the temporary file for writing code coverage information already exists before the test runs
+
+## [11.5.49] - 2026-01-24
+
+### Fixed
+
+* [#6362](https://github.com/sebastianbergmann/phpunit/issues/6362): Manually instantiated test doubles are broken since PHPUnit 11.2
+* [#6470](https://github.com/sebastianbergmann/phpunit/issues/6470): Infinite recursion in `Count::getCountOf()` for unusal implementations of `Iterator` or `IteratorAggregate`
+
+## [11.5.48] - 2026-01-16
+
+### Changed
+
+* Reverted a change that caused a [build failure](https://github.com/php/php-src/actions/runs/21052584327/job/60542023395#step:14:3729) for the [PHP project's nightly community job](https://phpunit.expert/articles/how-php-and-its-ecosystem-test-each-other.html?ref=github)
+
+## [11.5.47] - 2026-01-15
+
+### Changed
+
+* `PHPUnit\Framework\MockObject` exceptions are now subtypes of `PHPUnit\Exception`
+
+### Fixed
+
+* [#6470](https://github.com/sebastianbergmann/phpunit/issues/6470): Mocking a class with a property hook setter accepting more types than the property results in a fatal error
+
+## [11.5.46] - 2025-12-06
+
+* No changes; `phpunit.phar` rebuilt with PHP 8.4 to work around PHP-Scoper issue [#1139](https://github.com/humbug/php-scoper/issues/1139)
+
+## [11.5.45] - 2025-12-01
+
+### Changed
+
+* Updated list of deprecated PHP configuration settings for PHP 8.6
+
+### Fixed
+
+* [#6408](https://github.com/sebastianbergmann/phpunit/issues/6408): Exception in a data provider method leads to internal PHPUnit error
+* [#6426](https://github.com/sebastianbergmann/phpunit/pull/6426): Fix migration of configuration without schema location
+
+## [11.5.44] - 2025-11-13
+
+### Fixed
+
+* [#6402](https://github.com/sebastianbergmann/phpunit/pull/6402): Avoid reading from `STDOUT` when `rewind()` fails
+
+## [11.5.43] - 2025-10-30
+
+### Changed
+
+* Skipped tests alone no longer lead to a yellow background for the test result summary
+* Updated list of deprecated PHP configuration settings for PHP 8.4 and PHP 8.5
+
+### Fixed
+
+* [#6391](https://github.com/sebastianbergmann/phpunit/issues/6391): Errors during backup of global variables and static properties are not reported
+
+## [11.5.42] - 2025-09-28
+
+### Fixed
+
+* [#6368](https://github.com/sebastianbergmann/phpunit/issues/6368): `failOnPhpunitWarning="false"` has no effect
+
+## [11.5.41] - 2025-09-24
+
+* No changes; `phpunit.phar` rebuilt with updated dependencies
+
+## [11.5.40] - 2025-09-23
+
+* No changes; `phpunit.phar` rebuilt with updated dependencies
+
+## [11.5.39] - 2025-09-14
+
+### Changed
+
+* [#6366](https://github.com/sebastianbergmann/phpunit/issues/6366): Exclude `__sleep()` and `__wakeup()` from test double code generation on PHP >= 8.5
+
+## [11.5.38] - 2025-09-11
+
+### Changed
+
+* [#6353](https://github.com/sebastianbergmann/phpunit/pull/6353): Disable performance optimization for tests requiring Xdebug
+
+## [11.5.37] - 2025-09-11
+
+### Changed
+
+* Do not use `__sleep()` method (which will be deprecated in PHP 8.5)
+
+## [11.5.36] - 2025-09-03
+
+### Fixed
+
+* [#6340](https://github.com/sebastianbergmann/phpunit/issues/6340): Implicitly enabled display of deprecation details is not disabled when it should be
+
+## [11.5.35] - 2025-08-28
+
+### Changed
+
+* `#[IgnorePhpunitDeprecations]` is now considered for test runner deprecations (where applicable)
+
+## [11.5.34] - 2025-08-20
+
+### Changed
+
+* Do not configure `report_memleaks` setting (which will be deprecated in PHP 8.5) for PHPT processes
+
 ## [11.5.33] - 2025-08-16
 
 ### Changed
@@ -308,6 +460,29 @@ All notable changes of the PHPUnit 11.5 release series are documented in this fi
 * [#6055](https://github.com/sebastianbergmann/phpunit/issues/6055): `assertNotContainsOnly()` (use `assertContainsNotOnlyArray()`, `assertContainsNotOnlyBool()`, `assertContainsNotOnlyCallable()`, `assertContainsNotOnlyFloat()`, `assertContainsNotOnlyInt()`, `assertContainsNotOnlyIterable()`, `assertContainsNotOnlyNumeric()`, `assertContainsNotOnlyObject()`, `assertContainsNotOnlyResource()`, `assertContainsNotOnlyClosedResource()`, `assertContainsNotOnlyScalar()`, or `assertContainsNotOnlyString()` instead)
 * [#6059](https://github.com/sebastianbergmann/phpunit/issues/6059): `containsOnly()` (use `containsOnlyArray()`, `containsOnlyBool()`, `containsOnlyCallable()`, `containsOnlyFloat()`, `containsOnlyInt()`, `containsOnlyIterable()`, `containsOnlyNumeric()`, `containsOnlyObject()`, `containsOnlyResource()`, `containsOnlyClosedResource()`, `containsOnlyScalar()`, or `containsOnlyString()` instead)
 
+[11.5.56]: https://github.com/sebastianbergmann/phpunit/compare/11.5.55...11.5.56
+[11.5.55]: https://github.com/sebastianbergmann/phpunit/compare/11.5.54...11.5.55
+[11.5.54]: https://github.com/sebastianbergmann/phpunit/compare/11.5.53...11.5.54
+[11.5.53]: https://github.com/sebastianbergmann/phpunit/compare/11.5.52...11.5.53
+[11.5.52]: https://github.com/sebastianbergmann/phpunit/compare/11.5.51...11.5.52
+[11.5.51]: https://github.com/sebastianbergmann/phpunit/compare/11.5.50...11.5.51
+[11.5.50]: https://github.com/sebastianbergmann/phpunit/compare/11.5.49...11.5.50
+[11.5.49]: https://github.com/sebastianbergmann/phpunit/compare/11.5.48...11.5.49
+[11.5.48]: https://github.com/sebastianbergmann/phpunit/compare/11.5.47...11.5.48
+[11.5.47]: https://github.com/sebastianbergmann/phpunit/compare/11.5.46...11.5.47
+[11.5.46]: https://github.com/sebastianbergmann/phpunit/compare/11.5.45...11.5.46
+[11.5.45]: https://github.com/sebastianbergmann/phpunit/compare/11.5.44...11.5.45
+[11.5.44]: https://github.com/sebastianbergmann/phpunit/compare/11.5.43...11.5.44
+[11.5.43]: https://github.com/sebastianbergmann/phpunit/compare/11.5.42...11.5.43
+[11.5.42]: https://github.com/sebastianbergmann/phpunit/compare/11.5.41...11.5.42
+[11.5.41]: https://github.com/sebastianbergmann/phpunit/compare/11.5.40...11.5.41
+[11.5.40]: https://github.com/sebastianbergmann/phpunit/compare/11.5.39...11.5.40
+[11.5.39]: https://github.com/sebastianbergmann/phpunit/compare/11.5.38...11.5.39
+[11.5.38]: https://github.com/sebastianbergmann/phpunit/compare/11.5.37...11.5.38
+[11.5.37]: https://github.com/sebastianbergmann/phpunit/compare/11.5.36...11.5.37
+[11.5.36]: https://github.com/sebastianbergmann/phpunit/compare/11.5.35...11.5.36
+[11.5.35]: https://github.com/sebastianbergmann/phpunit/compare/11.5.34...11.5.35
+[11.5.34]: https://github.com/sebastianbergmann/phpunit/compare/11.5.33...11.5.34
 [11.5.33]: https://github.com/sebastianbergmann/phpunit/compare/11.5.32...11.5.33
 [11.5.32]: https://github.com/sebastianbergmann/phpunit/compare/11.5.31...11.5.32
 [11.5.31]: https://github.com/sebastianbergmann/phpunit/compare/11.5.30...11.5.31

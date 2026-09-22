@@ -4,14 +4,17 @@ namespace Filament\Tables\Table\Concerns;
 
 use Closure;
 use Filament\Actions\Action;
-use Filament\Support\Enums\Size;
 use Filament\Support\Enums\Width;
 use Filament\Support\Facades\FilamentIcon;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Enums\ColumnManagerLayout;
+use Filament\Tables\Enums\ColumnManagerResetActionPosition;
 use Filament\Tables\View\TablesIconAlias;
 
 trait HasColumnManager
 {
+    protected ColumnManagerResetActionPosition | Closure | null $columnManagerResetActionPosition = null;
+
     protected bool | Closure | null $hasColumnManager = null;
 
     protected bool | Closure $hasReorderableColumns = false;
@@ -27,9 +30,13 @@ trait HasColumnManager
 
     protected ?Closure $modifyColumnManagerTriggerActionUsing = null;
 
+    protected ColumnManagerLayout | Closure | null $columnManagerLayout = null;
+
     protected bool | Closure $hasDeferredColumnManager = true;
 
     protected ?Closure $modifyColumnManagerApplyActionUsing = null;
+
+    protected bool | Closure $persistsColumnsInSession = true;
 
     public function columnManager(bool | Closure | null $condition = true): static
     {
@@ -78,6 +85,42 @@ trait HasColumnManager
         $this->modifyColumnManagerApplyActionUsing = $callback;
 
         return $this;
+    }
+
+    public function persistColumnsInSession(bool | Closure $condition = true): static
+    {
+        $this->persistsColumnsInSession = $condition;
+
+        return $this;
+    }
+
+    public function columnManagerLayout(ColumnManagerLayout | Closure | null $layout): static
+    {
+        $this->columnManagerLayout = $layout;
+
+        return $this;
+    }
+
+    public function getColumnManagerLayout(): ColumnManagerLayout
+    {
+        return $this->evaluate($this->columnManagerLayout) ?? ColumnManagerLayout::Dropdown;
+    }
+
+    public function columnManagerResetActionPosition(ColumnManagerResetActionPosition | Closure | null $position): static
+    {
+        $this->columnManagerResetActionPosition = $position;
+
+        return $this;
+    }
+
+    public function persistsColumnsInSession(): bool
+    {
+        return (bool) $this->evaluate($this->persistsColumnsInSession);
+    }
+
+    public function getColumnManagerResetActionPosition(): ColumnManagerResetActionPosition
+    {
+        return $this->evaluate($this->columnManagerResetActionPosition) ?? ColumnManagerResetActionPosition::Header;
     }
 
     /**
@@ -210,6 +253,17 @@ trait HasColumnManager
             ->icon(FilamentIcon::resolve(TablesIconAlias::ACTIONS_COLUMN_MANAGER) ?? Heroicon::ViewColumns)
             ->color('gray')
             ->livewireClickHandlerEnabled(false)
+            ->modalSubmitAction(false)
+            ->extraModalFooterActions([
+                $this->getColumnManagerApplyAction()
+                    ->alpineClickHandler("\$dispatch('apply-table-column-manager'); close()"),
+                Action::make('resetColumnManager')
+                    ->label(__('filament-tables::table.column_manager.actions.reset.label'))
+                    ->color('danger')
+                    ->alpineClickHandler("\$dispatch('reset-table-column-manager'); \$wire.resetTableColumnManager()")
+                    ->button(),
+            ])
+            ->modalCancelActionLabel(__('filament::components/modal.actions.close.label'))
             ->table($this)
             ->authorize(true);
 
@@ -219,9 +273,7 @@ trait HasColumnManager
             ]) ?? $action;
         }
 
-        if ($action->getView() === Action::BUTTON_VIEW) {
-            $action->defaultSize(Size::Small);
-        }
+        $action->extraAttributes(['class' => 'fi-force-enabled'], merge: true);
 
         return $action;
     }

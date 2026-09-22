@@ -14,6 +14,7 @@ use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Exceptions\Cancel;
 use Filament\Support\Exceptions\Halt;
+use Filament\Support\Livewire\Partials\PartialsComponentHook;
 use Filament\Tables\Contracts\HasTable;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Model;
@@ -28,7 +29,7 @@ use Throwable;
 
 use function Livewire\store;
 
-trait InteractsWithActions
+trait InteractsWithActions /** @phpstan-ignore trait.unused */
 {
     use WithRateLimiting;
 
@@ -38,6 +39,8 @@ trait InteractsWithActions
     public ?array $mountedActions = [];
 
     protected ?int $originallyMountedActionIndex = null;
+
+    protected int $mountActionNestingLevel = 0;
 
     /**
      * @var mixed
@@ -87,6 +90,33 @@ trait InteractsWithActions
 
     protected bool $hasActionsModalRendered = false;
 
+    /**
+     * Context for the `mountAction()` call that opens the `?action=` default action on
+     * page load. `mountedFromUrl` is forced on last, so a crafted `?actionContext=` value
+     * cannot unset it to run a modal-less action.
+     *
+     * @return array<string, mixed>
+     */
+    public function getDefaultActionUrlContext(): array
+    {
+        return array_merge(
+            is_array($this->defaultActionContext) ? $this->defaultActionContext : [],
+            ['mountedFromUrl' => true],
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getDefaultTableActionUrlContext(): array
+    {
+        return [
+            'table' => true,
+            'recordKey' => $this->defaultTableActionRecord,
+            'mountedFromUrl' => true,
+        ];
+    }
+
     public function bootedInteractsWithActions(): void
     {
         if (filled($originallyMountedActionIndex = array_key_last($this->mountedActions))) {
@@ -97,7 +127,9 @@ trait InteractsWithActions
 
         // Boot the InteractsWithTable trait first so the table object is available.
         if (! ($this instanceof HasTable)) {
-            $this->cacheMountedActions($this->mountedActions);
+            if (empty($this->cacheMountedActions($this->mountedActions))) {
+                $this->mountedActions = [];
+            }
         }
     }
 
@@ -107,79 +139,138 @@ trait InteractsWithActions
      */
     public function mountAction(string $name, array $arguments = [], array $context = []): mixed
     {
-        $this->mountedActions[] = [
-            'name' => $name,
-            'arguments' => $arguments,
-            'context' => $context,
-        ];
+        $this->mountActionNestingLevel++;
 
         try {
-            $action = $this->getMountedAction();
-        } catch (ActionNotResolvableException $exception) {
-            $action = null;
-        }
+            $this->mountedActions[] = [
+                'name' => $name,
+                'arguments' => $arguments,
+                'context' => $context,
+            ];
 
-        if (! $action) {
-            $this->unmountAction(canCancelParentActions: false);
-
-            return null;
-        }
-
-        if ($action->isDisabled()) {
-            $this->unmountAction(canCancelParentActions: false);
-
-            return null;
-        }
-
-        if (($actionComponent = $action->getSchemaComponent()) instanceof ExposesStateToActionData) {
-            foreach ($actionComponent->getChildSchemas() as $actionComponentChildSchema) {
-                $actionComponentChildSchema->validate();
-            }
-        }
-
-        try {
-            if (
-                $action->hasAuthorizationNotification() &&
-                ($response = $action->getAuthorizationResponseWithMessage())->denied()
-            ) {
-                $action->sendUnauthorizedNotification($response);
-
-                throw new Cancel;
+            try {
+                $action = $this->getMountedAction();
+            } catch (ActionNotResolvableException $exception) {
+                $action = null;
             }
 
-            $hasSchema = $this->mountedActionHasSchema(mountedAction: $action);
+            if (! $action) {
+                $this->unmountAction(cancelParentActions: false);
 
-            if ($hasSchema) {
-                $action->callBeforeFormFilled();
+                return null;
             }
 
-            $schema = $this->getMountedActionSchema(mountedAction: $action);
+            if ($action->isDisabled()) {
+                $this->unmountAction(cancelParentActions: false);
 
-            $action->mount([
-                'form' => $schema,
-                'schema' => $schema,
-            ]);
-
-            if ($hasSchema) {
-                $action->callAfterFormFilled();
+                return null;
             }
-        } catch (Halt $exception) {
-            return null;
-        } catch (Cancel $exception) {
-            $this->unmountAction(canCancelParentActions: false);
+
+            if (($actionComponent = $action->getSchemaComponent()) instanceof ExposesStateToActionData) {
+                foreach ($actionComponent->getChildSchemas() as $actionComponentChildSchema) {
+                    $actionComponentChildSchema->validate();
+                }
+            }
+
+            // Keep a reference to this entry since the action's mount lifecycle may replace it.
+            $mountedActionState = &$this->mountedActions[$action->getNestingIndex()];
+
+            try {
+                if (
+                    $action->hasAuthorizationNotification() &&
+                    ($response = $action->getAuthorizationResponseWithMessage())->denied()
+                ) {
+                    $action->sendUnauthorizedNotification($response);
+
+                    throw new Cancel;
+                }
+
+                $hasSchema = $this->mountedActionHasSchema(mountedAction: $action);
+
+                if ($hasSchema) {
+                    $action->callBeforeFormFilled();
+                }
+
+                $schema = $this->getMountedActionSchema(mountedAction: $action);
+
+                $action->mount([
+                    'form' => $schema,
+                    'schema' => $schema,
+                ]);
+
+                if ($hasSchema) {
+                    $action->callAfterFormFilled();
+                }
+            } catch (Halt $exception) {
+                $this->unmountAction(cancelParentActions: false);
+
+                return null;
+            } catch (Cancel $exception) {
+                $this->unmountAction(cancelParentActions: false);
+
+                return null;
+            } catch (ValidationException $exception) {
+                $this->unmountAction(cancelParentActions: false);
+
+                throw $exception;
+            }
+
+            $mountedActionState['hasUnsavedChangesAlert'] = $action->hasUnsavedChangesAlert();
+            unset($mountedActionState);
+
+            if (! $this->mountedActionShouldOpenModal(mountedAction: $action)) {
+                if ($context['mountedFromUrl'] ?? false) {
+                    // A modal-less action mounted from the URL has nothing to show the user, so
+                    // running it here would let a crafted link trigger it with no interaction.
+                    $this->unmountAction(cancelParentActions: false);
+
+                    return null;
+                }
+
+                $result = $this->callMountedAction();
+
+                // The action can have stopped itself without unmounting, by halting, and it has no
+                // modal to stop in. If another action was mounted while it was running, it must remain
+                // on the stack until that action closes.
+                if ($this->getMountedAction() === $action) {
+                    $this->unmountAction(cancelParentActions: false);
+                }
+
+                return $result;
+            }
+
+            $this->syncActionModals();
+
+            $this->resetErrorBag();
 
             return null;
+        } finally {
+            $this->mountActionNestingLevel--;
         }
+    }
 
-        if (! $this->mountedActionShouldOpenModal(mountedAction: $action)) {
-            return $this->callMountedAction();
+    /**
+     * Unmounts every action on top of the stack that has no modal to be seen in.
+     */
+    protected function unmountActionsWithoutModals(): void
+    {
+        while (filled($this->mountedActions ?? [])) {
+            try {
+                $action = $this->getMountedAction();
+            } catch (ActionNotResolvableException $exception) {
+                $action = null;
+            }
+
+            if ($action && $this->mountedActionShouldOpenModal(mountedAction: $action)) {
+                break;
+            }
+
+            array_pop($this->mountedActions);
+
+            while (count($this->cachedMountedActions ?? []) > count($this->mountedActions)) {
+                array_pop($this->cachedMountedActions);
+            }
         }
-
-        $this->syncActionModals();
-
-        $this->resetErrorBag();
-
-        return null;
     }
 
     /**
@@ -192,6 +283,8 @@ trait InteractsWithActions
         if (! $action) {
             return null;
         }
+
+        $originalActionArguments = $action->getArguments();
 
         $action->mergeArguments($arguments);
 
@@ -221,6 +314,8 @@ trait InteractsWithActions
         $originallyMountedActions = $this->mountedActions;
 
         $result = null;
+
+        $hasFinalizedDatabaseTransaction = false;
 
         try {
             $action->beginDatabaseTransaction();
@@ -262,7 +357,7 @@ trait InteractsWithActions
 
             $result = $action->callAfter() ?? $result;
 
-            $this->afterActionCalled();
+            $this->afterActionCalled($action);
 
             (match ($action->getStatus()) {
                 ActionStatus::Success => function () use ($action): void {
@@ -284,11 +379,13 @@ trait InteractsWithActions
             $exception->shouldRollbackDatabaseTransaction() ?
                 $action->rollBackDatabaseTransaction() :
                 $action->commitDatabaseTransaction();
+
+            $hasFinalizedDatabaseTransaction = true;
         } catch (ValidationException $exception) {
             $action->rollBackDatabaseTransaction();
 
             if (! $this->mountedActionShouldOpenModal(mountedAction: $action)) {
-                $action->resetArguments();
+                $action->arguments($originalActionArguments);
                 $action->resetData();
 
                 $this->unmountAction();
@@ -301,7 +398,9 @@ trait InteractsWithActions
             throw $exception;
         }
 
-        $action->commitDatabaseTransaction();
+        if (! $hasFinalizedDatabaseTransaction) {
+            $action->commitDatabaseTransaction();
+        }
 
         if (store($this)->has('redirect')) {
             $this->unmountAction();
@@ -309,7 +408,9 @@ trait InteractsWithActions
             return $result;
         }
 
-        $action->resetArguments();
+        $this->partiallyRenderActionParentSchema($action);
+
+        $action->arguments($originalActionArguments);
         $action->resetData();
 
         $onlyActionNamesAndContexts = fn (array $actions): array => collect($actions)
@@ -329,7 +430,34 @@ trait InteractsWithActions
         return $result;
     }
 
-    protected function afterActionCalled(): void {}
+    public function forceRender(): void
+    {
+        app(PartialsComponentHook::class)->forceRender($this);
+    }
+
+    protected function partiallyRenderActionParentSchema(Action $action): void
+    {
+        $actionSchema = $action->getSchemaContainer() ?? $action->getSchemaComponent()?->getContainer();
+        $schemaToPartiallyRender = null;
+
+        while ($actionSchema !== null) {
+            if ($actionSchema->shouldPartiallyRender()) {
+                $schemaToPartiallyRender = $actionSchema;
+            }
+
+            $actionSchema = $actionSchema->getParentComponent()?->getContainer();
+        }
+
+        if (! $schemaToPartiallyRender) {
+            return;
+        }
+
+        app(PartialsComponentHook::class)->renderPartial($this, fn (): array => [
+            "schema.{$schemaToPartiallyRender->getKey()}" => $schemaToPartiallyRender->toHtml(...),
+        ]);
+    }
+
+    protected function afterActionCalled(Action $action): void {}
 
     /**
      * @param  array<string, mixed>  $arguments
@@ -340,13 +468,22 @@ trait InteractsWithActions
         $this->mountedActions = [];
         $this->cachedMountedActions = null;
 
-        foreach ($this->cachedSchemas as $schemaName => $schema) {
-            if (str($schemaName)->startsWith('mountedActionSchema')) {
+        $this->forgetCachedMountedActionSchemas();
+
+        $this->mountAction($name, $arguments, $context);
+    }
+
+    protected function forgetCachedMountedActionSchemas(int $fromNestingIndex = 0): void
+    {
+        foreach (array_keys($this->cachedSchemas) as $schemaName) {
+            if (! str_starts_with($schemaName, 'mountedActionSchema')) {
+                continue;
+            }
+
+            if (((int) substr($schemaName, strlen('mountedActionSchema'))) >= $fromNestingIndex) {
                 unset($this->cachedSchemas[$schemaName]);
             }
         }
-
-        $this->mountAction($name, $arguments, $context);
     }
 
     public function cacheAction(Action $action): Action
@@ -442,14 +579,18 @@ trait InteractsWithActions
      */
     protected function cacheMountedActions(array $mountedActions): array
     {
-        return $this->cachedMountedActions = $this->resolveActions($mountedActions);
+        try {
+            return $this->cachedMountedActions = $this->resolveActions($mountedActions);
+        } catch (ActionNotResolvableException) {
+            return $this->cachedMountedActions = [];
+        }
     }
 
     /**
      * @param  array<array<string, mixed>>  $actions
      * @return array<Action>
      */
-    protected function resolveActions(array $actions): array
+    protected function resolveActions(array $actions, bool $isMounting = true): array
     {
         $resolvedActions = [];
 
@@ -470,15 +611,21 @@ trait InteractsWithActions
                 continue;
             }
 
+            if (filled($action['arguments'] ?? [])) {
+                $resolvedAction->mergeArguments($action['arguments']);
+            }
+
             $resolvedAction->nestingIndex($actionNestingIndex);
             $resolvedAction->boot();
 
             $resolvedActions[] = $resolvedAction;
 
-            $this->cacheSchema(
-                "mountedActionSchema{$actionNestingIndex}",
-                $this->getMountedActionSchema($actionNestingIndex, $resolvedAction),
-            );
+            if ($isMounting) {
+                $this->cacheSchema(
+                    "mountedActionSchema{$actionNestingIndex}",
+                    $this->getMountedActionSchema($actionNestingIndex, $resolvedAction),
+                );
+            }
         }
 
         return $resolvedActions;
@@ -545,21 +692,24 @@ trait InteractsWithActions
             throw new ActionNotResolvableException('Failed to resolve table action for Livewire component without the [' . HasTable::class . '] trait.');
         }
 
-        $resolvedAction = null;
-
         if (count($parentActions)) {
             $parentAction = Arr::last($parentActions);
-            $resolvedAction = $parentAction->getModalAction($action['name']) ?? throw new ActionNotResolvableException("Action [{$action['name']}] was not found for action [{$parentAction->getName()}].");
-        } else {
-            if ($action['context']['bulk'] ?? false) {
-                $resolvedAction = $this->getTable()->getBulkAction($action['name']);
-            }
 
-            $resolvedAction ??= $this->getTable()->getAction($action['name']) ?? throw new ActionNotResolvableException("Action [{$action['name']}] not found on table.");
+            return $parentAction->getModalAction($action['name']) ?? throw new ActionNotResolvableException("Action [{$action['name']}] was not found for action [{$parentAction->getName()}].");
         }
+
+        if ($action['context']['bulk'] ?? false) {
+            $resolvedAction = $this->getTable()->getBulkAction($action['name']);
+        }
+
+        $resolvedAction ??= $this->getTable()->getAction($action['name']) ?? throw new ActionNotResolvableException("Action [{$action['name']}] not found on table.");
 
         if (filled($action['context']['recordKey'] ?? null)) {
             $record = $this->getTableRecord($action['context']['recordKey']);
+
+            if (! $record) {
+                throw new ActionNotResolvableException("Record [{$action['context']['recordKey']}] no longer exists.");
+            }
 
             $resolvedAction->getRootGroup()?->record($record) ?? $resolvedAction->record($record);
         }
@@ -600,16 +750,16 @@ trait InteractsWithActions
     }
 
     /**
-     * @param  string | array<string>  $actions
+     * @param  string | array<string | array<string, mixed>>  $actions
      */
-    public function getAction(string | array $actions): ?Action
+    public function getAction(string | array $actions, bool $isMounting = true): ?Action
     {
         $actions = array_map(
             fn (string | array $action): array => is_array($action) ? $action : ['name' => $action],
             Arr::wrap($actions),
         );
 
-        return Arr::last($this->resolveActions($actions));
+        return Arr::last($this->resolveActions($actions, $isMounting));
     }
 
     public function getMountedActionSchemaName(): ?string
@@ -670,7 +820,7 @@ trait InteractsWithActions
         return null;
     }
 
-    public function unmountAction(bool $canCancelParentActions = true): void
+    public function unmountAction(bool | string | null $cancelParentActions = null): void
     {
         try {
             $action = $this->getMountedAction();
@@ -678,18 +828,24 @@ trait InteractsWithActions
             $action = null;
         }
 
-        if (! ($canCancelParentActions && $action)) {
+        if (($cancelParentActions === false) || (! $action)) {
             array_pop($this->mountedActions);
-        } elseif ($action->shouldCancelAllParentActions()) {
+        } elseif (
+            ($cancelParentActions === true) ||
+            (($cancelParentActions === null) && $action->shouldCancelAllParentActions())
+        ) {
             $this->mountedActions = [];
         } else {
-            $parentActionToCancelTo = $action->getParentActionToCancelTo();
+            $parentActionToCancelTo = is_string($cancelParentActions)
+                ? $cancelParentActions
+                : $action->getParentActionToCancelTo();
 
             while (true) {
                 $recentlyClosedParentAction = array_pop($this->mountedActions);
 
                 if (
                     blank($parentActionToCancelTo) ||
+                    ($recentlyClosedParentAction === null) ||
                     ($recentlyClosedParentAction['name'] === $parentActionToCancelTo)
                 ) {
                     break;
@@ -697,11 +853,23 @@ trait InteractsWithActions
             }
         }
 
+        if ($this->mountActionNestingLevel === 0) {
+            // Closing a modal can expose an action that has no modal of its own, which
+            // would then be stuck on the stack with nothing to show.
+            $this->unmountActionsWithoutModals();
+        }
+
         $this->syncActionModals();
 
         while (count($this->cachedMountedActions ?? []) > count($this->mountedActions)) {
             array_pop($this->cachedMountedActions);
         }
+
+        // The schemas of the actions that have just closed, which are cached by nesting index: an
+        // action mounted at one of those indexes later in this request would otherwise be handed
+        // the schema of the action that used to be there, since `getMountedActionSchema()` reads
+        // the cache before it builds anything.
+        $this->forgetCachedMountedActionSchemas(fromNestingIndex: count($this->mountedActions));
 
         if (! count($this->mountedActions)) {
             $action?->clearRecordAfter();
@@ -720,7 +888,12 @@ trait InteractsWithActions
 
     protected function syncActionModals(): void
     {
-        $this->dispatch('sync-action-modals', id: $this->getId(), newActionNestingIndex: array_key_last($this->mountedActions));
+        $this->dispatch(
+            'sync-action-modals',
+            id: $this->getId(),
+            newActionNestingIndex: array_key_last($this->mountedActions),
+            shouldOverlayParentActions: $this->getMountedAction()?->shouldOverlayParentActions() ?? false,
+        );
     }
 
     public function getOriginallyMountedActionIndex(): ?int

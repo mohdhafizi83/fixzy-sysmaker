@@ -9,6 +9,7 @@ use Filament\Schemas\Components\Concerns\CanOpenUrl;
 use Filament\Schemas\Components\Concerns\HasDescription;
 use Filament\Schemas\Components\Concerns\HasLabel;
 use Filament\Support\Concerns\HasColor;
+use Filament\Support\Concerns\HasPlaceholder;
 use Filament\Support\Enums\IconPosition;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Htmlable;
@@ -19,6 +20,7 @@ class Stat extends Component
     use HasColor;
     use HasDescription;
     use HasLabel;
+    use HasPlaceholder;
 
     protected string $view = 'filament-widgets::stats-overview-widget.stat';
 
@@ -44,12 +46,12 @@ class Stat extends Component
     protected string | array | null $descriptionColor = null;
 
     /**
-     * @var scalar | Htmlable | Closure
+     * @var scalar | Htmlable | Closure | null
      */
     protected $value;
 
     /**
-     * @param  scalar | Htmlable | Closure  $value
+     * @param  scalar | Htmlable | Closure | null  $value
      */
     final public function __construct(string | Htmlable $label, $value)
     {
@@ -58,11 +60,14 @@ class Stat extends Component
     }
 
     /**
-     * @param  scalar | Htmlable | Closure  $value
+     * @param  scalar | Htmlable | Closure | null  $value
      */
     public static function make(string | Htmlable $label, $value): static
     {
-        return app(static::class, ['label' => $label, 'value' => $value]);
+        $static = app(static::class, ['label' => $label, 'value' => $value]);
+        $static->configure();
+
+        return $static;
     }
 
     /**
@@ -119,7 +124,7 @@ class Stat extends Component
     }
 
     /**
-     * @param  scalar | Htmlable | Closure  $value
+     * @param  scalar | Htmlable | Closure | null  $value
      */
     public function value($value): static
     {
@@ -144,7 +149,7 @@ class Stat extends Component
         return $this->chartColor ?? $this->getColor();
     }
 
-    public function getIcon(): string | BackedEnum | null
+    public function getIcon(): string | BackedEnum | Htmlable | null
     {
         return $this->icon;
     }
@@ -157,7 +162,7 @@ class Stat extends Component
         return $this->descriptionColor ?? $this->getColor();
     }
 
-    public function getDescriptionIcon(): string | BackedEnum | null
+    public function getDescriptionIcon(): string | BackedEnum | Htmlable | null
     {
         return $this->descriptionIcon;
     }
@@ -168,15 +173,15 @@ class Stat extends Component
     }
 
     /**
-     * @return scalar | Htmlable | Closure
+     * @return scalar | Htmlable | null
      */
     public function getValue(): mixed
     {
-        return value($this->value);
+        return $this->evaluate($this->value);
     }
 
     public function generateChartDataChecksum(): string
     {
-        return md5(json_encode($this->getChart()) . now());
+        return md5(json_encode($this->getChart()));
     }
 }

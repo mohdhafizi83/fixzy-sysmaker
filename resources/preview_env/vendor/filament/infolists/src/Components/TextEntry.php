@@ -4,6 +4,7 @@ namespace Filament\Infolists\Components;
 
 use Closure;
 use Filament\Actions\Action;
+use Filament\Forms\Components\RichEditor\Models\Contracts\HasRichContent;
 use Filament\Infolists\View\Components\TextEntryComponent\ItemComponent;
 use Filament\Infolists\View\Components\TextEntryComponent\ItemComponent\IconComponent;
 use Filament\Schemas\Components\Contracts\HasAffixActions;
@@ -19,7 +20,10 @@ use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\IconPosition;
 use Filament\Support\Enums\IconSize;
 use Filament\Support\Enums\TextSize;
+use Filament\Support\View\ComponentAttributeBag as FilamentComponentAttributeBag;
 use Filament\Support\View\Components\BadgeComponent;
+use Illuminate\Contracts\Database\Query\Expression;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -131,7 +135,17 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
 
     public function isProse(): bool
     {
-        return (bool) $this->evaluate($this->isProse);
+        if ($this->evaluate($this->isProse)) {
+            return true;
+        }
+
+        $record = $this->getRecord();
+
+        if (! ($record instanceof HasRichContent)) {
+            return false;
+        }
+
+        return $record->hasRichContentAttribute($this->getName());
     }
 
     public function isListWithLineBreaks(): bool
@@ -171,15 +185,17 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
         $attributes = $this->getExtraAttributeBag()
             ->class([
                 'fi-in-text',
+                'fi-numeric' => $this->isNumeric() || $this->isMoney(),
             ]);
 
-        if (blank($state)) {
+        if (blank($state instanceof Htmlable ? $state->toHtml() : $state)) {
             $attributes = $attributes
                 ->merge([
                     'x-tooltip' => filled($tooltip = $this->getEmptyTooltip())
                         ? '{
                             content: ' . Js::from($tooltip) . ',
                             theme: $store.theme,
+                            allowHTML: ' . Js::from($tooltip instanceof Htmlable) . ',
                         }'
                         : null,
                 ], escape: false);
@@ -189,7 +205,7 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
             ob_start(); ?>
 
             <div <?= $attributes->toHtml() ?>>
-                <?php if (filled($placeholder !== null)) { ?>
+                <?php if (filled($placeholder)) { ?>
                     <p class="fi-in-placeholder">
                         <?= e($placeholder) ?>
                     </p>
@@ -201,7 +217,7 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
 
         $shouldOpenUrlInNewTab = $this->shouldOpenUrlInNewTab();
 
-        $formatState = function (mixed $stateItem) use ($shouldOpenUrlInNewTab): string {
+        $formatState = function (mixed $stateItem, mixed $formattedState = null) use ($shouldOpenUrlInNewTab): string {
             $url = $this->getUrl($stateItem);
 
             $item = '';
@@ -210,7 +226,7 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
                 $item .= '<a ' . generate_href_html($url, $shouldOpenUrlInNewTab)->toHtml() . '>';
             }
 
-            $item .= e($this->formatState($stateItem));
+            $item .= e($formattedState ?? $this->formatState($stateItem));
 
             if (filled($url)) {
                 $item .= '</a>';
@@ -219,7 +235,9 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
             return $item;
         };
 
+        /** @var array<mixed> $state */
         $state = Arr::wrap($state);
+
         $stateCount = count($state);
 
         $listLimit = $this->getListLimit() ?? $stateCount;
@@ -236,6 +254,8 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
             }
         }
 
+        $isCollapsedList = false;
+
         if (($stateCount > 1) && (! $isListWithLineBreaks) && (! $isBadge)) {
             $state = [
                 implode(
@@ -248,7 +268,8 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
             ];
 
             $stateCount = 1;
-            $formatState = fn (mixed $stateItem): string => $stateItem;
+            $formatState = fn (mixed $stateItem, mixed $formattedState = null): string => $stateItem;
+            $isCollapsedList = true;
         }
 
         $alignment = $this->getAlignment();
@@ -266,13 +287,13 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
         $isProse = $this->isProse();
         $isMarkdown = $this->isMarkdown();
 
-        $getStateItem = function (mixed $stateItem) use ($iconPosition, $isBadge, $isMarkdown, $isProse, $lineClamp): array {
+        $getStateItem = function (mixed $stateItem, mixed $formattedState = null) use ($iconPosition, $isBadge, $isMarkdown, $isProse, $lineClamp): array {
             $color = $this->getColor($stateItem) ?? ($isBadge ? 'primary' : null);
             $iconColor = $this->getIconColor($stateItem);
 
             $size = $this->getSize($stateItem);
 
-            $iconHtml = generate_icon_html($this->getIcon($stateItem), attributes: (new ComponentAttributeBag)
+            $iconHtml = generate_icon_html($this->getIcon($stateItem), attributes: (new FilamentComponentAttributeBag)
                 ->color(IconComponent::class, $iconColor), size: match ($size) {
                     TextSize::Medium => IconSize::Medium,
                     TextSize::Large => IconSize::Large,
@@ -282,35 +303,19 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
             $isCopyable = $this->isCopyable($stateItem);
 
             if ($isCopyable) {
-                $copyableStateJs = Js::from($this->getCopyableState($stateItem) ?? $this->formatState($stateItem));
+                $copyableStateJs = Js::from($this->getCopyableState($stateItem) ?? $formattedState ?? $this->formatState($stateItem));
                 $copyMessageJs = Js::from($this->getCopyMessage($stateItem));
                 $copyMessageDurationJs = Js::from($this->getCopyMessageDuration($stateItem));
             }
 
+            $tooltip = $this->getTooltip($stateItem);
+
             return [
-                'attributes' => (new ComponentAttributeBag)
-                    ->merge([
-                        'x-on:click' => $isCopyable
-                            ? <<<JS
-                                window.navigator.clipboard.writeText({$copyableStateJs})
-                                \$tooltip({$copyMessageJs}, {
-                                    theme: \$store.theme,
-                                    timeout: {$copyMessageDurationJs},
-                                })
-                                JS
-                            : null,
-                        'x-tooltip' => filled($tooltip = $this->getTooltip($stateItem))
-                            ? '{
-                                content: ' . Js::from($tooltip) . ',
-                                theme: $store.theme,
-                            }'
-                            : null,
-                    ], escape: false)
+                'attributes' => (new FilamentComponentAttributeBag)
                     ->class([
                         'fi-in-text-item',
                         'fi-prose' => $isProse || $isMarkdown,
                         (($fontFamily = $this->getFontFamily($stateItem)) instanceof FontFamily) ? "fi-font-{$fontFamily->value}" : (is_string($fontFamily) ? $fontFamily : ''),
-                        'fi-copyable' => $isCopyable,
                     ])
                     ->when(
                         ! $isBadge,
@@ -324,13 +329,38 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
                             ]))
                             ->color(ItemComponent::class, $color)
                     ),
-                'badgeAttributes' => $isBadge
-                    ? (new ComponentAttributeBag)
+                'contentAttributes' => ($isBadge || $isCopyable || filled($tooltip))
+                    ? (new FilamentComponentAttributeBag)
+                        ->merge([
+                            'x-on:click' => $isCopyable
+                                ? <<<JS
+                                window.navigator.clipboard.writeText({$copyableStateJs})
+                                \$tooltip({$copyMessageJs}, {
+                                    theme: \$store.theme,
+                                    timeout: {$copyMessageDurationJs},
+                                })
+                                JS
+                                : null,
+                            'x-tooltip' => filled($tooltip)
+                                ? '{
+                                content: ' . Js::from($tooltip) . ',
+                                theme: $store.theme,
+                                allowHTML: ' . Js::from($tooltip instanceof Htmlable) . ',
+                            }'
+                                : null,
+                        ], escape: false)
                         ->class([
-                            'fi-badge',
-                            ($size instanceof TextSize) ? "fi-size-{$size->value}" : $size,
+                            'fi-copyable' => $isCopyable,
                         ])
-                        ->color(BadgeComponent::class, $color ?? 'primary')
+                        ->when(
+                            $isBadge,
+                            fn (ComponentAttributeBag $attributes) => $attributes
+                                ->class([
+                                    'fi-badge',
+                                    ($size instanceof TextSize) ? "fi-size-{$size->value}" : $size,
+                                ])
+                                ->color(BadgeComponent::class, $color ?? 'primary')
+                        )
                     : null,
                 'iconAfterHtml' => ($iconPosition === IconPosition::After) ? $iconHtml : '',
                 'iconBeforeHtml' => ($iconPosition === IconPosition::Before) ? $iconHtml : '',
@@ -347,6 +377,8 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
             fn (Action $suffixAction): bool => $suffixAction->isVisible(),
         );
 
+        $hasAffixActions = ((bool) $prefixActions) || ((bool) $suffixActions);
+
         if (
             ($stateCount === 1) &&
             (! $isBulleted) &&
@@ -354,27 +386,28 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
             empty($suffixActions)
         ) {
             $stateItem = Arr::first($state);
+            $stateItemFormattedState = $isCollapsedList ? null : $this->formatState($stateItem);
             [
                 'attributes' => $stateItemAttributes,
-                'badgeAttributes' => $stateItemBadgeAttributes,
+                'contentAttributes' => $stateItemContentAttributes,
                 'iconAfterHtml' => $stateItemIconAfterHtml,
                 'iconBeforeHtml' => $stateItemIconBeforeHtml,
-            ] = $getStateItem($stateItem);
+            ] = $getStateItem($stateItem, $stateItemFormattedState);
 
             ob_start(); ?>
 
             <div <?= $attributes
                 ->merge($stateItemAttributes->getAttributes(), escape: false)
                 ->toHtml() ?>>
-                <?php if ($isBadge) { ?>
-                <span <?= $stateItemBadgeAttributes->toHtml() ?>>
+                <?php if ($stateItemContentAttributes) { ?>
+                <span <?= $stateItemContentAttributes->toHtml() ?>>
                 <?php } ?>
 
                 <?= $stateItemIconBeforeHtml ?>
-                <?= $formatState($stateItem) ?>
+                <?= $formatState($stateItem, $stateItemFormattedState) ?>
                 <?= $stateItemIconAfterHtml ?>
 
-                <?php if ($isBadge) { ?>
+                <?php if ($stateItemContentAttributes) { ?>
                     </span>
             <?php } ?>
             </div>
@@ -388,7 +421,7 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
                 'fi-in-text-has-line-breaks' => $isListWithLineBreaks,
             ]);
 
-        if ($stateOverListLimitCount || $prefixActions || $suffixActions) {
+        if ($stateOverListLimitCount || $hasAffixActions) {
             $attributes = $attributes
                 ->merge([
                     'x-data' => $isLimitedListExpandable
@@ -396,7 +429,7 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
                         : null,
                 ], escape: false)
                 ->class([
-                    'fi-in-text-affixed' => $prefixActions || $suffixActions,
+                    'fi-in-text-affixed' => $hasAffixActions,
                     'fi-in-text-list-limited' => $stateOverListLimitCount,
                 ]);
 
@@ -411,7 +444,7 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
                     </div>
                 <?php } ?>
 
-                <?php if ($prefixActions || $suffixActions) { ?>
+                <?php if ($hasAffixActions) { ?>
                     <div class="fi-in-text-affixed-content">
                 <?php } ?>
 
@@ -419,12 +452,13 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
                     <?php $stateIteration = 1; ?>
 
                     <?php foreach ($state as $stateItem) { ?>
+                        <?php $stateItemFormattedState = $isCollapsedList ? null : $this->formatState($stateItem); ?>
                         <?php [
                             'attributes' => $stateItemAttributes,
-                            'badgeAttributes' => $stateItemBadgeAttributes,
+                            'contentAttributes' => $stateItemContentAttributes,
                             'iconAfterHtml' => $stateItemIconAfterHtml,
                             'iconBeforeHtml' => $stateItemIconBeforeHtml,
-                        ] = $getStateItem($stateItem); ?>
+                        ] = $getStateItem($stateItem, $stateItemFormattedState); ?>
 
                         <li
                             <?php if ($stateIteration > $listLimit) { ?>
@@ -434,15 +468,15 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
                             <?php } ?>
                             <?= $stateItemAttributes->toHtml() ?>
                         >
-                            <?php if ($isBadge) { ?>
-                            <span <?= $stateItemBadgeAttributes->toHtml() ?>>
+                            <?php if ($stateItemContentAttributes) { ?>
+                            <span <?= $stateItemContentAttributes->toHtml() ?>>
                             <?php } ?>
 
                             <?= $stateItemIconBeforeHtml ?>
-                            <?= $formatState($stateItem) ?>
+                            <?= $formatState($stateItem, $stateItemFormattedState) ?>
                             <?= $stateItemIconAfterHtml ?>
 
-                            <?php if ($isBadge) { ?>
+                            <?php if ($stateItemContentAttributes) { ?>
                                 </span>
                         <?php } ?>
                         </li>
@@ -453,9 +487,18 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
 
                 <?php if ($stateOverListLimitCount) { ?>
                     <div class="fi-in-text-list-limited-message">
+                        <?php
+                            // These stay `<div role="button">` — not a real `<button>`, and deliberately without
+                            // `tabindex`. When the entry has a URL or action, `entry-wrapper.blade.php` wraps the whole
+                            // entry content in an `<a>` / `<button>`, and a `<button>` — or any element with `tabindex`
+                            // — is interactive content that is invalid nested inside a link/button. `role="button"` +
+                            // `aria-expanded` expose the control's purpose and state to assistive tech without
+                            // introducing that invalid nesting.
+                    ?>
                         <?php if ($isLimitedListExpandable) { ?>
                             <div
                                 role="button"
+                                x-bind:aria-expanded="(! isLimited).toString()"
                                 x-on:click.prevent.stop="isLimited = false"
                                 x-show="isLimited"
                                 class="fi-link fi-size-xs"
@@ -465,6 +508,7 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
 
                             <div
                                 role="button"
+                                x-bind:aria-expanded="(! isLimited).toString()"
                                 x-on:click.prevent.stop="isLimited = true"
                                 x-cloak
                                 x-show="! isLimited"
@@ -478,7 +522,7 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
                     </div>
                 <?php } ?>
 
-                <?php if ($prefixActions || $suffixActions) { ?>
+                <?php if ($hasAffixActions) { ?>
                     </div>
                 <?php } ?>
 
@@ -498,23 +542,24 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
 
         <ul <?= $attributes->toHtml() ?>>
             <?php foreach ($state as $stateItem) { ?>
+                <?php $stateItemFormattedState = $isCollapsedList ? null : $this->formatState($stateItem); ?>
                 <?php [
                     'attributes' => $stateItemAttributes,
-                    'badgeAttributes' => $stateItemBadgeAttributes,
+                    'contentAttributes' => $stateItemContentAttributes,
                     'iconAfterHtml' => $stateItemIconAfterHtml,
                     'iconBeforeHtml' => $stateItemIconBeforeHtml,
-                ] = $getStateItem($stateItem); ?>
+                ] = $getStateItem($stateItem, $stateItemFormattedState); ?>
 
                 <li <?= $stateItemAttributes->toHtml() ?>>
-                    <?php if ($isBadge) { ?>
-                    <span <?= $stateItemBadgeAttributes->toHtml() ?>>
+                    <?php if ($stateItemContentAttributes) { ?>
+                    <span <?= $stateItemContentAttributes->toHtml() ?>>
                     <?php } ?>
 
                     <?= $stateItemIconBeforeHtml ?>
-                    <?= $formatState($stateItem) ?>
+                    <?= $formatState($stateItem, $stateItemFormattedState) ?>
                     <?= $stateItemIconAfterHtml ?>
 
-                    <?php if ($isBadge) { ?>
+                    <?php if ($stateItemContentAttributes) { ?>
                         </span>
                 <?php } ?>
                 </li>
@@ -532,7 +577,7 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
     /**
      * @param  string | array<int | string, string | Closure> | Closure | null  $relationship
      */
-    public function avg(string | array | Closure | null $relationship, string | Closure | null $column): static
+    public function avg(string | array | Closure | null $relationship, string | Expression | Closure | null $column): static
     {
         $this->state(function (TextEntry $entry, ?Model $record) use ($relationship, $column): int | float | null {
             if (blank($record)) {
@@ -573,7 +618,7 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
     /**
      * @param  string | array<int | string, string | Closure> | Closure | null  $relationship
      */
-    public function max(string | array | Closure | null $relationship, string | Closure | null $column): static
+    public function max(string | array | Closure | null $relationship, string | Expression | Closure | null $column): static
     {
         $this->state(function (TextEntry $entry, ?Model $record) use ($relationship, $column): int | float | null {
             if (blank($record)) {
@@ -594,7 +639,7 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
     /**
      * @param  string | array<int | string, string | Closure> | Closure | null  $relationship
      */
-    public function min(string | array | Closure | null $relationship, string | Closure | null $column): static
+    public function min(string | array | Closure | null $relationship, string | Expression | Closure | null $column): static
     {
         $this->state(function (TextEntry $entry, ?Model $record) use ($relationship, $column): int | float | null {
             if (blank($record)) {
@@ -615,7 +660,7 @@ class TextEntry extends Entry implements HasAffixActions, HasEmbeddedView
     /**
      * @param  string | array<int | string, string | Closure> | Closure | null  $relationship
      */
-    public function sum(string | array | Closure | null $relationship, string | Closure | null $column): static
+    public function sum(string | array | Closure | null $relationship, string | Expression | Closure | null $column): static
     {
         $this->state(function (TextEntry $entry, ?Model $record) use ($relationship, $column): int | float | null {
             if (blank($record)) {

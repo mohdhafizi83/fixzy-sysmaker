@@ -10,8 +10,11 @@ use Filament\Panel;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use ReflectionClass;
+use RuntimeException;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
+use Spatie\Permission\Traits\HasRoles;
 
 class Utils
 {
@@ -49,7 +52,7 @@ class Utils
 
     public static function isAuthProviderConfigured(): bool
     {
-        return in_array(\Spatie\Permission\Traits\HasRoles::class, class_uses_recursive(static::getAuthProviderFQCN()));
+        return in_array(HasRoles::class, class_uses_recursive(static::getAuthProviderFQCN()));
     }
 
     public static function isSuperAdminEnabled(): bool
@@ -126,6 +129,50 @@ class Utils
             ->toString();
     }
 
+    public static function resolvePolicyFor(string $model): string
+    {
+        $reflection = new ReflectionClass($model);
+        $modelPath = (string) $reflection->getFileName();
+
+        if (Str::startsWith($modelPath, app_path('Models' . DIRECTORY_SEPARATOR))) {
+            return Str::of($modelPath)
+                ->after(app_path('Models' . DIRECTORY_SEPARATOR))
+                ->beforeLast('.php')
+                ->replace(DIRECTORY_SEPARATOR, '\\')
+                ->prepend(static::resolveNamespaceFromPath(static::getPolicyPath()) . '\\')
+                ->append('Policy')
+                ->toString();
+        }
+
+        if (static::hasPathSegment($modelPath, 'vendor') || ! static::hasPathSegment($modelPath, 'Models')) {
+            return static::resolveNamespaceFromPath(static::getPolicyPath()) . '\\' . class_basename($model) . 'Policy';
+        }
+
+        return static::replaceLastSegment($reflection->getNamespaceName(), '\\', 'Models', 'Policies')
+            . '\\' . class_basename($model) . 'Policy';
+    }
+
+    public static function resolvePolicyPathFor(string $model): string
+    {
+        $modelPath = (string) (new ReflectionClass($model))->getFileName();
+
+        if (Str::startsWith($modelPath, app_path('Models' . DIRECTORY_SEPARATOR))) {
+            return Str::of($modelPath)
+                ->after(app_path('Models' . DIRECTORY_SEPARATOR))
+                ->prepend(static::getPolicyPath() . DIRECTORY_SEPARATOR)
+                ->replaceLast('.php', 'Policy.php')
+                ->toString();
+        }
+
+        if (static::hasPathSegment($modelPath, 'vendor') || ! static::hasPathSegment($modelPath, 'Models')) {
+            return static::getPolicyPath() . DIRECTORY_SEPARATOR . class_basename($model) . 'Policy.php';
+        }
+
+        return Str::of(static::replaceLastSegment($modelPath, DIRECTORY_SEPARATOR, 'Models', 'Policies'))
+            ->replaceLast('.php', 'Policy.php')
+            ->toString();
+    }
+
     public static function getRolePolicyPath(): ?string
     {
         $filesystem = new Filesystem;
@@ -148,7 +195,7 @@ class Utils
 
     public static function getResourceCluster(): ?string
     {
-        return config('filament-shield.shield_resource.cluster', null);
+        return config('filament-shield.shield_resource.cluster');
     }
 
     public static function getRoleModel(): string
@@ -180,36 +227,50 @@ class Utils
 
     public static function createRole(?string $name = null, int | string | null $tenantId = null): Role
     {
+        $guardName = static::getFilamentAuthGuard();
+
         if (static::isTenancyEnabled()) {
             return static::getRoleModel()::firstOrCreate(
                 [
                     'name' => $name ?? static::getConfig()->super_admin->name,
                     static::getTenantModelForeignKey() => $tenantId,
+                    'guard_name' => $guardName,
                 ],
-                ['guard_name' => static::getFilamentAuthGuard()]
             );
         }
 
         return static::getRoleModel()::firstOrCreate(
-            ['name' => $name ?? static::getSuperAdminName()],
-            ['guard_name' => static::getFilamentAuthGuard()]
+            [
+                'name' => $name ?? static::getSuperAdminName(),
+                'guard_name' => $guardName,
+            ],
         );
     }
 
     public static function createPermission(string $name): string
     {
         return static::getPermissionModel()::firstOrCreate(
-            ['name' => $name],
-            ['guard_name' => static::getFilamentAuthGuard()]
+            ['name' => $name, 'guard_name' => static::getFilamentAuthGuard()],
         )->name;
     }
 
     public static function giveSuperAdminPermission(string | array | Collection $permissions): void
     {
         if (! static::isSuperAdminDefinedViaGate() && static::isSuperAdminEnabled()) {
-            $superAdmin = static::createRole();
 
-            $superAdmin->givePermissionTo($permissions);
+            if (static::isTenancyEnabled() && $tenantModel = static::getTenantModel()) {
+
+                $tenants = app($tenantModel)->all();
+
+                foreach ($tenants as $tenant) {
+                    $superAdmin = static::createRole(tenantId: $tenant->getKey());
+                    $superAdmin->givePermissionTo($permissions);
+                }
+
+            } else {
+                $superAdmin = static::createRole();
+                $superAdmin->givePermissionTo($permissions);
+            }
 
             app(PermissionRegistrar::class)->forgetCachedPermissions();
         }
@@ -268,7 +329,7 @@ class Utils
 
             // Fast path: exact match
             if ($checkPathLower === $basePathLower) {
-                return rtrim($namespace, '\\');
+                return rtrim((string) $namespace, '\\');
             }
 
             // Check if configured path is within this PSR-4 base
@@ -276,7 +337,7 @@ class Utils
                 $relative = substr($checkPath, strlen($basePath));
                 $relative = rtrim($relative, DIRECTORY_SEPARATOR);
 
-                $ns = rtrim($namespace, '\\');
+                $ns = rtrim((string) $namespace, '\\');
                 if ($relative !== '') {
                     $ns .= '\\' . str_replace(DIRECTORY_SEPARATOR, '\\', $relative);
                 }
@@ -285,7 +346,41 @@ class Utils
             }
         }
 
-        throw new \RuntimeException("Configured path does not match any PSR-4 mapping: {$configuredPath}");
+        throw new RuntimeException('Configured path does not match any PSR-4 mapping: ' . $configuredPath);
+    }
+
+    public static function flushPsr4Cache(): void
+    {
+        static::$psr4Cache = null;
+    }
+
+    /**
+     * Convert a permission key to a localization key.
+     *
+     * Removes the configured separator and converts to snake_case.
+     */
+    public static function toLocalizationKey(string $key): string
+    {
+        $separator = static::getConfig()->permissions->separator;
+
+        return Str::of($key)
+            ->replace($separator, '_')
+            ->snake()
+            ->replace('__', '_')
+            ->toString();
+    }
+
+    protected static function hasPathSegment(string $path, string $segment): bool
+    {
+        return in_array($segment, explode(DIRECTORY_SEPARATOR, $path), true);
+    }
+
+    protected static function replaceLastSegment(string $subject, string $separator, string $search, string $replace): string
+    {
+        $segments = explode($separator, $subject);
+        $segments[max(array_keys($segments, $search, true))] = $replace;
+
+        return implode($separator, $segments);
     }
 
     protected static function isAbsolutePath(string $path): bool

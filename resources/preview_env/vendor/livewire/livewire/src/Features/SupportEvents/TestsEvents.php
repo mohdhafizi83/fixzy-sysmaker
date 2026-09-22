@@ -2,7 +2,6 @@
 
 namespace Livewire\Features\SupportEvents;
 
-use Livewire\Mechanisms\ComponentRegistry;
 use PHPUnit\Framework\Assert as PHPUnit;
 
 trait TestsEvents
@@ -52,11 +51,9 @@ trait TestsEvents
         if (empty($params)) {
             $test = collect(data_get($this->effects, 'dispatches'))->contains('name', '=', $value);
         } elseif (isset($params[0]) && ! is_string($params[0]) && is_callable($params[0])) {
-            $event = collect(data_get($this->effects, 'dispatches'))->first(function ($item) use ($value) {
-                return $item['name'] === $value;
+            $test = collect(data_get($this->effects, 'dispatches'))->contains(function ($item) use ($value, $params) {
+                return $item['name'] === $value && $params[0]($item['name'], $item['params']);
             });
-
-            $test = $event && $params[0]($event['name'], $event['params']);
         } else {
             $test = (bool) collect(data_get($this->effects, 'dispatches'))->first(function ($item) use ($value, $params) {
                 $commonParams = array_intersect_key($item['params'], $params);
@@ -80,11 +77,11 @@ trait TestsEvents
 
     protected function testDispatchedTo($target, $value)
     {
-        $name = app(ComponentRegistry::class)->getName($target);
+        $name = app('livewire.factory')->resolveComponentName($target);
 
         return (bool) collect(data_get($this->effects, 'dispatches'))->first(function ($item) use ($name, $value) {
             return $item['name'] === $value
-                && $item['to'] === $name;
+                && $item['component'] === $name;
         });
     }
 }

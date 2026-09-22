@@ -10,6 +10,12 @@ export default (Alpine) => {
 
         transitionEasing: null,
 
+        closeTimeout: null,
+
+        durationTimeout: null,
+
+        unsubscribeLivewireHook: null,
+
         init() {
             this.computedStyle = window.getComputedStyle(this.$el)
 
@@ -25,7 +31,7 @@ export default (Alpine) => {
                 notification.duration &&
                 notification.duration !== 'persistent'
             ) {
-                setTimeout(() => {
+                this.durationTimeout = setTimeout(() => {
                     if (!this.$el.matches(':hover')) {
                         this.close()
 
@@ -53,7 +59,7 @@ export default (Alpine) => {
             const hide = () => {
                 Alpine.mutateDom(() => {
                     this.$el._x_isShown
-                        ? this.$el.style.setProperty('opacity', 0)
+                        ? this.$el.style.setProperty('visibility', 'hidden')
                         : this.$el.style.setProperty('display', 'none')
                 })
             }
@@ -74,13 +80,16 @@ export default (Alpine) => {
         },
 
         configureAnimations() {
-            let animation
+            // Inline notifications, such as those in the database
+            // notifications modal, are removed instantly, without animation.
+            if (this.$el.classList.contains('fi-inline')) {
+                return
+            }
 
-            Livewire.hook(
-                'commit',
-                ({ component, commit, succeed, fail, respond }) => {
+            this.unsubscribeLivewireHook = Livewire.interceptMessage(
+                ({ message, onSuccess }) => {
                     if (
-                        !component.snapshot.data
+                        !message.component.snapshot.data
                             .isFilamentNotificationsComponent
                     ) {
                         return
@@ -93,18 +102,45 @@ export default (Alpine) => {
                             this.$el.getBoundingClientRect().top
                         const oldTop = getTop()
 
-                        respond(() => {
-                            animation = () => {
+                        onSuccess(({ onRender }) => {
+                            // `onRender` runs once the DOM has been morphed, inside a
+                            // `requestAnimationFrame()` before the browser paints, so the
+                            // new position can be measured and the animation started
+                            // without the notification flashing in its final position.
+                            onRender(() => {
                                 if (!this.isShown) {
+                                    return
+                                }
+
+                                // Finish any running animations so they do not distort
+                                // the measurement of the new position.
+                                this.$el
+                                    .getAnimations()
+                                    .forEach((animation) => animation.finish())
+
+                                const newTop = getTop()
+
+                                if (oldTop === newTop) {
+                                    return
+                                }
+
+                                // Honor `prefers-reduced-motion`: `element.animate()`
+                                // (the Web Animations API) is not covered by the CSS
+                                // reduced-motion reset, so skip the FLIP reposition
+                                // entirely — the element is already at its final
+                                // position after the morph.
+                                if (
+                                    window.matchMedia(
+                                        '(prefers-reduced-motion: reduce)',
+                                    ).matches
+                                ) {
                                     return
                                 }
 
                                 this.$el.animate(
                                     [
                                         {
-                                            transform: `translateY(${
-                                                oldTop - getTop()
-                                            }px)`,
+                                            transform: `translateY(${oldTop - newTop}px)`,
                                         },
                                         { transform: 'translateY(0px)' },
                                     ],
@@ -113,33 +149,47 @@ export default (Alpine) => {
                                         easing: this.transitionEasing,
                                     },
                                 )
-                            }
-
-                            this.$el
-                                .getAnimations()
-                                .forEach((animation) => animation.finish())
-                        })
-
-                        succeed(({ snapshot, effect }) => {
-                            animation()
+                            })
                         })
                     })
                 },
             )
         },
 
-        close() {
+        close(isImmediate = false) {
+            clearTimeout(this.closeTimeout)
+            clearTimeout(this.durationTimeout)
+
+            const dispatchClosedEvent = () =>
+                window.dispatchEvent(
+                    new CustomEvent('notificationClosed', {
+                        detail: {
+                            id: notification.id,
+                        },
+                    }),
+                )
+
+            if (isImmediate === true) {
+                this.isShown = false
+
+                dispatchClosedEvent()
+
+                return
+            }
+
+            // Inline notifications, such as those in the database
+            // notifications modal, are part of a list, so they are removed
+            // from it as soon as possible instead of fading out first.
+            if (this.$root.classList.contains('fi-inline')) {
+                dispatchClosedEvent()
+
+                return
+            }
+
             this.isShown = false
 
-            setTimeout(
-                () =>
-                    window.dispatchEvent(
-                        new CustomEvent('notificationClosed', {
-                            detail: {
-                                id: notification.id,
-                            },
-                        }),
-                    ),
+            this.closeTimeout = setTimeout(
+                dispatchClosedEvent,
                 this.transitionDuration,
             )
         },
@@ -162,6 +212,12 @@ export default (Alpine) => {
                     },
                 }),
             )
+        },
+
+        destroy() {
+            clearTimeout(this.closeTimeout)
+            clearTimeout(this.durationTimeout)
+            this.unsubscribeLivewireHook?.()
         },
     }))
 }

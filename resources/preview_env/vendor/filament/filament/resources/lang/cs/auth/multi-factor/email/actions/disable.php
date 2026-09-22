@@ -8,13 +8,13 @@ return [
 
         'heading' => 'Vypnout e-mailové ověřovací kódy',
 
-        'description' => 'Opravdu chcete přestat dostávat e-mailové ověřovací kódy? Vypnutím odstraníte další vrstvu zabezpečení Vašeho účtu.',
+        'description' => 'Opravdu chcete přestat dostávat e-mailové ověřovací kódy? Vypnutím odstraníte další vrstvu zabezpečení vašeho účtu.',
 
         'form' => [
 
             'code' => [
 
-                'label' => 'Zadejte 6-místný kód, který jsme Vám poslali e-mailem',
+                'label' => 'Zadejte šestimístný kód, který jsme vám poslali e-mailem',
 
                 'validation_attribute' => 'kód',
 
@@ -27,9 +27,12 @@ return [
                         'notifications' => [
 
                             'resent' => [
-                                'title' => 'Nový kód byl odeslán na Váš e-mail',
+                                'title' => 'Nový kód byl odeslán na váš e-mail',
                             ],
 
+                            'throttled' => [
+                                'title' => 'Příliš mnoho pokusů o opětovné odeslání. Počkejte prosím, než požádáte o další kód.',
+                            ],
                         ],
 
                     ],
@@ -39,6 +42,8 @@ return [
                 'messages' => [
 
                     'invalid' => 'Zadaný kód je neplatný.',
+
+                    'rate_limited' => 'Příliš mnoho pokusů. Zkuste to znovu později.',
 
                 ],
 

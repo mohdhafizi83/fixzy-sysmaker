@@ -11,8 +11,13 @@ return [
                 'expand_list' => ':count in tilang tam rawh',
             ],
 
-            'more_list_items' => 'and :count more',
+            'more_list_items' => 'leh adang :count',
 
+        ],
+
+        'icon' => [
+            'true' => 'Aw',
+            'false' => 'Aih',
         ],
 
         'key_value' => [
@@ -29,7 +34,7 @@ return [
 
             ],
 
-            'placeholder' => 'No entries',
+            'placeholder' => 'Ziah luh a awmlo',
 
         ],
 

@@ -10,8 +10,10 @@ use BezhanSalleh\FilamentShield\Commands\PublishCommand;
 use BezhanSalleh\FilamentShield\Commands\SeederCommand;
 use BezhanSalleh\FilamentShield\Commands\SetupCommand;
 use BezhanSalleh\FilamentShield\Commands\SuperAdminCommand;
+use BezhanSalleh\FilamentShield\Commands\TranslationCommand;
 use BezhanSalleh\FilamentShield\Concerns\HasAboutCommand;
 use BezhanSalleh\FilamentShield\Support\Utils;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -61,6 +63,10 @@ class FilamentShieldServiceProvider extends PackageServiceProvider
         if (Utils::isRolePolicyRegistered()) {
             Gate::policy(Utils::getRoleModel(), Utils::getRolePolicyPath());
         }
+
+        Filament::serving(function (): void {
+            $this->app->make('filament-shield')->registerEnforcedPolicies();
+        });
     }
 
     /**
@@ -75,6 +81,7 @@ class FilamentShieldServiceProvider extends PackageServiceProvider
             SeederCommand::class,
             SetupCommand::class,
             SuperAdminCommand::class,
+            TranslationCommand::class,
         ];
     }
 }

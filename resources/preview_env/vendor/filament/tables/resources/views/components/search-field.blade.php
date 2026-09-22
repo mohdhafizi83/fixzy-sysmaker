@@ -1,35 +1,43 @@
-@php
-    use Illuminate\View\ComponentAttributeBag;
-@endphp
-
 @props([
     'debounce' => '500ms',
+    'label' => __('filament-tables::table.fields.search.label'),
+    'labelHidden' => true,
     'onBlur' => false,
     'placeholder' => __('filament-tables::table.fields.search.placeholder'),
     'wireModel' => 'tableSearch',
 ])
 
 @php
-    $wireModelAttribute = $onBlur ? 'wire:model.blur' : "wire:model.live.debounce.{$debounce}";
+    use Filament\Support\Icons\Heroicon;
+    use Filament\Support\View\ComponentAttributeBag as FilamentComponentAttributeBag;
+    use Filament\Tables\View\TablesIconAlias;
+
+    $wireModelAttribute = $onBlur ? 'wire:model.live.blur' : "wire:model.live.debounce.{$debounce}";
 @endphp
 
 <div
     x-id="['input']"
     {{ $attributes->class(['fi-ta-search-field']) }}
 >
-    <label x-bind:for="$id('input')" class="fi-sr-only">
-        {{ __('filament-tables::table.fields.search.label') }}
+    <label
+        x-bind:for="$id('input')"
+        @class([
+            'fi-sr-only' => $labelHidden,
+            'fi-ta-cell-label' => ! $labelHidden,
+        ])
+    >
+        {{ $label }}
     </label>
 
     <x-filament::input.wrapper
         inline-prefix
-        :prefix-icon="\Filament\Support\Icons\Heroicon::MagnifyingGlass"
-        :prefix-icon-alias="\Filament\Tables\View\TablesIconAlias::SEARCH_FIELD"
+        :prefix-icon="Heroicon::MagnifyingGlass"
+        :prefix-icon-alias="TablesIconAlias::SEARCH_FIELD"
         :wire:target="$wireModel"
     >
         <x-filament::input
             :attributes="
-                (new ComponentAttributeBag)->merge([
+                (new FilamentComponentAttributeBag)->merge([
                     'autocomplete' => 'off',
                     'inlinePrefix' => true,
                     'maxlength' => 1000,

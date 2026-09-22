@@ -19,7 +19,7 @@ class Block extends Component
     }
     use HasName;
 
-    protected string | BackedEnum | Closure | null $icon = null;
+    protected string | BackedEnum | Htmlable | Closure | null $icon = null;
 
     protected int | Closure | null $maxItems = null;
 
@@ -49,14 +49,14 @@ class Block extends Component
         return null;
     }
 
-    public function icon(string | BackedEnum | Closure | null $icon): static
+    public function icon(string | BackedEnum | Htmlable | Closure | null $icon): static
     {
         $this->icon = $icon;
 
         return $this;
     }
 
-    public function getIcon(): string | BackedEnum | null
+    public function getIcon(): string | BackedEnum | Htmlable | null
     {
         return $this->evaluate($this->icon);
     }
@@ -76,11 +76,11 @@ class Block extends Component
     /**
      * @param  array<string, mixed> | null  $state
      */
-    public function getLabel(?array $state = null, ?string $key = null): string | Htmlable
+    public function getLabel(?array $state = null, ?string $key = null, ?int $index = null): string | Htmlable
     {
         $label = $this->evaluate(
             $this->label,
-            ['key' => $key, 'state' => $state, 'uuid' => $key],
+            ['index' => $index, 'key' => $key, 'state' => $state, 'uuid' => $key],
         );
 
         if (blank($label) && filled($label = $this->getBaseLabel())) {

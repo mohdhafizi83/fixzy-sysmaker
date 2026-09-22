@@ -109,6 +109,7 @@ class Type
             }
 
             $keyName = $query->getModel()->getKeyName();
+            $qualifiedKeyName = $query->getModel()->getQualifiedKeyName();
 
             if ($this->hasOptionLabelFromRecordUsingCallback()) {
                 return $query
@@ -121,12 +122,18 @@ class Type
 
             $titleAttribute = $this->getTitleAttribute();
 
+            // Qualify the column names so they are not ambiguous when the query has been
+            // modified to include a join (for example, through `modifyOptionsQueryUsing()`).
+            $qualifiedTitleAttribute = str_contains($titleAttribute, '->')
+                ? $titleAttribute
+                : $query->qualifyColumn($titleAttribute);
+
             if (empty($query->getQuery()->orders)) {
-                $query->orderBy($titleAttribute);
+                $query->orderBy($qualifiedTitleAttribute);
             }
 
             return $query
-                ->pluck($titleAttribute, $keyName)
+                ->pluck($qualifiedTitleAttribute, $qualifiedKeyName)
                 ->toArray();
         });
 
@@ -143,7 +150,16 @@ class Type
                 ]) ?? $query;
             }
 
+            $baseQuery = $query->getQuery();
+
+            if (isset($baseQuery->limit)) {
+                $component->optionsLimit($baseQuery->limit);
+            } elseif ($component->isSearchable() && filled($this->getSearchColumns())) {
+                $query->limit($component->getOptionsLimit());
+            }
+
             $keyName = $query->getModel()->getKeyName();
+            $qualifiedKeyName = $query->getModel()->getQualifiedKeyName();
 
             if ($this->hasOptionLabelFromRecordUsingCallback()) {
                 return $query
@@ -156,19 +172,27 @@ class Type
 
             $titleAttribute = $this->getTitleAttribute();
 
+            // Qualify the column names so they are not ambiguous when the query has been
+            // modified to include a join (for example, through `modifyOptionsQueryUsing()`).
+            $qualifiedTitleAttribute = str_contains($titleAttribute, '->')
+                ? $titleAttribute
+                : $query->qualifyColumn($titleAttribute);
+
             if (empty($query->getQuery()->orders)) {
-                $query->orderBy($titleAttribute);
+                $query->orderBy($qualifiedTitleAttribute);
             }
 
             return $query
-                ->pluck($titleAttribute, $keyName)
+                ->pluck($qualifiedTitleAttribute, $qualifiedKeyName)
                 ->toArray();
         });
 
         $this->getOptionLabelUsing(function (Select $component, $value) {
             $query = $this->getModel()::query();
 
-            $query->where($query->getModel()->getKeyName(), $value);
+            // Qualify the key name so it is not ambiguous when the query has been modified to
+            // include a join (for example, through `modifyOptionsQueryUsing()`).
+            $query->where($query->getModel()->getQualifiedKeyName(), $value);
 
             if ($this->modifyOptionsQueryUsing) {
                 $query = $component->evaluate($this->modifyOptionsQueryUsing, [

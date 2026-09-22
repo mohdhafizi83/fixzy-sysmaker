@@ -2,6 +2,8 @@
 
 namespace Livewire\Features\SupportQueryString;
 
+use Illuminate\Support\Arr;
+use Livewire\Drawer\Utils;
 use Livewire\Features\SupportAttributes\Attribute as LivewireAttribute;
 use Livewire\Features\SupportFormObjects\Form;
 use ReflectionClass;
@@ -61,13 +63,46 @@ class BaseUrl extends LivewireAttribute
         if ($initialValue === $nonExistentValue) return;
 
         $decoded = is_array($initialValue)
-            ? json_decode(json_encode($initialValue), true)
-            : json_decode($initialValue ?? '', true);
+            ? json_decode(json_encode($initialValue, flags: JSON_BIGINT_AS_STRING), true, flags: JSON_BIGINT_AS_STRING)
+            : json_decode($initialValue ?? '', true, flags: JSON_BIGINT_AS_STRING);
+
+        $original = $this->getValue();
+
+        if (is_string($initialValue) && is_array($decoded)) {
+            $target = $this->getSubTarget() ?? $this->getComponent();
+            $property = $this->getSubName() ?? $this->getName();
+
+            $decodedMatchesPropertyType = Utils::propertyTypeMatchesValue(
+                $target,
+                $property,
+                $decoded,
+            );
+            $initialValueMatchesPropertyType = Utils::propertyTypeMatchesValue(
+                $target,
+                $property,
+                $initialValue,
+            );
+
+            $propertyTypePrefersInitialValue = $decodedMatchesPropertyType === false && $initialValueMatchesPropertyType === true;
+            $untypedPropertyCurrentlyContainsString = $decodedMatchesPropertyType === null && is_string($original);
+
+            if ($propertyTypePrefersInitialValue || $untypedPropertyCurrentlyContainsString) {
+                $decoded = null;
+            }
+        }
 
         // If only part of an array is present in the query string,
         // we want to merge instead of override the value...
-        if (is_array($decoded) && is_array($original = $this->getValue())) {
+        if (is_array($decoded) && is_array($original)) {
             $decoded = $this->recursivelyMergeArraysWithoutAppendingDuplicateValues($original, $decoded);
+        }
+
+        // If json_decode produced a non-finite float (INF, -INF, NAN),
+        // it means the value looked like scientific notation with an
+        // overflowing exponent (e.g. "123456e7890"). Fall back to
+        // the original string to avoid data corruption...
+        if (is_float($decoded) && ! is_finite($decoded)) {
+            $decoded = null;
         }
 
         // Handle empty strings differently depending on if this
@@ -78,7 +113,12 @@ class BaseUrl extends LivewireAttribute
             $value = $decoded === null ? $initialValue : $decoded;
         }
 
-        $this->setValue($value, $this->nullable);
+        try {
+            $this->setValue($value, $this->nullable);
+        } catch (\TypeError $e) {
+            // Silently ignore invalid query string types and keep the default.
+            return;
+        }
     }
 
     protected function recursivelyMergeArraysWithoutAppendingDuplicateValues(&$array1, &$array2)
@@ -123,13 +163,13 @@ class BaseUrl extends LivewireAttribute
     public function getFromUrlQueryString($name, $default = null)
     {
         if (! app('livewire')->isLivewireRequest()) {
-            $value = request()->query($this->urlName(), $default);
+            $value = data_get(request()->query(), $this->urlName(), $default);
 
             // If the property is present in the querystring without a value, then Laravel returns
             // the $default value. We want to return null in this case, so we can differentiate
             // between "not present" and "present with no value". If the request is a Livewire
             // request, we don't have that issue as we use PHP's parse_str function.
-            if (array_key_exists($name, request()->query()) && $value === $default) {
+            if (Arr::has(request()->query(), $name) && $value === $default) {
                 return null;
             }
 
@@ -153,6 +193,6 @@ class BaseUrl extends LivewireAttribute
             parse_str($parsedUrl['query'], $query);
         }
 
-        return $query[$key] ?? $default;
+        return data_get($query, $key, $default);
     }
 }

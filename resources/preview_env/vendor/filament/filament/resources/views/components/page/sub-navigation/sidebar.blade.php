@@ -2,12 +2,17 @@
     'navigation',
 ])
 
+@php
+    use Filament\Support\Facades\FilamentView;
+    use Filament\View\PanelsRenderHook;
+@endphp
+
 <div
     {{ $attributes->class(['fi-page-sub-navigation-sidebar-ctn']) }}
 >
-    {{ \Filament\Support\Facades\FilamentView::renderHook(\Filament\View\PanelsRenderHook::PAGE_SUB_NAVIGATION_SIDEBAR_BEFORE, scopes: $this->getRenderHookScopes()) }}
+    {{ FilamentView::renderHook(PanelsRenderHook::PAGE_SUB_NAVIGATION_SIDEBAR_BEFORE, scopes: $this->getRenderHookScopes()) }}
 
-    <ul wire:ignore class="fi-page-sub-navigation-sidebar">
+    <ul class="fi-page-sub-navigation-sidebar">
         @foreach ($navigation as $navigationGroup)
             @php
                 $isNavigationGroupActive = $navigationGroup->isActive();
@@ -31,5 +36,5 @@
         @endforeach
     </ul>
 
-    {{ \Filament\Support\Facades\FilamentView::renderHook(\Filament\View\PanelsRenderHook::PAGE_SUB_NAVIGATION_SIDEBAR_AFTER, scopes: $this->getRenderHookScopes()) }}
+    {{ FilamentView::renderHook(PanelsRenderHook::PAGE_SUB_NAVIGATION_SIDEBAR_AFTER, scopes: $this->getRenderHookScopes()) }}
 </div>

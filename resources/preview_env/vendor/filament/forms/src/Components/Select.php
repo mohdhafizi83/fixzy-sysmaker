@@ -8,17 +8,21 @@ use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Forms\View\FormsIconAlias;
 use Filament\Schemas\Components\Component;
-use Filament\Schemas\Components\Contracts\HasAffixActions;
 use Filament\Schemas\Components\StateCasts\BooleanStateCast;
 use Filament\Schemas\Components\StateCasts\Contracts\StateCast;
 use Filament\Schemas\Components\StateCasts\EnumArrayStateCast;
 use Filament\Schemas\Components\StateCasts\EnumStateCast;
+use Filament\Schemas\Components\StateCasts\OptionsArrayStateCast;
+use Filament\Schemas\Components\StateCasts\OptionStateCast;
 use Filament\Schemas\Schema;
 use Filament\Support\Components\Attributes\ExposedLivewireMethod;
+use Filament\Support\Components\Contracts\HasEmbeddedView;
 use Filament\Support\Concerns\HasExtraAlpineAttributes;
+use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentIcon;
 use Filament\Support\Icons\Heroicon;
 use Filament\Support\Services\RelationshipJoiner;
+use Filament\Support\View\ComponentAttributeBag as FilamentComponentAttributeBag;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Connection;
@@ -33,6 +37,7 @@ use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Database\Eloquent\Relations\HasOneOrManyThrough;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Js;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Renderless;
 use LogicException;
@@ -41,7 +46,7 @@ use Znck\Eloquent\Relations\BelongsToThrough;
 use function Filament\Support\generate_search_column_expression;
 use function Filament\Support\generate_search_term_expression;
 
-class Select extends Field implements Contracts\CanDisableOptions, Contracts\HasNestedRecursiveValidationRules, HasAffixActions
+class Select extends Field implements Contracts\CanDisableOptions, Contracts\HasAffixes, Contracts\HasNestedRecursiveValidationRules, HasEmbeddedView
 {
     use Concerns\CanAllowHtml;
     use Concerns\CanBeNative;
@@ -61,10 +66,7 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
     use Concerns\HasPlaceholder;
     use HasExtraAlpineAttributes;
 
-    /**
-     * @var view-string
-     */
-    protected string $view = 'filament-forms::components.select';
+    protected ?string $publishedViewOverrideCheckPath = 'filament-forms::components.select';
 
     /**
      * @var array<Component | Action | ActionGroup> | Closure | null
@@ -121,29 +123,30 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
 
     protected string | Closure | null $relationship = null;
 
+    protected ?Closure $modifyRelationshipQueryUsing = null;
+
+    protected bool $shouldIgnoreRelationshipRecord = false;
+
+    protected ?Collection $cachedRelationshipRecords = null;
+
+    /**
+     * @var array<string | int, string> | null
+     */
+    protected ?array $cachedRelationshipOptions = null;
+
     protected int | Closure $optionsLimit = 50;
 
     protected bool | Closure | null $isSearchForcedCaseInsensitive = null;
 
     protected bool | Closure $canOptionLabelsWrap = true;
 
+    protected bool | Closure $isReorderable = false;
+
+    protected bool | Closure | null $hasDynamicOptions = null;
+
     protected function setUp(): void
     {
         parent::setUp();
-
-        $this->default(static fn (Select $component): ?array => $component->isMultiple() ? [] : null);
-
-        $this->afterStateHydrated(static function (Select $component, $state): void {
-            if (! $component->isMultiple()) {
-                return;
-            }
-
-            if (is_array($state)) {
-                return;
-            }
-
-            $component->state([]);
-        });
 
         $this->transformOptionsForJsUsing(static function (Select $component, array $options): array {
             return collect($options)
@@ -242,7 +245,7 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
             ->label(__('filament-forms::components.select.actions.create_option.label'))
             ->schema(static function (Select $component, Schema $schema): array | Schema | null {
                 return $component->getCreateOptionActionForm($schema->model(
-                    $component->getRelationship() ? $component->getRelationship()->getModel()::class : null,
+                    $component->hasRelationship() ? $component->getRelationship()->getModel()::class : $component->getActionSchemaModel(),
                 ));
             })
             ->action(static function (Action $action, array $arguments, Select $component, array $data, Schema $schema): void {
@@ -265,6 +268,8 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
 
                 $component->state($state);
                 $component->callAfterStateUpdated();
+
+                $component->refreshSelectedOptionLabel();
 
                 if (! ($arguments['another'] ?? false)) {
                     return;
@@ -516,6 +521,18 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
         return $this;
     }
 
+    public function reorderable(bool | Closure $condition = true): static
+    {
+        $this->isReorderable = $condition;
+
+        return $this;
+    }
+
+    public function isReorderable(): bool
+    {
+        return (bool) $this->evaluate($this->isReorderable);
+    }
+
     public function position(string | Closure | null $position): static
     {
         $this->position = $position;
@@ -546,9 +563,17 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
     #[Renderless]
     public function getOptionLabel(bool $withDefault = true): ?string
     {
+        return $this->resolveOptionLabel($withDefault);
+    }
+
+    /**
+     * @param  array<string | array<string>> | null  $options
+     */
+    protected function resolveOptionLabel(bool $withDefault = true, ?array $options = null): ?string
+    {
         if (! $this->getOptionLabelUsing) {
             $state = $this->getState();
-            $options = $this->getOptions();
+            $options ??= $this->getOptions();
 
             if ($state instanceof BackedEnum) {
                 $state = $state->value;
@@ -593,17 +618,18 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
     }
 
     /**
+     * @param  array<string | array<string>> | null  $options
      * @return array<string>
      */
-    public function getOptionLabels(bool $withDefaults = true): array
+    public function getOptionLabels(bool $withDefaults = true, ?array $options = null): array
     {
         if (! $this->getOptionLabelsUsing) {
             $state = $this->getState();
-            $options = $this->getOptions();
+            $options ??= $this->getOptions();
 
             $labels = [];
 
-            foreach ($state as $value) {
+            foreach ($state ?? [] as $value) {
                 if ($value instanceof BackedEnum) {
                     $value = $value->value;
                 }
@@ -765,205 +791,21 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
     {
         $this->relationship = $name ?? $this->getName();
         $this->relationshipTitleAttribute = $titleAttribute;
+        $this->modifyRelationshipQueryUsing = $modifyQueryUsing;
+        $this->shouldIgnoreRelationshipRecord = $ignoreRecord;
+        $this->cachedRelationshipRecords = null;
+        $this->cachedRelationshipOptions = null;
 
-        $this->getSearchResultsUsing(static function (Select $component, ?string $search) use ($modifyQueryUsing, $ignoreRecord): array {
-            $relationship = Relation::noConstraints(fn () => $component->getRelationship());
-
-            $relationshipQuery = app(RelationshipJoiner::class)->prepareQueryForNoConstraints($relationship);
-
-            if ($ignoreRecord && ($record = $component->getRecord())) {
-                $relationshipQuery->where($record->getQualifiedKeyName(), '!=', $record->getKey());
-            }
-
-            if ($modifyQueryUsing) {
-                $relationshipQuery = $component->evaluate($modifyQueryUsing, [
-                    'query' => $relationshipQuery,
-                    'search' => $search,
-                ]) ?? $relationshipQuery;
-            }
-
-            $component->applySearchConstraint(
-                $relationshipQuery,
-                generate_search_term_expression($search, $component->isSearchForcedCaseInsensitive(), $relationshipQuery->getConnection()),
-            );
-
-            $baseRelationshipQuery = $relationshipQuery->getQuery();
-
-            if (isset($baseRelationshipQuery->limit)) {
-                $component->optionsLimit($baseRelationshipQuery->limit);
-            } else {
-                $relationshipQuery->limit($component->getOptionsLimit());
-            }
-
-            $qualifiedRelatedKeyName = $component->getQualifiedRelatedKeyNameForRelationship($relationship);
-
-            if ($component->hasOptionLabelFromRecordUsingCallback()) {
-                return $relationshipQuery
-                    ->get()
-                    ->mapWithKeys(static fn (Model $record) => [
-                        $record->{Str::afterLast($qualifiedRelatedKeyName, '.')} => $component->getOptionLabelFromRecord($record),
-                    ])
-                    ->toArray();
-            }
-
-            $relationshipTitleAttribute = $component->getRelationshipTitleAttribute();
-
-            if (empty($relationshipQuery->getQuery()->orders)) {
-                $relationshipQuery->orderBy($relationshipQuery->qualifyColumn($relationshipTitleAttribute));
-            }
-
-            if (str_contains($relationshipTitleAttribute, '->')) {
-                if (! str_contains($relationshipTitleAttribute, ' as ')) {
-                    $relationshipTitleAttribute .= " as {$relationshipTitleAttribute}";
-                }
-            } else {
-                $relationshipTitleAttribute = $relationshipQuery->qualifyColumn($relationshipTitleAttribute);
-            }
-
-            return $relationshipQuery
-                ->pluck($relationshipTitleAttribute, $qualifiedRelatedKeyName)
-                ->toArray();
+        $this->getSearchResultsUsing(static function (Select $component, ?string $search): array {
+            return $component->getSearchResultsFromRelationship($search);
         });
 
-        $this->options(static function (Select $component) use ($modifyQueryUsing, $ignoreRecord): ?array {
-            if (($component->isSearchable()) && ! $component->isPreloaded()) {
-                return null;
-            }
-
-            $relationship = Relation::noConstraints(fn () => $component->getRelationship());
-
-            $relationshipQuery = app(RelationshipJoiner::class)->prepareQueryForNoConstraints($relationship);
-
-            if ($ignoreRecord && ($record = $component->getRecord())) {
-                $relationshipQuery->where($record->getQualifiedKeyName(), '!=', $record->getKey());
-            }
-
-            if ($modifyQueryUsing) {
-                $relationshipQuery = $component->evaluate($modifyQueryUsing, [
-                    'query' => $relationshipQuery,
-                    'search' => null,
-                ]) ?? $relationshipQuery;
-            }
-
-            $baseRelationshipQuery = $relationshipQuery->getQuery();
-
-            if (isset($baseRelationshipQuery->limit)) {
-                $component->optionsLimit($baseRelationshipQuery->limit);
-            } elseif ($component->isSearchable() && filled($component->getSearchColumns())) {
-                $relationshipQuery->limit($component->getOptionsLimit());
-            }
-
-            $qualifiedRelatedKeyName = $component->getQualifiedRelatedKeyNameForRelationship($relationship);
-
-            if ($component->hasOptionLabelFromRecordUsingCallback()) {
-                return $relationshipQuery
-                    ->get()
-                    ->mapWithKeys(static fn (Model $record) => [
-                        $record->{Str::afterLast($qualifiedRelatedKeyName, '.')} => $component->getOptionLabelFromRecord($record),
-                    ])
-                    ->toArray();
-            }
-
-            $relationshipTitleAttribute = $component->getRelationshipTitleAttribute();
-
-            if (empty($relationshipQuery->getQuery()->orders)) {
-                $relationshipQuery->orderBy($relationshipQuery->qualifyColumn($relationshipTitleAttribute));
-            }
-
-            if (str_contains($relationshipTitleAttribute, '->')) {
-                if (! str_contains($relationshipTitleAttribute, ' as ')) {
-                    $relationshipTitleAttribute .= " as {$relationshipTitleAttribute}";
-                }
-            } else {
-                $relationshipTitleAttribute = $relationshipQuery->qualifyColumn($relationshipTitleAttribute);
-            }
-
-            return $relationshipQuery
-                ->pluck($relationshipTitleAttribute, $qualifiedRelatedKeyName)
-                ->toArray();
+        $this->options(static function (Select $component): ?array {
+            return $component->getOptionsFromRelationship();
         });
 
-        $this->loadStateFromRelationshipsUsing(static function (Select $component, $state) use ($modifyQueryUsing): void {
-            if (filled($state)) {
-                return;
-            }
-
-            $relationship = $component->getRelationship();
-
-            if (
-                ($relationship instanceof BelongsToMany) ||
-                ($relationship instanceof HasOneOrManyThrough)
-            ) {
-                if ($modifyQueryUsing) {
-                    $component->evaluate($modifyQueryUsing, [
-                        'query' => $relationship->getQuery(),
-                        'search' => null,
-                    ]);
-                }
-
-                /** @var Collection $relatedRecords */
-                $relatedRecords = $relationship->getResults();
-
-                $component->state(
-                    // Cast the related keys to a string, otherwise JavaScript does not
-                    // know how to handle deselection.
-                    //
-                    // https://github.com/filamentphp/filament/issues/1111
-                    $relatedRecords
-                        ->pluck(($relationship instanceof BelongsToMany) ? $relationship->getRelatedKeyName() : $relationship->getRelated()->getKeyName())
-                        ->map(static fn ($key): string => strval($key))
-                        ->all(),
-                );
-
-                return;
-            }
-
-            if ($relationship instanceof BelongsToThrough) {
-                /** @var ?Model $relatedModel */
-                $relatedModel = $relationship->getResults();
-
-                $component->state(
-                    $relatedModel?->getAttribute(
-                        $relationship->getRelated()->getKeyName(),
-                    ),
-                );
-
-                return;
-            }
-
-            if ($relationship instanceof HasMany) {
-                /** @var Collection $relatedRecords */
-                $relatedRecords = $relationship->getResults();
-
-                $component->state(
-                    $relatedRecords
-                        ->pluck($relationship->getLocalKeyName())
-                        ->all(),
-                );
-
-                return;
-            }
-
-            if ($relationship instanceof HasOne) {
-                $relatedModel = $relationship->getResults();
-
-                $component->state(
-                    $relatedModel?->getAttribute(
-                        $relationship->getLocalKeyName(),
-                    ),
-                );
-
-                return;
-            }
-
-            /** @var BelongsTo $relationship */
-            $relatedModel = $relationship->getResults();
-
-            $component->state(
-                $relatedModel?->getAttribute(
-                    $relationship->getOwnerKeyName(),
-                ),
-            );
+        $this->loadStateFromRelationshipsUsing(static function (Select $component): void {
+            $component->fillStateFromRelationship();
         });
 
         $this->getOptionLabelUsing(static function (Select $component) {
@@ -987,6 +829,29 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
         });
 
         $this->getSelectedRecordUsing(static function (Select $component, $state) use ($modifyQueryUsing): ?Model {
+            $relationship = $component->getRelationship();
+
+            if (
+                (! $modifyQueryUsing) &&
+                ($relationship instanceof BelongsTo)
+            ) {
+                $record = $component->getRecord();
+
+                if (
+                    ($record instanceof Model) &&
+                    $record->relationLoaded($component->getRelationshipName())
+                ) {
+                    $relatedRecord = $record->getRelationValue($component->getRelationshipName());
+
+                    if (
+                        ($relatedRecord instanceof Model) &&
+                        ((string) $relatedRecord->getAttribute($relationship->getOwnerKeyName()) === (string) $state)
+                    ) {
+                        return $relatedRecord;
+                    }
+                }
+            }
+
             $relationship = Relation::noConstraints(fn () => $component->getRelationship());
 
             $relationshipQuery = app(RelationshipJoiner::class)->prepareQueryForNoConstraints($relationship);
@@ -1004,6 +869,59 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
         });
 
         $this->getOptionLabelsUsing(static function (Select $component, array $values) use ($modifyQueryUsing): array {
+            $relationship = $component->getRelationship();
+            $record = $component->getRecord();
+            $relationshipName = $component->getRelationshipName();
+
+            if (
+                (! $modifyQueryUsing) &&
+                ($record instanceof Model) &&
+                $record->relationLoaded($relationshipName) &&
+                (
+                    ($relationship instanceof BelongsToMany) ||
+                    ($relationship instanceof HasOneOrMany)
+                )
+            ) {
+                $relatedRecords = $record->getRelationValue($relationshipName);
+
+                if ($relatedRecords instanceof Collection) {
+                    $relatedKeyName = ($relationship instanceof BelongsToMany)
+                        ? $relationship->getRelatedKeyName()
+                        : $relationship->getRelated()->getKeyName();
+
+                    $loadedKeys = $relatedRecords->pluck($relatedKeyName)->map(fn ($key) => (string) $key)->all();
+                    $requestedKeys = array_map(fn ($value) => (string) $value, $values);
+
+                    if (empty(array_diff($requestedKeys, $loadedKeys))) {
+                        $relationshipTitleAttribute = $component->getRelationshipTitleAttribute();
+
+                        if (str_contains($relationshipTitleAttribute, '->')) {
+                            $relationshipTitleAttribute = str_replace('->', '.', $relationshipTitleAttribute);
+                        }
+
+                        $filteredRecords = $relatedRecords->filter(
+                            fn (Model $relatedRecord): bool => in_array(
+                                (string) $relatedRecord->getAttribute($relatedKeyName),
+                                $requestedKeys,
+                                strict: true,
+                            ),
+                        );
+
+                        if ($component->hasOptionLabelFromRecordUsingCallback()) {
+                            return $filteredRecords
+                                ->mapWithKeys(static fn (Model $relatedRecord) => [
+                                    $relatedRecord->getAttribute($relatedKeyName) => $component->getOptionLabelFromRecord($relatedRecord),
+                                ])
+                                ->toArray();
+                        }
+
+                        return $filteredRecords
+                            ->pluck($relationshipTitleAttribute, $relatedKeyName)
+                            ->toArray();
+                    }
+                }
+            }
+
             $relationship = Relation::noConstraints(fn () => $component->getRelationship());
 
             $relationshipQuery = app(RelationshipJoiner::class)->prepareQueryForNoConstraints($relationship);
@@ -1043,107 +961,12 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
                 ->toArray();
         });
 
-        $this->saveRelationshipsUsing(static function (Select $component, Model $record, $state) use ($modifyQueryUsing): void {
-            $relationship = $component->getRelationship();
-
-            if (($relationship instanceof HasOne) || ($relationship instanceof HasMany)) {
-                $query = $relationship->getQuery();
-
-                if ($modifyQueryUsing) {
-                    $component->evaluate($modifyQueryUsing, [
-                        'query' => $query,
-                        'search' => null,
-                    ]);
-                }
-
-                $query->update([
-                    $relationship->getForeignKeyName() => null,
-                ]);
-
-                if (! empty($state)) {
-                    $relationship::noConstraints(function () use ($component, $record, $state, $modifyQueryUsing): void {
-                        $relationship = $component->getRelationship();
-
-                        $query = $relationship->getQuery()->whereIn($relationship->getLocalKeyName(), Arr::wrap($state));
-
-                        if ($modifyQueryUsing) {
-                            $component->evaluate($modifyQueryUsing, [
-                                'query' => $query,
-                                'search' => null,
-                            ]);
-                        }
-
-                        $query->update([
-                            $relationship->getForeignKeyName() => $record->getAttribute($relationship->getLocalKeyName()),
-                        ]);
-                    });
-                }
-
-                return;
-            }
-
-            if (
-                ($relationship instanceof HasOneOrMany) ||
-                ($relationship instanceof HasOneOrManyThrough) ||
-                ($relationship instanceof BelongsToThrough)
-            ) {
-                return;
-            }
-
-            if (! $relationship instanceof BelongsToMany) {
-                // If the model is new and the foreign key is already filled, we don't need to fill it again.
-                // This could be a security issue if the foreign key was mutated in some way before it
-                // was saved, and we don't want to overwrite that value.
-                if (
-                    $record->wasRecentlyCreated &&
-                    filled($record->getAttributeValue($relationship->getForeignKeyName()))
-                ) {
-                    return;
-                }
-
-                $relationship->associate($state);
-                $record->wasRecentlyCreated && $record->save();
-
-                return;
-            }
-
-            if ($modifyQueryUsing) {
-                $component->evaluate($modifyQueryUsing, [
-                    'query' => $relationship->getQuery(),
-                    'search' => null,
-                ]);
-            }
-
-            /** @var Collection $relatedRecords */
-            $relatedRecords = $relationship->getResults();
-
-            $state = Arr::wrap($state ?? []);
-
-            $recordsToDetach = array_diff(
-                $relatedRecords
-                    ->pluck($relationship->getRelatedKeyName())
-                    ->map(static fn ($key): string => strval($key))
-                    ->all(),
-                $state,
-            );
-
-            if (count($recordsToDetach) > 0) {
-                $relationship->detach($recordsToDetach);
-            }
-
-            $pivotData = $component->getPivotData();
-
-            if ($pivotData === []) {
-                $relationship->sync($state, detaching: false);
-
-                return;
-            }
-
-            $relationship->syncWithPivotValues($state, $pivotData, detaching: false);
+        $this->saveRelationshipsUsing(static function (Select $component): void {
+            $component->saveStateToRelationship();
         });
 
         $this->createOptionUsing(static function (Select $component, array $data, Schema $schema) {
-            $record = $component->getRelationship()->getRelated();
+            $record = $component->getRelationship()->newModelInstance();
             $record->fill($data);
             $record->save();
 
@@ -1160,9 +983,458 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
             $schema->getRecord()?->update($data);
         });
 
-        $this->dehydrated(fn (Select $component): bool => ! $component->isMultiple());
+        $this->dehydrated(fn (Select $component): bool => (! $component->isMultiple()) && $component->isSaved());
 
         return $this;
+    }
+
+    /**
+     * @return array<string | int, string>
+     */
+    public function getSearchResultsFromRelationship(?string $search): array
+    {
+        $relationship = Relation::noConstraints(fn () => $this->getRelationship());
+
+        $relationshipQuery = app(RelationshipJoiner::class)->prepareQueryForNoConstraints($relationship);
+
+        if ($this->shouldIgnoreRelationshipRecord && ($record = $this->getRecord())) {
+            $relationshipQuery->where($record->getQualifiedKeyName(), '!=', $record->getKey());
+        }
+
+        if ($this->modifyRelationshipQueryUsing) {
+            $relationshipQuery = $this->evaluate($this->modifyRelationshipQueryUsing, [
+                'query' => $relationshipQuery,
+                'search' => $search,
+            ]) ?? $relationshipQuery;
+        }
+
+        $this->applySearchConstraint(
+            $relationshipQuery,
+            generate_search_term_expression($search, $this->isSearchForcedCaseInsensitive(), $relationshipQuery->getConnection()),
+        );
+
+        $baseRelationshipQuery = $relationshipQuery->getQuery();
+
+        if (isset($baseRelationshipQuery->limit)) {
+            $this->optionsLimit($baseRelationshipQuery->limit);
+        } else {
+            $relationshipQuery->limit($this->getOptionsLimit());
+        }
+
+        $qualifiedRelatedKeyName = $this->getQualifiedRelatedKeyNameForRelationship($relationship);
+
+        if ($this->hasOptionLabelFromRecordUsingCallback()) {
+            return $relationshipQuery
+                ->get()
+                ->mapWithKeys(fn (Model $record) => [
+                    $record->{Str::afterLast($qualifiedRelatedKeyName, '.')} => $this->getOptionLabelFromRecord($record),
+                ])
+                ->toArray();
+        }
+
+        $relationshipTitleAttribute = $this->getRelationshipTitleAttribute();
+
+        if (empty($relationshipQuery->getQuery()->orders)) {
+            $relationshipOrderByAttribute = $relationshipTitleAttribute;
+
+            if (str_contains($relationshipOrderByAttribute, ' as ')) {
+                $relationshipOrderByAttribute = (string) str($relationshipOrderByAttribute)->before(' as ');
+            }
+
+            $relationshipQuery->orderBy($relationshipQuery->qualifyColumn($relationshipOrderByAttribute));
+        }
+
+        if (str_contains($relationshipTitleAttribute, '->')) {
+            if (! str_contains($relationshipTitleAttribute, ' as ')) {
+                $relationshipTitleAttribute .= " as {$relationshipTitleAttribute}";
+            }
+        } else {
+            $relationshipTitleAttribute = $relationshipQuery->qualifyColumn($relationshipTitleAttribute);
+        }
+
+        return $relationshipQuery
+            ->pluck($relationshipTitleAttribute, $qualifiedRelatedKeyName)
+            ->toArray();
+    }
+
+    /**
+     * @return array<string | int, string> | null
+     */
+    public function getOptionsFromRelationship(): ?array
+    {
+        if ($this->isSearchable() && (! $this->isPreloaded())) {
+            return null;
+        }
+
+        $relationship = Relation::noConstraints(fn () => $this->getRelationship());
+
+        $qualifiedRelatedKeyName = $this->getQualifiedRelatedKeyNameForRelationship($relationship);
+
+        if ($this->hasOptionLabelFromRecordUsingCallback()) {
+            if (
+                (! $this->modifyRelationshipQueryUsing) &&
+                (! $this->shouldIgnoreRelationshipRecord) &&
+                ($this->cachedRelationshipRecords !== null)
+            ) {
+                return $this->cachedRelationshipRecords
+                    ->mapWithKeys(fn (Model $record) => [
+                        $record->{Str::afterLast($qualifiedRelatedKeyName, '.')} => $this->getOptionLabelFromRecord($record),
+                    ])
+                    ->toArray();
+            }
+
+            $relationshipQuery = app(RelationshipJoiner::class)->prepareQueryForNoConstraints($relationship);
+
+            if ($this->shouldIgnoreRelationshipRecord && ($record = $this->getRecord())) {
+                $relationshipQuery->where($record->getQualifiedKeyName(), '!=', $record->getKey());
+            }
+
+            if ($this->modifyRelationshipQueryUsing) {
+                $relationshipQuery = $this->evaluate($this->modifyRelationshipQueryUsing, [
+                    'query' => $relationshipQuery,
+                    'search' => null,
+                ]) ?? $relationshipQuery;
+            }
+
+            $baseRelationshipQuery = $relationshipQuery->getQuery();
+
+            if (isset($baseRelationshipQuery->limit)) {
+                $this->optionsLimit($baseRelationshipQuery->limit);
+            } elseif ($this->isSearchable() && filled($this->getSearchColumns())) {
+                $relationshipQuery->limit($this->getOptionsLimit());
+            }
+
+            $records = $relationshipQuery->get();
+
+            if ((! $this->modifyRelationshipQueryUsing) && (! $this->shouldIgnoreRelationshipRecord)) {
+                $this->cachedRelationshipRecords = $records;
+            }
+
+            return $records
+                ->mapWithKeys(fn (Model $record) => [
+                    $record->{Str::afterLast($qualifiedRelatedKeyName, '.')} => $this->getOptionLabelFromRecord($record),
+                ])
+                ->toArray();
+        }
+
+        if (
+            (! $this->modifyRelationshipQueryUsing) &&
+            (! $this->shouldIgnoreRelationshipRecord) &&
+            ($this->cachedRelationshipOptions !== null)
+        ) {
+            return $this->cachedRelationshipOptions;
+        }
+
+        $relationshipQuery = app(RelationshipJoiner::class)->prepareQueryForNoConstraints($relationship);
+
+        if ($this->shouldIgnoreRelationshipRecord && ($record = $this->getRecord())) {
+            $relationshipQuery->where($record->getQualifiedKeyName(), '!=', $record->getKey());
+        }
+
+        if ($this->modifyRelationshipQueryUsing) {
+            $relationshipQuery = $this->evaluate($this->modifyRelationshipQueryUsing, [
+                'query' => $relationshipQuery,
+                'search' => null,
+            ]) ?? $relationshipQuery;
+        }
+
+        $baseRelationshipQuery = $relationshipQuery->getQuery();
+
+        if (isset($baseRelationshipQuery->limit)) {
+            $this->optionsLimit($baseRelationshipQuery->limit);
+        } elseif ($this->isSearchable() && filled($this->getSearchColumns())) {
+            $relationshipQuery->limit($this->getOptionsLimit());
+        }
+
+        $relationshipTitleAttribute = $this->getRelationshipTitleAttribute();
+
+        if (empty($relationshipQuery->getQuery()->orders)) {
+            $relationshipOrderByAttribute = $relationshipTitleAttribute;
+
+            if (str_contains($relationshipOrderByAttribute, ' as ')) {
+                $relationshipOrderByAttribute = (string) str($relationshipOrderByAttribute)->before(' as ');
+            }
+
+            $relationshipQuery->orderBy($relationshipQuery->qualifyColumn($relationshipOrderByAttribute));
+        }
+
+        if (str_contains($relationshipTitleAttribute, '->')) {
+            if (! str_contains($relationshipTitleAttribute, ' as ')) {
+                $relationshipTitleAttribute .= " as {$relationshipTitleAttribute}";
+            }
+        } else {
+            $relationshipTitleAttribute = $relationshipQuery->qualifyColumn($relationshipTitleAttribute);
+        }
+
+        $options = $relationshipQuery
+            ->pluck($relationshipTitleAttribute, $qualifiedRelatedKeyName)
+            ->toArray();
+
+        if ((! $this->modifyRelationshipQueryUsing) && (! $this->shouldIgnoreRelationshipRecord)) {
+            $this->cachedRelationshipOptions = $options;
+        }
+
+        return $options;
+    }
+
+    public function fillStateFromRelationship(): void
+    {
+        if (filled($this->getState())) {
+            return;
+        }
+
+        $relationship = $this->getRelationship();
+        $relationshipName = $this->getRelationshipName();
+
+        if (
+            (! $this->modifyRelationshipQueryUsing) &&
+            (! str_contains($relationshipName, '.')) &&
+            ($record = $this->getRecord()) instanceof Model &&
+            $record->relationLoaded($relationshipName)
+        ) {
+            $relatedRecords = $record->getRelationValue($relationshipName);
+
+            if (
+                ($relationship instanceof BelongsToMany) ||
+                ($relationship instanceof HasOneOrManyThrough)
+            ) {
+                $relatedKeys = $relatedRecords
+                    ->pluck(($relationship instanceof BelongsToMany) ? $relationship->getRelatedKeyName() : $relationship->getRelated()->getKeyName())
+                    ->map(static fn ($key): string => strval($key));
+
+                $this->state(
+                    $this->isMultiple()
+                        ? $relatedKeys->all()
+                        : $relatedKeys->first(),
+                );
+
+                return;
+            }
+
+            if ($relationship instanceof BelongsToThrough) {
+                $this->state(
+                    $relatedRecords?->getAttribute(
+                        $relationship->getRelated()->getKeyName(),
+                    ),
+                );
+
+                return;
+            }
+
+            if ($relationship instanceof HasMany) {
+                $this->state(
+                    $relatedRecords
+                        ->pluck($relationship->getLocalKeyName())
+                        ->all(),
+                );
+
+                return;
+            }
+
+            if ($relationship instanceof HasOne) {
+                $this->state(
+                    $relatedRecords?->getAttribute(
+                        $relationship->getLocalKeyName(),
+                    ),
+                );
+
+                return;
+            }
+
+            /** @var BelongsTo $relationship */
+            $this->state(
+                $relatedRecords?->getAttribute(
+                    $relationship->getOwnerKeyName(),
+                ),
+            );
+
+            return;
+        }
+
+        if (
+            ($relationship instanceof BelongsToMany) ||
+            ($relationship instanceof HasOneOrManyThrough)
+        ) {
+            if ($this->modifyRelationshipQueryUsing) {
+                $this->evaluate($this->modifyRelationshipQueryUsing, [
+                    'query' => $relationship->getQuery(),
+                    'search' => null,
+                ]);
+            }
+
+            /** @var Collection $relatedRecords */
+            $relatedRecords = $relationship->getResults();
+
+            // Cast the related keys to a string, otherwise
+            // JavaScript can't handle deselection.
+            //
+            // https://github.com/filamentphp/filament/issues/1111
+            $relatedKeys = $relatedRecords
+                ->pluck(($relationship instanceof BelongsToMany) ? $relationship->getRelatedKeyName() : $relationship->getRelated()->getKeyName())
+                ->map(static fn ($key): string => strval($key));
+
+            $this->state(
+                $this->isMultiple()
+                    ? $relatedKeys->all()
+                    : $relatedKeys->first(),
+            );
+
+            return;
+        }
+
+        if ($relationship instanceof BelongsToThrough) {
+            /** @var ?Model $relatedModel */
+            $relatedModel = $relationship->getResults();
+
+            $this->state(
+                $relatedModel?->getAttribute(
+                    $relationship->getRelated()->getKeyName(),
+                ),
+            );
+
+            return;
+        }
+
+        if ($relationship instanceof HasMany) {
+            /** @var Collection $relatedRecords */
+            $relatedRecords = $relationship->getResults();
+
+            $this->state(
+                $relatedRecords
+                    ->pluck($relationship->getLocalKeyName())
+                    ->all(),
+            );
+
+            return;
+        }
+
+        if ($relationship instanceof HasOne) {
+            $relatedModel = $relationship->getResults();
+
+            $this->state(
+                $relatedModel?->getAttribute(
+                    $relationship->getLocalKeyName(),
+                ),
+            );
+
+            return;
+        }
+
+        /** @var BelongsTo $relationship */
+        $relatedModel = $relationship->getResults();
+
+        $this->state(
+            $relatedModel?->getAttribute(
+                $relationship->getOwnerKeyName(),
+            ),
+        );
+    }
+
+    public function saveStateToRelationship(): void
+    {
+        $relationship = $this->getRelationship();
+        $record = $this->getRecord();
+        $relationshipName = $this->getRelationshipName();
+        $state = $this->getState();
+
+        if (($relationship instanceof HasOne) || ($relationship instanceof HasMany)) {
+            $query = $relationship->getQuery();
+
+            if ($this->modifyRelationshipQueryUsing) {
+                $this->evaluate($this->modifyRelationshipQueryUsing, [
+                    'query' => $query,
+                    'search' => null,
+                ]);
+            }
+
+            $query->update([
+                $relationship->getForeignKeyName() => null,
+            ]);
+
+            if (! empty($state)) {
+                $relationship::noConstraints(function () use ($record, $state): void {
+                    $relationship = $this->getRelationship();
+
+                    $query = $relationship->getQuery()->whereIn($relationship->getLocalKeyName(), Arr::wrap($state));
+
+                    if ($this->modifyRelationshipQueryUsing) {
+                        $this->evaluate($this->modifyRelationshipQueryUsing, [
+                            'query' => $query,
+                            'search' => null,
+                        ]);
+                    }
+
+                    $query->update([
+                        $relationship->getForeignKeyName() => $record->getAttribute($relationship->getLocalKeyName()),
+                    ]);
+                });
+            }
+
+            $record->unsetRelation($relationshipName);
+
+            return;
+        }
+
+        if (
+            ($relationship instanceof HasOneOrMany) ||
+            ($relationship instanceof HasOneOrManyThrough) ||
+            ($relationship instanceof BelongsToThrough)
+        ) {
+            return;
+        }
+
+        if (! $relationship instanceof BelongsToMany) {
+            // Security: If the model is new and the foreign key is already
+            // filled, don't overwrite it — the key may have been set by
+            // authorization logic or event listeners before save.
+            if (
+                $record->wasRecentlyCreated &&
+                filled($record->getAttributeValue($relationship->getForeignKeyName()))
+            ) {
+                return;
+            }
+
+            $relationship->associate($state);
+            $record->wasRecentlyCreated && $record->save();
+
+            return;
+        }
+
+        if ($this->modifyRelationshipQueryUsing) {
+            $this->evaluate($this->modifyRelationshipQueryUsing, [
+                'query' => $relationship->getQuery(),
+                'search' => null,
+            ]);
+        }
+
+        /** @var Collection $relatedRecords */
+        $relatedRecords = $relationship->getResults();
+
+        $state = Arr::wrap($state ?? []);
+
+        $recordsToDetach = array_diff(
+            $relatedRecords
+                ->pluck($relationship->getRelatedKeyName())
+                ->map(static fn ($key): string => strval($key))
+                ->all(),
+            $state,
+        );
+
+        if (count($recordsToDetach) > 0) {
+            $relationship->detach($recordsToDetach);
+        }
+
+        $pivotData = $this->getPivotData();
+
+        if ($pivotData === []) {
+            $relationship->sync($state, detaching: false);
+            $record->unsetRelation($relationshipName);
+
+            return;
+        }
+
+        $relationship->syncWithPivotValues($state, $pivotData, detaching: false);
+        $record->unsetRelation($relationshipName);
     }
 
     /**
@@ -1255,6 +1527,12 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
         $relationshipName = $this->getRelationshipName();
 
         foreach (explode('.', $relationshipName) as $nestedRelationshipName) {
+            if ($record->hasAttribute($nestedRelationshipName)) {
+                $relationship = null;
+
+                break;
+            }
+
             if (! $record->isRelation($nestedRelationshipName)) {
                 $relationship = null;
 
@@ -1295,14 +1573,29 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
         return filled($this->getRelationshipName());
     }
 
+    public function dynamicOptions(bool | Closure | null $condition = true): static
+    {
+        $this->hasDynamicOptions = $condition;
+
+        return $this;
+    }
+
     public function hasDynamicOptions(): bool
     {
+        if (($condition = $this->evaluate($this->hasDynamicOptions)) !== null) {
+            return $condition;
+        }
+
         if ($this->hasDynamicDisabledOptions()) {
             return true;
         }
 
         if ($this->hasRelationship()) {
-            return $this->isPreloaded();
+            return (! $this->isSearchable()) || $this->isPreloaded();
+        }
+
+        if ($this->isPreloaded()) {
+            return true;
         }
 
         return $this->options instanceof Closure;
@@ -1315,6 +1608,19 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
         }
 
         return $this->getSearchResultsUsing instanceof Closure;
+    }
+
+    public function hasInitialNoOptionsMessage(): bool
+    {
+        if ($this->hasRelationship()) {
+            return (! $this->isSearchable()) || $this->isPreloaded();
+        }
+
+        if ($this->isPreloaded()) {
+            return true;
+        }
+
+        return ! $this->hasDynamicSearchResults();
     }
 
     /**
@@ -1367,21 +1673,6 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
         return (bool) $this->evaluate($this->canOptionLabelsWrap);
     }
 
-    public function hydrateDefaultState(?array &$hydratedDefaultState): void
-    {
-        parent::hydrateDefaultState($hydratedDefaultState);
-
-        if (is_bool($state = $this->getState())) {
-            $state = $state ? 1 : 0;
-
-            $this->state($state);
-
-            if (is_array($hydratedDefaultState)) {
-                Arr::set($hydratedDefaultState, $this->getStatePath(), $state); /** @phpstan-ignore parameterByRef.type */
-            }
-        }
-    }
-
     public function getQualifiedRelatedKeyNameForRelationship(Relation $relationship): string
     {
         if ($relationship instanceof BelongsToMany) {
@@ -1430,6 +1721,22 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
     }
 
     /**
+     * @return array<StateCast>
+     */
+    public function getDefaultStateCasts(): array
+    {
+        if ($this->hasCustomStateCasts() || filled($this->getEnum())) {
+            return parent::getDefaultStateCasts();
+        }
+
+        if ($this->isMultiple()) {
+            return [app(OptionsArrayStateCast::class)];
+        }
+
+        return [app(OptionStateCast::class, ['isNullable' => true])];
+    }
+
+    /**
      * @return ?array<string>
      */
     public function getInValidationRuleValues(): ?array
@@ -1446,6 +1753,11 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
             }
 
             $state = $this->getState();
+
+            if (blank($state)) {
+                return null;
+            }
+
             $optionLabels = $this->getOptionLabels(withDefaults: false);
 
             if (count($state) > count($optionLabels)) {
@@ -1476,13 +1788,17 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
             throw new LogicException("Filament failed to validate the [{$this->getStatePath()}] field\'s selected options because it did not have an [options()] or [getOptionLabelUsing()] configuration. Please use one of these methods to inform Filament which options are valid for this field.");
         }
 
+        $state = $this->getState();
+
+        if (blank($state)) {
+            return null;
+        }
+
         $optionLabel = $this->getOptionLabel(withDefault: false);
 
         if (blank($optionLabel)) {
             return [];
         }
-
-        $state = $this->getState();
 
         if ($state instanceof BackedEnum) {
             $state = $state->value;
@@ -1503,5 +1819,224 @@ class Select extends Field implements Contracts\CanDisableOptions, Contracts\Has
     public function hasNullableBooleanState(): bool
     {
         return true;
+    }
+
+    public function toEmbeddedHtml(): string
+    {
+        $extraInputAttributeBag = $this->getExtraInputAttributeBag();
+        $canSelectPlaceholder = $this->canSelectPlaceholder();
+        $isAutofocused = $this->isAutofocused();
+        $isDisabled = $this->isDisabled();
+        $isMultiple = $this->isMultiple();
+        $isReorderable = $this->isReorderable();
+        $isSearchable = $this->isSearchable();
+        $hasInitialNoOptionsMessage = $this->hasInitialNoOptionsMessage();
+        $canOptionLabelsWrap = $this->canOptionLabelsWrap();
+        $isRequired = $this->isRequired();
+        $isHtmlAllowed = $this->isHtmlAllowed();
+        $isNative = (! ($isSearchable || $isMultiple || $isHtmlAllowed) && $this->isNative());
+        $isPrefixInline = $this->isPrefixInline();
+        $isSuffixInline = $this->isSuffixInline();
+        $key = $this->getKey();
+        $id = $this->getId();
+        $prefixActions = $this->getPrefixActions();
+        $prefixIcon = $this->getPrefixIcon();
+        $prefixIconColor = $this->getPrefixIconColor();
+        $prefixLabel = $this->getPrefixLabel();
+        $suffixActions = $this->getSuffixActions();
+        $suffixIcon = $this->getSuffixIcon();
+        $suffixIconColor = $this->getSuffixIconColor();
+        $suffixLabel = $this->getSuffixLabel();
+        $statePath = $this->getStatePath();
+        $state = $this->getRawState();
+        $livewireKey = $this->getLivewireKey();
+        $hasDynamicOptions = $this->hasDynamicOptions();
+
+        // Filter visible prefix/suffix actions
+        $prefixActions = array_filter(
+            $prefixActions,
+            static fn (Action $action): bool => $action->isVisible(),
+        );
+        $suffixActions = array_filter(
+            $suffixActions,
+            static fn (Action $action): bool => $action->isVisible(),
+        );
+
+        $hasPrefix = count($prefixActions) || $prefixIcon || filled($prefixLabel);
+
+        $wrapperAttributes = $this->getExtraAttributeBag()
+            ->merge([
+                'x-on:focus-input.stop' => $isNative
+                    ? "\$el.querySelector('select')?.focus()"
+                    : "\$el.querySelector('.fi-select-input-btn')?.focus()",
+            ], escape: false)
+            ->class([
+                'fi-fo-select',
+                'fi-fo-select-has-inline-prefix' => $isPrefixInline && $hasPrefix,
+                'fi-fo-select-native' => $isNative,
+            ]);
+
+        ob_start(); ?>
+
+
+                <?php if ($isNative) { ?>
+                    <?php $options = $this->getOptions(); ?>
+
+                    <select
+                        <?= $extraInputAttributeBag
+                            ->merge([
+                                'autofocus' => $isAutofocused,
+                                'disabled' => $isDisabled,
+                                'id' => $id,
+                                'required' => $isRequired,
+                                'wire:key' => $hasDynamicOptions ? ($livewireKey . '.' . substr(md5(serialize($options)), 0, 64)) : null,
+                                $this->applyStateBindingModifiers('wire:model') => $statePath,
+                            ], escape: false)
+                            ->class([
+                                'fi-select-input',
+                                'fi-select-input-has-inline-prefix' => $isPrefixInline && $hasPrefix,
+                            ])
+                            ->toHtml() ?>
+                    >
+                        <?php if ($canSelectPlaceholder) { ?>
+                            <option value="">
+                                <?php if (! $isDisabled) { ?>
+                                    <?= e($this->getPlaceholder()) ?>
+                                <?php } ?>
+                            </option>
+                        <?php } ?>
+
+                        <?php foreach ($options as $value => $label) { ?>
+                            <?php if (is_array($label)) { ?>
+                                <optgroup label="<?= e($value) ?>">
+                                    <?php foreach ($label as $groupedValue => $groupedLabel) { ?>
+                                        <option
+                                            <?php if ($this->isOptionDisabled($groupedValue, $groupedLabel)) { ?> disabled <?php } ?>
+                                            value="<?= e($groupedValue) ?>"
+                                        >
+                                            <?= e($groupedLabel) ?>
+                                        </option>
+                                    <?php } ?>
+                                </optgroup>
+                            <?php } else { ?>
+                                <option
+                                    <?php if ($this->isOptionDisabled($value, $label)) { ?> disabled <?php } ?>
+                                    value="<?= e($value) ?>"
+                                >
+                                    <?= e($label) ?>
+                                </option>
+                            <?php } ?>
+                        <?php } ?>
+                    </select>
+                <?php } else { ?>
+                    <?php $options = $this->getOptions(); ?>
+
+                    <div
+                        class="fi-hidden"
+                        x-data="{
+                            isDisabled: <?= Js::from($isDisabled) ?>,
+                            init() {
+                                const container = $el.nextElementSibling
+                                container.dispatchEvent(
+                                    new CustomEvent('set-select-property', {
+                                        detail: { isDisabled: this.isDisabled },
+                                    }),
+                                )
+                            },
+                        }"
+                    ></div>
+                    <div
+                        x-load
+                        x-load-src="<?= e(FilamentAsset::getAlpineComponentSrc('select', 'filament/forms')) ?>"
+                        x-data="selectFormComponent({
+                                    canOptionLabelsWrap: <?= Js::from($canOptionLabelsWrap) ?>,
+                                    canSelectPlaceholder: <?= Js::from($canSelectPlaceholder) ?>,
+                                    clearButtonLabel: <?= Js::from(__('filament-forms::components.select.actions.clear.label')) ?>,
+                                    getOptionLabelUsing: async () => {
+                                        return await Livewire.fireAction(
+                                            $wire.__instance,
+                                            'callSchemaComponentMethod',
+                                            [<?= Js::from($key) ?>, 'getOptionLabel'],
+                                            { async: true },
+                                        )
+                                    },
+                                    getOptionLabelsUsing: async () => {
+                                        return await Livewire.fireAction(
+                                            $wire.__instance,
+                                            'callSchemaComponentMethod',
+                                            [<?= Js::from($key) ?>, 'getOptionLabelsForJs'],
+                                            { async: true },
+                                        )
+                                    },
+                                    getOptionsUsing: async () => {
+                                        return await Livewire.fireAction(
+                                            $wire.__instance,
+                                            'callSchemaComponentMethod',
+                                            [<?= Js::from($key) ?>, 'getOptionsForJs'],
+                                            { async: true },
+                                        )
+                                    },
+                                    getSearchResultsUsing: async (search) => {
+                                        return await Livewire.fireAction(
+                                            $wire.__instance,
+                                            'callSchemaComponentMethod',
+                                            [<?= Js::from($key) ?>, 'getSearchResultsForJs', { search }],
+                                            { async: true },
+                                        )
+                                    },
+                                    hasDynamicOptions: <?= Js::from($hasDynamicOptions) ?>,
+                                    hasDynamicSearchResults: <?= Js::from($this->hasDynamicSearchResults()) ?>,
+                                    hasInitialNoOptionsMessage: <?= Js::from($hasInitialNoOptionsMessage) ?>,
+                                    id: <?= Js::from($id) ?>,
+                                    initialOptionLabel: <?= Js::from((blank($state) || $isMultiple) ? null : $this->resolveOptionLabel(options: $options)) ?>,
+                                    initialOptionLabels: <?= Js::from((filled($state) && $isMultiple) ? $this->transformOptionsForJs($this->getOptionLabels(options: $options)) : []) ?>,
+                                    initialState: <?= Js::from($state) ?>,
+                                    isAutofocused: <?= Js::from($isAutofocused) ?>,
+                                    isDisabled: <?= Js::from($isDisabled) ?>,
+                                    isHtmlAllowed: <?= Js::from($isHtmlAllowed) ?>,
+                                    isMultiple: <?= Js::from($isMultiple) ?>,
+                                    isReorderable: <?= Js::from($isReorderable) ?>,
+                                    isSearchable: <?= Js::from($isSearchable) ?>,
+                                    livewireId: <?= Js::from($this->getLivewire()->getId()) ?>,
+                                    loadingMessage: <?= Js::from($this->getLoadingMessage()) ?>,
+                                    maxItems: <?= Js::from($this->getMaxItems()) ?>,
+                                    maxItemsMessage: <?= Js::from($this->getMaxItemsMessage()) ?>,
+                                    noOptionsMessage: <?= Js::from($this->getNoOptionsMessage()) ?>,
+                                    noSearchResultsMessage: <?= Js::from($this->getNoSearchResultsMessage()) ?>,
+                                    options: <?= Js::from($this->transformOptionsForJs($options)) ?>,
+                                    optionsLimit: <?= Js::from($this->getOptionsLimit()) ?>,
+                                    placeholder: <?= Js::from($this->getPlaceholder()) ?>,
+                                    position: <?= Js::from($this->getPosition()) ?>,
+                                    removeButtonLabel: <?= Js::from(__('filament-forms::components.select.actions.remove_option.label')) ?>,
+                                    searchDebounce: <?= Js::from($this->getSearchDebounce()) ?>,
+                                    searchingMessage: <?= Js::from($this->getSearchingMessage()) ?>,
+                                    searchLabel: <?= Js::from(__('filament-forms::components.select.search_label')) ?>,
+                                    searchPrompt: <?= Js::from($this->getSearchPrompt()) ?>,
+                                    searchableOptionFields: <?= Js::from($this->getSearchableOptionFields()) ?>,
+                                    state: $wire.<?= $this->applyStateBindingModifiers("\$entangle('{$statePath}')") ?>,
+                                    statePath: <?= Js::from($statePath) ?>,
+                                })"
+                        wire:ignore
+                        wire:key="<?= e($livewireKey) ?>.<?= substr(md5(serialize([$isDisabled, $isReorderable])), 0, 64) ?>"
+                        x-on:keydown.esc="select.dropdown.isActive && $event.stopPropagation()"
+                        x-on:set-select-property="$event.detail.isDisabled ? select.disable() : select.enable()"
+                        <?= (new FilamentComponentAttributeBag)
+                            ->merge($this->getExtraAlpineAttributes(), escape: false)
+                            ->class(['fi-select-input'])
+                            ->toHtml() ?>
+                    >
+                        <div x-ref="select"></div>
+                    </div>
+                <?php } ?>
+
+        <?php $slotHtml = ob_get_clean();
+
+        return $this->wrapEmbeddedHtml(
+            $this->wrapInputHtml(
+                $slotHtml,
+                attributes: $wrapperAttributes,
+            ),
+            extraWrapperAttributes: ['class' => 'fi-fo-select-wrp'],
+        );
     }
 }

@@ -2,7 +2,6 @@
 
 namespace Livewire\Features\SupportNestedComponentListeners;
 
-use function Livewire\store;
 use Livewire\Drawer\Utils;
 use Livewire\ComponentHook;
 
@@ -25,7 +24,7 @@ class SupportNestedComponentListeners extends ComponentHook
                 $attributeKey = 'x-on:'.$fullEvent;
                 $attributeValue = "\$wire.\$parent.".$value;
 
-                store($this->component)->push('attributes', $attributeValue, $attributeKey);
+                $this->storePush('generatedAttributes', $attributeValue, $attributeKey);
             }
         }
     }
@@ -33,7 +32,7 @@ class SupportNestedComponentListeners extends ComponentHook
     public function render($view, $data)
     {
         return function ($html, $replaceHtml) {
-            $attributes = store($this->component)->get('attributes', false);
+            $attributes = $this->storeGet('generatedAttributes', false);
 
             if (! $attributes) return;
 
@@ -43,20 +42,20 @@ class SupportNestedComponentListeners extends ComponentHook
 
     public function dehydrate($context)
     {
-        $attributes = store($this->component)->get('attributes', false);
+        $attributes = $this->storeGet('generatedAttributes', false);
 
         if (! $attributes) return;
 
-        $attributes && $context->addMemo('attributes', $attributes);
+        $attributes && $context->addMemo('generatedAttributes', $attributes);
     }
 
     public function hydrate($memo)
     {
-        if (! isset($memo['attributes'])) return;
+        if (! isset($memo['generatedAttributes'])) return;
 
-        $attributes = $memo['attributes'];
+        $attributes = $memo['generatedAttributes'];
 
         // Store the attributes for later dehydration...
-        store($this->component)->set('attributes', $attributes);
+        $this->storeSet('generatedAttributes', $attributes);
     }
 }

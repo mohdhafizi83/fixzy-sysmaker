@@ -1,6 +1,7 @@
 ---
 title: Chart widgets
 ---
+import AutoScreenshot from "@components/AutoScreenshot.astro"
 import Aside from "@components/Aside.astro"
 
 ## Introduction
@@ -52,6 +53,8 @@ class BlogPostsChart extends ChartWidget
 
 Now, check out your widget in the dashboard.
 
+<AutoScreenshot name="widgets/chart/line" alt="Line chart" version="5.x" />
+
 ## Available chart types
 
 Below is a list of available chart widget classes which you may extend, and their corresponding [Chart.js](https://www.chartjs.org/docs) documentation page, for inspiration on what to return from `getData()`:
@@ -64,6 +67,24 @@ Below is a list of available chart widget classes which you may extend, and thei
 - Polar area chart - [Chart.js documentation](https://www.chartjs.org/docs/latest/charts/polar)
 - Radar chart - [Chart.js documentation](https://www.chartjs.org/docs/latest/charts/radar)
 - Scatter chart - [Chart.js documentation](https://www.chartjs.org/docs/latest/charts/scatter)
+
+For example, you could use a bar chart by returning `'bar'` from the `getType()` method:
+
+<AutoScreenshot name="widgets/chart/bar" alt="Bar chart" version="5.x" />
+
+Here are examples of the other available chart types:
+
+<AutoScreenshot name="widgets/chart/pie" alt="Pie chart" version="5.x" />
+
+<AutoScreenshot name="widgets/chart/doughnut" alt="Doughnut chart" version="5.x" />
+
+<AutoScreenshot name="widgets/chart/radar" alt="Radar chart" version="5.x" />
+
+<AutoScreenshot name="widgets/chart/polar-area" alt="Polar area chart" version="5.x" />
+
+<AutoScreenshot name="widgets/chart/scatter" alt="Scatter chart" version="5.x" />
+
+<AutoScreenshot name="widgets/chart/bubble" alt="Bubble chart" version="5.x" />
 
 ## Customizing the chart color
 
@@ -161,6 +182,12 @@ protected function getData(): array
 }
 ```
 
+<AutoScreenshot name="widgets/chart/filter" alt="Chart with filter" version="5.x" />
+
+<Aside variant="danger">
+    The `$filter` property is user-controllable. Although the `<select>` element only offers the keys returned from `getFilters()`, a crafted request can set `$this->filter` to any string, so it is not limited to those keys. You must ensure the value is valid before using it in a query — for example, by checking it against the keys of `getFilters()`, or by using a `match` expression with a safe default. Never interpolate `$this->filter` directly into a raw query.
+</Aside>
+
 ### Custom filters
 
 You can use [schema components](../schemas) to build custom filters for your chart widget. This approach offers a more flexible way to define filters.
@@ -206,9 +233,176 @@ protected function getData(): array
 
 The `$this->filters` array will always reflect the current form data. Please note that this data is not validated, as it is available live and not intended to be used for anything other than querying the database. You must ensure that the data is valid before using it.
 
+<AutoScreenshot name="widgets/chart/custom-filters" alt="Chart with custom filters" version="5.x" />
+
 <Aside variant="info">
     If you want to add filters that apply to multiple widgets at once, see [filtering widget data](overview#filtering-widget-data) in the dashboard.
 </Aside>
+
+#### Deferring filter updates
+
+By default, filters using the `filtersSchema()` method update the chart data immediately as they are changed. However, for complex queries or better user experience, you may want to **defer** filter updates until the user clicks an "Apply" button.
+
+When deferred, filter changes are only applied when the user clicks the "Apply" button. This ensures that the chart only re-renders when the user has finished adjusting all of their filters.
+
+The chart will display data using the default filter values when the page first loads, ensuring users see meaningful data immediately without needing to take action.
+
+To enable deferred filters, set the `$hasDeferredFilters` property to `true`:
+
+```php
+use Filament\Widgets\ChartWidget\Concerns\HasFiltersSchema;
+
+class BlogPostsChart extends ChartWidget
+{
+    use HasFiltersSchema;
+
+    protected bool $hasDeferredFilters = true;
+
+    // ...
+}
+```
+
+If you need dynamic control over whether filters are deferred, you may override the `hasDeferredFilters()` method:
+
+```php
+public function hasDeferredFilters(): bool
+{
+    return auth()->user()->prefersDeferredFilters();
+}
+```
+
+#### Resetting filters to defaults
+
+When using deferred filters, a "Reset" link appears in the filter dropdown footer alongside the "Apply" button. Clicking this link restores all filters to their default values as defined in the `filtersSchema()` method. For example, if you set `->default(now()->subDays(30))` on a `DatePicker`, the reset action will restore that default date, not an empty value.
+
+#### Customizing filter actions
+
+You may customize the apply and reset actions that appear when using deferred filters. All methods that are available to [customize action trigger buttons](../actions/overview) can be used:
+
+```php
+use Filament\Actions\Action;
+
+public function filtersApplyAction(Action $action): Action
+{
+    return $action
+        ->label('Update Chart')
+        ->color('success');
+}
+
+public function filtersResetAction(Action $action): Action
+{
+    return $action
+        ->label('Clear Filters')
+        ->color('danger');
+}
+```
+
+## Empty state
+
+When the `getData()` method returns an empty array, the chart widget renders an "empty state" instead of the chart.
+
+To customize when the empty state is rendered, override the `isEmpty()` method:
+
+```php
+public function isEmpty(): bool
+{
+    $data = $this->getCachedData();
+
+    return empty($data['datasets'][0]['data'] ?? []);
+}
+```
+
+### Setting the empty state heading
+
+To customize the heading of the empty state, set the `$emptyStateHeading` property:
+
+```php
+protected ?string $emptyStateHeading = 'No data available';
+```
+
+Alternatively, you can override the `getEmptyStateHeading()` method to return a dynamic heading:
+
+```php
+use Illuminate\Contracts\Support\Htmlable;
+
+public function getEmptyStateHeading(): string | Htmlable
+{
+    return "No sales yet for {$this->filter}";
+}
+```
+
+### Setting the empty state description
+
+To customize the description of the empty state, set the `$emptyStateDescription` property:
+
+```php
+protected ?string $emptyStateDescription = 'Check back later once data has been collected.';
+```
+
+Alternatively, you can override the `getEmptyStateDescription()` method to return a dynamic description:
+
+```php
+use Illuminate\Contracts\Support\Htmlable;
+
+public function getEmptyStateDescription(): string | Htmlable | null
+{
+    return 'Sales data will appear here once orders are placed.';
+}
+```
+
+### Setting the empty state icon
+
+To customize the [icon](../styling/icons) of the empty state, set the `$emptyStateIcon` property:
+
+```php
+use Filament\Support\Icons\Heroicon;
+
+protected string | BackedEnum | null $emptyStateIcon = Heroicon::OutlinedChartBar;
+```
+
+Alternatively, you can override the `getEmptyStateIcon()` method to return a dynamic icon:
+
+```php
+use BackedEnum;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\Support\Htmlable;
+
+public function getEmptyStateIcon(): string | BackedEnum | Htmlable
+{
+    return Heroicon::OutlinedShoppingCart;
+}
+```
+
+### Adding empty state actions
+
+You can add [actions](../actions/overview) to the empty state to prompt users to take action by overriding the `getEmptyStateActions()` method:
+
+```php
+use Filament\Actions\Action;
+
+public function getEmptyStateActions(): array
+{
+    return [
+        Action::make('refresh')
+            ->label('Refresh')
+            ->action('refresh'),
+    ];
+}
+```
+
+### Using a custom empty state view
+
+You may use a completely custom empty state view by overriding the `getEmptyState()` method:
+
+```php
+use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Contracts\View\View;
+
+public function getEmptyState(): View | Htmlable | null
+{
+    return view('widgets.charts.custom-empty-state');
+}
+```
 
 ## Live updating chart data (polling)
 
@@ -233,6 +427,8 @@ You may place a maximum height on the chart to ensure that it doesn't get too bi
 ```php
 protected ?string $maxHeight = '300px';
 ```
+
+<AutoScreenshot name="widgets/chart/max-height" alt="Chart with maximum height" version="5.x" />
 
 ## Setting chart configuration options
 
@@ -284,6 +480,76 @@ protected function getOptions(): RawJs
 }
 ```
 
+## Styling charts in a theme
+
+Chart.js paints a chart onto a `<canvas>`, so almost none of it can be reached from a stylesheet. A [custom theme](../styling/overview) is CSS only and cannot call `getOptions()`, so Filament exposes the parts of a chart that a theme is most likely to want to change as CSS custom properties. You may set them on `.fi-wi-chart`, or on any element above it to cover every chart in the panel at once:
+
+```css
+.fi-wi-chart {
+    --chart-border-width: 1;
+    --chart-line-tension: 0.4;
+    --chart-point-radius: 3;
+    --chart-point-style: rect;
+    --chart-bar-border-radius: 4;
+}
+```
+
+`--chart-border-width` sets the thickness of the line that a chart draws around its data. `--chart-line-tension` curves the line of a line chart, from `0` for straight segments up to `1`. `--chart-point-radius` sizes the markers on a line, radar or scatter chart, and `--chart-point-style` shapes them, accepting any of Chart.js' point styles - `circle`, `cross`, `crossRot`, `dash`, `line`, `rect`, `rectRounded`, `rectRot`, `star` or `triangle` - as well as `none` to hide them entirely. `--chart-bar-border-radius` rounds the corners of the bars in a bar chart, which are already slightly rounded by default. Set it to `0` for square bars.
+
+These values are handed to Chart.js rather than used by the browser, so they are plain numbers and keywords, without units. If you set one to something Chart.js cannot use, it is ignored and the chart keeps its default. They are also read again whenever the color scheme changes, so you may give light and dark mode different values.
+
+<Aside variant="info">
+    These properties are for styling every chart in a panel at once, which is what a theme usually wants. To change a single chart, use [`getOptions()`](#setting-chart-configuration-options) instead - anything you set there wins over the properties here.
+</Aside>
+
+### Styling the chart legend
+
+The legend beneath a chart is drawn onto the canvas as well. Two properties control the color swatch next to each label:
+
+```css
+.fi-wi-chart {
+    --chart-legend-box-width: 16;
+    --chart-legend-border-radius: 0;
+}
+```
+
+`--chart-legend-box-width` sets how wide each swatch is, and `--chart-legend-border-radius` rounds its corners, which are slightly rounded by default to match the bars of a bar chart. Set it to `0` for square swatches.
+
+### Styling chart tooltips
+
+The tooltip that appears when hovering over a chart is drawn onto the canvas as well. Its shape comes from two more properties:
+
+```css
+.fi-wi-chart {
+    --chart-tooltip-corner-radius: 0;
+    --chart-tooltip-border-width: 1;
+}
+```
+
+Its colors are set differently, so that you can use the same palette and dark mode variants as the rest of your theme. Filament reads them from elements that you style with an ordinary `color` declaration:
+
+```css
+.fi-wi-chart {
+    & .fi-wi-chart-tooltip-bg-color {
+        @apply text-gray-900 dark:text-white;
+    }
+
+    & .fi-wi-chart-tooltip-text-color {
+        @apply text-white dark:text-gray-900;
+    }
+
+    & .fi-wi-chart-tooltip-border-color {
+        @apply text-gray-700 dark:text-gray-200;
+    }
+}
+```
+
+A tooltip has no border until you give it a width, so `--chart-tooltip-border-width` and `.fi-wi-chart-tooltip-border-color` usually change together.
+
+The colors of the chart itself work in the same way: `.fi-wi-chart-bg-color` and `.fi-wi-chart-border-color` fill and outline the data, `.fi-wi-chart-grid-color` draws the grid lines, and `.fi-wi-chart-text-color` labels the axes.
+
+The small charts inside a [stats overview widget](stats-overview#styling-stat-charts-in-a-theme) are styled separately, with their own set of properties.
+
 ## Adding a description
 
 You may add a description, below the heading of the chart, using the `getDescription()` method:
@@ -295,6 +561,8 @@ public function getDescription(): ?string
 }
 ```
 
+<AutoScreenshot name="widgets/chart/description" alt="Chart with description" version="5.x" />
+
 ## Disabling lazy loading
 
 By default, widgets are lazy-loaded. This means that they will only be loaded when they are visible on the page.
@@ -302,7 +570,7 @@ By default, widgets are lazy-loaded. This means that they will only be loaded wh
 To disable this behavior, you may override the `$isLazy` property on the widget class:
 
 ```php
-protected static bool $isLazy = true;
+protected static bool $isLazy = false;
 ```
 
 ## Making the chart collapsible
@@ -312,6 +580,8 @@ You may allow the chart to be collapsible by setting the `$isCollapsible` proper
 ```php
 protected bool $isCollapsible = true;
 ```
+
+<AutoScreenshot name="widgets/chart/collapsible" alt="Collapsible chart" version="5.x" />
 
 ## Using custom Chart.js plugins
 
@@ -336,9 +606,20 @@ window.filamentChartJsPlugins ??= []
 window.filamentChartJsPlugins.push(ChartDataLabels)
 ```
 
-It's important to initialise the array if it has not been already, before pushing onto it. This ensures that mutliple JavaScript files (especially those from Filament plugins) that register Chart.js plugins do not overwrite each other, regardless of the order they are booted in.
+This is equivalent to including the plugins "inline" via `new Chart(..., { plugins: [...] })` when instantiating a Chart.js chart.
 
-You can push as many plugins to the `filamentChartJsPlugins` array as you would like to install, you do not need a separate file to import each plugin.
+It's important to initialise the array if it has not been already, before pushing onto it. This ensures that multiple JavaScript files (especially those from Filament plugins) that register Chart.js plugins do not overwrite each other, regardless of the order they are booted in.
+
+You can push as many plugins to the array as you would like to install, you do not need a separate file to import each plugin.
+
+Additionally, you can also register any "global plugins" which will use `Chart.register([...])` in the `window.filamentChartJsGlobalPlugins` array:
+
+```javascript
+import ChartDataLabels from 'chartjs-plugin-datalabels'
+
+window.filamentChartJsGlobalPlugins ??= []
+window.filamentChartJsGlobalPlugins.push(ChartDataLabels)
+```
 
 ### Step 3: Compile the JavaScript file with Vite
 

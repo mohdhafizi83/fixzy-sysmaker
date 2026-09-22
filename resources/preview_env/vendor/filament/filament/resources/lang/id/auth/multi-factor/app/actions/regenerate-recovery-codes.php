@@ -22,13 +22,15 @@ return [
 
                     'invalid' => 'Kode yang Anda masukkan tidak valid.',
 
+                    'rate_limited' => 'Terlalu banyak percobaan. Silakan coba lagi nanti.',
+
                 ],
 
             ],
 
             'password' => [
 
-                'label' => 'Atau, gunakan kata sandi',
+                'label' => 'Masukkan kata sandi Anda saat ini',
 
                 'validation_attribute' => 'kata sandi',
 

@@ -3,7 +3,9 @@
 namespace Livewire\Concerns;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Livewire\Drawer\Utils;
+use Livewire\Form;
 
 trait InteractsWithProperties
 {
@@ -26,14 +28,19 @@ trait InteractsWithProperties
     public function fill($values)
     {
         $publicProperties = array_keys($this->all());
+        $model = $values instanceof Model ? $values : null;
 
-        if ($values instanceof Model) {
-            $values = $values->toArray();
-        }
+        if ($model) $values = $model->toArray();
 
         foreach ($values as $key => $value) {
-            if (in_array(Utils::beforeFirstDot($key), $publicProperties)) {
+            if (! in_array(Utils::beforeFirstDot($key), $publicProperties)) continue;
+
+            try {
                 data_set($this, $key, $value);
+            } catch (\TypeError $exception) {
+                if (! $model) throw $exception;
+
+                data_set($this, $key, $model->getAttribute($key));
             }
         }
     }
@@ -59,7 +66,8 @@ trait InteractsWithProperties
                 $propertyName = $property->afterLast('.');
                 $objectName = $property->before('.');
 
-                if (method_exists($this->{$objectName}, 'reset')) {
+                // form object reset
+                if (is_subclass_of($this->{$objectName}, Form::class)) {
                     $this->{$objectName}->reset($propertyName);
                     continue;
                 }
@@ -68,10 +76,20 @@ trait InteractsWithProperties
 
                 if (is_object($object)) {
                     $isInitialized = (new \ReflectionProperty($object, (string) $propertyName))->isInitialized($object);
+                } elseif (is_array($object)) {
+                    $isInitialized = Arr::has($freshInstance->{$objectName}, Utils::afterFirstDot((string) $property));
                 } else {
                     $isInitialized = false;
                 }
             } else {
+                // Form objects are typed and have no default, so they appear
+                // uninitialized on a fresh instance. Reset their internal state
+                // instead of unsetting the property.
+                if (isset($this->{$property}) && is_subclass_of($this->{$property}, Form::class)) {
+                    $this->{$property}->reset();
+                    continue;
+                }
+
                 $isInitialized = (new \ReflectionProperty($freshInstance, (string) $property))->isInitialized($freshInstance);
             }
 
@@ -85,7 +103,7 @@ trait InteractsWithProperties
         }
     }
 
-    protected function resetExcept(...$properties)
+    public function resetExcept(...$properties)
     {
         if (count($properties) && is_array($properties[0])) {
             $properties = $properties[0];

@@ -12,8 +12,12 @@ export default function colorPickerFormComponent({
     liveDebounce,
     state,
 }) {
+    let isDestroyed = false
+
     return {
         state,
+
+        panelObserver: null,
 
         init() {
             if (!(this.state === null || this.state === '')) {
@@ -23,6 +27,21 @@ export default function colorPickerFormComponent({
             if (isAutofocused) {
                 this.togglePanelVisibility(this.$refs.input)
             }
+
+            this.$watch(
+                'state',
+                Alpine.debounce((value) => {
+                    if (isDestroyed) {
+                        return
+                    }
+
+                    if (!CSS.supports('color', value)) {
+                        return
+                    }
+
+                    this.$refs.picker.color = value
+                }, 200),
+            )
 
             this.$refs.input.addEventListener('change', (event) => {
                 this.setState(event.target.value)
@@ -37,6 +56,10 @@ export default function colorPickerFormComponent({
 
                 setTimeout(
                     () => {
+                        if (isDestroyed) {
+                            return
+                        }
+
                         if (this.state !== event.detail.value) {
                             return
                         }
@@ -48,9 +71,11 @@ export default function colorPickerFormComponent({
             })
 
             if (isLive || isLiveDebounced || isLiveOnBlur) {
-                new MutationObserver(() =>
+                this.panelObserver = new MutationObserver(() =>
                     this.isOpen() ? null : this.commitState(),
-                ).observe(this.$refs.panel, {
+                )
+
+                this.panelObserver.observe(this.$refs.panel, {
                     attributes: true,
                     childList: true,
                 })
@@ -69,7 +94,7 @@ export default function colorPickerFormComponent({
             this.state = value
 
             this.$refs.input.value = value
-            this.$refs.panel.color = value
+            this.$refs.picker.color = value
         },
 
         isOpen() {
@@ -77,6 +102,10 @@ export default function colorPickerFormComponent({
         },
 
         commitState() {
+            if (isDestroyed) {
+                return
+            }
+
             if (
                 JSON.stringify(this.$wire.__instance.canonical) ===
                 JSON.stringify(this.$wire.__instance.ephemeral)
@@ -85,6 +114,11 @@ export default function colorPickerFormComponent({
             }
 
             this.$wire.$commit()
+        },
+
+        destroy() {
+            isDestroyed = true
+            this.panelObserver?.disconnect()
         },
     }
 }

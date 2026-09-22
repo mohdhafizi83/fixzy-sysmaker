@@ -9,7 +9,7 @@ namespace Livewire\Features\SupportTesting {
     class Testable {
         public function mountAction(string | TestAction | array $actions, array $arguments = []): static {}
 
-        public function unmountAction(): static {}
+        public function unmountAction(bool | string | null $cancelParentActions = null): static {}
 
         /**
          * @deprecated Use `fillForm()` instead.
@@ -60,6 +60,14 @@ namespace Livewire\Features\SupportTesting {
         public function assertActionMounted(string | TestAction | array $actions): static {}
 
         public function assertActionNotMounted(string | TestAction | array $actions = []): static {}
+
+        public function assertMountedActionModalSee(string | array $values, bool $escape = true): static {}
+
+        public function assertMountedActionModalDontSee(string | array $values, bool $escape = true): static {}
+
+        public function assertMountedActionModalSeeHtml(string | array $values): static {}
+
+        public function assertMountedActionModalDontSeeHtml(string | array $values): static {}
 
         public function assertActionHalted(string | TestAction | array $actions = []): static {}
 

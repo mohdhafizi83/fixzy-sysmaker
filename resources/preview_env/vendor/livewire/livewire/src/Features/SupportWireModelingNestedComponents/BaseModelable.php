@@ -2,22 +2,21 @@
 
 namespace Livewire\Features\SupportWireModelingNestedComponents;
 
-use function Livewire\store;
 use Livewire\Features\SupportAttributes\Attribute as LivewireAttribute;
 
 #[\Attribute]
 class BaseModelable extends LivewireAttribute
 {
-    public function mount($params, $parent)
+    public function mount($params, $parent, $attributes)
     {
         if (! $parent) return;
 
         $outer = null;
 
-        foreach ($params as $key => $value) {
+        foreach ($attributes as $key => $value) {
             if (str($key)->startsWith('wire:model')) {
                 $outer = $value;
-                store($this->component)->push('bindings-directives', $key, $value);
+                $this->storePush('bindings-directives', $key, $value);
                 break;
             }
         }
@@ -26,7 +25,7 @@ class BaseModelable extends LivewireAttribute
 
         $inner = $this->getName();
 
-        store($this->component)->push('bindings', $inner, $outer);
+        $this->storePush('bindings', $inner, $outer);
 
         $this->setValue(data_get($parent, $outer));
     }
@@ -44,7 +43,7 @@ class BaseModelable extends LivewireAttribute
     // final value for the child's request...
     function update($fullPath, $newValue)
     {
-        if (store($this->component)->get('hasBeenSeeded', false)) {
+        if ($this->storeGet('hasBeenSeeded', false)) {
             $oldValue = $this->getValue();
 
             return function () use ($oldValue) {

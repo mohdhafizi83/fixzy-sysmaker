@@ -2,12 +2,12 @@
     'navigation',
 ])
 
+@php
+    use Illuminate\Contracts\Support\Htmlable;
+@endphp
+
 <x-filament::tabs
-    wire:ignore
-    :attributes="
-        \Filament\Support\prepare_inherited_attributes($attributes)
-            ->class(['fi-page-sub-navigation-tabs'])
-    "
+    :attributes="\Filament\Support\prepare_inherited_attributes($attributes)->class(['fi-page-sub-navigation-tabs'])"
 >
     @foreach ($navigation as $navigationGroup)
         @php
@@ -31,23 +31,27 @@
                     @foreach ($navigationGroup->getItems() as $navigationItem)
                         @php
                             $navigationItemBadge = $navigationItem->getBadge();
-                            $navigationItemBadgeColor = $navigationItem->getBadgeColor();
+                            $navigationItemBadgeColor = $navigationItem->getBadgeColor($navigationItemBadge);
+                            $navigationItemBadgeTooltip = $navigationItem->getBadgeTooltip($navigationItemBadge);
                             $navigationItemIcon = $navigationItem->isActive() ? ($navigationItem->getActiveIcon() ?? $navigationItem->getIcon()) : $navigationItem->getIcon();
                             $navigationItemUrl = $navigationItem->getUrl();
                             $shouldNavigationItemOpenUrlInNewTab = $navigationItem->shouldOpenUrlInNewTab();
+                            $navigationItemExtraAttributes = $navigationItem->getExtraAttributeBag();
                         @endphp
 
                         <x-filament::dropdown.list.item
                             :badge="$navigationItemBadge"
                             :badge-color="$navigationItemBadgeColor"
+                            :badge-tooltip="$navigationItemBadgeTooltip"
                             :href="$navigationItemUrl"
                             :icon="$navigationItemIcon"
                             tag="a"
                             :target="$shouldNavigationItemOpenUrlInNewTab ? '_blank' : null"
+                            :attributes="\Filament\Support\prepare_inherited_attributes($navigationItemExtraAttributes)"
                         >
                             {{ $navigationItem->getLabel() }}
 
-                            @if ($navigationItemIcon instanceof \Illuminate\Contracts\Support\Htmlable)
+                            @if ($navigationItemIcon instanceof Htmlable)
                                 <x-slot name="icon">
                                     {{ $navigationItemIcon }}
                                 </x-slot>
@@ -61,24 +65,28 @@
                 @php
                     $isNavigationItemActive = $navigationItem->isActive();
                     $navigationItemBadge = $navigationItem->getBadge();
-                    $navigationItemBadgeColor = $navigationItem->getBadgeColor();
+                    $navigationItemBadgeColor = $navigationItem->getBadgeColor($navigationItemBadge);
+                    $navigationItemBadgeTooltip = $navigationItem->getBadgeTooltip($navigationItemBadge);
                     $navigationItemIcon = $navigationItem->isActive() ? ($navigationItem->getActiveIcon() ?? $navigationItem->getIcon()) : $navigationItem->getIcon();
                     $navigationItemUrl = $navigationItem->getUrl();
                     $shouldNavigationItemOpenUrlInNewTab = $navigationItem->shouldOpenUrlInNewTab();
+                    $navigationItemExtraAttributes = $navigationItem->getExtraAttributeBag();
                 @endphp
 
                 <x-filament::tabs.item
                     :active="$isNavigationItemActive"
                     :badge="$navigationItemBadge"
                     :badge-color="$navigationItemBadgeColor"
+                    :badge-tooltip="$navigationItemBadgeTooltip"
                     :href="$navigationItemUrl"
                     :icon="$navigationItemIcon"
                     tag="a"
                     :target="$shouldNavigationItemOpenUrlInNewTab ? '_blank' : null"
+                    :attributes="\Filament\Support\prepare_inherited_attributes($navigationItemExtraAttributes)"
                 >
                     {{ $navigationItem->getLabel() }}
 
-                    @if ($navigationItemIcon instanceof \Illuminate\Contracts\Support\Htmlable)
+                    @if ($navigationItemIcon instanceof Htmlable)
                         <x-slot name="icon">
                             {{ $navigationItemIcon }}
                         </x-slot>

@@ -18,12 +18,7 @@ class WildcardPermission implements Wildcard
     /** @var non-empty-string */
     public const SUBPART_DELIMITER = ',';
 
-    protected Model $record;
-
-    public function __construct(Model $record)
-    {
-        $this->record = $record;
-    }
+    public function __construct(protected Model $record) {}
 
     public function getIndex(): array
     {
@@ -43,7 +38,7 @@ class WildcardPermission implements Wildcard
     protected function buildIndex(array $index, array $parts, string $permission): array
     {
         if (empty($parts)) {
-            $index[null] = true;
+            $index[''] = true;
 
             return $index;
         }

@@ -1,5 +1,11 @@
 <?php
 
+declare(strict_types=1);
+use BezhanSalleh\FilamentShield\Resources\Roles\RoleResource;
+use Filament\Pages\Dashboard;
+use Filament\Widgets\AccountWidget;
+use Filament\Widgets\FilamentInfoWidget;
+
 return [
 
     /*
@@ -96,12 +102,25 @@ return [
     |
     | Supported formats: snake, kebab, pascal, camel, upper_snake, lower_snake
     |
+    | Note: The separator must not conflict with the case format's own
+    | delimiter. For example, `_` cannot be used with snake/lower_snake/
+    | upper_snake, and `-` cannot be used with kebab.
+    |
+    | When `format_custom_permission_keys` is true (default), custom
+    | permissions defined below will have their keys formatted according to
+    | the case setting. If your custom permissions come from external sources
+    | (e.g. Terraform, Keycloak) and must remain unchanged, set this to false.
+    | When using the separator in custom permission definitions, each segment
+    | will be formatted independently (e.g. 'view:system_log' with pascal
+    | case becomes 'View:SystemLog').
+    |
     */
 
     'permissions' => [
         'separator' => ':',
         'case' => 'pascal',
         'generate' => true,
+        'format_custom_permission_keys' => true,
     ],
 
     /*
@@ -110,8 +129,12 @@ return [
     |--------------------------------------------------------------------------
     |
     | Shield can automatically generate Laravel policies for your resources.
-    | When merge is enabled, the methods below will be combined with any
-    | resource-specific methods you define in the resources section.
+    | Generated policies mirror each model's location: models under
+    | app/Models map into the path below (keeping their nesting), models in
+    | any other "Models" directory get a sibling "Policies" directory, and
+    | vendor models fall back to the path below. When merge is enabled, the
+    | methods below will be combined with any resource-specific methods you
+    | define in the resources section.
     |
     */
 
@@ -120,7 +143,7 @@ return [
         'merge' => true,
         'generate' => true,
         'methods' => [
-            'viewAny', 'view', 'create', 'update', 'delete', 'restore',
+            'viewAny', 'view', 'create', 'update', 'delete', 'deleteAny', 'restore',
             'forceDelete', 'forceDeleteAny', 'restoreAny', 'replicate', 'reorder',
         ],
         'single_parameter_methods' => [
@@ -146,7 +169,7 @@ return [
 
     'localization' => [
         'enabled' => false,
-        'key' => 'filament-shield::filament-shield',
+        'key' => 'filament-shield::filament-shield.resource_permission_prefixes_labels',
     ],
 
     /*
@@ -163,7 +186,7 @@ return [
     'resources' => [
         'subject' => 'model',
         'manage' => [
-            \BezhanSalleh\FilamentShield\Resources\Roles\RoleResource::class => [
+            RoleResource::class => [
                 'viewAny',
                 'view',
                 'create',
@@ -191,7 +214,7 @@ return [
         'subject' => 'class',
         'prefix' => 'view',
         'exclude' => [
-            \Filament\Pages\Dashboard::class,
+            Dashboard::class,
         ],
     ],
 
@@ -210,8 +233,8 @@ return [
         'subject' => 'class',
         'prefix' => 'view',
         'exclude' => [
-            \Filament\Widgets\AccountWidget::class,
-            \Filament\Widgets\FilamentInfoWidget::class,
+            AccountWidget::class,
+            FilamentInfoWidget::class,
         ],
     ],
 
@@ -223,6 +246,9 @@ return [
     | Sometimes you need permissions that don't map to resources, pages, or
     | widgets. Define any custom permissions here and they'll be available
     | when editing roles in your application.
+    |
+    | Keys are formatted per the Permission Builder settings above; set
+    | permissions.format_custom_permission_keys to false to use them as-is.
     |
     */
 

@@ -22,13 +22,15 @@ return [
 
                     'invalid' => 'Il codice inserito non è valido.',
 
+                    'rate_limited' => 'Hai effettuato troppi tentativi. Riprova più tardi.',
+
                 ],
 
             ],
 
             'password' => [
 
-                'label' => 'Oppure, inserisci la tua password attuale',
+                'label' => 'Inserisci la tua password attuale',
 
                 'validation_attribute' => 'password',
 

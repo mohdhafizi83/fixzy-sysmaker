@@ -3,31 +3,38 @@ import { Select } from '../../../../support/resources/js/utilities/select.js'
 export default function selectFormComponent({
     canOptionLabelsWrap,
     canSelectPlaceholder,
-    isHtmlAllowed,
+    clearButtonLabel,
     getOptionLabelUsing,
     getOptionLabelsUsing,
     getOptionsUsing,
     getSearchResultsUsing,
+    hasDynamicOptions,
+    hasDynamicSearchResults,
+    hasInitialNoOptionsMessage,
+    id,
     initialOptionLabel,
     initialOptionLabels,
     initialState,
     isAutofocused,
     isDisabled,
+    isHtmlAllowed,
     isMultiple,
+    isReorderable,
     isSearchable,
-    hasDynamicOptions,
-    hasDynamicSearchResults,
     livewireId,
     loadingMessage,
     maxItems,
     maxItemsMessage,
+    noOptionsMessage,
     noSearchResultsMessage,
     options,
     optionsLimit,
     placeholder,
     position,
+    removeButtonLabel,
     searchDebounce,
     searchingMessage,
+    searchLabel,
     searchPrompt,
     searchableOptionFields,
     state,
@@ -40,49 +47,58 @@ export default function selectFormComponent({
 
         init() {
             this.select = new Select({
-                element: this.$refs.select,
-                options,
-                placeholder,
-                state: this.state,
                 canOptionLabelsWrap,
                 canSelectPlaceholder,
-                initialOptionLabel,
-                initialOptionLabels,
-                initialState,
-                isHtmlAllowed,
-                isAutofocused,
-                isDisabled,
-                isMultiple,
-                isSearchable,
+                clearButtonLabel,
+                element: this.$refs.select,
                 getOptionLabelUsing,
                 getOptionLabelsUsing,
                 getOptionsUsing,
                 getSearchResultsUsing,
                 hasDynamicOptions,
                 hasDynamicSearchResults,
-                searchPrompt,
-                searchDebounce,
+                hasInitialNoOptionsMessage,
+                id,
+                initialOptionLabel,
+                initialOptionLabels,
+                initialState,
+                isAutofocused,
+                isDisabled,
+                isHtmlAllowed,
+                isMultiple,
+                isReorderable,
+                isSearchable,
+                livewireId,
                 loadingMessage,
-                searchingMessage,
-                noSearchResultsMessage,
                 maxItems,
                 maxItemsMessage,
-                optionsLimit,
-                position,
-                searchableOptionFields,
-                livewireId,
-                statePath,
+                noOptionsMessage,
+                noSearchResultsMessage,
                 onStateChange: (newState) => {
                     this.state = newState
                 },
+                options,
+                optionsLimit,
+                placeholder,
+                position,
+                removeButtonLabel,
+                searchableOptionFields,
+                searchDebounce,
+                searchingMessage,
+                searchLabel,
+                searchPrompt,
+                state: this.state,
+                statePath,
             })
 
             this.$watch('state', (newState) => {
-                if (this.select && this.select.state !== newState) {
-                    this.select.state = newState
-                    this.select.updateSelectedDisplay()
-                    this.select.renderOptions()
-                }
+                this.$nextTick(() => {
+                    if (this.select && this.select.state !== newState) {
+                        this.select.state = newState
+                        this.select.updateSelectedDisplay()
+                        this.select.renderOptions()
+                    }
+                })
             })
         },
 

@@ -42,6 +42,11 @@ return [
 
         'form' => [
 
+            'password' => [
+                'label' => 'Password attuale',
+                'validation_attribute' => 'password attuale',
+            ],
+
             'code' => [
 
                 'label' => 'Inserisci il codice di 6 cifre dall\'app di autenticazione',
@@ -53,6 +58,8 @@ return [
                 'messages' => [
 
                     'invalid' => 'Il codice inserito non è valido.',
+
+                    'rate_limited' => 'Hai effettuato troppi tentativi. Riprova più tardi.',
 
                 ],
 

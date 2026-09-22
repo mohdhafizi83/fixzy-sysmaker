@@ -42,6 +42,11 @@ return [
 
         'form' => [
 
+            'password' => [
+                'label' => 'Huidig wachtwoord',
+                'validation_attribute' => 'huidig wachtwoord',
+            ],
+
             'code' => [
 
                 'label' => 'Voer de 6-cijferige code uit de authenticator-app in',
@@ -53,6 +58,8 @@ return [
                 'messages' => [
 
                     'invalid' => 'De ingevoerde code is ongeldig.',
+
+                    'rate_limited' => 'Te veel pogingen. Probeer het later opnieuw.',
 
                 ],
 

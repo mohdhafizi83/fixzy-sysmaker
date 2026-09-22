@@ -13,13 +13,21 @@ declare(strict_types=1);
 
 namespace League\Uri\Components;
 
+use BackedEnum;
 use Deprecated;
 use League\Uri\Contracts\FragmentInterface;
+use League\Uri\Contracts\UriComponentInterface;
+use League\Uri\Contracts\UriException;
 use League\Uri\Contracts\UriInterface;
 use League\Uri\Encoder;
-use League\Uri\Uri;
+use League\Uri\StringCoercionMode;
+use League\Uri\UriString;
 use Psr\Http\Message\UriInterface as Psr7UriInterface;
 use Stringable;
+use Uri\Rfc3986\Uri as Rfc3986Uri;
+use Uri\WhatWg\Url as WhatWgUrl;
+
+use function str_replace;
 
 final class Fragment extends Component implements FragmentInterface
 {
@@ -28,26 +36,39 @@ final class Fragment extends Component implements FragmentInterface
     /**
      * New instance.
      */
-    private function __construct(Stringable|string|null $fragment)
+    private function __construct(BackedEnum|Stringable|string|null $fragment)
     {
         $this->fragment = $this->validateComponent($fragment);
     }
 
-    public static function new(Stringable|string|null $value = null): self
+    public static function new(BackedEnum|Stringable|string|null $value = null): self
     {
         return new self($value);
     }
 
     /**
+     * Create a new instance from a string.or a stringable structure or returns null on failure.
+     */
+    public static function tryNew(BackedEnum|Stringable|string|null $uri = null): ?self
+    {
+        try {
+            return self::new($uri);
+        } catch (UriException) {
+            return null;
+        }
+    }
+
+    /**
      * Create a new instance from a URI object.
      */
-    public static function fromUri(Stringable|string $uri): self
+    public static function fromUri(WhatWgUrl|Rfc3986Uri|BackedEnum|Stringable|string $uri): self
     {
         $uri = self::filterUri($uri);
 
         return match (true) {
-            $uri instanceof UriInterface => new self($uri->getFragment()),
-            default => new self(Uri::new($uri)->getFragment()),
+            $uri instanceof Rfc3986Uri => new self($uri->getRawFragment()),
+            $uri instanceof Psr7UriInterface => new self(UriString::parse($uri)['fragment']),
+            default => new self($uri->getFragment()),
         };
     }
 
@@ -66,7 +87,32 @@ final class Fragment extends Component implements FragmentInterface
      */
     public function decoded(): ?string
     {
-        return $this->fragment;
+        if (null === $this->fragment) {
+            return null;
+        }
+
+        return  str_replace('%20', ' ', $this->fragment);
+    }
+
+    public function equals(mixed $value): bool
+    {
+        if (!StringCoercionMode::Native->isCoercible($value)) {
+            return false;
+        }
+
+        if (!$value instanceof UriComponentInterface) {
+            $value = self::tryNew(StringCoercionMode::Native->coerce($value));
+            if (null === $value) {
+                return false;
+            }
+        }
+
+        return $value->getUriComponent() === $this->getUriComponent();
+    }
+
+    public function normalize(): self
+    {
+        return  new self(Encoder::normalizeFragment($this->value()));
     }
 
     /**

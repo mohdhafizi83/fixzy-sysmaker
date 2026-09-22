@@ -1,6 +1,7 @@
 ---
 title: Create action
 ---
+import AutoScreenshot from "@components/AutoScreenshot.astro"
 import UtilityInjection from "@components/UtilityInjection.astro"
 
 ## Introduction
@@ -20,6 +21,8 @@ CreateAction::make()
     ])
 ```
 
+<AutoScreenshot name="actions/create-action/modal" alt="Create action modal" version="5.x" />
+
 ## Customizing data before saving
 
 Sometimes, you may wish to modify form data before it is finally saved to the database. To do this, you may use the `mutateDataUsing()` method, which has access to the `$data` as an array, and returns the modified version:
@@ -35,7 +38,7 @@ CreateAction::make()
     })
 ```
 
-<UtilityInjection set="actions" version="4.x">As well as `$data`, the `mutateDataUsing()` function can inject various utilities as parameters.</UtilityInjection>
+<UtilityInjection set="actions" version="5.x">As well as `$data`, the `mutateDataUsing()` function can inject various utilities as parameters.</UtilityInjection>
 
 ## Customizing the creation process
 
@@ -53,7 +56,7 @@ CreateAction::make()
 
 `$model` is the class name of the model, but you can replace this with your own hard-coded class if you wish.
 
-<UtilityInjection set="actions" version="4.x">As well as `$data` and `$model`, the `using()` function can inject various utilities as parameters.</UtilityInjection>
+<UtilityInjection set="actions" version="5.x">As well as `$data` and `$model`, the `using()` function can inject various utilities as parameters.</UtilityInjection>
 
 ## Redirecting after creation
 
@@ -78,7 +81,7 @@ CreateAction::make()
     ]))
 ```
 
-<UtilityInjection set="actions" version="4.x">As well as `$record`, the `successRedirectUrl()` function can inject various utilities as parameters.</UtilityInjection>
+<UtilityInjection set="actions" version="5.x">As well as `$record`, the `successRedirectUrl()` function can inject various utilities as parameters.</UtilityInjection>
 
 ## Customizing the save notification
 
@@ -93,7 +96,7 @@ CreateAction::make()
     ->successNotificationTitle('User registered')
 ```
 
-<UtilityInjection set="actions" version="4.x">As well as allowing a static value, the `successNotificationTitle()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="actions" version="5.x">As well as allowing a static value, the `successNotificationTitle()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 You may customize the entire notification using the `successNotification()` method:
 
@@ -110,7 +113,7 @@ CreateAction::make()
     )
 ```
 
-<UtilityInjection set="actions" version="4.x" extras="Notification;;Filament\Notifications\Notification;;$notification;;The default notification object, which could be a useful starting point for customization.">As well as allowing a static value, the `successNotification()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="actions" version="5.x" extras="Notification;;Filament\Notifications\Notification;;$notification;;The default notification object, which could be a useful starting point for customization.">As well as allowing a static value, the `successNotification()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 To disable the notification altogether, use the `successNotification(null)` method:
 
@@ -151,7 +154,7 @@ CreateAction::make()
     })
 ```
 
-<UtilityInjection set="actions" version="4.x">These hook functions can inject various utilities as parameters.</UtilityInjection>
+<UtilityInjection set="actions" version="5.x">These hook functions can inject various utilities as parameters.</UtilityInjection>
 
 ## Halting the creation process
 
@@ -254,7 +257,7 @@ If you'd like to modify the "create another" action, you may use the `createAnot
 use Filament\Actions\CreateAction;
 
 CreateAction::make()
-    ->createAnotherAction(fn (Action $action): Action => $aciton->label('Custom create another label'))
+    ->createAnotherAction(fn (Action $action): Action => $action->label('Custom create another label'))
 ```
 
 ### Disabling create another
@@ -268,7 +271,7 @@ CreateAction::make()
     ->createAnother(false)
 ```
 
-<UtilityInjection set="actions" version="4.x">As well as allowing a static value, the `createAnother()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="actions" version="5.x">As well as allowing a static value, the `createAnother()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ### Preserving data when creating another
 
@@ -300,4 +303,4 @@ CreateAction::make()
     ->preserveFormDataWhenCreatingAnother(fn (array $data): array => $data)
 ```
 
-<UtilityInjection set="actions" version="4.x">As well as allowing a static value, the `preserveFormDataWhenCreatingAnother()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="actions" version="5.x">As well as allowing a static value, the `preserveFormDataWhenCreatingAnother()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>

@@ -3,8 +3,6 @@
 namespace Livewire\Features\SupportComputed;
 
 use function Livewire\invade;
-use function Livewire\on;
-use function Livewire\off;
 
 use Livewire\Features\SupportAttributes\Attribute;
 use Illuminate\Support\Facades\Cache;
@@ -22,15 +20,6 @@ class BaseComputed extends Attribute
         public $tags = null,
     ) {}
 
-    function boot()
-    {
-        off('__get', $this->handleMagicGet(...));
-        on('__get', $this->handleMagicGet(...));
-
-        off('__unset', $this->handleMagicUnset(...));
-        on('__unset', $this->handleMagicUnset(...));
-    }
-
     function call()
     {
         throw new CannotCallComputedDirectlyException(
@@ -39,19 +28,20 @@ class BaseComputed extends Attribute
         );
     }
 
-    protected function handleMagicGet($target, $property, $returnValue)
+    public function handleMagicGet($returnValue)
     {
-        if ($target !== $this->component) return;
-        if ($this->generatePropertyName($property) !== $this->getName()) return;
-
         if ($this->persist) {
-            $returnValue($this->handlePersistedGet());
+            $returnValue(
+                $this->requestCachedValue ??= $this->handlePersistedGet()
+            );
 
             return;
         }
 
         if ($this->cache) {
-            $returnValue($this->handleCachedGet());
+            $returnValue(
+                $this->requestCachedValue ??= $this->handleCachedGet()
+            );
 
             return;
         }
@@ -61,19 +51,18 @@ class BaseComputed extends Attribute
         );
     }
 
-    protected function handleMagicUnset($target, $property)
+    public function handleMagicUnset()
     {
-        if ($target !== $this->component) return;
-        if ($property !== $this->getName()) return;
-
         if ($this->persist) {
             $this->handlePersistedUnset();
+            unset($this->requestCachedValue);
 
             return;
         }
 
         if ($this->cache) {
             $this->handleCachedUnset();
+            unset($this->requestCachedValue);
 
             return;
         }
@@ -87,10 +76,12 @@ class BaseComputed extends Attribute
 
         $closure = fn () => $this->evaluateComputed();
 
-        return match(Cache::supportsTags() && !empty($this->tags)) {
+        $value = match(Cache::supportsTags() && !empty($this->tags)) {
             true => Cache::tags($this->tags)->remember($key, $this->seconds, $closure),
             default => Cache::remember($key, $this->seconds, $closure)
         };
+
+        return $this->resolveCachedValue($value, $closure);
     }
 
     protected function handleCachedGet()
@@ -99,10 +90,42 @@ class BaseComputed extends Attribute
 
         $closure = fn () => $this->evaluateComputed();
 
-        return match(Cache::supportsTags() && !empty($this->tags)) {
+        $value = match(Cache::supportsTags() && !empty($this->tags)) {
             true => Cache::tags($this->tags)->remember($key, $this->seconds, $closure),
             default => Cache::remember($key, $this->seconds, $closure)
         };
+
+        return $this->resolveCachedValue($value, $closure);
+    }
+
+    protected function resolveCachedValue($value, $closure)
+    {
+        $class = $this->findIncompleteClass($value);
+
+        if ($class === null) return $value;
+
+        if (config('app.debug')) {
+            logger()->warning(
+                "Livewire re-evaluated cached computed property [{$this->component->getName()}::{$this->getName()}] because Laravel could not unserialize [{$class}]. The value is correct, but it was not served from cache. Return a scalar or array, or add the class to [cache.serializable_classes]."
+            );
+        }
+
+        return $closure();
+    }
+
+    protected function findIncompleteClass($value)
+    {
+        if ($value instanceof \__PHP_Incomplete_Class) {
+            return ((array) $value)['__PHP_Incomplete_Class_Name'] ?? \__PHP_Incomplete_Class::class;
+        }
+
+        if (! is_array($value)) return null;
+
+        foreach ($value as $item) {
+            if ($class = $this->findIncompleteClass($item)) return $class;
+        }
+
+        return null;
     }
 
     protected function handlePersistedUnset()

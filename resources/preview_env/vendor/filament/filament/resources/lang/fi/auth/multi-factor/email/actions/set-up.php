@@ -2,7 +2,7 @@
 
 return [
 
-    'label' => 'Set up',
+    'label' => 'Käyttöönotto',
 
     'modal' => [
 
@@ -30,6 +30,10 @@ return [
                                 'title' => 'Olemme lähettänyt koodin sähköpostiisi',
                             ],
 
+                            'throttled' => [
+                                'title' => 'Liian monta lähetyksen yritystä. Odota ennen seuraavaa yritystä.',
+                            ],
+
                         ],
 
                     ],
@@ -39,6 +43,8 @@ return [
                 'messages' => [
 
                     'invalid' => 'Annettu koodi on väärin.',
+
+                    'rate_limited' => 'Liian monta yritystä. Yritä myöhemmin uudelleen.',
 
                 ],
 

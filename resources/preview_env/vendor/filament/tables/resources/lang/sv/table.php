@@ -12,6 +12,10 @@ return [
                 'label' => 'Använd kolumner',
             ],
 
+            'reorder' => [
+                'label' => 'Ändra ordning på kolumn',
+            ],
+
             'reset' => [
                 'label' => 'Återställ',
             ],
@@ -26,17 +30,28 @@ return [
             'label' => 'Åtgärd|Åtgärder',
         ],
 
+        'icon' => [
+
+            'boolean' => [
+                'true' => 'Ja',
+                'false' => 'Nej',
+            ],
+
+        ],
+
         'select' => [
 
-            'loading_message' => 'Laddar...',
+            'loading_message' => 'Laddar…',
+
+            'no_options_message' => 'Inga alternativ tillgängliga.',
 
             'no_search_results_message' => 'Inga alternativ matchar din sökning.',
 
             'placeholder' => 'Välj ett alternativ',
 
-            'searching_message' => 'Söker...',
+            'searching_message' => 'Söker…',
 
-            'search_prompt' => 'Börja skriva för att söka...',
+            'search_prompt' => 'Börja skriva för att söka…',
 
         ],
 
@@ -113,6 +128,10 @@ return [
             'label' => 'Ändra ordning på objekt',
         ],
 
+        'reorder_record' => [
+            'label' => 'Ändra ordning på objekt :key',
+        ],
+
         'filter' => [
             'label' => 'Filter',
         ],
@@ -127,6 +146,10 @@ return [
 
         'column_manager' => [
             'label' => 'Växla kolumner',
+        ],
+
+        'toggle_record_content' => [
+            'label' => 'Expandera/komprimera objekt :key',
         ],
 
     ],
@@ -217,7 +240,11 @@ return [
 
     ],
 
+    'loading' => 'Laddar…',
+
     'reorder_indicator' => 'Dra och släpp objekten i önskad ordning.',
+
+    'result_count' => '{0} Inga resultat|{1} :count resultat|[2,*] :count resultat',
 
     'selection_indicator' => [
 

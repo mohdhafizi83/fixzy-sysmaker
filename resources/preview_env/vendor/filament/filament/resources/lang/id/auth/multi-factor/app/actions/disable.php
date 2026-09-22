@@ -11,6 +11,10 @@ return [
         'description' => 'Apakah Anda yakin ingin berhenti menggunakan aplikasi Autenticator? Menonaktifkan fitur ini akan mengurangi keamanan dari akun Anda.',
 
         'form' => [
+            'password' => [
+                'label' => 'Kata sandi saat ini',
+                'validation_attribute' => 'kata sandi saat ini',
+            ],
 
             'code' => [
 
@@ -30,6 +34,8 @@ return [
 
                     'invalid' => 'Kode yang Anda masukkan tidak valid.',
 
+                    'rate_limited' => 'Terlalu banyak percobaan. Silakan coba lagi nanti.',
+
                 ],
 
             ],
@@ -43,6 +49,8 @@ return [
                 'messages' => [
 
                     'invalid' => 'Kode pemulihan yang Anda masukkan tidak valid.',
+
+                    'rate_limited' => 'Terlalu banyak percobaan. Silakan coba lagi nanti.',
 
                 ],
 

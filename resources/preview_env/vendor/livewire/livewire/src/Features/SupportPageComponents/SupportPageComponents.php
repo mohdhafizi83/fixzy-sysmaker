@@ -2,9 +2,10 @@
 
 namespace Livewire\Features\SupportPageComponents;
 
-use function Livewire\{on, off, once};
+use function Livewire\{on, once};
 use Livewire\Drawer\ImplicitRouteBinding;
 use Livewire\ComponentHook;
+use Livewire\Mechanisms\HandleRouting\LivewirePageController;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -20,7 +21,7 @@ class SupportPageComponents extends ComponentHook
 
     static function registerLayoutViewMacros()
     {
-        View::macro('layoutData', function ($data = []) {
+        View::macro('layoutData', function ($data = []): static {
             if (! isset($this->layoutConfig)) $this->layoutConfig = new PageComponentConfig;
 
             $this->layoutConfig->mergeParams($data);
@@ -28,7 +29,7 @@ class SupportPageComponents extends ComponentHook
             return $this;
         });
 
-        View::macro('section', function ($section) {
+        View::macro('section', function ($section): static {
             if (! isset($this->layoutConfig)) $this->layoutConfig = new PageComponentConfig;
 
             $this->layoutConfig->slotOrSection = $section;
@@ -36,7 +37,7 @@ class SupportPageComponents extends ComponentHook
             return $this;
         });
 
-        View::macro('title', function ($title) {
+        View::macro('title', function ($title): static {
             if (! isset($this->layoutConfig)) $this->layoutConfig = new PageComponentConfig;
 
             $this->layoutConfig->mergeParams(['title' => $title]);
@@ -44,7 +45,7 @@ class SupportPageComponents extends ComponentHook
             return $this;
         });
 
-        View::macro('slot', function ($slot) {
+        View::macro('slot', function ($slot): static {
             if (! isset($this->layoutConfig)) $this->layoutConfig = new PageComponentConfig;
 
             $this->layoutConfig->slotOrSection = $slot;
@@ -52,7 +53,7 @@ class SupportPageComponents extends ComponentHook
             return $this;
         });
 
-        View::macro('extends', function ($view, $params = []) {
+        View::macro('extends', function ($view, $params = []): static {
             if (! isset($this->layoutConfig)) $this->layoutConfig = new PageComponentConfig;
 
             $this->layoutConfig->type = 'extends';
@@ -63,7 +64,7 @@ class SupportPageComponents extends ComponentHook
             return $this;
         });
 
-        View::macro('layout', function ($view, $params = []) {
+        View::macro('layout', function ($view, $params = []): static {
             if (! isset($this->layoutConfig)) $this->layoutConfig = new PageComponentConfig;
 
             $this->layoutConfig->type = 'component';
@@ -74,7 +75,7 @@ class SupportPageComponents extends ComponentHook
             return $this;
         });
 
-        View::macro('response', function (callable $callback) {
+        View::macro('response', function (callable $callback): static {
             if (! isset($this->layoutConfig)) $this->layoutConfig = new PageComponentConfig;
 
             $this->layoutConfig->response = $callback;
@@ -111,13 +112,15 @@ class SupportPageComponents extends ComponentHook
             };
         });
 
-        on('render', $handler);
-        on('render.placeholder', $handler);
+        $render = on('render', $handler);
+        $renderPlaceholder = on('render.placeholder', $handler);
 
-        $callback();
-
-        off('render', $handler);
-        off('render.placeholder', $handler);
+        try {
+            $callback();
+        } finally {
+            $render();
+            $renderPlaceholder();
+        }
 
         return $layoutConfig;
     }
@@ -141,6 +144,14 @@ class SupportPageComponents extends ComponentHook
             }
 
             throw $exception;
+        }
+
+        // Merge lazy/defer route defaults so that ->lazy() and ->defer()
+        // route macros work even when the component has no mount() method...
+        foreach (['lazy', 'defer'] as $key) {
+            if (array_key_exists($key, $route->defaults) && ! array_key_exists($key, $params)) {
+                $params[$key] = $route->defaults[$key];
+            }
         }
 
         return $params;
@@ -230,14 +241,24 @@ class SupportPageComponents extends ComponentHook
 
         $uses = $action['uses'] ?? false;
 
-        if (! $uses) return;
+        if (! $uses) return false;
 
         if (is_string($uses)) {
             $class = str($uses)->before('@')->toString();
             $method = str($uses)->after('@')->toString();
 
+            // Case 1: Direct component class usage (Route::get('/path', Component::class))
             if (is_subclass_of($class, \Livewire\Component::class) && $method === '__invoke') {
                 return $class;
+            }
+
+            // Case 2: Route::livewire macro usage (via LivewirePageController)
+            if (str($uses)->contains(LivewirePageController::class)) {
+                $component = $action['livewire_component'] ?? null;
+
+                if (! $component) return false;
+
+                return app('livewire.factory')->resolveComponentClass($component);
             }
         }
 

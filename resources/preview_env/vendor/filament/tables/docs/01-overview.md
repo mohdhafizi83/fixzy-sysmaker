@@ -8,6 +8,8 @@ import AutoScreenshot from "@components/AutoScreenshot.astro"
 
 Tables are a common UI pattern for displaying lists of records in web applications. Filament provides a PHP-based API for defining tables with many features, while also being incredibly customizable.
 
+<AutoScreenshot name="tables/example" alt="Table" version="5.x" />
+
 ### Defining table columns
 
 The basis of any table is rows and columns. Filament uses Eloquent to get the data for rows in the table, and you are responsible for defining the columns that are used in that row.
@@ -33,7 +35,7 @@ public function table(Table $table): Table
 }
 ```
 
-<AutoScreenshot name="tables/overview/columns" alt="Table with columns" version="4.x" />
+<AutoScreenshot name="tables/overview/columns" alt="Table with columns" version="5.x" />
 
 In this example, there are 3 columns in the table. The first two display [text](columns/text) - the title and slug of each row in the table. The third column displays an [icon](columns/icon), either a green check or a red cross depending on if the row is featured or not.
 
@@ -48,7 +50,7 @@ TextColumn::make('title')
     ->searchable()
 ```
 
-<AutoScreenshot name="tables/overview/searchable-columns" alt="Table with searchable column" version="4.x" />
+<AutoScreenshot name="tables/overview/searchable-columns" alt="Table with searchable column" version="5.x" />
 
 You can make multiple columns searchable, and Filament will be able to search for matches within any of them, all at once.
 
@@ -61,7 +63,7 @@ TextColumn::make('title')
     ->sortable()
 ```
 
-<AutoScreenshot name="tables/overview/sortable-columns" alt="Table with sortable column" version="4.x" />
+<AutoScreenshot name="tables/overview/sortable-columns" alt="Table with sortable column" version="5.x" />
 
 #### Accessing related data from columns
 
@@ -73,7 +75,7 @@ use Filament\Tables\Columns\TextColumn;
 TextColumn::make('author.name')
 ```
 
-<AutoScreenshot name="tables/overview/relationship-columns" alt="Table with relationship column" version="4.x" />
+<AutoScreenshot name="tables/overview/relationship-columns" alt="Table with relationship column" version="5.x" />
 
 In this case, Filament will search for an `author` relationship on the `Post` model, and then display the `name` attribute of that relationship. We call this "dot notation", and you can use it to display any attribute of any relationship, even nested relationships. Filament uses this dot notation to eager-load the results of that relationship for you.
 
@@ -136,7 +138,7 @@ public function table(Table $table): Table
 }
 ```
 
-<AutoScreenshot name="tables/overview/filters" alt="Table with filters" version="4.x" />
+<AutoScreenshot name="tables/overview/filters" alt="Table with filters" version="5.x" />
 
 In this example, we have defined 2 table filters. On the table, there is now a "filter" icon button in the top corner. Clicking it will open a dropdown with the 2 filters we have defined.
 
@@ -184,19 +186,21 @@ public function table(Table $table): Table
 }
 ```
 
-<AutoScreenshot name="tables/overview/actions" alt="Table with actions" version="4.x" />
+<AutoScreenshot name="tables/overview/actions" alt="Table with actions" version="5.x" />
 
 In this example, we define 2 actions for table rows. The first action is a "feature" action. When clicked, it will set the `is_featured` attribute on the record to `true` - which is written within the `action()` method. Using the `hidden()` method, the action will be hidden if the record is already featured. The second action is an "unfeature" action. When clicked, it will set the `is_featured` attribute on the record to `false`. Using the `visible()` method, the action will be hidden if the record is not featured.
 
 We also define a bulk action. When bulk actions are defined, each row in the table will have a checkbox. This bulk action is [built-in to Filament](../actions/delete#bulk-delete), and it will delete all selected records. However, you can [write your own custom bulk actions](actions#bulk-actions) easily too.
 
-<AutoScreenshot name="tables/overview/actions-modal" alt="Table with action modal open" version="4.x" />
+<AutoScreenshot name="tables/overview/actions-modal" alt="Table with action modal open" version="5.x" />
 
 Actions can also open modals to request confirmation from the user, as well as render forms inside to collect extra data. It's a good idea to read the [Actions documentation](../actions) to learn more about their extensive capabilities throughout Filament.
 
 ## Pagination
 
 By default, Filament tables will be paginated. The user can choose between 5, 10, 25, and 50 records per page. If there are more records than the selected number, the user can navigate between pages using the pagination buttons.
+
+<AutoScreenshot name="tables/pagination/default" alt="Table with default pagination" version="5.x" />
 
 ### Customizing the pagination options
 
@@ -234,6 +238,20 @@ public function table(Table $table): Table
     Make sure that the default pagination page option is included in the [pagination options](#customizing-the-pagination-options).
 </Aside>
 
+### Disabling records per page persistence in the user's session
+
+By default, the selected number of records per page is persisted in the user's session. To disable this behavior, use the `persistRecordsPerPageInSession()` method:
+
+```php
+use Filament\Tables\Table;
+
+public function table(Table $table): Table
+{
+    return $table
+        ->persistRecordsPerPageInSession(false);
+}
+```
+
 ### Displaying links to the first and the last pagination page
 
 To add "extreme" links to the first and the last page using the `extremePaginationLinks()` method:
@@ -247,6 +265,8 @@ public function table(Table $table): Table
         ->extremePaginationLinks();
 }
 ```
+
+<AutoScreenshot name="tables/pagination/extreme" alt="Table with extreme pagination links" version="5.x" />
 
 ### Using simple pagination
 
@@ -263,6 +283,8 @@ public function table(Table $table): Table
 }
 ```
 
+<AutoScreenshot name="tables/pagination/simple" alt="Table with simple pagination" version="5.x" />
+
 ### Using cursor pagination
 
 You may use cursor pagination by using the `paginationMode(PaginationMode::Cursor)` method:
@@ -277,6 +299,8 @@ public function table(Table $table): Table
         ->paginationMode(PaginationMode::Cursor);
 }
 ```
+
+<AutoScreenshot name="tables/pagination/cursor" alt="Table with cursor pagination" version="5.x" />
 
 ### Preventing query string conflicts with the pagination page
 
@@ -357,11 +381,11 @@ public function table(Table $table): Table
 }
 ```
 
-If you're using mass assignment protection on your model, you will also need to add the `sort` attribute to the `$fillable` array there.
+The `sort` database column in this example will be used to store the order of records in the table. Whenever you order a database query using that column, they will be returned in the defined order. If you're using mass assignment protection on your model, you will also need to add the `sort` attribute to the `$fillable` array there.
 
 When making the table reorderable, a new button will be available on the table to toggle reordering.
 
-<AutoScreenshot name="tables/reordering" alt="Table with reorderable rows" version="4.x" />
+<AutoScreenshot name="tables/reordering" alt="Table with reorderable rows" version="5.x" />
 
 The `reorderable()` method accepts the name of a column to store the record order in. If you use something like [`spatie/eloquent-sortable`](https://github.com/spatie/eloquent-sortable) with an order column such as `order_column`, you may use this instead:
 
@@ -432,7 +456,27 @@ public function table(Table $table): Table
 }
 ```
 
-<AutoScreenshot name="tables/reordering/custom-trigger-action" alt="Table with reorderable rows and a custom trigger action" version="4.x" />
+<AutoScreenshot name="tables/reordering/custom-trigger-action" alt="Table with reorderable rows and a custom trigger action" version="5.x" />
+
+### Running code before and after reordering
+
+You may run code before or after a record is reordered using the `beforeReordering()` and `afterReordering()` methods. Both methods accept a function that receives the new `$order` array of record keys:
+
+```php
+use Filament\Tables\Table;
+
+public function table(Table $table): Table
+{
+    return $table
+        ->reorderable('sort')
+        ->beforeReordering(function (array $order): void {
+            // Runs before records are reordered in the database.
+        })
+        ->afterReordering(function (array $order): void {
+            // Runs after records are reordered in the database.
+        });
+}
+```
 
 ## Customizing the table header
 
@@ -464,6 +508,8 @@ public function table(Table $table): Table
             // ...
         ]);
 ```
+
+<AutoScreenshot name="tables/heading" alt="Table with heading and description" version="5.x" />
 
 You can pass a view to the `$table->header()` method to customize the entire header HTML:
 
@@ -538,6 +584,38 @@ public function table(Table $table): Table
 }
 ```
 
+## Persisting the table state in the user's session
+
+Filament can remember a table's [filters](filters#persisting-filters-in-the-users-session), [search](columns#persisting-the-search-in-the-users-session), [sort](columns#persisting-the-sort-in-the-users-session), [grouping](grouping#persisting-the-grouping-in-the-users-session), [column manager](columns#disabling-column-persistence-in-the-users-session), and [records per page](#disabling-records-per-page-persistence-in-the-users-session) state in the user's session, so it is restored when they return to the table. Each feature has its own method, but you can toggle all of them at once using the `persistInSession()` method:
+
+```php
+use Filament\Tables\Table;
+
+public function table(Table $table): Table
+{
+    return $table
+        ->columns([
+            // ...
+        ])
+        ->persistInSession();
+}
+```
+
+Passing `false` disables every kind of session persistence, including the column manager, which is persisted by default:
+
+```php
+use Filament\Tables\Table;
+
+public function table(Table $table): Table
+{
+    return $table
+        ->columns([
+            // ...
+        ])
+        ->persistInSession(false);
+}
+```
+
 ## Styling table rows
 
 ### Striped table rows
@@ -554,7 +632,7 @@ public function table(Table $table): Table
 }
 ```
 
-<AutoScreenshot name="tables/striped" alt="Table with striped rows" version="4.x" />
+<AutoScreenshot name="tables/striped" alt="Table with striped rows" version="5.x" />
 
 ### Custom row classes
 
@@ -577,6 +655,8 @@ public function table(Table $table): Table
         });
 }
 ```
+
+<AutoScreenshot name="tables/custom-row-classes" alt="Table with custom row classes" version="5.x" />
 
 ## Global settings
 

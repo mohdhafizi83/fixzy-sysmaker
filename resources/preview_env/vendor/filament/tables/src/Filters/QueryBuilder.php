@@ -4,19 +4,19 @@ namespace Filament\Tables\Filters;
 
 use Closure;
 use Filament\Forms\Components\Repeater;
+use Filament\QueryBuilder\Constraints\Constraint;
+use Filament\QueryBuilder\Constraints\Operators\Operator;
+use Filament\QueryBuilder\Forms\Components\RuleBuilder;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Schema;
-use Filament\Tables\Filters\QueryBuilder\Concerns\HasConstraints;
-use Filament\Tables\Filters\QueryBuilder\Forms\Components\RuleBuilder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 
 class QueryBuilder extends BaseFilter
 {
-    use HasConstraints;
-
     /**
      * @var array<string, ?int> | null
      */
@@ -24,30 +24,126 @@ class QueryBuilder extends BaseFilter
 
     protected string | Closure | null $constraintPickerWidth = null;
 
+    /** @var array<Constraint> */
+    protected array $constraints = [];
+
+    protected int | Closure | null $maxRules = null;
+
+    protected int | Closure | null $maxNestingDepth = null;
+
+    protected ?RuleBuilder $cachedRuleBuilder = null;
+
+    /**
+     * @var array<string, bool>
+     */
+    protected array $cachedRuleSchemaValidity = [];
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->label(__('filament-tables::filters/query-builder.label'));
+        $this->label(__('filament-query-builder::query-builder.label'));
 
         $this->schema(fn (QueryBuilder $filter): array => [
             RuleBuilder::make('rules')
                 ->label($filter->getLabel())
+                ->hiddenLabel()
                 ->constraints($filter->getConstraints())
                 ->blockPickerColumns($filter->getConstraintPickerColumns())
                 ->blockPickerWidth($filter->getConstraintPickerWidth())
-                ->live(onBlur: true),
+                ->maxRules($filter->getMaxRules())
+                ->maxNestingDepth($filter->getMaxNestingDepth()),
         ]);
 
         $this->query(function (Builder $query, array $data): void {
+            // Security: Rule trees are stored in tamperable Livewire state with no upstream payload limits, so an authenticated user could submit an enormous or deeply-nested tree to exhaust CPU/memory. If it exceeds the configured `maxRules()` or `maxNestingDepth()` bounds, fail safe by applying no constraints rather than processing it.
+            if ($this->exceedsRuleLimits($data['rules'])) {
+                return;
+            }
+
             $this->applyRulesToQuery($query, $data['rules'], $this->getRuleBuilder());
         });
 
         $this->baseQuery(function (Builder $query, array $data): void {
+            // Security: See the note in `query()` above — bound the rule tree so a tampered Livewire payload cannot exhaust CPU/memory, failing safe by applying no constraints when it exceeds the configured limits.
+            if ($this->exceedsRuleLimits($data['rules'])) {
+                return;
+            }
+
             $this->applyRulesToBaseQuery($query, $data['rules'], $this->getRuleBuilder());
         });
 
+        $this->indicateUsing(function (array $state): array {
+            // Security: See the note in `query()` above — an over-limit tree is treated as no active filter here too, rather than traversing the whole tampered tree to build indicators.
+            if ($this->exceedsRuleLimits($state['rules'])) {
+                return [];
+            }
+
+            // The summaries describe the applied rules, so the rule builder must be resolved from the applied state too. Otherwise a rule that has been removed from the filters form without applying it has no matching block.
+            return $this->getTable()->withAppliedFiltersFormState(fn (): array => $this->getRuleSummaries($state['rules'], $this->getRuleBuilder()));
+        });
+
         $this->columnSpanFull();
+    }
+
+    /**
+     * @param  array<string, mixed>  $rules
+     * @return array<string>
+     */
+    public function getRuleSummaries(array $rules, RuleBuilder $ruleBuilder, int $iteration = 1): array
+    {
+        $summaries = [];
+
+        foreach ($rules as $ruleIndex => $rule) {
+            $ruleBuilderBlockContainer = $ruleBuilder->getChildSchema($ruleIndex);
+
+            if (! $ruleBuilderBlockContainer) {
+                throw new LogicException('No query builder block found for [' . ($rule['type'] ?? $ruleIndex) . '].');
+            }
+
+            if ($rule['type'] === RuleBuilder::OR_BLOCK_NAME) {
+                $orSummaries = [];
+
+                foreach ($rule['data'][RuleBuilder::OR_BLOCK_GROUPS_REPEATER_NAME] as $orGroupIndex => $orGroup) {
+                    $orGroupSummaries = $this->getRuleSummaries(
+                        $orGroup['rules'],
+                        $this->getNestedRuleBuilder($ruleBuilderBlockContainer, $orGroupIndex),
+                        $iteration + 1,
+                    );
+
+                    $orSummaries[] = ((count($orGroupSummaries) > 1) ? '(' : '') . implode(' ' . __('filament-query-builder::query-builder.form.rules.item.and') . ' ', $orGroupSummaries) . ((count($orGroupSummaries) > 1) ? ')' : '');
+                }
+
+                $orSummaries = array_filter($orSummaries, filled(...));
+
+                if (blank($orSummaries)) {
+                    continue;
+                }
+
+                if (count($orSummaries) === 1) {
+                    $summaries[$ruleIndex] = Arr::first($orSummaries);
+
+                    continue;
+                }
+
+                $hasParentheses = ($iteration > 1) && (count($orSummaries) > 1);
+
+                $summaries[$ruleIndex] = ($hasParentheses ? '(' : '') . implode(' ' . __('filament-query-builder::query-builder.form.or_groups.block.or') . ' ', $orSummaries) . ($hasParentheses ? ')' : '');
+
+                continue;
+            }
+
+            $this->tapOperatorFromRule(
+                $rule,
+                $ruleBuilderBlockContainer,
+                function (Operator $operator) use ($ruleIndex, &$summaries): void {
+                    $summaries[$ruleIndex] = $operator->getSummary();
+                },
+                shouldUseRawSettings: true,
+            );
+        }
+
+        return $summaries;
     }
 
     public static function getDefaultName(): ?string
@@ -57,7 +153,14 @@ class QueryBuilder extends BaseFilter
 
     public function getActiveCount(): int
     {
-        return $this->countRules($this->getState()['rules'], $this->getRuleBuilder());
+        $rules = $this->getState()['rules'];
+
+        // Security: See the note in `query()` above — an over-limit tree is treated as no active filter here too, rather than traversing the whole tampered tree to count rules.
+        if ($this->exceedsRuleLimits($rules)) {
+            return 0;
+        }
+
+        return $this->getTable()->withAppliedFiltersFormState(fn (): int => $this->countRules($rules, $this->getRuleBuilder()));
     }
 
     /**
@@ -70,6 +173,10 @@ class QueryBuilder extends BaseFilter
         foreach ($rules as $ruleIndex => $rule) {
             $ruleBuilderBlockContainer = $ruleBuilder->getChildSchema($ruleIndex);
 
+            if (! $ruleBuilderBlockContainer) {
+                throw new LogicException('No query builder block found for [' . ($rule['type'] ?? $ruleIndex) . '].');
+            }
+
             if ($rule['type'] === RuleBuilder::OR_BLOCK_NAME) {
                 foreach ($rule['data'][RuleBuilder::OR_BLOCK_GROUPS_REPEATER_NAME] as $orGroupIndex => $orGroup) {
                     $count += $this->countRules(
@@ -81,9 +188,7 @@ class QueryBuilder extends BaseFilter
                 continue;
             }
 
-            try {
-                $ruleBuilderBlockContainer->validate();
-            } catch (ValidationException) {
+            if (! $this->ruleSchemaPassesValidation($ruleBuilderBlockContainer)) {
                 continue;
             }
 
@@ -104,6 +209,10 @@ class QueryBuilder extends BaseFilter
     {
         foreach ($rules as $ruleIndex => $rule) {
             $ruleBuilderBlockContainer = $ruleBuilder->getChildSchema($ruleIndex);
+
+            if (! $ruleBuilderBlockContainer) {
+                throw new LogicException('No query builder block found for [' . ($rule['type'] ?? $ruleIndex) . '].');
+            }
 
             if ($rule['type'] === RuleBuilder::OR_BLOCK_NAME) {
                 $query->where(function (Builder $query) use ($rule, $ruleBuilderBlockContainer): void {
@@ -128,7 +237,7 @@ class QueryBuilder extends BaseFilter
             $this->tapOperatorFromRule(
                 $rule,
                 $ruleBuilderBlockContainer,
-                fn ($operator) => $operator->applyToBaseQuery($query),
+                fn (Operator $operator) => $operator->applyToBaseQuery($query),
             );
         }
 
@@ -147,6 +256,10 @@ class QueryBuilder extends BaseFilter
         foreach ($rules as $ruleIndex => $rule) {
             $ruleBuilderBlockContainer = $ruleBuilder->getChildSchema($ruleIndex);
 
+            if (! $ruleBuilderBlockContainer) {
+                throw new LogicException('No query builder block found for [' . ($rule['type'] ?? $ruleIndex) . '].');
+            }
+
             if ($rule['type'] === RuleBuilder::OR_BLOCK_NAME) {
                 foreach ($rule['data'][RuleBuilder::OR_BLOCK_GROUPS_REPEATER_NAME] as $orGroupIndex => $orGroup) {
                     $this->applyRulesToBaseQuery(
@@ -162,7 +275,7 @@ class QueryBuilder extends BaseFilter
             $this->tapOperatorFromRule(
                 $rule,
                 $ruleBuilderBlockContainer,
-                fn ($operator) => $operator->applyToBaseFilterQuery($query),
+                fn (Operator $operator) => $operator->applyToBaseFilterQuery($query),
             );
         }
 
@@ -221,23 +334,104 @@ class QueryBuilder extends BaseFilter
         return $this->evaluate($this->constraintPickerWidth);
     }
 
+    public function maxRules(int | Closure | null $count): static
+    {
+        $this->maxRules = $count;
+
+        return $this;
+    }
+
+    public function getMaxRules(): ?int
+    {
+        $count = $this->evaluate($this->maxRules);
+
+        return ($count === null) ? null : (int) $count;
+    }
+
+    public function maxNestingDepth(int | Closure | null $depth): static
+    {
+        $this->maxNestingDepth = $depth;
+
+        return $this;
+    }
+
+    public function getMaxNestingDepth(): ?int
+    {
+        $depth = $this->evaluate($this->maxNestingDepth);
+
+        return ($depth === null) ? null : (int) $depth;
+    }
+
+    /**
+     * @param  array<string, mixed>  $rules
+     */
+    public function exceedsRuleLimits(array $rules): bool
+    {
+        $maxRules = $this->getMaxRules();
+        $maxNestingDepth = $this->getMaxNestingDepth();
+
+        if (($maxRules === null) && ($maxNestingDepth === null)) {
+            return false;
+        }
+
+        $ruleCount = 0;
+
+        // Security: Traverse the raw rule tree without instantiating schemas, so counting the leaf conditions and measuring the nesting depth is itself cheap even for a hostile payload.
+        return $this->rulesExceedLimits($rules, 1, $ruleCount, $maxRules, $maxNestingDepth);
+    }
+
+    /**
+     * @param  array<string, mixed>  $rules
+     */
+    protected function rulesExceedLimits(array $rules, int $depth, int &$ruleCount, ?int $maxRules, ?int $maxNestingDepth): bool
+    {
+        if (($maxNestingDepth !== null) && ($depth > $maxNestingDepth)) {
+            return true;
+        }
+
+        foreach ($rules as $rule) {
+            // An "OR" block is a structural container, so it does not count towards `maxRules` itself; only the leaf conditions inside its groups do. Its nesting is still bounded by the depth check above.
+            if (($rule['type'] ?? null) === RuleBuilder::OR_BLOCK_NAME) {
+                foreach ($rule['data'][RuleBuilder::OR_BLOCK_GROUPS_REPEATER_NAME] ?? [] as $orGroup) {
+                    if ($this->rulesExceedLimits($orGroup['rules'] ?? [], $depth + 1, $ruleCount, $maxRules, $maxNestingDepth)) {
+                        return true;
+                    }
+                }
+
+                continue;
+            }
+
+            $ruleCount++;
+
+            if (($maxRules !== null) && ($ruleCount > $maxRules)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     protected function getRuleBuilder(): RuleBuilder
     {
+        if ($this->cachedRuleBuilder instanceof RuleBuilder) {
+            return $this->cachedRuleBuilder;
+        }
+
         $builder = $this->getSchema()->getComponent(fn (Component $component): bool => $component instanceof RuleBuilder);
 
         if (! ($builder instanceof RuleBuilder)) {
             throw new LogicException('No rule builder component found.');
         }
 
-        return $builder;
+        return $this->cachedRuleBuilder = $builder;
     }
 
     protected function getNestedRuleBuilder(Schema $schema, string $orGroupIndex): RuleBuilder
     {
         $builder = $schema
             ->getComponent(fn (Component $component): bool => $component instanceof Repeater)
-            ->getChildSchema($orGroupIndex)
-            ->getComponent(fn (Component $component): bool => $component instanceof RuleBuilder);
+            ?->getChildSchema($orGroupIndex)
+            ?->getComponent(fn (Component $component): bool => $component instanceof RuleBuilder);
 
         if (! ($builder instanceof RuleBuilder)) {
             throw new LogicException('No nested rule builder component found.');
@@ -249,7 +443,7 @@ class QueryBuilder extends BaseFilter
     /**
      * @param  array<string, mixed>  $rule
      */
-    protected function tapOperatorFromRule(array $rule, Schema $schema, Closure $callback): void
+    protected function tapOperatorFromRule(array $rule, Schema $schema, Closure $callback, bool $shouldUseRawSettings = false): void
     {
         $constraint = $this->getConstraint($rule['type']);
 
@@ -271,19 +465,19 @@ class QueryBuilder extends BaseFilter
             return;
         }
 
-        try {
-            $schema->validate();
-        } catch (ValidationException) {
+        if (! $this->ruleSchemaPassesValidation($schema)) {
             return;
         }
 
+        $settings = $shouldUseRawSettings ? $rule['data']['settings'] : ($schema->getStateSnapshot()['settings'] ?? []);
+
         $constraint
-            ->settings($rule['data']['settings'])
+            ->settings($settings)
             ->inverse($isInverseOperator);
 
         $operator
             ->constraint($constraint)
-            ->settings($rule['data']['settings'])
+            ->settings($settings)
             ->inverse($isInverseOperator);
 
         $callback($operator);
@@ -296,5 +490,45 @@ class QueryBuilder extends BaseFilter
             ->constraint(null)
             ->settings(null)
             ->inverse(null);
+    }
+
+    protected function ruleSchemaPassesValidation(Schema $schema): bool
+    {
+        $statePath = $schema->getStatePath();
+
+        return $this->cachedRuleSchemaValidity[$statePath] ??= (function () use ($schema): bool {
+            try {
+                $schema->validate();
+
+                return true;
+            } catch (ValidationException) {
+                return false;
+            }
+        })();
+    }
+
+    /**
+     * @param  array<Constraint>  $constraints
+     */
+    public function constraints(array $constraints): static
+    {
+        foreach ($constraints as $constraint) {
+            $this->constraints[$constraint->getName()] = $constraint;
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return array<Constraint>
+     */
+    public function getConstraints(): array
+    {
+        return array_map(fn (Constraint $constraint): Constraint => $constraint->model($this->getTable()->getModel()), $this->constraints);
+    }
+
+    public function getConstraint(string $name): ?Constraint
+    {
+        return ($this->constraints[$name] ?? null)?->model($this->getTable()->getModel());
     }
 }

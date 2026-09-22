@@ -42,6 +42,11 @@ return [
 
         'form' => [
 
+            'password' => [
+                'label' => 'Kata sandi saat ini',
+                'validation_attribute' => 'kata sandi saat ini',
+            ],
+
             'code' => [
 
                 'label' => 'Masukkan kode 6 digit dari aplikasi authenticator',
@@ -53,6 +58,8 @@ return [
                 'messages' => [
 
                     'invalid' => 'Kode yang Anda masukkan tidak valid.',
+
+                    'rate_limited' => 'Terlalu banyak percobaan. Silakan coba lagi nanti.',
 
                 ],
 

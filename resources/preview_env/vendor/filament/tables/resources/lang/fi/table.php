@@ -12,6 +12,10 @@ return [
                 'label' => 'Aseta sarakkeet',
             ],
 
+            'reorder' => [
+                'label' => 'Uudelleenjärjestele sarake',
+            ],
+
             'reset' => [
                 'label' => 'Palauta',
             ],
@@ -26,9 +30,20 @@ return [
             'label' => 'Toiminta|Toiminnat',
         ],
 
+        'icon' => [
+
+            'boolean' => [
+                'true' => 'Kyllä',
+                'false' => 'Ei',
+            ],
+
+        ],
+
         'select' => [
 
             'loading_message' => 'Ladataan...',
+
+            'no_options_message' => 'Ei vaihtoehtoja saatavilla.',
 
             'no_search_results_message' => 'Ei hakuasi vastaavia vaihtoehtoja.',
 
@@ -113,6 +128,10 @@ return [
             'label' => 'Järjestele tietueita',
         ],
 
+        'reorder_record' => [
+            'label' => 'Uudelleenjärjestele kohde :key',
+        ],
+
         'filter' => [
             'label' => 'Suodata',
         ],
@@ -127,6 +146,10 @@ return [
 
         'column_manager' => [
             'label' => 'Näytä sarakkeet',
+        ],
+
+        'toggle_record_content' => [
+            'label' => 'Laajenna/kutista kohde :key',
         ],
 
     ],
@@ -217,7 +240,11 @@ return [
 
     ],
 
+    'loading' => 'Ladataan...',
+
     'reorder_indicator' => 'Raahaa ja pudota tietueet järjestykseen.',
+
+    'result_count' => '{0} Ei tuloksia|{1} :count tulos|[2,*] :count tulosta',
 
     'selection_indicator' => [
 

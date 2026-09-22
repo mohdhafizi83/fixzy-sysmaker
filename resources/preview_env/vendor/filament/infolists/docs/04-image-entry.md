@@ -1,6 +1,7 @@
 ---
 title: Image entry
 ---
+import Aside from "@components/Aside.astro"
 import AutoScreenshot from "@components/AutoScreenshot.astro"
 import UtilityInjection from "@components/UtilityInjection.astro"
 
@@ -18,7 +19,26 @@ In this case, the `header_image` state could contain `posts/header-images/428124
 
 Alternatively, the state could contain an absolute URL to an image, such as `https://example.com/images/header.jpg`.
 
-<AutoScreenshot name="infolists/entries/image/simple" alt="Image entry" version="4.x" />
+<AutoScreenshot name="infolists/entries/image/simple" alt="Image entry" version="5.x" />
+
+## Setting the alt text
+
+You should set descriptive alt text on your images so that screen reader users understand what each image shows. Use the `alt()` method:
+
+```php
+use Filament\Infolists\Components\ImageEntry;
+
+ImageEntry::make('header_image')
+    ->alt('Article header image')
+```
+
+<UtilityInjection set="infolistEntries" version="5.x">As well as allowing a static value, the `alt()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters, including the `$state` of the current image, which is useful when the entry renders multiple images.</UtilityInjection>
+
+If you do not set any alt text, the image is rendered with an empty `alt` attribute, which marks it as decorative for assistive technology.
+
+<Aside variant="warning">
+    When an image [links to a URL](overview#opening-a-url-when-an-entry-is-clicked), its alt text becomes the accessible name of the link. Always set meaningful `alt()` text on linked images, otherwise screen reader users will encounter a link with no name.
+</Aside>
 
 ## Managing the image disk
 
@@ -31,7 +51,7 @@ ImageEntry::make('header_image')
     ->disk('s3')
 ```
 
-<UtilityInjection set="infolistEntries" version="4.x">As well as allowing a static value, the `disk()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="infolistEntries" version="5.x">As well as allowing a static value, the `disk()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ## Public images
 
@@ -44,7 +64,7 @@ ImageEntry::make('header_image')
     ->visibility('public')
 ```
 
-<UtilityInjection set="infolistEntries" version="4.x">As well as allowing a static value, the `visibility()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="infolistEntries" version="5.x">As well as allowing a static value, the `visibility()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ## Customizing the size
 
@@ -63,7 +83,9 @@ ImageEntry::make('author.avatar')
     ->imageSize(40)
 ```
 
-<UtilityInjection set="infolistEntries" version="4.x">As well as allowing a static values, the `imageWidth()`, `imageHeight()` and `imageSize()` methods also accept functions to dynamically calculate them. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="infolistEntries" version="5.x">As well as allowing a static values, the `imageWidth()`, `imageHeight()` and `imageSize()` methods also accept functions to dynamically calculate them. You can inject various utilities into the function as parameters.</UtilityInjection>
+
+<AutoScreenshot name="infolists/entries/image/size" alt="Image entry with custom size" version="5.x" />
 
 ### Square images
 
@@ -77,7 +99,7 @@ ImageEntry::make('author.avatar')
     ->square()
 ```
 
-<AutoScreenshot name="infolists/entries/image/square" alt="Square image entry" version="4.x" />
+<AutoScreenshot name="infolists/entries/image/square" alt="Square image entry" version="5.x" />
 
 Optionally, you may pass a boolean value to control if the image should be square or not:
 
@@ -89,7 +111,7 @@ ImageEntry::make('author.avatar')
     ->square(FeatureFlag::active())
 ```
 
-<UtilityInjection set="infolistEntries" version="4.x">As well as allowing a static value, the `square()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="infolistEntries" version="5.x">As well as allowing a static value, the `square()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ## Circular images
 
@@ -103,7 +125,7 @@ ImageEntry::make('author.avatar')
     ->circular()
 ```
 
-<AutoScreenshot name="infolists/entries/image/circular" alt="Circular image entry" version="4.x" />
+<AutoScreenshot name="infolists/entries/image/circular" alt="Circular image entry" version="5.x" />
 
 Optionally, you may pass a boolean value to control if the image should be circular or not:
 
@@ -115,7 +137,7 @@ ImageEntry::make('author.avatar')
     ->circular(FeatureFlag::active())
 ```
 
-<UtilityInjection set="infolistEntries" version="4.x">As well as allowing a static value, the `circular()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="infolistEntries" version="5.x">As well as allowing a static value, the `circular()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ## Adding a default image URL
 
@@ -128,7 +150,7 @@ ImageEntry::make('header_image')
     ->defaultImageUrl(url('storage/posts/header-images/default.jpg'))
 ```
 
-<UtilityInjection set="infolistEntries" version="4.x">As well as allowing a static value, the `defaultImageUrl()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="infolistEntries" version="5.x">As well as allowing a static value, the `defaultImageUrl()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ## Stacking images
 
@@ -143,7 +165,7 @@ ImageEntry::make('colleagues.avatar')
     ->stacked()
 ```
 
-<AutoScreenshot name="infolists/entries/image/stacked" alt="Stacked image entry" version="4.x" />
+<AutoScreenshot name="infolists/entries/image/stacked" alt="Stacked image entry" version="5.x" />
 
 Optionally, you may pass a boolean value to control if the images should be stacked or not:
 
@@ -156,7 +178,7 @@ ImageEntry::make('colleagues.avatar')
     ->stacked(FeatureFlag::active())
 ```
 
-<UtilityInjection set="infolistEntries" version="4.x">As well as allowing a static value, the `stacked()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="infolistEntries" version="5.x">As well as allowing a static value, the `stacked()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ### Customizing the stacked ring width
 
@@ -172,7 +194,9 @@ ImageEntry::make('colleagues.avatar')
     ->ring(5)
 ```
 
-<UtilityInjection set="infolistEntries" version="4.x">As well as allowing a static value, the `ring()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<AutoScreenshot name="infolists/entries/image/stacked-ring" alt="Image entry with stacked ring width" version="5.x" />
+
+<UtilityInjection set="infolistEntries" version="5.x">As well as allowing a static value, the `ring()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ### Customizing the stacked overlap
 
@@ -188,7 +212,9 @@ ImageEntry::make('colleagues.avatar')
     ->overlap(2)
 ```
 
-<UtilityInjection set="infolistEntries" version="4.x">As well as allowing a static value, the `overlap()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<AutoScreenshot name="infolists/entries/image/stacked-overlap" alt="Image entry with stacked overlap" version="5.x" />
+
+<UtilityInjection set="infolistEntries" version="5.x">As well as allowing a static value, the `overlap()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ## Setting a limit
 
@@ -204,9 +230,9 @@ ImageEntry::make('colleagues.avatar')
     ->limit(3)
 ```
 
-<UtilityInjection set="infolistEntries" version="4.x">As well as allowing a static value, the `limit()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="infolistEntries" version="5.x">As well as allowing a static value, the `limit()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
-<AutoScreenshot name="infolists/entries/image/limited" alt="Limited image entry" version="4.x" />
+<AutoScreenshot name="infolists/entries/image/limited" alt="Limited image entry" version="5.x" />
 
 ### Showing the remaining images count
 
@@ -223,7 +249,7 @@ ImageEntry::make('colleagues.avatar')
     ->limitedRemainingText()
 ```
 
-<AutoScreenshot name="infolists/entries/image/limited-remaining-text" alt="Limited image entry with remaining text" version="4.x" />
+<AutoScreenshot name="infolists/entries/image/limited-remaining-text" alt="Limited image entry with remaining text" version="5.x" />
 
 Optionally, you may pass a boolean value to control if the remaining text should be displayed or not:
 
@@ -238,7 +264,7 @@ ImageEntry::make('colleagues.avatar')
     ->limitedRemainingText(FeatureFlag::active())
 ```
 
-<UtilityInjection set="infolistEntries" version="4.x">As well as allowing a static value, the `limitedRemainingText()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="infolistEntries" version="5.x">As well as allowing a static value, the `limitedRemainingText()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 #### Customizing the limited remaining text size
 
@@ -256,7 +282,7 @@ ImageEntry::make('colleagues.avatar')
     ->limitedRemainingText(size: TextSize::Large)
 ```
 
-<UtilityInjection set="infolistEntries" version="4.x">As well as allowing a static value, the `limitedRemainingText()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="infolistEntries" version="5.x">As well as allowing a static value, the `limitedRemainingText()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ## Prevent file existence checks
 
@@ -269,7 +295,7 @@ ImageEntry::make('attachment')
     ->checkFileExistence(false)
 ```
 
-<UtilityInjection set="infolistEntries" version="4.x">As well as allowing a static value, the `checkFileExistence()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="infolistEntries" version="5.x">As well as allowing a static value, the `checkFileExistence()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ## Adding extra HTML attributes to the image
 
@@ -285,6 +311,6 @@ ImageEntry::make('logo')
     ])
 ```
 
-<UtilityInjection set="infolistEntries" version="4.x">As well as allowing a static value, the `extraImgAttributes()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="infolistEntries" version="5.x">As well as allowing a static value, the `extraImgAttributes()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 By default, calling `extraImgAttributes()` multiple times will overwrite the previous attributes. If you wish to merge the attributes instead, you can pass `merge: true` to the method.

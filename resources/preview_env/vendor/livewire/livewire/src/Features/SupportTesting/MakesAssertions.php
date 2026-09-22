@@ -8,6 +8,39 @@ use Illuminate\Support\Arr;
 
 trait MakesAssertions
 {
+    /**
+     * @return $this
+     */
+    function assertRenderSkipped()
+    {
+        $this->lastState->getResponse()->assertOk();
+
+        PHPUnit::assertTrue(
+            (bool) $this->instance()->shouldSkipRender(),
+            'Failed asserting that component rendering was skipped.'
+        );
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    function assertRenderNotSkipped()
+    {
+        $this->lastState->getResponse()->assertOk();
+
+        PHPUnit::assertFalse(
+            (bool) $this->instance()->shouldSkipRender(),
+            'Failed asserting that component rendering was not skipped.'
+        );
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
     function assertSee($values, $escape = true, $stripInitialData = true)
     {
         foreach (Arr::wrap($values) as $value) {
@@ -20,6 +53,9 @@ trait MakesAssertions
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     function assertDontSee($values, $escape = true, $stripInitialData = true)
     {
         foreach (Arr::wrap($values) as $value) {
@@ -32,6 +68,9 @@ trait MakesAssertions
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     function assertSeeHtml($values)
     {
         foreach (Arr::wrap($values) as $value) {
@@ -44,6 +83,9 @@ trait MakesAssertions
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     function assertSeeHtmlInOrder($values)
     {
         PHPUnit::assertThat(
@@ -54,6 +96,9 @@ trait MakesAssertions
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     function assertDontSeeHtml($values)
     {
         foreach (Arr::wrap($values) as $value) {
@@ -66,6 +111,9 @@ trait MakesAssertions
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     function assertSeeText($value, $escape = true)
     {
         $value = Arr::wrap($value);
@@ -83,6 +131,9 @@ trait MakesAssertions
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     function assertDontSeeText($value, $escape = true)
     {
         $value = Arr::wrap($value);
@@ -100,6 +151,9 @@ trait MakesAssertions
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     function assertSet($name, $value, $strict = false)
     {
         $actual = $this->get($name);
@@ -113,6 +167,9 @@ trait MakesAssertions
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     function assertNotSet($name, $value, $strict = false)
     {
         $actual = $this->get($name);
@@ -122,6 +179,9 @@ trait MakesAssertions
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     function assertSetStrict($name, $value)
     {
         $this->assertSet($name, $value, true);
@@ -129,6 +189,9 @@ trait MakesAssertions
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     function assertNotSetStrict($name, $value)
     {
         $this->assertNotSet($name, $value, true);
@@ -136,6 +199,9 @@ trait MakesAssertions
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     function assertCount($name, $value)
     {
         PHPUnit::assertCount($value, $this->get($name));
@@ -143,6 +209,9 @@ trait MakesAssertions
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     function assertSnapshotSet($name, $value, $strict = false)
     {
         $data = $this->lastState->getSnapshotData();
@@ -156,6 +225,9 @@ trait MakesAssertions
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     function assertSnapshotNotSet($name, $value, $strict = false)
     {
         $data = $this->lastState->getSnapshotData();
@@ -169,6 +241,9 @@ trait MakesAssertions
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     function assertSnapshotSetStrict($name, $value)
     {
         $this->assertSnapshotSet($name, $value, true);
@@ -176,6 +251,9 @@ trait MakesAssertions
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     function assertSnapshotNotSetStrict($name, $value)
     {
         $this->assertSnapshotNotSet($name, $value, true);
@@ -183,6 +261,9 @@ trait MakesAssertions
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     public function assertReturned($value)
     {
         $data = data_get($this->lastState->getEffects(), 'returns.0');

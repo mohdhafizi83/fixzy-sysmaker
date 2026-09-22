@@ -16,9 +16,12 @@ use Filament\Support\Concerns\HasIcon;
 use Filament\Support\Concerns\HasIconPosition;
 use Filament\Support\Concerns\HasIconSize;
 use Filament\Support\Concerns\HasTooltip;
+use Filament\Support\Contracts\ScalableIcon;
+use Filament\Support\Enums\IconSize;
 use Filament\Support\Enums\Width;
 use Filament\Support\Facades\FilamentIcon;
 use Filament\Support\Icons\Heroicon;
+use Filament\Support\View\ComponentAttributeBag as FilamentComponentAttributeBag;
 use Filament\Support\View\Concerns\CanGenerateBadgeHtml;
 use Filament\Support\View\Concerns\CanGenerateButtonHtml;
 use Filament\Support\View\Concerns\CanGenerateDropdownItemHtml;
@@ -164,7 +167,7 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
         return $this->getTriggerView() === static::BADGE_VIEW;
     }
 
-    public function badge(string | int | float | Closure | null $badge = null): static
+    public function badge(string | Closure | null $badge = null): static
     {
         if (func_num_args() === 0) {
             /** @phpstan-ignore-next-line */
@@ -263,12 +266,25 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
         return false;
     }
 
-    public function getIcon(): string | BackedEnum
+    public function getIcon(): string | BackedEnum | Htmlable
     {
         return $this->getBaseIcon() ?? FilamentIcon::resolve(ActionsIconAlias::ACTION_GROUP) ?? Heroicon::EllipsisVertical;
     }
 
     public function isHidden(): bool
+    {
+        if (! $this->hasTable()) {
+            return $this->resolveIsHidden();
+        }
+
+        if (! $this->prepareVisibilityCache()) {
+            return $this->resolveIsHidden();
+        }
+
+        return $this->cachedIsHidden ??= $this->resolveIsHidden();
+    }
+
+    protected function resolveIsHidden(): bool
     {
         if ($this->baseIsHidden()) {
             return true;
@@ -290,6 +306,14 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
      */
     public function toArray(): array
     {
+        $icon = $this->getIcon();
+
+        if ($icon instanceof ScalableIcon) {
+            $icon = $icon->getIconForSize($this->getIconSize() ?? IconSize::Medium);
+        } elseif ($icon instanceof BackedEnum) {
+            $icon = $icon->value;
+        }
+
         return [
             'actions' => collect($this->getActions())->toArray(),
             'color' => $this->getColor(),
@@ -299,7 +323,9 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
             'dropdownWidth' => $this->getDropdownWidth(),
             'extraAttributes' => $this->getExtraAttributes(),
             'hasDropdown' => $this->hasDropdown(),
-            'icon' => $this->getIcon(),
+            'hasDropdownFlip' => $this->hasDropdownFlip(),
+            'hasDropdownTeleport' => $this->hasDropdownTeleport(),
+            'icon' => $icon,
             'iconPosition' => $this->getIconPosition(),
             'iconSize' => $this->getIconSize(),
             'isOutlined' => $this->isOutlined(),
@@ -307,7 +333,7 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
             'size' => $this->getSize(),
             'tooltip' => $this->getTooltip(),
             'triggerView' => $this->getTriggerView(),
-            'view' => $this->getView(),
+            'view' => $this->hasView() ? $this->getView() : null,
         ];
     }
 
@@ -343,7 +369,9 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
         }
 
         $static->color($data['color'] ?? null);
-        $static->dropdown($data['hasDropdown'] ?? false);
+        $static->dropdown($data['hasDropdown'] ?? true);
+        $static->dropdownFlip($data['hasDropdownFlip'] ?? false);
+        $static->dropdownTeleport($data['hasDropdownTeleport'] ?? false);
         $static->dropdownMaxHeight($data['dropdownMaxHeight'] ?? null);
         $static->dropdownOffset($data['dropdownOffset'] ?? null);
         $static->dropdownPlacement($data['dropdownPlacement'] ?? null);
@@ -353,7 +381,7 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
         $static->iconPosition($data['iconPosition'] ?? null);
         $static->iconSize($data['iconSize'] ?? null);
         $static->label($data['label'] ?? null);
-        $static->outlined($data['isOutlined'] ?? null);
+        $static->outlined($data['isOutlined'] ?? false);
         $static->tooltip($data['tooltip'] ?? null);
 
         return $static;
@@ -371,22 +399,65 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
     {
         return match ($parameterName) {
             'livewire' => [$this->getLivewire()],
-            'model' => [$this->getModel() ?? $this->getSchemaContainer()?->getModel() ?? $this->getSchemaComponent()?->getModel()],
+            'model' => [$this->getModel()],
             'mountedActions' => [$this->getLivewire()->getMountedActions()],
-            'record' => [$this->getRecord() ?? $this->getSchemaContainer()?->getRecord() ?? $this->getSchemaComponent()?->getRecord()],
+            'record' => [$this->getRecord()],
             'schema' => [$this->getSchemaContainer()],
             'schemaComponent', 'component' => [$this->getSchemaComponent()],
             'schemaOperation', 'context', 'operation' => [$this->getSchemaContainer()?->getOperation() ?? $this->getSchemaComponent()?->getContainer()->getOperation()],
             'schemaGet', 'get' => [$this->getSchemaComponent()->makeGetUtility()],
-            'schemaComponentState', 'state' => [$this->getSchemaComponent()->getState()],
+            'schemaComponentState', 'state' => [$this->getSchemaComponentState()],
+            'schemaState' => [$this->getSchemaState()],
             'table' => [$this->getTable()],
             default => parent::resolveDefaultClosureDependencyForEvaluationByName($parameterName),
         };
     }
 
+    public function getSchemaComponentState(): mixed
+    {
+        $schemaContainer = $this->getSchemaContainer();
+
+        while ($schemaContainer) {
+            $parentComponent = $schemaContainer->getParentComponent();
+
+            if (! $parentComponent) {
+                break;
+            }
+
+            if ($parentComponent->hasStatePath()) {
+                return $parentComponent->getState();
+            }
+
+            $schemaContainer = $parentComponent->getContainer();
+        }
+
+        return $this->getSchemaComponent()?->getState();
+    }
+
+    public function getSchemaState(): mixed
+    {
+        $schemaContainer = $this->getSchemaContainer();
+
+        while ($schemaContainer) {
+            if (filled($schemaContainer->getStatePath(isAbsolute: false))) {
+                return $schemaContainer->getStateSnapshot();
+            }
+
+            $parentComponent = $schemaContainer->getParentComponent();
+
+            if (! $parentComponent) {
+                return $schemaContainer->getStateSnapshot();
+            }
+
+            $schemaContainer = $parentComponent->getContainer();
+        }
+
+        return null;
+    }
+
     protected function resolveDefaultClosureDependencyForEvaluationByType(string $parameterType): array
     {
-        $record = $this->getRecord();
+        $record = is_a($parameterType, Model::class, allow_string: true) ? $this->getRecord() : null;
 
         return match ($parameterType) {
             Model::class, ($record instanceof Model) ? $record::class : null => [$record],
@@ -447,14 +518,14 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
         $maxHeight = $this->getDropdownMaxHeight();
         $width = $this->getDropdownWidth();
 
-        $panelAttributes = (new ComponentAttributeBag)
+        $panelAttributes = (new FilamentComponentAttributeBag)
             ->class([
                 'fi-dropdown-panel',
                 ($width instanceof Width) ? "fi-width-{$width->value}" : (is_string($width) ? $width : ''),
                 'fi-scrollable' => $maxHeight,
             ])
             ->style([
-                "max-height: {$maxHeight}" => $maxHeight,
+                ('max-height: ' . e($maxHeight)) => $maxHeight,
             ]);
 
         ob_start(); ?>
@@ -464,7 +535,9 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
             <?= $this->getExtraDropdownAttributeBag()->class(['fi-dropdown'])->toHtml() ?>
         >
             <div
-                x-on:mousedown="toggle"
+                x-on:keyup.enter="toggle($event)"
+                x-on:keyup.space="toggle($event)"
+                x-on:mousedown="if ($event.button === 0) toggle($event)"
                 class="fi-dropdown-trigger"
             >
                 <?= $this->toTriggerHtml() ?>
@@ -472,7 +545,7 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
 
             <div
                 x-cloak
-                x-float.placement.<?= $this->getDropdownPlacement() ?? 'bottom-start' ?>.teleport.offset="{ offset: <?= $this->getDropdownOffset() ?? 8 ?> }"
+                x-float.placement.<?= $this->getDropdownPlacement() ?? 'bottom-start' ?><?= $this->hasDropdownFlip() ? '.flip' : '' ?><?= $this->hasDropdownTeleport() ? '.teleport' : '' ?>.offset="{ offset: <?= $this->getDropdownOffset() ?? 8 ?> }"
                 x-ref="panel"
                 x-transition:enter-start="fi-opacity-0"
                 x-transition:leave-end="fi-opacity-0"
@@ -554,7 +627,7 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
     protected function toBadgeTriggerHtml(): string
     {
         return $this->generateBadgeHtml(
-            attributes: (new ComponentAttributeBag)
+            attributes: (new FilamentComponentAttributeBag)
                 ->merge($this->getExtraAttributes(), escape: false)
                 ->class(['fi-ac-badge-group']),
             color: $this->getColor(),
@@ -571,11 +644,11 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
     protected function toButtonTriggerHtml(): string
     {
         return $this->generateButtonHtml(
-            attributes: (new ComponentAttributeBag)
+            attributes: (new FilamentComponentAttributeBag)
                 ->merge($this->getExtraAttributes(), escape: false)
                 ->class(['fi-ac-btn-group']),
-            badge: $this->getBadge(),
-            badgeColor: $this->getBadgeColor(),
+            badge: $badge = $this->getBadge(),
+            badgeColor: $this->getBadgeColor($badge),
             color: $this->getColor(),
             icon: $this->getIcon(),
             iconPosition: $this->getIconPosition(),
@@ -593,12 +666,12 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
     protected function toGroupedTriggerHtml(): string
     {
         return $this->generateDropdownItemHtml(
-            attributes: (new ComponentAttributeBag)
+            attributes: (new FilamentComponentAttributeBag)
                 ->merge($this->getExtraAttributes(), escape: false)
                 ->class(['fi-ac-grouped-group']),
-            badge: $this->getBadge(),
-            badgeColor: $this->getBadgeColor(),
-            badgeTooltip: $this->getBadgeTooltip(),
+            badge: $badge = $this->getBadge(),
+            badgeColor: $this->getBadgeColor($badge),
+            badgeTooltip: $this->getBadgeTooltip($badge),
             color: $this->getColor(),
             icon: $this->getIcon(),
             iconSize: $this->getIconSize(),
@@ -611,11 +684,11 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
     protected function toIconButtonTriggerHtml(): string
     {
         return $this->generateIconButtonHtml(
-            attributes: (new ComponentAttributeBag)
+            attributes: (new FilamentComponentAttributeBag)
                 ->merge($this->getExtraAttributes(), escape: false)
                 ->class(['fi-ac-icon-btn-group']),
-            badge: $this->getBadge(),
-            badgeColor: $this->getBadgeColor(),
+            badge: $badge = $this->getBadge(),
+            badgeColor: $this->getBadgeColor($badge),
             color: $this->getColor(),
             icon: $this->getIcon(),
             iconSize: $this->getIconSize(),
@@ -629,11 +702,11 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
     protected function toLinkTriggerHtml(): string
     {
         return $this->generateLinkHtml(
-            attributes: (new ComponentAttributeBag)
+            attributes: (new FilamentComponentAttributeBag)
                 ->merge($this->getExtraAttributes(), escape: false)
                 ->class(['fi-ac-link-group']),
-            badge: $this->getBadge(),
-            badgeColor: $this->getBadgeColor(),
+            badge: $badge = $this->getBadge(),
+            badgeColor: $this->getBadgeColor($badge),
             color: $this->getColor(),
             icon: $this->getIcon(),
             iconPosition: $this->getIconPosition(),
@@ -651,9 +724,9 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
         return view(
             $this->getTriggerView(),
             [
-                'attributes' => new ComponentAttributeBag,
+                'attributes' => new FilamentComponentAttributeBag,
                 ...$this->extractPublicMethods(),
-                ...(isset($this->viewIdentifier) ? [$this->viewIdentifier => $this] : []),
+                $this->viewIdentifier => $this,
                 ...$this->viewData,
             ],
         );
@@ -685,7 +758,14 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
      */
     public function extraDropdownAttributes(array | Closure $attributes, bool $merge = false): static
     {
+        // Security: Attribute values are not escaped when rendered. Never
+        // pass unsanitized user input as attribute names or values.
+
         if ($merge) {
+            if (($attributes instanceof Closure) && in_array($attributes, $this->extraDropdownAttributes, strict: true)) {
+                return $this;
+            }
+
             $this->extraDropdownAttributes[] = $attributes;
         } else {
             $this->extraDropdownAttributes = [$attributes];
@@ -699,7 +779,7 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
      */
     public function getExtraDropdownAttributes(): array
     {
-        $temporaryAttributeBag = new ComponentAttributeBag;
+        $temporaryAttributeBag = new FilamentComponentAttributeBag;
 
         foreach ($this->extraDropdownAttributes as $extraDropdownAttributes) {
             $temporaryAttributeBag = $temporaryAttributeBag->merge($this->evaluate($extraDropdownAttributes), escape: false);
@@ -710,6 +790,6 @@ class ActionGroup extends ViewComponent implements Arrayable, HasEmbeddedView
 
     public function getExtraDropdownAttributeBag(): ComponentAttributeBag
     {
-        return new ComponentAttributeBag($this->getExtraDropdownAttributes());
+        return new FilamentComponentAttributeBag($this->getExtraDropdownAttributes());
     }
 }

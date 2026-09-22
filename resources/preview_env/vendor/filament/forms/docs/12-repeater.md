@@ -28,7 +28,7 @@ Repeater::make('members')
     ->columns(2)
 ```
 
-<AutoScreenshot name="forms/fields/repeater/simple" alt="Repeater" version="4.x" />
+<AutoScreenshot name="forms/fields/repeater/simple" alt="Repeater" version="5.x" />
 
 We recommend that you store repeater data with a `JSON` column in your database. Additionally, if you're using Eloquent, make sure that column has an `array` cast.
 
@@ -61,7 +61,7 @@ Repeater::make('members')
     ->defaultItems(3)
 ```
 
-<UtilityInjection set="formFields" version="4.x">As well as allowing a static value, the `defaultItems()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x">As well as allowing a static value, the `defaultItems()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ## Adding items
 
@@ -81,7 +81,7 @@ Repeater::make('members')
     ->addActionLabel('Add member')
 ```
 
-<UtilityInjection set="formFields" version="4.x">As well as allowing a static value, the `addActionLabel()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x">As well as allowing a static value, the `addActionLabel()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ### Aligning the add action button
 
@@ -98,7 +98,9 @@ Repeater::make('members')
     ->addActionAlignment(Alignment::Start)
 ```
 
-<UtilityInjection set="formFields" version="4.x">As well as allowing a static value, the `addActionAlignment()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x">As well as allowing a static value, the `addActionAlignment()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+
+<AutoScreenshot name="forms/fields/repeater/add-action-alignment" alt="Repeater with add action aligned to the start" version="5.x" />
 
 ### Preventing the user from adding items
 
@@ -114,7 +116,7 @@ Repeater::make('members')
     ->addable(false)
 ```
 
-<UtilityInjection set="formFields" version="4.x">As well as allowing a static value, the `addable()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x">As well as allowing a static value, the `addable()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ## Deleting items
 
@@ -134,7 +136,7 @@ Repeater::make('members')
     ->deletable(false)
 ```
 
-<UtilityInjection set="formFields" version="4.x">As well as allowing a static value, the `deletable()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x">As well as allowing a static value, the `deletable()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ## Reordering items
 
@@ -154,7 +156,7 @@ Repeater::make('members')
     ->reorderable(false)
 ```
 
-<UtilityInjection set="formFields" version="4.x">As well as allowing a static value, the `reorderable()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x">As well as allowing a static value, the `reorderable()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ### Reordering items with buttons
 
@@ -170,7 +172,7 @@ Repeater::make('members')
     ->reorderableWithButtons()
 ```
 
-<AutoScreenshot name="forms/fields/repeater/reorderable-with-buttons" alt="Repeater that is reorderable with buttons" version="4.x" />
+<AutoScreenshot name="forms/fields/repeater/reorderable-with-buttons" alt="Repeater that is reorderable with buttons" version="5.x" />
 
 Optionally, you may pass a boolean value to control if the repeater should be ordered with buttons or not:
 
@@ -184,7 +186,7 @@ Repeater::make('members')
     ->reorderableWithButtons(FeatureFlag::active())
 ```
 
-<UtilityInjection set="formFields" version="4.x">As well as allowing a static value, the `reorderableWithButtons()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x">As well as allowing a static value, the `reorderableWithButtons()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ### Preventing reordering with drag and drop
 
@@ -200,7 +202,7 @@ Repeater::make('members')
     ->reorderableWithDragAndDrop(false)
 ```
 
-<UtilityInjection set="formFields" version="4.x">As well as allowing a static value, the `reorderableWithDragAndDrop()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x">As well as allowing a static value, the `reorderableWithDragAndDrop()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ## Collapsing items
 
@@ -216,6 +218,8 @@ Repeater::make('qualifications')
     ->collapsible()
 ```
 
+<AutoScreenshot name="forms/fields/repeater/collapsible" alt="Collapsible repeater" version="5.x" />
+
 You may also collapse all items by default:
 
 ```php
@@ -228,7 +232,7 @@ Repeater::make('qualifications')
     ->collapsed()
 ```
 
-<AutoScreenshot name="forms/fields/repeater/collapsed" alt="Collapsed repeater" version="4.x" />
+<AutoScreenshot name="forms/fields/repeater/collapsed" alt="Collapsed repeater" version="5.x" />
 
 Optionally, the `collapsible()` and `collapsed()` methods accept a boolean value to control if the repeater should be collapsible and collapsed or not:
 
@@ -243,7 +247,33 @@ Repeater::make('qualifications')
     ->collapsed(FeatureFlag::active())
 ```
 
-<UtilityInjection set="formFields" version="4.x">As well as allowing static values, the `collapsible()` and `collapsed()` methods also accept functions to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x">As well as allowing static values, the `collapsible()` and `collapsed()` methods also accept functions to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+
+If collapsed items contain components that are expensive to render, you can [defer the loading of their schemas](#deferring-the-loading-of-repeater-item-schemas) until they are expanded.
+
+## Deferring the loading of repeater item schemas
+
+If a repeater's item schema is expensive to render, you can pass a `Schema` object to `schema()` and use `deferLoading()`. This is particularly useful when items are [collapsed](#collapsing-items) by default. Each item schema will be loaded independently when its item is expanded and enters the viewport:
+
+```php
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Schema;
+
+Repeater::make('members')
+    ->schema(
+        Schema::make()
+            ->components([
+                TextInput::make('name'),
+                TextInput::make('email')
+                    ->email(),
+            ])
+            ->deferLoading(),
+    )
+    ->collapsed()
+```
+
+Repeater item schemas automatically receive unique keys from their item state paths. You can learn more about deferred schemas in the [schema overview](../schemas/overview#deferring-the-loading-of-a-child-schema).
 
 ## Cloning items
 
@@ -259,7 +289,7 @@ Repeater::make('qualifications')
     ->cloneable()
 ```
 
-<AutoScreenshot name="forms/fields/repeater/cloneable" alt="Cloneable repeater" version="4.x" />
+<AutoScreenshot name="forms/fields/repeater/cloneable" alt="Cloneable repeater" version="5.x" />
 
 Optionally, the `cloneable()` method accepts a boolean value to control if the repeater should be cloneable or not:
 
@@ -273,7 +303,7 @@ Repeater::make('qualifications')
     ->cloneable(FeatureFlag::active())
 ```
 
-<UtilityInjection set="formFields" version="4.x">As well as allowing a static value, the `cloneable()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x">As well as allowing a static value, the `cloneable()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ## Integrating with an Eloquent relationship
 
@@ -288,21 +318,6 @@ Repeater::make('qualifications')
         // ...
     ])
 ```
-
-<Aside variant="warning">
-    When using `disabled()` with `relationship()`, ensure that `disabled()` is called before `relationship()`. This ensures that the `dehydrated()` call from within `relationship()` is not overridden by the call from `disabled()`:
-    
-    ```php
-    use Filament\Forms\Components\Repeater;
-    
-    Repeater::make('qualifications')
-        ->disabled()
-        ->relationship()
-        ->schema([
-            // ...
-        ])
-    ```
-</Aside>
 
 ### Reordering items in a relationship
 
@@ -332,7 +347,7 @@ Repeater::make('qualifications')
     ->orderColumn('order_column')
 ```
 
-<UtilityInjection set="formFields" version="4.x">As well as allowing a static value, the `orderColumn()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x">As well as allowing a static value, the `orderColumn()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ### Integrating with a `BelongsToMany` Eloquent relationship
 
@@ -410,7 +425,7 @@ Repeater::make('qualifications')
     })
 ```
 
-<UtilityInjection set="formFields" version="4.x" extras="Data;;array<array<string, mixed>>;;$data;;The data that is being filled into the repeater.">You can inject various utilities into the function passed to `mutateRelationshipDataBeforeFillUsing()` as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x" extras="Data;;array<array<string, mixed>>;;$data;;The data that is being filled into the repeater.">You can inject various utilities into the function passed to `mutateRelationshipDataBeforeFillUsing()` as parameters.</UtilityInjection>
 
 ### Mutating related item data before creating
 
@@ -431,7 +446,7 @@ Repeater::make('qualifications')
     })
 ```
 
-<UtilityInjection set="formFields" version="4.x" extras="Data;;array<string, mixed>;;$data;;The data that is being saved by the repeater.">You can inject various utilities into the function passed to `mutateRelationshipDataBeforeCreateUsing()` as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x" extras="Data;;array<string, mixed>;;$data;;The data that is being saved by the repeater.">You can inject various utilities into the function passed to `mutateRelationshipDataBeforeCreateUsing()` as parameters.</UtilityInjection>
 
 ### Mutating related item data before saving
 
@@ -452,7 +467,90 @@ Repeater::make('qualifications')
     })
 ```
 
-<UtilityInjection set="formFields" version="4.x" extras="Data;;array<string, mixed>;;$data;;The data that is being saved by the repeater.">You can inject various utilities into the function passed to `mutateRelationshipDataBeforeSaveUsing()` as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x" extras="Data;;array<string, mixed>;;$data;;The data that is being saved by the repeater.">You can inject various utilities into the function passed to `mutateRelationshipDataBeforeSaveUsing()` as parameters.</UtilityInjection>
+
+### Running code after creating a related item
+
+You may run code after a new related item is created in the database using the `afterCreate()` method. This method accepts a closure that receives the current item's data in a `$data` variable and the newly created record in a `$record` variable. This is useful when you need the record's ID to perform additional operations, such as attaching pivot data:
+
+```php
+use Filament\Forms\Components\Repeater;
+use Illuminate\Database\Eloquent\Model;
+
+Repeater::make('variants')
+    ->relationship()
+    ->schema([
+        // ...
+    ])
+    ->afterCreate(function (array $data, Model $record): void {
+        if (isset($data['attributes'])) {
+            $record->attributes()->attach($data['attributes']);
+        }
+    })
+```
+
+<UtilityInjection set="formFields" version="5.x" extras="Data;;array<string, mixed>;;$data;;The data that was used to create the record.||Record;;Illuminate\Database\Eloquent\Model;;$record;;The newly created record.">You can inject various utilities into the function passed to `afterCreate()` as parameters.</UtilityInjection>
+
+### Running code after updating a related item
+
+You may run code after an existing related item is updated in the database using the `afterUpdate()` method. This method accepts a closure that receives the current item's data in a `$data` variable and the updated record in a `$record` variable:
+
+```php
+use Filament\Forms\Components\Repeater;
+use Illuminate\Database\Eloquent\Model;
+
+Repeater::make('variants')
+    ->relationship()
+    ->schema([
+        // ...
+    ])
+    ->afterUpdate(function (array $data, Model $record): void {
+        if (isset($data['attributes'])) {
+            $record->attributes()->sync($data['attributes']);
+        }
+    })
+```
+
+<UtilityInjection set="formFields" version="5.x" extras="Data;;array<string, mixed>;;$data;;The data that was used to update the record.||Record;;Illuminate\Database\Eloquent\Model;;$record;;The updated record.">You can inject various utilities into the function passed to `afterUpdate()` as parameters.</UtilityInjection>
+
+### Running code after deleting a related item
+
+You may run code after a related item is deleted from the database using the `afterDelete()` method. This method accepts a closure that receives the record that was just deleted in a `$record` variable. The record will no longer exist in the database at this point, but you can still access its attributes, such as its ID:
+
+```php
+use Filament\Forms\Components\Repeater;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
+
+Repeater::make('attachments')
+    ->relationship()
+    ->schema([
+        // ...
+    ])
+    ->afterDelete(function (Model $record): void {
+        Storage::delete($record->file_path);
+    })
+```
+
+<UtilityInjection set="formFields" version="5.x" extras="Record;;Illuminate\Database\Eloquent\Model;;$record;;The record that was just deleted.">You can inject various utilities into the function passed to `afterDelete()` as parameters.</UtilityInjection>
+
+### Modifying related records after retrieval
+
+You may filter or modify the related records of a repeater after they are retrieved from the database using the `modifyRecordsUsing` argument. This method accepts a function that receives a `Collection` of related records. You should return the modified collection.
+
+This can be particularly useful to restrict records to a specific group or category without doing this in the database query itself, which would trigger an extra query if the records are already eager loaded:
+
+```php
+use Filament\Forms\Components\Repeater;
+use Illuminate\Database\Eloquent\Collection;
+
+Repeater::make('startItems')
+    ->relationship(name: 'items', modifyRecordsUsing: fn (Collection $records): Collection => $records->where('group', 'start')),
+Repeater::make('endItems')
+    ->relationship(name: 'items', modifyRecordsUsing: fn (Collection $records): Collection => $records->where('group', 'end')),
+```
+
+<UtilityInjection set="formFields" version="5.x" extras="Records;;Illuminate\Database\Eloquent\Collection;;$records;;The collection of related records.">You can inject various utilities into the function passed to `modifyRecordsUsing` as parameters.</UtilityInjection>
 
 ## Grid layout
 
@@ -468,11 +566,11 @@ Repeater::make('qualifications')
     ->grid(2)
 ```
 
-<AutoScreenshot name="forms/fields/repeater/grid" alt="Repeater with a 2 column grid of items" version="4.x" />
+<AutoScreenshot name="forms/fields/repeater/grid" alt="Repeater with a 2 column grid of items" version="5.x" />
 
 This method accepts the same options as the `columns()` method of the [grid](../schemas/layouts#grid-system). This allows you to responsively customize the number of grid columns at various breakpoints.
 
-<UtilityInjection set="formFields" version="4.x">As well as allowing a static value, the `grid()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x">As well as allowing a static value, the `grid()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ## Adding a label to repeater items based on their content
 
@@ -504,9 +602,25 @@ Repeater::make('members')
     Any fields that you use from `$state` should be `live()` if you wish to see the item label update live as you use the form.
 </Aside>
 
-<UtilityInjection set="formFields" version="4.x" extras="Item;;Filament\Schemas\Schema;;$item;;The schema object for the current repeater item.||Key;;string;;$key;;The key for the current repeater item.||State;;array<string, mixed>;;$state;;The raw unvalidated data for the current repeater item.">You can inject various utilities into the function passed to `itemLabel()` as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x" extras="Item;;Filament\Schemas\Schema;;$item;;The schema object for the current repeater item.||Key;;string;;$key;;The key for the current repeater item.||Index;;int;;$index;;The zero-based index of the current repeater item.||State;;array<string, mixed>;;$state;;The raw unvalidated data for the current repeater item.">You can inject various utilities into the function passed to `itemLabel()` as parameters.</UtilityInjection>
 
-<AutoScreenshot name="forms/fields/repeater/labelled" alt="Repeater with item labels" version="4.x" />
+<AutoScreenshot name="forms/fields/repeater/labelled" alt="Repeater with item labels" version="5.x" />
+
+## Numbering repeater items
+
+You can add the repeater item's number next to its label using the `itemNumbers()` method:
+
+```php
+use Filament\Forms\Components\Repeater;
+
+Repeater::make('members')
+    ->schema([
+        // ...
+    ])
+    ->itemNumbers()
+```
+
+<AutoScreenshot name="forms/fields/repeater/numbered" alt="Repeater with numbered items" version="5.x" />
 
 ## Simple repeaters with one field
 
@@ -524,9 +638,9 @@ Repeater::make('invitations')
     )
 ```
 
-<UtilityInjection set="formFields" version="4.x">As well as allowing a static value, the `simple()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x">As well as allowing a static value, the `simple()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
-<AutoScreenshot name="forms/fields/repeater/simple-one-field" alt="Simple repeater design with only one field" version="4.x" />
+<AutoScreenshot name="forms/fields/repeater/simple-one-field" alt="Simple repeater design with only one field" version="5.x" />
 
 Instead of using a nested array to store data, simple repeaters use a flat array of values. This means that the data structure for the above example could look like this:
 
@@ -565,7 +679,7 @@ You are trying to retrieve the value of `client_id` from inside the repeater ite
 
 `$get()` is relative to the current repeater item, so `$get('client_id')` is looking for `$get('repeater.item1.client_id')`.
 
-You can use `../` to go up a level in the data structure, so `$get('../client_id')` is `$get('repeater.client_id')` and `$get('../client_id')` is `$get('client_id')`.
+You can use `../` to go up a level in the data structure, so `$get('../client_id')` is `$get('repeater.client_id')` and `$get('../../client_id')` is `$get('client_id')`.
 
 The special case of `$get()` with no arguments, or `$get('')` or `$get('./')`, will always return the full data array for the current repeater item.
 
@@ -597,7 +711,7 @@ Repeater::make('members')
     ])
 ```
 
-<AutoScreenshot name="forms/fields/repeater/table" alt="Repeater with a table layout" version="4.x" />
+<AutoScreenshot name="forms/fields/repeater/table" alt="Repeater with a table layout" version="5.x" />
 
 The labels displayed in the header of the table are passed to the `TableColumn::make()` method. If you want to provide an accessible label for a column but do not wish to display it, you can use the `hiddenHeaderLabel()` method:
 
@@ -645,6 +759,42 @@ TableColumn::make('Name')
     ->width('200px')
 ```
 
+### Compact table repeaters
+
+You can make table repeaters more compact by using the `compact()` method, to fit more data in a smaller space:
+
+```php
+use Filament\Forms\Components\Repeater;
+
+Repeater::make('members')
+    ->table([
+        // ...
+    ])
+    ->compact()
+    ->schema([
+        // ...
+    ])
+```
+
+Optionally, you may pass a boolean value to control if the table repeater should be compact or not:
+
+```php
+use Filament\Forms\Components\Repeater;
+
+Repeater::make('members')
+    ->table([
+        // ...
+    ])
+    ->compact(FeatureFlag::active())
+    ->schema([
+        // ...
+    ])
+```
+
+<UtilityInjection set="formFields" version="5.x">As well as allowing a static value, the `compact()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+
+<AutoScreenshot name="forms/fields/repeater/table-compact" alt="Repeater with a compact table layout" version="5.x" />
+
 ## Repeater validation
 
 As well as all rules listed on the [validation](validation) page, there are additional rules that are specific to repeaters.
@@ -664,7 +814,7 @@ Repeater::make('members')
     ->maxItems(5)
 ```
 
-<UtilityInjection set="formFields" version="4.x">As well as allowing static values, the `minItems()` and `maxItems()` methods also accept a function to dynamically calculate them. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x">As well as allowing static values, the `minItems()` and `maxItems()` methods also accept a function to dynamically calculate them. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 ### Distinct state validation
 
@@ -701,7 +851,7 @@ Checkbox::make('is_correct')
     ->distinct(FeatureFlag::active())
 ```
 
-<UtilityInjection set="formFields" version="4.x">As well as allowing a static value, the `distinct()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x">As well as allowing a static value, the `distinct()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 #### Automatically fixing indistinct state
 
@@ -735,7 +885,7 @@ Checkbox::make('is_correct')
     ->fixIndistinctState(FeatureFlag::active())
 ```
 
-<UtilityInjection set="formFields" version="4.x">As well as allowing a static value, the `fixIndistinctState()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x">As well as allowing a static value, the `fixIndistinctState()` method also accepts a function to dynamically calculate it. You can inject various utilities into the function as parameters.</UtilityInjection>
 
 #### Disabling options when they are already selected in another item
 
@@ -758,7 +908,7 @@ Repeater::make('members')
 This method will automatically enable the `distinct()` and `live()` methods on the field.
 
 <Aside variant="warning">
-    In case you want to add another condition to [disable options](../select#disabling-specific-options) with, you can chain `disableOptionWhen()` with the `merge: true` argument:
+    In case you want to add another condition to [disable options](select#disabling-specific-options) with, you can chain `disableOptionWhen()` with the `merge: true` argument:
     
     ```php
     use Filament\Forms\Components\Repeater;
@@ -806,7 +956,7 @@ Repeater::make('members')
     )
 ```
 
-<UtilityInjection set="formFields" version="4.x" extras="Action;;Filament\Actions\Action;;$action;;The action object to customize.">The action registration methods can inject various utilities into the function as parameters.</UtilityInjection>
+<UtilityInjection set="formFields" version="5.x" extras="Action;;Filament\Actions\Action;;$action;;The action object to customize.">The action registration methods can inject various utilities into the function as parameters.</UtilityInjection>
 
 ### Confirming repeater actions with a modal
 

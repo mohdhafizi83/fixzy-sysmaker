@@ -5,8 +5,12 @@ namespace Filament\Actions\Imports;
 use Carbon\CarbonInterface;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Actions\Imports\Downloaders\Contracts\Downloader;
+use Filament\Actions\Imports\Downloaders\CsvDownloader;
 use Filament\Actions\Imports\Models\Import;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Component;
+use Filament\Support\Concerns\CanCallHooks;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Validator;
@@ -14,6 +18,16 @@ use Illuminate\Validation\ValidationException;
 
 abstract class Importer
 {
+    use CanCallHooks;
+
+    // Security: Imports do not perform per-record authorization checks.
+    // Each CSV row is processed by `resolveRecord()`, `fillRecord()`,
+    // and `saveRecord()` without consulting Laravel policies. Add
+    // manual checks in lifecycle hooks (`beforeCreate()`, etc.)
+    // if needed. Failure CSVs contain original data unchanged, so
+    // formula injection risk applies to those files too — override
+    // `shouldPreventFormulaInjection()` to neutralize it.
+
     /** @var array<ImportColumn> */
     protected array $cachedColumns;
 
@@ -33,6 +47,8 @@ abstract class Importer
      * @var class-string<Model>|null
      */
     protected static ?string $model = null;
+
+    protected static bool $shouldPreventFormulaInjection = false;
 
     /**
      * @param  array<string, string>  $columnMap
@@ -145,6 +161,9 @@ abstract class Importer
 
     public function resolveRecord(): ?Model
     {
+        // Security: This method runs without policy checks.
+        // Override to add authorization logic if needed.
+
         $keyName = app(static::getModel())->getKeyName();
         $keyColumnName = $this->columnMap[$keyName] ?? $keyName;
 
@@ -296,11 +315,39 @@ abstract class Importer
             ->prepend(app()->getNamespace() . 'Models\\');
     }
 
+    public static function preventFormulaInjection(bool $condition = true): void
+    {
+        static::$shouldPreventFormulaInjection = $condition;
+    }
+
+    public static function shouldPreventFormulaInjection(): bool
+    {
+        // Security: Off by default because the failure CSV is designed to be
+        // corrected and re-uploaded — prefixing a `'` to neutralize formula
+        // injection (CWE-1236) would corrupt legitimate data such as `-5` on
+        // that round trip. The failure CSV includes every uploaded column,
+        // even those not mapped to an `ImportColumn`, so this is a whole-file
+        // toggle rather than a per-column one. Enable it for a single importer
+        // by redeclaring `$shouldPreventFormulaInjection`, or globally by
+        // calling `Importer::preventFormulaInjection()` in a service provider.
+        return static::$shouldPreventFormulaInjection;
+    }
+
+    public static function getFailedRowsDownloader(): Downloader
+    {
+        return app(CsvDownloader::class);
+    }
+
     abstract public static function getCompletedNotificationBody(Import $import): string;
 
     public static function getCompletedNotificationTitle(Import $import): string
     {
         return __('filament-actions::import.notifications.completed.title');
+    }
+
+    public static function modifyCompletedNotification(Notification $notification, Import $import): Notification
+    {
+        return $notification;
     }
 
     /**
@@ -387,15 +434,6 @@ abstract class Importer
     public function getOptions(): array
     {
         return $this->options;
-    }
-
-    protected function callHook(string $hook): void
-    {
-        if (! method_exists($this, $hook)) {
-            return;
-        }
-
-        $this->{$hook}();
     }
 
     public function getImport(): Import

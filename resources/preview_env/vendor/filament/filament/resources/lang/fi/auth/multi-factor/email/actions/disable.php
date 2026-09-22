@@ -30,6 +30,10 @@ return [
                                 'title' => 'Olemme lähettänyt koodin sähköpostiisi',
                             ],
 
+                            'throttled' => [
+                                'title' => 'Liian monta lähetyksen yritystä. Yritä myöhemmin uudelleen.',
+                            ],
+
                         ],
 
                     ],
@@ -39,6 +43,8 @@ return [
                 'messages' => [
 
                     'invalid' => 'Annettu koodi on väärin.',
+
+                    'rate_limited' => 'Liian monta yritystä. Yritä myöhemmin uudelleen.',
 
                 ],
 
@@ -59,7 +65,7 @@ return [
     'notifications' => [
 
         'disabled' => [
-            'title' => 'Email verification codes have been disabled',
+            'title' => 'Sähköpostin vahvistuskoodit on otettu pois käytöstä',
         ],
 
     ],

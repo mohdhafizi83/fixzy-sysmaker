@@ -32,11 +32,11 @@ return [
 
     'multiple' => [
 
-        'label' => 'លុបចោលការជ្រើសរើស',
+        'label' => 'លុបអ្វីដែលបានជ្រើសរើស',
 
         'modal' => [
 
-            'heading' => 'លុបចោលការជ្រើសរើស :label',
+            'heading' => 'លុប :label ដែលបានជ្រើសរើស',
 
             'actions' => [
 
@@ -52,6 +52,18 @@ return [
 
             'deleted' => [
                 'title' => 'បានលុប',
+            ],
+
+            'deleted_partial' => [
+                'title' => 'បានលុប :count នៃ :total',
+                'missing_authorization_failure_message' => 'អ្នកមិនមានសិទ្ធិលុប :count ទេ។',
+                'missing_processing_failure_message' => ':count មិនអាចលុបបានទេ។',
+            ],
+
+            'deleted_none' => [
+                'title' => 'បរាជ័យក្នុងការលុប',
+                'missing_authorization_failure_message' => 'អ្នកមិនមានសិទ្ធិលុប :count ទេ។',
+                'missing_processing_failure_message' => ':count មិនអាចលុបបានទេ។',
             ],
 
         ],

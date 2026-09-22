@@ -1,6 +1,10 @@
 .fi-sc-tabs {
     @apply flex flex-col;
 
+    & .fi-tabs.fi-invisible {
+        @apply invisible;
+    }
+
     & .fi-sc-tabs-tab {
         @apply outline-hidden;
 
@@ -9,7 +13,7 @@
         }
 
         &:not(.fi-active) {
-            @apply invisible absolute h-0 overflow-hidden p-0;
+            @apply hidden;
         }
     }
 

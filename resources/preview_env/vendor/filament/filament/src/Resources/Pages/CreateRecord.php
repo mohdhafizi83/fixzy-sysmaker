@@ -8,6 +8,8 @@ use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Pages\Concerns\CanUseDatabaseTransactions;
 use Filament\Pages\Concerns\HasUnsavedDataChangesAlert;
+use Filament\Resources\Events\RecordCreated;
+use Filament\Resources\Events\RecordSaved;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\EmbeddedSchema;
@@ -18,11 +20,13 @@ use Filament\Support\Exceptions\Halt;
 use Filament\Support\Facades\FilamentView;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Js;
-use Livewire\Attributes\Locked;
 use Throwable;
 
 /**
+ * @template TModel of Model = Model
+ *
  * @property-read Schema $form
  */
 class CreateRecord extends Page
@@ -30,6 +34,7 @@ class CreateRecord extends Page
     use CanUseDatabaseTransactions;
     use HasUnsavedDataChangesAlert;
 
+    /** @var ?TModel */
     public ?Model $record = null;
 
     /**
@@ -41,7 +46,14 @@ class CreateRecord extends Page
 
     protected static bool $canCreateAnother = true;
 
-    #[Locked]
+    /**
+     * After a successful creation, this stays `true` while the user is redirected, to prevent duplicate
+     * records from additional clicks of the submit button. In SPA mode, if the user then navigates back,
+     * the page is restored from Livewire's history cache with this still `true`, which would block the
+     * form from ever being submitted again. JavaScript detects the restoration and resets this property
+     * in Livewire's client-side state, which is synced with the server during the next request. It is
+     * deliberately not `#[Locked]`, since that would prevent the client-side reset from being synced.
+     */
     public bool $isCreating = false;
 
     public function getBreadcrumb(): string
@@ -61,6 +73,11 @@ class CreateRecord extends Page
     protected function authorizeAccess(): void
     {
         abort_unless(static::getResource()::canCreate(), 403);
+    }
+
+    public function hydrate(): void
+    {
+        $this->authorizeAccess();
     }
 
     protected function fillForm(): void
@@ -104,6 +121,8 @@ class CreateRecord extends Page
             $this->form->model($this->getRecord())->saveRelationships();
 
             $this->callHook('afterCreate');
+            Event::dispatch(RecordCreated::class, ['record' => $this->record, 'data' => $data, 'page' => $this]);
+            Event::dispatch(RecordSaved::class, ['record' => $this->record, 'data' => $data, 'page' => $this]);
         } catch (Halt $exception) {
             $exception->shouldRollbackDatabaseTransaction() ?
                 $this->rollBackDatabaseTransaction() :
@@ -137,6 +156,11 @@ class CreateRecord extends Page
                 ...$this->form->getRawState(),
                 ...$preserveRawState,
             ]);
+
+            // Rebuild child schemas without double-firing `afterStateHydrated()` hooks.
+            $hydratedDefaultState = null;
+            $this->form->hydrateState($hydratedDefaultState, shouldCallHydrationHooks: false);
+            $this->form->dispatchClientSideStateReset();
 
             $this->isCreating = false;
 
@@ -190,6 +214,7 @@ class CreateRecord extends Page
 
     /**
      * @param  array<string, mixed>  $data
+     * @return TModel
      */
     protected function handleRecordCreation(array $data): Model
     {
@@ -287,8 +312,11 @@ class CreateRecord extends Page
 
     public function defaultForm(Schema $schema): Schema
     {
+        if (! $schema->hasCustomColumns()) {
+            $schema->columns($this->hasInlineLabels() ? 1 : 2);
+        }
+
         return $schema
-            ->columns($this->hasInlineLabels() ? 1 : 2)
             ->inlineLabel($this->hasInlineLabels())
             ->model($this->getModel())
             ->operation('create')
@@ -335,7 +363,7 @@ class CreateRecord extends Page
     }
 
     /**
-     * @return Model|class-string<Model>|null
+     * @return TModel|class-string<TModel>|null
      */
     protected function getMountedActionSchemaModel(): Model | string | null
     {
@@ -352,6 +380,9 @@ class CreateRecord extends Page
         static::$canCreateAnother = false;
     }
 
+    /**
+     * @return ?TModel
+     */
     public function getRecord(): ?Model
     {
         return $this->record;
@@ -387,7 +418,8 @@ class CreateRecord extends Page
         return Actions::make($this->getFormActions())
             ->alignment($this->getFormActionsAlignment())
             ->fullWidth($this->hasFullWidthFormActions())
-            ->sticky($this->areFormActionsSticky());
+            ->sticky($this->areFormActionsSticky())
+            ->key('form-actions');
     }
 
     public function hasFormWrapper(): bool
@@ -409,10 +441,5 @@ class CreateRecord extends Page
     protected function hasFullWidthFormActions(): bool
     {
         return false;
-    }
-
-    public function getDefaultTestingSchemaName(): ?string
-    {
-        return 'form';
     }
 }

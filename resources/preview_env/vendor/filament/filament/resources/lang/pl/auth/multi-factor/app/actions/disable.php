@@ -11,6 +11,10 @@ return [
         'description' => 'Czy na pewno chcesz przestać używać aplikacji uwierzytelniającej? Wyłączenie jej usunie dodatkowe zabezpieczenie z Twojego konta.',
 
         'form' => [
+            'password' => [
+                'label' => 'Aktualne hasło',
+                'validation_attribute' => 'aktualne hasło',
+            ],
 
             'code' => [
 
@@ -30,6 +34,8 @@ return [
 
                     'invalid' => 'Wprowadzony kod jest nieprawidłowy.',
 
+                    'rate_limited' => 'Zbyt wiele prób. Spróbuj ponownie później.',
+
                 ],
 
             ],
@@ -43,6 +49,8 @@ return [
                 'messages' => [
 
                     'invalid' => 'Wprowadzony kod odzyskiwania jest nieprawidłowy.',
+
+                    'rate_limited' => 'Zbyt wiele prób. Spróbuj ponownie później.',
 
                 ],
 

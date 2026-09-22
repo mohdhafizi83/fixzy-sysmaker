@@ -122,9 +122,53 @@ return [
 
     ],
 
+    'color_picker' => [
+
+        'panel_label' => 'Färgväljare',
+
+    ],
+
+    'date_time_picker' => [
+
+        'month_select' => [
+            'label' => 'Månad',
+        ],
+
+        'year_input' => [
+            'label' => 'År',
+        ],
+
+        'hour_input' => [
+            'label' => 'Timme',
+        ],
+
+        'minute_input' => [
+            'label' => 'Minut',
+        ],
+
+        'second_input' => [
+            'label' => 'Sekund',
+        ],
+
+    ],
+
     'file_upload' => [
 
+        'actions' => [
+
+            'download' => [
+                'label' => 'Ladda ner',
+            ],
+
+            'open' => [
+                'label' => 'Öppna i ny flik',
+            ],
+
+        ],
+
         'editor' => [
+
+            'label' => 'Bildredigerare',
 
             'actions' => [
 
@@ -252,6 +296,18 @@ return [
 
     'key_value' => [
 
+        'columns' => [
+
+            'actions' => [
+                'label' => 'Åtgärder',
+            ],
+
+            'reorder' => [
+                'label' => 'Ändra ordning',
+            ],
+
+        ],
+
         'actions' => [
 
             'add' => [
@@ -283,6 +339,10 @@ return [
     ],
 
     'markdown_editor' => [
+
+        'file_attachments_accepted_file_types_message' => 'Uppladdade filer måste vara av typen: :values.',
+
+        'file_attachments_max_size_message' => 'Uppladdade filer får inte vara större än :max kilobyte.',
 
         'tools' => [
             'attach_files' => 'Lägg till filer',
@@ -334,6 +394,18 @@ return [
     ],
 
     'repeater' => [
+
+        'columns' => [
+
+            'actions' => [
+                'label' => 'Åtgärder',
+            ],
+
+            'reorder' => [
+                'label' => 'Flytta',
+            ],
+
+        ],
 
         'actions' => [
 
@@ -443,6 +515,71 @@ return [
 
             ],
 
+            'grid' => [
+
+                'label' => 'Rutnät',
+
+                'modal' => [
+
+                    'heading' => 'Rutnät',
+
+                    'form' => [
+
+                        'preset' => [
+
+                            'label' => 'Mall',
+
+                            'placeholder' => 'Ingen',
+
+                            'options' => [
+                                'two' => 'Två',
+                                'three' => 'Tre',
+                                'four' => 'Fyra',
+                                'five' => 'Fem',
+                                'two_start_third' => 'Två (start tredjedel)',
+                                'two_end_third' => 'Två (slut tredjedel)',
+                                'two_start_fourth' => 'Två (start fjärdedel)',
+                                'two_end_fourth' => 'Två (slut fjärdedel)',
+                            ],
+                        ],
+
+                        'columns' => [
+                            'label' => 'Kolumner',
+                        ],
+
+                        'from_breakpoint' => [
+
+                            'label' => 'Från brytpunkt',
+
+                            'options' => [
+                                'default' => 'Alla',
+                                'sm' => 'Liten',
+                                'md' => 'Medel',
+                                'lg' => 'Stor',
+                                'xl' => 'Extra stor',
+                                '2xl' => 'Dubbel extra stor',
+                            ],
+
+                        ],
+
+                        'is_asymmetric' => [
+                            'label' => 'Två asymmetriska kolumner',
+                        ],
+
+                        'start_span' => [
+                            'label' => 'Startbredd',
+                        ],
+
+                        'end_span' => [
+                            'label' => 'Slutbredd',
+                        ],
+
+                    ],
+
+                ],
+
+            ],
+
             'link' => [
 
                 'label' => 'Redigera',
@@ -467,9 +604,77 @@ return [
 
             ],
 
+            'text_color' => [
+
+                'label' => 'Textfärg',
+
+                'modal' => [
+
+                    'heading' => 'Textfärg',
+
+                    'form' => [
+
+                        'color' => [
+                            'label' => 'Färg',
+
+                            'options' => [
+                                'slate' => 'Skiffer',
+                                'gray' => 'Grå',
+                                'zinc' => 'Zink',
+                                'neutral' => 'Neutral',
+                                'stone' => 'Sten',
+                                'mauve' => 'Malva',
+                                'olive' => 'Oliv',
+                                'mist' => 'Dis',
+                                'taupe' => 'Taupe',
+                                'red' => 'Röd',
+                                'orange' => 'Orange',
+                                'amber' => 'Bärnsten',
+                                'yellow' => 'Gul',
+                                'lime' => 'Lime',
+                                'green' => 'Grön',
+                                'emerald' => 'Smaragd',
+                                'teal' => 'Blågrön',
+                                'cyan' => 'Cyan',
+                                'sky' => 'Himmelsblå',
+                                'blue' => 'Blå',
+                                'indigo' => 'Indigo',
+                                'violet' => 'Violett',
+                                'purple' => 'Lila',
+                                'fuchsia' => 'Fuchsia',
+                                'pink' => 'Rosa',
+                                'rose' => 'Rosenröd',
+                            ],
+                        ],
+
+                        'custom_color' => [
+                            'label' => 'Anpassad färg',
+                        ],
+
+                    ],
+
+                ],
+
+            ],
+
         ],
 
+        'file_attachments_accepted_file_types_message' => 'Uppladdade filer måste vara av typen: :values.',
+
+        'file_attachments_max_size_message' => 'Uppladdade filer får inte vara större än :max kilobyte.',
+
         'no_merge_tag_search_results_message' => 'Kunde inte matcha mallvariabler.',
+
+        'mentions' => [
+            'no_options_message' => 'Inga alternativ tillgängliga.',
+            'no_search_results_message' => 'Inga resultat matchar din sökning.',
+            'search_prompt' => 'Börja skriva för att söka…',
+            'searching_message' => 'Söker…',
+        ],
+
+        'toolbar' => [
+            'label' => 'Redigerarens verktygsfält',
+        ],
 
         'tools' => [
             'align_center' => 'Centrera',
@@ -488,6 +693,11 @@ return [
             'h1' => 'Titel',
             'h2' => 'Rubrik',
             'h3' => 'Underrubrik',
+            'h4' => 'Rubrik 4',
+            'h5' => 'Rubrik 5',
+            'h6' => 'Rubrik 6',
+            'grid' => 'Rutnät',
+            'grid_delete' => 'Ta bort rutnät',
             'highlight' => 'Markera',
             'horizontal_rule' => 'Horisontell linje',
             'italic' => 'Kursiv',
@@ -495,6 +705,7 @@ return [
             'link' => 'Länk',
             'merge_tags' => 'Mallvariabel',
             'ordered_list' => 'Nummerlista',
+            'paragraph' => 'Stycke',
             'redo' => 'Gör om',
             'small' => 'Liten text',
             'strike' => 'Genomstruken',
@@ -511,17 +722,23 @@ return [
             'table_merge_cells' => 'Sammanfoga celler',
             'table_split_cell' => 'Dela cell',
             'table_toggle_header_row' => 'Växla rubrikrad',
+            'table_toggle_header_cell' => 'Växla rubrikcell',
+            'text_color' => 'Textfärg',
             'underline' => 'Understruken',
             'undo' => 'Ångra',
         ],
 
-        'uploading_file_message' => 'Laddar upp fil...',
+        'uploading_file_message' => 'Laddar upp fil…',
 
     ],
 
     'select' => [
 
         'actions' => [
+
+            'clear' => [
+                'label' => 'Rensa',
+            ],
 
             'create_option' => [
 
@@ -567,6 +784,10 @@ return [
 
             ],
 
+            'remove_option' => [
+                'label' => 'Ta bort :label',
+            ],
+
         ],
 
         'boolean' => [
@@ -574,22 +795,40 @@ return [
             'false' => 'Nej',
         ],
 
-        'loading_message' => 'Laddar...',
+        'loading_message' => 'Laddar…',
 
         'max_items_message' => 'Kan endast välja :count st.',
+
+        'no_options_message' => 'Inga alternativ tillgängliga.',
 
         'no_search_results_message' => 'Inga alternativ matchar din sökning.',
 
         'placeholder' => 'Välj ett alternativ',
 
-        'searching_message' => 'Söker...',
+        'searching_message' => 'Söker…',
 
-        'search_prompt' => 'Börja skriva för att söka...',
+        'search_label' => 'Sök',
+
+        'search_prompt' => 'Börja skriva för att söka…',
 
     ],
 
     'tags_input' => [
+
+        'actions' => [
+
+            'delete' => [
+                'label' => 'Ta bort',
+            ],
+
+        ],
+
         'placeholder' => 'Ny tagg',
+
+        'tag_added' => 'Tillagd: :tag',
+
+        'tag_removed' => 'Borttagen: :tag',
+
     ],
 
     'text_input' => [

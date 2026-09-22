@@ -1,6 +1,7 @@
 ---
 title: Overview
 ---
+import Aside from "@components/Aside.astro"
 import AutoScreenshot from "@components/AutoScreenshot.astro"
 
 ## Introduction
@@ -29,7 +30,7 @@ class EditPost extends Component
 }
 ```
 
-<AutoScreenshot name="notifications/success" alt="Success notification" version="4.x" />
+<AutoScreenshot name="notifications/success" alt="Success notification" version="5.x" />
 
 ## Setting a title
 
@@ -44,6 +45,10 @@ Notification::make()
 ```
 
 The title text can contain basic, safe HTML elements. To generate safe HTML with Markdown, you can use the [`Str::markdown()` helper](https://laravel.com/docs/strings#method-str-markdown): `title(Str::markdown('Saved **successfully**'))`
+
+<Aside variant="danger">
+    Filament's built-in HTML sanitizer permits inline `style` attributes in order to support rich text formatting features such as font colors, text highlighting, and image sizing. This means that CSS properties like `background: url(...)` or `position: fixed` will not be stripped from sanitized HTML. If your content comes from untrusted users, you should consider restricting the default configuration. See the [security documentation](../advanced/security#customizing-the-sanitizer) for details on how to customize the sanitizer.
+</Aside>
 
 Or with JavaScript:
 
@@ -77,7 +82,7 @@ new FilamentNotification()
     .send()
 ```
 
-<AutoScreenshot name="notifications/icon" alt="Notification with icon" version="4.x" />
+<AutoScreenshot name="notifications/icon" alt="Notification with icon" version="5.x" />
 
 Notifications often have a status like `success`, `warning`, `danger` or `info`. Instead of manually setting the corresponding [icons](../styling/icons) and [colors](../styling/colors), there's a `status()` method which you can pass the status. You may also use the dedicated `success()`, `warning()`, `danger()` and `info()` methods instead. So, cleaning up the above example would look like this:
 
@@ -99,7 +104,7 @@ new FilamentNotification()
     .send()
 ```
 
-<AutoScreenshot name="notifications/statuses" alt="Notifications with various statuses" version="4.x" />
+<AutoScreenshot name="notifications/statuses" alt="Notifications with various statuses" version="5.x" />
 
 ## Setting a background color
 
@@ -123,7 +128,7 @@ new FilamentNotification()
     .send()
 ```
 
-<AutoScreenshot name="notifications/color" alt="Notification with background color" version="4.x" />
+<AutoScreenshot name="notifications/color" alt="Notification with background color" version="5.x" />
 
 ## Setting a duration
 
@@ -219,7 +224,7 @@ new FilamentNotification()
     .send()
 ```
 
-<AutoScreenshot name="notifications/body" alt="Notification with body text" version="4.x" />
+<AutoScreenshot name="notifications/body" alt="Notification with body text" version="5.x" />
 
 ## Adding actions to notifications
 
@@ -258,7 +263,7 @@ new FilamentNotification()
     .send()
 ```
 
-<AutoScreenshot name="notifications/actions" alt="Notification with actions" version="4.x" />
+<AutoScreenshot name="notifications/actions" alt="Notification with actions" version="5.x" />
 
 You can learn more about how to style action buttons [here](../actions/overview).
 
@@ -301,6 +306,10 @@ new FilamentNotification()
     ])
     .send()
 ```
+
+<Aside variant="danger">
+    If you are passing user-controlled data to the `url()` method, you should validate that the URL does not use a dangerous scheme such as `javascript:` or `data:`. Failing to do so could expose your application to XSS attacks. The simplest way to guard against this is to wrap the value in Filament's [`Str::sanitizeUrl()`](../advanced/security#validating-user-input) helper, which returns `null` for any URL that does not use `http`/`https` (or a relative path).
+</Aside>
 
 ### Dispatching Livewire events from notification actions
 
@@ -488,3 +497,5 @@ use Filament\Support\Enums\VerticalAlignment;
 Notifications::alignment(Alignment::Start);
 Notifications::verticalAlignment(VerticalAlignment::End);
 ```
+
+<AutoScreenshot name="notifications/positioning" alt="Notification positioned at the bottom start of the page" version="5.x" />
