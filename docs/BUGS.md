@@ -270,3 +270,17 @@ or regenerate: `node test/golden.js <fixture> --update`.
 - Fixture: p_19 Advanced Action (comment+insert+update+select+DROP-attempt);
   golden proves DROP rejected with visible reason. php -l 33/33,
   golden 17/17, e2e 21/21, preview live 200.
+
+### BUG-018 TELEGRAM BLOCK (2026-09-22): send_telegram now generates real code
+- send_telegram compiles to Http::timeout(15)->post to
+  api.telegram.org/bot<token>/sendMessage with ##token## interpolation in
+  chat_id and message.
+- Security: bot token NEVER hardcoded — read at runtime from
+  FixzySetting('telegram_bot_token'); chat_id falls back to
+  FixzySetting('telegram_default_chat_id'); no-op when unset.
+- New generated page: System > Telegram Bot Settings
+  (/admin/telegram-settings) with Save + "Send test message" (verifies
+  Telegram 'ok' response, shows rejection description on failure).
+- Guard badge list now EMPTY: every remaining palette block generates code.
+- Fixture: u_tg chained after send_email; php -l 35/35, golden 17/17,
+  e2e 21/21, preview live 200.

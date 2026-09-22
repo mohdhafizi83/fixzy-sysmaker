@@ -23,8 +23,8 @@
 // Removed from the product (owner decision 2026-09-22, not worth the cost):
 //   send_whatsapp (Meta template-approval policy), delay (needs async queue
 //   infra). Old saved workflows containing these types are skipped safely.
-// Still unsupported (UI shows a "not generated" badge): send_telegram,
-// advanced action.
+// All remaining palette blocks generate real code (Telegram bot token comes
+// from the Telegram Settings page at runtime).
 // Anything unsupported compiles to an explicit `// [fixzy] ... not supported`
 // comment so generated PHP always stays valid and gaps stay visible.
 
@@ -423,6 +423,22 @@ function compileAction(block, recordVar) {
             const expr = compileCondition(tokens); // reuse: single value works too
             if (expr === null) { pushUnsupported('variable expression'); break; }
             lines.push(`$${name} = ${expr};`);
+            break;
+        }
+        case 'send_telegram': {
+            // Bot token comes from the Telegram Settings page at runtime
+            // (never hardcoded). Chat ID: block field, else default setting.
+            const chatId = compileTokenText(block.chat_id || '');
+            const message = compileTokenText(block.message || '');
+            lines.push('$__wf_tgChat = ' + chatId + ';');
+            lines.push('if ($__wf_tgChat === \'\') { $__wf_tgChat = \\App\\Models\\FixzySetting::get(\'telegram_default_chat_id\', \'\'); }');
+            lines.push('$__wf_tgToken = \\App\\Models\\FixzySetting::get(\'telegram_bot_token\', \'\');');
+            lines.push('if ($__wf_tgChat !== \'\' && $__wf_tgToken !== \'\') {');
+            lines.push('    \\Illuminate\\Support\\Facades\\Http::timeout(15)->asJson()->post(');
+            lines.push('        \'https://api.telegram.org/bot\' . $__wf_tgToken . \'/sendMessage\',');
+            lines.push('        [\'chat_id\' => $__wf_tgChat, \'text\' => ' + message + ']');
+            lines.push('    );');
+            lines.push('}');
             break;
         }
         case 'terminate_workflow':
@@ -914,6 +930,14 @@ async function generateWorkflowHooks(fullSchema, outputDir) {
             const mailView = path.join(outputDir, 'resources', 'views', 'filament', 'pages', 'mail-settings.blade.php');
             fs.mkdirSync(path.dirname(mailView), { recursive: true });
             fs.writeFileSync(mailView, renderTemplate('resources/views/filament/pages/mail-settings.blade.php.njk', {}));
+        }
+        const tgPage = path.join(outputDir, 'app', 'Filament', 'Pages', 'TelegramSettings.php');
+        if (!fs.existsSync(tgPage)) {
+            fs.mkdirSync(path.dirname(tgPage), { recursive: true });
+            fs.writeFileSync(tgPage, renderTemplate('app/Filament/Pages/TelegramSettings.php.njk', {}));
+            const tgView = path.join(outputDir, 'resources', 'views', 'filament', 'pages', 'telegram-settings.blade.php');
+            fs.mkdirSync(path.dirname(tgView), { recursive: true });
+            fs.writeFileSync(tgView, renderTemplate('resources/views/filament/pages/telegram-settings.blade.php.njk', {}));
         }
 
         // The provider is ALWAYS generated: even with no workflow blocks it

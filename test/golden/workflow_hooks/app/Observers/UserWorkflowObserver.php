@@ -28,6 +28,15 @@ class UserWorkflowObserver
                     $msg->subject($__wf_subject);
                 });
             }
+            $__wf_tgChat = $telegram_chat_id;
+            if ($__wf_tgChat === '') { $__wf_tgChat = \App\Models\FixzySetting::get('telegram_default_chat_id', ''); }
+            $__wf_tgToken = \App\Models\FixzySetting::get('telegram_bot_token', '');
+            if ($__wf_tgChat !== '' && $__wf_tgToken !== '') {
+                \Illuminate\Support\Facades\Http::timeout(15)->asJson()->post(
+                    'https://api.telegram.org/bot' . $__wf_tgToken . '/sendMessage',
+                    ['chat_id' => $__wf_tgChat, 'text' => 'New user ' . $user_name . ' registered!']
+                );
+            }
         } else {
             return;
         }

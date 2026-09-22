@@ -1,0 +1,46 @@
+Memulakan Orchestrator Laravel Filament...
+--- Menjana Database Layer ---
+Model generated: /tmp/fsm-e2e-syAYad/gen/app/Models/Fakulti.php
+User Model generated: /tmp/fsm-e2e-syAYad/gen/app/Models/User.php
+--- Menjana Standard Resources ---
+Table Class generated (Final): FakultisTable.php
+Form Schema generated: /tmp/fsm-e2e-syAYad/gen/app/Filament/Resources/Fakultis/Schemas/FakultiForm.php
+List Page generated: /tmp/fsm-e2e-syAYad/gen/app/Filament/Resources/Fakultis/Pages/ListFakultis.php
+Create Page generated: /tmp/fsm-e2e-syAYad/gen/app/Filament/Resources/Fakultis/Pages/CreateFakulti.php
+Edit Page generated: /tmp/fsm-e2e-syAYad/gen/app/Filament/Resources/Fakultis/Pages/EditFakulti.php
+Resource generated: /tmp/fsm-e2e-syAYad/gen/app/Filament/Resources/Fakultis/FakultiResource.php
+--- Menjana Custom Modules ---
+   - Table Class generated: FakultiRingkasTable.php
+   - Form Schema generated: FakultiRingkaForm.php
+List Page generated: /tmp/fsm-e2e-syAYad/gen/app/Filament/Resources/FakultiRingkas/Pages/ListFakultiRingkas.php
+Create Page generated: /tmp/fsm-e2e-syAYad/gen/app/Filament/Resources/FakultiRingkas/Pages/CreateFakultiRingka.php
+Edit Page generated: /tmp/fsm-e2e-syAYad/gen/app/Filament/Resources/FakultiRingkas/Pages/EditFakultiRingka.php
+Resource generated: /tmp/fsm-e2e-syAYad/gen/app/Filament/Resources/FakultiRingkas/FakultiRingkaResource.php
+--- Generating Additional Features ---
+Menjana Filament Exports Script (dengan Label)...
+   - Generated: UserExporter.php
+   - Generated: FakultiExporter.php
+Generated Importer: /tmp/fsm-e2e-syAYad/gen/app/Filament/Imports/UserImporter.php
+Generated Importer: /tmp/fsm-e2e-syAYad/gen/app/Filament/Imports/FakultiImporter.php
+[workflow] Workflow hooks: 0 observer(s), 0 project listener(s).
+Generating Deployment Guide from Templates...
+Finished generating the Laravel Filament stack.
+generated OK -> /tmp/fsm-e2e-syAYad/gen
+$ cp -a /home/fizi/projects/FiziSysMaker/resources/preview_env /tmp/fsm-e2e-syAYad/app
+skeleton copied
+$ cp -a /tmp/fsm-e2e-syAYad/gen/. /tmp/fsm-e2e-syAYad/app/
+generated overlay applied
+$ php /home/fizi/projects/FiziSysMaker/bin/composer.phar dump-autoload --no-scripts -q
+composer dump-autoload done
+filament component cache cleared
+
+  Database\Seeders\ShieldSeeder ...................................... RUNNING  
+Super admin role has been granted all permissions and assigned to the default user.
+  Database\Seeders\ShieldSeeder .................................... 4 ms DONE  
+
+
+artisan boots OK
+all 2 fixture tables present in sqlite
+HTTP /admin/login -> 200 OK
+
+E2E SMOKE PASS (custom_module_override) — workdir /tmp/fsm-e2e-syAYad
