@@ -51,9 +51,12 @@ async function generateAdminPanelProvider(fullSchema, basePath) {
             mfa_provider: Number(project.module_auth_email_2fa) === 1
                 ? '\\Filament\\Auth\\MultiFactor\\Email\\EmailAuthentication::make()'
                 : null,
-            login_class: Number(project.module_auth_email_captcha) === 1
-                ? '\\App\\Filament\\Auth\\CaptchaLogin::class'
+            login_class: (Number(project.module_auth_email_captcha) === 1
+                || Number(project.module_auth_ldap) === 1)
+                ? '\\App\\Filament\\Auth\\FixzyLogin::class'
                 : null,
+            google_sso: Number(project.module_auth_google_sso) === 1,
+            ldap: Number(project.module_auth_ldap) === 1,
         });
 
         const outputPath = path.join(providersPath, 'AdminPanelProvider.php');

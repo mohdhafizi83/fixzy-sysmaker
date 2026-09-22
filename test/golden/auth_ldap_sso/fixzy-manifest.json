@@ -1,0 +1,9 @@
+{
+  "composer": [
+    "laravel/socialite",
+    "directorytree/ldaprecord-laravel"
+  ],
+  "php_extensions": [
+    "ldap"
+  ]
+}

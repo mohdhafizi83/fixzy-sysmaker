@@ -88,9 +88,33 @@ DB_PASSWORD=your_password</code></pre>
                 </li>
                 <li>
                     Don't forget to set <code>APP_ENV=production</code> and <code>APP_DEBUG=false</code> in the <code>.env</code> file on your server.
+                    
                 </li>
             </ul>
         </div>
     </x-filament::section>
+
+    
+
+    
+
+    
+    
+    <x-filament::section collapsible collapsed>
+        <x-slot name="heading">
+            Extra Login Security
+        </x-slot>
+        <div class="prose max-w-none dark:prose-invert text-sm">
+            <ul class="list-disc pl-5 space-y-2">
+                
+                <li><strong>Human check (captcha):</strong> the login page asks a simple arithmetic question before
+                    accepting a sign-in. This runs entirely on your server — no external captcha service, no API keys,
+                    nothing to configure.</li>
+                
+                
+            </ul>
+        </div>
+    </x-filament::section>
+    
 
 </x-filament-panels::page>

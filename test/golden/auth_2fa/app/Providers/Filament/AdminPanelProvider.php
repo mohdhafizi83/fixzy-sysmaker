@@ -73,7 +73,7 @@ class AdminPanelProvider extends PanelProvider
                 'panels::styles.after',
                 fn () => Blade::render('@vite("resources/css/filament/admin/theme.css")'),
             )
-            ->sidebarCollapsibleOnDesktop()
+                        ->sidebarCollapsibleOnDesktop()
 			            ->topNavigation();
     }
 	

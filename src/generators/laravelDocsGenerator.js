@@ -28,6 +28,13 @@ async function generateDeploymentGuidePage(fullSchema, basePath) {
         // 4. JANA BLADE VIEW (deployment-guide.blade.php)
         const bladeOut = renderTemplate('resources/views/filament/pages/deployment-guide.blade.php.njk', {
             app_db_name: appDbName,
+            // Feature-aware sections (English): only show checklists for
+            // features the owner enabled in the designer.
+            google_sso: Number(fullSchema.project.module_auth_google_sso) === 1,
+            ldap: Number(fullSchema.project.module_auth_ldap) === 1,
+            captcha: Number(fullSchema.project.module_auth_email_captcha) === 1,
+            two_fa: Number(fullSchema.project.module_auth_email_2fa) === 1,
+            debug_enabled: Number(fullSchema.project.debug_mode) === 1 || fullSchema.project.debug_mode === true,
         });
         fs.writeFileSync(path.join(viewsDir, 'deployment-guide.blade.php'), bladeOut);
 

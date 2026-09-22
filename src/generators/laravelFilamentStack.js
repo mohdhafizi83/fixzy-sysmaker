@@ -44,6 +44,7 @@ const { generateFilamentExports } = require('./laravelExportsGenerator');
 const { generateFilamentImporters } = require('./laravelImportersGenerator');
 const { generateAdminPanelProvider } = require('./laravelAdminPanelGenerator');
 const { generateWorkflowHooks } = require('./laravelWorkflowGenerator');
+const { generateAuthIntegrations } = require('./laravelAuthIntegrationsGenerator');
 const { generateDeploymentGuidePage } = require('./laravelDocsGenerator');
 
 /**
@@ -95,11 +96,34 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
             fs.writeFileSync(path.join(printDir, 'PrintAction.php'), renderTemplate('app/Filament/Actions/PrintAction.php.njk', {}));
         }
 
-        // Native captcha login page (BUG-015: module_auth_email_captcha).
-        if (Number((fullSchema.project || {}).module_auth_email_captcha) === 1) {
+        // Native login page (BUG-015): captcha human check and/or LDAP
+        // directory auth, combined into one FixzyLogin class.
+        const captcha = Number((fullSchema.project || {}).module_auth_email_captcha) === 1;
+        const ldap = Number((fullSchema.project || {}).module_auth_ldap) === 1;
+        if (captcha || ldap) {
             const authDir = path.join(outputDir, 'app', 'Filament', 'Auth');
             fs.mkdirSync(authDir, { recursive: true });
-            fs.writeFileSync(path.join(authDir, 'CaptchaLogin.php'), renderTemplate('app/Filament/Auth/CaptchaLogin.php.njk', {}));
+            fs.writeFileSync(
+                path.join(authDir, 'FixzyLogin.php'),
+                renderTemplate('app/Filament/Auth/FixzyLogin.php.njk', { captcha, ldap })
+            );
+        }
+
+        // SSO / LDAP integration files + deploy manifest (plug & play).
+        const authIntegrations = await generateAuthIntegrations(fullSchema, outputDir);
+        if (!authIntegrations.success) throw new Error(`Auth integrations: ${authIntegrations.message}`);
+        if (authIntegrations.composerPackages.length || authIntegrations.phpExtensions.length) {
+            const providersFile = path.join(outputDir, 'bootstrap', 'providers.php');
+            if (fs.existsSync(providersFile)) {
+                let contents = fs.readFileSync(providersFile, 'utf8');
+                if (!contents.includes('AuthIntegrationsServiceProvider')) {
+                    contents = contents.replace(
+                        /return\s*\[/,
+                        'return [\n    App\\Providers\\AuthIntegrationsServiceProvider::class,'
+                    );
+                    fs.writeFileSync(providersFile, contents);
+                }
+            }
         }
 
         // Native BelongsToTenant trait — used by 1:m tenancy models.

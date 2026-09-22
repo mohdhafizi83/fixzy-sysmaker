@@ -88,9 +88,16 @@ DB_PASSWORD=your_password</code></pre>
                 </li>
                 <li>
                     Don't forget to set <code>APP_ENV=production</code> and <code>APP_DEBUG=false</code> in the <code>.env</code> file on your server.
+                    <strong>Note:</strong> you enabled <strong>Debug Mode</strong> in the designer — that is fine for development, but it MUST be turned off (<code>APP_DEBUG=false</code>) on a public server, otherwise error pages will expose internal details to visitors.
                 </li>
             </ul>
         </div>
     </x-filament::section>
+
+    
+
+    
+
+    
 
 </x-filament-panels::page>

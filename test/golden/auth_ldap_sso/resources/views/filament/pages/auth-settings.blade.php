@@ -1,0 +1,82 @@
+<x-filament-panels::page>
+    @if(session('fixzy_settings_saved'))
+        <div class="rounded-lg bg-green-50 border border-green-200 text-green-800 px-4 py-3 text-sm dark:bg-green-950 dark:text-green-200 dark:border-green-800">
+            {{ session('fixzy_settings_saved') }}
+        </div>
+    @endif
+
+    <form wire:submit="save" class="space-y-6">
+        
+        <x-filament::section heading="Google Single Sign-On">
+            <p class="text-sm text-gray-500 mb-4">
+                Create an OAuth client in
+                <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="text-primary-600 underline">Google Cloud Console</a>
+                (type: Web application) and paste the credentials below. The redirect URI below must be added to the allowed list there.
+            </p>
+            <div class="grid gap-4 md:grid-cols-2">
+                <label class="block">
+                    <span class="text-sm font-medium">Client ID</span>
+                    <input type="text" wire:model="settings.google_client_id"
+                           class="mt-1 w-full rounded-lg border-gray-300 shadow-sm dark:bg-gray-800 dark:border-gray-600 px-3 py-2 text-sm" />
+                </label>
+                <label class="block">
+                    <span class="text-sm font-medium">Client Secret</span>
+                    <input type="password" wire:model="settings.google_client_secret"
+                           class="mt-1 w-full rounded-lg border-gray-300 shadow-sm dark:bg-gray-800 dark:border-gray-600 px-3 py-2 text-sm" />
+                </label>
+                <label class="block md:col-span-2">
+                    <span class="text-sm font-medium">Redirect URI</span>
+                    <input type="text" wire:model="settings.google_redirect_uri"
+                           class="mt-1 w-full rounded-lg border-gray-300 shadow-sm dark:bg-gray-800 dark:border-gray-600 px-3 py-2 text-sm" />
+                </label>
+            </div>
+        </x-filament::section>
+        
+
+        
+        <x-filament::section heading="LDAP / Active Directory">
+            <p class="text-sm text-gray-500 mb-4">
+                Users will log in with their directory username on the normal login form. Use a dedicated
+                service account (read-only) for the bind credentials.
+            </p>
+            <div class="grid gap-4 md:grid-cols-2">
+                <label class="block">
+                    <span class="text-sm font-medium">LDAP hosts (comma separated)</span>
+                    <input type="text" wire:model="settings.ldap_hosts" placeholder="ldap1.example.com,ldap2.example.com"
+                           class="mt-1 w-full rounded-lg border-gray-300 shadow-sm dark:bg-gray-800 dark:border-gray-600 px-3 py-2 text-sm" />
+                </label>
+                <label class="block">
+                    <span class="text-sm font-medium">Port</span>
+                    <input type="text" wire:model="settings.ldap_port" placeholder="389"
+                           class="mt-1 w-full rounded-lg border-gray-300 shadow-sm dark:bg-gray-800 dark:border-gray-600 px-3 py-2 text-sm" />
+                </label>
+                <label class="block">
+                    <span class="text-sm font-medium">Base DN</span>
+                    <input type="text" wire:model="settings.ldap_base_dn" placeholder="dc=example,dc=com"
+                           class="mt-1 w-full rounded-lg border-gray-300 shadow-sm dark:bg-gray-800 dark:border-gray-600 px-3 py-2 text-sm" />
+                </label>
+                <label class="block">
+                    <span class="text-sm font-medium">Username attribute</span>
+                    <input type="text" wire:model="settings.ldap_username_field" placeholder="uid (OpenLDAP) / samaccountname (AD)"
+                           class="mt-1 w-full rounded-lg border-gray-300 shadow-sm dark:bg-gray-800 dark:border-gray-600 px-3 py-2 text-sm" />
+                </label>
+                <label class="block">
+                    <span class="text-sm font-medium">Bind DN (service account)</span>
+                    <input type="text" wire:model="settings.ldap_bind_dn" placeholder="cn=svc-app,ou=Service,dc=example,dc=com"
+                           class="mt-1 w-full rounded-lg border-gray-300 shadow-sm dark:bg-gray-800 dark:border-gray-600 px-3 py-2 text-sm" />
+                </label>
+                <label class="block">
+                    <span class="text-sm font-medium">Bind password</span>
+                    <input type="password" wire:model="settings.ldap_bind_password"
+                           class="mt-1 w-full rounded-lg border-gray-300 shadow-sm dark:bg-gray-800 dark:border-gray-600 px-3 py-2 text-sm" />
+                </label>
+            </div>
+        </x-filament::section>
+        
+
+        <div class="flex justify-end">
+            <x-filament::button type="submit">Save settings</x-filament::button>
+        </div>
+    </form>
+</x-filament-panels::page>
+

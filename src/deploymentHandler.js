@@ -124,6 +124,34 @@ async function deployApp(event, deployConfig) {
         // --- STEP 5: Composer ---
         win.webContents.send(STATUS_CHANNEL, { step: 5, message: 'Install Composer & Key...' });
         await runCommand('composer', ['install', '--optimize-autoloader'], projectPath, win, LOG_CHANNEL);
+
+        // Plug & play: install feature packages chosen at design time
+        // (Google SSO / LDAP), as declared in the generated manifest.
+        const manifestPath = path.join(projectPath, 'fixzy-manifest.json');
+        if (fs.existsSync(manifestPath)) {
+            try {
+                const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+                for (const pkg of (manifest.composer || [])) {
+                    win.webContents.send(STATUS_CHANNEL, { step: 5, message: `Installing ${pkg}...` });
+                    await runCommand('composer', ['require', pkg, '--no-interaction'], projectPath, win, LOG_CHANNEL);
+                }
+                for (const ext of (manifest.php_extensions || [])) {
+                    const hasExt = await new Promise((resolve) => {
+                        const probe = spawn('php', ['-m']);
+                        let out = '';
+                        probe.stdout.on('data', (d) => { out += d; });
+                        probe.on('close', () => resolve(out.toLowerCase().includes(ext.toLowerCase())));
+                        probe.on('error', () => resolve(false));
+                    });
+                    if (!hasExt) {
+                        win.webContents.send(LOG_CHANNEL, `WARNING: PHP extension '${ext}' is not installed. Install it (e.g. apt install php-${ext} / php-${ext}-ldap) before using LDAP sign-in.`);
+                    }
+                }
+            } catch (e) {
+                win.webContents.send(LOG_CHANNEL, `WARNING: Could not read fixzy-manifest.json: ${e.message}`);
+            }
+        }
+
         await runCommand('php', ['artisan', 'key:generate'], projectPath, win, LOG_CHANNEL);
 
         // --- STEP 6: Migration & Shield ---

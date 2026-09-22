@@ -32,7 +32,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login(\App\Filament\Auth\CaptchaLogin::class)
+            ->login(\App\Filament\Auth\FixzyLogin::class)
             ->profile()
             
             ->colors([
@@ -72,7 +72,7 @@ class AdminPanelProvider extends PanelProvider
                 'panels::styles.after',
                 fn () => Blade::render('@vite("resources/css/filament/admin/theme.css")'),
             )
-            ->sidebarCollapsibleOnDesktop()
+                        ->sidebarCollapsibleOnDesktop()
 			            ->topNavigation();
     }
 	

@@ -23,13 +23,13 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         '40275907c8566c390185147049ef6e5d' => __DIR__ . '/..' . '/livewire/livewire/src/helpers.php',
         '2c620c99f96a2b964346b45a4d1d1e64' => __DIR__ . '/..' . '/spatie/invade/src/functions.php',
         'e125f489d647ae664b0af7b573079de7' => __DIR__ . '/..' . '/filament/support/src/helpers.php',
-        '35a6ad97d21e794e7e22a17d806652e4' => __DIR__ . '/..' . '/nunomaduro/termwind/src/Functions.php',
         '7b11c4dc42b3b3023073cb14e519683c' => __DIR__ . '/..' . '/ralouphie/getallheaders/src/getallheaders.php',
-        '2203a247e6fda86070a5e4e07aed533a' => __DIR__ . '/..' . '/symfony/clock/Resources/now.php',
-        '09f6b20656683369174dd6fa83b7e5fb' => __DIR__ . '/..' . '/symfony/polyfill-uuid/bootstrap.php',
-        'a1105708a18b76903365ca1c4aa61b02' => __DIR__ . '/..' . '/symfony/translation/Resources/functions.php',
+        '35a6ad97d21e794e7e22a17d806652e4' => __DIR__ . '/..' . '/nunomaduro/termwind/src/Functions.php',
         '37a3dc5111fe8f707ab4c132ef1dbc62' => __DIR__ . '/..' . '/guzzlehttp/guzzle/src/functions_include.php',
+        '2203a247e6fda86070a5e4e07aed533a' => __DIR__ . '/..' . '/symfony/clock/Resources/now.php',
+        'a1105708a18b76903365ca1c4aa61b02' => __DIR__ . '/..' . '/symfony/translation/Resources/functions.php',
         'e39a8b23c42d4e1452234d762b03835a' => __DIR__ . '/..' . '/ramsey/uuid/src/functions.php',
+        '09f6b20656683369174dd6fa83b7e5fb' => __DIR__ . '/..' . '/symfony/polyfill-uuid/bootstrap.php',
         '9d2b9fc6db0f153a0a149fefb182415e' => __DIR__ . '/..' . '/symfony/polyfill-php84/bootstrap.php',
         '476ca15b8d69b04665cd879be9cb4c68' => __DIR__ . '/..' . '/laravel/framework/src/Illuminate/Collections/functions.php',
         '265b4faa2b3a9766332744949e83bf97' => __DIR__ . '/..' . '/laravel/framework/src/Illuminate/Collections/helpers.php',
@@ -52,8 +52,10 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'ebb446bb6d02e998480945fbbb73dc64' => __DIR__ . '/..' . '/filament/filament/src/helpers.php',
         'a1cfe24d14977df6878b9bf804af2d1c' => __DIR__ . '/..' . '/nunomaduro/collision/src/Adapters/Phpunit/Autoload.php',
         'aadac1114cab8dc19489a7f6dc24c003' => __DIR__ . '/..' . '/pestphp/pest-plugin-arch/src/Autoload.php',
+        '5897ea0ac4cccf14d323035e65887801' => __DIR__ . '/..' . '/symfony/polyfill-php82/bootstrap.php',
         'f83ed111c2f97a0449abf067f157f418' => __DIR__ . '/..' . '/pestphp/pest/src/Functions.php',
         '7d2876738dc0328edeb8a103c76cd8e7' => __DIR__ . '/..' . '/pestphp/pest/src/Pest.php',
+        'decc78cc4436b1292c6c0d151b19445c' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/bootstrap.php',
         '801c31d8ed748cfa537fa45402288c95' => __DIR__ . '/..' . '/psy/psysh/src/functions.php',
         '377b22b161c09ed6e5152de788ca020a' => __DIR__ . '/..' . '/spatie/laravel-permission/src/helpers.php',
         '2f0b622c582b78b662a0db8a878c23ca' => __DIR__ . '/..' . '/fruitcake/laravel-debugbar/src/helpers.php',
@@ -64,37 +66,39 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
     );
 
     public static $prefixLengthsPsr4 = array (
-        'v' => 
+        'v' =>
         array (
             'voku\\' => 5,
         ),
-        'p' => 
+        'p' =>
         array (
+            'phpseclib4\\' => 11,
             'phpDocumentor\\Reflection\\' => 25,
         ),
-        'c' => 
+        'c' =>
         array (
             'chillerlan\\Settings\\' => 20,
             'chillerlan\\QRCode\\' => 18,
         ),
-        'W' => 
+        'W' =>
         array (
             'Whoops\\' => 7,
             'Webmozart\\Assert\\' => 17,
         ),
-        'T' => 
+        'T' =>
         array (
             'Tiptap\\' => 7,
             'TijsVerkoyen\\CssToInlineStyles\\' => 31,
             'Tests\\' => 6,
             'Termwind\\' => 9,
         ),
-        'S' => 
+        'S' =>
         array (
             'Symfony\\Polyfill\\Uuid\\' => 22,
             'Symfony\\Polyfill\\Php85\\' => 23,
             'Symfony\\Polyfill\\Php84\\' => 23,
             'Symfony\\Polyfill\\Php83\\' => 23,
+            'Symfony\\Polyfill\\Php82\\' => 23,
             'Symfony\\Polyfill\\Php80\\' => 23,
             'Symfony\\Polyfill\\Mbstring\\' => 26,
             'Symfony\\Polyfill\\Intl\\Normalizer\\' => 33,
@@ -127,14 +131,14 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
             'Spatie\\LaravelPackageTools\\' => 27,
             'Spatie\\Invade\\' => 14,
         ),
-        'R' => 
+        'R' =>
         array (
             'RyanChandler\\BladeCaptureDirective\\Database\\Factories\\' => 54,
             'RyanChandler\\BladeCaptureDirective\\' => 35,
             'Ramsey\\Uuid\\' => 12,
             'Ramsey\\Collection\\' => 18,
         ),
-        'P' => 
+        'P' =>
         array (
             'Psy\\' => 4,
             'Psr\\SimpleCache\\' => 16,
@@ -160,17 +164,17 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
             'PHPUnit\\Architecture\\' => 21,
             'PHPStan\\PhpDocParser\\' => 21,
         ),
-        'O' => 
+        'O' =>
         array (
             'OpenSpout\\' => 10,
         ),
-        'N' => 
+        'N' =>
         array (
             'NunoMaduro\\Collision\\' => 21,
             'Nette\\' => 6,
             'N3XT0R\\MigrationGenerator\\' => 26,
         ),
-        'M' => 
+        'M' =>
         array (
             'Monolog\\' => 8,
             'Mockery\\' => 8,
@@ -178,36 +182,40 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
             'MJS\\TopSort\\Tests\\' => 18,
             'MJS\\TopSort\\' => 12,
         ),
-        'L' => 
+        'L' =>
         array (
             'Livewire\\' => 9,
             'League\\Uri\\' => 11,
+            'League\\OAuth1\\Client\\' => 21,
             'League\\MimeTypeDetection\\' => 25,
             'League\\Flysystem\\Local\\' => 23,
             'League\\Flysystem\\' => 17,
             'League\\Csv\\' => 11,
             'League\\Config\\' => 14,
             'League\\CommonMark\\' => 18,
+            'LdapRecord\\Laravel\\' => 19,
+            'LdapRecord\\' => 11,
             'Laravel\\Tinker\\' => 15,
+            'Laravel\\Socialite\\' => 18,
             'Laravel\\SerializableClosure\\' => 28,
             'Laravel\\Sail\\' => 13,
             'Laravel\\Prompts\\' => 16,
             'Laravel\\Pail\\' => 13,
         ),
-        'K' => 
+        'K' =>
         array (
             'Kirschbaum\\PowerJoins\\' => 22,
         ),
-        'J' => 
+        'J' =>
         array (
             'Jean85\\' => 7,
         ),
-        'I' => 
+        'I' =>
         array (
             'Illuminate\\Support\\' => 19,
             'Illuminate\\' => 11,
         ),
-        'G' => 
+        'G' =>
         array (
             'GuzzleHttp\\UriTemplate\\' => 23,
             'GuzzleHttp\\Psr7\\' => 16,
@@ -215,10 +223,11 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
             'GuzzleHttp\\' => 11,
             'GrahamCampbell\\ResultType\\' => 26,
         ),
-        'F' => 
+        'F' =>
         array (
             'Fruitcake\\LaravelDebugbar\\' => 26,
             'Fruitcake\\Cors\\' => 15,
+            'Firebase\\JWT\\' => 13,
             'Filament\\Widgets\\' => 17,
             'Filament\\Tables\\' => 16,
             'Filament\\Support\\' => 17,
@@ -231,11 +240,11 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
             'Fidry\\CpuCoreCounter\\' => 21,
             'Faker\\' => 6,
         ),
-        'E' => 
+        'E' =>
         array (
             'Egulias\\EmailValidator\\' => 23,
         ),
-        'D' => 
+        'D' =>
         array (
             'Dotenv\\' => 7,
             'Doctrine\\Inflector\\' => 19,
@@ -252,13 +261,13 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
             'DanHarrin\\LivewireRateLimiting\\' => 31,
             'DanHarrin\\DateFormatConverter\\' => 30,
         ),
-        'C' => 
+        'C' =>
         array (
             'Cron\\' => 5,
             'Carbon\\Doctrine\\' => 16,
             'Carbon\\' => 7,
         ),
-        'B' => 
+        'B' =>
         array (
             'Brick\\Math\\' => 11,
             'BladeUI\\Icons\\' => 14,
@@ -267,7 +276,7 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
             'BezhanSalleh\\FilamentShield\\Database\\Factories\\' => 47,
             'BezhanSalleh\\FilamentShield\\' => 28,
         ),
-        'A' => 
+        'A' =>
         array (
             'App\\' => 4,
             'AnourValar\\EloquentSerialize\\' => 29,
@@ -275,597 +284,625 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
     );
 
     public static $prefixDirsPsr4 = array (
-        'voku\\' => 
+        'voku\\' =>
         array (
             0 => __DIR__ . '/..' . '/voku/portable-ascii/src/voku',
         ),
-        'phpDocumentor\\Reflection\\' => 
+        'phpseclib4\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib',
+        ),
+        'phpDocumentor\\Reflection\\' =>
         array (
             0 => __DIR__ . '/..' . '/phpdocumentor/reflection-docblock/src',
             1 => __DIR__ . '/..' . '/phpdocumentor/type-resolver/src',
             2 => __DIR__ . '/..' . '/phpdocumentor/reflection-common/src',
         ),
-        'chillerlan\\Settings\\' => 
+        'chillerlan\\Settings\\' =>
         array (
             0 => __DIR__ . '/..' . '/chillerlan/php-settings-container/src',
         ),
-        'chillerlan\\QRCode\\' => 
+        'chillerlan\\QRCode\\' =>
         array (
             0 => __DIR__ . '/..' . '/chillerlan/php-qrcode/src',
         ),
-        'Whoops\\' => 
+        'Whoops\\' =>
         array (
             0 => __DIR__ . '/..' . '/filp/whoops/src/Whoops',
         ),
-        'Webmozart\\Assert\\' => 
+        'Webmozart\\Assert\\' =>
         array (
             0 => __DIR__ . '/..' . '/webmozart/assert/src',
         ),
-        'Tiptap\\' => 
+        'Tiptap\\' =>
         array (
             0 => __DIR__ . '/..' . '/ueberdosis/tiptap-php/src',
         ),
-        'TijsVerkoyen\\CssToInlineStyles\\' => 
+        'TijsVerkoyen\\CssToInlineStyles\\' =>
         array (
             0 => __DIR__ . '/..' . '/tijsverkoyen/css-to-inline-styles/src',
         ),
-        'Tests\\' => 
+        'Tests\\' =>
         array (
             0 => __DIR__ . '/../..' . '/tests',
         ),
-        'Termwind\\' => 
+        'Termwind\\' =>
         array (
             0 => __DIR__ . '/..' . '/nunomaduro/termwind/src',
         ),
-        'Symfony\\Polyfill\\Uuid\\' => 
+        'Symfony\\Polyfill\\Uuid\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-uuid',
         ),
-        'Symfony\\Polyfill\\Php85\\' => 
+        'Symfony\\Polyfill\\Php85\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-php85',
         ),
-        'Symfony\\Polyfill\\Php84\\' => 
+        'Symfony\\Polyfill\\Php84\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-php84',
         ),
-        'Symfony\\Polyfill\\Php83\\' => 
+        'Symfony\\Polyfill\\Php83\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-php83',
         ),
-        'Symfony\\Polyfill\\Php80\\' => 
+        'Symfony\\Polyfill\\Php82\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/symfony/polyfill-php82',
+        ),
+        'Symfony\\Polyfill\\Php80\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-php80',
         ),
-        'Symfony\\Polyfill\\Mbstring\\' => 
+        'Symfony\\Polyfill\\Mbstring\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-mbstring',
         ),
-        'Symfony\\Polyfill\\Intl\\Normalizer\\' => 
+        'Symfony\\Polyfill\\Intl\\Normalizer\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-intl-normalizer',
         ),
-        'Symfony\\Polyfill\\Intl\\Idn\\' => 
+        'Symfony\\Polyfill\\Intl\\Idn\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-intl-idn',
         ),
-        'Symfony\\Polyfill\\Intl\\Grapheme\\' => 
+        'Symfony\\Polyfill\\Intl\\Grapheme\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-intl-grapheme',
         ),
-        'Symfony\\Polyfill\\Ctype\\' => 
+        'Symfony\\Polyfill\\Ctype\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-ctype',
         ),
-        'Symfony\\Contracts\\Translation\\' => 
+        'Symfony\\Contracts\\Translation\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/translation-contracts',
         ),
-        'Symfony\\Contracts\\Service\\' => 
+        'Symfony\\Contracts\\Service\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/service-contracts',
         ),
-        'Symfony\\Contracts\\EventDispatcher\\' => 
+        'Symfony\\Contracts\\EventDispatcher\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/event-dispatcher-contracts',
         ),
-        'Symfony\\Component\\Yaml\\' => 
+        'Symfony\\Component\\Yaml\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/yaml',
         ),
-        'Symfony\\Component\\VarDumper\\' => 
+        'Symfony\\Component\\VarDumper\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/var-dumper',
         ),
-        'Symfony\\Component\\Uid\\' => 
+        'Symfony\\Component\\Uid\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/uid',
         ),
-        'Symfony\\Component\\Translation\\' => 
+        'Symfony\\Component\\Translation\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/translation',
         ),
-        'Symfony\\Component\\String\\' => 
+        'Symfony\\Component\\String\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/string',
         ),
-        'Symfony\\Component\\Routing\\' => 
+        'Symfony\\Component\\Routing\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/routing',
         ),
-        'Symfony\\Component\\Process\\' => 
+        'Symfony\\Component\\Process\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/process',
         ),
-        'Symfony\\Component\\Mime\\' => 
+        'Symfony\\Component\\Mime\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/mime',
         ),
-        'Symfony\\Component\\Mailer\\' => 
+        'Symfony\\Component\\Mailer\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/mailer',
         ),
-        'Symfony\\Component\\HttpKernel\\' => 
+        'Symfony\\Component\\HttpKernel\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/http-kernel',
         ),
-        'Symfony\\Component\\HttpFoundation\\' => 
+        'Symfony\\Component\\HttpFoundation\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/http-foundation',
         ),
-        'Symfony\\Component\\HtmlSanitizer\\' => 
+        'Symfony\\Component\\HtmlSanitizer\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/html-sanitizer',
         ),
-        'Symfony\\Component\\Finder\\' => 
+        'Symfony\\Component\\Finder\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/finder',
         ),
-        'Symfony\\Component\\EventDispatcher\\' => 
+        'Symfony\\Component\\EventDispatcher\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/event-dispatcher',
         ),
-        'Symfony\\Component\\ErrorHandler\\' => 
+        'Symfony\\Component\\ErrorHandler\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/error-handler',
         ),
-        'Symfony\\Component\\CssSelector\\' => 
+        'Symfony\\Component\\CssSelector\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/css-selector',
         ),
-        'Symfony\\Component\\Console\\' => 
+        'Symfony\\Component\\Console\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/console',
         ),
-        'Symfony\\Component\\Clock\\' => 
+        'Symfony\\Component\\Clock\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/clock',
         ),
-        'Spatie\\ShikiPhp\\' => 
+        'Spatie\\ShikiPhp\\' =>
         array (
             0 => __DIR__ . '/..' . '/spatie/shiki-php/src',
         ),
-        'Spatie\\Permission\\' => 
+        'Spatie\\Permission\\' =>
         array (
             0 => __DIR__ . '/..' . '/spatie/laravel-permission/src',
         ),
-        'Spatie\\LaravelPackageTools\\' => 
+        'Spatie\\LaravelPackageTools\\' =>
         array (
             0 => __DIR__ . '/..' . '/spatie/laravel-package-tools/src',
         ),
-        'Spatie\\Invade\\' => 
+        'Spatie\\Invade\\' =>
         array (
             0 => __DIR__ . '/..' . '/spatie/invade/src',
         ),
-        'RyanChandler\\BladeCaptureDirective\\Database\\Factories\\' => 
+        'RyanChandler\\BladeCaptureDirective\\Database\\Factories\\' =>
         array (
             0 => __DIR__ . '/..' . '/ryangjchandler/blade-capture-directive/database/factories',
         ),
-        'RyanChandler\\BladeCaptureDirective\\' => 
+        'RyanChandler\\BladeCaptureDirective\\' =>
         array (
             0 => __DIR__ . '/..' . '/ryangjchandler/blade-capture-directive/src',
         ),
-        'Ramsey\\Uuid\\' => 
+        'Ramsey\\Uuid\\' =>
         array (
             0 => __DIR__ . '/..' . '/ramsey/uuid/src',
         ),
-        'Ramsey\\Collection\\' => 
+        'Ramsey\\Collection\\' =>
         array (
             0 => __DIR__ . '/..' . '/ramsey/collection/src',
         ),
-        'Psy\\' => 
+        'Psy\\' =>
         array (
             0 => __DIR__ . '/..' . '/psy/psysh/src',
         ),
-        'Psr\\SimpleCache\\' => 
+        'Psr\\SimpleCache\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/simple-cache/src',
         ),
-        'Psr\\Log\\' => 
+        'Psr\\Log\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/log/src',
         ),
-        'Psr\\Http\\Message\\' => 
+        'Psr\\Http\\Message\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/http-factory/src',
             1 => __DIR__ . '/..' . '/psr/http-message/src',
         ),
-        'Psr\\Http\\Client\\' => 
+        'Psr\\Http\\Client\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/http-client/src',
         ),
-        'Psr\\EventDispatcher\\' => 
+        'Psr\\EventDispatcher\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/event-dispatcher/src',
         ),
-        'Psr\\Container\\' => 
+        'Psr\\Container\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/container/src',
         ),
-        'Psr\\Clock\\' => 
+        'Psr\\Clock\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/clock/src',
         ),
-        'Psr\\Cache\\' => 
+        'Psr\\Cache\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/cache/src',
         ),
-        'PragmaRX\\Google2FA\\' => 
+        'PragmaRX\\Google2FA\\' =>
         array (
             0 => __DIR__ . '/..' . '/pragmarx/google2fa/src',
         ),
-        'PragmaRX\\Google2FAQRCode\\Tests\\' => 
+        'PragmaRX\\Google2FAQRCode\\Tests\\' =>
         array (
             0 => __DIR__ . '/..' . '/pragmarx/google2fa-qrcode/tests',
         ),
-        'PragmaRX\\Google2FAQRCode\\' => 
+        'PragmaRX\\Google2FAQRCode\\' =>
         array (
             0 => __DIR__ . '/..' . '/pragmarx/google2fa-qrcode/src',
         ),
-        'PhpParser\\' => 
+        'PhpParser\\' =>
         array (
             0 => __DIR__ . '/..' . '/nikic/php-parser/lib/PhpParser',
         ),
-        'PhpOption\\' => 
+        'PhpOption\\' =>
         array (
             0 => __DIR__ . '/..' . '/phpoption/phpoption/src/PhpOption',
         ),
-        'Pest\\Plugin\\' => 
+        'Pest\\Plugin\\' =>
         array (
             0 => __DIR__ . '/..' . '/pestphp/pest-plugin/src',
         ),
-        'Pest\\Mutate\\' => 
+        'Pest\\Mutate\\' =>
         array (
             0 => __DIR__ . '/..' . '/pestphp/pest-plugin-mutate/src',
         ),
-        'Pest\\Laravel\\' => 
+        'Pest\\Laravel\\' =>
         array (
             0 => __DIR__ . '/..' . '/pestphp/pest-plugin-laravel/src',
         ),
-        'Pest\\Arch\\' => 
+        'Pest\\Arch\\' =>
         array (
             0 => __DIR__ . '/..' . '/pestphp/pest-plugin-arch/src',
         ),
-        'Pest\\' => 
+        'Pest\\' =>
         array (
             0 => __DIR__ . '/..' . '/pestphp/pest/src',
         ),
-        'ParagonIE\\ConstantTime\\' => 
+        'ParagonIE\\ConstantTime\\' =>
         array (
             0 => __DIR__ . '/..' . '/paragonie/constant_time_encoding/src',
         ),
-        'ParaTest\\' => 
+        'ParaTest\\' =>
         array (
             0 => __DIR__ . '/..' . '/brianium/paratest/src',
         ),
-        'PHPUnit\\Architecture\\' => 
+        'PHPUnit\\Architecture\\' =>
         array (
             0 => __DIR__ . '/..' . '/ta-tikoma/phpunit-architecture-test/src',
         ),
-        'PHPStan\\PhpDocParser\\' => 
+        'PHPStan\\PhpDocParser\\' =>
         array (
             0 => __DIR__ . '/..' . '/phpstan/phpdoc-parser/src',
         ),
-        'OpenSpout\\' => 
+        'OpenSpout\\' =>
         array (
             0 => __DIR__ . '/..' . '/openspout/openspout/src',
         ),
-        'NunoMaduro\\Collision\\' => 
+        'NunoMaduro\\Collision\\' =>
         array (
             0 => __DIR__ . '/..' . '/nunomaduro/collision/src',
         ),
-        'Nette\\' => 
+        'Nette\\' =>
         array (
             0 => __DIR__ . '/..' . '/nette/schema/src',
             1 => __DIR__ . '/..' . '/nette/php-generator/src',
             2 => __DIR__ . '/..' . '/nette/utils/src',
         ),
-        'N3XT0R\\MigrationGenerator\\' => 
+        'N3XT0R\\MigrationGenerator\\' =>
         array (
             0 => __DIR__ . '/..' . '/n3xt0r/laravel-migration-generator/src',
         ),
-        'Monolog\\' => 
+        'Monolog\\' =>
         array (
             0 => __DIR__ . '/..' . '/monolog/monolog/src/Monolog',
         ),
-        'Mockery\\' => 
+        'Mockery\\' =>
         array (
             0 => __DIR__ . '/..' . '/mockery/mockery/library/Mockery',
         ),
-        'Masterminds\\' => 
+        'Masterminds\\' =>
         array (
             0 => __DIR__ . '/..' . '/masterminds/html5/src',
         ),
-        'MJS\\TopSort\\Tests\\' => 
+        'MJS\\TopSort\\Tests\\' =>
         array (
             0 => __DIR__ . '/..' . '/marcj/topsort/tests/Tests',
         ),
-        'MJS\\TopSort\\' => 
+        'MJS\\TopSort\\' =>
         array (
             0 => __DIR__ . '/..' . '/marcj/topsort/src',
         ),
-        'Livewire\\' => 
+        'Livewire\\' =>
         array (
             0 => __DIR__ . '/..' . '/livewire/livewire/src',
         ),
-        'League\\Uri\\' => 
+        'League\\Uri\\' =>
         array (
             0 => __DIR__ . '/..' . '/league/uri-components',
             1 => __DIR__ . '/..' . '/league/uri',
             2 => __DIR__ . '/..' . '/league/uri-interfaces',
         ),
-        'League\\MimeTypeDetection\\' => 
+        'League\\OAuth1\\Client\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/league/oauth1-client/src',
+        ),
+        'League\\MimeTypeDetection\\' =>
         array (
             0 => __DIR__ . '/..' . '/league/mime-type-detection/src',
         ),
-        'League\\Flysystem\\Local\\' => 
+        'League\\Flysystem\\Local\\' =>
         array (
             0 => __DIR__ . '/..' . '/league/flysystem-local',
         ),
-        'League\\Flysystem\\' => 
+        'League\\Flysystem\\' =>
         array (
             0 => __DIR__ . '/..' . '/league/flysystem/src',
         ),
-        'League\\Csv\\' => 
+        'League\\Csv\\' =>
         array (
             0 => __DIR__ . '/..' . '/league/csv/src',
         ),
-        'League\\Config\\' => 
+        'League\\Config\\' =>
         array (
             0 => __DIR__ . '/..' . '/league/config/src',
         ),
-        'League\\CommonMark\\' => 
+        'League\\CommonMark\\' =>
         array (
             0 => __DIR__ . '/..' . '/league/commonmark/src',
         ),
-        'Laravel\\Tinker\\' => 
+        'LdapRecord\\Laravel\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src',
+        ),
+        'LdapRecord\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/directorytree/ldaprecord/src',
+        ),
+        'Laravel\\Tinker\\' =>
         array (
             0 => __DIR__ . '/..' . '/laravel/tinker/src',
         ),
-        'Laravel\\SerializableClosure\\' => 
+        'Laravel\\Socialite\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/laravel/socialite/src',
+        ),
+        'Laravel\\SerializableClosure\\' =>
         array (
             0 => __DIR__ . '/..' . '/laravel/serializable-closure/src',
         ),
-        'Laravel\\Sail\\' => 
+        'Laravel\\Sail\\' =>
         array (
             0 => __DIR__ . '/..' . '/laravel/sail/src',
         ),
-        'Laravel\\Prompts\\' => 
+        'Laravel\\Prompts\\' =>
         array (
             0 => __DIR__ . '/..' . '/laravel/prompts/src',
         ),
-        'Laravel\\Pail\\' => 
+        'Laravel\\Pail\\' =>
         array (
             0 => __DIR__ . '/..' . '/laravel/pail/src',
         ),
-        'Kirschbaum\\PowerJoins\\' => 
+        'Kirschbaum\\PowerJoins\\' =>
         array (
             0 => __DIR__ . '/..' . '/kirschbaum-development/eloquent-power-joins/src',
         ),
-        'Jean85\\' => 
+        'Jean85\\' =>
         array (
             0 => __DIR__ . '/..' . '/jean85/pretty-package-versions/src',
         ),
-        'Illuminate\\Support\\' => 
+        'Illuminate\\Support\\' =>
         array (
             0 => __DIR__ . '/..' . '/laravel/framework/src/Illuminate/Macroable',
             1 => __DIR__ . '/..' . '/laravel/framework/src/Illuminate/Collections',
             2 => __DIR__ . '/..' . '/laravel/framework/src/Illuminate/Conditionable',
             3 => __DIR__ . '/..' . '/laravel/framework/src/Illuminate/Reflection',
         ),
-        'Illuminate\\' => 
+        'Illuminate\\' =>
         array (
             0 => __DIR__ . '/..' . '/laravel/framework/src/Illuminate',
         ),
-        'GuzzleHttp\\UriTemplate\\' => 
+        'GuzzleHttp\\UriTemplate\\' =>
         array (
             0 => __DIR__ . '/..' . '/guzzlehttp/uri-template/src',
         ),
-        'GuzzleHttp\\Psr7\\' => 
+        'GuzzleHttp\\Psr7\\' =>
         array (
             0 => __DIR__ . '/..' . '/guzzlehttp/psr7/src',
         ),
-        'GuzzleHttp\\Promise\\' => 
+        'GuzzleHttp\\Promise\\' =>
         array (
             0 => __DIR__ . '/..' . '/guzzlehttp/promises/src',
         ),
-        'GuzzleHttp\\' => 
+        'GuzzleHttp\\' =>
         array (
             0 => __DIR__ . '/..' . '/guzzlehttp/guzzle/src',
         ),
-        'GrahamCampbell\\ResultType\\' => 
+        'GrahamCampbell\\ResultType\\' =>
         array (
             0 => __DIR__ . '/..' . '/graham-campbell/result-type/src',
         ),
-        'Fruitcake\\LaravelDebugbar\\' => 
+        'Fruitcake\\LaravelDebugbar\\' =>
         array (
             0 => __DIR__ . '/..' . '/fruitcake/laravel-debugbar/src',
         ),
-        'Fruitcake\\Cors\\' => 
+        'Fruitcake\\Cors\\' =>
         array (
             0 => __DIR__ . '/..' . '/fruitcake/php-cors/src',
         ),
-        'Filament\\Widgets\\' => 
+        'Firebase\\JWT\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/firebase/php-jwt/src',
+        ),
+        'Filament\\Widgets\\' =>
         array (
             0 => __DIR__ . '/..' . '/filament/widgets/src',
         ),
-        'Filament\\Tables\\' => 
+        'Filament\\Tables\\' =>
         array (
             0 => __DIR__ . '/..' . '/filament/tables/src',
         ),
-        'Filament\\Support\\' => 
+        'Filament\\Support\\' =>
         array (
             0 => __DIR__ . '/..' . '/filament/support/src',
         ),
-        'Filament\\Schemas\\' => 
+        'Filament\\Schemas\\' =>
         array (
             0 => __DIR__ . '/..' . '/filament/schemas/src',
         ),
-        'Filament\\Notifications\\' => 
+        'Filament\\Notifications\\' =>
         array (
             0 => __DIR__ . '/..' . '/filament/notifications/src',
         ),
-        'Filament\\Infolists\\' => 
+        'Filament\\Infolists\\' =>
         array (
             0 => __DIR__ . '/..' . '/filament/infolists/src',
         ),
-        'Filament\\Forms\\' => 
+        'Filament\\Forms\\' =>
         array (
             0 => __DIR__ . '/..' . '/filament/forms/src',
         ),
-        'Filament\\Actions\\' => 
+        'Filament\\Actions\\' =>
         array (
             0 => __DIR__ . '/..' . '/filament/actions/src',
         ),
-        'Filament\\' => 
+        'Filament\\' =>
         array (
             0 => __DIR__ . '/..' . '/filament/filament/src',
         ),
-        'Fidry\\CpuCoreCounter\\' => 
+        'Fidry\\CpuCoreCounter\\' =>
         array (
             0 => __DIR__ . '/..' . '/fidry/cpu-core-counter/src',
         ),
-        'Faker\\' => 
+        'Faker\\' =>
         array (
             0 => __DIR__ . '/..' . '/fakerphp/faker/src/Faker',
         ),
-        'Egulias\\EmailValidator\\' => 
+        'Egulias\\EmailValidator\\' =>
         array (
             0 => __DIR__ . '/..' . '/egulias/email-validator/src',
         ),
-        'Dotenv\\' => 
+        'Dotenv\\' =>
         array (
             0 => __DIR__ . '/..' . '/vlucas/phpdotenv/src',
         ),
-        'Doctrine\\Inflector\\' => 
+        'Doctrine\\Inflector\\' =>
         array (
             0 => __DIR__ . '/..' . '/doctrine/inflector/src',
         ),
-        'Doctrine\\Deprecations\\' => 
+        'Doctrine\\Deprecations\\' =>
         array (
             0 => __DIR__ . '/..' . '/doctrine/deprecations/src',
         ),
-        'Doctrine\\DBAL\\' => 
+        'Doctrine\\DBAL\\' =>
         array (
             0 => __DIR__ . '/..' . '/doctrine/dbal/src',
         ),
-        'Doctrine\\Common\\Lexer\\' => 
+        'Doctrine\\Common\\Lexer\\' =>
         array (
             0 => __DIR__ . '/..' . '/doctrine/lexer/src',
         ),
-        'Doctrine\\Common\\' => 
+        'Doctrine\\Common\\' =>
         array (
             0 => __DIR__ . '/..' . '/doctrine/event-manager/src',
         ),
-        'Dflydev\\DotAccessData\\' => 
+        'Dflydev\\DotAccessData\\' =>
         array (
             0 => __DIR__ . '/..' . '/dflydev/dot-access-data/src',
         ),
-        'DeepCopy\\' => 
+        'DeepCopy\\' =>
         array (
             0 => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy',
         ),
-        'DebugBar\\Bridge\\Symfony\\' => 
+        'DebugBar\\Bridge\\Symfony\\' =>
         array (
             0 => __DIR__ . '/..' . '/php-debugbar/symfony-bridge/src',
         ),
-        'DebugBar\\' => 
+        'DebugBar\\' =>
         array (
             0 => __DIR__ . '/..' . '/php-debugbar/php-debugbar/src',
         ),
-        'Database\\Seeders\\' => 
+        'Database\\Seeders\\' =>
         array (
             0 => __DIR__ . '/../..' . '/database/seeders',
             1 => __DIR__ . '/..' . '/laravel/pint/database/seeders',
         ),
-        'Database\\Factories\\' => 
+        'Database\\Factories\\' =>
         array (
             0 => __DIR__ . '/../..' . '/database/factories',
             1 => __DIR__ . '/..' . '/laravel/pint/database/factories',
         ),
-        'DanHarrin\\LivewireRateLimiting\\' => 
+        'DanHarrin\\LivewireRateLimiting\\' =>
         array (
             0 => __DIR__ . '/..' . '/danharrin/livewire-rate-limiting/src',
         ),
-        'DanHarrin\\DateFormatConverter\\' => 
+        'DanHarrin\\DateFormatConverter\\' =>
         array (
             0 => __DIR__ . '/..' . '/danharrin/date-format-converter/src',
         ),
-        'Cron\\' => 
+        'Cron\\' =>
         array (
             0 => __DIR__ . '/..' . '/dragonmantank/cron-expression/src/Cron',
         ),
-        'Carbon\\Doctrine\\' => 
+        'Carbon\\Doctrine\\' =>
         array (
             0 => __DIR__ . '/..' . '/carbonphp/carbon-doctrine-types/src/Carbon/Doctrine',
         ),
-        'Carbon\\' => 
+        'Carbon\\' =>
         array (
             0 => __DIR__ . '/..' . '/nesbot/carbon/src/Carbon',
         ),
-        'Brick\\Math\\' => 
+        'Brick\\Math\\' =>
         array (
             0 => __DIR__ . '/..' . '/brick/math/src',
         ),
-        'BladeUI\\Icons\\' => 
+        'BladeUI\\Icons\\' =>
         array (
             0 => __DIR__ . '/..' . '/blade-ui-kit/blade-icons/src',
         ),
-        'BladeUI\\Heroicons\\' => 
+        'BladeUI\\Heroicons\\' =>
         array (
             0 => __DIR__ . '/..' . '/blade-ui-kit/blade-heroicons/src',
         ),
-        'BezhanSalleh\\PluginEssentials\\' => 
+        'BezhanSalleh\\PluginEssentials\\' =>
         array (
             0 => __DIR__ . '/..' . '/bezhansalleh/filament-plugin-essentials/src',
         ),
-        'BezhanSalleh\\FilamentShield\\Database\\Factories\\' => 
+        'BezhanSalleh\\FilamentShield\\Database\\Factories\\' =>
         array (
             0 => __DIR__ . '/..' . '/bezhansalleh/filament-shield/database/factories',
         ),
-        'BezhanSalleh\\FilamentShield\\' => 
+        'BezhanSalleh\\FilamentShield\\' =>
         array (
             0 => __DIR__ . '/..' . '/bezhansalleh/filament-shield/src',
         ),
-        'App\\' => 
+        'App\\' =>
         array (
             0 => __DIR__ . '/../..' . '/app',
             1 => __DIR__ . '/..' . '/laravel/pint/app',
         ),
-        'AnourValar\\EloquentSerialize\\' => 
+        'AnourValar\\EloquentSerialize\\' =>
         array (
             0 => __DIR__ . '/..' . '/anourvalar/eloquent-serialize/src',
         ),
     );
 
     public static $prefixesPsr0 = array (
-        'H' => 
+        'H' =>
         array (
-            'Highlight\\' => 
+            'Highlight\\' =>
             array (
                 0 => __DIR__ . '/..' . '/scrivo/highlight.php',
             ),
-            'HighlightUtilities\\' => 
+            'HighlightUtilities\\' =>
             array (
                 0 => __DIR__ . '/..' . '/scrivo/highlight.php',
             ),
@@ -873,6 +910,7 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
     );
 
     public static $classMap = array (
+        'AllowDynamicProperties' => __DIR__ . '/..' . '/symfony/polyfill-php82/Resources/stubs/AllowDynamicProperties.php',
         'AnourValar\\EloquentSerialize\\Facades\\EloquentSerializeFacade' => __DIR__ . '/..' . '/anourvalar/eloquent-serialize/src/Facades/EloquentSerializeFacade.php',
         'AnourValar\\EloquentSerialize\\Grammars\\EloquentBuilderGrammar' => __DIR__ . '/..' . '/anourvalar/eloquent-serialize/src/Grammars/EloquentBuilderGrammar.php',
         'AnourValar\\EloquentSerialize\\Grammars\\ModelGrammar' => __DIR__ . '/..' . '/anourvalar/eloquent-serialize/src/Grammars/ModelGrammar.php',
@@ -3281,6 +3319,14 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'Filament\\Widgets\\Widget' => __DIR__ . '/..' . '/filament/widgets/src/Widget.php',
         'Filament\\Widgets\\WidgetConfiguration' => __DIR__ . '/..' . '/filament/widgets/src/WidgetConfiguration.php',
         'Filament\\Widgets\\WidgetsServiceProvider' => __DIR__ . '/..' . '/filament/widgets/src/WidgetsServiceProvider.php',
+        'Firebase\\JWT\\BeforeValidException' => __DIR__ . '/..' . '/firebase/php-jwt/src/BeforeValidException.php',
+        'Firebase\\JWT\\CachedKeySet' => __DIR__ . '/..' . '/firebase/php-jwt/src/CachedKeySet.php',
+        'Firebase\\JWT\\ExpiredException' => __DIR__ . '/..' . '/firebase/php-jwt/src/ExpiredException.php',
+        'Firebase\\JWT\\JWK' => __DIR__ . '/..' . '/firebase/php-jwt/src/JWK.php',
+        'Firebase\\JWT\\JWT' => __DIR__ . '/..' . '/firebase/php-jwt/src/JWT.php',
+        'Firebase\\JWT\\JWTExceptionWithPayloadInterface' => __DIR__ . '/..' . '/firebase/php-jwt/src/JWTExceptionWithPayloadInterface.php',
+        'Firebase\\JWT\\Key' => __DIR__ . '/..' . '/firebase/php-jwt/src/Key.php',
+        'Firebase\\JWT\\SignatureInvalidException' => __DIR__ . '/..' . '/firebase/php-jwt/src/SignatureInvalidException.php',
         'Fruitcake\\Cors\\CorsService' => __DIR__ . '/..' . '/fruitcake/php-cors/src/CorsService.php',
         'Fruitcake\\Cors\\Exceptions\\InvalidOptionException' => __DIR__ . '/..' . '/fruitcake/php-cors/src/Exceptions/InvalidOptionException.php',
         'Fruitcake\\LaravelDebugbar\\CollectorProviders\\AbstractCollectorProvider' => __DIR__ . '/..' . '/fruitcake/laravel-debugbar/src/CollectorProviders/AbstractCollectorProvider.php',
@@ -5069,10 +5115,299 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'Laravel\\SerializableClosure\\Support\\ReflectionClosure' => __DIR__ . '/..' . '/laravel/serializable-closure/src/Support/ReflectionClosure.php',
         'Laravel\\SerializableClosure\\Support\\SelfReference' => __DIR__ . '/..' . '/laravel/serializable-closure/src/Support/SelfReference.php',
         'Laravel\\SerializableClosure\\UnsignedSerializableClosure' => __DIR__ . '/..' . '/laravel/serializable-closure/src/UnsignedSerializableClosure.php',
+        'Laravel\\Socialite\\AbstractUser' => __DIR__ . '/..' . '/laravel/socialite/src/AbstractUser.php',
+        'Laravel\\Socialite\\Contracts\\Factory' => __DIR__ . '/..' . '/laravel/socialite/src/Contracts/Factory.php',
+        'Laravel\\Socialite\\Contracts\\Provider' => __DIR__ . '/..' . '/laravel/socialite/src/Contracts/Provider.php',
+        'Laravel\\Socialite\\Contracts\\User' => __DIR__ . '/..' . '/laravel/socialite/src/Contracts/User.php',
+        'Laravel\\Socialite\\Exceptions\\DriverMissingConfigurationException' => __DIR__ . '/..' . '/laravel/socialite/src/Exceptions/DriverMissingConfigurationException.php',
+        'Laravel\\Socialite\\Facades\\Socialite' => __DIR__ . '/..' . '/laravel/socialite/src/Facades/Socialite.php',
+        'Laravel\\Socialite\\One\\AbstractProvider' => __DIR__ . '/..' . '/laravel/socialite/src/One/AbstractProvider.php',
+        'Laravel\\Socialite\\One\\MissingTemporaryCredentialsException' => __DIR__ . '/..' . '/laravel/socialite/src/One/MissingTemporaryCredentialsException.php',
+        'Laravel\\Socialite\\One\\MissingVerifierException' => __DIR__ . '/..' . '/laravel/socialite/src/One/MissingVerifierException.php',
+        'Laravel\\Socialite\\One\\TwitterProvider' => __DIR__ . '/..' . '/laravel/socialite/src/One/TwitterProvider.php',
+        'Laravel\\Socialite\\One\\User' => __DIR__ . '/..' . '/laravel/socialite/src/One/User.php',
+        'Laravel\\Socialite\\Socialite' => __DIR__ . '/..' . '/laravel/socialite/src/Socialite.php',
+        'Laravel\\Socialite\\SocialiteManager' => __DIR__ . '/..' . '/laravel/socialite/src/SocialiteManager.php',
+        'Laravel\\Socialite\\SocialiteServiceProvider' => __DIR__ . '/..' . '/laravel/socialite/src/SocialiteServiceProvider.php',
+        'Laravel\\Socialite\\Testing\\FakeProvider' => __DIR__ . '/..' . '/laravel/socialite/src/Testing/FakeProvider.php',
+        'Laravel\\Socialite\\Testing\\SocialiteFake' => __DIR__ . '/..' . '/laravel/socialite/src/Testing/SocialiteFake.php',
+        'Laravel\\Socialite\\Two\\AbstractProvider' => __DIR__ . '/..' . '/laravel/socialite/src/Two/AbstractProvider.php',
+        'Laravel\\Socialite\\Two\\BitbucketProvider' => __DIR__ . '/..' . '/laravel/socialite/src/Two/BitbucketProvider.php',
+        'Laravel\\Socialite\\Two\\FacebookProvider' => __DIR__ . '/..' . '/laravel/socialite/src/Two/FacebookProvider.php',
+        'Laravel\\Socialite\\Two\\GithubProvider' => __DIR__ . '/..' . '/laravel/socialite/src/Two/GithubProvider.php',
+        'Laravel\\Socialite\\Two\\GitlabProvider' => __DIR__ . '/..' . '/laravel/socialite/src/Two/GitlabProvider.php',
+        'Laravel\\Socialite\\Two\\GoogleProvider' => __DIR__ . '/..' . '/laravel/socialite/src/Two/GoogleProvider.php',
+        'Laravel\\Socialite\\Two\\InvalidStateException' => __DIR__ . '/..' . '/laravel/socialite/src/Two/InvalidStateException.php',
+        'Laravel\\Socialite\\Two\\LinkedInOpenIdProvider' => __DIR__ . '/..' . '/laravel/socialite/src/Two/LinkedInOpenIdProvider.php',
+        'Laravel\\Socialite\\Two\\LinkedInProvider' => __DIR__ . '/..' . '/laravel/socialite/src/Two/LinkedInProvider.php',
+        'Laravel\\Socialite\\Two\\ProviderInterface' => __DIR__ . '/..' . '/laravel/socialite/src/Two/ProviderInterface.php',
+        'Laravel\\Socialite\\Two\\SlackOpenIdProvider' => __DIR__ . '/..' . '/laravel/socialite/src/Two/SlackOpenIdProvider.php',
+        'Laravel\\Socialite\\Two\\SlackProvider' => __DIR__ . '/..' . '/laravel/socialite/src/Two/SlackProvider.php',
+        'Laravel\\Socialite\\Two\\Token' => __DIR__ . '/..' . '/laravel/socialite/src/Two/Token.php',
+        'Laravel\\Socialite\\Two\\TwitchProvider' => __DIR__ . '/..' . '/laravel/socialite/src/Two/TwitchProvider.php',
+        'Laravel\\Socialite\\Two\\TwitterProvider' => __DIR__ . '/..' . '/laravel/socialite/src/Two/TwitterProvider.php',
+        'Laravel\\Socialite\\Two\\User' => __DIR__ . '/..' . '/laravel/socialite/src/Two/User.php',
+        'Laravel\\Socialite\\Two\\XProvider' => __DIR__ . '/..' . '/laravel/socialite/src/Two/XProvider.php',
         'Laravel\\Tinker\\ClassAliasAutoloader' => __DIR__ . '/..' . '/laravel/tinker/src/ClassAliasAutoloader.php',
         'Laravel\\Tinker\\Console\\TinkerCommand' => __DIR__ . '/..' . '/laravel/tinker/src/Console/TinkerCommand.php',
         'Laravel\\Tinker\\TinkerCaster' => __DIR__ . '/..' . '/laravel/tinker/src/TinkerCaster.php',
         'Laravel\\Tinker\\TinkerServiceProvider' => __DIR__ . '/..' . '/laravel/tinker/src/TinkerServiceProvider.php',
+        'LdapRecord\\Auth\\BindException' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Auth/BindException.php',
+        'LdapRecord\\Auth\\Events\\Attempting' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Auth/Events/Attempting.php',
+        'LdapRecord\\Auth\\Events\\Binding' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Auth/Events/Binding.php',
+        'LdapRecord\\Auth\\Events\\Bound' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Auth/Events/Bound.php',
+        'LdapRecord\\Auth\\Events\\Event' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Auth/Events/Event.php',
+        'LdapRecord\\Auth\\Events\\Failed' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Auth/Events/Failed.php',
+        'LdapRecord\\Auth\\Events\\Passed' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Auth/Events/Passed.php',
+        'LdapRecord\\Auth\\Guard' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Auth/Guard.php',
+        'LdapRecord\\Auth\\PasswordRequiredException' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Auth/PasswordRequiredException.php',
+        'LdapRecord\\Auth\\UsernameRequiredException' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Auth/UsernameRequiredException.php',
+        'LdapRecord\\Configuration\\ConfigurationException' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Configuration/ConfigurationException.php',
+        'LdapRecord\\Configuration\\DomainConfiguration' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Configuration/DomainConfiguration.php',
+        'LdapRecord\\Configuration\\Validators\\ArrayValidator' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Configuration/Validators/ArrayValidator.php',
+        'LdapRecord\\Configuration\\Validators\\BooleanValidator' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Configuration/Validators/BooleanValidator.php',
+        'LdapRecord\\Configuration\\Validators\\IntegerValidator' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Configuration/Validators/IntegerValidator.php',
+        'LdapRecord\\Configuration\\Validators\\StringOrNullValidator' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Configuration/Validators/StringOrNullValidator.php',
+        'LdapRecord\\Configuration\\Validators\\Validator' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Configuration/Validators/Validator.php',
+        'LdapRecord\\Connection' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Connection.php',
+        'LdapRecord\\ConnectionException' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/ConnectionException.php',
+        'LdapRecord\\ConnectionManager' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/ConnectionManager.php',
+        'LdapRecord\\Container' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Container.php',
+        'LdapRecord\\ContainerException' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/ContainerException.php',
+        'LdapRecord\\DetailedError' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/DetailedError.php',
+        'LdapRecord\\DetectsErrors' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/DetectsErrors.php',
+        'LdapRecord\\EscapesValues' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/EscapesValues.php',
+        'LdapRecord\\Events\\Connected' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Events/Connected.php',
+        'LdapRecord\\Events\\Connecting' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Events/Connecting.php',
+        'LdapRecord\\Events\\ConnectionEvent' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Events/ConnectionEvent.php',
+        'LdapRecord\\Events\\ConnectionFailed' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Events/ConnectionFailed.php',
+        'LdapRecord\\Events\\Dispatcher' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Events/Dispatcher.php',
+        'LdapRecord\\Events\\DispatcherInterface' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Events/DispatcherInterface.php',
+        'LdapRecord\\Events\\Logger' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Events/Logger.php',
+        'LdapRecord\\Events\\NullDispatcher' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Events/NullDispatcher.php',
+        'LdapRecord\\Exceptions\\AlreadyExistsException' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Exceptions/AlreadyExistsException.php',
+        'LdapRecord\\Exceptions\\ConstraintViolationException' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Exceptions/ConstraintViolationException.php',
+        'LdapRecord\\Exceptions\\InsufficientAccessException' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Exceptions/InsufficientAccessException.php',
+        'LdapRecord\\HandlesConnection' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/HandlesConnection.php',
+        'LdapRecord\\Laravel\\Auth\\AuthenticatesWithLdap' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Auth/AuthenticatesWithLdap.php',
+        'LdapRecord\\Laravel\\Auth\\BindFailureListener' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Auth/BindFailureListener.php',
+        'LdapRecord\\Laravel\\Auth\\CreatesUserProvider' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Auth/CreatesUserProvider.php',
+        'LdapRecord\\Laravel\\Auth\\DatabaseUserProvider' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Auth/DatabaseUserProvider.php',
+        'LdapRecord\\Laravel\\Auth\\HasLdapUser' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Auth/HasLdapUser.php',
+        'LdapRecord\\Laravel\\Auth\\LdapAuthenticatable' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Auth/LdapAuthenticatable.php',
+        'LdapRecord\\Laravel\\Auth\\ListensForLdapBindFailure' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Auth/ListensForLdapBindFailure.php',
+        'LdapRecord\\Laravel\\Auth\\NoDatabaseUserProvider' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Auth/NoDatabaseUserProvider.php',
+        'LdapRecord\\Laravel\\Auth\\Rule' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Auth/Rule.php',
+        'LdapRecord\\Laravel\\Auth\\Rules\\OnlyImported' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Auth/Rules/OnlyImported.php',
+        'LdapRecord\\Laravel\\Auth\\UserProvider' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Auth/UserProvider.php',
+        'LdapRecord\\Laravel\\Auth\\Validator' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Auth/Validator.php',
+        'LdapRecord\\Laravel\\Commands\\BrowseLdapServer' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Commands/BrowseLdapServer.php',
+        'LdapRecord\\Laravel\\Commands\\GetRootDse' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Commands/GetRootDse.php',
+        'LdapRecord\\Laravel\\Commands\\ImportLdapUsers' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Commands/ImportLdapUsers.php',
+        'LdapRecord\\Laravel\\Commands\\MakeLdapModel' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Commands/MakeLdapModel.php',
+        'LdapRecord\\Laravel\\Commands\\MakeLdapRule' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Commands/MakeLdapRule.php',
+        'LdapRecord\\Laravel\\Commands\\MakeLdapScope' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Commands/MakeLdapScope.php',
+        'LdapRecord\\Laravel\\Commands\\TestLdapConnection' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Commands/TestLdapConnection.php',
+        'LdapRecord\\Laravel\\DetectsSoftDeletes' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/DetectsSoftDeletes.php',
+        'LdapRecord\\Laravel\\Events\\Auth\\BindFailed' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Auth/BindFailed.php',
+        'LdapRecord\\Laravel\\Events\\Auth\\Binding' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Auth/Binding.php',
+        'LdapRecord\\Laravel\\Events\\Auth\\Bound' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Auth/Bound.php',
+        'LdapRecord\\Laravel\\Events\\Auth\\Completed' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Auth/Completed.php',
+        'LdapRecord\\Laravel\\Events\\Auth\\CompletedWithWindows' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Auth/CompletedWithWindows.php',
+        'LdapRecord\\Laravel\\Events\\Auth\\DiscoveredWithCredentials' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Auth/DiscoveredWithCredentials.php',
+        'LdapRecord\\Laravel\\Events\\Auth\\EloquentUserTrashed' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Auth/EloquentUserTrashed.php',
+        'LdapRecord\\Laravel\\Events\\Auth\\Event' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Auth/Event.php',
+        'LdapRecord\\Laravel\\Events\\Auth\\Rejected' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Auth/Rejected.php',
+        'LdapRecord\\Laravel\\Events\\Auth\\RuleEvent' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Auth/RuleEvent.php',
+        'LdapRecord\\Laravel\\Events\\Auth\\RuleFailed' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Auth/RuleFailed.php',
+        'LdapRecord\\Laravel\\Events\\Auth\\RulePassed' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Auth/RulePassed.php',
+        'LdapRecord\\Laravel\\Events\\Import\\Completed' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Import/Completed.php',
+        'LdapRecord\\Laravel\\Events\\Import\\Deleted' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Import/Deleted.php',
+        'LdapRecord\\Laravel\\Events\\Import\\DeletedMissing' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Import/DeletedMissing.php',
+        'LdapRecord\\Laravel\\Events\\Import\\Event' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Import/Event.php',
+        'LdapRecord\\Laravel\\Events\\Import\\ImportFailed' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Import/ImportFailed.php',
+        'LdapRecord\\Laravel\\Events\\Import\\Imported' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Import/Imported.php',
+        'LdapRecord\\Laravel\\Events\\Import\\Importing' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Import/Importing.php',
+        'LdapRecord\\Laravel\\Events\\Import\\Restored' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Import/Restored.php',
+        'LdapRecord\\Laravel\\Events\\Import\\Saved' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Import/Saved.php',
+        'LdapRecord\\Laravel\\Events\\Import\\Started' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Import/Started.php',
+        'LdapRecord\\Laravel\\Events\\Import\\Synchronized' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Import/Synchronized.php',
+        'LdapRecord\\Laravel\\Events\\Import\\Synchronizing' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Import/Synchronizing.php',
+        'LdapRecord\\Laravel\\Events\\Loggable' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/Loggable.php',
+        'LdapRecord\\Laravel\\Events\\LoggableEvent' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Events/LoggableEvent.php',
+        'LdapRecord\\Laravel\\Import\\EloquentHydrator' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Import/EloquentHydrator.php',
+        'LdapRecord\\Laravel\\Import\\EloquentUserHydrator' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Import/EloquentUserHydrator.php',
+        'LdapRecord\\Laravel\\Import\\Hydrators\\AttributeHydrator' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Import/Hydrators/AttributeHydrator.php',
+        'LdapRecord\\Laravel\\Import\\Hydrators\\DomainHydrator' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Import/Hydrators/DomainHydrator.php',
+        'LdapRecord\\Laravel\\Import\\Hydrators\\GuidHydrator' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Import/Hydrators/GuidHydrator.php',
+        'LdapRecord\\Laravel\\Import\\Hydrators\\Hydrator' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Import/Hydrators/Hydrator.php',
+        'LdapRecord\\Laravel\\Import\\Hydrators\\PasswordHydrator' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Import/Hydrators/PasswordHydrator.php',
+        'LdapRecord\\Laravel\\Import\\ImportException' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Import/ImportException.php',
+        'LdapRecord\\Laravel\\Import\\Importer' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Import/Importer.php',
+        'LdapRecord\\Laravel\\Import\\LdapUserImporter' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Import/LdapUserImporter.php',
+        'LdapRecord\\Laravel\\Import\\Synchronizer' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Import/Synchronizer.php',
+        'LdapRecord\\Laravel\\Import\\UserSynchronizer' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Import/UserSynchronizer.php',
+        'LdapRecord\\Laravel\\ImportableFromLdap' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/ImportableFromLdap.php',
+        'LdapRecord\\Laravel\\LdapAuthServiceProvider' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/LdapAuthServiceProvider.php',
+        'LdapRecord\\Laravel\\LdapImportable' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/LdapImportable.php',
+        'LdapRecord\\Laravel\\LdapRecord' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/LdapRecord.php',
+        'LdapRecord\\Laravel\\LdapServiceProvider' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/LdapServiceProvider.php',
+        'LdapRecord\\Laravel\\LdapUserAuthenticator' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/LdapUserAuthenticator.php',
+        'LdapRecord\\Laravel\\LdapUserRepository' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/LdapUserRepository.php',
+        'LdapRecord\\Laravel\\Middleware\\UserDomainValidator' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Middleware/UserDomainValidator.php',
+        'LdapRecord\\Laravel\\Middleware\\WindowsAuthenticate' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Middleware/WindowsAuthenticate.php',
+        'LdapRecord\\Laravel\\Testing\\DirectoryEmulator' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Testing/DirectoryEmulator.php',
+        'LdapRecord\\Laravel\\Testing\\EmulatedBuilder' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Testing/EmulatedBuilder.php',
+        'LdapRecord\\Laravel\\Testing\\EmulatedConnectionFake' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Testing/EmulatedConnectionFake.php',
+        'LdapRecord\\Laravel\\Testing\\Emulated\\ActiveDirectoryBuilder' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Testing/Emulated/ActiveDirectoryBuilder.php',
+        'LdapRecord\\Laravel\\Testing\\Emulated\\EmulatesModelQueries' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Testing/Emulated/EmulatesModelQueries.php',
+        'LdapRecord\\Laravel\\Testing\\Emulated\\ModelBuilder' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Testing/Emulated/ModelBuilder.php',
+        'LdapRecord\\Laravel\\Testing\\Emulated\\OpenLdapBuilder' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Testing/Emulated/OpenLdapBuilder.php',
+        'LdapRecord\\Laravel\\Testing\\EmulatesQueries' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Testing/EmulatesQueries.php',
+        'LdapRecord\\Laravel\\Testing\\GuidValue' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Testing/GuidValue.php',
+        'LdapRecord\\Laravel\\Testing\\LdapDatabaseManager' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Testing/LdapDatabaseManager.php',
+        'LdapRecord\\Laravel\\Testing\\LdapObject' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Testing/LdapObject.php',
+        'LdapRecord\\Laravel\\Testing\\LdapObjectAttribute' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Testing/LdapObjectAttribute.php',
+        'LdapRecord\\Laravel\\Testing\\LdapObjectAttributeValue' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Testing/LdapObjectAttributeValue.php',
+        'LdapRecord\\Laravel\\Testing\\ResolvesEmulatedConnection' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Testing/ResolvesEmulatedConnection.php',
+        'LdapRecord\\Laravel\\Testing\\UnescapedValue' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Testing/UnescapedValue.php',
+        'LdapRecord\\Laravel\\Testing\\VirtualAttributeObserver' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Testing/VirtualAttributeObserver.php',
+        'LdapRecord\\Laravel\\Testing\\VirtualAttributeValueObserver' => __DIR__ . '/..' . '/directorytree/ldaprecord-laravel/src/Testing/VirtualAttributeValueObserver.php',
+        'LdapRecord\\Ldap' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Ldap.php',
+        'LdapRecord\\LdapInterface' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/LdapInterface.php',
+        'LdapRecord\\LdapRecordException' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/LdapRecordException.php',
+        'LdapRecord\\LdapResultResponse' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/LdapResultResponse.php',
+        'LdapRecord\\Models\\ActiveDirectory\\Computer' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/ActiveDirectory/Computer.php',
+        'LdapRecord\\Models\\ActiveDirectory\\Concerns\\HasAccountControl' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/ActiveDirectory/Concerns/HasAccountControl.php',
+        'LdapRecord\\Models\\ActiveDirectory\\Concerns\\HasPrimaryGroup' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/ActiveDirectory/Concerns/HasPrimaryGroup.php',
+        'LdapRecord\\Models\\ActiveDirectory\\Contact' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/ActiveDirectory/Contact.php',
+        'LdapRecord\\Models\\ActiveDirectory\\Container' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/ActiveDirectory/Container.php',
+        'LdapRecord\\Models\\ActiveDirectory\\Entry' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/ActiveDirectory/Entry.php',
+        'LdapRecord\\Models\\ActiveDirectory\\ExchangeDatabase' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/ActiveDirectory/ExchangeDatabase.php',
+        'LdapRecord\\Models\\ActiveDirectory\\ExchangeServer' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/ActiveDirectory/ExchangeServer.php',
+        'LdapRecord\\Models\\ActiveDirectory\\ForeignSecurityPrincipal' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/ActiveDirectory/ForeignSecurityPrincipal.php',
+        'LdapRecord\\Models\\ActiveDirectory\\Group' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/ActiveDirectory/Group.php',
+        'LdapRecord\\Models\\ActiveDirectory\\OrganizationalUnit' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/ActiveDirectory/OrganizationalUnit.php',
+        'LdapRecord\\Models\\ActiveDirectory\\Printer' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/ActiveDirectory/Printer.php',
+        'LdapRecord\\Models\\ActiveDirectory\\Relations\\HasOnePrimaryGroup' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/ActiveDirectory/Relations/HasOnePrimaryGroup.php',
+        'LdapRecord\\Models\\ActiveDirectory\\Scopes\\HasServerRoleAttribute' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/ActiveDirectory/Scopes/HasServerRoleAttribute.php',
+        'LdapRecord\\Models\\ActiveDirectory\\Scopes\\InConfigurationContext' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/ActiveDirectory/Scopes/InConfigurationContext.php',
+        'LdapRecord\\Models\\ActiveDirectory\\Scopes\\RejectComputerObjectClass' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/ActiveDirectory/Scopes/RejectComputerObjectClass.php',
+        'LdapRecord\\Models\\ActiveDirectory\\User' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/ActiveDirectory/User.php',
+        'LdapRecord\\Models\\Attributes\\AccountControl' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Attributes/AccountControl.php',
+        'LdapRecord\\Models\\Attributes\\DistinguishedName' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Attributes/DistinguishedName.php',
+        'LdapRecord\\Models\\Attributes\\DistinguishedNameBuilder' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Attributes/DistinguishedNameBuilder.php',
+        'LdapRecord\\Models\\Attributes\\Guid' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Attributes/Guid.php',
+        'LdapRecord\\Models\\Attributes\\MbString' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Attributes/MbString.php',
+        'LdapRecord\\Models\\Attributes\\Password' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Attributes/Password.php',
+        'LdapRecord\\Models\\Attributes\\Sid' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Attributes/Sid.php',
+        'LdapRecord\\Models\\Attributes\\TSProperty' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Attributes/TSProperty.php',
+        'LdapRecord\\Models\\Attributes\\TSPropertyArray' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Attributes/TSPropertyArray.php',
+        'LdapRecord\\Models\\Attributes\\Timestamp' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Attributes/Timestamp.php',
+        'LdapRecord\\Models\\BatchModification' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/BatchModification.php',
+        'LdapRecord\\Models\\Collection' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Collection.php',
+        'LdapRecord\\Models\\Concerns\\CanAuthenticate' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Concerns/CanAuthenticate.php',
+        'LdapRecord\\Models\\Concerns\\HasAttributes' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Concerns/HasAttributes.php',
+        'LdapRecord\\Models\\Concerns\\HasEvents' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Concerns/HasEvents.php',
+        'LdapRecord\\Models\\Concerns\\HasGlobalScopes' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Concerns/HasGlobalScopes.php',
+        'LdapRecord\\Models\\Concerns\\HasPassword' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Concerns/HasPassword.php',
+        'LdapRecord\\Models\\Concerns\\HasRelationships' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Concerns/HasRelationships.php',
+        'LdapRecord\\Models\\Concerns\\HasScopes' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Concerns/HasScopes.php',
+        'LdapRecord\\Models\\Concerns\\HidesAttributes' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Concerns/HidesAttributes.php',
+        'LdapRecord\\Models\\Concerns\\SerializesAndRestoresPropertyValues' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Concerns/SerializesAndRestoresPropertyValues.php',
+        'LdapRecord\\Models\\Concerns\\SerializesProperties' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Concerns/SerializesProperties.php',
+        'LdapRecord\\Models\\DetectsResetIntegers' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/DetectsResetIntegers.php',
+        'LdapRecord\\Models\\DirectoryServer\\Entry' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/DirectoryServer/Entry.php',
+        'LdapRecord\\Models\\DirectoryServer\\Group' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/DirectoryServer/Group.php',
+        'LdapRecord\\Models\\DirectoryServer\\User' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/DirectoryServer/User.php',
+        'LdapRecord\\Models\\Entry' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Entry.php',
+        'LdapRecord\\Models\\Events\\Created' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Events/Created.php',
+        'LdapRecord\\Models\\Events\\Creating' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Events/Creating.php',
+        'LdapRecord\\Models\\Events\\Deleted' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Events/Deleted.php',
+        'LdapRecord\\Models\\Events\\Deleting' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Events/Deleting.php',
+        'LdapRecord\\Models\\Events\\Event' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Events/Event.php',
+        'LdapRecord\\Models\\Events\\Renamed' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Events/Renamed.php',
+        'LdapRecord\\Models\\Events\\Renaming' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Events/Renaming.php',
+        'LdapRecord\\Models\\Events\\Saved' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Events/Saved.php',
+        'LdapRecord\\Models\\Events\\Saving' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Events/Saving.php',
+        'LdapRecord\\Models\\Events\\Updated' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Events/Updated.php',
+        'LdapRecord\\Models\\Events\\Updating' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Events/Updating.php',
+        'LdapRecord\\Models\\FreeIPA\\Entry' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/FreeIPA/Entry.php',
+        'LdapRecord\\Models\\FreeIPA\\Group' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/FreeIPA/Group.php',
+        'LdapRecord\\Models\\FreeIPA\\User' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/FreeIPA/User.php',
+        'LdapRecord\\Models\\Model' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Model.php',
+        'LdapRecord\\Models\\ModelDoesNotExistException' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/ModelDoesNotExistException.php',
+        'LdapRecord\\Models\\ModelNotFoundException' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/ModelNotFoundException.php',
+        'LdapRecord\\Models\\OpenLDAP\\Entry' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/OpenLDAP/Entry.php',
+        'LdapRecord\\Models\\OpenLDAP\\Group' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/OpenLDAP/Group.php',
+        'LdapRecord\\Models\\OpenLDAP\\OrganizationalUnit' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/OpenLDAP/OrganizationalUnit.php',
+        'LdapRecord\\Models\\OpenLDAP\\User' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/OpenLDAP/User.php',
+        'LdapRecord\\Models\\Relations\\HasMany' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Relations/HasMany.php',
+        'LdapRecord\\Models\\Relations\\HasManyIn' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Relations/HasManyIn.php',
+        'LdapRecord\\Models\\Relations\\HasOne' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Relations/HasOne.php',
+        'LdapRecord\\Models\\Relations\\OneToMany' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Relations/OneToMany.php',
+        'LdapRecord\\Models\\Relations\\Relation' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Relations/Relation.php',
+        'LdapRecord\\Models\\Scope' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Scope.php',
+        'LdapRecord\\Models\\Scopes\\HasObjectClasses' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Scopes/HasObjectClasses.php',
+        'LdapRecord\\Models\\Types\\ActiveDirectory' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Types/ActiveDirectory.php',
+        'LdapRecord\\Models\\Types\\DirectoryServer' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Types/DirectoryServer.php',
+        'LdapRecord\\Models\\Types\\FreeIPA' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Types/FreeIPA.php',
+        'LdapRecord\\Models\\Types\\OpenLDAP' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Types/OpenLDAP.php',
+        'LdapRecord\\Models\\Types\\TypeInterface' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Models/Types/TypeInterface.php',
+        'LdapRecord\\Query\\ArrayCacheStore' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/ArrayCacheStore.php',
+        'LdapRecord\\Query\\Builder' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Builder.php',
+        'LdapRecord\\Query\\BuildsQueries' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/BuildsQueries.php',
+        'LdapRecord\\Query\\Cache' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Cache.php',
+        'LdapRecord\\Query\\Collection' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Collection.php',
+        'LdapRecord\\Query\\EscapedValue' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/EscapedValue.php',
+        'LdapRecord\\Query\\Events\\Chunk' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Events/Chunk.php',
+        'LdapRecord\\Query\\Events\\Listing' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Events/Listing.php',
+        'LdapRecord\\Query\\Events\\Paginate' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Events/Paginate.php',
+        'LdapRecord\\Query\\Events\\QueryExecuted' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Events/QueryExecuted.php',
+        'LdapRecord\\Query\\Events\\Read' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Events/Read.php',
+        'LdapRecord\\Query\\Events\\Search' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Events/Search.php',
+        'LdapRecord\\Query\\ExtractsNestedFilters' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/ExtractsNestedFilters.php',
+        'LdapRecord\\Query\\Filter\\AndGroup' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Filter/AndGroup.php',
+        'LdapRecord\\Query\\Filter\\ApproximatelyEquals' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Filter/ApproximatelyEquals.php',
+        'LdapRecord\\Query\\Filter\\BooleanGroup' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Filter/BooleanGroup.php',
+        'LdapRecord\\Query\\Filter\\ConditionFilter' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Filter/ConditionFilter.php',
+        'LdapRecord\\Query\\Filter\\Contains' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Filter/Contains.php',
+        'LdapRecord\\Query\\Filter\\EndsWith' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Filter/EndsWith.php',
+        'LdapRecord\\Query\\Filter\\Equals' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Filter/Equals.php',
+        'LdapRecord\\Query\\Filter\\Factory' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Filter/Factory.php',
+        'LdapRecord\\Query\\Filter\\Filter' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Filter/Filter.php',
+        'LdapRecord\\Query\\Filter\\GreaterThanOrEquals' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Filter/GreaterThanOrEquals.php',
+        'LdapRecord\\Query\\Filter\\GroupFilter' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Filter/GroupFilter.php',
+        'LdapRecord\\Query\\Filter\\Has' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Filter/Has.php',
+        'LdapRecord\\Query\\Filter\\LessThanOrEquals' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Filter/LessThanOrEquals.php',
+        'LdapRecord\\Query\\Filter\\Not' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Filter/Not.php',
+        'LdapRecord\\Query\\Filter\\OrGroup' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Filter/OrGroup.php',
+        'LdapRecord\\Query\\Filter\\Parser' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Filter/Parser.php',
+        'LdapRecord\\Query\\Filter\\ParserException' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Filter/ParserException.php',
+        'LdapRecord\\Query\\Filter\\Raw' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Filter/Raw.php',
+        'LdapRecord\\Query\\Filter\\StartsWith' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Filter/StartsWith.php',
+        'LdapRecord\\Query\\InteractsWithTime' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/InteractsWithTime.php',
+        'LdapRecord\\Query\\Model\\ActiveDirectoryBuilder' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Model/ActiveDirectoryBuilder.php',
+        'LdapRecord\\Query\\Model\\Builder' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Model/Builder.php',
+        'LdapRecord\\Query\\Model\\FreeIpaBuilder' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Model/FreeIpaBuilder.php',
+        'LdapRecord\\Query\\Model\\OpenLdapBuilder' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Model/OpenLdapBuilder.php',
+        'LdapRecord\\Query\\MultipleObjectsFoundException' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/MultipleObjectsFoundException.php',
+        'LdapRecord\\Query\\ObjectNotFoundException' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/ObjectNotFoundException.php',
+        'LdapRecord\\Query\\ObjectsNotFoundException' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/ObjectsNotFoundException.php',
+        'LdapRecord\\Query\\Pagination\\AbstractPaginator' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Pagination/AbstractPaginator.php',
+        'LdapRecord\\Query\\Pagination\\LazyPaginator' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Pagination/LazyPaginator.php',
+        'LdapRecord\\Query\\Pagination\\Paginator' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Pagination/Paginator.php',
+        'LdapRecord\\Query\\Slice' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Query/Slice.php',
+        'LdapRecord\\Support\\Arr' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Support/Arr.php',
+        'LdapRecord\\Support\\ForwardsCalls' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Support/ForwardsCalls.php',
+        'LdapRecord\\Support\\Str' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Support/Str.php',
+        'LdapRecord\\Support\\Value' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Support/Value.php',
+        'LdapRecord\\Testing\\AuthGuardFake' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Testing/AuthGuardFake.php',
+        'LdapRecord\\Testing\\ConnectionFake' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Testing/ConnectionFake.php',
+        'LdapRecord\\Testing\\DirectoryFake' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Testing/DirectoryFake.php',
+        'LdapRecord\\Testing\\LdapExpectation' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Testing/LdapExpectation.php',
+        'LdapRecord\\Testing\\LdapExpectationException' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Testing/LdapExpectationException.php',
+        'LdapRecord\\Testing\\LdapFake' => __DIR__ . '/..' . '/directorytree/ldaprecord/src/Testing/LdapFake.php',
         'League\\CommonMark\\CommonMarkConverter' => __DIR__ . '/..' . '/league/commonmark/src/CommonMarkConverter.php',
         'League\\CommonMark\\ConverterInterface' => __DIR__ . '/..' . '/league/commonmark/src/ConverterInterface.php',
         'League\\CommonMark\\Delimiter\\Bracket' => __DIR__ . '/..' . '/league/commonmark/src/Delimiter/Bracket.php',
@@ -5519,6 +5854,30 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'League\\MimeTypeDetection\\GeneratedExtensionToMimeTypeMap' => __DIR__ . '/..' . '/league/mime-type-detection/src/GeneratedExtensionToMimeTypeMap.php',
         'League\\MimeTypeDetection\\MimeTypeDetector' => __DIR__ . '/..' . '/league/mime-type-detection/src/MimeTypeDetector.php',
         'League\\MimeTypeDetection\\OverridingExtensionToMimeTypeMap' => __DIR__ . '/..' . '/league/mime-type-detection/src/OverridingExtensionToMimeTypeMap.php',
+        'League\\OAuth1\\Client\\Credentials\\ClientCredentials' => __DIR__ . '/..' . '/league/oauth1-client/src/Credentials/ClientCredentials.php',
+        'League\\OAuth1\\Client\\Credentials\\ClientCredentialsInterface' => __DIR__ . '/..' . '/league/oauth1-client/src/Credentials/ClientCredentialsInterface.php',
+        'League\\OAuth1\\Client\\Credentials\\Credentials' => __DIR__ . '/..' . '/league/oauth1-client/src/Credentials/Credentials.php',
+        'League\\OAuth1\\Client\\Credentials\\CredentialsException' => __DIR__ . '/..' . '/league/oauth1-client/src/Credentials/CredentialsException.php',
+        'League\\OAuth1\\Client\\Credentials\\CredentialsInterface' => __DIR__ . '/..' . '/league/oauth1-client/src/Credentials/CredentialsInterface.php',
+        'League\\OAuth1\\Client\\Credentials\\RsaClientCredentials' => __DIR__ . '/..' . '/league/oauth1-client/src/Credentials/RsaClientCredentials.php',
+        'League\\OAuth1\\Client\\Credentials\\TemporaryCredentials' => __DIR__ . '/..' . '/league/oauth1-client/src/Credentials/TemporaryCredentials.php',
+        'League\\OAuth1\\Client\\Credentials\\TokenCredentials' => __DIR__ . '/..' . '/league/oauth1-client/src/Credentials/TokenCredentials.php',
+        'League\\OAuth1\\Client\\Server\\Bitbucket' => __DIR__ . '/..' . '/league/oauth1-client/src/Server/Bitbucket.php',
+        'League\\OAuth1\\Client\\Server\\Magento' => __DIR__ . '/..' . '/league/oauth1-client/src/Server/Magento.php',
+        'League\\OAuth1\\Client\\Server\\Server' => __DIR__ . '/..' . '/league/oauth1-client/src/Server/Server.php',
+        'League\\OAuth1\\Client\\Server\\Trello' => __DIR__ . '/..' . '/league/oauth1-client/src/Server/Trello.php',
+        'League\\OAuth1\\Client\\Server\\Tumblr' => __DIR__ . '/..' . '/league/oauth1-client/src/Server/Tumblr.php',
+        'League\\OAuth1\\Client\\Server\\Twitter' => __DIR__ . '/..' . '/league/oauth1-client/src/Server/Twitter.php',
+        'League\\OAuth1\\Client\\Server\\User' => __DIR__ . '/..' . '/league/oauth1-client/src/Server/User.php',
+        'League\\OAuth1\\Client\\Server\\Uservoice' => __DIR__ . '/..' . '/league/oauth1-client/src/Server/Uservoice.php',
+        'League\\OAuth1\\Client\\Server\\X' => __DIR__ . '/..' . '/league/oauth1-client/src/Server/X.php',
+        'League\\OAuth1\\Client\\Server\\Xing' => __DIR__ . '/..' . '/league/oauth1-client/src/Server/Xing.php',
+        'League\\OAuth1\\Client\\Signature\\EncodesUrl' => __DIR__ . '/..' . '/league/oauth1-client/src/Signature/EncodesUrl.php',
+        'League\\OAuth1\\Client\\Signature\\HmacSha1Signature' => __DIR__ . '/..' . '/league/oauth1-client/src/Signature/HmacSha1Signature.php',
+        'League\\OAuth1\\Client\\Signature\\PlainTextSignature' => __DIR__ . '/..' . '/league/oauth1-client/src/Signature/PlainTextSignature.php',
+        'League\\OAuth1\\Client\\Signature\\RsaSha1Signature' => __DIR__ . '/..' . '/league/oauth1-client/src/Signature/RsaSha1Signature.php',
+        'League\\OAuth1\\Client\\Signature\\Signature' => __DIR__ . '/..' . '/league/oauth1-client/src/Signature/Signature.php',
+        'League\\OAuth1\\Client\\Signature\\SignatureInterface' => __DIR__ . '/..' . '/league/oauth1-client/src/Signature/SignatureInterface.php',
         'League\\Uri\\BaseUri' => __DIR__ . '/..' . '/league/uri/BaseUri.php',
         'League\\Uri\\Builder' => __DIR__ . '/..' . '/league/uri/Builder.php',
         'League\\Uri\\Components\\Authority' => __DIR__ . '/..' . '/league/uri-components/Components/Authority.php',
@@ -8725,6 +9084,12 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'Ramsey\\Uuid\\UuidInterface' => __DIR__ . '/..' . '/ramsey/uuid/src/UuidInterface.php',
         'Ramsey\\Uuid\\Validator\\GenericValidator' => __DIR__ . '/..' . '/ramsey/uuid/src/Validator/GenericValidator.php',
         'Ramsey\\Uuid\\Validator\\ValidatorInterface' => __DIR__ . '/..' . '/ramsey/uuid/src/Validator/ValidatorInterface.php',
+        'Random\\BrokenRandomEngineError' => __DIR__ . '/..' . '/symfony/polyfill-php82/Resources/stubs/Random/BrokenRandomEngineError.php',
+        'Random\\CryptoSafeEngine' => __DIR__ . '/..' . '/symfony/polyfill-php82/Resources/stubs/Random/CryptoSafeEngine.php',
+        'Random\\Engine' => __DIR__ . '/..' . '/symfony/polyfill-php82/Resources/stubs/Random/Engine.php',
+        'Random\\Engine\\Secure' => __DIR__ . '/..' . '/symfony/polyfill-php82/Resources/stubs/Random/Engine/Secure.php',
+        'Random\\RandomError' => __DIR__ . '/..' . '/symfony/polyfill-php82/Resources/stubs/Random/RandomError.php',
+        'Random\\RandomException' => __DIR__ . '/..' . '/symfony/polyfill-php82/Resources/stubs/Random/RandomException.php',
         'ReflectionConstant' => __DIR__ . '/..' . '/symfony/polyfill-php84/Resources/stubs/ReflectionConstant.php',
         'RyanChandler\\BladeCaptureDirective\\BladeCaptureDirective' => __DIR__ . '/..' . '/ryangjchandler/blade-capture-directive/src/BladeCaptureDirective.php',
         'RyanChandler\\BladeCaptureDirective\\BladeCaptureDirectiveServiceProvider' => __DIR__ . '/..' . '/ryangjchandler/blade-capture-directive/src/BladeCaptureDirectiveServiceProvider.php',
@@ -8934,6 +9299,8 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'SebastianBergmann\\Type\\UnknownType' => __DIR__ . '/..' . '/sebastian/type/src/type/UnknownType.php',
         'SebastianBergmann\\Type\\VoidType' => __DIR__ . '/..' . '/sebastian/type/src/type/VoidType.php',
         'SebastianBergmann\\Version' => __DIR__ . '/..' . '/sebastian/version/src/Version.php',
+        'SensitiveParameter' => __DIR__ . '/..' . '/symfony/polyfill-php82/Resources/stubs/SensitiveParameter.php',
+        'SensitiveParameterValue' => __DIR__ . '/..' . '/symfony/polyfill-php82/Resources/stubs/SensitiveParameterValue.php',
         'Spatie\\Invade\\Invader' => __DIR__ . '/..' . '/spatie/invade/src/Invader.php',
         'Spatie\\Invade\\StaticInvader' => __DIR__ . '/..' . '/spatie/invade/src/StaticInvader.php',
         'Spatie\\LaravelPackageTools\\Commands\\Concerns\\AskToRunMigrations' => __DIR__ . '/..' . '/spatie/laravel-package-tools/src/Commands/Concerns/AskToRunMigrations.php',
@@ -10037,6 +10404,10 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'Symfony\\Polyfill\\Mbstring\\Mbstring' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/Mbstring.php',
         'Symfony\\Polyfill\\Php80\\Php80' => __DIR__ . '/..' . '/symfony/polyfill-php80/Php80.php',
         'Symfony\\Polyfill\\Php80\\PhpToken' => __DIR__ . '/..' . '/symfony/polyfill-php80/PhpToken.php',
+        'Symfony\\Polyfill\\Php82\\NoDynamicProperties' => __DIR__ . '/..' . '/symfony/polyfill-php82/NoDynamicProperties.php',
+        'Symfony\\Polyfill\\Php82\\Php82' => __DIR__ . '/..' . '/symfony/polyfill-php82/Php82.php',
+        'Symfony\\Polyfill\\Php82\\Random\\Engine\\Secure' => __DIR__ . '/..' . '/symfony/polyfill-php82/Random/Engine/Secure.php',
+        'Symfony\\Polyfill\\Php82\\SensitiveParameterValue' => __DIR__ . '/..' . '/symfony/polyfill-php82/SensitiveParameterValue.php',
         'Symfony\\Polyfill\\Php83\\Php83' => __DIR__ . '/..' . '/symfony/polyfill-php83/Php83.php',
         'Symfony\\Polyfill\\Php84\\Php84' => __DIR__ . '/..' . '/symfony/polyfill-php84/Php84.php',
         'Symfony\\Polyfill\\Php85\\Php85' => __DIR__ . '/..' . '/symfony/polyfill-php85/Php85.php',
@@ -10361,6 +10732,544 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'phpDocumentor\\Reflection\\Types\\This' => __DIR__ . '/..' . '/phpdocumentor/type-resolver/src/Types/This.php',
         'phpDocumentor\\Reflection\\Types\\Void_' => __DIR__ . '/..' . '/phpdocumentor/type-resolver/src/Types/Void_.php',
         'phpDocumentor\\Reflection\\Utils' => __DIR__ . '/..' . '/phpdocumentor/reflection-docblock/src/Utils.php',
+        'phpseclib4\\Common\\ConstantUtilityTrait' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Common/ConstantUtilityTrait.php',
+        'phpseclib4\\Common\\Functions\\Arrays' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Common/Functions/Arrays.php',
+        'phpseclib4\\Common\\Functions\\Files' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Common/Functions/Files.php',
+        'phpseclib4\\Common\\Functions\\Strings' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Common/Functions/Strings.php',
+        'phpseclib4\\Crypt\\AES' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/AES.php',
+        'phpseclib4\\Crypt\\Blowfish' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Blowfish.php',
+        'phpseclib4\\Crypt\\ChaCha20' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/ChaCha20.php',
+        'phpseclib4\\Crypt\\Common\\AsymmetricKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Common/AsymmetricKey.php',
+        'phpseclib4\\Crypt\\Common\\BlockCipher' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Common/BlockCipher.php',
+        'phpseclib4\\Crypt\\Common\\Formats\\Keys\\JWK' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Common/Formats/Keys/JWK.php',
+        'phpseclib4\\Crypt\\Common\\Formats\\Keys\\OpenSSH' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Common/Formats/Keys/OpenSSH.php',
+        'phpseclib4\\Crypt\\Common\\Formats\\Keys\\PKCS' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Common/Formats/Keys/PKCS.php',
+        'phpseclib4\\Crypt\\Common\\Formats\\Keys\\PKCS1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Common/Formats/Keys/PKCS1.php',
+        'phpseclib4\\Crypt\\Common\\Formats\\Keys\\PKCS8' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Common/Formats/Keys/PKCS8.php',
+        'phpseclib4\\Crypt\\Common\\Formats\\Keys\\PuTTY' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Common/Formats/Keys/PuTTY.php',
+        'phpseclib4\\Crypt\\Common\\Formats\\Signature\\Raw' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Common/Formats/Signature/Raw.php',
+        'phpseclib4\\Crypt\\Common\\PrivateKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Common/PrivateKey.php',
+        'phpseclib4\\Crypt\\Common\\PublicKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Common/PublicKey.php',
+        'phpseclib4\\Crypt\\Common\\StreamCipher' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Common/StreamCipher.php',
+        'phpseclib4\\Crypt\\Common\\SymmetricKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Common/SymmetricKey.php',
+        'phpseclib4\\Crypt\\Common\\Traits\\ASN1AlgorithmIdentifier' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Common/Traits/ASN1AlgorithmIdentifier.php',
+        'phpseclib4\\Crypt\\Common\\Traits\\Fingerprint' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Common/Traits/Fingerprint.php',
+        'phpseclib4\\Crypt\\Common\\Traits\\PKCS12Helper' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Common/Traits/PKCS12Helper.php',
+        'phpseclib4\\Crypt\\Common\\Traits\\PasswordProtected' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Common/Traits/PasswordProtected.php',
+        'phpseclib4\\Crypt\\DES' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DES.php',
+        'phpseclib4\\Crypt\\DH' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DH.php',
+        'phpseclib4\\Crypt\\DH\\Formats\\Keys\\PKCS1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DH/Formats/Keys/PKCS1.php',
+        'phpseclib4\\Crypt\\DH\\Formats\\Keys\\PKCS8' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DH/Formats/Keys/PKCS8.php',
+        'phpseclib4\\Crypt\\DH\\Parameters' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DH/Parameters.php',
+        'phpseclib4\\Crypt\\DH\\PrivateKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DH/PrivateKey.php',
+        'phpseclib4\\Crypt\\DH\\PublicKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DH/PublicKey.php',
+        'phpseclib4\\Crypt\\DSA' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DSA.php',
+        'phpseclib4\\Crypt\\DSA\\Formats\\Keys\\OpenSSH' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DSA/Formats/Keys/OpenSSH.php',
+        'phpseclib4\\Crypt\\DSA\\Formats\\Keys\\PKCS1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DSA/Formats/Keys/PKCS1.php',
+        'phpseclib4\\Crypt\\DSA\\Formats\\Keys\\PKCS8' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DSA/Formats/Keys/PKCS8.php',
+        'phpseclib4\\Crypt\\DSA\\Formats\\Keys\\PuTTY' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DSA/Formats/Keys/PuTTY.php',
+        'phpseclib4\\Crypt\\DSA\\Formats\\Keys\\Raw' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DSA/Formats/Keys/Raw.php',
+        'phpseclib4\\Crypt\\DSA\\Formats\\Keys\\XML' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DSA/Formats/Keys/XML.php',
+        'phpseclib4\\Crypt\\DSA\\Formats\\Signature\\ASN1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DSA/Formats/Signature/ASN1.php',
+        'phpseclib4\\Crypt\\DSA\\Formats\\Signature\\Raw' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DSA/Formats/Signature/Raw.php',
+        'phpseclib4\\Crypt\\DSA\\Formats\\Signature\\SSH2' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DSA/Formats/Signature/SSH2.php',
+        'phpseclib4\\Crypt\\DSA\\Parameters' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DSA/Parameters.php',
+        'phpseclib4\\Crypt\\DSA\\PrivateKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DSA/PrivateKey.php',
+        'phpseclib4\\Crypt\\DSA\\PublicKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DSA/PublicKey.php',
+        'phpseclib4\\Crypt\\EC' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC.php',
+        'phpseclib4\\Crypt\\EC\\BaseCurves\\Base' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/BaseCurves/Base.php',
+        'phpseclib4\\Crypt\\EC\\BaseCurves\\Binary' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/BaseCurves/Binary.php',
+        'phpseclib4\\Crypt\\EC\\BaseCurves\\KoblitzPrime' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/BaseCurves/KoblitzPrime.php',
+        'phpseclib4\\Crypt\\EC\\BaseCurves\\Montgomery' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/BaseCurves/Montgomery.php',
+        'phpseclib4\\Crypt\\EC\\BaseCurves\\Prime' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/BaseCurves/Prime.php',
+        'phpseclib4\\Crypt\\EC\\BaseCurves\\TwistedEdwards' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/BaseCurves/TwistedEdwards.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\Curve25519' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/Curve25519.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\Curve448' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/Curve448.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\Ed25519' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/Ed25519.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\Ed448' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/Ed448.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\brainpoolP160r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/brainpoolP160r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\brainpoolP160t1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/brainpoolP160t1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\brainpoolP192r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/brainpoolP192r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\brainpoolP192t1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/brainpoolP192t1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\brainpoolP224r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/brainpoolP224r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\brainpoolP224t1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/brainpoolP224t1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\brainpoolP256r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/brainpoolP256r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\brainpoolP256t1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/brainpoolP256t1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\brainpoolP320r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/brainpoolP320r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\brainpoolP320t1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/brainpoolP320t1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\brainpoolP384r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/brainpoolP384r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\brainpoolP384t1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/brainpoolP384t1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\brainpoolP512r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/brainpoolP512r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\brainpoolP512t1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/brainpoolP512t1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\nistb233' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/nistb233.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\nistb409' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/nistb409.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\nistk163' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/nistk163.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\nistk233' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/nistk233.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\nistk283' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/nistk283.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\nistk409' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/nistk409.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\nistp192' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/nistp192.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\nistp224' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/nistp224.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\nistp256' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/nistp256.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\nistp384' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/nistp384.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\nistp521' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/nistp521.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\nistt571' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/nistt571.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\prime192v1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/prime192v1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\prime192v2' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/prime192v2.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\prime192v3' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/prime192v3.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\prime239v1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/prime239v1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\prime239v2' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/prime239v2.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\prime239v3' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/prime239v3.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\prime256v1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/prime256v1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\secp112r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/secp112r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\secp112r2' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/secp112r2.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\secp128r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/secp128r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\secp128r2' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/secp128r2.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\secp160k1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/secp160k1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\secp160r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/secp160r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\secp160r2' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/secp160r2.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\secp192k1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/secp192k1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\secp192r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/secp192r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\secp224k1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/secp224k1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\secp224r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/secp224r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\secp256k1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/secp256k1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\secp256r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/secp256r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\secp384r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/secp384r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\secp521r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/secp521r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\sect113r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/sect113r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\sect113r2' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/sect113r2.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\sect131r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/sect131r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\sect131r2' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/sect131r2.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\sect163k1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/sect163k1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\sect163r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/sect163r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\sect163r2' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/sect163r2.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\sect193r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/sect193r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\sect193r2' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/sect193r2.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\sect233k1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/sect233k1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\sect233r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/sect233r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\sect239k1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/sect239k1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\sect283k1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/sect283k1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\sect283r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/sect283r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\sect409k1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/sect409k1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\sect409r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/sect409r1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\sect571k1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/sect571k1.php',
+        'phpseclib4\\Crypt\\EC\\Curves\\sect571r1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Curves/sect571r1.php',
+        'phpseclib4\\Crypt\\EC\\Formats\\Keys\\Common' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Formats/Keys/Common.php',
+        'phpseclib4\\Crypt\\EC\\Formats\\Keys\\JWK' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Formats/Keys/JWK.php',
+        'phpseclib4\\Crypt\\EC\\Formats\\Keys\\MontgomeryPrivate' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Formats/Keys/MontgomeryPrivate.php',
+        'phpseclib4\\Crypt\\EC\\Formats\\Keys\\MontgomeryPublic' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Formats/Keys/MontgomeryPublic.php',
+        'phpseclib4\\Crypt\\EC\\Formats\\Keys\\OpenSSH' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Formats/Keys/OpenSSH.php',
+        'phpseclib4\\Crypt\\EC\\Formats\\Keys\\PKCS1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Formats/Keys/PKCS1.php',
+        'phpseclib4\\Crypt\\EC\\Formats\\Keys\\PKCS8' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Formats/Keys/PKCS8.php',
+        'phpseclib4\\Crypt\\EC\\Formats\\Keys\\PuTTY' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Formats/Keys/PuTTY.php',
+        'phpseclib4\\Crypt\\EC\\Formats\\Keys\\XML' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Formats/Keys/XML.php',
+        'phpseclib4\\Crypt\\EC\\Formats\\Keys\\libsodium' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Formats/Keys/libsodium.php',
+        'phpseclib4\\Crypt\\EC\\Formats\\Signature\\ASN1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Formats/Signature/ASN1.php',
+        'phpseclib4\\Crypt\\EC\\Formats\\Signature\\IEEE' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Formats/Signature/IEEE.php',
+        'phpseclib4\\Crypt\\EC\\Formats\\Signature\\Raw' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Formats/Signature/Raw.php',
+        'phpseclib4\\Crypt\\EC\\Formats\\Signature\\SSH2' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Formats/Signature/SSH2.php',
+        'phpseclib4\\Crypt\\EC\\Parameters' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/Parameters.php',
+        'phpseclib4\\Crypt\\EC\\PrivateKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/PrivateKey.php',
+        'phpseclib4\\Crypt\\EC\\PublicKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/EC/PublicKey.php',
+        'phpseclib4\\Crypt\\Hash' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Hash.php',
+        'phpseclib4\\Crypt\\PublicKeyLoader' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/PublicKeyLoader.php',
+        'phpseclib4\\Crypt\\RC2' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/RC2.php',
+        'phpseclib4\\Crypt\\RC4' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/RC4.php',
+        'phpseclib4\\Crypt\\RSA' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/RSA.php',
+        'phpseclib4\\Crypt\\RSA\\Formats\\Keys\\JWK' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/RSA/Formats/Keys/JWK.php',
+        'phpseclib4\\Crypt\\RSA\\Formats\\Keys\\MSBLOB' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/RSA/Formats/Keys/MSBLOB.php',
+        'phpseclib4\\Crypt\\RSA\\Formats\\Keys\\OpenSSH' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/RSA/Formats/Keys/OpenSSH.php',
+        'phpseclib4\\Crypt\\RSA\\Formats\\Keys\\PKCS1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/RSA/Formats/Keys/PKCS1.php',
+        'phpseclib4\\Crypt\\RSA\\Formats\\Keys\\PKCS8' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/RSA/Formats/Keys/PKCS8.php',
+        'phpseclib4\\Crypt\\RSA\\Formats\\Keys\\PSS' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/RSA/Formats/Keys/PSS.php',
+        'phpseclib4\\Crypt\\RSA\\Formats\\Keys\\PuTTY' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/RSA/Formats/Keys/PuTTY.php',
+        'phpseclib4\\Crypt\\RSA\\Formats\\Keys\\Raw' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/RSA/Formats/Keys/Raw.php',
+        'phpseclib4\\Crypt\\RSA\\Formats\\Keys\\XML' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/RSA/Formats/Keys/XML.php',
+        'phpseclib4\\Crypt\\RSA\\PrivateKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/RSA/PrivateKey.php',
+        'phpseclib4\\Crypt\\RSA\\PublicKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/RSA/PublicKey.php',
+        'phpseclib4\\Crypt\\Rijndael' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Rijndael.php',
+        'phpseclib4\\Crypt\\Salsa20' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Salsa20.php',
+        'phpseclib4\\Crypt\\TripleDES' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/TripleDES.php',
+        'phpseclib4\\Crypt\\Twofish' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Twofish.php',
+        'phpseclib4\\Exception\\BadConfigurationException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/BadConfigurationException.php',
+        'phpseclib4\\Exception\\BadDecryptionException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/BadDecryptionException.php',
+        'phpseclib4\\Exception\\BadMethodCallException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/BadMethodCallException.php',
+        'phpseclib4\\Exception\\BaseException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/BaseException.php',
+        'phpseclib4\\Exception\\CharacterConversionException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/CharacterConversionException.php',
+        'phpseclib4\\Exception\\ConnectionClosedException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/ConnectionClosedException.php',
+        'phpseclib4\\Exception\\EOCException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/EOCException.php',
+        'phpseclib4\\Exception\\EncodedDataUnavailableException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/EncodedDataUnavailableException.php',
+        'phpseclib4\\Exception\\ExcessivelyDeepDataException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/ExcessivelyDeepDataException.php',
+        'phpseclib4\\Exception\\FileSystemException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/FileSystemException.php',
+        'phpseclib4\\Exception\\InvalidArgumentException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/InvalidArgumentException.php',
+        'phpseclib4\\Exception\\InvalidModeException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/InvalidModeException.php',
+        'phpseclib4\\Exception\\InvalidPacketLengthException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/InvalidPacketLengthException.php',
+        'phpseclib4\\Exception\\InvalidStateException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/InvalidStateException.php',
+        'phpseclib4\\Exception\\KeyConstraintException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/KeyConstraintException.php',
+        'phpseclib4\\Exception\\LengthException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/LengthException.php',
+        'phpseclib4\\Exception\\NoKeyLoadedException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/NoKeyLoadedException.php',
+        'phpseclib4\\Exception\\NoSupportedAlgorithmsException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/NoSupportedAlgorithmsException.php',
+        'phpseclib4\\Exception\\PasswordNeededException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/PasswordNeededException.php',
+        'phpseclib4\\Exception\\ResourceLimitException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/ResourceLimitException.php',
+        'phpseclib4\\Exception\\ServiceUnavailableException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/ServiceUnavailableException.php',
+        'phpseclib4\\Exception\\TimeoutException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/TimeoutException.php',
+        'phpseclib4\\Exception\\UnexpectedSFTPPacketException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/UnexpectedSFTPPacketException.php',
+        'phpseclib4\\Exception\\UnexpectedSSHMessageException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/UnexpectedSSHMessageException.php',
+        'phpseclib4\\Exception\\UnexpectedValueException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/UnexpectedValueException.php',
+        'phpseclib4\\Exception\\UnsupportedAlgorithmException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/UnsupportedAlgorithmException.php',
+        'phpseclib4\\Exception\\UnsupportedCurveException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/UnsupportedCurveException.php',
+        'phpseclib4\\Exception\\UnsupportedValueException' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Exception/UnsupportedValueException.php',
+        'phpseclib4\\File\\ANSI' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ANSI.php',
+        'phpseclib4\\File\\ASN1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1.php',
+        'phpseclib4\\File\\ASN1\\Constructed' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Constructed.php',
+        'phpseclib4\\File\\ASN1\\Element' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Element.php',
+        'phpseclib4\\File\\ASN1\\ExcessivelyDeepData' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/ExcessivelyDeepData.php',
+        'phpseclib4\\File\\ASN1\\MalformedData' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/MalformedData.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AccessDescription' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AccessDescription.php',
+        'phpseclib4\\File\\ASN1\\Maps\\Accuracy' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/Accuracy.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AdministrationDomainName' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AdministrationDomainName.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AlgorithmIdentifier' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AlgorithmIdentifier.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AnotherName' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AnotherName.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AttCertIssuer' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AttCertIssuer.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AttCertValidityPeriod' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AttCertValidityPeriod.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AttCertVersion' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AttCertVersion.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AttCertVersionV1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AttCertVersionV1.php',
+        'phpseclib4\\File\\ASN1\\Maps\\Attribute' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/Attribute.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AttributeCertificateInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AttributeCertificateInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AttributeCertificateInfoV1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AttributeCertificateInfoV1.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AttributeCertificateV1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AttributeCertificateV1.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AttributeCertificateV2' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AttributeCertificateV2.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AttributeType' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AttributeType.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AttributeTypeAndValue' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AttributeTypeAndValue.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AttributeValue' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AttributeValue.php',
+        'phpseclib4\\File\\ASN1\\Maps\\Attributes' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/Attributes.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AuthAttributes' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AuthAttributes.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AuthEnvelopedData' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AuthEnvelopedData.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AuthenticatedSafe' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AuthenticatedSafe.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AuthorityInfoAccessSyntax' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AuthorityInfoAccessSyntax.php',
+        'phpseclib4\\File\\ASN1\\Maps\\AuthorityKeyIdentifier' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/AuthorityKeyIdentifier.php',
+        'phpseclib4\\File\\ASN1\\Maps\\BaseDistance' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/BaseDistance.php',
+        'phpseclib4\\File\\ASN1\\Maps\\BasicConstraints' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/BasicConstraints.php',
+        'phpseclib4\\File\\ASN1\\Maps\\BuiltInDomainDefinedAttribute' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/BuiltInDomainDefinedAttribute.php',
+        'phpseclib4\\File\\ASN1\\Maps\\BuiltInDomainDefinedAttributes' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/BuiltInDomainDefinedAttributes.php',
+        'phpseclib4\\File\\ASN1\\Maps\\BuiltInStandardAttributes' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/BuiltInStandardAttributes.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CMSAlgorithmProtection' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CMSAlgorithmProtection.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CMSEncryptedData' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CMSEncryptedData.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CMSVersion' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CMSVersion.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CPSuri' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CPSuri.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CRLDistributionPoints' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CRLDistributionPoints.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CRLNumber' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CRLNumber.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CRLReason' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CRLReason.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CertBag' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CertBag.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CertPolicyId' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CertPolicyId.php',
+        'phpseclib4\\File\\ASN1\\Maps\\Certificate' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/Certificate.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CertificateChoices' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CertificateChoices.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CertificateIssuer' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CertificateIssuer.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CertificateList' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CertificateList.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CertificatePolicies' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CertificatePolicies.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CertificateSerialNumber' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CertificateSerialNumber.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CertificateSet' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CertificateSet.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CertificationRequest' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CertificationRequest.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CertificationRequestInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CertificationRequestInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\Characteristic_two' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/Characteristic_two.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CompressedData' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CompressedData.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CompressionAlgorithmIdentifier' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CompressionAlgorithmIdentifier.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CompressionAlgorithmIdentifiers' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CompressionAlgorithmIdentifiers.php',
+        'phpseclib4\\File\\ASN1\\Maps\\ContentEncryptionAlgorithmIdentifier' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/ContentEncryptionAlgorithmIdentifier.php',
+        'phpseclib4\\File\\ASN1\\Maps\\ContentInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/ContentInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\ContentType' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/ContentType.php',
+        'phpseclib4\\File\\ASN1\\Maps\\CountryName' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/CountryName.php',
+        'phpseclib4\\File\\ASN1\\Maps\\Curve' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/Curve.php',
+        'phpseclib4\\File\\ASN1\\Maps\\DHParameter' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/DHParameter.php',
+        'phpseclib4\\File\\ASN1\\Maps\\DSAParams' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/DSAParams.php',
+        'phpseclib4\\File\\ASN1\\Maps\\DSAPrivateKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/DSAPrivateKey.php',
+        'phpseclib4\\File\\ASN1\\Maps\\DSAPublicKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/DSAPublicKey.php',
+        'phpseclib4\\File\\ASN1\\Maps\\Digest' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/Digest.php',
+        'phpseclib4\\File\\ASN1\\Maps\\DigestAlgorithmIdentifier' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/DigestAlgorithmIdentifier.php',
+        'phpseclib4\\File\\ASN1\\Maps\\DigestAlgorithmIdentifiers' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/DigestAlgorithmIdentifiers.php',
+        'phpseclib4\\File\\ASN1\\Maps\\DigestInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/DigestInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\DigestedData' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/DigestedData.php',
+        'phpseclib4\\File\\ASN1\\Maps\\DirectoryString' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/DirectoryString.php',
+        'phpseclib4\\File\\ASN1\\Maps\\DisplayText' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/DisplayText.php',
+        'phpseclib4\\File\\ASN1\\Maps\\DistributionPoint' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/DistributionPoint.php',
+        'phpseclib4\\File\\ASN1\\Maps\\DistributionPointName' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/DistributionPointName.php',
+        'phpseclib4\\File\\ASN1\\Maps\\DssSigValue' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/DssSigValue.php',
+        'phpseclib4\\File\\ASN1\\Maps\\ECCCMSSharedInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/ECCCMSSharedInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\ECParameters' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/ECParameters.php',
+        'phpseclib4\\File\\ASN1\\Maps\\ECPoint' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/ECPoint.php',
+        'phpseclib4\\File\\ASN1\\Maps\\ECPrivateKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/ECPrivateKey.php',
+        'phpseclib4\\File\\ASN1\\Maps\\EDIPartyName' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/EDIPartyName.php',
+        'phpseclib4\\File\\ASN1\\Maps\\ESSCertID' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/ESSCertID.php',
+        'phpseclib4\\File\\ASN1\\Maps\\ESSCertIDv2' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/ESSCertIDv2.php',
+        'phpseclib4\\File\\ASN1\\Maps\\EcdsaSigValue' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/EcdsaSigValue.php',
+        'phpseclib4\\File\\ASN1\\Maps\\EncapsulatedContentInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/EncapsulatedContentInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\EncryptedContent' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/EncryptedContent.php',
+        'phpseclib4\\File\\ASN1\\Maps\\EncryptedContentInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/EncryptedContentInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\EncryptedData' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/EncryptedData.php',
+        'phpseclib4\\File\\ASN1\\Maps\\EncryptedDataCMS' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/EncryptedDataCMS.php',
+        'phpseclib4\\File\\ASN1\\Maps\\EncryptedKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/EncryptedKey.php',
+        'phpseclib4\\File\\ASN1\\Maps\\EncryptedPrivateKeyInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/EncryptedPrivateKeyInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\EnvelopedData' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/EnvelopedData.php',
+        'phpseclib4\\File\\ASN1\\Maps\\ExtKeyUsageSyntax' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/ExtKeyUsageSyntax.php',
+        'phpseclib4\\File\\ASN1\\Maps\\ExtendedCertificate' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/ExtendedCertificate.php',
+        'phpseclib4\\File\\ASN1\\Maps\\ExtendedCertificateInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/ExtendedCertificateInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\Extension' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/Extension.php',
+        'phpseclib4\\File\\ASN1\\Maps\\ExtensionAttribute' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/ExtensionAttribute.php',
+        'phpseclib4\\File\\ASN1\\Maps\\ExtensionAttributes' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/ExtensionAttributes.php',
+        'phpseclib4\\File\\ASN1\\Maps\\Extensions' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/Extensions.php',
+        'phpseclib4\\File\\ASN1\\Maps\\FieldElement' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/FieldElement.php',
+        'phpseclib4\\File\\ASN1\\Maps\\FieldID' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/FieldID.php',
+        'phpseclib4\\File\\ASN1\\Maps\\GeneralName' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/GeneralName.php',
+        'phpseclib4\\File\\ASN1\\Maps\\GeneralNames' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/GeneralNames.php',
+        'phpseclib4\\File\\ASN1\\Maps\\GeneralSubtree' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/GeneralSubtree.php',
+        'phpseclib4\\File\\ASN1\\Maps\\GeneralSubtrees' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/GeneralSubtrees.php',
+        'phpseclib4\\File\\ASN1\\Maps\\Hash' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/Hash.php',
+        'phpseclib4\\File\\ASN1\\Maps\\HashAlgAndValue' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/HashAlgAndValue.php',
+        'phpseclib4\\File\\ASN1\\Maps\\HashAlgorithm' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/HashAlgorithm.php',
+        'phpseclib4\\File\\ASN1\\Maps\\HoldInstructionCode' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/HoldInstructionCode.php',
+        'phpseclib4\\File\\ASN1\\Maps\\Holder' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/Holder.php',
+        'phpseclib4\\File\\ASN1\\Maps\\InvalidityDate' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/InvalidityDate.php',
+        'phpseclib4\\File\\ASN1\\Maps\\Iso4217CurrencyCode' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/Iso4217CurrencyCode.php',
+        'phpseclib4\\File\\ASN1\\Maps\\IssuerAltName' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/IssuerAltName.php',
+        'phpseclib4\\File\\ASN1\\Maps\\IssuerAndSerialNumber' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/IssuerAndSerialNumber.php',
+        'phpseclib4\\File\\ASN1\\Maps\\IssuerSerial' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/IssuerSerial.php',
+        'phpseclib4\\File\\ASN1\\Maps\\IssuingDistributionPoint' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/IssuingDistributionPoint.php',
+        'phpseclib4\\File\\ASN1\\Maps\\KEKIdentifier' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/KEKIdentifier.php',
+        'phpseclib4\\File\\ASN1\\Maps\\KEKRecipientInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/KEKRecipientInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\KeyAgreeRecipientIdentifier' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/KeyAgreeRecipientIdentifier.php',
+        'phpseclib4\\File\\ASN1\\Maps\\KeyAgreeRecipientInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/KeyAgreeRecipientInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\KeyDerivationAlgorithmIdentifier' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/KeyDerivationAlgorithmIdentifier.php',
+        'phpseclib4\\File\\ASN1\\Maps\\KeyEncryptionAlgorithmIdentifier' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/KeyEncryptionAlgorithmIdentifier.php',
+        'phpseclib4\\File\\ASN1\\Maps\\KeyIdentifier' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/KeyIdentifier.php',
+        'phpseclib4\\File\\ASN1\\Maps\\KeyPurposeId' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/KeyPurposeId.php',
+        'phpseclib4\\File\\ASN1\\Maps\\KeyTransRecipientInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/KeyTransRecipientInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\KeyUsage' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/KeyUsage.php',
+        'phpseclib4\\File\\ASN1\\Maps\\LogotypeAudio' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/LogotypeAudio.php',
+        'phpseclib4\\File\\ASN1\\Maps\\LogotypeAudioInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/LogotypeAudioInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\LogotypeData' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/LogotypeData.php',
+        'phpseclib4\\File\\ASN1\\Maps\\LogotypeDetails' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/LogotypeDetails.php',
+        'phpseclib4\\File\\ASN1\\Maps\\LogotypeExtn' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/LogotypeExtn.php',
+        'phpseclib4\\File\\ASN1\\Maps\\LogotypeImage' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/LogotypeImage.php',
+        'phpseclib4\\File\\ASN1\\Maps\\LogotypeImageInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/LogotypeImageInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\LogotypeImageResolution' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/LogotypeImageResolution.php',
+        'phpseclib4\\File\\ASN1\\Maps\\LogotypeImageType' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/LogotypeImageType.php',
+        'phpseclib4\\File\\ASN1\\Maps\\LogotypeInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/LogotypeInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\LogotypeReference' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/LogotypeReference.php',
+        'phpseclib4\\File\\ASN1\\Maps\\MQVuserKeyingMaterial' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/MQVuserKeyingMaterial.php',
+        'phpseclib4\\File\\ASN1\\Maps\\MacData' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/MacData.php',
+        'phpseclib4\\File\\ASN1\\Maps\\MaskGenAlgorithm' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/MaskGenAlgorithm.php',
+        'phpseclib4\\File\\ASN1\\Maps\\MessageAuthenticationCode' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/MessageAuthenticationCode.php',
+        'phpseclib4\\File\\ASN1\\Maps\\MessageAuthenticationCodeAlgorithm' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/MessageAuthenticationCodeAlgorithm.php',
+        'phpseclib4\\File\\ASN1\\Maps\\MessageImprint' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/MessageImprint.php',
+        'phpseclib4\\File\\ASN1\\Maps\\MonetaryValue' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/MonetaryValue.php',
+        'phpseclib4\\File\\ASN1\\Maps\\Name' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/Name.php',
+        'phpseclib4\\File\\ASN1\\Maps\\NameConstraints' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/NameConstraints.php',
+        'phpseclib4\\File\\ASN1\\Maps\\NetworkAddress' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/NetworkAddress.php',
+        'phpseclib4\\File\\ASN1\\Maps\\NoticeReference' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/NoticeReference.php',
+        'phpseclib4\\File\\ASN1\\Maps\\NumericUserIdentifier' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/NumericUserIdentifier.php',
+        'phpseclib4\\File\\ASN1\\Maps\\ORAddress' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/ORAddress.php',
+        'phpseclib4\\File\\ASN1\\Maps\\ObjectDigestInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/ObjectDigestInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\OneAsymmetricKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/OneAsymmetricKey.php',
+        'phpseclib4\\File\\ASN1\\Maps\\OrganizationName' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/OrganizationName.php',
+        'phpseclib4\\File\\ASN1\\Maps\\OrganizationalUnitNames' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/OrganizationalUnitNames.php',
+        'phpseclib4\\File\\ASN1\\Maps\\OriginatorIdentifierOrKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/OriginatorIdentifierOrKey.php',
+        'phpseclib4\\File\\ASN1\\Maps\\OriginatorInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/OriginatorInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\OriginatorPublicKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/OriginatorPublicKey.php',
+        'phpseclib4\\File\\ASN1\\Maps\\OtherCertificateFormat' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/OtherCertificateFormat.php',
+        'phpseclib4\\File\\ASN1\\Maps\\OtherKeyAttribute' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/OtherKeyAttribute.php',
+        'phpseclib4\\File\\ASN1\\Maps\\OtherLogotypeInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/OtherLogotypeInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\OtherPrimeInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/OtherPrimeInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\OtherPrimeInfos' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/OtherPrimeInfos.php',
+        'phpseclib4\\File\\ASN1\\Maps\\OtherRecipientInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/OtherRecipientInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\OtherRevocationInfoFormat' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/OtherRevocationInfoFormat.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PBEParameter' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PBEParameter.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PBES2params' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PBES2params.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PBKDF2params' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PBKDF2params.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PBMAC1params' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PBMAC1params.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PFX' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PFX.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PKCS8ShroudedKeyBag' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PKCS8ShroudedKeyBag.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PKCS9String' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PKCS9String.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PSourceAlgorithm' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PSourceAlgorithm.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PasswordRecipientInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PasswordRecipientInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\Pentanomial' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/Pentanomial.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PersonalName' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PersonalName.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PolicyInformation' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PolicyInformation.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PolicyMappings' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PolicyMappings.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PolicyQualifierId' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PolicyQualifierId.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PolicyQualifierInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PolicyQualifierInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PostalAddress' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PostalAddress.php',
+        'phpseclib4\\File\\ASN1\\Maps\\Prime_p' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/Prime_p.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PrivateDomainName' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PrivateDomainName.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PrivateKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PrivateKey.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PrivateKeyInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PrivateKeyInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PrivateKeyUsagePeriod' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PrivateKeyUsagePeriod.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PublicKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PublicKey.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PublicKeyAndChallenge' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PublicKeyAndChallenge.php',
+        'phpseclib4\\File\\ASN1\\Maps\\PublicKeyInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/PublicKeyInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\QCStatement' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/QCStatement.php',
+        'phpseclib4\\File\\ASN1\\Maps\\QCStatements' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/QCStatements.php',
+        'phpseclib4\\File\\ASN1\\Maps\\QcEuLimitValue' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/QcEuLimitValue.php',
+        'phpseclib4\\File\\ASN1\\Maps\\RC2CBCParameter' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/RC2CBCParameter.php',
+        'phpseclib4\\File\\ASN1\\Maps\\RDNSequence' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/RDNSequence.php',
+        'phpseclib4\\File\\ASN1\\Maps\\RSAES_OAEP_params' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/RSAES_OAEP_params.php',
+        'phpseclib4\\File\\ASN1\\Maps\\RSAPrivateKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/RSAPrivateKey.php',
+        'phpseclib4\\File\\ASN1\\Maps\\RSAPublicKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/RSAPublicKey.php',
+        'phpseclib4\\File\\ASN1\\Maps\\RSASSA_PSS_params' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/RSASSA_PSS_params.php',
+        'phpseclib4\\File\\ASN1\\Maps\\ReasonFlags' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/ReasonFlags.php',
+        'phpseclib4\\File\\ASN1\\Maps\\RecipientEncryptedKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/RecipientEncryptedKey.php',
+        'phpseclib4\\File\\ASN1\\Maps\\RecipientEncryptedKeys' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/RecipientEncryptedKeys.php',
+        'phpseclib4\\File\\ASN1\\Maps\\RecipientIdentifier' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/RecipientIdentifier.php',
+        'phpseclib4\\File\\ASN1\\Maps\\RecipientInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/RecipientInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\RecipientInfos' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/RecipientInfos.php',
+        'phpseclib4\\File\\ASN1\\Maps\\RecipientKeyIdentifier' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/RecipientKeyIdentifier.php',
+        'phpseclib4\\File\\ASN1\\Maps\\RelativeDistinguishedName' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/RelativeDistinguishedName.php',
+        'phpseclib4\\File\\ASN1\\Maps\\RevocationInfoChoice' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/RevocationInfoChoice.php',
+        'phpseclib4\\File\\ASN1\\Maps\\RevocationInfoChoices' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/RevocationInfoChoices.php',
+        'phpseclib4\\File\\ASN1\\Maps\\RevokedCertificate' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/RevokedCertificate.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SMIMECapabilities' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SMIMECapabilities.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SMIMECapability' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SMIMECapability.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SafeBag' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SafeBag.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SafeContents' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SafeContents.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SecretBag' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SecretBag.php',
+        'phpseclib4\\File\\ASN1\\Maps\\ShakeOutputLen' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/ShakeOutputLen.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SignatureAlgorithmIdentifier' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SignatureAlgorithmIdentifier.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SignatureValue' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SignatureValue.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SignedAttributes' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SignedAttributes.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SignedData' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SignedData.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SignedPublicKeyAndChallenge' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SignedPublicKeyAndChallenge.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SignerIdentifier' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SignerIdentifier.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SignerInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SignerInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SignerInfos' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SignerInfos.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SigningCertificate' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SigningCertificate.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SigningCertificateV2' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SigningCertificateV2.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SpecifiedECDomain' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SpecifiedECDomain.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SubjectAltName' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SubjectAltName.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SubjectDirectoryAttributes' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SubjectDirectoryAttributes.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SubjectInfoAccessSyntax' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SubjectInfoAccessSyntax.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SubjectKeyIdentifier' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SubjectKeyIdentifier.php',
+        'phpseclib4\\File\\ASN1\\Maps\\SubjectPublicKeyInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/SubjectPublicKeyInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\TBSCertList' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/TBSCertList.php',
+        'phpseclib4\\File\\ASN1\\Maps\\TBSCertificate' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/TBSCertificate.php',
+        'phpseclib4\\File\\ASN1\\Maps\\TSAPolicyId' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/TSAPolicyId.php',
+        'phpseclib4\\File\\ASN1\\Maps\\TSTInfo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/TSTInfo.php',
+        'phpseclib4\\File\\ASN1\\Maps\\TerminalIdentifier' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/TerminalIdentifier.php',
+        'phpseclib4\\File\\ASN1\\Maps\\Time' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/Time.php',
+        'phpseclib4\\File\\ASN1\\Maps\\TimeStampToken' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/TimeStampToken.php',
+        'phpseclib4\\File\\ASN1\\Maps\\Trinomial' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/Trinomial.php',
+        'phpseclib4\\File\\ASN1\\Maps\\UnauthAttributes' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/UnauthAttributes.php',
+        'phpseclib4\\File\\ASN1\\Maps\\UniqueIdentifier' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/UniqueIdentifier.php',
+        'phpseclib4\\File\\ASN1\\Maps\\UnprotectedAttributes' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/UnprotectedAttributes.php',
+        'phpseclib4\\File\\ASN1\\Maps\\UnsignedAttributes' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/UnsignedAttributes.php',
+        'phpseclib4\\File\\ASN1\\Maps\\UserKeyingMaterial' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/UserKeyingMaterial.php',
+        'phpseclib4\\File\\ASN1\\Maps\\UserNotice' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/UserNotice.php',
+        'phpseclib4\\File\\ASN1\\Maps\\V2Form' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/V2Form.php',
+        'phpseclib4\\File\\ASN1\\Maps\\Validity' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/Validity.php',
+        'phpseclib4\\File\\ASN1\\Maps\\netscape_ca_policy_url' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/netscape_ca_policy_url.php',
+        'phpseclib4\\File\\ASN1\\Maps\\netscape_cert_type' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/netscape_cert_type.php',
+        'phpseclib4\\File\\ASN1\\Maps\\netscape_comment' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Maps/netscape_comment.php',
+        'phpseclib4\\File\\ASN1\\OIDs\\CMS' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/OIDs/CMS.php',
+        'phpseclib4\\File\\ASN1\\OIDs\\Curves' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/OIDs/Curves.php',
+        'phpseclib4\\File\\ASN1\\OIDs\\EC' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/OIDs/EC.php',
+        'phpseclib4\\File\\ASN1\\OIDs\\Hashes' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/OIDs/Hashes.php',
+        'phpseclib4\\File\\ASN1\\OIDs\\PFX' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/OIDs/PFX.php',
+        'phpseclib4\\File\\ASN1\\OIDs\\PKCS8' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/OIDs/PKCS8.php',
+        'phpseclib4\\File\\ASN1\\OIDs\\X509' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/OIDs/X509.php',
+        'phpseclib4\\File\\ASN1\\Types\\BMPString' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/BMPString.php',
+        'phpseclib4\\File\\ASN1\\Types\\BaseString' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/BaseString.php',
+        'phpseclib4\\File\\ASN1\\Types\\BaseType' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/BaseType.php',
+        'phpseclib4\\File\\ASN1\\Types\\BitString' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/BitString.php',
+        'phpseclib4\\File\\ASN1\\Types\\Boolean' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/Boolean.php',
+        'phpseclib4\\File\\ASN1\\Types\\Choice' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/Choice.php',
+        'phpseclib4\\File\\ASN1\\Types\\Common' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/Common.php',
+        'phpseclib4\\File\\ASN1\\Types\\ExplicitNull' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/ExplicitNull.php',
+        'phpseclib4\\File\\ASN1\\Types\\GeneralString' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/GeneralString.php',
+        'phpseclib4\\File\\ASN1\\Types\\GeneralizedTime' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/GeneralizedTime.php',
+        'phpseclib4\\File\\ASN1\\Types\\GraphicString' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/GraphicString.php',
+        'phpseclib4\\File\\ASN1\\Types\\IA5String' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/IA5String.php',
+        'phpseclib4\\File\\ASN1\\Types\\Integer' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/Integer.php',
+        'phpseclib4\\File\\ASN1\\Types\\NumericString' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/NumericString.php',
+        'phpseclib4\\File\\ASN1\\Types\\OID' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/OID.php',
+        'phpseclib4\\File\\ASN1\\Types\\OctetString' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/OctetString.php',
+        'phpseclib4\\File\\ASN1\\Types\\PrintableString' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/PrintableString.php',
+        'phpseclib4\\File\\ASN1\\Types\\TeletexString' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/TeletexString.php',
+        'phpseclib4\\File\\ASN1\\Types\\UTCTime' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/UTCTime.php',
+        'phpseclib4\\File\\ASN1\\Types\\UTF8String' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/UTF8String.php',
+        'phpseclib4\\File\\ASN1\\Types\\UniversalString' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/UniversalString.php',
+        'phpseclib4\\File\\ASN1\\Types\\VideotexString' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/VideotexString.php',
+        'phpseclib4\\File\\ASN1\\Types\\VisibleString' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Types/VisibleString.php',
+        'phpseclib4\\File\\CMS' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/CMS.php',
+        'phpseclib4\\File\\CMS\\CompressedData' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/CMS/CompressedData.php',
+        'phpseclib4\\File\\CMS\\DigestedData' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/CMS/DigestedData.php',
+        'phpseclib4\\File\\CMS\\EncryptedData' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/CMS/EncryptedData.php',
+        'phpseclib4\\File\\CMS\\EnvelopedData\\DerivableKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/CMS/EnvelopedData/DerivableKey.php',
+        'phpseclib4\\File\\CMS\\EnvelopedData\\KEKRecipient' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/CMS/EnvelopedData/KEKRecipient.php',
+        'phpseclib4\\File\\CMS\\EnvelopedData\\KeyAgreeRecipient' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/CMS/EnvelopedData/KeyAgreeRecipient.php',
+        'phpseclib4\\File\\CMS\\EnvelopedData\\KeyAgreeRecipient\\EncryptedKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/CMS/EnvelopedData/KeyAgreeRecipient/EncryptedKey.php',
+        'phpseclib4\\File\\CMS\\EnvelopedData\\KeyTransRecipient' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/CMS/EnvelopedData/KeyTransRecipient.php',
+        'phpseclib4\\File\\CMS\\EnvelopedData\\PasswordRecipient' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/CMS/EnvelopedData/PasswordRecipient.php',
+        'phpseclib4\\File\\CMS\\EnvelopedData\\Recipient' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/CMS/EnvelopedData/Recipient.php',
+        'phpseclib4\\File\\CMS\\EnvelopedData\\SearchableKey' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/CMS/EnvelopedData/SearchableKey.php',
+        'phpseclib4\\File\\CMS\\SignedData' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/CMS/SignedData.php',
+        'phpseclib4\\File\\CMS\\SignedData\\Signer' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/CMS/SignedData/Signer.php',
+        'phpseclib4\\File\\CRL' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/CRL.php',
+        'phpseclib4\\File\\CSR' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/CSR.php',
+        'phpseclib4\\File\\Common\\Signable' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/Common/Signable.php',
+        'phpseclib4\\File\\Common\\Traits\\ASN1Signature' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/Common/Traits/ASN1Signature.php',
+        'phpseclib4\\File\\Common\\Traits\\DN' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/Common/Traits/DN.php',
+        'phpseclib4\\File\\Common\\Traits\\Extension' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/Common/Traits/Extension.php',
+        'phpseclib4\\File\\Common\\Traits\\KeyDerivation' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/Common/Traits/KeyDerivation.php',
+        'phpseclib4\\File\\PFX' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/PFX.php',
+        'phpseclib4\\File\\SPKAC' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/SPKAC.php',
+        'phpseclib4\\File\\X509' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/X509.php',
+        'phpseclib4\\Math\\BigInteger' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\BCMath' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/BCMath.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\BCMath64' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/BCMath64.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\BCMath\\Base' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/BCMath/Base.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\BCMath\\BuiltIn' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/BCMath/BuiltIn.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\BCMath\\DefaultEngine' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/BCMath/DefaultEngine.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\BCMath\\OpenSSL' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/BCMath/OpenSSL.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\BCMath\\Reductions\\Barrett' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/BCMath/Reductions/Barrett.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\BCMath\\Reductions\\EvalBarrett' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/BCMath/Reductions/EvalBarrett.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\Engine' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/Engine.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\GMP' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/GMP.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\GMP\\DefaultEngine' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/GMP/DefaultEngine.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\OpenSSL' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/OpenSSL.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\PHP' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/PHP.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\PHP32' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/PHP32.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\PHP64' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/PHP64.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\PHP\\Base' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/PHP/Base.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\PHP\\DefaultEngine' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/PHP/DefaultEngine.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\PHP\\Montgomery' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/PHP/Montgomery.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\PHP\\OpenSSL' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/PHP/OpenSSL.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\PHP\\Reductions\\Barrett' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/PHP/Reductions/Barrett.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\PHP\\Reductions\\Classic' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/PHP/Reductions/Classic.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\PHP\\Reductions\\EvalBarrett' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/PHP/Reductions/EvalBarrett.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\PHP\\Reductions\\Montgomery' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/PHP/Reductions/Montgomery.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\PHP\\Reductions\\MontgomeryMult' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/PHP/Reductions/MontgomeryMult.php',
+        'phpseclib4\\Math\\BigInteger\\Engines\\PHP\\Reductions\\PowerOfTwo' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger/Engines/PHP/Reductions/PowerOfTwo.php',
+        'phpseclib4\\Math\\BinaryField' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BinaryField.php',
+        'phpseclib4\\Math\\BinaryField\\Integer' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BinaryField/Integer.php',
+        'phpseclib4\\Math\\Common\\FiniteField' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/Common/FiniteField.php',
+        'phpseclib4\\Math\\Common\\FiniteField\\Integer' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/Common/FiniteField/Integer.php',
+        'phpseclib4\\Math\\PrimeField' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/PrimeField.php',
+        'phpseclib4\\Math\\PrimeField\\Integer' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/PrimeField/Integer.php',
+        'phpseclib4\\Net\\SCP' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SCP.php',
+        'phpseclib4\\Net\\SFTP' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SFTP.php',
+        'phpseclib4\\Net\\SFTP\\Attribute' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SFTP/Attribute.php',
+        'phpseclib4\\Net\\SFTP\\FileType' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SFTP/FileType.php',
+        'phpseclib4\\Net\\SFTP\\OpenFlag' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SFTP/OpenFlag.php',
+        'phpseclib4\\Net\\SFTP\\OpenFlag5' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SFTP/OpenFlag5.php',
+        'phpseclib4\\Net\\SFTP\\PacketType' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SFTP/PacketType.php',
+        'phpseclib4\\Net\\SFTP\\StatusCode' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SFTP/StatusCode.php',
+        'phpseclib4\\Net\\SFTP\\Stream' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SFTP/Stream.php',
+        'phpseclib4\\Net\\SSH2' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SSH2.php',
+        'phpseclib4\\Net\\SSH2\\ChannelConnectionFailureReason' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SSH2/ChannelConnectionFailureReason.php',
+        'phpseclib4\\Net\\SSH2\\DisconnectReason' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SSH2/DisconnectReason.php',
+        'phpseclib4\\Net\\SSH2\\MessageType' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SSH2/MessageType.php',
+        'phpseclib4\\Net\\SSH2\\MessageTypeExtra' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SSH2/MessageTypeExtra.php',
+        'phpseclib4\\Net\\SSH2\\TerminalMode' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SSH2/TerminalMode.php',
+        'phpseclib4\\System\\SSH\\Agent' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/System/SSH/Agent.php',
+        'phpseclib4\\System\\SSH\\Agent\\Identity' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/System/SSH/Agent/Identity.php',
+        'phpseclib4\\System\\SSH\\Common\\Traits\\ReadBytes' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/System/SSH/Common/Traits/ReadBytes.php',
         'staabm\\SideEffectsDetector\\SideEffect' => __DIR__ . '/..' . '/staabm/side-effects-detector/lib/SideEffect.php',
         'staabm\\SideEffectsDetector\\SideEffectsDetector' => __DIR__ . '/..' . '/staabm/side-effects-detector/lib/SideEffectsDetector.php',
         'voku\\helper\\ASCII' => __DIR__ . '/..' . '/voku/portable-ascii/src/voku/helper/ASCII.php',

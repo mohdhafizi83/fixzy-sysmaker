@@ -198,3 +198,36 @@ or regenerate: `node test/golden.js <fixture> --update`.
   stack), send_email/whatsapp/telegram/http_request blocks (need external
   services), for_each_loop/data_transformer/switch (complex control flow).
 - Tests: fixture workflow_hooks.json + goldens; e2e batch 21/21 boots.
+
+### BUG-015 LDAP/Google SSO IMPLEMENTED (2026-09-22): plug-and-play auth integrations
+- Owner directive: Fixzy must auto-implement selected auth features; trusted
+  packages only. Chosen: laravel/socialite (official Laravel) +
+  directorytree/ldaprecord-laravel (de-facto Laravel LDAP standard).
+- New generator: src/generators/laravelAuthIntegrationsGenerator.js
+  * Google SSO: GoogleController (redirect/callback, auto-provision,
+    email-match linking), google_id migration, Socialite config pushed at
+    runtime from DB settings.
+  * LDAP: LdapAuthenticator service (service-account bind -> search ->
+    user bind), local fallback preserved.
+  * Shared: fixzy_settings key/value table + FixzySetting model.
+  * Admin UI: System -> Auth Settings page (paste keys once; nothing
+    hard-coded; env fallback supported).
+  * fixzy-manifest.json in output declares composer packages + required
+    PHP extensions.
+- Login page unified: App\Filament\Auth\FixzyLogin combines captcha +
+  LDAP (captcha validation always runs before LDAP fallback).
+- AdminPanelProvider: "Sign in with Google" button via
+  panels::auth.login.form.after render hook.
+- Deploy flow (deploymentHandler.js): reads manifest, auto composer
+  require per package, warns if PHP ext (ldap) missing.
+- Preview flow (register.js): now also runs workflow hooks + auth
+  integrations generators (parity with full-stack generator).
+- Deployment Guide (English, feature-aware): SSO checklist, LDAP
+  checklist (incl. php-ldap ext), Extra Login Security section,
+  debug-mode-off warning. Sections render only for enabled features.
+- preview_env: socialite + ldaprecord-laravel pre-installed
+  (needed php8.5-intl + php8.5-ldap system packages).
+- Verified: golden 17/17, e2e batch 21/21 (auth_ldap_sso boots with
+  provider registered), php -l clean on all generated files.
+- Remaining gaps (documented, need external services): send
+  email/whatsapp/telegram automation blocks.

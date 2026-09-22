@@ -1,0 +1,69 @@
+Memulakan Orchestrator Laravel Filament...
+--- Menjana Database Layer ---
+Model generated: /tmp/fsm-e2e-RHHVsv/gen/app/Models/Projek.php
+Model generated: /tmp/fsm-e2e-RHHVsv/gen/app/Models/Tugas.php
+Model generated: /tmp/fsm-e2e-RHHVsv/gen/app/Models/Nota.php
+Model generated: /tmp/fsm-e2e-RHHVsv/gen/app/Models/Kategori.php
+User Model generated: /tmp/fsm-e2e-RHHVsv/gen/app/Models/User.php
+--- Menjana Standard Resources ---
+Table Class generated (Final): ProjeksTable.php
+Table Class generated (Final): TugasesTable.php
+Table Class generated (Final): NotasTable.php
+Table Class generated (Final): KategorisTable.php
+Form Schema generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Projeks/Schemas/ProjekForm.php
+Form Schema generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Tugases/Schemas/TugasForm.php
+Form Schema generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Notas/Schemas/NotaForm.php
+Form Schema generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Kategoris/Schemas/KategoriForm.php
+List Page generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Projeks/Pages/ListProjeks.php
+List Page generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Tugases/Pages/ListTugases.php
+List Page generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Notas/Pages/ListNotas.php
+List Page generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Kategoris/Pages/ListKategoris.php
+Create Page generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Projeks/Pages/CreateProjek.php
+Create Page generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Tugases/Pages/CreateTugas.php
+Create Page generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Notas/Pages/CreateNota.php
+Create Page generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Kategoris/Pages/CreateKategori.php
+Edit Page generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Projeks/Pages/EditProjek.php
+Edit Page generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Tugases/Pages/EditTugas.php
+Edit Page generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Notas/Pages/EditNota.php
+Edit Page generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Kategoris/Pages/EditKategori.php
+Relation Manager generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Projeks/RelationManagers/TugasRelationManager.php
+Relation Manager generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Kategoris/RelationManagers/KategoriRelationManager.php
+Resource generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Projeks/ProjekResource.php
+Resource generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Tugases/TugasResource.php
+Resource generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Notas/NotaResource.php
+Resource generated: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Resources/Kategoris/KategoriResource.php
+--- Menjana Custom Modules ---
+--- Generating Additional Features ---
+Menjana Filament Exports Script (dengan Label)...
+   - Generated: UserExporter.php
+   - Generated: ProjekExporter.php
+   - Generated: TugasExporter.php
+   - Generated: NotaExporter.php
+   - Generated: KategoriExporter.php
+Generated Importer: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Imports/UserImporter.php
+Generated Importer: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Imports/ProjekImporter.php
+Generated Importer: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Imports/TugasImporter.php
+Generated Importer: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Imports/NotaImporter.php
+Generated Importer: /tmp/fsm-e2e-RHHVsv/gen/app/Filament/Imports/KategoriImporter.php
+[workflow] No workflows configured; nothing generated.
+Generating Deployment Guide from Templates...
+Finished generating the Laravel Filament stack.
+generated OK -> /tmp/fsm-e2e-RHHVsv/gen
+$ cp -a /home/fizi/projects/FiziSysMaker/resources/preview_env /tmp/fsm-e2e-RHHVsv/app
+skeleton copied
+$ cp -a /tmp/fsm-e2e-RHHVsv/gen/. /tmp/fsm-e2e-RHHVsv/app/
+generated overlay applied
+$ php /home/fizi/projects/FiziSysMaker/bin/composer.phar dump-autoload --no-scripts -q
+composer dump-autoload done
+filament component cache cleared
+
+  Database\Seeders\ShieldSeeder ...................................... RUNNING  
+Super admin role has been granted all permissions and assigned to the default user.
+  Database\Seeders\ShieldSeeder .................................... 5 ms DONE  
+
+
+artisan boots OK
+all 5 fixture tables present in sqlite
+HTTP /admin/login -> 200 OK
+
+E2E SMOKE PASS (relations_all) — workdir /tmp/fsm-e2e-RHHVsv

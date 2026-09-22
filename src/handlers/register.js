@@ -96,6 +96,9 @@ const { generateFilamentExports } = require('../generators/laravelExportsGenerat
 const { generateFilamentImporters } = require('../generators/laravelImportersGenerator');
 
 const { generateAdminPanelProvider } = require('../generators/laravelAdminPanelGenerator');
+const { generateWorkflowHooks } = require('../generators/laravelWorkflowGenerator');
+const { generateAuthIntegrations } = require('../generators/laravelAuthIntegrationsGenerator');
+const { renderTemplate } = require('../render/engine');
 
 const { deployApp, updateApp } = require('../deploymentHandler');
 
@@ -2459,6 +2462,24 @@ ipcMain.handle('preview:instant-run', async (event) => {
             await generateFilamentExports(fullSchema, previewPath);
             await generateFilamentImporters(fullSchema, previewPath);
             await generateAdminPanelProvider(fullSchema, previewPath);
+
+            // Workflow hooks + SSO/LDAP integrations (live preview parity
+            // with the full-stack generator).
+            await generateWorkflowHooks(fullSchema, previewPath);
+            await generateAuthIntegrations(fullSchema, previewPath);
+
+            // Combined login page referenced by AdminPanelProvider when
+            // captcha or LDAP is enabled.
+            const captchaOn = Number((fullSchema.project || {}).module_auth_email_captcha) === 1;
+            const ldapOn = Number((fullSchema.project || {}).module_auth_ldap) === 1;
+            if (captchaOn || ldapOn) {
+                const authDir = path.join(previewPath, 'app', 'Filament', 'Auth');
+                fs.mkdirSync(authDir, { recursive: true });
+                fs.writeFileSync(
+                    path.join(authDir, 'FixzyLogin.php'),
+                    renderTemplate('app/Filament/Auth/FixzyLogin.php.njk', { captcha: captchaOn, ldap: ldapOn })
+                );
+            }
 
             // Save the schema memory after code is successfully generated to RAM and Hard Disk
             lastGeneratedSchema = JSON.parse(JSON.stringify(fullSchema));

@@ -88,9 +88,16 @@ DB_PASSWORD=your_password</code></pre>
                 </li>
                 <li>
                     Don't forget to set <code>APP_ENV=production</code> and <code>APP_DEBUG=false</code> in the <code>.env</code> file on your server.
+                    
                 </li>
             </ul>
         </div>
     </x-filament::section>
+
+    
+
+    
+
+    
 
 </x-filament-panels::page>

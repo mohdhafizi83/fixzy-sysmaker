@@ -1,0 +1,131 @@
+Memulakan Orchestrator Laravel Filament...
+--- Menjana Database Layer ---
+Model generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Models/Pelajar.php
+Model generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Models/ProfilPelajar.php
+Model generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Models/DokumenPelajar.php
+Model generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Models/Kursus.php
+Model generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Models/PendaftaranKursus.php
+Model generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Models/PengesahanPendaftaran.php
+Model generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Models/Fakulti.php
+Model generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Models/KeputusanUjian.php
+Model generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Models/Invoice.php
+User Model generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Models/User.php
+--- Menjana Standard Resources ---
+Table Class generated (Final): PelajarsTable.php
+Table Class generated (Final): ProfilPelajarsTable.php
+Table Class generated (Final): DokumenPelajarsTable.php
+Table Class generated (Final): KursusesTable.php
+Table Class generated (Final): PendaftaranKursusesTable.php
+Table Class generated (Final): PengesahanPendaftaransTable.php
+Table Class generated (Final): FakultisTable.php
+Table Class generated (Final): KeputusanUjiansTable.php
+Table Class generated (Final): InvoicesTable.php
+Form Schema generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Pelajars/Schemas/PelajarForm.php
+Form Schema generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/ProfilPelajars/Schemas/ProfilPelajarForm.php
+Form Schema generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/DokumenPelajars/Schemas/DokumenPelajarForm.php
+Form Schema generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Kursuses/Schemas/KursusForm.php
+Form Schema generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/PendaftaranKursuses/Schemas/PendaftaranKursusForm.php
+Form Schema generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/PengesahanPendaftarans/Schemas/PengesahanPendaftaranForm.php
+Form Schema generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Fakultis/Schemas/FakultiForm.php
+Form Schema generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/KeputusanUjians/Schemas/KeputusanUjianForm.php
+Form Schema generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Invoices/Schemas/InvoiceForm.php
+List Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Pelajars/Pages/ListPelajars.php
+List Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/ProfilPelajars/Pages/ListProfilPelajars.php
+List Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/DokumenPelajars/Pages/ListDokumenPelajars.php
+List Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Kursuses/Pages/ListKursuses.php
+List Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/PendaftaranKursuses/Pages/ListPendaftaranKursuses.php
+List Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/PengesahanPendaftarans/Pages/ListPengesahanPendaftarans.php
+List Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Fakultis/Pages/ListFakultis.php
+List Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/KeputusanUjians/Pages/ListKeputusanUjians.php
+List Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Invoices/Pages/ListInvoices.php
+Create Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Pelajars/Pages/CreatePelajar.php
+Create Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/ProfilPelajars/Pages/CreateProfilPelajar.php
+Create Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/DokumenPelajars/Pages/CreateDokumenPelajar.php
+Create Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Kursuses/Pages/CreateKursus.php
+Create Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/PendaftaranKursuses/Pages/CreatePendaftaranKursus.php
+Create Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/PengesahanPendaftarans/Pages/CreatePengesahanPendaftaran.php
+Create Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Fakultis/Pages/CreateFakulti.php
+Create Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/KeputusanUjians/Pages/CreateKeputusanUjian.php
+Create Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Invoices/Pages/CreateInvoice.php
+Edit Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Pelajars/Pages/EditPelajar.php
+Edit Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/ProfilPelajars/Pages/EditProfilPelajar.php
+Edit Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/DokumenPelajars/Pages/EditDokumenPelajar.php
+Edit Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Kursuses/Pages/EditKursus.php
+Edit Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/PendaftaranKursuses/Pages/EditPendaftaranKursus.php
+Edit Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/PengesahanPendaftarans/Pages/EditPengesahanPendaftaran.php
+Edit Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Fakultis/Pages/EditFakulti.php
+Edit Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/KeputusanUjians/Pages/EditKeputusanUjian.php
+Edit Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Invoices/Pages/EditInvoice.php
+Relation Manager generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Pelajars/RelationManagers/DokumenPelajarRelationManager.php
+Relation Manager generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Kursuses/RelationManagers/KursusRelationManager.php
+Relation Manager generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Pelajars/RelationManagers/PendaftaranKursusRelationManager.php
+Relation Manager generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Kursuses/RelationManagers/PendaftaranKursusRelationManager.php
+Relation Manager generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Fakultis/RelationManagers/PelajarRelationManager.php
+Relation Manager generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Pelajars/RelationManagers/KeputusanUjianRelationManager.php
+Relation Manager generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Fakultis/RelationManagers/InvoiceRelationManager.php
+Resource generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Pelajars/PelajarResource.php
+Resource generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/ProfilPelajars/ProfilPelajarResource.php
+Resource generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/DokumenPelajars/DokumenPelajarResource.php
+Resource generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Kursuses/KursusResource.php
+Resource generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/PendaftaranKursuses/PendaftaranKursusResource.php
+Resource generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/PengesahanPendaftarans/PengesahanPendaftaranResource.php
+Resource generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Fakultis/FakultiResource.php
+Resource generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/KeputusanUjians/KeputusanUjianResource.php
+Resource generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/Invoices/InvoiceResource.php
+--- Menjana Custom Modules ---
+   - Table Class generated: PelajarTestsTable.php
+   - Table Class generated: NewPendaftaranKursusesTable.php
+   - Form Schema generated: PelajarTestForm.php
+   - Form Schema generated: NewPendaftaranKursusForm.php
+List Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/PelajarTests/Pages/ListPelajarTests.php
+List Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/NewPendaftaranKursuses/Pages/ListNewPendaftaranKursuses.php
+Create Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/PelajarTests/Pages/CreatePelajarTest.php
+Create Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/NewPendaftaranKursuses/Pages/CreateNewPendaftaranKursus.php
+Edit Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/PelajarTests/Pages/EditPelajarTest.php
+Edit Page generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/NewPendaftaranKursuses/Pages/EditNewPendaftaranKursus.php
+Resource generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/PelajarTests/PelajarTestResource.php
+Resource generated: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Resources/NewPendaftaranKursuses/NewPendaftaranKursusResource.php
+--- Generating Additional Features ---
+Menjana Filament Exports Script (dengan Label)...
+   - Generated: UserExporter.php
+   - Generated: PelajarExporter.php
+   - Generated: ProfilPelajarExporter.php
+   - Generated: DokumenPelajarExporter.php
+   - Generated: KursusExporter.php
+   - Generated: PendaftaranKursusExporter.php
+   - Generated: PengesahanPendaftaranExporter.php
+   - Generated: FakultiExporter.php
+   - Generated: KeputusanUjianExporter.php
+   - Generated: InvoiceExporter.php
+Generated Importer: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Imports/UserImporter.php
+Generated Importer: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Imports/PelajarImporter.php
+Generated Importer: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Imports/ProfilPelajarImporter.php
+Generated Importer: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Imports/DokumenPelajarImporter.php
+Generated Importer: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Imports/KursusImporter.php
+Generated Importer: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Imports/PendaftaranKursusImporter.php
+Generated Importer: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Imports/PengesahanPendaftaranImporter.php
+Generated Importer: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Imports/FakultiImporter.php
+Generated Importer: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Imports/KeputusanUjianImporter.php
+Generated Importer: /tmp/fsm-e2e-7kw7Xl/gen/app/Filament/Imports/InvoiceImporter.php
+[workflow] No workflows configured; nothing generated.
+Generating Deployment Guide from Templates...
+Finished generating the Laravel Filament stack.
+generated OK -> /tmp/fsm-e2e-7kw7Xl/gen
+$ cp -a /home/fizi/projects/FiziSysMaker/resources/preview_env /tmp/fsm-e2e-7kw7Xl/app
+skeleton copied
+$ cp -a /tmp/fsm-e2e-7kw7Xl/gen/. /tmp/fsm-e2e-7kw7Xl/app/
+generated overlay applied
+$ php /home/fizi/projects/FiziSysMaker/bin/composer.phar dump-autoload --no-scripts -q
+composer dump-autoload done
+filament component cache cleared
+
+  Database\Seeders\ShieldSeeder ...................................... RUNNING  
+Super admin role has been granted all permissions and assigned to the default user.
+  Database\Seeders\ShieldSeeder .................................... 4 ms DONE  
+
+
+artisan boots OK
+all 10 fixture tables present in sqlite
+HTTP /admin/login -> 200 OK
+
+E2E SMOKE PASS (big_university) — workdir /tmp/fsm-e2e-7kw7Xl

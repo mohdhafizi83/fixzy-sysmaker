@@ -88,9 +88,34 @@ DB_PASSWORD=your_password</code></pre>
                 </li>
                 <li>
                     Don't forget to set <code>APP_ENV=production</code> and <code>APP_DEBUG=false</code> in the <code>.env</code> file on your server.
+                    
                 </li>
             </ul>
         </div>
     </x-filament::section>
+
+    
+
+    
+
+    
+    
+    <x-filament::section collapsible collapsed>
+        <x-slot name="heading">
+            Extra Login Security
+        </x-slot>
+        <div class="prose max-w-none dark:prose-invert text-sm">
+            <ul class="list-disc pl-5 space-y-2">
+                
+                
+                <li><strong>Two-factor authentication (2FA):</strong> users can enable email-based 2FA from their
+                    profile page (Filament native multi-factor authentication). After saving their password they will
+                    receive a one-time code by email at each login. Make sure <code>MAIL_*</code> settings in
+                    <code>.env</code> point to a working mail server, otherwise codes cannot be delivered.</li>
+                
+            </ul>
+        </div>
+    </x-filament::section>
+    
 
 </x-filament-panels::page>

@@ -77,7 +77,7 @@ DB_PASSWORD=your_password</code></pre>
         <div class="prose max-w-none dark:prose-invert text-sm">
             <ul class="list-disc pl-5 space-y-2">
                 <li>Make sure your server supports <strong>PHP 8.1</strong> or above.</li>
-                <li>Make sure these PHP extensions are enabled: <code>bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, tokenizer, xml</code>.</li>
+                <li>Make sure these PHP extensions are enabled: <code>bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, tokenizer, xml</code>{% endraw %}{% if ldap %}, <strong>ldap</strong>{% endif %}{% raw %}.</li>
                 <li>
                     Recommended folder structure:
                     <ul class="list-circle pl-5 mt-1">
@@ -88,9 +88,110 @@ DB_PASSWORD=your_password</code></pre>
                 </li>
                 <li>
                     Don't forget to set <code>APP_ENV=production</code> and <code>APP_DEBUG=false</code> in the <code>.env</code> file on your server.
+                    {% endraw %}{% if debug_enabled %}<strong>Note:</strong> you enabled <strong>Debug Mode</strong> in the designer — that is fine for development, but it MUST be turned off (<code>APP_DEBUG=false</code>) on a public server, otherwise error pages will expose internal details to visitors.{% endif %}{% raw %}
                 </li>
             </ul>
         </div>
     </x-filament::section>
+{% endraw %}
+    {% if google_sso %}
+    {# GOOGLE SSO #}
+    <x-filament::section collapsible collapsed>
+        <x-slot name="heading">
+            Google Single Sign-On — Setup Checklist
+        </x-slot>
+        <x-slot name="description">
+            This application was designed with Google sign-in enabled. Complete these steps to activate it.
+        </x-slot>
 
-</x-filament-panels::page>{% endraw %}
+        <div class="prose max-w-none dark:prose-invert text-sm">
+            <ol class="list-decimal pl-5 space-y-2">
+                <li>
+                    <strong>Create OAuth credentials:</strong> Go to
+                    <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="text-primary-600 underline">Google Cloud Console → Credentials</a>,
+                    create an <strong>OAuth 2.0 Client ID</strong> of type <strong>Web application</strong>.
+                </li>
+                <li>
+                    <strong>Authorize the redirect URI:</strong> add your application's callback URL
+                    (<code>https://your-domain.com/auth/google/callback</code>) to the <em>Authorized redirect URIs</em> list.
+                </li>
+                <li>
+                    <strong>Enter the keys in the admin panel:</strong> open <strong>System → Auth Settings</strong> and paste the
+                    <em>Client ID</em> and <em>Client Secret</em>. They are stored securely in the database — no file editing needed.
+                </li>
+                <li>
+                    <strong>Test:</strong> the "Sign in with Google" button appears on the login page. First-time sign-ins are
+                    provisioned automatically; existing users are matched by email.
+                </li>
+            </ol>
+            <p class="text-xs text-gray-500 mt-2">
+                Powered by <code>laravel/socialite</code> (official Laravel package). If the button shows a 503 error,
+                the credentials have not been saved yet.
+            </p>
+        </div>
+    </x-filament::section>
+    {% endif %}
+
+    {% if ldap %}
+    {# LDAP / ACTIVE DIRECTORY #}
+    <x-filament::section collapsible collapsed>
+        <x-slot name="heading">
+            LDAP / Active Directory — Setup Checklist
+        </x-slot>
+        <x-slot name="description">
+            This application was designed with directory (LDAP) sign-in enabled.
+        </x-slot>
+
+        <div class="prose max-w-none dark:prose-invert text-sm">
+            <ol class="list-decimal pl-5 space-y-2">
+                <li>
+                    <strong>PHP extension:</strong> the server must have the <code>ldap</code> extension installed
+                    (e.g. <code>apt install php-ldap</code>, or enable it in cPanel → Select PHP Version).
+                </li>
+                <li>
+                    <strong>Service account:</strong> ask your IT administrator for a read-only bind account
+                    (e.g. <code>cn=svc-app,ou=Service,dc=example,dc=com</code>) and the base DN of your directory.
+                </li>
+                <li>
+                    <strong>Enter the settings:</strong> open <strong>System → Auth Settings</strong> and fill in the LDAP
+                    hosts, port, base DN, bind credentials, and the username attribute
+                    (<code>uid</code> for OpenLDAP, <code>samaccountname</code> for Active Directory).
+                </li>
+                <li>
+                    <strong>Test:</strong> users can now sign in on the normal login form with their directory
+                    username and password. Accounts are created locally on first successful sign-in.
+                </li>
+            </ol>
+            <p class="text-xs text-gray-500 mt-2">
+                Powered by <code>directorytree/ldaprecord</code> (the standard LDAP library for Laravel).
+                Local (database) passwords still work as a fallback.
+            </p>
+        </div>
+    </x-filament::section>
+    {% endif %}
+
+    {% if captcha or two_fa %}
+    {# EXTRA LOGIN SECURITY #}
+    <x-filament::section collapsible collapsed>
+        <x-slot name="heading">
+            Extra Login Security
+        </x-slot>
+        <div class="prose max-w-none dark:prose-invert text-sm">
+            <ul class="list-disc pl-5 space-y-2">
+                {% if captcha %}
+                <li><strong>Human check (captcha):</strong> the login page asks a simple arithmetic question before
+                    accepting a sign-in. This runs entirely on your server — no external captcha service, no API keys,
+                    nothing to configure.</li>
+                {% endif %}
+                {% if two_fa %}
+                <li><strong>Two-factor authentication (2FA):</strong> users can enable email-based 2FA from their
+                    profile page (Filament native multi-factor authentication). After saving their password they will
+                    receive a one-time code by email at each login. Make sure <code>MAIL_*</code> settings in
+                    <code>.env</code> point to a working mail server, otherwise codes cannot be delivered.</li>
+                {% endif %}
+            </ul>
+        </div>
+    </x-filament::section>
+    {% endif %}
+
+</x-filament-panels::page>
