@@ -124,6 +124,53 @@ CLI environment variables:
 | Automation | **Enterprise:** visual workflow engine — hooks, actions, logic, scheduled jobs |
 | Docs | In-app deployment guide (feature-aware) |
 
+### Built-in features (selectable per project)
+
+In Fixzy SysMaker, **built-in** means a feature you can tick on (or off) for
+each generated app from the **Technologies Stack & Core Features** tab. Every
+selection is saved with the project, carried through the IR, and compiled into
+real code — the generated app ships only what you picked.
+
+| Built-in feature | Default | What the generated app gets |
+|---|---|---|
+| Email & Password auth | Always on | Login page, password hashing, session handling |
+| Two-Factor Authentication (2FA) | Off (radio) | Native Filament multi-factor auth on login |
+| Login Captcha | Off (radio) | Native arithmetic human-check — no external service |
+| LDAP / Active Directory | Off | Directory bind, auto account provisioning (ldaprecord-laravel) |
+| Google SSO | Off | "Sign in with Google" via Socialite, first-login provisioning |
+| Group-Based Permissions | Off | Roles & permissions per user group (Filament Shield) |
+| Audit Trail (Log Audit) | Off | Native audit log: who changed what, when (migration + observer) |
+| Real-time Notifications & Chat | Off | Live notification bell + chat module over WebSocket (see below) |
+| Fake Data (Data Seeder) | Off | Factories + seeders with realistic sample data |
+| Debug Mode & Debugbar | Off | Detailed errors + debug bar (never enable in production) |
+| Soft / Hard Delete | Hard | Per-project deletion strategy (soft = restorable rows) |
+| Multi-tenancy | Per project | Row-level ownership & tenant scoping (`BelongsToTenant`) |
+
+Plus the always-on baseline every generated app receives: migrations, Eloquent
+models with relations, Filament 5 resources (forms/tables/pages), CSV
+import/export per table, and a feature-aware deployment guide.
+
+### Real-time Notifications & Chat (opt-in)
+
+Push events to users instantly — no page refresh. Native-first: built on
+Laravel's broadcasting and Filament's native notification bell; third-party
+packages only where no native transport exists.
+
+- **Live notification bell** — Filament `databaseNotifications()`, updated in
+  real time over WebSocket
+- **Chat module** — a ready-made private chat page (model, migration, event,
+  private channels with per-user auth)
+- **Backend choice:**
+  - **Laravel Reverb** (default) — official first-party Laravel WebSocket
+    server, self-hosted, no external account
+  - **Pusher Channels** — hosted service, free tier, keys managed by admin
+- **Graceful degradation** — if the Pusher SDK or WebSocket server is
+  missing, the app still boots (broadcast falls back to log; chat messages
+  still persist)
+- **Security** — private channels authenticated per user; CDN scripts pinned
+  with SRI hashes; keys entered by the admin on the in-app **Real-time
+  Settings** page after deployment, never baked into generated code
+
 ### Authentication modules (opt-in, plug-and-play)
 
 Tick a flag in the project settings and the generated app ships with the real
@@ -213,11 +260,14 @@ Shipped:
 - [x] Multi-tenancy, row ownership, native audit trail
 - [x] Dashboard builder with stat/chart widgets
 - [x] Auth modules: Google SSO, LDAP/AD, email 2FA, login captcha (opt-in)
+- [x] Real-time notifications & chat (opt-in): live bell + chat over Laravel
+  Reverb (self-hosted) or Pusher (hosted), graceful degradation, SRI-pinned
+  CDN assets
 - [x] **Enterprise:** visual workflow & hooks engine — full block palette
   (email, Telegram, HTTP, Advanced Action/raw SQL, logic, loops, try/catch)
   compiling to real PHP (observers, listeners, scheduled commands)
 - [x] GUI Setup Wizard (one-click environment provisioning)
-- [x] 17-fixture golden test matrix + CI (ubuntu + macOS)
+- [x] 22-fixture golden test matrix + CI (ubuntu + macOS)
 
 Next:
 - [ ] Guided project templates (CRM, inventory, booking, helpdesk starters)
@@ -231,7 +281,7 @@ Roadmap items are community-friendly — open an issue to vote or request.
 ## Development
 
 ```bash
-node test/golden.js                 # 16-fixture snapshot matrix
+node test/golden.js                 # 22-fixture snapshot matrix
 node test/e2e_smoke.js <fixture>    # generate + migrate + boot + HTTP check
 node test/pathguard_test.js         # security unit tests
 node test/audit_headless.js         # generator crash audit
