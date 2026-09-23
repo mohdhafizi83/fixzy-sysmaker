@@ -57,6 +57,8 @@ async function generateAdminPanelProvider(fullSchema, basePath) {
                 : null,
             google_sso: Number(project.module_auth_google_sso) === 1,
             ldap: Number(project.module_auth_ldap) === 1,
+            // Real-time module (native Filament database notifications).
+            realtime_enabled: Number(project.module_realtime) === 1,
         });
 
         const outputPath = path.join(providersPath, 'AdminPanelProvider.php');

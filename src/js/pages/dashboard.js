@@ -33,6 +33,23 @@ export function populateMainDashboard(projectData) {
     setElementValue('app-module-fake-data', projectData.module_fake_data); 
     setElementValue('app-debug-mode', projectData.debug_mode);
 	setRadioValue('app-data_delete_type', projectData.data_delete_type || 'hard');
+
+    // Real-time module: checkbox + backend selector (shown only when enabled)
+    setElementValue('app-module-realtime', projectData.module_realtime);
+    setElementValue('app-realtime_backend', projectData.realtime_backend || 'reverb');
+    const toggleRealtimeBackendVisibility = () => {
+        const fgBackend = document.getElementById('fg-realtime-backend');
+        const realtimeChecked = document.getElementById('app-module-realtime')?.checked;
+        if (fgBackend) {
+            fgBackend.classList.toggle('hidden', !realtimeChecked);
+        }
+    };
+    const realtimeCheckbox = document.getElementById('app-module-realtime');
+    if (realtimeCheckbox) {
+        realtimeCheckbox.removeEventListener('change', toggleRealtimeBackendVisibility);
+        realtimeCheckbox.addEventListener('change', toggleRealtimeBackendVisibility);
+    }
+    toggleRealtimeBackendVisibility();
 	
     // ▼▼▼ START: ARCHITECTURE & TENANCY LOGIC ▼▼▼
     setRadioValue('app-tenancy_type', projectData.tenancy_type || 'standard');

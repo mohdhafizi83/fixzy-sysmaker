@@ -111,6 +111,23 @@ never baked into generated code or git.
 | telegram settings (generated app) | `TelegramSettings` page (`/admin/telegram-settings`) + connection test | ✅ generated |
 | mail settings (generated app) | `MailSettings` page + `applyMailSettings()` boot override of .env | ✅ generated |
 
+### L. Real-time notifications & chat (project-level flags, 2026-09-23)
+| Value | Trigger | Generated output | Fixture |
+|---|---|---|---|
+| Real-time off | `project.module_realtime = 0` | nothing generated (default) | all non-realtime fixtures |
+| Reverb backend | `module_realtime = 1`, `realtime_backend = "reverb"` | `RealtimeServiceProvider` (broadcast config + channel auth + Echo client) + `ChatMessage` model/migration + `ChatMessageCreated` event + Chat page + Real-time Settings page + `->databaseNotifications()` (native Filament) | realtime_on |
+| Pusher backend | `module_realtime = 1`, `realtime_backend = "pusher"` | same as Reverb; composer `pusher/pusher-php-server` instead of `laravel/reverb` | (manual; golden covers reverb) |
+
+Native-first design: notifications bell, broadcasting facade, private
+channels and the `notifications` table are all NATIVE (Filament v5 /
+Laravel 12). Third-party packages only for the WebSocket transport
+(no native alternative): `laravel/reverb` (first-party Laravel) or
+`pusher/pusher-php-server`. Frontend `pusher-js` + `laravel-echo` are
+pinned CDN builds with SRI integrity — no npm build needed in the
+generated app. Broadcast credentials are entered by the admin on the
+**Real-time Settings** page (`fixzy_settings`), never baked into code.
+Deploy auto-installs composer + npm packages from `fixzy-manifest.json`.
+
 ## Stress combos (2–3 axes at once)
 | Fixture | Combo |
 |---|---|

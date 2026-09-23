@@ -1,0 +1,13 @@
+{
+  "composer": [
+    "laravel/reverb"
+  ],
+  "php_extensions": [],
+  "npm": [
+    "pusher-js@8.6.0",
+    "laravel-echo@2.5.0"
+  ],
+  "providers": [
+    "App\\Providers\\RealtimeServiceProvider"
+  ]
+}

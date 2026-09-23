@@ -1,0 +1,70 @@
+<x-filament-panels::page>
+    @if(session('fixzy_settings_error'))
+        <div class="rounded-lg bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm dark:bg-red-950 dark:text-red-200 dark:border-red-800">
+            {{ session('fixzy_settings_error') }}
+        </div>
+    @endif
+
+    <x-filament::section>
+        <div
+            x-data="{ messages: $wire.entangle('messages') }"
+            class="flex flex-col gap-4"
+        >
+            <div
+                x-ref="scroller"
+                class="flex flex-col gap-2 max-h-[28rem] overflow-y-auto rounded-lg border border-gray-200 p-4 dark:border-gray-700"
+            >
+                <template x-for="msg in messages" :key="msg.id">
+                    <div :class="msg.is_self ? 'self-end' : 'self-start'">
+                        <div
+                            :class="msg.is_self
+                                ? 'bg-primary-600 text-white'
+                                : 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100'"
+                            class="max-w-md rounded-lg px-3 py-2 text-sm shadow-sm"
+                        >
+                            <div class="font-semibold text-xs mb-0.5 opacity-80" x-text="msg.user_name"></div>
+                            <div class="whitespace-pre-wrap break-words" x-text="msg.message"></div>
+                            <div class="text-[10px] mt-1 opacity-60" x-text="msg.created_at"></div>
+                        </div>
+                    </div>
+                </template>
+
+                <div x-show="messages.length === 0" class="text-sm text-gray-400 text-center py-8">
+                    No messages yet. Say hello 👋
+                </div>
+            </div>
+
+            <form wire:submit="send" class="flex gap-2">
+                <input
+                    type="text"
+                    wire:model="newMessage"
+                    maxlength="2000"
+                    placeholder="Type a message…"
+                    class="flex-1 rounded-lg border-gray-300 shadow-sm dark:bg-gray-800 dark:border-gray-600 px-3 py-2 text-sm"
+                />
+                <x-filament::button type="submit">Send</x-filament::button>
+            </form>
+
+            <p class="text-xs text-gray-400">
+                Real-time updates arrive over the WebSocket. If the connection is down, messages still save — reload to catch up.
+            </p>
+        </div>
+    </x-filament::section>
+
+    @script
+    <script>
+        const subscribe = () => {
+            window.Echo.private(@js('chat.' . $this->room)).listen('.chat.message.created', () => {
+                $wire.call('loadMessages')
+            })
+        }
+
+        window.addEventListener('EchoLoaded', () => subscribe())
+
+        if (window.Echo) {
+            subscribe()
+        }
+    </script>
+    @endscript
+</x-filament-panels::page>
+

@@ -1,0 +1,97 @@
+<?php
+
+namespace App\Filament\Pages;
+
+use App\Events\ChatMessageCreated;
+use App\Models\ChatMessage;
+use Filament\Pages\Page;
+use Illuminate\Support\Facades\Auth;
+
+/**
+ * Simple real-time chat (Fixzy SysMaker generated).
+ *
+ * Messages are persisted to chat_messages and broadcast on the private
+ * channel chat.{room} via the RealtimeServiceProvider Echo client, so
+ * every open window refreshes instantly. The page itself degrades
+ * gracefully: if the WebSocket is down, sending still works and other
+ * windows catch up on reload.
+ */
+class Chat extends Page
+{
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-chat-bubble-left-ellipsis';
+
+    protected static ?string $navigationLabel = 'Chat';
+
+    protected static ?string $title = 'Team Chat';
+
+    protected static ?string $slug = 'chat';
+
+    protected static ?int $navigationSort = 994;
+
+    protected static string | \UnitEnum | null $navigationGroup = 'System';
+
+    protected string $view = 'filament.pages.chat';
+
+    public string $room = 'global';
+
+    public string $newMessage = '';
+
+    /** @var array<int, array<string, mixed>> */
+    public array $messages = [];
+
+    public function mount(): void
+    {
+        $this->loadMessages();
+    }
+
+    public function loadMessages(): void
+    {
+        $this->messages = ChatMessage::query()
+            ->where('room', $this->room)
+            ->latest()
+            ->limit(50)
+            ->get()
+            ->reverse()
+            ->values()
+            ->map(fn (ChatMessage $m): array => [
+                'id' => $m->getKey(),
+                'user_name' => $m->user_name,
+                'message' => $m->message,
+                'created_at' => $m->created_at?->format('H:i'),
+                'is_self' => (int) $m->user_id === (int) (Auth::id() ?? 0),
+            ])
+            ->all();
+    }
+
+    public function send(): void
+    {
+        $text = trim($this->newMessage);
+        if ($text === '') {
+            return;
+        }
+        if (strip_tags($text) !== $text) {
+            session()->flash('fixzy_settings_error', 'Chat messages must be plain text.');
+            return;
+        }
+
+        $user = Auth::user();
+
+        $message = ChatMessage::create([
+            'room' => $this->room,
+            'user_id' => $user?->getKey(),
+            'user_name' => $user?->name ?? 'Anonymous',
+            'message' => mb_substr($text, 0, 2000),
+        ]);
+
+        $this->newMessage = '';
+        $this->loadMessages();
+
+        // The message is already persisted; a dead WebSocket server must
+        // never break sending. Other windows catch up on reload.
+        try {
+            broadcast(new ChatMessageCreated($message));
+        } catch (\Throwable) {
+            // Broadcast transport unavailable — silent by design.
+        }
+    }
+}

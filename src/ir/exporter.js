@@ -384,6 +384,10 @@ function exportIR(fullSchema) {
             authorization: !!p.module_authorization,
             auditing: !!p.module_log_audit,
             seeders: !!p.module_fake_data,
+            realtime: {
+                enabled: !!p.module_realtime,
+                backend: p.realtime_backend === 'pusher' ? 'pusher' : 'reverb',
+            },
             soft_delete: {
                 mode: p.data_delete_type === 'soft' ? 'soft' : 'hard',
                 restore_allowed: true,

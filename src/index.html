@@ -301,6 +301,27 @@
                     <input type="checkbox" id="app-module-log-audit" name="app-module-log-audit"> Enable Audit Trail
                 </label>
             </fieldset>
+
+<fieldset>
+    <legend>Real-time Notifications &amp; Chat</legend>
+    <p class="module-description">
+        Push events to users instantly instead of waiting for a page refresh: a live notification bell in the admin panel, workflow notifications, and a simple user chat module. Uses Laravel's native broadcasting; the WebSocket server runs locally (Reverb, first-party Laravel) or via Pusher (hosted service).
+    </p>
+    <label class="checkbox-label">
+        <input type="checkbox" id="app-module-realtime" name="app-module-realtime"> Enable Real-time Module
+    </label>
+    <div class="form-group sub-option" id="fg-realtime-backend" style="margin-top: 0.75rem;">
+        <label for="app-realtime_backend"><strong>Real-time backend</strong></label>
+        <select name="app-realtime_backend" id="app-realtime_backend">
+            <option value="reverb">Laravel Reverb (self-hosted WebSocket server)</option>
+            <option value="pusher">Pusher Channels (hosted service)</option>
+        </select>
+        <p class="module-description" style="margin-top: 0.5rem;">
+            <strong>Reverb</strong>: official first-party Laravel WebSocket server — runs on your own server, no external account needed.
+            <strong>Pusher</strong>: hosted by Pusher.com — no server to run, but requires a (free-tier) account and keys.
+        </p>
+    </div>
+</fieldset>
             
             <fieldset>
                 <legend>Fake Data</legend>

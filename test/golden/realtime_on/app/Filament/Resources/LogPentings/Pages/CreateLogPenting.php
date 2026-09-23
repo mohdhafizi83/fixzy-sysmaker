@@ -1,0 +1,31 @@
+<?php
+
+namespace App\Filament\Resources\LogPentings\Pages;
+
+use App\Filament\Resources\LogPentings\LogPentingResource;
+use Filament\Resources\Pages\CreateRecord;
+
+class CreateLogPenting extends CreateRecord
+{
+    protected static string $resource = LogPentingResource::class;
+
+    public int $gridColumns = 2;
+    
+    protected function getHeaderActions(): array
+    {
+        return [
+            $this->getCreateFormAction()
+                 ->formId('form'),
+            $this->getCreateAnotherFormAction()
+                 ->formId('form'),
+            $this->getCancelFormAction(),
+        ];
+    }
+    
+    
+
+    protected function getFormActions(): array
+    {
+        return [];
+    }
+}

@@ -33,6 +33,16 @@ function openStore(dbPath) {
             'utf8'
         );
         db.exec(schemaSql);
+    } else {
+        // Incremental column migrations for databases created before newer
+        // feature flags existed. SQLite-safe: check, then ALTER.
+        const cols = db.prepare("PRAGMA table_info(projects)").all().map((c) => c.name);
+        if (!cols.includes('module_realtime')) {
+            db.exec("ALTER TABLE projects ADD COLUMN module_realtime INTEGER DEFAULT 0");
+        }
+        if (!cols.includes('realtime_backend')) {
+            db.exec("ALTER TABLE projects ADD COLUMN realtime_backend TEXT DEFAULT 'reverb'");
+        }
     }
     return db;
 }

@@ -61,6 +61,41 @@ function runCommand(command, args, cwd, win, logChannel) {
 }
 
 /**
+ * Register feature providers declared in fixzy-manifest.json into the
+ * target app's bootstrap/providers.php (idempotent). Used by deploy and
+ * update so generated providers (SSO/LDAP, real-time) actually boot.
+ */
+function registerManifestProviders(projectPath, win, logChannel) {
+    const manifestPath = path.join(projectPath, 'fixzy-manifest.json');
+    if (!fs.existsSync(manifestPath)) return;
+    try {
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+        const providers = Array.isArray(manifest.providers) ? manifest.providers : [];
+        if (providers.length === 0) return;
+
+        const providersFile = path.join(projectPath, 'bootstrap', 'providers.php');
+        if (!fs.existsSync(providersFile)) {
+            win.webContents.send(logChannel, 'WARNING: bootstrap/providers.php not found; feature providers not registered.');
+            return;
+        }
+        let contents = fs.readFileSync(providersFile, 'utf8');
+        for (const prov of providers) {
+            const shortName = prov.split('\\').pop();
+            if (!contents.includes(shortName)) {
+                contents = contents.replace(
+                    /return\s*\[/,
+                    `return [\n    ${prov}::class,`
+                );
+                win.webContents.send(logChannel, `Registered provider: ${prov}`);
+            }
+        }
+        fs.writeFileSync(providersFile, contents);
+    } catch (e) {
+        win.webContents.send(logChannel, `WARNING: Could not register manifest providers: ${e.message}`);
+    }
+}
+
+/**
  * Function to DEPLOY (New Installation)
  */
 async function deployApp(event, deployConfig) {
@@ -90,6 +125,11 @@ async function deployApp(event, deployConfig) {
         // --- STEP 2: Copy Files ---
         win.webContents.send(STATUS_CHANNEL, { step: 2, message: 'Copying generated files...' });
         fs.cpSync(generatedPath, projectPath, { recursive: true, force: true });
+
+        // Register generated feature providers (SSO/LDAP, real-time) in
+        // bootstrap/providers.php. The staging folder has no providers.php,
+        // so the generator declares them in the manifest instead.
+        registerManifestProviders(projectPath, win, LOG_CHANNEL);
 
         // --- STEP 3: Configure .env ---
         win.webContents.send(STATUS_CHANNEL, { step: 3, message: 'Configuring .env...' });
@@ -145,6 +185,16 @@ async function deployApp(event, deployConfig) {
                     });
                     if (!hasExt) {
                         win.webContents.send(LOG_CHANNEL, `WARNING: PHP extension '${ext}' is not installed. Install it (e.g. apt install php-${ext} / php-${ext}-ldap) before using LDAP sign-in.`);
+                    }
+                }
+                // Frontend feature packages (real-time module: pusher-js,
+                // laravel-echo). Installed before the npm install/build step.
+                for (const pkg of (manifest.npm || [])) {
+                    win.webContents.send(STATUS_CHANNEL, { step: 5, message: `Installing npm package ${pkg}...` });
+                    try {
+                        await runCommand('npm', ['install', pkg, '--save'], projectPath, win, LOG_CHANNEL);
+                    } catch (e) {
+                        win.webContents.send(LOG_CHANNEL, `WARNING: npm install ${pkg} failed: ${e.message}. Real-time JS may fall back to CDN builds.`);
                     }
                 }
             } catch (e) {
@@ -224,6 +274,9 @@ async function updateApp(event, updateConfig) {
                 return true;
             }
         });
+
+        // 3b. Register any new feature providers from the manifest (idempotent).
+        registerManifestProviders(projectPath, win, LOG_CHANNEL);
 
         // 4. Update Dependencies
         win.webContents.send(STATUS_CHANNEL, { step: 4, message: 'Updating Autoloader...' });

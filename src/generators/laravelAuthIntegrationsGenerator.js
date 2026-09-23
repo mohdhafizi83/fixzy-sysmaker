@@ -127,7 +127,7 @@ function generateAuthIntegrations(fullSchema, outputDir) {
         // Manifest for the deploy flow (auto composer require + ext warning).
         fs.writeFileSync(
             path.join(outputDir, 'fixzy-manifest.json'),
-            JSON.stringify({ composer: composerPackages, php_extensions: phpExtensions }, null, 2)
+            JSON.stringify({ composer: composerPackages, php_extensions: phpExtensions, providers: ['App\\Providers\\AuthIntegrationsServiceProvider'] }, null, 2)
         );
 
         return { success: true, composerPackages, phpExtensions };

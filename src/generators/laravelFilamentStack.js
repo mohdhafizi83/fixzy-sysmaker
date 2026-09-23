@@ -45,6 +45,7 @@ const { generateFilamentImporters } = require('./laravelImportersGenerator');
 const { generateAdminPanelProvider } = require('./laravelAdminPanelGenerator');
 const { generateWorkflowHooks } = require('./laravelWorkflowGenerator');
 const { generateAuthIntegrations } = require('./laravelAuthIntegrationsGenerator');
+const { generateRealtimeModule } = require('./laravelRealtimeGenerator');
 const { generateDeploymentGuidePage } = require('./laravelDocsGenerator');
 
 /**
@@ -187,7 +188,15 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         const workflowResult = await generateWorkflowHooks(fullSchema, outputDir);
         if (!workflowResult.success) throw new Error(`Workflow hooks: ${workflowResult.message}`);
         console.log(`[workflow] ${workflowResult.message}`);
-        
+
+        // Real-time notifications & chat (native Filament notifications +
+        // Laravel broadcasting; Reverb/Pusher only as transport).
+        const realtimeResult = await generateRealtimeModule(fullSchema, outputDir);
+        if (!realtimeResult.success) throw new Error(`Real-time module: ${realtimeResult.message}`);
+        if (realtimeResult.backend) {
+            console.log(`[realtime] enabled via ${realtimeResult.backend} (${realtimeResult.composerPackages.join(', ')})`);
+        }
+
         const guideResult = await generateDeploymentGuidePage(fullSchema, outputDir);
         if (!guideResult.success) console.warn(`Guide Warning: ${guideResult.message}`); // Warning sahaja, bukan error
 

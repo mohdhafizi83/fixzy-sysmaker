@@ -60,6 +60,26 @@ function run(cmd, opts = {}) {
     run(`cp -a ${genDir}/. ${appDir}/`);
     console.log('generated overlay applied');
 
+    // 3a. Register feature providers declared in fixzy-manifest.json
+    // (mirrors deploymentHandler.registerManifestProviders — the staging
+    // folder has no bootstrap/providers.php of its own).
+    const manifestFile = path.join(genDir, 'fixzy-manifest.json');
+    if (fs.existsSync(manifestFile)) {
+        const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
+        const providersFile = path.join(appDir, 'bootstrap', 'providers.php');
+        if (Array.isArray(manifest.providers) && manifest.providers.length && fs.existsSync(providersFile)) {
+            let contents = fs.readFileSync(providersFile, 'utf8');
+            for (const prov of manifest.providers) {
+                const shortName = prov.split('\\').pop();
+                if (!contents.includes(shortName)) {
+                    contents = contents.replace(/return\s*\[/, `return [\n    ${prov}::class,`);
+                    console.log(`registered provider: ${prov}`);
+                }
+            }
+            fs.writeFileSync(providersFile, contents);
+        }
+    }
+
     // 3b. Rebuild composer autoload: the bundled preview_env vendor was built on
     // Windows and its classmap contains absolute D:\ paths, which break on Linux.
     run(`php ${path.join(REPO, 'bin', 'composer.phar')} dump-autoload --no-scripts -q`, { cwd: appDir });
