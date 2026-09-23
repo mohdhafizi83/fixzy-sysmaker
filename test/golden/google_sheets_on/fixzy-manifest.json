@@ -1,0 +1,10 @@
+{
+  "composer": [
+    "google/apiclient"
+  ],
+  "php_extensions": [],
+  "npm": [],
+  "providers": [
+    "App\\Providers\\GoogleSheetsServiceProvider"
+  ]
+}

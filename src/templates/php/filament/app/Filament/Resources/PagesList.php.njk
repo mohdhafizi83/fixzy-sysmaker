@@ -28,7 +28,7 @@ class List{{ resource_folder }} extends ListRecords
         fn (CreateAction $action) => $action->url(fn (): string => static::getResource()::getUrl('create', [
                     '{{ foreign_key }}' => request()->query('{{ foreign_key }}')
                 ]))
-    ){% else %}CreateAction::make(),{% endif %}
+    ){% else %}CreateAction::make(),{% endif %}{% if google_sync %}\App\Filament\Actions\CreateGoogleSheet{{ google_sync_model }}Action::make(),{% endif %}
         ];
     }
     

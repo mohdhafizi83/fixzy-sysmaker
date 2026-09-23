@@ -1,0 +1,27 @@
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('pendaftaran_kursus', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('pelajar_id');
+            $table->foreignId('kursus_id');
+            $table->dateTime('tarikh_pendaftaran')->nullable()->useCurrent();
+            $table->string('gred', 5)->nullable()->default('NULL');
+            $table->boolean('dokumen_lengkap')->nullable();
+            $table->unique(['pelajar_id', 'kursus_id']);
+            $table->timestamps();
+            $table->softDeletes();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('pendaftaran_kursus');
+    }
+};

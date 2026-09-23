@@ -1,0 +1,46 @@
+<?php
+
+namespace App\Providers;
+
+use App\Jobs\PullGoogleSheetsJob;
+use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\ServiceProvider;
+
+/**
+ * Google Sheets Sync module wiring (Fixzy SysMaker generated).
+ *
+ * - Registers the per-table push observers.
+ * - Schedules the pull job every few minutes (requires the Laravel
+ *   scheduler cron entry: * * * * * php artisan schedule:run).
+ */
+class GoogleSheetsServiceProvider extends ServiceProvider
+{
+    public function boot(): void
+    {
+        \App\Models\Pelajar::observe(\App\Observers\GoogleSheetsSyncPelajarObserver::class);
+        \App\Models\ProfilPelajar::observe(\App\Observers\GoogleSheetsSyncProfilPelajarObserver::class);
+
+        // Poll cadence is runtime-configurable (gsheets_poll_minutes, default
+        // 5). The scheduler ticks every minute; the job is
+        // only dispatched when enough time has passed since the last pull.
+        Schedule::job(new PullGoogleSheetsJob())
+            ->everyMinute()
+            ->skip(fn () => $this->pollIntervalNotElapsed())
+            ->withoutOverlapping();
+    }
+
+    protected function pollIntervalNotElapsed(): bool
+    {
+        $minutes = (int) \App\Models\FixzySetting::get('gsheets_poll_minutes', '5');
+        if ($minutes <= 0) {
+            return true; // Sync disabled at runtime.
+        }
+        $last = \App\Models\GoogleSheetSync::query()
+            ->whereNotNull('last_synced_at')
+            ->max('last_synced_at');
+        if (! $last) {
+            return false; // Never synced — run now.
+        }
+        return now()->lt(\Illuminate\Support\Carbon::parse($last)->addMinutes($minutes));
+    }
+}

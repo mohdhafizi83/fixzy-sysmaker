@@ -1,0 +1,42 @@
+<?php
+
+return [
+    /*
+    |--------------------------------------------------------------------------
+    | Google Sheets Sync targets (Fixzy SysMaker generated)
+    |--------------------------------------------------------------------------
+    | Each entry maps a table_key to its model and the columns mirrored in
+    | the spreadsheet. Column A of every sheet is always `sync_uuid` and
+    | must not be edited. Do not rename headers after the sheet exists —
+    | the pull job validates them.
+    */
+
+    'targets' => [
+        'Pelajar' => [
+            'model' => App\Models\Pelajar::class,
+            'title' => 'Pelajar',
+            'columns' => [
+                ['field' => 'fakulti_id', 'header' => 'Id Fakulti', 'type' => 'number'],
+                ['field' => 'nama_penuh', 'header' => 'Nama Penuh', 'type' => 'text'],
+                ['field' => 'no_matrik', 'header' => 'No Matrik', 'type' => 'text'],
+                ['field' => 'tarikh_daftar', 'header' => 'Tarikh Daftar', 'type' => 'date'],
+                ['field' => 'gambar_profil', 'header' => 'Gambar Profil', 'type' => 'text'],
+                ['field' => 'surat_tawaran', 'header' => 'Surat Tawaran', 'type' => 'text'],
+            ],
+        ],
+        'ProfilPelajar' => [
+            'model' => App\Models\ProfilPelajar::class,
+            'title' => 'Profil Pelajar',
+            'columns' => [
+                ['field' => 'pelajar_id', 'header' => 'Pelajar Id', 'type' => 'number'],
+                ['field' => 'alamat', 'header' => 'Alamat', 'type' => 'text'],
+                ['field' => 'no_telefon', 'header' => 'No Telefon', 'type' => 'text'],
+                ['field' => 'tarikh_lahir', 'header' => 'Tarikh Lahir', 'type' => 'date'],
+                ['field' => 'info_kecemasan', 'header' => 'Info Kecemasan', 'type' => 'text'],
+            ],
+        ],
+    ],
+
+    // Minutes between pull-from-sheet runs (scheduled job).
+    'poll_interval_minutes' => 5,
+];

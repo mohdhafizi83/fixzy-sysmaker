@@ -39,6 +39,11 @@ async function generateSingleListPage(tableName, tableData, fullSchema, basePath
     // --- LOGIK ASAL CSS VERTICAL ACTION ---
     const hasChildWithCount = relationships.some(r => r.parent_table_name === tableName && r.show_count_in_tv === 1);
 
+    // Google Sheets sync button: only when the project module is on AND
+    // this table opted in (custom tables only — enforced at save time).
+    const gsheetsModuleOn = Number((fullSchema.project || {}).module_google_sheets) === 1;
+    const gsheetsTableOn = Number(tableData.google_sync_enabled) === 1 && tableName !== 'users';
+
     const listContent = renderTemplate(TEMPLATE, {
         page_class_base: options.customPageName || modelNameSingular,
         resource_folder: resourceFolder,
@@ -47,6 +52,8 @@ async function generateSingleListPage(tableName, tableData, fullSchema, basePath
         foreign_key: foreignKey,
         vertical_css: hasChildWithCount,
         print_css: tableData.allow_print_view === 1,
+        google_sync: gsheetsModuleOn && gsheetsTableOn,
+        google_sync_model: options.googleSyncModel || modelNameSingular,
     });
 
     const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'Pages');

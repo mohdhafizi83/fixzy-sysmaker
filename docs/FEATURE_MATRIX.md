@@ -128,6 +128,27 @@ generated app. Broadcast credentials are entered by the admin on the
 **Real-time Settings** page (`fixzy_settings`), never baked into code.
 Deploy auto-installs composer + npm packages from `fixzy-manifest.json`.
 
+### M. Google Sheets two-way sync (project + per-table flags, 2026-09-23)
+| Value | Trigger | Generated output | Fixture |
+|---|---|---|---|
+| Module off | `project.module_google_sheets = 0` | nothing generated (default) | all non-gsheets fixtures |
+| Module on, no table opted in | `module_google_sheets = 1`, all `google_sync_enabled = 0` | warning only, no files | (manual) |
+| Table synced | `module_google_sheets = 1` + `table.google_sync_enabled = 1` (custom table) | `config/fixzy_sheets.php` target map + `GoogleSheetsSyncService` + `PullGoogleSheetsJob` + `GoogleSheetsServiceProvider` (observers + schedule) + `GoogleSheetSync` model/mapping migration + per-table `sync_uuid`/`sheet_synced_at` migration + per-table Observer + `CreateGoogleSheet{Model}Action` on the listing + Google Sheets Settings page | google_sheets_on |
+| Core table blocked | `google_sync_enabled = 1` on `users`/system/feature-generated table | rejected at save (server-side throw); generator also never collects it | (audit_headless sabotage) |
+
+Scope (owner decisions): **add and update only** — rows deleted in the
+sheet are ignored and re-pushed; deletions from the app DO remove the
+sheet row. **Polling** every few minutes (runtime-configurable
+`gsheets_poll_minutes`, default 5) via the Laravel scheduler — not
+real-time. **Service account** auth: JSON key uploaded on the generated
+Google Sheets Settings page, stored in `storage/app/private` (never in
+code/git); new sheets auto-shared with the configured admin email.
+Row identity = `sync_uuid` (column A); conflicts resolved
+last-write-wins using `updated_at` vs `last_synced_at`; the
+`$importing` flag prevents sheet→DB→sheet echo loops. Repeater/file
+fields and primary keys are excluded from the sheet. Deploy installs
+`google/apiclient` via `fixzy-manifest.json`.
+
 ## Stress combos (2–3 axes at once)
 | Fixture | Combo |
 |---|---|

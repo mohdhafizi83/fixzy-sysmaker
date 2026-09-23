@@ -1,0 +1,156 @@
+<?php
+
+namespace App\Filament\Resources\Kursuses\Tables;
+
+
+
+use App\Models\Kursus;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\RestoreAction;
+use Filament\Tables\Table;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TrashedFilter;
+use Filament\Tables\Columns\Summarizers\Sum;
+use Filament\Tables\Columns\Summarizers\Average;
+use Illuminate\Support\HtmlString;
+use Illuminate\Contracts\View\View;
+
+
+class KursusesTable
+{
+    public static function configure(Table $table): Table
+    {
+        return $table
+            
+            
+            
+            
+            
+            ->description('')
+            ->columns([
+                TextColumn::make('id')
+                    ->label('Id')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                TextColumn::make('nama_kursus')
+                    ->label('Nama Kursus')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('kod_kursus')
+                    ->label('Kod Kursus')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('deskripsi')
+                    ->label('Deskripsi')
+                    ->sortable()
+                    ->wrap()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('jam_kredit')
+                    ->label('Jam Kredit')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric()
+                    ->summarize([
+                        Sum::make(),
+                        Average::make()
+                    ]),
+                TextColumn::make('parent.nama_kursus')
+                    ->label('Prasyarat Kursus Id')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                IconColumn::make('lokasi_kelas')
+                    ->label('Lokasi Kelas')
+                    ->icon('heroicon-o-map-pin')
+                    ->color('danger')
+                    ->action(
+                    Action::make('Show Google Map')
+                        ->modalHeading(false)->modalFooter(null)
+                        ->modalContent(function (Kursus $record): HtmlString {
+                            if (blank($record->lokasi_kelas)) { return new HtmlString('<p class="text-center">No map link provided.</p>'); }
+                            $iframeCode = $record->lokasi_kelas;
+                            $responsiveIframeCode = str_replace('width="600"', 'width="100%"', $iframeCode);
+                            $responsiveIframeCode = str_replace('height="450"', 'height="450px"', $responsiveIframeCode);
+                            return new HtmlString($responsiveIframeCode);
+                        })
+                )
+                    ->searchable()
+                    ->toggleable()
+                    ->tooltip('Show youtube video/google maps location')
+                    ->alignCenter(),
+                TextColumn::make('created_at')
+                    ->label('Created At')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->dateTime('d F Y h:i A'),
+                IconColumn::make('youtube_intro')
+                    ->label('Youtube Intro')
+                    ->icon('heroicon-o-video-camera')
+                    ->color('danger')
+                    ->action(
+                    Action::make('Show Youtube Video')
+                        ->modalHeading(false)->modalFooter(null)
+                        ->modalContent(fn (Kursus $record): HtmlString => new HtmlString(
+                            $record->youtube_intro
+                                ? '<iframe src="' . e($record->getCleanYoutubeUrl('youtube_intro')) . '" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
+                                : '<p class="text-center">No video link provided.</p>'
+                        ))
+                )
+                    ->searchable()
+                    ->toggleable()
+                    ->tooltip('Show youtube video')
+                    ->alignCenter(),
+                TextColumn::make('updated_at')
+                    ->label('Updated At')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->dateTime('d F Y h:i A'),
+                TextColumn::make('deleted_at')
+                    ->label('Deleted At')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->dateTime('d F Y h:i A')
+            ])
+            ->when((bool) request()->query('print'), fn (Table $table) => $table->paginated(false),)
+            ->filters([
+                TrashedFilter::make(),
+            ])
+            ->recordActions([
+
+                   
+                    
+                
+                
+                ForceDeleteAction::make(),
+                RestoreAction::make(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                DeleteBulkAction::make(),
+            ]),
+            ]);
+    }
+}

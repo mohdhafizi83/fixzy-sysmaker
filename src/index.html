@@ -323,6 +323,16 @@
     </div>
 </fieldset>
             
+<fieldset>
+    <legend>Google Sheets Sync</legend>
+    <p class="module-description">
+        Let admins turn any custom table into a live Google Spreadsheet. Rows added or edited in the sheet are synced back into the database automatically (every few minutes), and changes made in the admin panel are pushed to the sheet. Deletions in the sheet are ignored to protect database records. Requires a Google Cloud service account (JSON key) configured in the generated app's settings page.
+    </p>
+    <label class="checkbox-label">
+        <input type="checkbox" id="app-module-google-sheets" name="app-module-google-sheets"> Enable Google Sheets Sync Module
+    </label>
+</fieldset>
+
             <fieldset>
                 <legend>Fake Data</legend>
                  <p class="module-description">
@@ -1617,6 +1627,7 @@
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-allow-csv-import" name="tbl-allow-csv-import" checked> Enable import CSV file</label>
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-allow-print-view" name="tbl-allow-print-view" checked> Enable print-view</label>
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-allow-mass-delete" name="tbl-allow-mass-delete" checked> Enable bulk delete</label>
+                                        <label class="checkbox-label" id="lbl-tbl-google-sync"><input type="checkbox" id="tbl-google-sync-enabled" name="tbl-google-sync-enabled"> Enable Google Sheets sync</label>
     <label class="checkbox-label">
         <input type="checkbox" id="tbl-show-edit-button" name="tbl-show-edit-button" checked> Show edit button
     </label>

@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Observers;
+
+use App\Services\GoogleSheets\GoogleSheetsSyncService;
+use Illuminate\Database\Eloquent\Model;
+
+/**
+ * Pushes admin-panel changes on a synced table to its Google Sheet.
+ *
+ * One generated class per synced table (GoogleSheetsSync<Model>Observer),
+ * registered by GoogleSheetsServiceProvider. Writes that originate from
+ * the sheet pull (GoogleSheetsSyncService::$importing) are skipped so
+ * changes never echo back.
+ *
+ * Push failures never break the admin action — they are logged and the
+ * next scheduled pull reconciles drift anyway.
+ */
+class GoogleSheetsSyncProfilPelajarObserver
+{
+    protected const TABLE_KEY = 'ProfilPelajar';
+
+    public function saved(Model $record): void
+    {
+        if (GoogleSheetsSyncService::$importing) {
+            return;
+        }
+        try {
+            app(GoogleSheetsSyncService::class)->pushRecord(self::TABLE_KEY, $record, 'update');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning(
+                '[gsheets] push on save failed for ' . self::TABLE_KEY . ': ' . $e->getMessage()
+            );
+        }
+    }
+
+    public function deleted(Model $record): void
+    {
+        if (GoogleSheetsSyncService::$importing) {
+            return;
+        }
+        try {
+            app(GoogleSheetsSyncService::class)->pushRecord(self::TABLE_KEY, $record, 'delete');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning(
+                '[gsheets] push on delete failed for ' . self::TABLE_KEY . ': ' . $e->getMessage()
+            );
+        }
+    }
+}

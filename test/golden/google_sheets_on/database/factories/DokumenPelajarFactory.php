@@ -1,0 +1,23 @@
+<?php
+namespace Database\Factories;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\DokumenPelajar;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\DokumenPelajar>
+ */
+class DokumenPelajarFactory extends Factory
+{
+    protected $model = DokumenPelajar::class;
+
+    public function definition(): array
+    {
+        return [
+            'pelajar_id' => \App\Models\Pelajar::inRandomOrder()->value('id'),
+            'nama_fail' => fake()->name(),
+            'path_fail' => fake()->word(),
+            'jenis_dokumen' => fake()->word(),
+            'tarikh_muatnaik' => fake()->dateTimeThisYear(),
+        ];
+    }
+}

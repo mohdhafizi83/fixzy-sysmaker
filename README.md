@@ -141,6 +141,7 @@ real code — the generated app ships only what you picked.
 | Group-Based Permissions | Off | Roles & permissions per user group (Filament Shield) |
 | Audit Trail (Log Audit) | Off | Native audit log: who changed what, when (migration + observer) |
 | Real-time Notifications & Chat | Off | Live notification bell + chat module over WebSocket (see below) |
+| Google Sheets Sync | Off | Two-way sync of custom tables with Google Sheets (see below) |
 | Fake Data (Data Seeder) | Off | Factories + seeders with realistic sample data |
 | Debug Mode & Debugbar | Off | Detailed errors + debug bar (never enable in production) |
 | Soft / Hard Delete | Hard | Per-project deletion strategy (soft = restorable rows) |
@@ -170,6 +171,38 @@ packages only where no native transport exists.
 - **Security** — private channels authenticated per user; CDN scripts pinned
   with SRI hashes; keys entered by the admin on the in-app **Real-time
   Settings** page after deployment, never baked into generated code
+
+### Google Sheets Sync (opt-in)
+
+Two-way sync between your database and Google Sheets — built for teams that
+live in spreadsheets. Enable the module per project, then tick **Enable
+Google Sheets sync** on any custom table (core tables are guarded out).
+
+- **"Create Google Sheet" button** — on each opted-in table's listing:
+  creates the spreadsheet, pushes all rows, auto-shares it with the admin's
+  Google account, and links it to the table
+- **Two-way sync** — edits in the sheet flow into the database (new rows
+  imported with identity backfill); edits made in Filament push back to the
+  sheet automatically via model observers
+- **Polling, not webhooks** — a scheduled job pulls the sheet every few
+  minutes (runtime-configurable), no public endpoint or Pub/Sub setup needed
+- **Conflict safety** — last-write-wins guard: a row whose database copy is
+  fresher than the sheet copy is never overwritten; echo-loop protection
+  keeps pull → push from ping-ponging
+- **No-delete policy** — rows deleted in the sheet are ignored (the
+  database stays the source of truth); deletes from the app remove the
+  sheet row
+- **Identity via `sync_uuid`** — every synced row carries a UUID in column
+  A of the sheet and a `sync_uuid` column in the database; primary keys,
+  file/image fields, and repeaters are excluded from sync
+- **Security** — service-account JSON is pasted by the admin on the
+  in-app **Google Sheets Settings** page, stored under
+  `storage/app/private` (never in git); credentials are validated before
+  saving
+
+Verified end-to-end against a mock Google Sheets API (`test/gsheets_e2e.js`):
+create/push/pull, new-row import, conflict resolution, delete propagation,
+and echo-loop guard — 18/18 assertions.
 
 ### Authentication modules (opt-in, plug-and-play)
 
@@ -263,11 +296,14 @@ Shipped:
 - [x] Real-time notifications & chat (opt-in): live bell + chat over Laravel
   Reverb (self-hosted) or Pusher (hosted), graceful degradation, SRI-pinned
   CDN assets
+- [x] Google Sheets sync (opt-in): two-way sync of custom tables — create &
+  share sheet, polling pull, observer push, conflict guard, no-delete policy
+  (e2e-tested against a mock Sheets API)
 - [x] **Enterprise:** visual workflow & hooks engine — full block palette
   (email, Telegram, HTTP, Advanced Action/raw SQL, logic, loops, try/catch)
   compiling to real PHP (observers, listeners, scheduled commands)
 - [x] GUI Setup Wizard (one-click environment provisioning)
-- [x] 22-fixture golden test matrix + CI (ubuntu + macOS)
+- [x] 23-fixture golden test matrix + CI (ubuntu + macOS)
 
 Next:
 - [ ] Guided project templates (CRM, inventory, booking, helpdesk starters)
@@ -281,8 +317,9 @@ Roadmap items are community-friendly — open an issue to vote or request.
 ## Development
 
 ```bash
-node test/golden.js                 # 22-fixture snapshot matrix
+node test/golden.js                 # 23-fixture snapshot matrix
 node test/e2e_smoke.js <fixture>    # generate + migrate + boot + HTTP check
+node test/gsheets_e2e.js            # Google Sheets sync vs mock Sheets API
 node test/pathguard_test.js         # security unit tests
 node test/audit_headless.js         # generator crash audit
 ```

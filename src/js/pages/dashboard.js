@@ -36,6 +36,7 @@ export function populateMainDashboard(projectData) {
 
     // Real-time module: checkbox + backend selector (shown only when enabled)
     setElementValue('app-module-realtime', projectData.module_realtime);
+    setElementValue('app-module-google-sheets', projectData.module_google_sheets);
     setElementValue('app-realtime_backend', projectData.realtime_backend || 'reverb');
     const toggleRealtimeBackendVisibility = () => {
         const fgBackend = document.getElementById('fg-realtime-backend');

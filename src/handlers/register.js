@@ -958,7 +958,7 @@ ipcMain.handle('project:update', async (event, data) => {
             'copy_children_async', 'allow_pwa_install', 'url', 'project_hook_workflow', 'stack_base', 'stack_database',
 			'stack_theme', 'module_auth_email_2fa', 'module_auth_email_captcha', 'module_auth_ldap',
             'module_auth_google_sso', 'module_authorization', 'module_log_audit', 'data_delete_type', 'module_fake_data', 'tenancy_type', 'tenant_table', 'debug_mode',
-            'module_realtime', 'realtime_backend'
+            'module_realtime', 'realtime_backend', 'module_google_sheets'
         ];
 
         const setClause = Object.keys(fieldsToUpdate)
@@ -1023,8 +1023,20 @@ ipcMain.handle('table:update', async (event, data) => {
 
             // Build the SET clause for the 'tables' table
             const allowedColumns = [
-                'table_name', 'module_name', 'table_view_title', 'table_description', 'show_quick_search', 'allow_pagination', 'pagination_type', 'default_sort_by', 'sort_descending', 'allow_csv_export', 'allow_csv_import', 'allow_print_view', 'allow_mass_delete', 'show_edit_button', 'show_delete_button', 'allow_restore_delete', 'allow_force_delete', 'tv_template', 'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input', 'detail_view_classes_input', 'detail_view_title', 'record_owner', 'default_focus', 'redirect_after_insert', 'enable_detail_view', 'delete_with_children', 'dv_allow_print_view', 'dv_separate_page', 'dv_hide_save_as_copy', 'dv_sticky_buttons', 'dv_allow_add_from_homepage', 'column_grid_type', 'static_grid_columns', 'table_hook_workflow', 'feature_source'
+                'table_name', 'module_name', 'table_view_title', 'table_description', 'show_quick_search', 'allow_pagination', 'pagination_type', 'default_sort_by', 'sort_descending', 'allow_csv_export', 'allow_csv_import', 'allow_print_view', 'allow_mass_delete', 'show_edit_button', 'show_delete_button', 'allow_restore_delete', 'allow_force_delete', 'tv_template', 'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input', 'detail_view_classes_input', 'detail_view_title', 'record_owner', 'default_focus', 'redirect_after_insert', 'enable_detail_view', 'delete_with_children', 'dv_allow_print_view', 'dv_separate_page', 'dv_hide_save_as_copy', 'dv_sticky_buttons', 'dv_allow_add_from_homepage', 'column_grid_type', 'static_grid_columns', 'table_hook_workflow', 'feature_source', 'google_sync_enabled'
             ];
+
+            // Google Sheets sync is only allowed on user-defined (custom) tables.
+            // Core/system tables (users, tenancy pivots, feature-generated
+            // tables) are rejected server-side so the UI can't be bypassed.
+            if (fieldsToUpdate.hasOwnProperty('google_sync_enabled') && Number(fieldsToUpdate.google_sync_enabled) === 1) {
+                const target = db.prepare("SELECT table_name, feature_source FROM tables WHERE table_id = ?").get(table_id);
+                const CORE_SYNC_BLOCKED = ['users', 'sessions', 'jobs', 'failed_jobs', 'cache', 'password_reset_tokens', 'permissions', 'roles'];
+                if (!target || CORE_SYNC_BLOCKED.includes(target.table_name) || (target.feature_source && target.feature_source.trim() !== '')) {
+                    throw new Error("Google Sheets sync can only be enabled on custom tables.");
+                }
+            }
+
             const setClause = Object.keys(fieldsToUpdate) 
                 .filter(key => allowedColumns.includes(key))
                 .map(key => `${key} = ?`)

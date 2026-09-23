@@ -1,0 +1,118 @@
+<?php
+
+namespace App\Filament\Imports;
+
+use App\Models\KeputusanUjian;
+use App\Models\Pelajar;
+use Filament\Actions\Imports\ImportColumn;
+use Filament\Actions\Imports\Importer;
+use Filament\Actions\Imports\Models\Import;
+use Illuminate\Support\Number;
+use Filament\Forms\Components\Checkbox;
+
+class KeputusanUjianImporter extends Importer
+{
+    protected static ?string $model = KeputusanUjian::class;
+
+    public static function getColumns(): array
+    {
+        return [
+            ImportColumn::make('id')
+                ->label('ID')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('ID'),
+
+            ImportColumn::make('pelajar')
+                ->label('nama_penuh')
+                ->relationship(resolveUsing: ['nama_penuh'])
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample nama_penuh 1', 'Sample nama_penuh 2'])
+                ->exampleHeader('nama_penuh'),
+
+            ImportColumn::make('test')
+                ->label('Test')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Test 1', 'Sample Test 2'])
+                ->exampleHeader('Test'),
+
+            ImportColumn::make('created_at')
+                ->label('Created At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Created At'),
+
+            ImportColumn::make('updated_at')
+                ->label('Updated At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Updated At'),
+
+            ImportColumn::make('deleted_at')
+                ->label('Deleted At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Deleted At'),
+
+            ImportColumn::make('created_by')
+                ->label('Created By')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Created By'),
+
+            ImportColumn::make('updated_by')
+                ->label('Updated By')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Updated By'),
+
+            ImportColumn::make('deleted_by')
+                ->label('Deleted By')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Deleted By'),
+        ];
+    }
+
+    public function resolveRecord(): ?KeputusanUjian
+    {
+    return new KeputusanUjian();
+    }
+
+    public static function getCompletedNotificationBody(Import $import): string
+    {
+        $body = 'Your Keputusan Ujian import has completed and ' . Number::format($import->successful_rows) . ' ' . str('row')->plural($import->successful_rows) . ' imported.';
+
+        if ($failedRowsCount = $import->getFailedRowsCount()) {
+            $body .= ' ' . Number::format($failedRowsCount) . ' ' . str('row')->plural($failedRowsCount) . ' failed to import.';
+        }
+
+        return $body;
+    }
+    
+    public static function getOptionsFormComponents(): array
+    {
+        return [
+            Checkbox::make('updateExisting')
+                ->label('Update existing records'),
+        ];
+    }
+
+}

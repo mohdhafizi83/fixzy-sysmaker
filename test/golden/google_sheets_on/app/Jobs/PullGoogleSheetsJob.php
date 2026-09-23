@@ -1,0 +1,51 @@
+<?php
+
+namespace App\Jobs;
+
+use App\Services\GoogleSheets\GoogleSheetsSyncService;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * Pulls changes from every configured Google Sheet into the database
+ * (add + update only; sheet deletions are ignored by design).
+ *
+ * Scheduled every few minutes by GoogleSheetsServiceProvider. Runs
+ * targets sequentially with a small pause to stay under the Sheets
+ * API read quota (~300 reads/min/project).
+ */
+class PullGoogleSheetsJob implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    public int $tries = 2;
+
+    public int $timeout = 600;
+
+    public function handle(GoogleSheetsSyncService $service): void
+    {
+        if (! GoogleSheetsSyncService::credentialsConfigured()) {
+            return; // Not set up yet — stay silent.
+        }
+
+        $targets = array_keys(config('fixzy_sheets.targets', []));
+
+        foreach ($targets as $tableKey) {
+            try {
+                $result = $service->pullFromSheet($tableKey);
+                Log::info('[gsheets] pull ' . $tableKey, $result);
+            } catch (\Throwable $e) {
+                Log::warning('[gsheets] pull failed for ' . $tableKey . ': ' . $e->getMessage());
+                \App\Models\GoogleSheetSync::query()
+                    ->where('table_key', $tableKey)
+                    ->update(['last_error' => $e->getMessage()]);
+            }
+            // Gentle pacing between sheets (quota friendliness).
+            sleep(2);
+        }
+    }
+}

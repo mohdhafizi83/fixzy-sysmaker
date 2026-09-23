@@ -46,6 +46,7 @@ const { generateAdminPanelProvider } = require('./laravelAdminPanelGenerator');
 const { generateWorkflowHooks } = require('./laravelWorkflowGenerator');
 const { generateAuthIntegrations } = require('./laravelAuthIntegrationsGenerator');
 const { generateRealtimeModule } = require('./laravelRealtimeGenerator');
+const { generateGoogleSheetsModule } = require('./laravelGoogleSheetsGenerator');
 const { generateDeploymentGuidePage } = require('./laravelDocsGenerator');
 
 /**
@@ -195,6 +196,14 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         if (!realtimeResult.success) throw new Error(`Real-time module: ${realtimeResult.message}`);
         if (realtimeResult.backend) {
             console.log(`[realtime] enabled via ${realtimeResult.backend} (${realtimeResult.composerPackages.join(', ')})`);
+        }
+
+        // Google Sheets two-way sync (custom tables opted in; add/update
+        // only; service-account auth; polling every few minutes).
+        const gsheetsResult = await generateGoogleSheetsModule(fullSchema, outputDir);
+        if (!gsheetsResult.success) throw new Error(`Google Sheets sync: ${gsheetsResult.message}`);
+        if (gsheetsResult.syncedTables && gsheetsResult.syncedTables.length) {
+            console.log(`[gsheets] sync enabled for: ${gsheetsResult.syncedTables.join(', ')}`);
         }
 
         const guideResult = await generateDeploymentGuidePage(fullSchema, outputDir);

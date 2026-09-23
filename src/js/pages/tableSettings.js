@@ -65,6 +65,30 @@ export function populateTableSettings(tableName) {
         }
     }
     // ▲▲▲ END IMPORT LOGIC ▲▲▲
+
+    // ▼▼▼ GOOGLE SHEETS SYNC: custom tables only, module must be enabled ▼▼▼
+    const gsyncCheckbox = document.getElementById('tbl-google-sync-enabled');
+    if (gsyncCheckbox) {
+        const moduleEnabled = Number(appState.activeProject.module_google_sheets) === 1;
+        const isCoreTable = tableData.table_name === 'users'
+            || (tableData.feature_source && String(tableData.feature_source).trim() !== '');
+        const labelEl = document.getElementById('lbl-tbl-google-sync');
+
+        if (!moduleEnabled) {
+            gsyncCheckbox.checked = false;
+            gsyncCheckbox.disabled = true;
+            if (labelEl) labelEl.title = "Enable the Google Sheets Sync module in the project's Core Features tab first.";
+        } else if (isCoreTable) {
+            gsyncCheckbox.checked = false;
+            gsyncCheckbox.disabled = true;
+            if (labelEl) labelEl.title = "Google Sheets sync is only available for custom tables (not core or feature-generated tables).";
+        } else {
+            gsyncCheckbox.disabled = false;
+            if (labelEl) labelEl.title = "";
+            setElementValue('tbl-google-sync-enabled', tableData.google_sync_enabled);
+        }
+    }
+    // ▲▲▲ END GOOGLE SHEETS SYNC LOGIC ▲▲▲
     
     setElementValue('tbl-show-edit-button', tableData.show_edit_button);
     setElementValue('tbl-show-delete-button', tableData.show_delete_button);

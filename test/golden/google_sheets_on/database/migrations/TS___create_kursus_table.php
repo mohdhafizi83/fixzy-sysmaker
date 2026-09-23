@@ -1,0 +1,28 @@
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('kursus', function (Blueprint $table) {
+            $table->id();
+            $table->string('nama_kursus', 150);
+            $table->string('kod_kursus', 10)->unique();
+            $table->text('deskripsi')->nullable();
+            $table->integer('jam_kredit')->nullable()->default('3');
+            $table->foreignId('prasyarat_kursus_id')->nullable()->default('NULL');
+            $table->string('lokasi_kelas', 255)->nullable();
+            $table->string('youtube_intro', 255)->nullable();
+            $table->timestamps();
+            $table->softDeletes();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('kursus');
+    }
+};

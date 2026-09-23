@@ -44,6 +44,7 @@ CREATE TABLE projects (
     module_fake_data             INTEGER DEFAULT 1,
     module_realtime              INTEGER DEFAULT 0,
     realtime_backend             TEXT DEFAULT 'reverb', -- reverb (self-hosted) | pusher (hosted)
+    module_google_sheets         INTEGER DEFAULT 0,
     debug_mode                   INTEGER DEFAULT 0,
     tenancy_type                 TEXT DEFAULT 'standard', -- BARU: standard, one_to_many, many_to_many
     tenant_table                 TEXT,                    -- BARU: Nama jadual tenant (cth: fakulti, syarikat)
@@ -93,6 +94,7 @@ CREATE TABLE tables (
     static_grid_columns          INTEGER DEFAULT 2,
     table_hook_workflow          TEXT,
     feature_source               TEXT DEFAULT NULL,
+    google_sync_enabled          INTEGER DEFAULT 0,
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
 

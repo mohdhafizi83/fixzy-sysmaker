@@ -1,0 +1,88 @@
+<?php
+
+namespace App\Filament\Pages;
+
+use App\Models\FixzySetting;
+use App\Services\GoogleSheets\GoogleSheetsSyncService;
+use Filament\Pages\Page;
+use Illuminate\Support\Facades\Storage;
+
+/**
+ * Google Sheets Sync settings (Fixzy SysMaker generated).
+ *
+ * The admin uploads the Google Cloud service account JSON here (stored
+ * under storage/app/private, outside git) and sets the account to
+ * auto-share generated spreadsheets with. Secrets never live in code.
+ */
+class GoogleSheetsSettings extends Page
+{
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-table-cells';
+
+    protected static ?string $navigationLabel = 'Google Sheets';
+
+    protected static ?string $title = 'Google Sheets Sync Settings';
+
+    protected static ?string $slug = 'google-sheets-settings';
+
+    protected string $view = 'filament.pages.google-sheets-settings';
+
+    protected static ?int $navigationSort = 994;
+
+    protected static string | \UnitEnum | null $navigationGroup = 'System';
+
+    public array $settings = [];
+
+    public ?string $uploadJson = null;
+
+    public function mount(): void
+    {
+        $this->settings = [
+            'gsheets_share_email' => FixzySetting::get('gsheets_share_email', ''),
+            'gsheets_poll_minutes' => FixzySetting::get('gsheets_poll_minutes', '5'),
+        ];
+    }
+
+    /**
+     * Whitelist of setting keys this page may write. Hardcoded server-side
+     * — never derived from client-supplied state.
+     */
+    private const ALLOWED_KEYS = [
+        'gsheets_share_email',
+        'gsheets_poll_minutes',
+    ];
+
+    public function save(): void
+    {
+        foreach (self::ALLOWED_KEYS as $key) {
+            $value = $this->settings[$key] ?? null;
+            if ($value !== null && $value !== '') {
+                FixzySetting::set($key, $value);
+            }
+        }
+
+        if ($this->uploadJson !== null && trim($this->uploadJson) !== '') {
+            $decoded = json_decode($this->uploadJson, true);
+            if (! is_array($decoded) || ! isset($decoded['type'], $decoded['client_email'], $decoded['private_key'])) {
+                session()->flash('fixzy_settings_error', 'That does not look like a Google service account JSON file.');
+                return;
+            }
+            if (($decoded['type'] ?? '') !== 'service_account') {
+                session()->flash('fixzy_settings_error', 'The JSON must be a service account key (type: service_account).');
+                return;
+            }
+            // Store privately; record only the relative path in settings.
+            // Laravel 12 'local' disk root IS storage/app/private — store at
+            // the disk root, not a nested 'private/' prefix.
+            Storage::disk('local')->put('google_service_account.json', $this->uploadJson);
+            FixzySetting::set('gsheets_service_account_path', 'google_service_account.json');
+            $this->uploadJson = null;
+        }
+
+        session()->flash('fixzy_settings_saved', 'Google Sheets settings saved.');
+    }
+
+    public function getCredentialsConfiguredProperty(): bool
+    {
+        return GoogleSheetsSyncService::credentialsConfigured();
+    }
+}

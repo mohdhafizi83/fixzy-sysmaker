@@ -43,6 +43,31 @@ async function tryGen(name, fn) {
         require('../src/generators/laravelTablesGenerator').generateFilamentTablesTable(fullSchema, outDir));
     await tryGen('generateFilamentSchemasForm', () =>
         require('../src/generators/laravelSchemasGenerator').generateFilamentSchemasForm(fullSchema, outDir));
+    await tryGen('generateGoogleSheetsModule (off)', () =>
+        require('../src/generators/laravelGoogleSheetsGenerator').generateGoogleSheetsModule(fullSchema, outDir));
+
+    // Google Sheets ON: enable module + opt in two custom tables (one must
+    // be rejected logic-wise if feature-generated; fixture has none).
+    const gsSchema = JSON.parse(JSON.stringify(fullSchema));
+    gsSchema.project.module_google_sheets = 1;
+    const gsTables = Object.keys(gsSchema.database.table).filter((t) => t !== 'users');
+    if (gsTables[0]) gsSchema.database.table[gsTables[0]].google_sync_enabled = 1;
+    if (gsTables[1]) gsSchema.database.table[gsTables[1]].google_sync_enabled = 1;
+    const gsOut = path.join(outDir, '_gsheets_on');
+    await tryGen('generateGoogleSheetsModule (on)', () =>
+        require('../src/generators/laravelGoogleSheetsGenerator').generateGoogleSheetsModule(gsSchema, gsOut));
+    // Sabotage: users table must never be picked up even if flag set.
+    const sabSchema = JSON.parse(JSON.stringify(gsSchema));
+    sabSchema.database.table['users'].google_sync_enabled = 1;
+    const picked = require('../src/generators/laravelGoogleSheetsGenerator').collectSyncedTables(sabSchema)
+        .map((s) => s.tableName);
+    if (picked.includes('users')) {
+        results.push(['gsheets users-guard', 'FAIL', 'users table was collected for sync']);
+        console.log('FAIL gsheets users-guard: users table was collected');
+    } else {
+        results.push(['gsheets users-guard', 'OK', picked.length]);
+        console.log(`OK   gsheets users-guard (synced: ${picked.join(', ')})`);
+    }
 
     // Count files produced
     let count = 0;

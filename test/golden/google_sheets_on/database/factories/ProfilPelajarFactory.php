@@ -1,0 +1,23 @@
+<?php
+namespace Database\Factories;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\ProfilPelajar;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\ProfilPelajar>
+ */
+class ProfilPelajarFactory extends Factory
+{
+    protected $model = ProfilPelajar::class;
+
+    public function definition(): array
+    {
+        return [
+            'pelajar_id' => \App\Models\Pelajar::inRandomOrder()->value('id'),
+            'alamat' => fake()->address(),
+            'no_telefon' => fake()->phoneNumber(),
+            'tarikh_lahir' => fake()->date(),
+            'info_kecemasan' => $this->faker->randomElement(['Primary', 'Secondary', 'Diploma', 'Degree', 'Masters', 'PhD']),
+        ];
+    }
+}

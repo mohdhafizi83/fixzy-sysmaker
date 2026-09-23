@@ -1,0 +1,123 @@
+<?php
+
+namespace App\Filament\Imports;
+
+use App\Models\ProfilPelajar;
+use App\Models\Pelajar;
+use Filament\Actions\Imports\ImportColumn;
+use Filament\Actions\Imports\Importer;
+use Filament\Actions\Imports\Models\Import;
+use Illuminate\Support\Number;
+use Filament\Forms\Components\Checkbox;
+
+class ProfilPelajarImporter extends Importer
+{
+    protected static ?string $model = ProfilPelajar::class;
+
+    public static function getColumns(): array
+    {
+        return [
+            ImportColumn::make('id')
+                ->label('Id')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Id'),
+
+            ImportColumn::make('pelajar')
+                ->label('nama_penuh')
+                ->requiredMapping()
+                ->relationship(resolveUsing: ['nama_penuh'])
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['required', 'integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('nama_penuh'),
+
+            ImportColumn::make('alamat')
+                ->label('Alamat')
+                ->ignoreBlankState()
+                ->examples(['Sample Alamat 1', 'Sample Alamat 2'])
+                ->exampleHeader('Alamat'),
+
+            ImportColumn::make('no_telefon')
+                ->label('No Telefon')
+                ->ignoreBlankState()
+                ->rules(['max:20'])
+                ->examples(['Sample No Telefon 1', 'Sample No Telefon 2'])
+                ->exampleHeader('No Telefon'),
+
+            ImportColumn::make('tarikh_lahir')
+                ->label('Tarikh Lahir')
+                ->ignoreBlankState()
+                ->rules(['date'])
+                ->examples(['2024-01-01', '2024-12-31'])
+                ->exampleHeader('Tarikh Lahir'),
+
+            ImportColumn::make('info_kecemasan')
+                ->label('Info Kecemasan')
+                ->ignoreBlankState()
+                ->rules(['max:200'])
+                ->examples(['Sample Info Kecemasan 1', 'Sample Info Kecemasan 2'])
+                ->exampleHeader('Info Kecemasan'),
+
+            ImportColumn::make('created_at')
+                ->label('Created At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Created At'),
+
+            ImportColumn::make('updated_at')
+                ->label('Updated At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Updated At'),
+
+            ImportColumn::make('deleted_at')
+                ->label('Deleted At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Deleted At'),
+        ];
+    }
+
+    public function resolveRecord(): ?ProfilPelajar
+    {
+    
+        $pelajar = Pelajar::firstWhere('nama_penuh', $this->data['pelajar'] ?? null);
+
+        if (!$pelajar) {
+            return null;
+        }
+
+        return ProfilPelajar::firstOrNew([
+            'pelajar_id' => $pelajar->id
+        ]);
+    }
+
+    public static function getCompletedNotificationBody(Import $import): string
+    {
+        $body = 'Your Profil Pelajar import has completed and ' . Number::format($import->successful_rows) . ' ' . str('row')->plural($import->successful_rows) . ' imported.';
+
+        if ($failedRowsCount = $import->getFailedRowsCount()) {
+            $body .= ' ' . Number::format($failedRowsCount) . ' ' . str('row')->plural($failedRowsCount) . ' failed to import.';
+        }
+
+        return $body;
+    }
+    
+    public static function getOptionsFormComponents(): array
+    {
+        return [
+            Checkbox::make('updateExisting')
+                ->label('Update existing records'),
+        ];
+    }
+
+}

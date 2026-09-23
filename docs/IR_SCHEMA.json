@@ -196,6 +196,14 @@
               ]
             }
           }
+        },
+        "google_sheets_sync": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          }
         }
       }
     },

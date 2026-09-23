@@ -1,0 +1,521 @@
+<?php
+
+namespace App\Services\GoogleSheets;
+
+use App\Models\GoogleSheetSync;
+use Google\Service\Sheets;
+use Google\Service\Sheets\Spreadsheet;
+use Google\Service\Sheets\ValueRange;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
+
+/**
+ * Google Sheets two-way sync engine (Fixzy SysMaker generated).
+ *
+ * Design decisions (agreed scope):
+ *  - Add & update only. Rows deleted in the sheet are IGNORED (they are
+ *    re-pushed on the next sync). Deletions from the app DO remove the
+ *    row from the sheet.
+ *  - Row identity = `sync_uuid` column (column A in the sheet). Users
+ *    must not edit it; new sheet rows have it empty and get a UUID on
+ *    import.
+ *  - Conflicts: last-write-wins. A sheet cell is only imported when the
+ *    DB row was not modified after the sheet's last sync timestamp.
+ *  - Credentials live in fixzy_settings (admin settings page), never
+ *    in code. The service account JSON is stored on disk
+ *    (storage/app/private/google_service_account.json).
+ */
+class GoogleSheetsSyncService
+{
+    /** @var array<string,array> sync targets from config/fixzy_sheets.php */
+    protected array $targets;
+
+    protected ?Sheets $service = null;
+
+    protected ?\Google\Service\Drive $driveService = null;
+
+    protected ?\Google\Client $client = null;
+
+    /**
+     * While true, DB writes originate from a sheet pull; observers must
+     * NOT push them back (prevents echo loops sheet->DB->sheet).
+     */
+    public static bool $importing = false;
+
+    public function __construct()
+    {
+        $this->targets = config('fixzy_sheets.targets', []);
+    }
+
+    public static function credentialsConfigured(): bool
+    {
+        $path = \App\Models\FixzySetting::get('gsheets_service_account_path');
+        return $path && Storage::disk('local')->exists($path);
+    }
+
+    protected function client(): \Google\Client
+    {
+        if ($this->client === null) {
+            $path = \App\Models\FixzySetting::get('gsheets_service_account_path');
+            if (! $path || ! Storage::disk('local')->exists($path)) {
+                throw new \RuntimeException('Google service account JSON not configured. Open the Google Sheets settings page.');
+            }
+            // Optional endpoint override (gsheets_base_uri in fixzy_settings).
+            // Used by the mock-API e2e harness; also handy behind corporate
+            // proxies. Never set in production — defaults to googleapis.com.
+            $baseUri = \App\Models\FixzySetting::get('gsheets_base_uri');
+            if (is_string($baseUri) && $baseUri !== '') {
+                // In override mode we must NOT call setAuthConfig(): it flips
+                // the client into ADC mode whose auth handler re-fetches a
+                // signed assertion from the REAL google token endpoint,
+                // ignoring any token we set. Instead, fetch a bearer token
+                // from the override host and hand it over directly.
+                $tokenJson = @file_get_contents(rtrim($baseUri, '/') . '/token', false, stream_context_create([
+                    'http' => [
+                        'method' => 'POST',
+                        'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
+                        'content' => 'grant_type=' . rawurlencode('urn:ietf:params:oauth:grant-type:jwt-bearer') . '&assertion=override',
+                        'timeout' => 15,
+                        'ignore_errors' => true,
+                    ],
+                ]));
+                $decoded = json_decode((string) $tokenJson, true);
+                if (! is_array($decoded) || ! isset($decoded['access_token'])) {
+                    throw new \RuntimeException('Override token endpoint did not return an access_token.');
+                }
+                $decoded['created'] = time();
+                $client = new \Google\Client();
+                $client->setAccessToken($decoded);
+            } else {
+                $client = new \Google\Client();
+                $client->setAuthConfig(Storage::disk('local')->path($path));
+                $client->addScope(Sheets::SPREADSHEETS);
+                // Sharing a spreadsheet with a user is a Drive API operation.
+                $client->addScope(\Google\Service\Drive::DRIVE);
+            }
+            $this->client = $client;
+        }
+
+        return $this->client;
+    }
+
+    protected function sheets(): Sheets
+    {
+        if ($this->service === null) {
+            $baseUri = \App\Models\FixzySetting::get('gsheets_base_uri');
+            if (is_string($baseUri) && $baseUri !== '') {
+                $this->service = new Sheets($this->client(), rtrim($baseUri, '/') . '/');
+            } else {
+                $this->service = new Sheets($this->client());
+            }
+        }
+
+        return $this->service;
+    }
+
+    /** Drive API — used only for sharing spreadsheets with the admin. */
+    protected function drive(): \Google\Service\Drive
+    {
+        if ($this->driveService === null) {
+            $baseUri = \App\Models\FixzySetting::get('gsheets_base_uri');
+            if (is_string($baseUri) && $baseUri !== '') {
+                $this->driveService = new \Google\Service\Drive($this->client(), rtrim($baseUri, '/') . '/');
+            } else {
+                $this->driveService = new \Google\Service\Drive($this->client());
+            }
+        }
+
+        return $this->driveService;
+    }
+
+    /**
+     * Create a spreadsheet for a sync target and push all current rows.
+     *
+     * @return GoogleSheetSync the mapping row (with spreadsheet_id set)
+     */
+    public function createSheetFor(string $tableKey): GoogleSheetSync
+    {
+        $target = $this->targetOrFail($tableKey);
+        $modelClass = $target['model'];
+
+        $mapping = GoogleSheetSync::firstOrNew(['table_key' => $tableKey]);
+
+        $spreadsheet = new Spreadsheet();
+        $spreadsheet->setProperties(new \Google\Service\Sheets\SpreadsheetProperties([
+            'title' => $target['title'] . ' (Fixzy Sync)',
+        ]));
+        $created = $this->sheets()->spreadsheets->create($spreadsheet);
+        $mapping->spreadsheet_id = $created->getSpreadsheetId();
+        $mapping->sheet_name = $created->getSheets()[0]->getProperties()->getTitle() ?: 'Sheet1';
+        $mapping->save();
+
+        // Share with the admin's Google account if configured.
+        $shareEmail = \App\Models\FixzySetting::get('gsheets_share_email');
+        if ($shareEmail) {
+            try {
+                $perm = new \Google\Service\Drive\Permission([
+                    'type' => 'user',
+                    'role' => 'writer',
+                    'emailAddress' => $shareEmail,
+                ]);
+                $this->drive()->permissions->create($mapping->spreadsheet_id, $perm);
+            } catch (\Throwable $e) {
+                // Sharing failure must not abort sheet creation.
+                report($e);
+            }
+        }
+
+        $this->pushFull($mapping, $target);
+
+        return $mapping;
+    }
+
+    /**
+     * Push the entire table into the sheet (overwrite values).
+     */
+    public function pushFull(GoogleSheetSync $mapping, ?array $target = null): void
+    {
+        $target ??= $this->targetOrFail($mapping->table_key);
+        $modelClass = $target['model'];
+
+        $values = [$this->headerRow($target)];
+        $now = now();
+
+        $modelClass::query()->orderBy($modelClass::newModelInstance()->getKeyName())->each(function (Model $row) use (&$values, $target, $now) {
+            // Every synced row needs an identity before it hits the sheet.
+            if (! $row->sync_uuid) {
+                $row->forceFill(['sync_uuid' => (string) \Illuminate\Support\Str::uuid()])->saveQuietly();
+            }
+            $values[] = $this->rowToSheetValues($row, $target);
+            $row->forceFill(['sheet_synced_at' => $now])->saveQuietly();
+        });
+
+        $range = $this->quotedRange($mapping) . '!A1';
+        $body = new ValueRange(['values' => $values]);
+        $this->sheets()->spreadsheets_values->update(
+            $mapping->spreadsheet_id, $range, $body, ['valueInputOption' => 'RAW']
+        );
+
+        $mapping->forceFill(['last_synced_at' => $now, 'last_error' => null])->save();
+    }
+
+    /**
+     * Pull changes from the sheet into the database (add + update only).
+     * Called by the scheduled job every few minutes.
+     *
+     * @return array{imported:int,updated:int,skipped:int}
+     */
+    public function pullFromSheet(string $tableKey): array
+    {
+        self::$importing = true;
+        try {
+            return $this->doPullFromSheet($tableKey);
+        } finally {
+            self::$importing = false;
+        }
+    }
+
+    protected function doPullFromSheet(string $tableKey): array
+    {
+        $target = $this->targetOrFail($tableKey);
+        $modelClass = $target['model'];
+
+        $mapping = GoogleSheetSync::where('table_key', $tableKey)->first();
+        if (! $mapping || ! $mapping->spreadsheet_id) {
+            return ['imported' => 0, 'updated' => 0, 'skipped' => 0];
+        }
+
+        $range = $this->quotedRange($mapping) . '!A1:ZZZ';
+        $response = $this->sheets()->spreadsheets_values->get($mapping->spreadsheet_id, $range);
+        $rows = $response->getValues() ?: [];
+
+        if (count($rows) < 2) {
+            $mapping->forceFill(['last_synced_at' => now(), 'last_error' => null])->save();
+            return ['imported' => 0, 'updated' => 0, 'skipped' => 0];
+        }
+
+        $header = array_map(fn ($h) => trim((string) $h), $rows[0]);
+        $colIndex = [];
+        foreach ($target['columns'] as $i => $col) {
+            $pos = array_search($col['header'], $header, true);
+            if ($pos === false) {
+                throw new \RuntimeException("Column '{$col['header']}' missing from sheet — do not rename the header row.");
+            }
+            $colIndex[$col['field']] = $pos;
+        }
+
+        $lastSync = $mapping->last_synced_at;
+        $imported = $updated = $skipped = 0;
+        $seenUuids = [];
+
+        foreach ($rows as $rowIdx => $raw) {
+            if ($rowIdx === 0) {
+                continue; // header
+            }
+            $uuid = trim((string) ($raw[0] ?? ''));
+
+            if ($uuid === '') {
+                // New row inserted directly in the sheet. forceFill because
+                // sync_uuid is not in the model's $fillable (mass-assignment
+                // protection) and create() would silently drop it.
+                $attrs = $this->sheetRowToAttributes($raw, $colIndex, $target);
+                $attrs['sync_uuid'] = (string) \Illuminate\Support\Str::uuid();
+                $attrs['sheet_synced_at'] = now();
+                try {
+                    $new = new $modelClass();
+                    $new->forceFill($attrs)->save();
+                    $imported++;
+                    $seenUuids[] = $attrs['sync_uuid'];
+                    // Backfill the generated uuid into the sheet's identity
+                    // column so the row is tracked both ways. Without this,
+                    // the next pull would import the same sheet row again
+                    // (duplicate) and delete/update lookups by uuid would
+                    // never find it.
+                    $this->sheets()->spreadsheets_values->update(
+                        $mapping->spreadsheet_id,
+                        $this->quotedRange($mapping) . '!A' . ($rowIdx + 1),
+                        new ValueRange(['values' => [[$attrs['sync_uuid']]]]),
+                        ['valueInputOption' => 'RAW']
+                    );
+                } catch (\Throwable $e) {
+                    // Row fails DB constraints (e.g. required column that is
+                    // not part of the sheet). Skip it — one bad row must not
+                    // abort the whole pull.
+                    \Illuminate\Support\Facades\Log::warning(
+                        '[gsheets] import skipped a new sheet row: ' . $e->getMessage()
+                    );
+                    $skipped++;
+                }
+                continue;
+            }
+
+            $seenUuids[] = $uuid;
+            $row = $modelClass::query()->where('sync_uuid', $uuid)->first();
+            if (! $row) {
+                // Unknown uuid (user pasted one) — treat as new.
+                $attrs = $this->sheetRowToAttributes($raw, $colIndex, $target);
+                $attrs['sync_uuid'] = $uuid;
+                $attrs['sheet_synced_at'] = now();
+                $new = new $modelClass();
+                $new->forceFill($attrs)->save();
+                $imported++;
+                continue;
+            }
+
+            // Conflict guard: if the DB row changed after the last sync,
+            // the DB wins (its value will be pushed back).
+            if ($lastSync && $row->updated_at && $row->updated_at->gt($lastSync)) {
+                $skipped++;
+                continue;
+            }
+
+            $attrs = $this->sheetRowToAttributes($raw, $colIndex, $target);
+            $dirty = false;
+            foreach ($attrs as $field => $value) {
+                if ((string) $row->getAttribute($field) !== (string) $value) {
+                    $row->setAttribute($field, $value);
+                    $dirty = true;
+                }
+            }
+            if ($dirty) {
+                $row->forceFill(['sheet_synced_at' => now()])->save();
+                $updated++;
+            }
+        }
+
+        $mapping->forceFill(['last_synced_at' => now(), 'last_error' => null])->save();
+
+        return ['imported' => $imported, 'updated' => $updated, 'skipped' => $skipped];
+    }
+
+    /**
+     * Push a single record change to the sheet (called from the observer).
+     * Insert: append a row. Update: rewrite the matching row by sync_uuid.
+     * Delete: remove the row from the sheet.
+     */
+    public function pushRecord(string $tableKey, Model $row, string $op = 'update'): void
+    {
+        $target = $this->targetOrFail($tableKey);
+        $mapping = GoogleSheetSync::where('table_key', $tableKey)->first();
+        if (! $mapping || ! $mapping->spreadsheet_id) {
+            return; // Sheet not created yet — nothing to push.
+        }
+
+        $sheetId = $mapping->spreadsheet_id;
+        $quoted = $this->quotedRange($mapping);
+
+        if ($op === 'delete') {
+            if (! $row->sync_uuid) {
+                return;
+            }
+            $found = $this->findRowByUuid($sheetId, $quoted, $row->sync_uuid, $mapping->sheet_name ?: 'Sheet1');
+            if ($found !== null) {
+                $batch = new Sheets\BatchUpdateSpreadsheetRequest([
+                    'requests' => [[
+                        'deleteDimension' => [
+                            'range' => [
+                                'sheetId' => $found['sheetId'],
+                                'dimension' => 'ROWS',
+                                'startIndex' => $found['rowIndex'],
+                                'endIndex' => $found['rowIndex'] + 1,
+                            ],
+                        ],
+                    ]],
+                ]);
+                $this->sheets()->spreadsheets->batchUpdate($sheetId, $batch);
+            }
+            return;
+        }
+
+        if (! $row->sync_uuid) {
+            $row->forceFill(['sync_uuid' => (string) \Illuminate\Support\Str::uuid()])->saveQuietly();
+        }
+
+        $values = $this->rowToSheetValues($row, $target);
+        $found = $this->findRowByUuid($sheetId, $quoted, $row->sync_uuid, $mapping->sheet_name ?: 'Sheet1');
+
+        if ($found === null) {
+            $body = new ValueRange(['values' => [$values]]);
+            $this->sheets()->spreadsheets_values->append(
+                $sheetId, $quoted . '!A1', $body,
+                ['valueInputOption' => 'RAW', 'insertDataOption' => 'INSERT_ROWS']
+            );
+        } else {
+            $range = $quoted . '!A' . ($found['rowIndex'] + 1);
+            $body = new ValueRange(['values' => [$values]]);
+            $this->sheets()->spreadsheets_values->update(
+                $sheetId, $range, $body, ['valueInputOption' => 'RAW']
+            );
+        }
+
+        $row->forceFill(['sheet_synced_at' => now()])->saveQuietly();
+    }
+
+    /** Locate a data row (0-based index within the sheet) whose column A equals the uuid. */
+    protected function findRowByUuid(string $sheetId, string $quotedSheet, string $uuid, string $sheetName = ''): ?array
+    {
+        $response = $this->sheets()->spreadsheets_values->get($sheetId, $quotedSheet . '!A2:A');
+        $rows = $response->getValues() ?: [];
+        foreach ($rows as $i => $r) {
+            if (trim((string) ($r[0] ?? '')) === $uuid) {
+                return ['rowIndex' => $i + 1, 'sheetId' => $this->sheetGid($sheetId, $sheetName)];
+            }
+        }
+        return null;
+    }
+
+    protected function sheetGid(string $sheetId, string $sheetName = ''): int
+    {
+        $meta = $this->sheets()->spreadsheets->get($sheetId, ['fields' => 'sheets.properties']);
+        foreach ($meta->getSheets() as $s) {
+            if ($sheetName === '' || ($s->getProperties()->getTitle() ?: 'Sheet1') === $sheetName) {
+                return (int) $s->getProperties()->getSheetId();
+            }
+        }
+        return 0;
+    }
+
+    protected function quotedRange(GoogleSheetSync $mapping): string
+    {
+        $name = $mapping->sheet_name ?: 'Sheet1';
+        return "'" . str_replace("'", "''", $name) . "'";
+    }
+
+    protected function headerRow(array $target): array
+    {
+        $headers = ['sync_uuid'];
+        foreach ($target['columns'] as $col) {
+            $headers[] = $col['header'];
+        }
+        return $headers;
+    }
+
+    protected function rowToSheetValues(Model $row, array $target): array
+    {
+        $values = [$row->sync_uuid];
+        foreach ($target['columns'] as $col) {
+            $values[] = $this->valueToSheet($row->getAttribute($col['field']), $col['type']);
+        }
+        return $values;
+    }
+
+    protected function valueToSheet($value, string $type)
+    {
+        if ($value === null) {
+            return '';
+        }
+        switch ($type) {
+            case 'date':
+                return $value instanceof \DateTimeInterface ? $value->format('Y-m-d') : (string) $value;
+            case 'datetime':
+                return $value instanceof \DateTimeInterface ? $value->format('Y-m-d H:i:s') : (string) $value;
+            case 'bool':
+                return $value ? 'TRUE' : 'FALSE';
+            case 'number':
+                return is_numeric($value) ? $value + 0 : (string) $value;
+            default:
+                return (string) $value;
+        }
+    }
+
+    protected function sheetRowToAttributes(array $raw, array $colIndex, array $target): array
+    {
+        $attrs = [];
+        foreach ($target['columns'] as $col) {
+            $pos = $colIndex[$col['field']];
+            $value = $raw[$pos] ?? '';
+            $value = is_string($value) ? trim($value) : $value;
+
+            if ($value === '') {
+                $attrs[$col['field']] = null;
+                continue;
+            }
+
+            switch ($col['type']) {
+                case 'number':
+                    $attrs[$col['field']] = is_numeric($value) ? $value + 0 : $value;
+                    break;
+                case 'bool':
+                    $t = is_string($value) ? strtolower($value) : $value;
+                    $attrs[$col['field']] = in_array($t, ['1', 'true', 'yes', 'ya', 'ya1'], true) ? 1 : 0;
+                    break;
+                case 'date':
+                    $attrs[$col['field']] = $this->parseDate($value, 'Y-m-d');
+                    break;
+                case 'datetime':
+                    $attrs[$col['field']] = $this->parseDate($value, 'Y-m-d H:i:s');
+                    break;
+                default:
+                    $attrs[$col['field']] = (string) $value;
+            }
+        }
+        return $attrs;
+    }
+
+    protected function parseDate($value, string $format): ?string
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format($format);
+        }
+        $value = (string) $value;
+        // Google Sheets may return serial numbers for dates.
+        if (is_numeric($value) && (float) $value > 1 && (float) $value < 2958466) {
+            $days = (float) $value;
+            $unix = ($days - 25569) * 86400; // Excel serial -> unix (UTC)
+            return gmdate($format, (int) $unix);
+        }
+        try {
+            return (new \DateTimeImmutable($value))->format($format);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    protected function targetOrFail(string $tableKey): array
+    {
+        if (! isset($this->targets[$tableKey])) {
+            throw new \RuntimeException("Unknown sync target: {$tableKey}");
+        }
+        return $this->targets[$tableKey];
+    }
+}

@@ -388,6 +388,9 @@ function exportIR(fullSchema) {
                 enabled: !!p.module_realtime,
                 backend: p.realtime_backend === 'pusher' ? 'pusher' : 'reverb',
             },
+            google_sheets_sync: {
+                enabled: !!p.module_google_sheets,
+            },
             soft_delete: {
                 mode: p.data_delete_type === 'soft' ? 'soft' : 'hard',
                 restore_allowed: true,

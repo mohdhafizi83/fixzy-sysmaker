@@ -1,0 +1,31 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+/**
+ * Mapping between an app table and its Google Spreadsheet
+ * (Fixzy SysMaker Google Sheets Sync module).
+ */
+class GoogleSheetSync extends Model
+{
+    protected $fillable = [
+        'table_key',
+        'spreadsheet_id',
+        'sheet_name',
+        'last_synced_at',
+        'last_error',
+    ];
+
+    protected $casts = [
+        'last_synced_at' => 'datetime',
+    ];
+
+    public function sheetUrl(): ?string
+    {
+        return $this->spreadsheet_id
+            ? 'https://docs.google.com/spreadsheets/d/' . $this->spreadsheet_id . '/edit'
+            : null;
+    }
+}
