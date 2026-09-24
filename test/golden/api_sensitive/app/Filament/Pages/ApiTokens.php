@@ -1,0 +1,117 @@
+<?php
+
+namespace App\Filament\Pages;
+
+use App\Api\ApiRegistry;
+use Filament\Pages\Page;
+use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\PersonalAccessToken;
+
+/**
+ * API Tokens (Fixzy SysMaker generated code).
+ *
+ * Create/revoke Sanctum bearer tokens for the /api/v1 endpoints.
+ * A token's name is free-form; its abilities are informational —
+ * actual access is enforced per-table by Shield roles of the token
+ * owner plus the generated field allowlists.
+ *
+ * Access: super_admin only (tokens are a security surface).
+ */
+class ApiTokens extends Page
+{
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-key';
+
+    protected static ?string $navigationLabel = 'API Tokens';
+
+    protected static ?string $title = 'API Tokens';
+
+    protected static ?string $slug = 'api-tokens';
+
+    protected static ?int $navigationSort = 995;
+
+    protected static string | \UnitEnum | null $navigationGroup = 'System';
+
+    protected string $view = 'filament.pages.api-tokens';
+
+    public string $tokenName = '';
+
+    public ?string $plainTextToken = null;
+
+    /** @var \Illuminate\Database\Eloquent\Collection<int, PersonalAccessToken> */
+    public $tokens;
+
+    public static function canAccess(): bool
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return false;
+        }
+
+        return $user->hasRole('super_admin')
+            || (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin());
+    }
+
+    public function mount(): void
+    {
+        $this->refreshTokens();
+    }
+
+    public function refreshTokens(): void
+    {
+        $this->tokens = Auth::user()->tokens()->latest()->get();
+    }
+
+    public function createToken(): void
+    {
+        $name = trim($this->tokenName);
+        if ($name === '') {
+            \Filament\Notifications\Notification::make()
+                ->title('Token name is required.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $token = Auth::user()->createToken($name, ['*']);
+        $this->plainTextToken = $token->plainTextToken;
+        $this->tokenName = '';
+        $this->refreshTokens();
+
+        \Filament\Notifications\Notification::make()
+            ->title('Token created. Copy it now — it is shown only once.')
+            ->success()
+            ->send();
+    }
+
+    public function revokeToken(int $id): void
+    {
+        $token = Auth::user()->tokens()->find($id);
+        if ($token) {
+            $token->delete();
+        }
+        $this->refreshTokens();
+
+        \Filament\Notifications\Notification::make()
+            ->title('Token revoked.')
+            ->success()
+            ->send();
+    }
+
+    /** Endpoint list for the docs table on the page. */
+    public function endpointDocs(): array
+    {
+        $rows = [];
+        foreach (ApiRegistry::$tables as $slug => $cfg) {
+            $rows[] = [
+                'slug' => $slug,
+                'table' => $cfg['table'],
+                'fields' => implode(', ', $cfg['fields']),
+                'read_roles' => implode(', ', $cfg['read_roles']) ?: '—',
+                'write_roles' => implode(', ', $cfg['write_roles']) ?: '—',
+            ];
+        }
+
+        return $rows;
+    }
+}

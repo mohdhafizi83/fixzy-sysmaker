@@ -6,6 +6,7 @@ import { renderAutomationTab } from '../features/schedulerManager.js';
 import { renderPublicFormTab } from '../features/publicFormManager.js';
 import { renderNumberingSection } from '../features/numberingManager.js';
 import { renderImportSection } from '../features/importManager.js';
+import { renderApiSection } from '../features/apiManager.js';
 import { appState, setLastActiveChildTable } from '../state.js';
 import { loadProjectData, SaveManager } from '../../renderer.js';
 import { 
@@ -170,6 +171,7 @@ export function populateTableSettings(tableName) {
     renderPublicFormTab(tableData);
     renderNumberingSection(tableData);
     renderImportSection(tableData);
+    renderApiSection(tableData);
 	
     const tvClassesInput = document.getElementById('tbl-table-view-classes-input');
     const tvClassesSelect = document.getElementById('table-view-classes-select');

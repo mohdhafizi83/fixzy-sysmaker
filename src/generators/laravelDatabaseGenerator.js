@@ -311,6 +311,8 @@ async function generateFilamentUserModel(fullSchema, basePath) {
             trait_audit: audit ? ', HasAudits' : '',
             import_shield: authorization ? 'use Spatie\\Permission\\Traits\\HasRoles;' : '',
             trait_shield: authorization ? ', HasRoles' : '',
+            import_api_tokens: require('./apiConfig').anyApiEnabled(fullSchema) ? 'use Laravel\\Sanctum\\HasApiTokens;' : '',
+            trait_api_tokens: require('./apiConfig').anyApiEnabled(fullSchema) ? ', HasApiTokens' : '',
             import_2fa: twoFa ? 'use Filament\\Auth\\MultiFactor\\Email\\Contracts\\HasEmailAuthentication;' : '',
             implements_2fa: twoFa ? 'HasEmailAuthentication' : '',
             methods_2fa: twoFa ? `

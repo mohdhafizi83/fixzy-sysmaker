@@ -148,6 +148,7 @@ real code — the generated app ships only what you picked.
 | Auto Numbering | Off | Race-safe reference codes per table (INV-202609-0001), prefix + date + width (see below) |
 | Smart Import / Export | Off | CSV/XLSX import with match-field profiles (update/skip/insert), dry-run validation (see below) |
 | Localization (Malay) | English | Full BM admin: chrome + validation via Filament's bundled Malay, per-field captions, live EN/BM switcher (see below) |
+| REST API | Off | Token-authenticated JSON API per table (Sanctum), role-scoped read/write, field allowlists, rate limiting (see below) |
 | Real-time Notifications & Chat | Off | Live notification bell + chat module over WebSocket (see below) |
 | Google Sheets Sync | Off | Two-way sync of custom tables with Google Sheets (see below) |
 | Fake Data (Data Seeder) | Off | Factories + seeders with realistic sample data |
@@ -377,6 +378,27 @@ v5.8.4), so the module uses plain Laravel: a `SetLocale` middleware
 reads the session and calls `App::setLocale()`, and the switcher
 route only accepts the whitelisted `en`/`ms` codes — no third-party
 plugin needed.
+
+### REST API (opt-in)
+
+Give external systems a clean JSON door into selected tables — no
+Laravel knowledge required on the consuming side.
+
+- **Token auth** — Laravel Sanctum bearer tokens. Create/revoke them
+  in Admin → API Tokens (super-admin only).
+- **Per-table control** — enable only the tables you want exposed,
+  pick which Shield roles may read and which may write, and choose
+  exactly which columns appear. Sensitive columns (passwords,
+  tokens, secrets) are stripped at generation time — they can never
+  leak, even if misconfigured.
+- **Endpoints** — `GET /api/v1/{table}` (paginated list + simple
+  filters), `GET /api/v1/{table}/{id}`, `POST` (create),
+  `PUT /api/v1/{table}/{id}` (update). Writes are validated with
+  the same rules as the admin form (required, max length, unique).
+- **Rate limiting** — per-table, per-token requests/min (default
+  60). Exceeding it returns HTTP 429.
+- **Self-documenting** — the API Tokens page lists every exposed
+  endpoint with its fields and required roles.
 
 ### Real-time Notifications & Chat (opt-in)
 

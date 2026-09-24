@@ -1,0 +1,84 @@
+<x-filament-panels::page>
+    <x-filament::section>
+        <div style="display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 220px;">
+                <label style="font-size: 0.75rem; font-weight: 600; display: block; margin-bottom: 0.25rem;">New token name</label>
+                <input type="text" wire:model="tokenName" placeholder="e.g. integration-partner-x"
+                       style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid rgb(209 213 219); border-radius: 0.5rem;">
+            </div>
+            <x-filament::button wire:click="createToken" icon="heroicon-o-plus" size="sm">
+                Create token
+            </x-filament::button>
+        </div>
+
+        @if ($plainTextToken)
+            <div style="margin-top: 1rem; padding: 0.75rem 1rem; background: rgb(236 253 245); border: 1px solid rgb(167 243 208); border-radius: 0.5rem;">
+                <p style="font-size: 0.75rem; font-weight: 600; color: rgb(6 95 70); margin-bottom: 0.25rem;">
+                    Copy this token now — it will not be shown again:
+                </p>
+                <code style="font-size: 0.8rem; word-break: break-all;">{{ $plainTextToken }}</code>
+            </div>
+        @endif
+    </x-filament::section>
+
+    <x-filament::section heading="Your tokens">
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; font-size: 0.875rem; border-collapse: collapse;">
+                <thead>
+                    <tr style="text-align: left; font-size: 0.75rem; font-weight: 600; color: rgb(107 114 128); border-bottom: 1px solid rgb(229 231 235);">
+                        <th style="padding: 0.5rem 1rem 0.5rem 0;">Name</th>
+                        <th style="padding: 0.5rem 1rem 0.5rem 0;">Last used</th>
+                        <th style="padding: 0.5rem 1rem 0.5rem 0;">Created</th>
+                        <th style="padding: 0.5rem 0;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($tokens as $t)
+                        <tr style="border-bottom: 1px solid rgb(243 244 246);">
+                            <td style="padding: 0.5rem 1rem 0.5rem 0; font-weight: 500;">{{ $t->name }}</td>
+                            <td style="padding: 0.5rem 1rem 0.5rem 0;">{{ $t->last_used_at ? $t->last_used_at->diffForHumans() : 'never' }}</td>
+                            <td style="padding: 0.5rem 1rem 0.5rem 0;">{{ $t->created_at->format('Y-m-d H:i') }}</td>
+                            <td style="padding: 0.5rem 0; text-align: right;">
+                                <x-filament::button wire:click="revokeToken({{ $t->id }})" color="danger" size="xs">
+                                    Revoke
+                                </x-filament::button>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="4" style="padding: 1rem 0; color: rgb(107 114 128);">No tokens yet.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </x-filament::section>
+
+    <x-filament::section heading="API endpoints">
+        <p style="font-size: 0.75rem; color: rgb(107 114 128); margin-bottom: 0.75rem;">
+            Send the token as <code>Authorization: Bearer &lt;token&gt;</code>. Role columns show which Shield roles grant access per table.
+        </p>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; font-size: 0.8rem; border-collapse: collapse;">
+                <thead>
+                    <tr style="text-align: left; font-size: 0.7rem; font-weight: 600; color: rgb(107 114 128); border-bottom: 1px solid rgb(229 231 235);">
+                        <th style="padding: 0.4rem 1rem 0.4rem 0;">Endpoint</th>
+                        <th style="padding: 0.4rem 1rem 0.4rem 0;">Methods</th>
+                        <th style="padding: 0.4rem 1rem 0.4rem 0;">Exposed fields</th>
+                        <th style="padding: 0.4rem 1rem 0.4rem 0;">Read roles</th>
+                        <th style="padding: 0.4rem 0;">Write roles</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($this->endpointDocs() as $e)
+                        <tr style="border-bottom: 1px solid rgb(243 244 246);">
+                            <td style="padding: 0.4rem 1rem 0.4rem 0;"><code>/api/v1/{{ $e['slug'] }}</code></td>
+                            <td style="padding: 0.4rem 1rem 0.4rem 0;">GET, POST, PUT</td>
+                            <td style="padding: 0.4rem 1rem 0.4rem 0; color: rgb(55 65 81);">{{ $e['fields'] }}</td>
+                            <td style="padding: 0.4rem 1rem 0.4rem 0;">{{ $e['read_roles'] }}</td>
+                            <td style="padding: 0.4rem 0;">{{ $e['write_roles'] }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </x-filament::section>
+</x-filament-panels::page>

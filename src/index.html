@@ -1969,6 +1969,39 @@
         </p>
     </div>
 </div>
+<div class="form-group mt-2" style="border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+    <h4>REST API</h4>
+    <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 0.5rem;">
+        Expose this table over a token-authenticated JSON API (/api/v1/...). Sensitive columns (passwords, tokens, secrets) are never exposed.
+    </p>
+    <label class="checkbox-label" style="font-weight: 600;">
+        <input type="checkbox" id="tbl-api-enabled" name="tbl-api-enabled"> Enable REST API for this table
+    </label>
+    <div id="api-panel" class="hidden" style="margin-top: 0.75rem;">
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+            <div style="flex: 1; min-width: 180px;">
+                <label style="font-weight: 600;">Read roles (comma-separated Shield roles)</label><br>
+                <input type="text" id="api-read-roles" placeholder="admin" style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+            </div>
+            <div style="flex: 1; min-width: 180px;">
+                <label style="font-weight: 600;">Write roles (comma-separated)</label><br>
+                <input type="text" id="api-write-roles" placeholder="admin" style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+            </div>
+            <div>
+                <label style="font-weight: 600;">Rate limit (req/min per token)</label><br>
+                <input type="number" id="api-rate-limit" value="60" min="1" max="10000" style="width: 90px; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+            </div>
+        </div>
+        <div style="margin-top: 0.75rem;">
+            <label style="font-weight: 600;">Exposed fields</label>
+            <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 0.4rem;">Leave none checked to expose all non-sensitive columns.</p>
+            <div id="api-fields-list" style="display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; max-height: 180px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 0.6rem;"></div>
+        </div>
+        <p class="helper-text" style="margin-top: 0.6rem; color: var(--secondary-color);">
+            Endpoints: GET /api/v1/{table} (list, paginated), GET /api/v1/{table}/{id}, POST, PUT. Create tokens in Admin &rarr; API Tokens.
+        </p>
+    </div>
+</div>
                                 </div>
                             </div>
                         </div>

@@ -131,6 +131,11 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         const localizationResult = generateLocalizationModule(fullSchema, outputDir);
         if (!localizationResult.success) throw new Error(`Localization: ${localizationResult.error || localizationResult.message}`);
 
+        // REST API module (Sanctum token auth, per-table allowlists).
+        const { generateApiModule } = require('./laravelApiGenerator');
+        const apiResult = generateApiModule(fullSchema, outputDir);
+        if (!apiResult.success) throw new Error(`REST API: ${apiResult.error || apiResult.message}`);
+
         // Native PrintAction class — referenced by resources with print view
         // enabled; must ship with the generated app, not just the preview skeleton.
         const anyPrint = Object.values(fullSchema.database.table || {})

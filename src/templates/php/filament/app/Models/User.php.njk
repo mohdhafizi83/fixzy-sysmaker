@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 {{ import_shield }}
-{{ import_softdelete }}
+{% if import_api_tokens %}{{ import_api_tokens }}
+{% endif %}{{ import_softdelete }}
 {{ import_audit }}
 {{ import_tenant }}
 {{ import_2fa }}
@@ -15,7 +16,7 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable {{ implements_clause }}
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable{{ trait_shield }}{{ trait_audit }}{{ trait_softdelete }};
+    use HasFactory, Notifiable{{ trait_shield }}{{ trait_api_tokens }}{{ trait_audit }}{{ trait_softdelete }};
 
     /**
      * The attributes that are mass assignable.

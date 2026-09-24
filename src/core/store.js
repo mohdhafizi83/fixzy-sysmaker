@@ -80,6 +80,12 @@ function openStore(dbPath) {
         if (!tableCols.includes('import_config')) {
             db.exec("ALTER TABLE tables ADD COLUMN import_config TEXT");
         }
+        if (!tableCols.includes('api_enabled')) {
+            db.exec("ALTER TABLE tables ADD COLUMN api_enabled INTEGER DEFAULT 0");
+        }
+        if (!tableCols.includes('api_config')) {
+            db.exec("ALTER TABLE tables ADD COLUMN api_config TEXT");
+        }
         if (!tableCols.includes('table_view_title_ms')) {
             db.exec("ALTER TABLE tables ADD COLUMN table_view_title_ms TEXT");
         }

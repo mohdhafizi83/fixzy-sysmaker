@@ -109,6 +109,8 @@ CREATE TABLE tables (
     numbering_config       TEXT,
     import_enabled       INTEGER DEFAULT 0,
     import_config        TEXT,
+    api_enabled          INTEGER DEFAULT 0,
+    api_config           TEXT,
     feature_source               TEXT DEFAULT NULL,
     google_sync_enabled          INTEGER DEFAULT 0,
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE

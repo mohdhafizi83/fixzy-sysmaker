@@ -1,0 +1,199 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Api\ApiRegistry;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\RateLimiter;
+
+/**
+ * Generic REST controller for API-enabled tables (Fixzy SysMaker).
+ *
+ * Auth: Laravel Sanctum bearer tokens (auth:sanctum). Authorization:
+ * the token's user must hold one of the table's Shield roles
+ * (read_roles for GET, write_roles for POST/PUT). Field allowlists
+ * are baked into ApiRegistry — unknown or sensitive fields are
+ * silently dropped from responses and rejected on write.
+ */
+class ApiController extends Controller
+{
+    public function index(Request $request, string $slug): JsonResponse
+    {
+        $cfg = $this->authorizeTable($request, $slug, 'read');
+        if ($cfg instanceof JsonResponse) {
+            return $cfg;
+        }
+
+        $model = $cfg['model'];
+        $query = $model::query();
+
+        // Optional simple filter: ?field=value (allowlisted fields only).
+        foreach ($request->query() as $key => $value) {
+            if (in_array($key, $cfg['fields'], true) && is_string($value)) {
+                $query->where($key, $value);
+            }
+        }
+
+        $perPage = min(max((int) $request->input('per_page', 25), 1), 100);
+        $page = max((int) $request->input('page', 1), 1);
+        $total = (clone $query)->count();
+        $rows = $query->skip(($page - 1) * $perPage)->take($perPage)->get();
+
+        return response()->json([
+            'data' => $rows->map(fn ($r) => $this->expose($r, $cfg['fields']))->all(),
+            'meta' => [
+                'page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'last_page' => (int) ceil($total / $perPage),
+            ],
+        ]);
+    }
+
+    public function show(Request $request, string $slug, string $id): JsonResponse
+    {
+        $cfg = $this->authorizeTable($request, $slug, 'read');
+        if ($cfg instanceof JsonResponse) {
+            return $cfg;
+        }
+
+        $row = $cfg['model']::find($id);
+        if (! $row) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+
+        return response()->json(['data' => $this->expose($row, $cfg['fields'])]);
+    }
+
+    public function store(Request $request, string $slug): JsonResponse
+    {
+        $cfg = $this->authorizeTable($request, $slug, 'write');
+        if ($cfg instanceof JsonResponse) {
+            return $cfg;
+        }
+
+        $data = $this->validatePayload($request, $cfg, true);
+        if ($data instanceof JsonResponse) {
+            return $data;
+        }
+
+        $row = $cfg['model']::create($data);
+
+        return response()->json(['data' => $this->expose($row, $cfg['fields'])], 201);
+    }
+
+    public function update(Request $request, string $slug, string $id): JsonResponse
+    {
+        $cfg = $this->authorizeTable($request, $slug, 'write');
+        if ($cfg instanceof JsonResponse) {
+            return $cfg;
+        }
+
+        $row = $cfg['model']::find($id);
+        if (! $row) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+
+        $data = $this->validatePayload($request, $cfg, false);
+        if ($data instanceof JsonResponse) {
+            return $data;
+        }
+
+        $row->fill($data)->save();
+
+        return response()->json(['data' => $this->expose($row, $cfg['fields'])]);
+    }
+
+    /**
+     * Resolve registry entry + enforce role + per-token rate limit.
+     * Returns JsonResponse on failure, config array on success.
+     */
+    protected function authorizeTable(Request $request, string $slug, string $action): JsonResponse|array
+    {
+        $cfg = ApiRegistry::for($slug);
+        if (! $cfg) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        $roles = $action === 'read' ? $cfg['read_roles'] : $cfg['write_roles'];
+        // super_admin is the platform-wide role and always passes.
+        $allowed = $user->hasRole('super_admin')
+            || collect($roles)->some(fn ($role) => $user->hasRole($role));
+        if (! $allowed) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $key = 'api:' . $slug . ':' . ($user->id ?? 'anon');
+        if (RateLimiter::tooManyAttempts($key, $cfg['rate_limit'])) {
+            return response()->json([
+                'message' => 'Too many requests. Retry in ' . RateLimiter::availableIn($key) . 's.',
+            ], 429);
+        }
+        RateLimiter::hit($key, 60);
+
+        return $cfg;
+    }
+
+    /**
+     * Validate a write payload against the baked rules. Only
+     * allowlisted fields are considered; everything else is ignored.
+     * Returns JsonResponse on failure, clean data array on success.
+     */
+    protected function validatePayload(Request $request, array $cfg, bool $isCreate): JsonResponse|array
+    {
+        $rules = [];
+        foreach ($cfg['rules'] as $field => $fieldRules) {
+            if (! in_array($field, $cfg['fields'], true)) {
+                continue;
+            }
+            $rules[$field] = $isCreate ? $fieldRules : array_values(array_filter(
+                $fieldRules,
+                fn ($r) => ! str_starts_with($r, 'required')
+            ));
+        }
+
+        $payload = $request->only(array_keys($rules));
+        try {
+            $data = validator($payload, $rules)->validate();
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => 'Validation failed.', 'errors' => $e->errors()], 422);
+        }
+
+        // Unique checks (validator 'unique' rule needs the table name).
+        foreach ($cfg['unique'] as $field) {
+            if (! array_key_exists($field, $data)) {
+                continue;
+            }
+            $exists = $cfg['model']::where($field, $data[$field])
+                ->when(! $isCreate && $request->route('id'), fn ($q) => $q->where('id', '!=', $request->route('id')))
+                ->exists();
+            if ($exists) {
+                return response()->json([
+                    'message' => 'Validation failed.',
+                    'errors' => [$field => ['The ' . $field . ' has already been taken.']],
+                ], 422);
+            }
+        }
+
+        return $data;
+    }
+
+    /** Project a model row down to the allowlisted fields. */
+    protected function expose($row, array $fields): array
+    {
+        $out = [];
+        foreach ($fields as $f) {
+            $value = $row->getAttribute($f);
+            $out[$f] = $value instanceof \DateTimeInterface ? $value->toIso8601String() : $value;
+        }
+
+        return $out;
+    }
+}

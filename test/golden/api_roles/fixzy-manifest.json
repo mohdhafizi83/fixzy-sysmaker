@@ -1,0 +1,10 @@
+{
+  "composer": [
+    "laravel/sanctum"
+  ],
+  "php_extensions": [],
+  "npm": [],
+  "providers": [
+    "App\\Providers\\ApiServiceProvider"
+  ]
+}

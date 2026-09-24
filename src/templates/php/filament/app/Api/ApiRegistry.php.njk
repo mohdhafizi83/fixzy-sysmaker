@@ -1,0 +1,35 @@
+<?php
+
+namespace App\Api;
+
+/**
+ * Generated API registry (Fixzy SysMaker).
+ *
+ * Maps each API-enabled table slug to its model, exposed field
+ * allowlist, validation rules, and required Shield roles.
+ * Sensitive columns are filtered at generation time — they never
+ * appear in $tables even if an allowlist mentions them.
+ */
+class ApiRegistry
+{
+    /** @var array<string, array<string, mixed>> */
+    public static array $tables = [
+{% for slug, cfg in tables %}
+        '{{ slug }}' => [
+            'model' => {{ cfg.model_class }}::class,
+            'table' => '{{ cfg.table_name }}',
+            'fields' => {{ cfg.fields_php }},
+            'rules' => {{ cfg.rules_php }},
+            'unique' => {{ cfg.unique_php }},
+            'read_roles' => {{ cfg.read_roles_php }},
+            'write_roles' => {{ cfg.write_roles_php }},
+            'rate_limit' => {{ cfg.rate_limit }},
+        ],
+{% endfor %}
+    ];
+
+    public static function for(string $slug): ?array
+    {
+        return self::$tables[$slug] ?? null;
+    }
+}

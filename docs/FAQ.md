@@ -259,6 +259,32 @@ output is byte-identical to a project without the module.
 Per user session (cookie). Each user can browse in their preferred
 language; the default follows the project setting.
 
+## REST API
+
+### How do external systems read/write my data?
+
+Enable the REST API per table in the table settings, regenerate,
+then create a token in Admin → API Tokens. Send it as
+`Authorization: Bearer <token>` to `/api/v1/{table}`.
+
+### Can a token read everything?
+
+No. Access is per table and per direction: each table has separate
+read and write role lists (Shield roles). A token acts with its
+owner's roles — if the owner lacks the write role, POST/PUT return
+403 even with a valid token.
+
+### Are sensitive columns ever exposed?
+
+Never. Columns matching password/token/secret patterns are stripped
+from the API allowlist at generation time, even if explicitly
+listed. The audit suite enforces this.
+
+### Is there rate limiting?
+
+Yes — per table, per token (default 60 requests/min, configurable).
+Exceeding it returns HTTP 429 with a retry hint.
+
 ## General
 
 ### Do I need Laravel knowledge to use the generated app?

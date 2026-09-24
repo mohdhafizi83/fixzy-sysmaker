@@ -512,6 +512,51 @@ async function tryGen(name, fn) {
         console.log('OK   localization off-guard (English project emits nothing)');
     }
 
+    // REST API module: enabled table emits registry+controller+routes;
+    // sensitive fields never appear; disabled project emits nothing.
+    const apiOnSchema = JSON.parse(JSON.stringify(schema));
+    const apiTbl = Object.entries(apiOnSchema.database.table)
+        .find(([name]) => name !== 'users')[1];
+    const apiSafeField = Object.keys(apiTbl.fields || {})
+        .find((f) => !/(password|token|secret)/i.test(f));
+    apiTbl.api_enabled = 1;
+    apiTbl.api_config = JSON.stringify({
+        read_roles: ['admin'], write_roles: ['admin'],
+        fields: ['password', 'remember_token', apiSafeField], rate_limit: 60,
+    });
+    const apiOnOut = path.join(outDir, '_api_on');
+    await tryGen('generateApiModule (on)', () =>
+        require('../src/generators/laravelApiGenerator').generateApiModule(apiOnSchema, apiOnOut));
+    const registryPath = path.join(apiOnOut, 'app', 'Api', 'ApiRegistry.php');
+    if (!fs.existsSync(registryPath)) {
+        results.push(['api on-guard', 'FAIL', 'registry missing with api_enabled=1']);
+        console.log('FAIL api on-guard');
+    } else {
+        const reg = fs.readFileSync(registryPath, 'utf8');
+        const noSecrets = !/password|remember_token/.test(reg);
+        const hasField = reg.includes(apiSafeField);
+        const hasRoutes = fs.existsSync(path.join(apiOnOut, 'app', 'Providers', 'ApiServiceProvider.php'));
+        if (noSecrets && hasField && hasRoutes) {
+            results.push(['api on-guard', 'OK', 1]);
+            console.log('OK   api on-guard (registry + routes; sensitive fields stripped)');
+        } else {
+            results.push(['api on-guard', 'FAIL', `noSecrets=${noSecrets} hasField=${hasField} hasRoutes=${hasRoutes}`]);
+            console.log('FAIL api on-guard');
+        }
+    }
+    const apiOffSchema = JSON.parse(JSON.stringify(schema));
+    const apiOffOut = path.join(outDir, '_api_off');
+    await tryGen('generateApiModule (off)', () =>
+        require('../src/generators/laravelApiGenerator').generateApiModule(apiOffSchema, apiOffOut));
+    const apiOffFiles = fs.existsSync(apiOffOut) ? fs.readdirSync(apiOffOut) : [];
+    if (apiOffFiles.length > 0) {
+        results.push(['api off-guard', 'FAIL', 'files emitted with no api_enabled table']);
+        console.log('FAIL api off-guard');
+    } else {
+        results.push(['api off-guard', 'OK', 0]);
+        console.log('OK   api off-guard (no API files without api_enabled)');
+    }
+
     // Count files produced
     let count = 0;
     (function walk(d) {

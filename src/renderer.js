@@ -58,6 +58,7 @@ import { initSchedulerTab } from './js/features/schedulerManager.js';
 import { initPublicFormTab } from './js/features/publicFormManager.js';
 import { initNumberingSection } from './js/features/numberingManager.js';
 import { initImportSection } from './js/features/importManager.js';
+import { initApiSection } from './js/features/apiManager.js';
 
 import { initializeWorkflowBuilder } from './js/workflowBuilder.js';
 
@@ -489,6 +490,7 @@ window.addEventListener('beforeunload', (event) => {
 	initPublicFormTab();
 	initNumberingSection();
 	initImportSection();
+	initApiSection();
 	initializeQueryBuilder();
     initializeTableHookBuilder();
     initializeProjectHookBuilder();
