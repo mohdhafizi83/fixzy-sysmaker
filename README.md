@@ -142,7 +142,7 @@ real code — the generated app ships only what you picked.
 | Data Audit Trail | Off | Who changed what data: before/after values, IP, per-record trail (migration + observer) |
 | User Activity Log | Off | What users did: sign-in / sign-out / failed sign-in, admin activity page (see below) |
 | Approval Workflow | Off | Per-table status machine: statuses, transitions, role-gated actions, lock-on-final (see below) |
-| Automation (Scheduler) | Off | Date reminders + recurring records (daily/weekly/monthly); scheduled backups coming next (see below) |
+| Automation (Scheduler) | Off | Date reminders, recurring records (daily/weekly/monthly), scheduled backups with restore (see below) |
 | Real-time Notifications & Chat | Off | Live notification bell + chat module over WebSocket (see below) |
 | Google Sheets Sync | Off | Two-way sync of custom tables with Google Sheets (see below) |
 | Fake Data (Data Seeder) | Off | Factories + seeders with realistic sample data |
@@ -223,9 +223,18 @@ cycle: daily, weekly (chosen weekday), or monthly (chosen day, clamped
 for short months). Perfect for monthly bills, weekly reports, or any
 "same record, every period" pattern. Optional notify on each creation.
 
+**Scheduled backups** — enable in the Automation fieldset: dump the
+database to `storage/app/backups` (gzip-compressed) daily or weekly,
+with a retention count (oldest files pruned automatically). MySQL/
+MariaDB uses `mysqldump --single-transaction`; SQLite copies the file
+directly. Restore from the admin Scheduler page (super-admin only,
+with a confirmation step; a safety copy of the current database is
+written before every restore).
+
 **Scheduler Status page** (admin → System → Scheduler): see every
-compiled schedule and the recent fire history — plus a **Run scheduler
-now** button to trigger the runner manually.
+compiled schedule, the backup files on disk, and the recent fire
+history — plus a **Run scheduler now** button to trigger the runner
+manually.
 
 Deployment note: the generated app needs one crontab entry to drive
 Laravel's scheduler daemon:

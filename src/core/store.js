@@ -52,6 +52,9 @@ function openStore(dbPath) {
         if (!cols.includes('module_scheduler')) {
             db.exec("ALTER TABLE projects ADD COLUMN module_scheduler INTEGER DEFAULT 0");
         }
+        if (!cols.includes('backup_config')) {
+            db.exec("ALTER TABLE projects ADD COLUMN backup_config TEXT");
+        }
         const tableCols = db.prepare("PRAGMA table_info(tables)").all().map((c) => c.name);
         if (!tableCols.includes('scheduler_config')) {
             db.exec("ALTER TABLE tables ADD COLUMN scheduler_config TEXT");

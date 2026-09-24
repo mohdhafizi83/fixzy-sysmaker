@@ -47,6 +47,7 @@ CREATE TABLE projects (
     realtime_backend             TEXT DEFAULT 'reverb', -- reverb (self-hosted) | pusher (hosted)
     module_google_sheets         INTEGER DEFAULT 0,
     module_scheduler             INTEGER DEFAULT 0,
+    backup_config                TEXT,
     debug_mode                   INTEGER DEFAULT 0,
     tenancy_type                 TEXT DEFAULT 'standard', -- BARU: standard, one_to_many, many_to_many
     tenant_table                 TEXT,                    -- BARU: Nama jadual tenant (cth: fakulti, syarikat)

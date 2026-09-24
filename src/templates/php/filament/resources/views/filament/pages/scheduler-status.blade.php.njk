@@ -75,7 +75,18 @@
                         <tr style="border-bottom: 1px solid rgb(243 244 246);">
                             <td style="padding: 0.5rem 1rem 0.5rem 0; font-family: monospace; font-size: 0.75rem;">{{ $b['name'] }}</td>
                             <td style="padding: 0.5rem 1rem 0.5rem 0;">{{ $b['size'] }}</td>
-                            <td style="padding: 0.5rem 0;">{{ $b['modified'] }}</td>
+                            <td style="padding: 0.5rem 0; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
+                                <span>{{ $b['modified'] }}</span>
+                                <x-filament::button
+                                    size="xs"
+                                    color="danger"
+                                    icon="heroicon-o-arrow-uturn-left"
+                                    wire:click="restoreBackup('{{ $b['name'] }}')"
+                                    wire:confirm="Restore the ENTIRE database from {{ $b['name'] }}? All changes made after this backup will be lost (a safety copy of the current database is kept)."
+                                >
+                                    Restore
+                                </x-filament::button>
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>

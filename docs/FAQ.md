@@ -106,6 +106,16 @@ Use the **Run scheduler now** button on the admin Scheduler page, or run
 `php artisan fixzy:schedule-run --force` — force mode fires every entry
 whose date is today or later, ignoring the exact offset window.
 
+### Is the restore safe? What if I restore the wrong backup?
+
+Every restore writes a safety copy of the current database
+(`database/pre-restore-<timestamp>_…`) before overwriting, so you can
+recover by copying it back. Restore is gated to super admins, requires
+a confirmation step, and only accepts files matching the exact backup
+naming pattern (no path traversal). For MySQL, restoring through the
+web UI is intentionally disabled — the page shows the shell command
+instead, so live DB credentials never flow through a UI action.
+
 ## General
 
 ### Do I need Laravel knowledge to use the generated app?

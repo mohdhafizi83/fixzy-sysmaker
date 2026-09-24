@@ -214,9 +214,24 @@ class ScheduleRunnerCommand extends Command
                 if ($driver === 'sqlite') {
                     $dbPath = config('database.connections.sqlite.database');
                     $gzip = $path.'.gz';
-                    $fh = gzopen($gzip, 'w9');
-                    gzpassthru(fopen($dbPath, 'r'), $fh);
-                    gzclose($fh);
+                    $in = fopen($dbPath, 'rb');
+                    if ($in === false) {
+                        throw new \RuntimeException('Cannot open database file for reading.');
+                    }
+                    $out = gzopen($gzip, 'w9');
+                    if ($out === false) {
+                        fclose($in);
+                        throw new \RuntimeException('Cannot open backup file for writing.');
+                    }
+                    while (! feof($in)) {
+                        gzwrite($out, (string) fread($in, 65536));
+                    }
+                    gzclose($out);
+                    fclose($in);
+                    if (! file_exists($gzip) || filesize($gzip) === 0) {
+                        @unlink($gzip);
+                        throw new \RuntimeException('Backup file empty after write.');
+                    }
                     @unlink($path); // we wrote the .gz variant
                     $path = $gzip;
                 } else {

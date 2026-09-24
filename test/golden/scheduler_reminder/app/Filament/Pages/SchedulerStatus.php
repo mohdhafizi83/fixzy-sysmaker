@@ -70,6 +70,98 @@ class SchedulerStatus extends Page
         $this->refreshData();
     }
 
+    /**
+     * Restore the database from a backup file (super_admin only).
+     *
+     * SQLite: the backup is gunzipped over the database file after a
+     * safety copy of the current database is written first
+     * (database/pre-restore-*.sqlite). MySQL: restoring from a web
+     * request is intentionally NOT supported — the page shows the
+     * command to run instead (safer, auditable, no shell exposure of
+     * live credentials through a UI action).
+     */
+    public function restoreBackup(string $name): void
+    {
+        $user = Auth::user();
+        $isSuper = method_exists($user, 'hasRole') && $user->hasRole('super_admin');
+        if (! $isSuper) {
+            \Filament\Notifications\Notification::make()
+                ->title('Only a super admin can restore backups.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        // Strict filename whitelist — never trust the request value as a path.
+        if (! preg_match('/^backup_\d{4}-\d{2}-\d{2}_\d{6}\.sql\.gz$/', $name)) {
+            \Filament\Notifications\Notification::make()
+                ->title('Invalid backup file name.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $path = storage_path('app/backups/'.$name);
+        if (! is_file($path)) {
+            \Filament\Notifications\Notification::make()
+                ->title('Backup file not found.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $driver = config('database.default');
+        if ($driver !== 'sqlite') {
+            \Filament\Notifications\Notification::make()
+                ->title('Web restore supports SQLite only.')
+                ->body('For MySQL run: gunzip -c '.escapeshellarg($path).' | mysql <db>')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $dbPath = config('database.connections.sqlite.database');
+        $safety = dirname($dbPath).'/pre-restore-'.date('Y-m-d_His').'_'.basename($dbPath);
+        try {
+            if (is_file($dbPath)) {
+                copy($dbPath, $safety);
+            }
+            $in = gzopen($path, 'rb');
+            if ($in === false) {
+                throw new \RuntimeException('Cannot open backup (gzip read failed).');
+            }
+            $out = fopen($dbPath, 'wb');
+            if ($out === false) {
+                gzclose($in);
+                throw new \RuntimeException('Cannot open database file for writing.');
+            }
+            while (! gzeof($in)) {
+                fwrite($out, gzread($in, 65536));
+            }
+            fclose($out);
+            gzclose($in);
+        } catch (\Throwable $e) {
+            report($e);
+            \Filament\Notifications\Notification::make()
+                ->title('Restore failed: '.$e->getMessage())
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        DB::purge($driver);
+        \Filament\Notifications\Notification::make()
+            ->title('Database restored from '.$name)
+            ->body('Safety copy of the previous database: '.basename($safety).'. Please reload the page.')
+            ->success()
+            ->send();
+    }
+
     protected function refreshData(): void
     {
         $cmd = \App\Console\Commands\ScheduleRunnerCommand::class;

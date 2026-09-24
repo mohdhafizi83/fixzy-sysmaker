@@ -39,6 +39,7 @@ export function populateMainDashboard(projectData) {
     setElementValue('app-module-realtime', projectData.module_realtime);
     setElementValue('app-module-google-sheets', projectData.module_google_sheets);
     setElementValue('app-module-scheduler', projectData.module_scheduler);
+    loadBackupSettings(projectData);
     setElementValue('app-realtime_backend', projectData.realtime_backend || 'reverb');
     const toggleRealtimeBackendVisibility = () => {
         const fgBackend = document.getElementById('fg-realtime-backend');
@@ -155,6 +156,13 @@ export function initializeProjectSaveHandlers() {
         if (!appState.isAutoSaveEnabled) return;
 
         const input = event.target;
+
+        // Backup settings: several inputs serialise into one backup_config JSON.
+        if (input.id && input.id.startsWith('app-backup-')) {
+            saveBackupSettings();
+            return;
+        }
+
         let key = (input.type === 'radio')
             ? input.name.replace('app-', '').replace(/-/g, '_')
             : input.id.replace('app-', '').replace(/-/g, '_');
@@ -208,4 +216,53 @@ export function initializeProjectSaveHandlers() {
     if (projectHookInput) {
         projectHookInput.addEventListener('input', handleInputChange);
     }
+}
+
+// --- Backup settings (project-level backup_config JSON) -----------------
+
+export function loadBackupSettings(projectData) {
+    let cfg = {};
+    try {
+        cfg = JSON.parse(projectData.backup_config || '{}') || {};
+    } catch (e) {
+        cfg = {};
+    }
+    setElementValue('app-backup-enabled', Number(cfg.enabled) === 1 ? 1 : 0);
+    setElementValue('app-backup-frequency', cfg.frequency === 'weekly' ? 'weekly' : 'daily');
+    setElementValue('app-backup-weekday', String(cfg.weekday || 1));
+    setElementValue('app-backup-retention', String(cfg.retention || 10));
+    setElementValue('app-backup-notify', cfg.notify || '');
+    toggleBackupWeekdayVisibility();
+    const freq = document.getElementById('app-backup-frequency');
+    if (freq && !freq.dataset.wired) {
+        freq.dataset.wired = '1';
+        freq.addEventListener('change', toggleBackupWeekdayVisibility);
+    }
+}
+
+function toggleBackupWeekdayVisibility() {
+    const freq = document.getElementById('app-backup-frequency');
+    const wrap = document.getElementById('app-backup-weekday-wrap');
+    if (freq && wrap) {
+        wrap.style.display = freq.value === 'weekly' ? '' : 'none';
+    }
+}
+
+export function saveBackupSettings() {
+    if (!appState.activeProject) return;
+    const enabled = document.getElementById('app-backup-enabled');
+    const freq = document.getElementById('app-backup-frequency');
+    const weekday = document.getElementById('app-backup-weekday');
+    const retention = document.getElementById('app-backup-retention');
+    const notify = document.getElementById('app-backup-notify');
+    const cfg = {
+        enabled: enabled && enabled.checked ? 1 : 0,
+        frequency: freq ? freq.value : 'daily',
+        weekday: Math.min(7, Math.max(1, parseInt(weekday ? weekday.value : '1', 10) || 1)),
+        retention: Math.min(60, Math.max(1, parseInt(retention ? retention.value : '10', 10) || 10)),
+        notify: notify ? String(notify.value || '').trim() : '',
+    };
+    SaveManager.addToQueue('project', appState.activeProject.project_id, {
+        backup_config: JSON.stringify(cfg),
+    });
 }

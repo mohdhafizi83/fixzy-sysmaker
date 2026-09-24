@@ -43,7 +43,7 @@ function generateSchedulerModule(fullSchema, outputDir) {
         };
 
         // Compiled schedule entries (PHP literal lines).
-        const { scheduleEntryPhp, recurringEntryPhp } = require('./schedulerConfig');
+        const { scheduleEntryPhp, recurringEntryPhp, backupEntryPhp } = require('./schedulerConfig');
         const reminderLines = entries
             .filter((e) => e.kind === 'reminder')
             .map(scheduleEntryPhp)
@@ -53,9 +53,7 @@ function generateSchedulerModule(fullSchema, outputDir) {
             .map(recurringEntryPhp)
             .join('\n');
         const backupEntries = entries.filter((e) => e.kind === 'backup');
-        const backupLines = backupEntries
-            .map((e) => `        [${Object.entries(e).map(([k, v]) => `'${k}' => '${phpLit(v)}'`).join(', ')}],`)
-            .join('\n');
+        const backupLines = backupEntries.map(backupEntryPhp).join('\n');
 
         emit(path.join('app', 'Models', 'ScheduleRun.php'),
             'app/Models/ScheduleRun.php.njk');

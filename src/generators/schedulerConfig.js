@@ -125,6 +125,43 @@ function recurringEntryPhp(entry) {
 }
 
 /**
+ * Parse the project-level backup_config JSON:
+ *   { "enabled": true, "frequency": "daily"|"weekly", "weekday": 1,
+ *     "retention": 10, "notify": "admin" }
+ * Returns a backup entry or null.
+ */
+function parseBackupConfig(project) {
+    if (!project || !project.backup_config) return null;
+    let cfg = null;
+    try {
+        cfg = JSON.parse(project.backup_config);
+    } catch (e) {
+        return null;
+    }
+    if (!cfg || typeof cfg !== 'object' || Number(cfg.enabled) !== 1) return null;
+    const frequency = cfg.frequency === 'weekly' ? 'weekly' : 'daily';
+    return {
+        kind: 'backup',
+        frequency,
+        weekday: Math.min(7, Math.max(1, parseInt(cfg.weekday, 10) || 1)),
+        retention: Math.min(60, Math.max(1, parseInt(cfg.retention, 10) || 10)),
+        notify: String(cfg.notify || '').trim(),
+    };
+}
+
+/** PHP literal for one backup entry. */
+function backupEntryPhp(entry) {
+    const parts = [
+        `'kind' => 'backup'`,
+        `'frequency' => '${phpStr(entry.frequency)}'`,
+        `'weekday' => ${entry.weekday}`,
+        `'retention' => ${entry.retention}`,
+        `'notify' => '${phpStr(entry.notify)}'`,
+    ];
+    return `        [${parts.join(', ')}],`;
+}
+
+/**
  * Collect every schedule entry across the schema.
  * Returns [] when the scheduler module is off or nothing is configured.
  */
@@ -139,6 +176,8 @@ function collectSchedules(fullSchema) {
         entries.push(...parsed.reminders);
         if (parsed.recurring) entries.push(parsed.recurring);
     }
+    const backup = parseBackupConfig(project);
+    if (backup) entries.push(backup);
     return entries;
 }
 
@@ -149,10 +188,12 @@ function anySchedulesEnabled(fullSchema) {
 
 module.exports = {
     parseSchedulerConfig,
+    parseBackupConfig,
     collectSchedules,
     anySchedulesEnabled,
     scheduleEntryPhp,
     recurringEntryPhp,
+    backupEntryPhp,
     modelClassName,
     isDateField,
 };

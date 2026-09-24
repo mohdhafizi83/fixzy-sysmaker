@@ -144,6 +144,40 @@ async function tryGen(name, fn) {
         console.log('OK   scheduler off-guard (no files emitted)');
     }
 
+    // Backup config: project-level backup_config compiles into BACKUPS.
+    const bkRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'scheduler_backup.json'), 'utf8'));
+    const bkSchema = {
+        project: bkRaw.project,
+        database: { table: bkRaw.database.table || {}, relationships: bkRaw.database.relationships || {} },
+    };
+    const bkEntries = require('../src/generators/schedulerConfig').collectSchedules(bkSchema);
+    const bk = bkEntries.find((e) => e.kind === 'backup');
+    if (bk && bk.frequency === 'weekly' && bk.weekday === 3 && bk.retention === 5) {
+        results.push(['backup config parse', 'OK', 'weekly/3/5']);
+        console.log('OK   backup config parse (weekly weekday=3 retention=5)');
+    } else {
+        results.push(['backup config parse', 'FAIL', JSON.stringify(bk)]);
+        console.log('FAIL backup config parse');
+    }
+    const bkOut = path.join(outDir, '_backup_on');
+    await tryGen('generateSchedulerModule (backup only)', () =>
+        require('../src/generators/laravelSchedulerGenerator').generateSchedulerModule(bkSchema, bkOut));
+    const bkCmd = path.join(bkOut, 'app', 'Console', 'Commands', 'ScheduleRunnerCommand.php');
+    if (fs.existsSync(bkCmd)) {
+        const body = fs.readFileSync(bkCmd, 'utf8');
+        const m = body.match(/public const BACKUPS = \[\n(\s*\[.*\],)\n\s*\];/);
+        if (m && m[1].includes("'retention' => 5") && !m[1].includes("'retention' => '5'")) {
+            results.push(['backup compiled-entry check', 'OK', 1]);
+            console.log('OK   backup compiled-entry check (retention int compiled)');
+        } else {
+            results.push(['backup compiled-entry check', 'FAIL', m ? m[1] : 'no BACKUPS entry']);
+            console.log('FAIL backup compiled-entry check');
+        }
+    } else {
+        results.push(['backup compiled-entry check', 'FAIL', 'command not emitted']);
+        console.log('FAIL backup command not emitted for backup-only project');
+    }
+
     // Count files produced
     let count = 0;
     (function walk(d) {
