@@ -1139,6 +1139,7 @@
                             <label class="radio-label"><input type="radio" name="fld-media-type" value="link" id="fld-media-link" checked> Link</label>
                             <label class="radio-label"><input type="radio" name="fld-media-type" value="image" id="fld-media-image"> Image</label>
                             <label class="radio-label"><input type="radio" name="fld-media-type" value="upload" id="fld-media-upload"> File upload</label>
+                            <label class="radio-label"><input type="radio" name="fld-media-type" value="attachments" id="fld-media-attachments"> Attachments (multi-file)</label>
                             <label class="radio-label"><input type="radio" name="fld-media-type" value="gmap" id="fld-media-gmap"> Google map</label>
                             <label class="radio-label"><input type="radio" name="fld-media-type" value="youtube" id="fld-media-youtube"> Youtube video</label>
                         </div>
@@ -1341,6 +1342,40 @@
                                     <div class="form-group"><label for="fld-file-behavior">Behavior of this field when clicked in the 'Table List'</label><select id="fld-file-behavior" name="fld-file-behavior" disabled><option value="detail_view">Select the record in the 'Record Form' (default behavior)</option><option value="no_action">No action (text only without link)</option><option value="download_link">Download link</option></select></div>
                                     <div class="form-group hidden" id="fld-file-display-as-group"><label for="fld-file-display-as">Display the link in the 'Table List' as</label><select id="fld-file-display-as" name="fld-file-display-as"><option value="field_contents">Field contents</option><option value="clickable_icon">Clickable icon</option><option value="other_field">Contents of another field</option></select></div>
                                     <div class="form-group hidden" id="fld-file-other-field-group"><label for="fld-file-other-field">The other field</label><select id="fld-file-other-field" name="fld-file-other-field"></select></div>
+                                </div>
+                            </div>
+
+                            <div id="attachments-options-panel" class="media-options-panel hidden">
+                                <div class="media-options-header">
+                                    <h4 id="attachments-options-title">Attachments options for ...</h4>
+                                </div>
+                                <div class="media-options-body">
+                                    <p class="helper-text" style="margin-bottom: 1rem;">
+                                        Multiple files per record, stored as attachment rows with metadata
+                                        (who uploaded, when, size). Files are kept private and served through
+                                        the admin panel — never a public URL.
+                                    </p>
+                                    <div class="form-group">
+                                        <label for="fld-attach-max-files">Maximum files per record</label>
+                                        <div class="input-group" style="max-width: 200px;">
+                                            <input type="number" id="fld-attach-max-files" name="fld-attach-max-files" value="10" min="1" max="50">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="fld-attach-types">Allowed file types (leave empty = any)</label>
+                                        <input type="text" id="fld-attach-types" name="fld-attach-types" placeholder="e.g. pdf, jpg, png, docx">
+                                        <p class="helper-text">Comma-separated extensions.</p>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="fld-attach-max-size">Maximum file size (KB)</label>
+                                        <div class="input-group" style="max-width: 200px;">
+                                            <input type="number" id="fld-attach-max-size" name="fld-attach-max-size" value="10240">
+                                            <span class="tooltip-container">
+                                                <i class="fas fa-info-circle"></i>
+                                                <span class="tooltip-text">Enforced in form validation AND by the server download route, whichever is smaller than php.ini.</span>
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -1678,6 +1713,7 @@
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-allow-print-view" name="tbl-allow-print-view" checked> Enable print-view</label>
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-allow-mass-delete" name="tbl-allow-mass-delete" checked> Enable bulk delete</label>
                                         <label class="checkbox-label" id="lbl-tbl-google-sync"><input type="checkbox" id="tbl-google-sync-enabled" name="tbl-google-sync-enabled"> Enable Google Sheets sync</label>
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-attachments-enabled" name="tbl-attachments-enabled"> Enable file attachments (multi-file, private storage)</label>
     <label class="checkbox-label">
         <input type="checkbox" id="tbl-show-edit-button" name="tbl-show-edit-button" checked> Show edit button
     </label>

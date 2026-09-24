@@ -156,6 +156,29 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
             formFieldsCode.push(uploadCode);
         }
 
+        else if (field.media_type === 'attachments') {
+            const kebabFieldName = field.field_name.replace(/_/g, '-');
+            const maxFiles = Math.min(50, Math.max(1, parseInt(field.attach_max_files, 10) || 10));
+            const maxSizeKb = Math.max(1, parseInt(field.attach_max_size, 10) || 10240);
+            const types = (field.attach_types || '').split(',').map(t => t.trim().toLowerCase().replace(/^\./, '')).filter(Boolean);
+            let attachCode = `FileUpload::make('${field.field_name}')
+    ->label('${field.caption || toTitleCase(field.field_name)}')
+    ->multiple()
+    ->maxFiles(${maxFiles})
+    ->maxSize(${maxSizeKb})
+    ->directory('attachments/${kebabFieldName}')
+    ->disk('local')
+    ->visibility('private')
+    ->columnSpanFull(),`;
+            if (types.length > 0) {
+                attachCode = attachCode.replace(/,$/, `\n    ->acceptedFileTypes([${types.map(t => `'${t}'`).join(', ')}]),`);
+            }
+            if (field.is_forced_readonly) {
+                 attachCode = attachCode.replace(/,$/, '->disabled()->dehydrated(false),');
+            }
+            formFieldsCode.push(attachCode);
+        }
+
         else if (['gmap', 'youtube'].includes(field.media_type)) {
             const viewerType = field.media_type === 'gmap' ? 'map' : 'video';
             let mediaViewCode = `TextInput::make('${field.field_name}')

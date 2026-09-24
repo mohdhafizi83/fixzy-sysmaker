@@ -116,6 +116,34 @@ naming pattern (no path traversal). For MySQL, restoring through the
 web UI is intentionally disabled — the page shows the shell command
 instead, so live DB credentials never flow through a UI action.
 
+## Attachments (Files & Documents)
+
+### What is the difference between a field upload and table attachments?
+
+A **field upload** (media type "Attachments (multi-file)") stores files
+in that one field — good when a record has a defined set of documents
+(e.g. an invoice's PDFs). **Table attachments** (tick "Attachments" in
+Table Settings) give every record a shared attachment list with no
+schema change — good for free-form documents on any table.
+
+### Are uploaded files public?
+
+No. Attachments are stored on the **private** `local` disk, never in
+`public/`. A direct URL guess returns 403. Every download goes through
+a **time-limited signed URL** — a forged or tampered link is rejected.
+
+### Can I limit file size and type?
+
+Yes. Field-level attachments let you set max files, allowed types
+(pdf/jpg/png/…), and max size per file. The limits are enforced in form
+validation, not just left to php.ini.
+
+### Who can see who uploaded a file?
+
+Every attachment records the uploader, timestamp, original filename,
+MIME type, and size. With the Data Audit Trail enabled, changes to
+attachments are also captured in the audit history.
+
 ## General
 
 ### Do I need Laravel knowledge to use the generated app?

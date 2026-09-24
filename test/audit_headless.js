@@ -178,6 +178,81 @@ async function tryGen(name, fn) {
         console.log('FAIL backup command not emitted for backup-only project');
     }
 
+    // Attachments module: generic table-level enable, private disk,
+    // signed download route, and off-guard (no emit when nothing
+    // enabled — including field-level-only projects).
+    const atRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'attach_table_generic.json'), 'utf8'));
+    const atSchema = {
+        project: atRaw.project,
+        database: { table: atRaw.database.table || {}, relationships: atRaw.database.relationships || {} },
+    };
+    const atOut = path.join(outDir, '_attach_on');
+    await tryGen('generateAttachmentModule (on)', () =>
+        require('../src/generators/laravelAttachmentGenerator').generateAttachmentModule(atSchema, atOut));
+    const atRM = path.join(atOut, 'app', 'Filament', 'RelationManagers', 'AttachmentsRelationManager.php');
+    if (fs.existsSync(atRM)) {
+        const body = fs.readFileSync(atRM, 'utf8');
+        const hasPrivate = body.includes("->disk('local')") && !body.includes("->disk('public')");
+        const hasSigned = body.includes('fixzy.attachments.download') && body.includes('temporarySignedRoute');
+        const hasMeta = body.includes('uploaded_by') && body.includes('original_name');
+        if (hasPrivate && hasSigned && hasMeta) {
+            results.push(['attachments manager check', 'OK', 1]);
+            console.log('OK   attachments manager check (private disk + signed route + metadata)');
+        } else {
+            results.push(['attachments manager check', 'FAIL', `private=${hasPrivate} signed=${hasSigned} meta=${hasMeta}`]);
+            console.log('FAIL attachments manager check');
+        }
+    } else {
+        results.push(['attachments manager check', 'FAIL', 'manager not emitted']);
+        console.log('FAIL attachments manager not emitted');
+    }
+    const atCtl = path.join(atOut, 'app', 'Http', 'Controllers', 'AttachmentDownloadController.php');
+    if (fs.existsSync(atCtl) && fs.readFileSync(atCtl, 'utf8').includes('hasValidSignature')) {
+        results.push(['attachments signed-download check', 'OK', 1]);
+        console.log('OK   attachments signed-download controller check');
+    } else {
+        results.push(['attachments signed-download check', 'FAIL', 'controller missing or no signature check']);
+        console.log('FAIL attachments signed-download controller check');
+    }
+    // Field-level-only project: plumbing (provider+controller) yes,
+    // generic pieces (model/manager/migration) no.
+    const flRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'attach_field_multi.json'), 'utf8'));
+    const flSchema = {
+        project: flRaw.project,
+        database: { table: flRaw.database.table || {}, relationships: flRaw.database.relationships || {} },
+    };
+    const flOut = path.join(outDir, '_attach_field_only');
+    await tryGen('generateAttachmentModule (field-level only)', () =>
+        require('../src/generators/laravelAttachmentGenerator').generateAttachmentModule(flSchema, flOut));
+    const flHasPlumbing = fs.existsSync(path.join(flOut, 'app', 'Providers', 'AttachmentServiceProvider.php'))
+        && fs.existsSync(path.join(flOut, 'app', 'Http', 'Controllers', 'AttachmentDownloadController.php'));
+    const flHasGeneric = fs.existsSync(path.join(flOut, 'app', 'Models', 'Attachment.php'))
+        || fs.existsSync(path.join(flOut, 'app', 'Filament', 'RelationManagers', 'AttachmentsRelationManager.php'));
+    if (flHasPlumbing && !flHasGeneric) {
+        results.push(['attachments field-level scope check', 'OK', 1]);
+        console.log('OK   attachments field-level scope check (plumbing only, no generic pieces)');
+    } else {
+        results.push(['attachments field-level scope check', 'FAIL', `plumbing=${flHasPlumbing} generic=${flHasGeneric}`]);
+        console.log('FAIL attachments field-level scope check');
+    }
+    // Off-guard: approval_simple has NO attachments anywhere → no files.
+    const atOffRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'approval_simple.json'), 'utf8'));
+    const atOffSchema = {
+        project: atOffRaw.project,
+        database: { table: atOffRaw.database.table || {}, relationships: atOffRaw.database.relationships || {} },
+    };
+    const atOffOut = path.join(outDir, '_attach_off');
+    await tryGen('generateAttachmentModule (off)', () =>
+        require('../src/generators/laravelAttachmentGenerator').generateAttachmentModule(atOffSchema, atOffOut));
+    const atOffFiles = fs.existsSync(atOffOut) ? fs.readdirSync(atOffOut) : [];
+    if (atOffFiles.length > 0) {
+        results.push(['attachments off-guard', 'FAIL', 'files emitted with no attachments configured']);
+        console.log('FAIL attachments off-guard: files emitted with nothing configured');
+    } else {
+        results.push(['attachments off-guard', 'OK', 0]);
+        console.log('OK   attachments off-guard (no files emitted)');
+    }
+
     // Count files produced
     let count = 0;
     (function walk(d) {

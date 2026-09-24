@@ -59,6 +59,9 @@ function openStore(dbPath) {
         if (!tableCols.includes('scheduler_config')) {
             db.exec("ALTER TABLE tables ADD COLUMN scheduler_config TEXT");
         }
+        if (!tableCols.includes('attachments_enabled')) {
+            db.exec("ALTER TABLE tables ADD COLUMN attachments_enabled INTEGER DEFAULT 0");
+        }
         if (!tableCols.includes('google_sync_enabled')) {
             db.exec("ALTER TABLE tables ADD COLUMN google_sync_enabled INTEGER DEFAULT 0");
         }

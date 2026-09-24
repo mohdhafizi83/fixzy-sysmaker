@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
+
+/**
+ * Attachments module registration (Fixzy SysMaker generated code).
+ *
+ * Registers the signed download route used by the Attachments relation
+ * manager and field-level attachment fields. Files live on the private
+ * `local` disk (never web-served); this route is the only door, and it
+ * requires a valid temporary signature minted inside the admin panel.
+ */
+class AttachmentServiceProvider extends ServiceProvider
+{
+    public function boot(): void
+    {
+        // Serve private files on the `local` disk through our signed
+        // download route. This makes temporaryUrl() work for the local
+        // driver (Filament calls it for private FileUpload previews and
+        // downloads), routing every read through the signature check.
+        \Illuminate\Support\Facades\Storage::disk('local')
+            ->buildTemporaryUrlsUsing(function (string $path, \DateTimeInterface $expiration, array $options = []): string {
+                return \Illuminate\Support\Facades\URL::temporarySignedRoute(
+                    'fixzy.attachments.download',
+                    $expiration,
+                    ['path' => $path],
+                );
+            });
+
+        Route::middleware('web')
+            ->prefix('fixzy-attachments')
+            ->name('fixzy.attachments.')
+            ->group(function (): void {
+                Route::get('/download/{path}', \App\Http\Controllers\AttachmentDownloadController::class)
+                    ->where('path', '.*')
+                    ->name('download');
+            });
+    }
+}

@@ -106,6 +106,11 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
             console.log(`[scheduler] ${schedulerResult.schedules} schedule entr(ies) compiled`);
         }
 
+        // Attachments module (multi-file documents per record) — shared files.
+        const { generateAttachmentModule } = require('./laravelAttachmentGenerator');
+        const attachmentResult = generateAttachmentModule(fullSchema, outputDir);
+        if (!attachmentResult.success) throw new Error(`Attachments: ${attachmentResult.message}`);
+
         // Native PrintAction class — referenced by resources with print view
         // enabled; must ship with the generated app, not just the preview skeleton.
         const anyPrint = Object.values(fullSchema.database.table || {})

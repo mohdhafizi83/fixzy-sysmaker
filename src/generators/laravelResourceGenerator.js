@@ -276,6 +276,14 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
     if (require('./approvalConfig').parseApprovalConfig(tableData)) {
         relationsApproval = `\n        $relations[] = ApprovalHistoryRelationManager::class;`;
     }
+
+    // --- Attachments (multi-file documents per record) ---
+    // Generic table-level manager only; field-level attachment fields
+    // render their own FileUpload and must not double up the manager.
+    let relationsAttachment = '';
+    if (require('./attachmentConfig').tableUsesGenericAttachments(tableData)) {
+        relationsAttachment = `\n        $relations[] = AttachmentsRelationManager::class;`;
+    }
     const context = {
         model_name: modelName,
         model_name_plural: namespaceFolder,
@@ -296,6 +304,7 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         menu_name: menuName,
         relations_audit: relationsAudit,
         relations_approval: relationsApproval,
+        relations_attachment: relationsAttachment,
         audit_enabled: projectSettings.module_log_audit === 1,
         model_name_flatcase: finalSlug,
     };

@@ -60,6 +60,8 @@ function generateTableColumnsParts(tableData, relationships, tableName, projectS
         if (field.media_type === 'image') controller = 'ImageColumn';
         else if (['upload', 'gmap', 'youtube'].includes(field.media_type) || field.data_type === 'BOOLEAN') controller = 'IconColumn';
         else controller = 'TextColumn';
+        // Attachments: show a file count instead of raw JSON paths.
+        const isAttachments = field.media_type === 'attachments';
         
         let fieldName;
         // Dot-notation logic for Relationships
@@ -81,6 +83,11 @@ function generateTableColumnsParts(tableData, relationships, tableName, projectS
         
         let lines = [`${controller}::make('${fieldName}')`];
         lines.push(`->label('${toTitleCase(field.caption || field.field_name)}')`);
+        if (isAttachments) {
+            lines.push(`->formatStateUsing(function ($state): string { $n = is_array($state) ? count($state) : (filled($state) ? 1 : 0); return $n === 1 ? '1 file' : $n . ' files'; })`);
+            lines.push(`->badge()`);
+            lines.push(`->color('gray')`);
+        }
         
         // --- LOGIK IMAGE ---
         if (controller === 'ImageColumn') {

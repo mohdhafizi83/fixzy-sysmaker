@@ -143,6 +143,7 @@ real code — the generated app ships only what you picked.
 | User Activity Log | Off | What users did: sign-in / sign-out / failed sign-in, admin activity page (see below) |
 | Approval Workflow | Off | Per-table status machine: statuses, transitions, role-gated actions, lock-on-final (see below) |
 | Automation (Scheduler) | Off | Date reminders, recurring records (daily/weekly/monthly), scheduled backups with restore (see below) |
+| File & Document Attachments | Off | Multi-file attachments per record, private storage + signed downloads, upload metadata (see below) |
 | Real-time Notifications & Chat | Off | Live notification bell + chat module over WebSocket (see below) |
 | Google Sheets Sync | Off | Two-way sync of custom tables with Google Sheets (see below) |
 | Fake Data (Data Seeder) | Off | Factories + seeders with realistic sample data |
@@ -242,6 +243,27 @@ Laravel's scheduler daemon:
 ```
 * * * * * cd /path/to/app && php artisan schedule:run >> /dev/null 2>&1
 ```
+
+### File & Document Attachments (opt-in)
+
+Real documents (invoices, claims, forms) need **many files per record**
+with metadata — not one file per column. Two ways to enable:
+
+- **Field-level**: set a field's media type to **Attachments
+  (multi-file)**. The form gets a `multiple()` upload with your max-files,
+  allowed-types, and max-size limits enforced in validation (not just
+  php.ini). Files are stored on the **private** disk; every view/download
+  goes through a **signed, expiring URL** — never a public link.
+- **Table-level**: tick **Attachments** in Table Settings. Every record
+  gets an **Attachments** relation manager (file list with name, size,
+  uploader, date) with upload / download / delete — no schema change per
+  table (polymorphic `attachments` table).
+
+**Security model:** uploads land on the private `local` disk (not
+`public/`), so a direct URL guess returns 403. Downloads use a
+time-limited signed route (`fixzy.attachments.download`); a forged or
+tampered URL is rejected. Upload metadata (who / when / original name /
+MIME / size) is recorded, integrating with the Data Audit Trail.
 
 ### Real-time Notifications & Chat (opt-in)
 

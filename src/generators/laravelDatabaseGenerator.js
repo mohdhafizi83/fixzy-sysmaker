@@ -83,7 +83,9 @@ async function generateFilamentModels(fullSchema, basePath) {
                 field.data_type === 'JSON' || 
                 (field.data_type === 'BOOLEAN' && field.display_type === 'check_box') ||
                 // Add a check for UI components that produce an Array
-                ['repeater', 'repeater_simple'].includes(field.display_type)
+                ['repeater', 'repeater_simple'].includes(field.display_type) ||
+                // Multi-file attachments store a JSON array of paths
+                field.media_type === 'attachments'
             );
             
             let modelCasts = '';
@@ -92,6 +94,8 @@ async function generateFilamentModels(fullSchema, basePath) {
                     let castType = '';
                     
                     if (field.data_type === 'JSON' || ['repeater', 'repeater_simple'].includes(field.display_type)) {
+                        castType = 'array';
+                    } else if (field.media_type === 'attachments') {
                         castType = 'array';
                     } else if (field.data_type === 'BOOLEAN' && field.display_type === 'check_box') {
                         castType = 'boolean';
@@ -246,6 +250,9 @@ let helperMethods = [];
                 approval_import: approvalCfg ? "\nuse App\\Models\\Concerns\\HasApproval;" : '',
                 approval_trait: approvalCfg ? "\n    use HasApproval;" : '',
                 approval_constants: approvalCfg ? "\n" + require('./approvalConfig').approvalConstantsPhp(approvalCfg).replace(/\n$/, '') : '',
+                attachment_relation: require('./attachmentConfig').tableUsesGenericAttachments(tableData)
+                    ? "\n    public function attachments()\n    {\n        return $this->morphMany(\\App\\Models\\Attachment::class, 'record')->latest('id');\n    }\n"
+                    : '',
                 class_name: className,
                 table_name: tableName,
                 primary_key: primaryKeyField ? primaryKeyField.field_name : 'id',
@@ -426,7 +433,10 @@ async function generateLaravelMigrations(fullSchema, outputBasePath) {
                 const isForeignKey = relationships.some(r => r.child_table_name === tableName && r.fk_child_field === field.field_name);
                 let line = '';
                 const upperType = field.data_type ? field.data_type.toUpperCase() : 'VARCHAR';
-                if (isForeignKey && ['INT', 'INTEGER', 'BIGINT'].includes(upperType)) {
+                if (field.media_type === 'attachments') {
+                    // Multi-file attachments: JSON array of stored paths.
+                    line = `            $table->text('${field.field_name}')`;
+                } else if (isForeignKey && ['INT', 'INTEGER', 'BIGINT'].includes(upperType)) {
                     line = `            $table->foreignId('${field.field_name}')`;
                 } else if (['VARCHAR', 'STRING', 'CHAR'].includes(upperType)) {
                     const method = upperType === 'CHAR' ? 'char' : 'string';

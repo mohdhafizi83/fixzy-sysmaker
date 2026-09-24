@@ -101,6 +101,7 @@ CREATE TABLE tables (
     approval_enabled           INTEGER DEFAULT 0,
     approval_config            TEXT,
     scheduler_config           TEXT,
+    attachments_enabled        INTEGER DEFAULT 0,
     feature_source               TEXT DEFAULT NULL,
     google_sync_enabled          INTEGER DEFAULT 0,
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
@@ -183,6 +184,9 @@ CREATE TABLE fields (
     file_storage_provider        TEXT DEFAULT 'local',
     file_types                   TEXT DEFAULT 'images',
 	file_max_size                INTEGER DEFAULT 1074,
+    attach_max_files             INTEGER DEFAULT 10,
+    attach_types                 TEXT,
+    attach_max_size              INTEGER DEFAULT 10240,
     delete_file_server           INTEGER DEFAULT 0,
     dont_rename_file             INTEGER DEFAULT 0,
     file_behavior                TEXT DEFAULT 'download_link',

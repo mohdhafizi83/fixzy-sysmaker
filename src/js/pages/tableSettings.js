@@ -160,6 +160,7 @@ export function populateTableSettings(tableName) {
     
     setElementValue('tbl-hook-logic', tableData.table_hook_workflow); // Populate workflow data
     setElementValue('tbl-approval-enabled', tableData.approval_enabled);
+    setElementValue('tbl-attachments-enabled', tableData.attachments_enabled);
     renderApprovalTab(tableData);
     renderAutomationTab(tableData);
 	
