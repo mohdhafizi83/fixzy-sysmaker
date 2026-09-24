@@ -185,6 +185,7 @@ async function generateFilamentImporters(fullSchema, basePath) {
 
             const columns = buildColumnContext(tableData.fields, tables);
             const resolveLogic = generateResolveRecordLogic(tableData, modelName, tables);
+            const importProfile = require('./importExportConfig').parseImportConfig(tableData);
 
             const fileContent = renderTemplate(TEMPLATE, {
                 model_name: modelName,
@@ -192,6 +193,10 @@ async function generateFilamentImporters(fullSchema, basePath) {
                 columns,
                 resolve_logic: resolveLogic,
                 frase_model_name: fraseModelName,
+                import_profile: importProfile
+                    ? require('./importExportConfig').importConfigPhp(importProfile)
+                    : null,
+                import_dry_run_default: importProfile && importProfile.dry_run ? 'true' : 'false',
             });
 
             const outputFilePath = path.join(importersDir, `${importerClassName}.php`);

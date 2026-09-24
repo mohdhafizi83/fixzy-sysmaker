@@ -146,6 +146,7 @@ real code — the generated app ships only what you picked.
 | File & Document Attachments | Off | Multi-file attachments per record, private storage + signed downloads, upload metadata (see below) |
 | Public Intake Forms | Off | Guest-facing submit forms + status lookup, rate-limited + captcha + honeypot (see below) |
 | Auto Numbering | Off | Race-safe reference codes per table (INV-202609-0001), prefix + date + width (see below) |
+| Smart Import / Export | Off | CSV/XLSX import with match-field profiles (update/skip/insert), dry-run validation (see below) |
 | Real-time Notifications & Chat | Off | Live notification bell + chat module over WebSocket (see below) |
 | Google Sheets Sync | Off | Two-way sync of custom tables with Google Sheets (see below) |
 | Fake Data (Data Seeder) | Off | Factories + seeders with realistic sample data |
@@ -328,6 +329,27 @@ Column and table identifiers are validated against the live schema
 plus a strict regex before use; all values go through query bindings.
 Widgets whose table or field was later deleted are skipped at
 generation time (no broken widgets).
+
+### Smart Import / Export (opt-in, per table)
+
+CSV/XLSX import with a reusable profile per table. In Table Settings →
+Features → **Smart Import**: pick a **match field** (e.g. `email`,
+`item_code`) and a mode:
+
+- **Update** — matched rows are updated, new rows inserted (upsert)
+- **Skip** — matched rows are left untouched, new rows inserted
+- **Insert** — always insert (legacy behaviour)
+
+The import flow is Filament's native 3-step wizard: upload → map CSV
+columns to fields → run. Validation runs per row before anything is
+saved; bad rows are reported with their line numbers and never
+inserted. A **dry-run** checkbox (default configurable) validates the
+whole file without persisting a single row — ideal for checking a
+messy spreadsheet first.
+
+Export supports **CSV and XLSX** natively (Filament v5 + OpenSpout,
+no extra dependencies). Round-trip stability is verified: export →
+re-import with an update profile leaves data byte-identical.
 
 ### Real-time Notifications & Chat (opt-in)
 

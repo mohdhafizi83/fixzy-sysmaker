@@ -210,6 +210,30 @@ The widget is skipped at generation time — you won't get a broken
 chart or a crash. Remove or repoint the widget in the Dashboard
 Builder.
 
+## Smart Import / Export
+
+### What's the difference between update, skip, and insert mode?
+
+They decide what happens when an imported row's match field (e.g.
+`email`) already exists in the table. **Update** overwrites the
+existing row with the imported values. **Skip** leaves the existing
+row completely untouched. **Insert** ignores matching entirely and
+always creates a new row (the classic behaviour).
+
+### Can I check a messy file before committing it?
+
+Yes — tick **Dry run** on the import dialog. Every row goes through
+the full validation pipeline (required fields, rules, type casts) and
+you get the per-row error report, but nothing is written to the
+database. Fix the file, re-run for real.
+
+### Does export support Excel?
+
+Yes. Exports offer both CSV and XLSX (Filament v5 native, via
+OpenSpout — no extra packages). Round-trip is stable: export a
+table, re-import with an update profile, and the data comes back
+identical.
+
 ## General
 
 ### Do I need Laravel knowledge to use the generated app?

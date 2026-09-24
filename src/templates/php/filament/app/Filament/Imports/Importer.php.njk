@@ -14,7 +14,15 @@ use Filament\Forms\Components\Checkbox;
 class {{ model_name }}Importer extends Importer
 {
     protected static ?string $model = {{ model_name }}::class;
-
+{% if import_profile %}
+    /**
+     * Smart-import profile baked at generation time (Fixzy SysMaker).
+     * match_field: column used to locate an existing row.
+     * mode: update (match→update, else insert) | skip (match→skip,
+     * else insert) | insert (always insert).
+     */
+    protected static ?array $profile = {{ import_profile }};
+{% endif %}
     public static function getColumns(): array
     {
         return [
@@ -34,16 +42,61 @@ class {{ model_name }}Importer extends Importer
 {% if not loop.last %}
 {% endif %}{% endfor %}        ];
     }
+{% if import_profile %}
+    public function resolveRecord(): ?{{ model_name }}
+    {
+        $mode = static::$profile['mode'] ?? 'update';
 
+        if ($mode === 'insert') {
+            return new {{ model_name }}();
+        }
+
+        $matchField = static::$profile['match_field'] ?? '';
+        $value = $this->data[$matchField] ?? null;
+
+        if ($matchField === '' || $value === null || $value === '') {
+            // No usable match value → always insert.
+            return new {{ model_name }}();
+        }
+
+        $existing = {{ model_name }}::where($matchField, $value)->first();
+
+        if (! $existing) {
+            return new {{ model_name }}();
+        }
+
+        if ($mode === 'skip') {
+            // Match found but profile says skip → return null so the
+            // row is not processed further.
+            return null;
+        }
+
+        // mode === 'update'
+        return $existing;
+    }
+
+    public function saveRecord(): void
+    {
+        // Dry-run: validation already ran upstream; skip persistence.
+        if (! empty($this->options['dry_run'])) {
+            return;
+        }
+
+        parent::saveRecord();
+    }
+{% else %}
     public function resolveRecord(): ?{{ model_name }}
     {
 {{ resolve_logic }}
     }
-
+{% endif %}
     public static function getCompletedNotificationBody(Import $import): string
     {
-        $body = 'Your {{ frase_model_name }} import has completed and ' . Number::format($import->successful_rows) . ' ' . str('row')->plural($import->successful_rows) . ' imported.';
-
+{% if import_profile %}        $dryRun = ! empty($import->options['dry_run']);
+        $verb = $dryRun ? 'validated' : 'imported';
+        $body = 'Your {{ frase_model_name }} import has completed and ' . Number::format($import->successful_rows) . ' ' . str('row')->plural($import->successful_rows) . ' ' . $verb . '.';
+{% else %}        $body = 'Your {{ frase_model_name }} import has completed and ' . Number::format($import->successful_rows) . ' ' . str('row')->plural($import->successful_rows) . ' imported.';
+{% endif %}
         if ($failedRowsCount = $import->getFailedRowsCount()) {
             $body .= ' ' . Number::format($failedRowsCount) . ' ' . str('row')->plural($failedRowsCount) . ' failed to import.';
         }
@@ -54,9 +107,12 @@ class {{ model_name }}Importer extends Importer
     public static function getOptionsFormComponents(): array
     {
         return [
-            Checkbox::make('updateExisting')
+{% if import_profile %}            Checkbox::make('dry_run')
+                ->label('Dry run (validate only, nothing is saved)')
+                ->default({{ import_dry_run_default }}),
+{% else %}            Checkbox::make('updateExisting')
                 ->label('Update existing records'),
-        ];
+{% endif %}        ];
     }
 
 }

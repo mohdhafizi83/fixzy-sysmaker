@@ -420,6 +420,52 @@ async function tryGen(name, fn) {
         console.log('OK   reports off-guard (no files emitted)');
     }
 
+    // Smart Import profile: update-mode fixture must bake a $profile
+    // with match_field + mode, resolveRecord must honour skip, and
+    // saveRecord must honour dry_run. Off-guard: create-only fixture
+    // (no match_field) must NOT emit a profile.
+    const impOnRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'import_profile_update.json'), 'utf8'));
+    const impOnSchema = {
+        project: impOnRaw.project,
+        database: { table: impOnRaw.database.table || {}, relationships: impOnRaw.database.relationships || {} },
+    };
+    const impOffRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'import_create_only.json'), 'utf8'));
+    const impOffSchema = {
+        project: impOffRaw.project,
+        database: { table: impOffRaw.database.table || {}, relationships: impOffRaw.database.relationships || {} },
+    };
+    const impOnOut = path.join(outDir, '_import_on');
+    await tryGen('generateFilamentImporters (profile on)', () =>
+        require('../src/generators/laravelImportersGenerator').generateFilamentImporters(impOnSchema, impOnOut));
+    const impOnFile = path.join(impOnOut, 'app', 'Filament', 'Imports', 'InventoriImporter.php');
+    if (fs.existsSync(impOnFile)) {
+        const impSrc = fs.readFileSync(impOnFile, 'utf8');
+        const hasProfile = /\$profile = \[.*'match_field' => "item_name".*'mode' => "update"/.test(impSrc);
+        const hasDryRun = /saveRecord[\s\S]*dry_run/.test(impSrc);
+        const hasSkip = /mode === 'skip'/.test(impSrc);
+        if (hasProfile && hasDryRun && hasSkip) {
+            results.push(['import profile baked', 'OK', 3]);
+            console.log('OK   import profile baked (match_field, dry_run, skip)');
+        } else {
+            results.push(['import profile baked', 'FAIL', `profile=${hasProfile} dryRun=${hasDryRun} skip=${hasSkip}`]);
+            console.log('FAIL import profile baked');
+        }
+    } else {
+        results.push(['import profile baked', 'FAIL', 'importer not emitted']);
+        console.log('FAIL import profile baked (no importer file)');
+    }
+    const impOffOut = path.join(outDir, '_import_off');
+    await tryGen('generateFilamentImporters (no profile)', () =>
+        require('../src/generators/laravelImportersGenerator').generateFilamentImporters(impOffSchema, impOffOut));
+    const impOffFile = path.join(impOffOut, 'app', 'Filament', 'Imports', 'InventoriImporter.php');
+    if (fs.existsSync(impOffFile) && /\$profile =/.test(fs.readFileSync(impOffFile, 'utf8'))) {
+        results.push(['import off-guard', 'FAIL', 'profile emitted without match_field']);
+        console.log('FAIL import off-guard');
+    } else {
+        results.push(['import off-guard', 'OK', 0]);
+        console.log('OK   import off-guard (no profile without match_field)');
+    }
+
     // Count files produced
     let count = 0;
     (function walk(d) {
