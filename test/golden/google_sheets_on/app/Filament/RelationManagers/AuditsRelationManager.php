@@ -19,6 +19,12 @@ class AuditsRelationManager extends RelationManager
 
     protected static ?string $title = 'Audit Trail';
 
+    /** Read-only manager (Filament v5: isReadOnly lives on the manager, not the Table). */
+    public function isReadOnly(): bool
+    {
+        return true;
+    }
+
     public function form(Schema $schema): Schema
     {
         return $schema->components([]);
@@ -52,7 +58,6 @@ class AuditsRelationManager extends RelationManager
             ->defaultSort('created_at', 'desc')
             ->headerActions([])
             ->actions([])
-            ->bulkActions([])
-            ->isReadOnly();
+            ->bulkActions([]);
     }
 }

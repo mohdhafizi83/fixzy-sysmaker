@@ -69,6 +69,40 @@ async function tryGen(name, fn) {
         console.log(`OK   gsheets users-guard (synced: ${picked.join(', ')})`);
     }
 
+    // Approvals module: run against the approval_multistep fixture.
+    const apSchemaRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'approval_multistep.json'), 'utf8'));
+    const apSchema = {
+        project: apSchemaRaw.project,
+        database: {
+            table: apSchemaRaw.database.table || {},
+            relationships: apSchemaRaw.database.relationships || {},
+        },
+    };
+    const apOut = path.join(outDir, '_approvals_on');
+    await tryGen('generateApprovalModule (on)', () =>
+        require('../src/generators/laravelApprovalGenerator').generateApprovalModule(apSchema, apOut));
+    await tryGen('generateFilamentModels (approvals)', () =>
+        require('../src/generators/laravelDatabaseGenerator').generateFilamentModels(apSchema, apOut));
+    await tryGen('generateFilamentTablesTable (approvals)', () =>
+        require('../src/generators/laravelTablesGenerator').generateFilamentTablesTable(apSchema, apOut));
+    // Guard: fixture with approvals OFF must emit no approval files.
+    const apOffRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'approval_off.json'), 'utf8'));
+    const apOffSchema = {
+        project: apOffRaw.project,
+        database: { table: apOffRaw.database.table || {}, relationships: apOffRaw.database.relationships || {} },
+    };
+    const apOffOut = path.join(outDir, '_approvals_off');
+    await tryGen('generateApprovalModule (off)', () =>
+        require('../src/generators/laravelApprovalGenerator').generateApprovalModule(apOffSchema, apOffOut));
+    const apOffFiles = fs.existsSync(apOffOut) ? fs.readdirSync(apOffOut) : [];
+    if (apOffFiles.length > 0) {
+        results.push(['approvals off-guard', 'FAIL', 'files emitted with approvals off']);
+        console.log('FAIL approvals off-guard: files emitted with approvals off');
+    } else {
+        results.push(['approvals off-guard', 'OK', 0]);
+        console.log('OK   approvals off-guard (no files emitted)');
+    }
+
     // Count files produced
     let count = 0;
     (function walk(d) {

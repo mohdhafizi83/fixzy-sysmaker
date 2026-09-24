@@ -6,14 +6,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 {{ import_softdelete }}
 {{ import_audit }}
-{{ import_tenant_trait }}
+{{ import_tenant_trait }}{{ approval_import }}
 
 class {{ class_name }} extends Model {{ class_implements_audit }}
 {
 	{{ trait_factory }}
     {{ trait_audit }}
     {{ trait_softdelete }}
-    {{ trait_tenant }}
+    {{ trait_tenant }}{{ approval_trait }}
     {{ tenant_property }}
     /**
      *
@@ -33,7 +33,7 @@ class {{ class_name }} extends Model {{ class_implements_audit }}
         {{ array_editable_byuser_fields }}
     ];
     
-{{ model_casts }}    
+{{ model_casts }}    {{ approval_constants }}
 
 {{ relationship_functions }}	
 

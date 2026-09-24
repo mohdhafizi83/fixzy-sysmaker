@@ -1,0 +1,65 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Concerns\HasAudits;
+
+use App\Models\Concerns\HasApproval;
+
+class LogPenting extends Model 
+{
+	use HasFactory;
+    use HasAudits;
+    use SoftDeletes;
+    
+    use HasApproval;
+    
+    /**
+     *
+     * @var string
+     */
+    protected $table = 'log_penting';
+    /**
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id';
+    /**
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        
+        'perihal',
+        'perihal_status'
+    
+    ];
+    
+    
+    /** Approval workflow (Fixzy SysMaker Approvals module) — generated. */
+    public const APPROVAL_STATUS_FIELD = 'perihal_status';
+    public const APPROVAL_INITIAL = 'draft';
+
+    public const APPROVAL_STATUSES = [
+        'draft' => ['label' => 'Draft', 'color' => 'gray', 'final' => false],
+        'pending' => ['label' => 'Pending Review', 'color' => 'warning', 'final' => false],
+        'approved' => ['label' => 'Approved', 'color' => 'success', 'final' => true],
+        'rejected' => ['label' => 'Rejected', 'color' => 'danger', 'final' => false],
+    ];
+
+    public const APPROVAL_TRANSITIONS = [
+        ['from' => 'draft', 'to' => 'pending', 'label' => 'Submit for review', 'roles' => '', 'require_comment' => false, 'notify' => 'admin'],
+        ['from' => 'pending', 'to' => 'approved', 'label' => 'Approve', 'roles' => 'admin', 'require_comment' => true, 'notify' => 'submitter'],
+        ['from' => 'pending', 'to' => 'rejected', 'label' => 'Reject', 'roles' => 'admin', 'require_comment' => true, 'notify' => 'submitter'],
+        ['from' => 'rejected', 'to' => 'pending', 'label' => 'Resubmit', 'roles' => '', 'require_comment' => false, 'notify' => 'admin'],
+    ];
+
+	
+
+
+
+
+}

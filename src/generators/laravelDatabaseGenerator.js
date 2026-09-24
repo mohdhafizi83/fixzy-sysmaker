@@ -231,6 +231,7 @@ let helperMethods = [];
             // --- TAMAT LOGIK USERSTAMPS ---
 
             // Render model template dengan context penuh
+            const approvalCfg = require('./approvalConfig').parseApprovalConfig(tableData);
             const modelContent = renderTemplate('app/Models/Model.php.njk', {
                 import_factory: fakeData ? 'use Illuminate\\Database\\Eloquent\\Factories\\HasFactory;' : '',
                 trait_factory: fakeData ? 'use HasFactory;' : '',
@@ -242,6 +243,9 @@ let helperMethods = [];
                 import_audit: audit ? 'use App\\Models\\Concerns\\HasAudits;' : '',
                 class_implements_audit: '',
                 trait_audit: audit ? 'use HasAudits;' : '',
+                approval_import: approvalCfg ? "\nuse App\\Models\\Concerns\\HasApproval;" : '',
+                approval_trait: approvalCfg ? "\n    use HasApproval;" : '',
+                approval_constants: approvalCfg ? "\n" + require('./approvalConfig').approvalConstantsPhp(approvalCfg).replace(/\n$/, '') : '',
                 class_name: className,
                 table_name: tableName,
                 primary_key: primaryKeyField ? primaryKeyField.field_name : 'id',

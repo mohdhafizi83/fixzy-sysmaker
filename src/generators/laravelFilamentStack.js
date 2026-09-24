@@ -93,6 +93,11 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         const activityLogResult = generateActivityLogModule(fullSchema, outputDir);
         if (!activityLogResult.success) throw new Error(`Activity log: ${activityLogResult.message}`);
 
+        // Approvals module (per-table state machine) — shared files.
+        const { generateApprovalModule } = require('./laravelApprovalGenerator');
+        const approvalResult = generateApprovalModule(fullSchema, outputDir);
+        if (!approvalResult.success) throw new Error(`Approvals: ${approvalResult.message}`);
+
         // Native PrintAction class — referenced by resources with print view
         // enabled; must ship with the generated app, not just the preview skeleton.
         const anyPrint = Object.values(fullSchema.database.table || {})

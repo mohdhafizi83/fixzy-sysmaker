@@ -1737,6 +1737,7 @@
                     <div class="tabs-nav">
                         <button class="tab-link active" data-tab="tab-detail-general" id="tbl-dv-tab-general" name="tbl-dv-tab-general">General</button>
                         <button class="tab-link" data-tab="tab-detail-permissions" id="tbl-dv-tab-permissions" name="tbl-dv-tab-permissions">Features</button>
+                        <button class="tab-link" data-tab="tab-detail-approvals" id="tbl-dv-tab-approvals" name="tbl-dv-tab-approvals">Approvals</button>
                         <button class="tab-link" data-tab="tab-detail-parent-child" id="tbl-dv-tab-parent-child" name="tbl-dv-tab-parent-child">Parent-Child </button>
 						<button class="tab-link" data-tab="tab-detail-hooks">Hooks (Optional - for sophisticated App)</button>
                     </div>
@@ -1813,6 +1814,83 @@
                                 </div>
                             </div>
                         </div>
+
+<div id="tab-detail-approvals" class="tab-pane">
+    <div class="card">
+        <div class="card-body">
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="tbl-approval-enabled" name="tbl-approval-enabled">
+                    Enable approval workflow for this table
+                </label>
+                <p class="helper-text" style="color: var(--secondary-color);">
+                    Records move through your own statuses (for example Draft &rarr; Pending &rarr; Approved).
+                    Each step can require a comment and notify specific user groups. Final statuses lock the record.
+                </p>
+            </div>
+
+            <div id="approval-config-panel" class="hidden" style="border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+                <div class="form-group">
+                    <label for="approval-status-field">Status field (stores the current status)</label>
+                    <select id="approval-status-field"></select>
+                    <p class="helper-text">Pick the text column that holds the record's status. It becomes a coloured badge in the table list.</p>
+                </div>
+                <div class="form-group">
+                    <label for="approval-preset">Start from a preset</label>
+                    <select id="approval-preset">
+                        <option value="">Keep my current setup</option>
+                        <option value="simple">Simple &mdash; Pending &rarr; Approved / Rejected</option>
+                        <option value="review">Review &mdash; Draft &rarr; In Review &rarr; Approved / Rejected</option>
+                        <option value="two_step">Two-step &mdash; Draft &rarr; Pending &rarr; Manager &rarr; Approved / Rejected</option>
+                    </select>
+                    <p class="helper-text">Preset fills the table below. You can edit everything after.</p>
+                </div>
+
+                <div class="form-group">
+                    <label>Statuses</label>
+                    <table class="approval-status-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="text-align: left; border-bottom: 1px solid var(--border-color);">
+                                <th style="padding: 6px;">Label</th>
+                                <th style="padding: 6px;">Colour</th>
+                                <th style="padding: 6px;">First status</th>
+                                <th style="padding: 6px;">Final (locks record)</th>
+                                <th style="padding: 6px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="approval-status-rows"></tbody>
+                    </table>
+                    <button type="button" class="btn btn-small" id="approval-add-status" style="margin-top: 8px;">+ Add status</button>
+                </div>
+
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <label>Transitions</label>
+                    <p class="helper-text" style="color: var(--secondary-color);">
+                        Each row is one allowed move. "Who can do this" uses the user groups from
+                        Group-Based Permissions. Leave empty for any authenticated user.
+                    </p>
+                    <table class="approval-transition-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="text-align: left; border-bottom: 1px solid var(--border-color);">
+                                <th style="padding: 6px;">From</th>
+                                <th style="padding: 6px;">To</th>
+                                <th style="padding: 6px;">Button label</th>
+                                <th style="padding: 6px;">Who can do this</th>
+                                <th style="padding: 6px;">Require comment</th>
+                                <th style="padding: 6px;">Notify groups</th>
+                                <th style="padding: 6px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="approval-transition-rows"></tbody>
+                    </table>
+                    <button type="button" class="btn btn-small" id="approval-add-transition" style="margin-top: 8px;">+ Add transition</button>
+                </div>
+
+                <div id="approval-validation-msg" class="hidden" style="margin-top: 1rem; padding: 10px; border-radius: 6px; background: rgba(220,38,38,0.1); color: #dc2626;"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div id="tab-detail-hooks" class="tab-pane">
     <div class="card">

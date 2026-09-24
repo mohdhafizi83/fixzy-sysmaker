@@ -53,6 +53,7 @@ initializeTableSaveHandlers,
 } from './js/uiHandlers.js';
 
 import { tenancyManager } from './js/features/tenancyManager.js';
+import { initApprovalTab } from './js/features/approvalManager.js';
 
 import { initializeWorkflowBuilder } from './js/workflowBuilder.js';
 
@@ -479,6 +480,7 @@ window.addEventListener('beforeunload', (event) => {
 	initializeOptionsListRules();
 	initializeCalculatedFieldRules();
 	initializeTemplatePreviewHandlers();
+	initApprovalTab();
 	initializeQueryBuilder();
     initializeTableHookBuilder();
     initializeProjectHookBuilder();

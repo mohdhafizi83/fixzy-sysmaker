@@ -59,6 +59,12 @@ function openStore(dbPath) {
         if (!tableCols.includes('card_columns_tablet')) {
             db.exec("ALTER TABLE tables ADD COLUMN card_columns_tablet INTEGER DEFAULT 2");
         }
+        if (!tableCols.includes('approval_enabled')) {
+            db.exec("ALTER TABLE tables ADD COLUMN approval_enabled INTEGER DEFAULT 0");
+        }
+        if (!tableCols.includes('approval_config')) {
+            db.exec("ALTER TABLE tables ADD COLUMN approval_config TEXT");
+        }
     }
     return db;
 }

@@ -141,6 +141,7 @@ real code — the generated app ships only what you picked.
 | Group-Based Permissions | Off | Roles & permissions per user group (Filament Shield) |
 | Data Audit Trail | Off | Who changed what data: before/after values, IP, per-record trail (migration + observer) |
 | User Activity Log | Off | What users did: sign-in / sign-out / failed sign-in, admin activity page (see below) |
+| Approval Workflow | Off | Per-table status machine: statuses, transitions, role-gated actions, lock-on-final (see below) |
 | Real-time Notifications & Chat | Off | Live notification bell + chat module over WebSocket (see below) |
 | Google Sheets Sync | Off | Two-way sync of custom tables with Google Sheets (see below) |
 | Fake Data (Data Seeder) | Off | Factories + seeders with realistic sample data |
@@ -179,6 +180,29 @@ Two independent, complementary logs — enable either one or both from the
   Roles UI)
 - Logging failures never break login — the listener is a passive observer
   with its own error handling
+
+### Approval Workflow (opt-in, per table)
+
+Turn any table into a review pipeline. Enable the **Approvals** tab on a
+table record and design the workflow visually — no code needed.
+
+- **Statuses** with colour badges (gray/info/warning/success/danger);
+  mark one as the first status (new records start there automatically)
+  and any as **final** (locked — records stop moving)
+- **Transitions** between statuses, each with its own button label,
+  optional role restriction (Shield role names, comma-separated; empty =
+  any signed-in user), optional mandatory comment, and optional notify
+  target (`submitter` or any Shield role)
+- **Presets** to start fast: simple (pending/approved/rejected),
+  review (draft → in review → approved/rejected), two-step approval
+- In the generated app: only legal transition buttons appear per row
+  (a `pending` row shows Approve/Reject, a `draft` row shows Submit);
+  illegal transitions are rejected in the model layer too, not just the
+  UI; final statuses lock the record (no further moves, no delete)
+- Every move is written to an **Approval History** relation manager on
+  the record: from → to, who, comment, when
+- Notifications land in the database bell (and mail) for the submitter
+  or configured roles when a decision is made
 
 ### Real-time Notifications & Chat (opt-in)
 

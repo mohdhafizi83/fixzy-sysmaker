@@ -20,7 +20,8 @@ use Filament\Tables\Table;
 {{ import_exportdata }}
 
 {{ import_relationmanagers }}
-{% if audit_enabled %}use App\Filament\RelationManagers\AuditsRelationManager;{% endif %}
+{% if audit_enabled %}use App\Filament\RelationManagers\AuditsRelationManager;{% endif %}{% if relations_approval %}
+use App\Filament\RelationManagers\ApprovalHistoryRelationManager;{% endif %}
 
 class {{ model_name }}Resource extends Resource
 {
@@ -57,7 +58,7 @@ class {{ model_name }}Resource extends Resource
 		
 
     // Only add AuditsRelationManager if the user is allowed to view it
-    {{ relations_audit }}
+    {{ relations_audit }}{{ relations_approval }}
 	
 	return $relations;
     }

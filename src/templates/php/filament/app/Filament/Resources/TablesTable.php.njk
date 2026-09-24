@@ -54,7 +54,7 @@ class {{ table_class_name or (table_name_plural ~ "Table") }}
 
                 {{ show_count_in_tv }}   
                     
-                {{ action_edit_button }}
+                {{ action_edit_button }}{{ approval_actions }}
                 {{ action_delete_button }}
                 {{ action_forcedelete_button }}
                 {{ action_restore_button }}

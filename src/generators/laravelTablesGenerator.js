@@ -158,7 +158,14 @@ function generateTableColumnsParts(tableData, relationships, tableName, projectS
         
         if (field.display_type === 'options_list' && field.options_list_values) {
             const options = field.options_list_values.split(';;');
-            if (options.length < 7) {
+            // Approval status field: use the workflow's configured badge colors.
+            const apCfg = require('./approvalConfig').parseApprovalConfig(tableData);
+            if (apCfg && field.field_name === apCfg.statusField) {
+                const colorArms = apCfg.statuses
+                    .map((s) => `        '${s.key.replace(/'/g, "\\'")}' => '${(s.color || 'gray').replace(/'/g, "\\'")}',`)
+                    .join('\n');
+                lines.push(`->badge()->color(fn (?string $state): string => match ($state) {\n${colorArms}\n        default => 'gray',\n        })`);
+            } else if (options.length < 7) {
                 const colors = ['gray', 'info', 'primary', 'warning', 'success', 'danger'];
                 const matchArms = options.map((opt, i) => `        '${opt}' => '${colors[i % colors.length]}',`).join('\n');
                 lines.push(`->badge()->color(fn (string \$state): string => match (\$state) {\n${matchArms}\n        })`);
@@ -452,11 +459,13 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                 : parts.all.join(',\n                ');
 
             // 2. Render template with settings context
+            const apCfg = require('./approvalConfig').parseApprovalConfig(tableData);
             let tableContent = renderTemplate('app/Filament/Resources/TablesTable.php.njk', {
                 table_name_singular: modelNameSingular,
                 table_name_plural: modelNamePlural,
                 all_columns: columnsCode,
                 layout_imports: (layout.layoutImports || []).map((i) => `use ${i};`).join('\n'),
+                approval_actions: apCfg ? "\n                " + require('./approvalConfig').approvalActionsPhp(apCfg, modelNameSingular) : '',
                 ...buildTableSettingsContext(tableData, relationships, tableName, projectSettings, modelNameSingular),
             });
 
@@ -516,6 +525,10 @@ function generateSingleTableClass(basePath, resourceFolder, className, tableData
         table_class_name: className,
         all_columns: columnsCode,
         layout_imports: (layout.layoutImports || []).map((i) => `use ${i};`).join('\n'),
+        approval_actions: (() => {
+            const ap = require('./approvalConfig').parseApprovalConfig(tableData);
+            return ap ? "\n                " + require('./approvalConfig').approvalActionsPhp(ap, modelNameSingular) : '';
+        })(),
         ...buildTableSettingsContext(tableData, relationships, tableName, projectSettings, modelNameSingular),
     });
 

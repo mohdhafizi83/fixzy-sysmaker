@@ -271,6 +271,11 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         relationsAudit = `\n        if (auth()->check() && auth()->user()->can('view_any_audit')) {\n            $relations[] = AuditsRelationManager::class;\n        }`;
     }
 
+    // --- Approvals (per-table state machine) ---
+    let relationsApproval = '';
+    if (require('./approvalConfig').parseApprovalConfig(tableData)) {
+        relationsApproval = `\n        $relations[] = ApprovalHistoryRelationManager::class;`;
+    }
     const context = {
         model_name: modelName,
         model_name_plural: namespaceFolder,
@@ -290,6 +295,7 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         shortcut_menu_order: shortcutMenuOrder,
         menu_name: menuName,
         relations_audit: relationsAudit,
+        relations_approval: relationsApproval,
         audit_enabled: projectSettings.module_log_audit === 1,
         model_name_flatcase: finalSlug,
     };

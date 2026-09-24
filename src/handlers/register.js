@@ -1023,7 +1023,7 @@ ipcMain.handle('table:update', async (event, data) => {
 
             // Build the SET clause for the 'tables' table
             const allowedColumns = [
-                'table_name', 'module_name', 'table_view_title', 'table_description', 'show_quick_search', 'allow_pagination', 'pagination_type', 'default_sort_by', 'sort_descending', 'allow_csv_export', 'allow_csv_import', 'allow_print_view', 'allow_mass_delete', 'show_edit_button', 'show_delete_button', 'allow_restore_delete', 'allow_force_delete', 'tv_template', 'card_columns', 'card_columns_tablet', 'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input', 'detail_view_classes_input', 'detail_view_title', 'record_owner', 'default_focus', 'redirect_after_insert', 'enable_detail_view', 'delete_with_children', 'dv_allow_print_view', 'dv_separate_page', 'dv_hide_save_as_copy', 'dv_sticky_buttons', 'dv_allow_add_from_homepage', 'column_grid_type', 'static_grid_columns', 'table_hook_workflow', 'feature_source', 'google_sync_enabled'
+                'table_name', 'module_name', 'table_view_title', 'table_description', 'show_quick_search', 'allow_pagination', 'pagination_type', 'default_sort_by', 'sort_descending', 'allow_csv_export', 'allow_csv_import', 'allow_print_view', 'allow_mass_delete', 'show_edit_button', 'show_delete_button', 'allow_restore_delete', 'allow_force_delete', 'tv_template', 'card_columns', 'card_columns_tablet', 'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input', 'detail_view_classes_input', 'detail_view_title', 'record_owner', 'default_focus', 'redirect_after_insert', 'enable_detail_view', 'delete_with_children', 'dv_allow_print_view', 'dv_separate_page', 'dv_hide_save_as_copy', 'dv_sticky_buttons', 'dv_allow_add_from_homepage', 'column_grid_type', 'static_grid_columns', 'table_hook_workflow', 'feature_source', 'google_sync_enabled', 'approval_enabled', 'approval_config'
             ];
 
             // Google Sheets sync is only allowed on user-defined (custom) tables.
@@ -1034,6 +1034,38 @@ ipcMain.handle('table:update', async (event, data) => {
                 const CORE_SYNC_BLOCKED = ['users', 'sessions', 'jobs', 'failed_jobs', 'cache', 'password_reset_tokens', 'permissions', 'roles'];
                 if (!target || CORE_SYNC_BLOCKED.includes(target.table_name) || (target.feature_source && target.feature_source.trim() !== '')) {
                     throw new Error("Google Sheets sync can only be enabled on custom tables.");
+                }
+            }
+
+            // Approval config must be valid JSON with the expected shape.
+            if (fieldsToUpdate.hasOwnProperty('approval_config') && fieldsToUpdate.approval_config) {
+                let cfg = null;
+                try {
+                    cfg = JSON.parse(fieldsToUpdate.approval_config);
+                } catch (e) {
+                    throw new Error("Approval configuration is not valid JSON.");
+                }
+                if (!cfg || !Array.isArray(cfg.statuses) || cfg.statuses.length < 2) {
+                    throw new Error("Approval configuration needs at least 2 statuses.");
+                }
+                if (typeof cfg.statusField !== 'string' || !/^[a-z][a-z0-9_]*$/i.test(cfg.statusField || '')) {
+                    throw new Error("Approval status field must be a valid column name.");
+                }
+                const keys = cfg.statuses.map(s => s && s.key).filter(k => typeof k === 'string' && /^[a-z][a-z0-9_]*$/.test(k));
+                if (keys.length !== cfg.statuses.length || new Set(keys).size !== keys.length) {
+                    throw new Error("Approval status keys must be unique lowercase identifiers.");
+                }
+                if (!keys.includes(cfg.initial)) {
+                    throw new Error("Approval initial status must be one of the defined statuses.");
+                }
+                const transitions = Array.isArray(cfg.transitions) ? cfg.transitions : [];
+                for (const t of transitions) {
+                    if (!keys.includes(t.from) || !keys.includes(t.to)) {
+                        throw new Error("Approval transition references an unknown status.");
+                    }
+                }
+                if (!transitions.some(t => !cfg.statuses.find(s => s.key === t.from && s.final))) {
+                    throw new Error("Approval config needs at least one transition out of a non-final status.");
                 }
             }
 
