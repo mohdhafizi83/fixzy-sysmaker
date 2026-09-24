@@ -142,6 +142,7 @@ real code — the generated app ships only what you picked.
 | Data Audit Trail | Off | Who changed what data: before/after values, IP, per-record trail (migration + observer) |
 | User Activity Log | Off | What users did: sign-in / sign-out / failed sign-in, admin activity page (see below) |
 | Approval Workflow | Off | Per-table status machine: statuses, transitions, role-gated actions, lock-on-final (see below) |
+| Automation (Scheduler) | Off | Date reminders + recurring records (daily/weekly/monthly); scheduled backups coming next (see below) |
 | Real-time Notifications & Chat | Off | Live notification bell + chat module over WebSocket (see below) |
 | Google Sheets Sync | Off | Two-way sync of custom tables with Google Sheets (see below) |
 | Fake Data (Data Seeder) | Off | Factories + seeders with realistic sample data |
@@ -203,6 +204,35 @@ table record and design the workflow visually — no code needed.
   the record: from → to, who, comment, when
 - Notifications land in the database bell (and mail) for the submitter
   or configured roles when a decision is made
+
+### Automation: Scheduler (opt-in)
+
+Time-based automation for your app. Enable the **Automation (Scheduler)**
+module in the Technologies Stack tab, then design per-table rules in each
+table's **Automation** tab. The generated app runs one lightweight
+scheduler tick per minute — every rule fires **at most once per day or
+period**, even across restarts (a `schedule_runs` bookkeeping table with a
+unique index makes double-fires impossible).
+
+**Date reminders** — notify a role N days before a date field's value
+(e.g. 3 days before `due_date`). The reminder lands in the notification
+bell and mail for the configured Shield roles.
+
+**Recurring records** — auto-create a copy of the latest row on a fixed
+cycle: daily, weekly (chosen weekday), or monthly (chosen day, clamped
+for short months). Perfect for monthly bills, weekly reports, or any
+"same record, every period" pattern. Optional notify on each creation.
+
+**Scheduler Status page** (admin → System → Scheduler): see every
+compiled schedule and the recent fire history — plus a **Run scheduler
+now** button to trigger the runner manually.
+
+Deployment note: the generated app needs one crontab entry to drive
+Laravel's scheduler daemon:
+
+```
+* * * * * cd /path/to/app && php artisan schedule:run >> /dev/null 2>&1
+```
 
 ### Real-time Notifications & Chat (opt-in)
 

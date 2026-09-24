@@ -1,0 +1,33 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+/**
+ * Scheduler fire-once bookkeeping table (Fixzy SysMaker Scheduler module).
+ * The unique index is the idempotency guarantee: a second claim for the
+ * same (kind, table, record, fire_date) throws and is treated as "already
+ * fired".
+ */
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('schedule_runs', function (Blueprint $table): void {
+            $table->id();
+            $table->string('kind', 20);            // reminder | recurring | backup
+            $table->string('table_name', 100);
+            $table->string('record_id', 50);
+            $table->date('fire_date');
+            $table->timestamps();
+
+            $table->unique(['kind', 'table_name', 'record_id', 'fire_date'], 'schedule_runs_fire_unique');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('schedule_runs');
+    }
+};

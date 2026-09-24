@@ -98,6 +98,14 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         const approvalResult = generateApprovalModule(fullSchema, outputDir);
         if (!approvalResult.success) throw new Error(`Approvals: ${approvalResult.message}`);
 
+        // Scheduler module (reminders / recurring / backup) — shared files.
+        const { generateSchedulerModule } = require('./laravelSchedulerGenerator');
+        const schedulerResult = generateSchedulerModule(fullSchema, outputDir);
+        if (!schedulerResult.success) throw new Error(`Scheduler: ${schedulerResult.message}`);
+        if (schedulerResult.schedules) {
+            console.log(`[scheduler] ${schedulerResult.schedules} schedule entr(ies) compiled`);
+        }
+
         // Native PrintAction class — referenced by resources with print view
         // enabled; must ship with the generated app, not just the preview skeleton.
         const anyPrint = Object.values(fullSchema.database.table || {})

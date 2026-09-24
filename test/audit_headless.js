@@ -103,6 +103,47 @@ async function tryGen(name, fn) {
         console.log('OK   approvals off-guard (no files emitted)');
     }
 
+    // Scheduler module: run against the scheduler_reminder fixture.
+    const schSchemaRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'scheduler_reminder.json'), 'utf8'));
+    const schSchema = {
+        project: schSchemaRaw.project,
+        database: { table: schSchemaRaw.database.table || {}, relationships: schSchemaRaw.database.relationships || {} },
+    };
+    const schOut = path.join(outDir, '_scheduler_on');
+    await tryGen('generateSchedulerModule (on)', () =>
+        require('../src/generators/laravelSchedulerGenerator').generateSchedulerModule(schSchema, schOut));
+    const schCmd = path.join(schOut, 'app', 'Console', 'Commands', 'ScheduleRunnerCommand.php');
+    if (fs.existsSync(schCmd)) {
+        const cmdBody = fs.readFileSync(schCmd, 'utf8');
+        if (cmdBody.includes("'field' => 'due_date'") && cmdBody.includes("'offset_days' => 3")) {
+            results.push(['scheduler compiled-entry check', 'OK', 1]);
+            console.log('OK   scheduler compiled-entry check (due_date/3 compiled in)');
+        } else {
+            results.push(['scheduler compiled-entry check', 'FAIL', 'reminder entry missing from command']);
+            console.log('FAIL scheduler compiled-entry check');
+        }
+    } else {
+        results.push(['scheduler compiled-entry check', 'FAIL', 'command not emitted']);
+        console.log('FAIL scheduler command not emitted');
+    }
+    // Guard: module OFF must emit no scheduler files even with rules present.
+    const schOffRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'scheduler_off.json'), 'utf8'));
+    const schOffSchema = {
+        project: schOffRaw.project,
+        database: { table: schOffRaw.database.table || {}, relationships: schOffRaw.database.relationships || {} },
+    };
+    const schOffOut = path.join(outDir, '_scheduler_off');
+    await tryGen('generateSchedulerModule (off)', () =>
+        require('../src/generators/laravelSchedulerGenerator').generateSchedulerModule(schOffSchema, schOffOut));
+    const schOffFiles = fs.existsSync(schOffOut) ? fs.readdirSync(schOffOut) : [];
+    if (schOffFiles.length > 0) {
+        results.push(['scheduler off-guard', 'FAIL', 'files emitted with scheduler off']);
+        console.log('FAIL scheduler off-guard: files emitted with scheduler off');
+    } else {
+        results.push(['scheduler off-guard', 'OK', 0]);
+        console.log('OK   scheduler off-guard (no files emitted)');
+    }
+
     // Count files produced
     let count = 0;
     (function walk(d) {

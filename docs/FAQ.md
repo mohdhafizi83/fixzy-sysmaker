@@ -72,6 +72,40 @@ The Activity Log page accepts query parameters:
 `tab=data` opens the per-user data-change feed (requires the Data Audit
 Trail to be enabled).
 
+## Scheduler (Automation)
+
+### How does the scheduler work in the generated app?
+
+One cron entry drives everything: `php artisan schedule:run` ticks every
+minute, and the generated `fixzy:schedule-run` command checks each
+compiled schedule (reminders, recurring records) to see if it is due.
+You never add per-rule cron entries.
+
+### Can a reminder fire twice?
+
+No. Every fire is claimed in a `schedule_runs` table with a unique index
+on (kind, table, record, date). A second attempt on the same day is a
+silent no-op — even if the server restarts mid-run or two workers race.
+
+### What does "recurring record" actually copy?
+
+It replicates the most recently created row of the table (all column
+values) as a brand-new record each period. Edit the latest row before the
+cycle and the next period picks up your changes. If the table is empty,
+one blank row is seeded so the cycle can start.
+
+### Where do reminders go?
+
+The same channels as approval notifications: the in-app notification
+bell (database channel) and mail for users who have an address. Recipients
+are Shield role names (comma-separated); `admin` maps to `super_admin`.
+
+### How do I test the scheduler without waiting for the due date?
+
+Use the **Run scheduler now** button on the admin Scheduler page, or run
+`php artisan fixzy:schedule-run --force` — force mode fires every entry
+whose date is today or later, ignoring the exact offset window.
+
 ## General
 
 ### Do I need Laravel knowledge to use the generated app?

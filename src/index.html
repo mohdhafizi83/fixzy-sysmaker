@@ -336,6 +336,16 @@
     </label>
 </fieldset>
 
+<fieldset>
+    <legend>Automation (Scheduler)</legend>
+    <p class="module-description">
+        Time-based automation for your app: date reminders (notify a role N days before a date field), recurring records (auto-clone a row daily/weekly/monthly), and scheduled database backups with retention. Configure per-table rules in each table's <strong>Automation</strong> tab. The generated app runs one lightweight scheduler tick per minute — every rule fires at most once per day/period, even if the server restarts.
+    </p>
+    <label class="checkbox-label">
+        <input type="checkbox" id="app-module-scheduler" name="app-module-scheduler"> Enable Scheduler Module
+    </label>
+</fieldset>
+
             <fieldset>
                 <legend>Fake Data</legend>
                  <p class="module-description">
@@ -1738,6 +1748,7 @@
                         <button class="tab-link active" data-tab="tab-detail-general" id="tbl-dv-tab-general" name="tbl-dv-tab-general">General</button>
                         <button class="tab-link" data-tab="tab-detail-permissions" id="tbl-dv-tab-permissions" name="tbl-dv-tab-permissions">Features</button>
                         <button class="tab-link" data-tab="tab-detail-approvals" id="tbl-dv-tab-approvals" name="tbl-dv-tab-approvals">Approvals</button>
+                        <button class="tab-link" data-tab="tab-detail-automation" id="tbl-dv-tab-automation" name="tbl-dv-tab-automation">Automation</button>
                         <button class="tab-link" data-tab="tab-detail-parent-child" id="tbl-dv-tab-parent-child" name="tbl-dv-tab-parent-child">Parent-Child </button>
 						<button class="tab-link" data-tab="tab-detail-hooks">Hooks (Optional - for sophisticated App)</button>
                     </div>
@@ -1888,6 +1899,80 @@
 
                 <div id="approval-validation-msg" class="hidden" style="margin-top: 1rem; padding: 10px; border-radius: 6px; background: rgba(220,38,38,0.1); color: #dc2626;"></div>
             </div>
+        </div>
+    </div>
+</div>
+
+<div id="tab-detail-automation" class="tab-pane">
+    <div class="card">
+        <div class="card-body">
+            <h4>Automation Rules (Scheduler)</h4>
+            <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 1rem;">
+                Time-based rules for this table. Requires the Scheduler module enabled in Technologies Stack.
+            </p>
+
+            <div id="scheduler-disabled-note" class="hidden" style="padding: 10px; border-radius: 6px; background: rgba(245,158,11,0.12); color: #b45309; margin-bottom: 1rem;">
+                The Scheduler module is OFF for this project. Enable it under <strong>Technologies Stack → Automation (Scheduler)</strong> to use these rules.
+            </div>
+
+            <div style="border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                <label style="font-weight: 600;">Date reminders</label>
+                <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 0.5rem;">
+                    Notify a role N days before a date field's value (e.g. 3 days before <em>due_date</em>).
+                </p>
+                <table class="scheduler-reminder-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="text-align: left; font-size: 0.85rem;">
+                            <th style="padding: 4px;">Date field</th>
+                            <th style="padding: 4px;">Days before</th>
+                            <th style="padding: 4px;">Notify role(s)</th>
+                            <th style="padding: 4px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="scheduler-reminder-rows"></tbody>
+                </table>
+                <button type="button" class="btn btn-small" id="scheduler-add-reminder" style="margin-top: 8px;">+ Add reminder</button>
+            </div>
+
+            <div style="border-top: 1px solid var(--border-color); margin-top: 1.25rem; padding-top: 1rem;">
+                <label style="font-weight: 600;">Recurring record</label>
+                <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 0.5rem;">
+                    Auto-create a copy of the latest row on a fixed cycle (e.g. a monthly bill). Optional: notify a role on each creation.
+                </p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="scheduler-recurring-enabled">Recurring creation</label>
+                        <select id="scheduler-recurring-enabled">
+                            <option value="">Off</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="scheduler-recurring-day-group" style="display: none;">
+                        <label for="scheduler-recurring-day">Day of month (1–31)</label>
+                        <input type="number" id="scheduler-recurring-day" min="1" max="31" value="1">
+                    </div>
+                    <div class="form-group" id="scheduler-recurring-weekday-group" style="display: none;">
+                        <label for="scheduler-recurring-weekday">Day of week</label>
+                        <select id="scheduler-recurring-weekday">
+                            <option value="1">Monday</option>
+                            <option value="2">Tuesday</option>
+                            <option value="3">Wednesday</option>
+                            <option value="4">Thursday</option>
+                            <option value="5">Friday</option>
+                            <option value="6">Saturday</option>
+                            <option value="7">Sunday</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="scheduler-recurring-notify">Notify role(s) (optional)</label>
+                        <input type="text" id="scheduler-recurring-notify" placeholder="e.g. admin">
+                    </div>
+                </div>
+            </div>
+
+            <div id="scheduler-validation-msg" class="hidden" style="margin-top: 1rem; padding: 10px; border-radius: 6px; background: rgba(220,38,38,0.1); color: #dc2626;"></div>
         </div>
     </div>
 </div>
