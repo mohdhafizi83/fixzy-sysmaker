@@ -1,0 +1,71 @@
+{% raw %}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ $form['intro'] ?: 'Submission Form' }}</title>
+    <style>
+        :root { color-scheme: light; }
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; margin: 0; padding: 24px; color: #1f2937; }
+        .card { max-width: 640px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.1); padding: 32px; }
+        h1 { margin: 0 0 8px; font-size: 24px; }
+        .intro { color: #4b5563; margin: 0 0 24px; line-height: 1.5; }
+        label { display: block; font-weight: 600; margin: 16px 0 4px; font-size: 14px; }
+        .req { color: #dc2626; }
+        input[type=text], input[type=email], input[type=number], input[type=date], textarea {
+            width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 15px;
+        }
+        input:focus, textarea:focus { outline: 2px solid #f97316; border-color: transparent; }
+        .err { color: #dc2626; font-size: 13px; margin-top: 4px; }
+        .hp { position: absolute; left: -9999px; }
+        button { margin-top: 24px; background: #f97316; color: #fff; border: 0; border-radius: 8px; padding: 12px 28px; font-size: 15px; font-weight: 600; cursor: pointer; }
+        button:hover { background: #ea580c; }
+        .lookup-link { display: block; margin-top: 20px; font-size: 14px; color: #f97316; }
+        .errors-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+<div class="card">
+    @if($errors->any())
+        <div class="errors-box">
+            <strong>Please correct the following:</strong>
+            <ul style="margin:8px 0 0;">
+                @foreach($errors->all() as $e)
+                    <li class="err">{{ $e }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <h1>{{ $form['intro'] ?: 'Submission Form' }}</h1>
+    @if($form['intro'])<p class="intro">{{ $form['intro'] }}</p>@endif
+
+    <form method="POST" action="{{ route('public.form.submit', ['slug' => $slug]) }}">
+        @csrf
+        {{-- Honeypot: hidden from humans, tempting for bots --}}
+        <div class="hp" aria-hidden="true">
+            <label for="website">Website</label>
+            <input type="text" name="website" id="website" tabindex="-1" autocomplete="off">
+        </div>
+
+        @foreach($form['fields'] as $f)
+            <label for="fld-{{ $f['name'] }}">{{ $f['label'] }}@if($f['required']) <span class="req">*</span>@endif</label>
+            <input type="{{ $f['type'] }}" id="fld-{{ $f['name'] }}" name="{{ $f['name'] }}" value="{{ old($f['name']) }}">
+        @endforeach
+
+        @if($form['captcha'])
+            <label for="captcha">Human check: what is {{ $captcha[0] }} + {{ $captcha[1] }}? <span class="req">*</span></label>
+            <input type="number" id="captcha" name="captcha" autocomplete="off">
+        @endif
+
+        <button type="submit">Submit</button>
+    </form>
+
+    @if($form['lookup'])
+        <a class="lookup-link" href="{{ route('public.form.lookup', ['slug' => $slug]) }}">Check your submission status →</a>
+    @endif
+</div>
+</body>
+</html>
+{% endraw %}

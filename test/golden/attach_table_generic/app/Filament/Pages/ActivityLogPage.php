@@ -1,0 +1,153 @@
+<?php
+
+namespace App\Filament\Pages;
+
+use App\Models\ActivityLog;
+
+use App\Models\Audit;
+
+use App\Models\User;
+use Filament\Pages\Page;
+use Illuminate\Support\Facades\Auth;
+
+/**
+ * User Activity Log (Fixzy SysMaker generated code).
+ *
+ * Admin-only view of what users did in the app: sign-ins, sign-outs and
+ * failed sign-in attempts (from the `activity_logs` table). When the
+ * Data Audit Trail module is also enabled, a second tab shows data
+ * changes (create/edit/delete) made by the selected user across all
+ * records, read from the `audits` table.
+ *
+ * Access: super_admin always; with Shield, anyone granted
+ * view_any_activity_log. Without the authorization module, all logged-in
+ * users are administrators.
+ */
+class ActivityLogPage extends Page
+{
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-user-group';
+
+    protected static ?string $navigationLabel = 'Activity Log';
+
+    protected static ?string $title = 'User Activity Log';
+
+    protected static ?string $slug = 'activity-log';
+
+    protected static ?int $navigationSort = 995;
+
+    protected static string | \UnitEnum | null $navigationGroup = 'System';
+
+    protected string $view = 'filament.pages.activity-log';
+
+    public ?int $userId = null;
+
+    public ?string $event = null;
+
+    public ?string $dateFrom = null;
+
+    public ?string $dateTo = null;
+
+    public ?string $tab = 'auth';
+
+    /** @var array<int, string> Filter dropdown options (id => name). */
+    public array $userOptions = [];
+
+    /** @var \Illuminate\Database\Eloquent\Collection<int, ActivityLog> */
+    public $activityRecords;
+
+    /** @var \Illuminate\Support\Collection<int, Audit> */
+    public $dataChangeRecords;
+
+    public static function canAccess(): bool
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return false;
+        }
+        
+        // Shield: super_admin sees everything; other users need the
+        // view_any_activity_log permission (create it in the Shield Roles
+        // UI to grant access — Shield auto-generates permissions for
+        // resources, not pages, so this fails closed until granted).
+        return $user->hasRole('super_admin')
+            || $user->can('view_any_activity_log');
+        
+    }
+
+    public function mount(): void
+    {
+        // Deep-link support: /activity-log?user=1&tab=data&event=logged_in&from=...&to=...
+        $this->userId = request()->integer('user') ?: null;
+        $this->event = request()->string('event')->toString() ?: null;
+        $this->dateFrom = request()->string('from')->toString() ?: null;
+        $this->dateTo = request()->string('to')->toString() ?: null;
+        if (request()->input('tab') === 'data') {
+            $this->tab = 'data';
+        }
+
+        // Without the Data Audit Trail there is only the sign-in tab.
+        if (! true) {
+            $this->tab = 'auth';
+        }
+
+        $this->userOptions = User::query()
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->all();
+
+        $this->refreshRecords();
+    }
+
+    /**
+     * Livewire hook: any filter change re-queries the tables.
+     */
+    public function updated(string $property): void
+    {
+        if (in_array($property, ['userId', 'event', 'dateFrom', 'dateTo', 'tab'], true)) {
+            $this->refreshRecords();
+        }
+    }
+
+    public function setTab(string $tab): void
+    {
+        // Both datasets are already loaded by refreshRecords() on mount,
+        // so toggling the tab only switches which table is displayed.
+        $this->tab = ($tab === 'data' && true) ? 'data' : 'auth';
+    }
+
+    /**
+     * Re-run both queries for the current filter state.
+     */
+    protected function refreshRecords(): void
+    {
+        $this->activityRecords = ActivityLog::query()
+            ->with('user')
+            ->when($this->userId, fn ($q) => $q->where('user_id', $this->userId))
+            ->when($this->event, fn ($q) => $q->where('event', $this->event))
+            ->when($this->dateFrom, fn ($q) => $q->whereDate('created_at', '>=', $this->dateFrom))
+            ->when($this->dateTo, fn ($q) => $q->whereDate('created_at', '<=', $this->dateTo))
+            ->latest()
+            ->limit(200)
+            ->get();
+
+
+        if ($this->userId) {
+            $this->dataChangeRecords = Audit::query()
+                ->where('user_id', $this->userId)
+                ->when($this->dateFrom, fn ($q) => $q->whereDate('created_at', '>=', $this->dateFrom))
+                ->when($this->dateTo, fn ($q) => $q->whereDate('created_at', '<=', $this->dateTo))
+                ->latest()
+                ->limit(200)
+                ->get()
+                ->map(function (Audit $audit): Audit {
+                    $short = class_basename($audit->auditable_type);
+                    $audit->type_label = trim(preg_replace('/(?<!^)[A-Z]/', ' $0', $short)) ?: $short;
+
+                    return $audit;
+                });
+        } else {
+            $this->dataChangeRecords = collect();
+        }
+
+    }
+}

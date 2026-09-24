@@ -55,6 +55,7 @@ initializeTableSaveHandlers,
 import { tenancyManager } from './js/features/tenancyManager.js';
 import { initApprovalTab } from './js/features/approvalManager.js';
 import { initSchedulerTab } from './js/features/schedulerManager.js';
+import { initPublicFormTab } from './js/features/publicFormManager.js';
 
 import { initializeWorkflowBuilder } from './js/workflowBuilder.js';
 
@@ -483,6 +484,7 @@ window.addEventListener('beforeunload', (event) => {
 	initializeTemplatePreviewHandlers();
 	initApprovalTab();
 	initSchedulerTab();
+	initPublicFormTab();
 	initializeQueryBuilder();
     initializeTableHookBuilder();
     initializeProjectHookBuilder();

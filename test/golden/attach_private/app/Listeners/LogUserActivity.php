@@ -1,0 +1,70 @@
+<?php
+
+namespace App\Listeners;
+
+use App\Models\ActivityLog;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+
+/**
+ * Native User Activity Log listener (Fixzy SysMaker generated code).
+ *
+ * Listens to Laravel's built-in auth events and writes one row per event to
+ * the `activity_logs` table. No auth flow is modified — this is purely a
+ * passive observer, so enabling it cannot break sign-in.
+ *
+ * Recorded events:
+ *   - logged_in     : successful sign-in (user, IP, user agent)
+ *   - logged_out    : sign-out
+ *   - login_failed  : failed credential attempt (account name is captured
+ *                     in the description, never as a user_id link)
+ */
+class LogUserActivity
+{
+    public function handleLogin(Login $event): void
+    {
+        $this->record($event->user?->getKey(), ActivityLog::EVENT_LOGGED_IN, 'Signed in');
+    }
+
+    public function handleLogout(Logout $event): void
+    {
+        $this->record($event->user?->getKey(), ActivityLog::EVENT_LOGGED_OUT, 'Signed out');
+    }
+
+    public function handleFailed(Failed $event): void
+    {
+        // $event->credentials holds the attempted [account => password] pair.
+        // Store only the attempted account name so admins can spot brute-force
+        // attempts; the password is never persisted anywhere.
+        $attempted = $event->credentials['email']
+            ?? $event->credentials['account']
+            ?? 'unknown account';
+
+        $this->record(
+            $event->user?->getKey(),
+            ActivityLog::EVENT_LOGIN_FAILED,
+            'Failed sign-in attempt: ' . $attempted
+        );
+    }
+
+    /**
+     * Persist one activity row. Never let a logging failure break the
+     * auth flow it is observing.
+     */
+    protected function record(?int $userId, string $event, string $description): void
+    {
+        try {
+            ActivityLog::create([
+                'user_id' => $userId,
+                'event' => $event,
+                'description' => $description,
+                'url' => request()->fullUrl() ?? null,
+                'ip_address' => request()->ip() ?? null,
+                'user_agent' => request()->userAgent() ?? null,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+}

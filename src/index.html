@@ -1822,6 +1822,7 @@
                         <button class="tab-link" data-tab="tab-detail-permissions" id="tbl-dv-tab-permissions" name="tbl-dv-tab-permissions">Features</button>
                         <button class="tab-link" data-tab="tab-detail-approvals" id="tbl-dv-tab-approvals" name="tbl-dv-tab-approvals">Approvals</button>
                         <button class="tab-link" data-tab="tab-detail-automation" id="tbl-dv-tab-automation" name="tbl-dv-tab-automation">Automation</button>
+                        <button class="tab-link" data-tab="tab-detail-publicform" id="tbl-dv-tab-publicform" name="tbl-dv-tab-publicform">Public Form</button>
                         <button class="tab-link" data-tab="tab-detail-parent-child" id="tbl-dv-tab-parent-child" name="tbl-dv-tab-parent-child">Parent-Child </button>
 						<button class="tab-link" data-tab="tab-detail-hooks">Hooks (Optional - for sophisticated App)</button>
                     </div>
@@ -2102,6 +2103,47 @@
         </div>
     </div>
 </div>
+
+                        <div id="tab-detail-publicform" class="tab-pane">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h4>Public Intake Form</h4>
+                                    <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 1rem;">
+                                        Let guests submit records without logging in. Submissions land in this table with a generated reference number.
+                                    </p>
+                                    <label class="checkbox-label" style="font-weight: 600;">
+                                        <input type="checkbox" id="tbl-public-form-enabled" name="tbl-public-form-enabled"> Enable public form for this table
+                                    </label>
+                                    <div id="public-form-panel" class="hidden" style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                                        <div style="margin-bottom: 0.75rem;">
+                                            <label style="font-weight: 600;">Form URL slug</label>
+                                            <input type="text" id="pf-slug" placeholder="e.g. complaints" style="width: 240px; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                                            <span class="helper-text" id="pf-url-preview" style="display:block; color: var(--secondary-color); font-size: 0.85rem;"></span>
+                                        </div>
+                                        <div style="margin-bottom: 0.75rem;">
+                                            <label style="font-weight: 600;">Public fields</label>
+                                            <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 0.4rem;">Tick the columns guests may submit.</p>
+                                            <div id="pf-field-picker" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; max-height: 220px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px;"></div>
+                                        </div>
+                                        <div style="margin-bottom: 0.75rem;">
+                                            <label style="font-weight: 600;">Intro text (shown above the form)</label>
+                                            <textarea id="pf-intro" rows="2" style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 6px;"></textarea>
+                                        </div>
+                                        <div style="margin-bottom: 0.75rem;">
+                                            <label style="font-weight: 600;">Success text (shown after submit)</label>
+                                            <textarea id="pf-success" rows="2" style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 6px;"></textarea>
+                                        </div>
+                                        <div style="margin-bottom: 0.75rem;">
+                                            <label style="font-weight: 600;">Initial status</label>
+                                            <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 0.4rem;">Status set on new submissions (leave empty if this table has no status column).</p>
+                                            <input type="text" id="pf-status-default" placeholder="e.g. pending" style="width: 240px; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                                        </div>
+                                        <label class="checkbox-label"><input type="checkbox" id="pf-captcha"> Require human check (arithmetic captcha)</label>
+                                        <label class="checkbox-label"><input type="checkbox" id="pf-lookup"> Enable public status lookup page</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                         <div id="tab-detail-parent-child" class="tab-pane">
                             <div class="card">

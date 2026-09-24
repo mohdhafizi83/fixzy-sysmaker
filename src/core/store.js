@@ -62,6 +62,12 @@ function openStore(dbPath) {
         if (!tableCols.includes('attachments_enabled')) {
             db.exec("ALTER TABLE tables ADD COLUMN attachments_enabled INTEGER DEFAULT 0");
         }
+        if (!tableCols.includes('public_form_enabled')) {
+            db.exec("ALTER TABLE tables ADD COLUMN public_form_enabled INTEGER DEFAULT 0");
+        }
+        if (!tableCols.includes('public_form_config')) {
+            db.exec("ALTER TABLE tables ADD COLUMN public_form_config TEXT");
+        }
         if (!tableCols.includes('google_sync_enabled')) {
             db.exec("ALTER TABLE tables ADD COLUMN google_sync_enabled INTEGER DEFAULT 0");
         }

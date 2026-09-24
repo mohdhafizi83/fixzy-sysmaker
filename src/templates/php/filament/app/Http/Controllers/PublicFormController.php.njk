@@ -1,0 +1,206 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
+
+/**
+ * Public intake form handler (Fixzy SysMaker generated code).
+ *
+ * Standalone (no Filament panel). The registry below is compiled at
+ * generation time from the project schema — guests can only insert the
+ * whitelisted columns, with server-side validation mirroring the table
+ * definition. Security layers: CSRF (web middleware), throttle,
+ * honeypot, optional arithmetic captcha, and a generated unique
+ * public_reference (never the internal id).
+ */
+class PublicFormController extends Controller
+{
+    /**
+     * Compiled public-form registry: slug => form definition.
+     */
+    protected const FORMS = {{ registry_php }};
+
+    public function show(string $slug)
+    {
+        $form = self::FORMS[$slug] ?? null;
+        if (!$form) {
+            abort(404);
+        }
+
+        $captcha = [random_int(1, 9), random_int(1, 9)];
+        session(['fixzy_public_captcha' => $captcha]);
+
+        return view('public.form', [
+            'slug' => $slug,
+            'form' => $form,
+            'captcha' => $captcha,
+        ]);
+    }
+
+    public function submit(Request $request, string $slug)
+    {
+        $form = self::FORMS[$slug] ?? null;
+        if (!$form) {
+            abort(404);
+        }
+
+        // Throttle: max 5 submissions per minute per IP.
+        $key = 'public_form:' . $request->ip() . ':' . $slug;
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            return back()->withErrors(['throttle' => 'Too many submissions. Please wait a minute and try again.'])->onlyInput();
+        }
+        RateLimiter::hit($key, 60);
+
+        // Honeypot: bots fill hidden fields; humans never see them.
+        if ($request->input('website') !== null && $request->input('website') !== '') {
+            // Silently drop bot submissions (don't reveal we caught them).
+            return redirect()->route('public.form.success', ['slug' => $slug, 'ref' => 'submitted']);
+        }
+
+        // Captcha (optional, per-form).
+        if ($form['captcha']) {
+            $c = session('fixzy_public_captcha');
+            $answer = $request->input('captcha');
+            if (!is_array($c) || (int) $answer !== ((int) $c[0] + (int) $c[1])) {
+                return back()->withErrors(['captcha' => 'Incorrect human-check answer. Please try again.'])->onlyInput();
+            }
+        }
+
+        // Server-side validation mirroring the table schema (allowlist only).
+        $rules = [];
+        foreach ($form['fields'] as $f) {
+            $rules[$f['name']] = $f['rules'];
+        }
+        $validated = $request->validate($rules);
+
+        // Build insert payload from the allowlist ONLY (never trust input keys).
+        $payload = [];
+        foreach ($form['fields'] as $f) {
+            if (array_key_exists($f['name'], $validated)) {
+                $payload[$f['name']] = $validated[$f['name']];
+            }
+        }
+
+        // Status default (e.g. "pending") if the table has a status column.
+        $statusField = $this->statusFieldFor($form['model']);
+        if ($statusField && $form['status_default'] !== '') {
+            $payload[$statusField] = $form['status_default'];
+        }
+
+        // Unique public reference (race-safe: retry on collision).
+        $ref = $this->generateReference();
+        $attempts = 0;
+        while ($this->referenceExists($form['model'], $ref) && $attempts < 5) {
+            $ref = $this->generateReference();
+            $attempts++;
+        }
+        $payload['public_reference'] = $ref;
+
+        $model = $form['model'];
+        $record = $model::create($payload);
+
+        return redirect()->route('public.form.success', ['slug' => $slug, 'ref' => $ref]);
+    }
+
+    public function success(string $slug)
+    {
+        $form = self::FORMS[$slug] ?? null;
+        if (!$form) {
+            abort(404);
+        }
+        return view('public.success', [
+            'slug' => $slug,
+            'ref' => request('ref', ''),
+            'successText' => $form['success'],
+        ]);
+    }
+
+    public function lookupForm(string $slug)
+    {
+        $form = self::FORMS[$slug] ?? null;
+        if (!$form || !$form['lookup']) {
+            abort(404);
+        }
+        return view('public.lookup', ['slug' => $slug, 'form' => $form]);
+    }
+
+    public function lookup(Request $request, string $slug)
+    {
+        $form = self::FORMS[$slug] ?? null;
+        if (!$form || !$form['lookup']) {
+            abort(404);
+        }
+
+        // Throttle lookups too (prevents enumeration).
+        $key = 'public_lookup:' . $request->ip() . ':' . $slug;
+        if (RateLimiter::tooManyAttempts($key, 10)) {
+            return back()->withErrors(['throttle' => 'Too many lookups. Please wait a minute.']);
+        }
+        RateLimiter::hit($key, 60);
+
+        $validated = $request->validate([
+            'reference' => 'required|string|max:64',
+            'email' => $form['email_field'] ? 'required|email' : 'nullable',
+        ]);
+
+        $model = $form['model'];
+        $q = $model::where('public_reference', $validated['reference']);
+        if ($form['email_field']) {
+            $q->where($form['email_field'], $validated['email']);
+        }
+        $record = $q->first();
+
+        if (!$record) {
+            return back()->withErrors(['reference' => 'No matching submission found. Check the reference and email.']);
+        }
+
+        // Return ONLY status + last update — never the full record.
+        $statusField = $this->statusFieldFor($form['model']);
+        return view('public.lookup', [
+            'slug' => $slug,
+            'form' => $form,
+            'found' => true,
+            'reference' => $record->public_reference,
+            'status' => $statusField ? $record->{$statusField} : null,
+            'updatedAt' => $record->updated_at,
+        ]);
+    }
+
+    /**
+     * Find the approval status column on a model (pattern: {field}_status
+     * or a 'status' column), if any.
+     */
+    protected function statusFieldFor(string $modelClass): ?string
+    {
+        static $cache = [];
+        if (array_key_exists($modelClass, $cache)) {
+            return $cache[$modelClass];
+        }
+        $table = (new $modelClass)->getTable();
+        $cols = Schema::getColumnListing($table);
+        $found = null;
+        foreach ($cols as $col) {
+            if (str_ends_with($col, '_status')) { $found = $col; break; }
+        }
+        if (!$found && in_array('status', $cols, true)) {
+            $found = 'status';
+        }
+        return $cache[$modelClass] = $found;
+    }
+
+    protected function referenceExists(string $modelClass, string $ref): bool
+    {
+        return $modelClass::where('public_reference', $ref)->exists();
+    }
+
+    protected function generateReference(): string
+    {
+        // Format: PF-YYYYMM-XXXXXX (base36, collision-checked by caller).
+        return 'PF-' . date('Ym') . '-' . strtoupper(Str::random(6));
+    }
+}

@@ -144,6 +144,30 @@ Every attachment records the uploader, timestamp, original filename,
 MIME type, and size. With the Data Audit Trail enabled, changes to
 attachments are also captured in the audit history.
 
+## Public Intake Forms
+
+### Can guests submit data without an account?
+
+Yes. Enable **Public Form** on any table and you get a guest-facing
+page at `/f/{slug}`. Guests can only submit the columns you ticked —
+everything else (owner, internal statuses, audit fields) is never
+readable or writable through the public route.
+
+### How do guests track their submission?
+
+Each submission gets a reference number (e.g.
+`PF-202609-A1B2C3`) shown on the success page. If you enable the
+lookup page, guests enter that reference **plus their email** at
+`/f/{slug}/status` and see only the current status and last-updated
+time — never the record contents.
+
+### Won't bots spam the public form?
+
+Four layers: a rate limit (5 submissions per minute per IP per
+form), a hidden honeypot field that silently drops bots, an optional
+arithmetic captcha, and CSRF protection on every post. Unknown form
+slugs return 404 so attackers can't enumerate your tables.
+
 ## General
 
 ### Do I need Laravel knowledge to use the generated app?

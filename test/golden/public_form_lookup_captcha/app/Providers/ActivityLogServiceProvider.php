@@ -1,0 +1,58 @@
+<?php
+
+namespace App\Providers;
+
+use App\Listeners\LogUserActivity;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\ServiceProvider;
+
+/**
+ * User Activity Log provider (Fixzy SysMaker generated code).
+ *
+ * Wires Laravel's native auth events to the LogUserActivity listener so
+ * every sign-in / sign-out / failed attempt is recorded. Registered only
+ * when the project enables module_log_activity.
+ */
+class ActivityLogServiceProvider extends ServiceProvider
+{
+    /**
+     * Auth events observed by the User Activity Log.
+     *
+     * @var array<class-string, class-string>
+     */
+    protected array $listeners = [
+        Login::class => 'handleLogin',
+        Logout::class => 'handleLogout',
+        Failed::class => 'handleFailed',
+    ];
+
+    public function boot(): void
+    {
+        // Laravel 12 auto-discovers listeners in app/Listeners by event
+        // type-hint, but discovery runs during the framework's own provider
+        // boot — which may happen AFTER this provider boots. Defer our check
+        // until the whole app is booted: register manually only when
+        // discovery has not already wired the listener, so events are
+        // never logged twice (and still logged when discovery is disabled).
+        $this->app->booted(function (): void {
+            foreach ($this->listeners as $event => $method) {
+                $alreadyRegistered = collect(Event::getRawListeners()[$event] ?? [])
+                    ->contains(function ($listener): bool {
+                        if (is_array($listener)) {
+                            return ($listener[0] ?? null) === LogUserActivity::class;
+                        }
+
+                        return is_string($listener)
+                            && str_starts_with($listener, 'App\\Listeners\\LogUserActivity');
+                    });
+
+                if (! $alreadyRegistered) {
+                    Event::listen($event, [LogUserActivity::class, $method]);
+                }
+            }
+        });
+    }
+}

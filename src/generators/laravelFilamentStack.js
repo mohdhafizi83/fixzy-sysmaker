@@ -109,7 +109,12 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         // Attachments module (multi-file documents per record) — shared files.
         const { generateAttachmentModule } = require('./laravelAttachmentGenerator');
         const attachmentResult = generateAttachmentModule(fullSchema, outputDir);
-        if (!attachmentResult.success) throw new Error(`Attachments: ${attachmentResult.message}`);
+        if (!attachmentResult.success) throw new Error(`Attachments: ${attachmentResult.error || attachmentResult.message}`);
+
+        // Public intake form module (guest submissions + status lookup).
+        const { generatePublicFormModule } = require('./laravelPublicFormGenerator');
+        const publicFormResult = generatePublicFormModule(fullSchema, outputDir);
+        if (!publicFormResult.success) throw new Error(`PublicForm: ${publicFormResult.error || publicFormResult.message}`);
 
         // Native PrintAction class — referenced by resources with print view
         // enabled; must ship with the generated app, not just the preview skeleton.

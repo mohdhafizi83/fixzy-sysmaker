@@ -74,7 +74,12 @@ async function generateFilamentModels(fullSchema, basePath) {
             const primaryKeyField = Object.values(tableData.fields).find(f => f.primary_key === 1);
 
             const excludedFields = ['created_at', 'updated_at', 'deleted_at', primaryKeyField?.field_name];
-            const fillableFields = Object.values(tableData.fields).filter(field => !excludedFields.includes(field.field_name) && field.read_only !== 1).map(field => `\n        '${field.field_name}'`).join(',');
+            let fillableFields = Object.values(tableData.fields).filter(field => !excludedFields.includes(field.field_name) && field.read_only !== 1).map(field => `\n        '${field.field_name}'`).join(',');
+            // Public intake forms insert a generated public_reference —
+            // keep it fillable so the controller can set it.
+            if (require('./publicFormConfig').parsePublicFormConfig(tableData)) {
+                fillableFields += (fillableFields ? ',' : '') + "\n        'public_reference'";
+            }
             
 // ==========================================
             // LOGIK CASTS (DIKEMASKINI UNTUK LARAVEL 11 & ARRAY UI)
@@ -903,5 +908,6 @@ module.exports = {
     generateLaravelMigrations,
     generateLaravelFactories,
     generateLaravelDatabaseSeeder,
-    generateNativeAuditFiles
+    generateNativeAuditFiles,
+    getModelClassName
 };

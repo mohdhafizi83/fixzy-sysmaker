@@ -253,6 +253,64 @@ async function tryGen(name, fn) {
         console.log('OK   attachments off-guard (no files emitted)');
     }
 
+    // Public intake form module: compiled registry, allowlist-only
+    // insert, throttle+captcha+honeypot present, lookup returns status
+    // only, off-guard emits nothing.
+    const pfRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'public_form_lookup_captcha.json'), 'utf8'));
+    const pfSchema = {
+        project: pfRaw.project,
+        database: { table: pfRaw.database.table || {}, relationships: pfRaw.database.relationships || {} },
+    };
+    const pfOut = path.join(outDir, '_publicform_on');
+    await tryGen('generatePublicFormModule (on)', () =>
+        require('../src/generators/laravelPublicFormGenerator').generatePublicFormModule(pfSchema, pfOut));
+    const pfCtl = path.join(pfOut, 'app', 'Http', 'Controllers', 'PublicFormController.php');
+    if (fs.existsSync(pfCtl)) {
+        const body = fs.readFileSync(pfCtl, 'utf8');
+        const hasRegistry = body.includes("'claims' =>") && body.includes("'captcha' => true") && body.includes("'lookup' => true");
+        const hasThrottle = body.includes('RateLimiter::tooManyAttempts');
+        const hasHoneypot = body.includes("input('website')");
+        const allowlistOnly = body.includes("array_key_exists($f['name'], $validated)");
+        const noRawInput = !body.includes('$request->all()');
+        if (hasRegistry && hasThrottle && hasHoneypot && allowlistOnly && noRawInput) {
+            results.push(['public form controller check', 'OK', 1]);
+            console.log('OK   public form controller check (registry+throttle+honeypot+allowlist)');
+        } else {
+            results.push(['public form controller check', 'FAIL', `reg=${hasRegistry} thr=${hasThrottle} hp=${hasHoneypot} allow=${allowlistOnly} noRaw=${noRawInput}`]);
+            console.log('FAIL public form controller check');
+        }
+    } else {
+        results.push(['public form controller check', 'FAIL', 'controller not emitted']);
+        console.log('FAIL public form controller not emitted');
+    }
+    const pfLookupView = path.join(pfOut, 'resources', 'views', 'public', 'lookup.blade.php');
+    if (fs.existsSync(pfLookupView)) {
+        const v = fs.readFileSync(pfLookupView, 'utf8');
+        // Lookup view must show status + updated_at ONLY — never field dumps.
+        if (v.includes('$status') && v.includes('$updatedAt') && !v.includes('$record->') && !v.includes('foreach($record')) {
+            results.push(['public lookup no-leak check', 'OK', 1]);
+            console.log('OK   public lookup no-leak check (status+time only)');
+        } else {
+            results.push(['public lookup no-leak check', 'FAIL', 'view exposes record fields']);
+            console.log('FAIL public lookup no-leak check');
+        }
+    } else {
+        results.push(['public lookup no-leak check', 'FAIL', 'lookup view missing']);
+        console.log('FAIL public lookup view missing');
+    }
+    // Off-guard: approval_simple has no public forms → no files.
+    const pfOffOut = path.join(outDir, '_publicform_off');
+    await tryGen('generatePublicFormModule (off)', () =>
+        require('../src/generators/laravelPublicFormGenerator').generatePublicFormModule(atOffSchema, pfOffOut));
+    const pfOffFiles = fs.existsSync(pfOffOut) ? fs.readdirSync(pfOffOut) : [];
+    if (pfOffFiles.length > 0) {
+        results.push(['public form off-guard', 'FAIL', 'files emitted with no public form configured']);
+        console.log('FAIL public form off-guard');
+    } else {
+        results.push(['public form off-guard', 'OK', 0]);
+        console.log('OK   public form off-guard (no files emitted)');
+    }
+
     // Count files produced
     let count = 0;
     (function walk(d) {

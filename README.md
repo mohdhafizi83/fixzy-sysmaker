@@ -144,6 +144,7 @@ real code — the generated app ships only what you picked.
 | Approval Workflow | Off | Per-table status machine: statuses, transitions, role-gated actions, lock-on-final (see below) |
 | Automation (Scheduler) | Off | Date reminders, recurring records (daily/weekly/monthly), scheduled backups with restore (see below) |
 | File & Document Attachments | Off | Multi-file attachments per record, private storage + signed downloads, upload metadata (see below) |
+| Public Intake Forms | Off | Guest-facing submit forms + status lookup, rate-limited + captcha + honeypot (see below) |
 | Real-time Notifications & Chat | Off | Live notification bell + chat module over WebSocket (see below) |
 | Google Sheets Sync | Off | Two-way sync of custom tables with Google Sheets (see below) |
 | Fake Data (Data Seeder) | Off | Factories + seeders with realistic sample data |
@@ -264,6 +265,29 @@ with metadata — not one file per column. Two ways to enable:
 time-limited signed route (`fixzy.attachments.download`); a forged or
 tampered URL is rejected. Upload metadata (who / when / original name /
 MIME / size) is recorded, integrating with the Data Audit Trail.
+
+### Public Intake Forms & Status Lookup (opt-in, per table)
+
+Let guests submit records **without logging in** — complaints,
+registrations, bookings, feedback. In Table Settings → **Public Form**:
+pick a URL slug, tick which columns guests may submit, set the intro /
+success text, initial status, and optional captcha + lookup page.
+
+- **Public URL**: `/f/{slug}` — a lightweight standalone Blade page
+  (not the admin panel). Server-side validation mirrors the table
+  schema (required, type, max length).
+- **Submissions** land in the normal table with a unique reference
+  number (`PF-YYYYMM-XXXXXX`) and your chosen initial status, so the
+  approval workflow picks them up automatically.
+- **Status lookup**: `/f/{slug}/status` — guests enter their reference
+  + email and see **status and last-updated only**. No record fields
+  are ever exposed.
+
+**Security model:** CSRF on every post; rate limit of 5 submissions
+per minute per IP (per form); a hidden honeypot field that silently
+drops bots; optional arithmetic captcha; unknown slugs 404 (no
+enumeration); inserts are allowlist-only (only the columns you ticked
+are ever read from the request).
 
 ### Real-time Notifications & Chat (opt-in)
 
