@@ -21,7 +21,8 @@ use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\Summarizers\Average;
 use Filament\Tables\Columns\Summarizers\Range;
 use Filament\Tables\Columns\Summarizers\Count;
-use Filament\Support\Icons\Heroicon;
+{% if layout_imports %}{{ layout_imports }}
+{% endif %}use Filament\Support\Icons\Heroicon;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Enums\FontWeight;
 use Illuminate\Support\Facades\Storage;
@@ -37,7 +38,8 @@ class {{ table_class_name or (table_name_plural ~ "Table") }}
         return $table
             {{ disabled_pagination }}
             {{ pagination_type }}
-            {{ open_to_new_tab }}
+{% if content_grid %}            {{ content_grid }}
+{% endif %}            {{ open_to_new_tab }}
             {{ disabled_detailview }}
             {{ disabled_row_interaction }}
             ->description('{{ add_description }}')

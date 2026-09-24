@@ -1657,7 +1657,32 @@
                                                     <option value="vertical_2">Vertical (2 fields per line)</option>
                                                     <option value="left_image">Left image</option>
                                                     <option value="right_image">Right image</option>
+                                                    <option value="card">Card grid (responsive)</option>
                                                 </select>
+                                            </div>
+                                            <div class="form-group" id="tbl-card-size-group" style="display: none;">
+                                                <label>Card size (cards per row)</label>
+                                                <div style="display: flex; gap: 1rem;">
+                                                    <div style="flex: 1;">
+                                                        <label class="checkbox-label" for="tbl-card-columns-tablet" style="display:block; margin-bottom: 2px;">Tablet width</label>
+                                                        <select id="tbl-card-columns-tablet" name="tbl-card-columns-tablet">
+                                                            <option value="1">1 card per row</option>
+                                                            <option value="2" selected>2 cards per row</option>
+                                                        </select>
+                                                    </div>
+                                                    <div style="flex: 1;">
+                                                        <label class="checkbox-label" for="tbl-card-columns" style="display:block; margin-bottom: 2px;">Desktop width</label>
+                                                        <select id="tbl-card-columns" name="tbl-card-columns">
+                                                            <option value="1">1 card per row</option>
+                                                            <option value="2">2 cards per row</option>
+                                                            <option value="3" selected>3 cards per row</option>
+                                                            <option value="4">4 cards per row</option>
+                                                            <option value="5">5 cards per row</option>
+                                                            <option value="6">6 cards per row</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <p style="font-size: 0.85em; margin-top: 4px;">Cards stack full-width on phones. With 10 records per page, each page shows 10 cards laid out in the grid above.</p>
                                             </div>
                                             <div class="form-group">
                                                 <label class="checkbox-label"><input type="checkbox" id="tbl-hide-field-captions" name="tbl-hide-field-captions"> Hide field captions (labels)</label>

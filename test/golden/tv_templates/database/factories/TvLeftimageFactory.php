@@ -1,0 +1,20 @@
+<?php
+namespace Database\Factories;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\TvLeftimage;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\TvLeftimage>
+ */
+class TvLeftimageFactory extends Factory
+{
+    protected $model = TvLeftimage::class;
+
+    public function definition(): array
+    {
+        return [
+            'nama_fakulti' => fake()->name(),
+            'gambar' => fake()->word(),
+        ];
+    }
+}

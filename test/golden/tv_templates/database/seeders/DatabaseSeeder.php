@@ -1,0 +1,85 @@
+<?php
+namespace Database\Seeders;
+use Illuminate\Database\Seeder;
+use App\Models\User;
+use App\Models\TvHorizontal;
+use App\Models\TvVertical1;
+use App\Models\TvVertical2;
+use App\Models\TvLeftimage;
+use App\Models\TvRightimage;
+use App\Models\TvCard;
+
+class DatabaseSeeder extends Seeder {
+    public function run(): void {
+        // 1. Create Test User (Super Admin)
+        $user = User::firstOrCreate(
+            ['email' => 'admin@admin.com'],
+            ['name' => 'Super Admin', 'password' => bcrypt('password')]
+        );
+
+        // Assign the Super Admin Role
+        $role = \Spatie\Permission\Models\Role::firstOrCreate([
+            'name' => 'super_admin',
+            'guard_name' => 'web'
+        ]);
+        $user->assignRole($role);
+
+
+        // Seed TvHorizontal (Kalis Ralat Unique Constraint)
+        for ($i = 0; $i < 20; $i++) {
+            try {
+                TvHorizontal::factory()->create();
+            } catch (\Exception $e) {
+                // Ignore if data is duplicated or violates a Unique Constraint
+            }
+        }
+
+        // Seed TvVertical1 (Kalis Ralat Unique Constraint)
+        for ($i = 0; $i < 20; $i++) {
+            try {
+                TvVertical1::factory()->create();
+            } catch (\Exception $e) {
+                // Ignore if data is duplicated or violates a Unique Constraint
+            }
+        }
+
+        // Seed TvVertical2 (Kalis Ralat Unique Constraint)
+        for ($i = 0; $i < 20; $i++) {
+            try {
+                TvVertical2::factory()->create();
+            } catch (\Exception $e) {
+                // Ignore if data is duplicated or violates a Unique Constraint
+            }
+        }
+
+        // Seed TvLeftimage (Kalis Ralat Unique Constraint)
+        for ($i = 0; $i < 20; $i++) {
+            try {
+                TvLeftimage::factory()->create();
+            } catch (\Exception $e) {
+                // Ignore if data is duplicated or violates a Unique Constraint
+            }
+        }
+
+        // Seed TvRightimage (Kalis Ralat Unique Constraint)
+        for ($i = 0; $i < 20; $i++) {
+            try {
+                TvRightimage::factory()->create();
+            } catch (\Exception $e) {
+                // Ignore if data is duplicated or violates a Unique Constraint
+            }
+        }
+
+        // Seed TvCard (Kalis Ralat Unique Constraint)
+        for ($i = 0; $i < 20; $i++) {
+            try {
+                TvCard::factory()->create();
+            } catch (\Exception $e) {
+                // Ignore if data is duplicated or violates a Unique Constraint
+            }
+        }
+
+        // Filament Shield Security
+        $this->call(ShieldSeeder::class);
+    }
+}

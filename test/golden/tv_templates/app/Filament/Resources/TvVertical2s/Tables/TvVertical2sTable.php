@@ -1,0 +1,62 @@
+<?php
+
+namespace App\Filament\Resources\TvVertical2s\Tables;
+
+
+
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\RestoreAction;
+use Filament\Tables\Table;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TrashedFilter;
+use Filament\Tables\Columns\Layout\Grid;
+use Filament\Support\Enums\TextSize;
+use Illuminate\Contracts\View\View;
+
+
+class TvVertical2sTable
+{
+    public static function configure(Table $table): Table
+    {
+        return $table
+            
+            
+            
+            
+            
+            ->description('')
+            ->columns([
+                Grid::make(2, [
+                    TextColumn::make('nama_fakulti')
+                    ->label('Nama Fakulti')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->color('success')
+                    ->size(TextSize::Medium)
+                    ->searchable()
+                    ->toggleable()
+                    ->alignCenter()
+                ])
+            ])
+            ->when((bool) request()->query('print'), fn (Table $table) => $table->paginated(false),)
+            ->filters([
+                TrashedFilter::make(),
+            ])
+            ->recordActions([
+
+                   
+                    
+                
+                
+                ForceDeleteAction::make(),
+                RestoreAction::make(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                DeleteBulkAction::make(),
+            ]),
+            ]);
+    }
+}

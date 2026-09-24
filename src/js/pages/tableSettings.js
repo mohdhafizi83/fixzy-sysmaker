@@ -9,7 +9,8 @@ import {
     populateRecordOwnerDropdown,
     populateCustomViewsTab,
     populateConstraintsTab,
-    updateTableViewTemplatePreview
+    updateTableViewTemplatePreview,
+    toggleCardSizeGroup
 } from '../uiHandlers.js';
 
 export function populateTableSettings(tableName) {
@@ -123,6 +124,9 @@ export function populateTableSettings(tableName) {
 
     // Tab: Table view -> Template
     setElementValue('tbl-tv-template', tableData.tv_template);
+    setElementValue('tbl-card-columns', tableData.card_columns);
+    setElementValue('tbl-card-columns-tablet', tableData.card_columns_tablet);
+    toggleCardSizeGroup();
     setElementValue('tbl-hide-field-captions', tableData.hide_field_captions);
     setElementValue('tbl-use-first-field-as-title', tableData.use_first_field_as_title);
     setElementValue('tbl-table-view-classes-input', tableData.table_view_classes_input);

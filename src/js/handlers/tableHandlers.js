@@ -416,6 +416,10 @@ export function populateRecordOwnerDropdown(tableName) {
 /**
  * Updates the image inside the "Template preview" box based on
  * the current selection of the 'tbl-tv-template' dropdown.
+ *
+ * For the 'card' template we render a LIVE mock grid that reflects the
+ * configured card size (cards per row on tablet/desktop) instead of a
+ * static image, so the user sees the real proportions.
  */
 export function updateTableViewTemplatePreview() {
     const templateSelect = document.getElementById('tbl-tv-template');
@@ -427,13 +431,68 @@ export function updateTableViewTemplatePreview() {
     }
 
     const selectedValue = templateSelect.value;
-    if (selectedValue) {
-        const imagePath = `../assets/images/${selectedValue}.png`;
-        previewArea.innerHTML = `<img src="${imagePath}" alt="Preview for the ${selectedValue} template" style="width: 100%; object-fit: contain;">`;
-    } else {
+    if (!selectedValue) {
         // If nothing is selected, show the default text
         previewArea.innerHTML = '<p style="text-align: center; color: var(--secondary-color);">Template preview area</p>';
+        return;
     }
+
+    if (selectedValue === 'card') {
+        previewArea.innerHTML = buildCardSizePreviewHtml();
+        return;
+    }
+
+    const imagePath = `../assets/images/${selectedValue}.png`;
+    previewArea.innerHTML = `<img src="${imagePath}" alt="Preview for the ${selectedValue} template" style="width: 100%; object-fit: contain;">`;
+}
+
+/**
+ * [HELPER] Builds a live HTML mock of the card grid using the currently
+ * selected card size values. Shows two mini-grids: tablet width and
+ * desktop width, each with sample cards (image block + text lines).
+ */
+function buildCardSizePreviewHtml() {
+    const clamp = (sel, min, max, dflt) => {
+        const el = document.getElementById(sel);
+        const n = el ? parseInt(el.value, 10) : NaN;
+        return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : dflt;
+    };
+    const tabletCols = clamp('tbl-card-columns-tablet', 1, 2, 2);
+    const desktopCols = clamp('tbl-card-columns', 1, 6, 3);
+
+    const cardHtml = () => `
+        <div style="border:1px solid #ddd; border-radius:8px; background:#fff; overflow:hidden; box-shadow:0 1px 2px rgba(0,0,0,0.06);">
+            <div style="height:46px; background:linear-gradient(135deg,#E0E7FF,#C7D2FE); display:flex; align-items:center; justify-content:center; color:#6366F1; font-size:0.7em;">image</div>
+            <div style="padding:6px 8px;">
+                <div style="height:7px; width:70%; background:#D1D5DB; border-radius:3px; margin-bottom:5px;"></div>
+                <div style="height:6px; width:90%; background:#E5E7EB; border-radius:3px; margin-bottom:4px;"></div>
+                <div style="height:6px; width:55%; background:#E5E7EB; border-radius:3px;"></div>
+            </div>
+        </div>`;
+
+    const gridHtml = (cols, count) => `
+        <div style="display:grid; grid-template-columns:repeat(${cols}, 1fr); gap:8px;">
+            ${Array.from({ length: count }, () => cardHtml()).join('')}
+        </div>`;
+
+    return `
+        <div style="font-size:0.8em; color:var(--secondary-color); margin-bottom:4px;">Tablet (${tabletCols} card${tabletCols > 1 ? 's' : ''} per row)</div>
+        ${gridHtml(tabletCols, Math.min(tabletCols + 1, 3))}
+        <div style="font-size:0.8em; color:var(--secondary-color); margin:10px 0 4px;">Desktop (${desktopCols} card${desktopCols > 1 ? 's' : ''} per row)</div>
+        ${gridHtml(desktopCols, Math.min(desktopCols + 2, 8))}
+        <div style="font-size:0.75em; color:var(--secondary-color); margin-top:8px; text-align:center;">Phone: 1 full-width card per row</div>
+    `;
+}
+
+/**
+ * Shows the "Card size" settings group only when the selected Table List
+ * template is 'card'. Called on populate and on template change.
+ */
+export function toggleCardSizeGroup() {
+    const templateSelect = document.getElementById('tbl-tv-template');
+    const cardSizeGroup = document.getElementById('tbl-card-size-group');
+    if (!templateSelect || !cardSizeGroup) return;
+    cardSizeGroup.style.display = templateSelect.value === 'card' ? '' : 'none';
 }
 
 /**
@@ -444,7 +503,13 @@ export function initializeTemplatePreviewHandlers() {
     const templateSelect = document.getElementById('tbl-tv-template');
     if (templateSelect) {
         templateSelect.addEventListener('change', updateTableViewTemplatePreview);
+        templateSelect.addEventListener('change', toggleCardSizeGroup);
     }
+    // Live preview: card size dropdowns redraw the mock grid immediately.
+    ['tbl-card-columns', 'tbl-card-columns-tablet'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', updateTableViewTemplatePreview);
+    });
 }
 
 export function initializeColumnGridHandlers() {
@@ -1502,6 +1567,11 @@ function applyTableOverrides(tableName, moduleId) {
                 }
             }
         });
+
+        // Card-size overrides change which controls are relevant and how the
+        // live preview looks — refresh both after applying the JSON.
+        toggleCardSizeGroup();
+        updateTableViewTemplatePreview();
 
     } catch (e) {
         console.error("Error applying table overrides:", e);

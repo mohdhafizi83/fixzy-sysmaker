@@ -14,11 +14,15 @@ const {
 const { renderTemplate } = require('../render/engine');
 
 /**
- * [HELPER] Generates the PHP string for the table columns.
- * Mengandungi SEMUA logik asal (Media, Relationships, Formatting, Summaries, dll).
+ * [HELPER] Generates the array of PHP column code strings.
+ * Contains ALL original logic (Media, Relationships, Formatting, Summaries, etc).
+ * Returns { all: string[], images: string[], others: string[] } so the caller can
+ * wrap columns into a layout component based on the tv_template setting.
  */
-function generateTableColumnsString(tableData, relationships, tableName, projectSettings, modelNameSingular) {
+function generateTableColumnsParts(tableData, relationships, tableName, projectSettings, modelNameSingular) {
     const columnsCode = [];
+    const imageColumns = [];
+    const otherColumns = [];
     // Note: modelNameSingular is passed in as an argument (Module Name) for correct type hinting
 
     // --- MULA: LOGIK PENGESANAN TENANT FK ---
@@ -224,9 +228,85 @@ if (field.data_type === 'JSON') {
         }
         
         columnsCode.push(lines.join('\n                    '));
+        if (controller === 'ImageColumn') imageColumns.push(lines.join('\n                    '));
+        else otherColumns.push(lines.join('\n                    '));
     }
 
-    return columnsCode.join(',\n                ');
+    return { all: columnsCode, images: imageColumns, others: otherColumns };
+}
+
+/**
+ * [HELPER] Backwards-compatible wrapper: returns the joined PHP columns string.
+ */
+function generateTableColumnsString(tableData, relationships, tableName, projectSettings, modelNameSingular) {
+    return generateTableColumnsParts(tableData, relationships, tableName, projectSettings, modelNameSingular).all.join(',\n                ');
+}
+
+/**
+ * [HELPER] Wraps the generated column code in the layout component that matches
+ * the table's tv_template setting. Every template keeps all columns visible; only
+ * the row layout differs.
+ *
+ *  - horizontal   (default) : flat columns, standard <table> rows
+ *  - vertical_1             : one field per line  -> Panel( Stack(all) )
+ *  - vertical_2             : two fields per line -> Panel( Grid(2, all) )
+ *  - left_image             : image column left, remaining fields stacked right
+ *                             -> Split( image, Stack(rest) )
+ *  - right_image            : fields stacked left, image column right
+ *                             -> Split( Stack(rest), image )
+ *  - card                   : responsive card grid (handled via contentGrid +
+ *                             a generated Blade card view; columns stay flat)
+ *
+ * If the template needs an image column but the table has none (or vice versa),
+ * we gracefully fall back to the closest sensible layout.
+ */
+function buildColumnsLayout(tvTemplate, parts) {
+    const tpl = String(tvTemplate || 'horizontal');
+    const indent = '                '; // matches template's ->columns([ ... ]) body
+
+    const joinCols = (cols) => cols.map((c) => indent + '    ' + c).join(',\n');
+
+    switch (tpl) {
+        case 'vertical_1':
+        case 'card':
+            // 'card' reuses the vertical panel layout; the card GRID effect comes
+            // from ->contentGrid() set in buildTableSettingsContext, which turns
+            // each record (panel + actions) into one responsive grid cell.
+            if (parts.all.length === 0) return { code: '', usesLayout: false };
+            return {
+                code: `Panel::make([\n${joinCols(parts.all)}\n${indent}])`,
+                usesLayout: true,
+                layoutImports: ['Filament\\Tables\\Columns\\Layout\\Panel'],
+            };
+        case 'vertical_2':
+            if (parts.all.length === 0) return { code: '', usesLayout: false };
+            return {
+                code: `Grid::make(2, [\n${joinCols(parts.all)}\n${indent}])`,
+                usesLayout: true,
+                layoutImports: ['Filament\\Tables\\Columns\\Layout\\Grid'],
+            };
+        case 'left_image':
+            if (parts.images.length === 0 || parts.others.length === 0) {
+                // No image column (or nothing to pair it with): fall back to vertical_1.
+                return buildColumnsLayout('vertical_1', parts);
+            }
+            return {
+                code: `Split::make([\n${joinCols(parts.images)},\n${indent}    Stack::make([\n${parts.others.map((c) => indent + '        ' + c).join(',\n')}\n${indent}    ]),\n${indent}])->from('md')`,
+                usesLayout: true,
+                layoutImports: ['Filament\\Tables\\Columns\\Layout\\Split', 'Filament\\Tables\\Columns\\Layout\\Stack'],
+            };
+        case 'right_image':
+            if (parts.images.length === 0 || parts.others.length === 0) {
+                return buildColumnsLayout('vertical_1', parts);
+            }
+            return {
+                code: `Split::make([\n${indent}    Stack::make([\n${parts.others.map((c) => indent + '        ' + c).join(',\n')}\n${indent}    ]),\n${joinCols(parts.images)}\n${indent}])->from('md')`,
+                usesLayout: true,
+                layoutImports: ['Filament\\Tables\\Columns\\Layout\\Split', 'Filament\\Tables\\Columns\\Layout\\Stack'],
+            };
+        default:
+            return { code: '', usesLayout: false };
+    }
 }
 
 /**
@@ -302,6 +382,22 @@ function buildTableSettingsContext(tableData, relationships, tableName, projectS
     else if (tableData.pagination_type === 'extreme') ctx.pagination_type = '->extremePaginationLinks()';
     else ctx.pagination_type = '';
 
+    // Card view: records render as a responsive grid of cards. Pagination
+    // (e.g. 10 records per page) yields one card per record in the grid.
+    // Card size = number of cards per row, configurable per table:
+    //   card_columns         -> desktop (xl) cards per row (1-6, default 3)
+    //   card_columns_tablet  -> tablet (md) cards per row (1-2, default 2)
+    ctx.content_grid = '';
+    if (String(tableData.tv_template || 'horizontal') === 'card') {
+        const clampInt = (v, min, max, dflt) => {
+            const n = parseInt(v, 10);
+            return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : dflt;
+        };
+        const xl = clampInt(tableData.card_columns, 1, 6, 3);
+        const md = clampInt(tableData.card_columns_tablet, 1, 2, 2);
+        ctx.content_grid = `->contentGrid(['md' => ${md}, 'xl' => ${xl}])`;
+    }
+
     ctx.add_description = tableData.table_description || '';
 
     ctx.action_delete_button = tableData.show_delete_button === 1 ? 'DeleteAction::make(),' : '';
@@ -348,14 +444,19 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
             const modelNameSingular = toSingularPascalCase(nameSource); // StudentInfo
             const modelNamePlural = toPluralPascalCase(nameSource); // StudentInfos
 
-            // 1. Generate Columns (pass modelNameSingular for type hinting)
-            const columnsCode = generateTableColumnsString(tableData, relationships, tableName, projectSettings, modelNameSingular);
+            // 1. Generate columns + template-aware layout wrapper
+            const parts = generateTableColumnsParts(tableData, relationships, tableName, projectSettings, modelNameSingular);
+            const layout = buildColumnsLayout(tableData.tv_template, parts);
+            const columnsCode = layout.usesLayout
+                ? layout.code
+                : parts.all.join(',\n                ');
 
             // 2. Render template with settings context
             let tableContent = renderTemplate('app/Filament/Resources/TablesTable.php.njk', {
                 table_name_singular: modelNameSingular,
                 table_name_plural: modelNamePlural,
                 all_columns: columnsCode,
+                layout_imports: (layout.layoutImports || []).map((i) => `use ${i};`).join('\n'),
                 ...buildTableSettingsContext(tableData, relationships, tableName, projectSettings, modelNameSingular),
             });
 
@@ -404,12 +505,17 @@ function generateSingleTableClass(basePath, resourceFolder, className, tableData
     // namespace App\Filament\Resources\PendingRegistrations\Tables;
 
     // 1. Render template (custom class name, custom namespace folder)
-    const columnsCode = generateTableColumnsString(tableData, relationships, tableName, projectSettings, modelNameSingular);
+    const parts = generateTableColumnsParts(tableData, relationships, tableName, projectSettings, modelNameSingular);
+    const layout = buildColumnsLayout(tableData.tv_template, parts);
+    const columnsCode = layout.usesLayout
+        ? layout.code
+        : parts.all.join(',\n                ');
     let tableContent = renderTemplate('app/Filament/Resources/TablesTable.php.njk', {
         table_name_singular: modelNameSingular,
         table_name_plural: resourceFolder, // Namespace uses the custom folder
         table_class_name: className,
         all_columns: columnsCode,
+        layout_imports: (layout.layoutImports || []).map((i) => `use ${i};`).join('\n'),
         ...buildTableSettingsContext(tableData, relationships, tableName, projectSettings, modelNameSingular),
     });
 

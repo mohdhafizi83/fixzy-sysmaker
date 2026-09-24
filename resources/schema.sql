@@ -74,6 +74,8 @@ CREATE TABLE tables (
     allow_restore_delete         INTEGER DEFAULT 1,
     allow_force_delete           INTEGER DEFAULT 1,
     tv_template                  TEXT DEFAULT 'horizontal',
+    card_columns                 INTEGER DEFAULT 3,
+    card_columns_tablet          INTEGER DEFAULT 2,
     hide_field_captions          INTEGER DEFAULT 0,
     use_first_field_as_title     INTEGER DEFAULT 0,
     table_view_classes_input     TEXT,
