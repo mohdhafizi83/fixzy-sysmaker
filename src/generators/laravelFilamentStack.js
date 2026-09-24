@@ -46,6 +46,7 @@ const { generateAdminPanelProvider } = require('./laravelAdminPanelGenerator');
 const { generateWorkflowHooks } = require('./laravelWorkflowGenerator');
 const { generateAuthIntegrations } = require('./laravelAuthIntegrationsGenerator');
 const { generateRealtimeModule } = require('./laravelRealtimeGenerator');
+const { generateActivityLogModule } = require('./laravelActivityLogGenerator');
 const { generateGoogleSheetsModule } = require('./laravelGoogleSheetsGenerator');
 const { generateDeploymentGuidePage } = require('./laravelDocsGenerator');
 
@@ -87,6 +88,10 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         // Native audit-trail files (Phase 4: replaces owen-it + tapp packages)
         const nativeAuditResult = await generateNativeAuditFiles(fullSchema, outputDir);
         if (!nativeAuditResult.success) throw new Error(`Native audit: ${nativeAuditResult.message}`);
+
+        // User Activity Log (sign-in/out/failed) + admin Activity Log page.
+        const activityLogResult = generateActivityLogModule(fullSchema, outputDir);
+        if (!activityLogResult.success) throw new Error(`Activity log: ${activityLogResult.message}`);
 
         // Native PrintAction class — referenced by resources with print view
         // enabled; must ship with the generated app, not just the preview skeleton.

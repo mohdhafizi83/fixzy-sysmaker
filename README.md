@@ -139,7 +139,8 @@ real code — the generated app ships only what you picked.
 | LDAP / Active Directory | Off | Directory bind, auto account provisioning (ldaprecord-laravel) |
 | Google SSO | Off | "Sign in with Google" via Socialite, first-login provisioning |
 | Group-Based Permissions | Off | Roles & permissions per user group (Filament Shield) |
-| Audit Trail (Log Audit) | Off | Native audit log: who changed what, when (migration + observer) |
+| Data Audit Trail | Off | Who changed what data: before/after values, IP, per-record trail (migration + observer) |
+| User Activity Log | Off | What users did: sign-in / sign-out / failed sign-in, admin activity page (see below) |
 | Real-time Notifications & Chat | Off | Live notification bell + chat module over WebSocket (see below) |
 | Google Sheets Sync | Off | Two-way sync of custom tables with Google Sheets (see below) |
 | Fake Data (Data Seeder) | Off | Factories + seeders with realistic sample data |
@@ -150,6 +151,34 @@ real code — the generated app ships only what you picked.
 Plus the always-on baseline every generated app receives: migrations, Eloquent
 models with relations, Filament 5 resources (forms/tables/pages), CSV
 import/export per table, and a feature-aware deployment guide.
+
+### Logging: Data Audit Trail & User Activity (opt-in)
+
+Two independent, complementary logs — enable either one or both from the
+**Logging** fieldset in the Technologies Stack tab.
+
+**Data Audit Trail** — *who changed what data*
+- Native `audits` table: polymorphic (any model), event, before/after
+  values, user, URL, IP address, user agent — no third-party package
+- `AuditObserver` + `HasAudits` trait record create/update/delete on every
+  audited model; passwords and tokens are always stripped
+- Read-only **Audits** relation manager on each resource: open any record
+  and see its full change history inline
+
+**User Activity Log** — *what users did in the app*
+- Captures Laravel auth events passively: **signed in**, **signed out**,
+  **failed sign-in** (with the attempted account name — never the
+  password)
+- Admin-only **Activity Log** page: filter by user, event type, and date
+  range; deep-linkable (`/admin/activity-log?user=1&tab=data`)
+- When the Data Audit Trail is also enabled, a second tab shows every
+  data change (create/edit/delete) that the selected user made across all
+  tables — a per-person activity feed
+- Access control: super admin always; with Shield enabled, gate the page
+  with a `view_any_activity_log` permission (create it in the Shield
+  Roles UI)
+- Logging failures never break login — the listener is a passive observer
+  with its own error handling
 
 ### Real-time Notifications & Chat (opt-in)
 
@@ -276,8 +305,9 @@ Click **Show Preview** to run the generated app instantly in a sandboxed local
 environment — log in, click around, and see your design before exporting.
 
 ### Multi-tenancy & auditing
-Row-level ownership, tenant scoping (single and multi-tenant patterns), and a
-generated native audit trail — no third-party auditing package required.
+Row-level ownership, tenant scoping (single and multi-tenant patterns), and
+generated native logging — a per-record Data Audit Trail plus an optional
+per-user Activity Log. No third-party auditing package required.
 
 ### Custom modules
 Build screens that go beyond plain CRUD: custom views, module-level logic,
@@ -290,7 +320,8 @@ Shipped:
 - [x] Laravel + Filament generator (full stack: DB, models, resources, I/O) — benchmark target
 - [x] Desktop (Windows/macOS), local web UI, and headless CLI from one engine
 - [x] SQL import (MySQL, PostgreSQL, SQL Server, SQLite)
-- [x] Multi-tenancy, row ownership, native audit trail
+- [x] Multi-tenancy, row ownership, native logging (Data Audit Trail +
+  User Activity Log, independently selectable)
 - [x] Dashboard builder with stat/chart widgets
 - [x] Auth modules: Google SSO, LDAP/AD, email 2FA, login captcha (opt-in)
 - [x] Real-time notifications & chat (opt-in): live bell + chat over Laravel
@@ -303,7 +334,7 @@ Shipped:
   (email, Telegram, HTTP, Advanced Action/raw SQL, logic, loops, try/catch)
   compiling to real PHP (observers, listeners, scheduled commands)
 - [x] GUI Setup Wizard (one-click environment provisioning)
-- [x] 23-fixture golden test matrix + CI (ubuntu + macOS)
+- [x] 26-fixture golden test matrix + CI (ubuntu + macOS)
 
 Next:
 - [ ] Guided project templates (CRM, inventory, booking, helpdesk starters)
@@ -317,7 +348,7 @@ Roadmap items are community-friendly — open an issue to vote or request.
 ## Development
 
 ```bash
-node test/golden.js                 # 23-fixture snapshot matrix
+node test/golden.js                 # 26-fixture snapshot matrix
 node test/e2e_smoke.js <fixture>    # generate + migrate + boot + HTTP check
 node test/gsheets_e2e.js            # Google Sheets sync vs mock Sheets API
 node test/pathguard_test.js         # security unit tests
@@ -326,7 +357,7 @@ node test/audit_headless.js         # generator crash audit
 
 CI runs the full matrix on ubuntu + macOS (`.github/workflows/ci.yml`).
 
-Key docs: `docs/FEATURE_MATRIX.md`, `docs/NATIVE_FEATURES.md`,
+Key docs: `docs/FAQ.md`, `docs/FEATURE_MATRIX.md`, `docs/NATIVE_FEATURES.md`,
 `docs/HEADLESS_WEB.md`, `docs/BUGS.md`.
 
 Architecture: the app stores your design in a local SQLite database; generators

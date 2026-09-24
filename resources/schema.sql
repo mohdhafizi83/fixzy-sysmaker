@@ -41,6 +41,7 @@ CREATE TABLE projects (
     module_auth_google_sso       INTEGER DEFAULT 0,
     module_authorization         INTEGER DEFAULT 1,
     module_log_audit             INTEGER DEFAULT 1,
+    module_log_activity          INTEGER DEFAULT 0,
     module_fake_data             INTEGER DEFAULT 1,
     module_realtime              INTEGER DEFAULT 0,
     realtime_backend             TEXT DEFAULT 'reverb', -- reverb (self-hosted) | pusher (hosted)

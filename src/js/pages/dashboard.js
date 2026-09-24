@@ -30,6 +30,7 @@ export function populateMainDashboard(projectData) {
     setElementValue('app-module-auth-google-sso', projectData.module_auth_google_sso);
     setElementValue('app-module-authorization', projectData.module_authorization);
     setElementValue('app-module-log-audit', projectData.module_log_audit);
+    setElementValue('app-module-log-activity', projectData.module_log_activity);
     setElementValue('app-module-fake-data', projectData.module_fake_data); 
     setElementValue('app-debug-mode', projectData.debug_mode);
 	setRadioValue('app-data_delete_type', projectData.data_delete_type || 'hard');

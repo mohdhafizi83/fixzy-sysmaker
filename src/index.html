@@ -293,12 +293,15 @@
             </fieldset>
 
             <fieldset>
-                <legend>Log Audit</legend>
+                <legend>Logging</legend>
                  <p class="module-description">
-                    Records significant events in a log file or database table, such as user logins, data changes, and administrative actions for security and compliance.
+                    Two independent, complementary logs. Enable either one or both.
                 </p>
                 <label class="checkbox-label">
-                    <input type="checkbox" id="app-module-log-audit" name="app-module-log-audit"> Enable Audit Trail
+                    <input type="checkbox" id="app-module-log-audit" name="app-module-log-audit"> Data Audit Trail — who changed what data (create / edit / delete, with before-and-after values, IP address)
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="app-module-log-activity" name="app-module-log-activity"> User Activity Log — what users did in the app (sign in, sign out, failed sign-in attempts), viewable by admins
                 </label>
             </fieldset>
 

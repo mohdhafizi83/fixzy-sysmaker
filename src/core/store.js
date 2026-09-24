@@ -46,6 +46,9 @@ function openStore(dbPath) {
         if (!cols.includes('module_google_sheets')) {
             db.exec("ALTER TABLE projects ADD COLUMN module_google_sheets INTEGER DEFAULT 0");
         }
+        if (!cols.includes('module_log_activity')) {
+            db.exec("ALTER TABLE projects ADD COLUMN module_log_activity INTEGER DEFAULT 0");
+        }
         const tableCols = db.prepare("PRAGMA table_info(tables)").all().map((c) => c.name);
         if (!tableCols.includes('google_sync_enabled')) {
             db.exec("ALTER TABLE tables ADD COLUMN google_sync_enabled INTEGER DEFAULT 0");
