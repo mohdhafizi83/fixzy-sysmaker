@@ -59,6 +59,11 @@ async function generateAdminPanelProvider(fullSchema, basePath) {
             ldap: Number(project.module_auth_ldap) === 1,
             // Real-time module (native Filament database notifications).
             realtime_enabled: Number(project.module_realtime) === 1,
+            // Reports module: custom dashboard page that renders the
+            // compiled report widgets (else stock Filament dashboard).
+            dashboard_class: require('./reportConfig').anyReportsEnabled(fullSchema)
+                ? '\\App\\Filament\\Pages\\FixzyDashboard'
+                : null,
         });
 
         const outputPath = path.join(providersPath, 'AdminPanelProvider.php');

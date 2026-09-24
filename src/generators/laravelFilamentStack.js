@@ -121,6 +121,11 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         const numberingResult = generateNumberingModule(fullSchema, outputDir);
         if (!numberingResult.success) throw new Error(`Numbering: ${numberingResult.error || numberingResult.message}`);
 
+        // Reports & Charts module (Dashboard Builder widgets).
+        const { generateReportModule } = require('./laravelReportGenerator');
+        const reportResult = generateReportModule(fullSchema, outputDir);
+        if (!reportResult.success) throw new Error(`Reports: ${reportResult.error || reportResult.message}`);
+
         // Native PrintAction class — referenced by resources with print view
         // enabled; must ship with the generated app, not just the preview skeleton.
         const anyPrint = Object.values(fullSchema.database.table || {})

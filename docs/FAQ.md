@@ -187,6 +187,29 @@ Depends on the date part: `YYYYMM` restarts monthly (0001 each new
 month), `YYYY` yearly, `YYYYMMDD` daily, and no date part means the
 counter runs forever.
 
+## Reports & Charts
+
+### Where do my Dashboard Builder widgets show up?
+
+They are compiled into the generated app's dashboard. Each widget
+becomes a small PHP class under `app/Filament/Widgets/` and the
+dashboard page lists them automatically. Re-generate after changing
+widgets in the builder.
+
+### Can a user tamper with a report's query from the browser?
+
+No. The compiled config is baked into the generated PHP as a
+protected static property — it never travels in the Livewire
+payload. Table/column identifiers are validated against the live
+schema plus a strict regex, and all filter values go through query
+bindings.
+
+### What happens if I delete a table a widget points to?
+
+The widget is skipped at generation time — you won't get a broken
+chart or a crash. Remove or repoint the widget in the Dashboard
+Builder.
+
 ## General
 
 ### Do I need Laravel knowledge to use the generated app?

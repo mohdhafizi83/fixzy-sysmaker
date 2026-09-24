@@ -360,6 +360,66 @@ async function tryGen(name, fn) {
         console.log('OK   numbering off-guard (no files emitted)');
     }
 
+    // Reports module: widgets compile to widget classes + dashboard;
+    // stale/bad widgets are skipped; off-guard emits nothing.
+    const repRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'reports_dashboard.json'), 'utf8'));
+    const repSchema = {
+        project: repRaw.project,
+        database: {
+            table: repRaw.database.table || {},
+            relationships: repRaw.database.relationships || {},
+            widgets: repRaw.database.widgets || [],
+        },
+    };
+    const repOut = path.join(outDir, '_reports_on');
+    await tryGen('generateReportModule (on)', () =>
+        require('../src/generators/laravelReportGenerator').generateReportModule(repSchema, repOut));
+    const repWdir = path.join(repOut, 'app', 'Filament', 'Widgets');
+    const repDash = path.join(repOut, 'app', 'Filament', 'Pages', 'FixzyDashboard.php');
+    const repWidgets = fs.existsSync(repWdir) ? fs.readdirSync(repWdir) : [];
+    // 4 valid widgets (w1-w4) + 4 shared files (ReportQuery + 3 bases) = 8.
+    // Stale table (w5) and non-numeric sum (w6) must NOT appear.
+    const repOk = repWidgets.length === 8
+        && repWidgets.includes('Report_w1.php') && repWidgets.includes('Report_w4.php')
+        && !repWidgets.includes('Report_w5.php') && !repWidgets.includes('Report_w6.php')
+        && fs.existsSync(repDash)
+        && fs.readFileSync(repDash, 'utf8').includes('Report_w1::class')
+        && !fs.readFileSync(repDash, 'utf8').includes('Report_w5');
+    if (repOk) {
+        results.push(['reports module check', 'OK', 1]);
+        console.log('OK   reports module check (4 widgets compiled, stale skipped, dashboard emitted)');
+    } else {
+        results.push(['reports module check', 'FAIL', `widgets=[${repWidgets.join(',')}] dash=${fs.existsSync(repDash)}`]);
+        console.log('FAIL reports module check');
+    }
+    // Compiled config must be baked as static property (not Livewire payload).
+    const repW3 = path.join(repWdir, 'Report_w3.php');
+    if (fs.existsSync(repW3)) {
+        const w3 = fs.readFileSync(repW3, 'utf8');
+        if (w3.includes('protected static array $cfg') && w3.includes("'label_field' => \"item_name\"") && w3.includes("'advanced' => [")) {
+            results.push(['reports compiled-config check', 'OK', 1]);
+            console.log('OK   reports compiled-config check (static baked, advanced rules present)');
+        } else {
+            results.push(['reports compiled-config check', 'FAIL', 'cfg not baked correctly']);
+            console.log('FAIL reports compiled-config check');
+        }
+    } else {
+        results.push(['reports compiled-config check', 'FAIL', 'Report_w3.php missing']);
+        console.log('FAIL reports compiled-config check');
+    }
+    // Off-guard: base_simple has no widgets → no report files.
+    const repOffOut = path.join(outDir, '_reports_off');
+    await tryGen('generateReportModule (off)', () =>
+        require('../src/generators/laravelReportGenerator').generateReportModule(atOffSchema, repOffOut));
+    const repOffFiles = fs.existsSync(repOffOut) ? fs.readdirSync(repOffOut) : [];
+    if (repOffFiles.length > 0) {
+        results.push(['reports off-guard', 'FAIL', 'files emitted with no widgets configured']);
+        console.log('FAIL reports off-guard');
+    } else {
+        results.push(['reports off-guard', 'OK', 0]);
+        console.log('OK   reports off-guard (no files emitted)');
+    }
+
     // Count files produced
     let count = 0;
     (function walk(d) {

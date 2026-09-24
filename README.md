@@ -306,6 +306,29 @@ Counters reset per period (daily/monthly/yearly) or never, depending
 on the date part you choose. A manually typed value always wins —
 auto numbering only fills empty fields on create.
 
+### Reports & Charts (Dashboard Builder)
+
+Widgets you design in the Dashboard Builder are **compiled into the
+generated app's dashboard** — no manual wiring. Four widget types:
+
+- **Stat card** — count / sum / avg of any table, optional filter
+- **Bar chart** — group by a column, aggregate a numeric column
+- **Pie chart** — share of a grouped aggregate
+- **Latest records** — a compact table of the newest rows
+
+Each widget carries its own width (1/2/3/full columns) and colour.
+Filters support a simple field/operator/value rule, a timeframe
+(today / this month / this year), and advanced AND/OR rule groups
+from the visual query builder.
+
+**Security model:** the compiled report config is baked into the
+generated PHP as a protected static property — it never travels in
+the Livewire payload, so it cannot be tampered with from the browser.
+Column and table identifiers are validated against the live schema
+plus a strict regex before use; all values go through query bindings.
+Widgets whose table or field was later deleted are skipped at
+generation time (no broken widgets).
+
 ### Real-time Notifications & Chat (opt-in)
 
 Push events to users instantly — no page refresh. Native-first: built on

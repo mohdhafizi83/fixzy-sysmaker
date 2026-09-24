@@ -38,6 +38,7 @@ function run(cmd, opts = {}) {
             table: schema.database.table || {},
             relationships: schema.database.relationships || [],
             unified_menu: schema.database.unified_menu || [],
+            widgets: schema.database.widgets || [],
         },
     };
     const { generateLaravelFilamentStack } = require('../src/generators/laravelFilamentStack');
