@@ -147,6 +147,7 @@ real code — the generated app ships only what you picked.
 | Public Intake Forms | Off | Guest-facing submit forms + status lookup, rate-limited + captcha + honeypot (see below) |
 | Auto Numbering | Off | Race-safe reference codes per table (INV-202609-0001), prefix + date + width (see below) |
 | Smart Import / Export | Off | CSV/XLSX import with match-field profiles (update/skip/insert), dry-run validation (see below) |
+| Localization (Malay) | English | Full BM admin: chrome + validation via Filament's bundled Malay, per-field captions, live EN/BM switcher (see below) |
 | Real-time Notifications & Chat | Off | Live notification bell + chat module over WebSocket (see below) |
 | Google Sheets Sync | Off | Two-way sync of custom tables with Google Sheets (see below) |
 | Fake Data (Data Seeder) | Off | Factories + seeders with realistic sample data |
@@ -350,6 +351,32 @@ messy spreadsheet first.
 Export supports **CSV and XLSX** natively (Filament v5 + OpenSpout,
 no extra dependencies). Round-trip stability is verified: export →
 re-import with an update profile leaves data byte-identical.
+
+### Localization — Bahasa Melayu (opt-in)
+
+Set the project language to **Malay** in Project Settings and the
+generated app ships bilingual. English projects are untouched (zero
+localization files emitted).
+
+- **Admin chrome** — Filament v5 bundles native Malay translations
+  ("Papan pemuka", "Log masuk", "Cipta"…) — activated automatically,
+  no extra packages.
+- **Validation messages** — a generated `lang/ms/validation.php`
+  localizes error text (" Medan nama fakulti diperlukan.").
+- **Your labels** — every field has an optional **Malay Caption**
+  (BM) beside its English caption. Fields with a BM caption render as
+  `__('fixzy.<table>.<field>')` backed by generated `lang/ms.json` +
+  `lang/en.json`; fields without one keep their English label
+  everywhere.
+- **Live switcher** — an EN/BM toggle in the user-menu area; the
+  choice persists per session (cookie), default follows the project
+  language.
+
+Filament v5 has no built-in locale-switch API (verified against
+v5.8.4), so the module uses plain Laravel: a `SetLocale` middleware
+reads the session and calls `App::setLocale()`, and the switcher
+route only accepts the whitelisted `en`/`ms` codes — no third-party
+plugin needed.
 
 ### Real-time Notifications & Chat (opt-in)
 

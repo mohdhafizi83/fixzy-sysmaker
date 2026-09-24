@@ -1,0 +1,9 @@
+{% raw %}{{-- Language switcher (Fixzy SysMaker generated code) --}}
+<div class="flex items-center gap-1 px-3 py-2 text-sm">
+    @php $current = app()->getLocale(); @endphp
+    <a href="{{ route('fixzy.locale.switch', 'en') }}"
+       class="rounded px-2 py-1 {{ $current === 'en' ? 'bg-primary-500 text-white font-semibold' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700' }}">EN</a>
+    <a href="{{ route('fixzy.locale.switch', 'ms') }}"
+       class="rounded px-2 py-1 {{ $current === 'ms' ? 'bg-primary-500 text-white font-semibold' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700' }}">BM</a>
+</div>
+{% endraw %}

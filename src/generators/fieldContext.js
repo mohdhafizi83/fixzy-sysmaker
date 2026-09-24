@@ -102,7 +102,7 @@ function buildFormFieldContext(field, elementType, opts = {}) {
     }
     if (field.unique === 1) ctx.is_unique = '->unique(ignoreRecord: true)';
     if (field.default_value) ctx.is_default_value = `->default('${field.default_value}')`;
-    ctx.is_caption = `->label('${field.caption || toTitleCase(field.field_name)}')`;
+    ctx.is_caption = `->label(${require('./localizationConfig').labelPhp(field.caption || toTitleCase(field.field_name), field, opts.tableName, opts.localizationEnabled)})`;
 
     // Options list
     if (field.display_type === 'options_list' && field.data_type !== 'BOOLEAN') {

@@ -12,6 +12,7 @@ const {
     toSingularCamelCase
 } = require('../utils');
 const { renderTemplate } = require('../render/engine');
+const { labelPhp } = require('./localizationConfig');
 
 /**
  * [HELPER] Generates the array of PHP column code strings.
@@ -24,6 +25,7 @@ function generateTableColumnsParts(tableData, relationships, tableName, projectS
     const imageColumns = [];
     const otherColumns = [];
     // Note: modelNameSingular is passed in as an argument (Module Name) for correct type hinting
+    const localizationEnabled = require('./localizationConfig').isLocalizationEnabled(projectSettings);
 
     // --- MULA: LOGIK PENGESANAN TENANT FK ---
     const isOneToMany = projectSettings && projectSettings.tenancy_type === 'one_to_many';
@@ -82,7 +84,7 @@ function generateTableColumnsParts(tableData, relationships, tableName, projectS
         }
         
         let lines = [`${controller}::make('${fieldName}')`];
-        lines.push(`->label('${toTitleCase(field.caption || field.field_name)}')`);
+        lines.push(`->label(${labelPhp(toTitleCase(field.caption || field.field_name), field, tableName, localizationEnabled)})`);
         if (isAttachments) {
             lines.push(`->formatStateUsing(function ($state): string { $n = is_array($state) ? count($state) : (filled($state) ? 1 : 0); return $n === 1 ? '1 file' : $n . ' files'; })`);
             lines.push(`->badge()`);

@@ -64,6 +64,8 @@ async function generateAdminPanelProvider(fullSchema, basePath) {
             dashboard_class: require('./reportConfig').anyReportsEnabled(fullSchema)
                 ? '\\App\\Filament\\Pages\\FixzyDashboard'
                 : null,
+            // Localization module (Malay): locale middleware + switcher.
+            localization_enabled: require('./localizationConfig').isLocalizationEnabled(project),
         });
 
         const outputPath = path.join(providersPath, 'AdminPanelProvider.php');

@@ -10,6 +10,7 @@ const {
 } = require('../utils');
 const { renderTemplate } = require('../render/engine');
 const { buildFormFieldContext } = require('./fieldContext');
+const { labelPhp } = require('./localizationConfig');
 
 /**
  * [HELPER] Generates the schema string for a form. 
@@ -18,6 +19,7 @@ const { buildFormFieldContext } = require('./fieldContext');
 function generateFormSchemaString(tableData, relationships, tableName, fullSchema) {
     const formFieldsCode = [];
     const modelNameSingular = toSingularPascalCase(tableName); // Keep using tableName for the internal variable
+    const localizationEnabled = require('./localizationConfig').isLocalizationEnabled(fullSchema.project || {});
 
     // --- MULA: LOGIK PENGESANAN TENANT FK ---
     const projectSettings = fullSchema.project || {};
@@ -81,7 +83,7 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
             }
 
             // Build render context for the field template
-            let parentOpts = {};
+            let parentOpts = { tableName, localizationEnabled };
             if (field.lookup_parent_table) {
                 const parentTable = field.lookup_parent_table;
                 const parentTableData = fullSchema.database.table[parentTable];
@@ -89,6 +91,8 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
                                         ? parentTableData.module_name
                                         : parentTable;
                 parentOpts = {
+                    tableName,
+                    localizationEnabled,
                     parentTable,
                     isSelfRef: parentTable === tableName,
                     relationshipName: toSingularCamelCase(parentNameSource),
@@ -121,7 +125,7 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
         else if (field.media_type === 'image') {
             let imageCode = renderTemplate('schemas/FileUploadField.php.njk', {
                 field_name: field.field_name,
-                label: field.caption || toTitleCase(field.field_name),
+                label: labelPhp(field.caption || toTitleCase(field.field_name), field, tableName, localizationEnabled),
                 avatar_crop: field.dv_thumb_shape === 'circular' ? '->avatar()->circleCropper()' : '',
                 kebab_field_name: field.field_name.replace(/_/g, '-'),
                 disk: field.image_storage_provider || 'public',
@@ -141,7 +145,7 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
                 acceptedTypes = field.file_types.split(',').map(t => `'${t.trim()}'`).join(', ');
             }
             let uploadCode = `FileUpload::make('${field.field_name}')
-    ->label('${field.caption || toTitleCase(field.field_name)}')
+    ->label(${labelPhp(field.caption || toTitleCase(field.field_name), field, tableName, localizationEnabled)})
     ->directory('${kebabFieldName}')
     ->disk('${field.file_storage_provider || 'public'}')
     ->acceptedFileTypes([${acceptedTypes}])
@@ -162,7 +166,7 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
             const maxSizeKb = Math.max(1, parseInt(field.attach_max_size, 10) || 10240);
             const types = (field.attach_types || '').split(',').map(t => t.trim().toLowerCase().replace(/^\./, '')).filter(Boolean);
             let attachCode = `FileUpload::make('${field.field_name}')
-    ->label('${field.caption || toTitleCase(field.field_name)}')
+    ->label(${labelPhp(field.caption || toTitleCase(field.field_name), field, tableName, localizationEnabled)})
     ->multiple()
     ->maxFiles(${maxFiles})
     ->maxSize(${maxSizeKb})
@@ -182,7 +186,7 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
         else if (['gmap', 'youtube'].includes(field.media_type)) {
             const viewerType = field.media_type === 'gmap' ? 'map' : 'video';
             let mediaViewCode = `TextInput::make('${field.field_name}')
-    ->label('${field.caption || toTitleCase(field.field_name)}')
+    ->label(${labelPhp(field.caption || toTitleCase(field.field_name), field, tableName, localizationEnabled)})
     ->columnSpanFull(),
 ViewField::make('${field.field_name}')
     ->view('filament.forms.components.${viewerType}-viewer')
@@ -213,7 +217,7 @@ ViewField::make('${field.field_name}')
             }
 
             let repeaterCode = `Repeater::make('${field.field_name}')
-    ->label('${field.caption || toTitleCase(field.field_name)}')
+    ->label(${labelPhp(field.caption || toTitleCase(field.field_name), field, tableName, localizationEnabled)})
     ->simple(
         ${elementCode}->unique(ignoreRecord: true),
     )
@@ -261,7 +265,7 @@ ViewField::make('${field.field_name}')
             }
 
             let repeaterCode = `Repeater::make('${field.field_name}')
-    ->label('${field.caption || toTitleCase(field.field_name)}')
+    ->label(${labelPhp(field.caption || toTitleCase(field.field_name), field, tableName, localizationEnabled)})
     ->schema([
         ${schemaElements.join('\n        ')}
     ])

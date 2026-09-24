@@ -234,6 +234,31 @@ OpenSpout — no extra packages). Round-trip is stable: export a
 table, re-import with an update profile, and the data comes back
 identical.
 
+## Localization (Bahasa Melayu)
+
+### How do I make the admin panel Malay?
+
+Set the project language to **Malay** in Project Settings, then
+regenerate. The admin chrome (buttons, pages, validation) comes from
+Filament's bundled Malay translations automatically.
+
+### Can I mix languages — some labels English, some Malay?
+
+Yes. Each field has an optional **Malay Caption**. Fields with one
+show the Malay caption when the locale is BM and the English caption
+when it's EN. Fields without a Malay caption keep their English label
+in both languages.
+
+### Does English projects get any localization overhead?
+
+No. English projects emit zero localization files — the generated
+output is byte-identical to a project without the module.
+
+### Where does the language switch persist?
+
+Per user session (cookie). Each user can browse in their preferred
+language; the default follows the project setting.
+
 ## General
 
 ### Do I need Laravel knowledge to use the generated app?

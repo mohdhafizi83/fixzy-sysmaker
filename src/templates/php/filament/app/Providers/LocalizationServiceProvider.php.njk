@@ -1,0 +1,30 @@
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
+
+/**
+ * Localization module registration (Fixzy SysMaker generated code).
+ *
+ * Registers the locale-switch route used by the user-menu switcher.
+ * Only the two supported locale codes are accepted; anything else is
+ * rejected with 404.
+ */
+class LocalizationServiceProvider extends ServiceProvider
+{
+    public function boot(): void
+    {
+        Route::middleware(['web'])
+            ->get('/fixzy-locale/{code}', function (string $code) {
+                if (! in_array($code, ['en', 'ms'], true)) {
+                    abort(404);
+                }
+                session()->put('fixzy_locale', $code);
+
+                return redirect()->back();
+            })
+            ->name('fixzy.locale.switch');
+    }
+}

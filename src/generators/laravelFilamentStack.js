@@ -126,6 +126,11 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         const reportResult = generateReportModule(fullSchema, outputDir);
         if (!reportResult.success) throw new Error(`Reports: ${reportResult.error || reportResult.message}`);
 
+        // Localization module (Malay + English switcher).
+        const { generateLocalizationModule } = require('./laravelLocalizationGenerator');
+        const localizationResult = generateLocalizationModule(fullSchema, outputDir);
+        if (!localizationResult.success) throw new Error(`Localization: ${localizationResult.error || localizationResult.message}`);
+
         // Native PrintAction class — referenced by resources with print view
         // enabled; must ship with the generated app, not just the preview skeleton.
         const anyPrint = Object.values(fullSchema.database.table || {})

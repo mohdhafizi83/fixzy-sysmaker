@@ -35,6 +35,7 @@ export function populateFieldSettings(tableName, fieldName) {
 	
 	setElementValue('fld-field-name', fieldData.field_name);
     setElementValue('fld-caption', fieldData.caption);
+    setElementValue('fld-caption-ms', fieldData.caption_ms);
     setElementValue('fld-description', fieldData.description);
     setElementValue('fld-data-type', fieldData.data_type);
     setElementValue('fld-length', fieldData.length);

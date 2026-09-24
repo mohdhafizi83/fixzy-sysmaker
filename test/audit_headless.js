@@ -466,6 +466,52 @@ async function tryGen(name, fn) {
         console.log('OK   import off-guard (no profile without match_field)');
     }
 
+    // Localization module: Malay project emits middleware + switcher +
+    // lang files with __() keys; English project emits nothing.
+    const locOnRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'localization_malay.json'), 'utf8'));
+    const locOnSchema = {
+        project: locOnRaw.project,
+        database: { table: locOnRaw.database.table || {}, relationships: locOnRaw.database.relationships || {} },
+    };
+    const locOnOut = path.join(outDir, '_loc_on');
+    await tryGen('generateLocalizationModule (on)', () =>
+        require('../src/generators/laravelLocalizationGenerator').generateLocalizationModule(locOnSchema, locOnOut));
+    const locMw = path.join(locOnOut, 'app', 'Http', 'Middleware', 'SetLocale.php');
+    const locMs = path.join(locOnOut, 'lang', 'ms.json');
+    const locEn = path.join(locOnOut, 'lang', 'en.json');
+    if (fs.existsSync(locMw) && fs.existsSync(locMs) && fs.existsSync(locEn)) {
+        const msJson = JSON.parse(fs.readFileSync(locMs, 'utf8'));
+        const enJson = JSON.parse(fs.readFileSync(locEn, 'utf8'));
+        const keysMatch = JSON.stringify(Object.keys(msJson).sort()) === JSON.stringify(Object.keys(enJson).sort());
+        if (keysMatch && Object.keys(msJson).length > 0) {
+            results.push(['localization lang files', 'OK', Object.keys(msJson).length]);
+            console.log(`OK   localization lang files (${Object.keys(msJson).length} keys, en/ms aligned)`);
+        } else {
+            results.push(['localization lang files', 'FAIL', `keysMatch=${keysMatch} n=${Object.keys(msJson).length}`]);
+            console.log('FAIL localization lang files');
+        }
+    } else {
+        results.push(['localization lang files', 'FAIL', 'middleware or lang files missing']);
+        console.log('FAIL localization lang files');
+    }
+    // Off-guard: English project (base_simple) must emit no localization files.
+    const locOffRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'base_simple.json'), 'utf8'));
+    const locOffSchema = {
+        project: locOffRaw.project,
+        database: { table: locOffRaw.database.table || {}, relationships: locOffRaw.database.relationships || {} },
+    };
+    const locOffOut = path.join(outDir, '_loc_off');
+    await tryGen('generateLocalizationModule (off)', () =>
+        require('../src/generators/laravelLocalizationGenerator').generateLocalizationModule(locOffSchema, locOffOut));
+    const locOffFiles = fs.existsSync(locOffOut) ? fs.readdirSync(locOffOut) : [];
+    if (locOffFiles.length > 0) {
+        results.push(['localization off-guard', 'FAIL', 'files emitted for English project']);
+        console.log('FAIL localization off-guard');
+    } else {
+        results.push(['localization off-guard', 'OK', 0]);
+        console.log('OK   localization off-guard (English project emits nothing)');
+    }
+
     // Count files produced
     let count = 0;
     (function walk(d) {

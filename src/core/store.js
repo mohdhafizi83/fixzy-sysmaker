@@ -80,6 +80,13 @@ function openStore(dbPath) {
         if (!tableCols.includes('import_config')) {
             db.exec("ALTER TABLE tables ADD COLUMN import_config TEXT");
         }
+        if (!tableCols.includes('table_view_title_ms')) {
+            db.exec("ALTER TABLE tables ADD COLUMN table_view_title_ms TEXT");
+        }
+        const fieldCols = db.prepare("PRAGMA table_info(fields)").all().map((c) => c.name);
+        if (!fieldCols.includes('caption_ms')) {
+            db.exec("ALTER TABLE fields ADD COLUMN caption_ms TEXT");
+        }
         if (!tableCols.includes('google_sync_enabled')) {
             db.exec("ALTER TABLE tables ADD COLUMN google_sync_enabled INTEGER DEFAULT 0");
         }
