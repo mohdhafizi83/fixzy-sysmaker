@@ -1,0 +1,8 @@
+{
+  "composer": [],
+  "php_extensions": [],
+  "npm": [],
+  "providers": [
+    "App\\Providers\\ActivityLogServiceProvider"
+  ]
+}

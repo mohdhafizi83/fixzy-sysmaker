@@ -1,0 +1,94 @@
+<?php
+
+namespace App\Filament\Resources\LogPentings\Tables;
+
+
+
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\RestoreAction;
+use Filament\Tables\Table;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TrashedFilter;
+use Illuminate\Contracts\View\View;
+
+
+class LogPentingsTable
+{
+    public static function configure(Table $table): Table
+    {
+        return $table
+            
+            
+            
+            
+            
+            ->description('')
+            ->columns([
+                TextColumn::make('id')
+                    ->label('Id')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                TextColumn::make('perihal')
+                    ->label('Perihal')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('ticket_no')
+                    ->label('Ticket No')
+                    ->toggleable(),
+                TextColumn::make('perihal_status')
+                    ->label('Status')
+                    ->sortable()
+                    ->searchable(isIndividual: true, isGlobal: false)
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->badge()->color(fn (?string $state): string => match ($state) {
+        'draft' => 'gray',
+        'approved' => 'success',
+        default => 'gray',
+        })
+            ])
+            ->when((bool) request()->query('print'), fn (Table $table) => $table->paginated(false),)
+            ->filters([
+                TrashedFilter::make(),
+            ])
+            ->recordActions([
+
+                   
+                    
+                
+                Action::make('approve_draft_to_approved')
+                    ->label('Approve')
+                    ->icon('heroicon-o-arrow-right-circle')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Approve')
+                    ->modalDescription('A comment is required for this step. Add one in the field below after confirming.')
+                    ->modalSubmitActionLabel('Approve')
+                    ->schema([
+                        \Filament\Forms\Components\Textarea::make('approval_comment')
+                            ->label('Comment')
+                            ->required(),
+                    ])
+                    ->visible(fn ($record): bool => collect($record->visibleTransitionsFor(auth()->user()))
+                        ->contains(fn (array $tr): bool => $tr['from'] === 'draft' && $tr['to'] === 'approved'))
+                    ->action(function ($record, array $data): void {
+                        $record->transitionTo('approved', $data['approval_comment'] ?? null);
+                    }),
+                
+                ForceDeleteAction::make(),
+                RestoreAction::make(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                DeleteBulkAction::make(),
+            ]),
+            ]);
+    }
+}

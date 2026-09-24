@@ -241,6 +241,7 @@ let helperMethods = [];
 
             // Render model template dengan context penuh
             const approvalCfg = require('./approvalConfig').parseApprovalConfig(tableData);
+            const numberingCfg = require('./numberingConfig').parseNumberingConfig(tableData);
             const modelContent = renderTemplate('app/Models/Model.php.njk', {
                 import_factory: fakeData ? 'use Illuminate\\Database\\Eloquent\\Factories\\HasFactory;' : '',
                 trait_factory: fakeData ? 'use HasFactory;' : '',
@@ -254,6 +255,8 @@ let helperMethods = [];
                 trait_audit: audit ? 'use HasAudits;' : '',
                 approval_import: approvalCfg ? "\nuse App\\Models\\Concerns\\HasApproval;" : '',
                 approval_trait: approvalCfg ? "\n    use HasApproval;" : '',
+                numbering_import: numberingCfg ? "\nuse App\\Models\\Concerns\\HasNumbering;" : '',
+                numbering_trait: numberingCfg ? "\n    use HasNumbering;\n\n    protected static function numberingConfig(): array\n    {\n        return " + require('./numberingConfig').numberingConfigPhp(numberingCfg) + ";\n    }\n" : '',
                 approval_constants: approvalCfg ? "\n" + require('./approvalConfig').approvalConstantsPhp(approvalCfg).replace(/\n$/, '') : '',
                 attachment_relation: require('./attachmentConfig').tableUsesGenericAttachments(tableData)
                     ? "\n    public function attachments()\n    {\n        return $this->morphMany(\\App\\Models\\Attachment::class, 'record')->latest('id');\n    }\n"

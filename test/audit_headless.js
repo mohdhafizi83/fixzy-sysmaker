@@ -311,6 +311,55 @@ async function tryGen(name, fn) {
         console.log('OK   public form off-guard (no files emitted)');
     }
 
+    // Auto Numbering module: trait + sequence migration emitted, model
+    // gets trait + compiled config, off-guard emits nothing.
+    const numRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'numbering_pattern.json'), 'utf8'));
+    const numSchema = {
+        project: numRaw.project,
+        database: { table: numRaw.database.table || {}, relationships: numRaw.database.relationships || {} },
+    };
+    const numOut = path.join(outDir, '_numbering_on');
+    await tryGen('generateNumberingModule (on)', () =>
+        require('../src/generators/laravelNumberingGenerator').generateNumberingModule(numSchema, numOut));
+    await tryGen('generateFilamentModels (numbering)', () =>
+        require('../src/generators/laravelDatabaseGenerator').generateFilamentModels(numSchema, numOut));
+    const numTrait = path.join(numOut, 'app', 'Models', 'Concerns', 'HasNumbering.php');
+    const numMig = fs.existsSync(path.join(numOut, 'database', 'migrations'))
+        && fs.readdirSync(path.join(numOut, 'database', 'migrations')).some(f => f.includes('numbering_sequences'));
+    if (fs.existsSync(numTrait) && fs.readFileSync(numTrait, 'utf8').includes('DB::transaction') && numMig) {
+        results.push(['numbering module check', 'OK', 1]);
+        console.log('OK   numbering module check (trait transaction + sequence migration)');
+    } else {
+        results.push(['numbering module check', 'FAIL', `trait=${fs.existsSync(numTrait)} tx=${fs.existsSync(numTrait) && fs.readFileSync(numTrait, 'utf8').includes('DB::transaction')} mig=${numMig}`]);
+        console.log('FAIL numbering module check');
+    }
+    const numModel = path.join(numOut, 'app', 'Models', 'LogPenting.php');
+    if (fs.existsSync(numModel)) {
+        const mb = fs.readFileSync(numModel, 'utf8');
+        if (mb.includes('use HasNumbering;') && mb.includes("'field' => 'invoice_no'") && mb.includes("'prefix' => 'INV'")) {
+            results.push(['numbering model wiring check', 'OK', 1]);
+            console.log('OK   numbering model wiring check');
+        } else {
+            results.push(['numbering model wiring check', 'FAIL', 'model missing trait/config']);
+            console.log('FAIL numbering model wiring check');
+        }
+    } else {
+        results.push(['numbering model wiring check', 'FAIL', 'model not emitted']);
+        console.log('FAIL numbering model not emitted');
+    }
+    // Off-guard: approval_simple has no numbering → no files.
+    const numOffOut = path.join(outDir, '_numbering_off');
+    await tryGen('generateNumberingModule (off)', () =>
+        require('../src/generators/laravelNumberingGenerator').generateNumberingModule(atOffSchema, numOffOut));
+    const numOffFiles = fs.existsSync(numOffOut) ? fs.readdirSync(numOffOut) : [];
+    if (numOffFiles.length > 0) {
+        results.push(['numbering off-guard', 'FAIL', 'files emitted with no numbering configured']);
+        console.log('FAIL numbering off-guard');
+    } else {
+        results.push(['numbering off-guard', 'OK', 0]);
+        console.log('OK   numbering off-guard (no files emitted)');
+    }
+
     // Count files produced
     let count = 0;
     (function walk(d) {

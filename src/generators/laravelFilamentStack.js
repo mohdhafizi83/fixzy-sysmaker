@@ -116,6 +116,11 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         const publicFormResult = generatePublicFormModule(fullSchema, outputDir);
         if (!publicFormResult.success) throw new Error(`PublicForm: ${publicFormResult.error || publicFormResult.message}`);
 
+        // Auto Numbering module (race-safe reference codes).
+        const { generateNumberingModule } = require('./laravelNumberingGenerator');
+        const numberingResult = generateNumberingModule(fullSchema, outputDir);
+        if (!numberingResult.success) throw new Error(`Numbering: ${numberingResult.error || numberingResult.message}`);
+
         // Native PrintAction class — referenced by resources with print view
         // enabled; must ship with the generated app, not just the preview skeleton.
         const anyPrint = Object.values(fullSchema.database.table || {})

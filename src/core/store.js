@@ -68,6 +68,12 @@ function openStore(dbPath) {
         if (!tableCols.includes('public_form_config')) {
             db.exec("ALTER TABLE tables ADD COLUMN public_form_config TEXT");
         }
+        if (!tableCols.includes('numbering_enabled')) {
+            db.exec("ALTER TABLE tables ADD COLUMN numbering_enabled INTEGER DEFAULT 0");
+        }
+        if (!tableCols.includes('numbering_config')) {
+            db.exec("ALTER TABLE tables ADD COLUMN numbering_config TEXT");
+        }
         if (!tableCols.includes('google_sync_enabled')) {
             db.exec("ALTER TABLE tables ADD COLUMN google_sync_enabled INTEGER DEFAULT 0");
         }

@@ -56,6 +56,7 @@ import { tenancyManager } from './js/features/tenancyManager.js';
 import { initApprovalTab } from './js/features/approvalManager.js';
 import { initSchedulerTab } from './js/features/schedulerManager.js';
 import { initPublicFormTab } from './js/features/publicFormManager.js';
+import { initNumberingSection } from './js/features/numberingManager.js';
 
 import { initializeWorkflowBuilder } from './js/workflowBuilder.js';
 
@@ -485,6 +486,7 @@ window.addEventListener('beforeunload', (event) => {
 	initApprovalTab();
 	initSchedulerTab();
 	initPublicFormTab();
+	initNumberingSection();
 	initializeQueryBuilder();
     initializeTableHookBuilder();
     initializeProjectHookBuilder();

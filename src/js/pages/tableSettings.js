@@ -4,6 +4,7 @@ import { setElementValue, setRadioValue } from '../ui/formHelpers.js';
 import { renderApprovalTab } from '../features/approvalManager.js';
 import { renderAutomationTab } from '../features/schedulerManager.js';
 import { renderPublicFormTab } from '../features/publicFormManager.js';
+import { renderNumberingSection } from '../features/numberingManager.js';
 import { appState, setLastActiveChildTable } from '../state.js';
 import { loadProjectData, SaveManager } from '../../renderer.js';
 import { 
@@ -162,9 +163,11 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-hook-logic', tableData.table_hook_workflow); // Populate workflow data
     setElementValue('tbl-approval-enabled', tableData.approval_enabled);
     setElementValue('tbl-attachments-enabled', tableData.attachments_enabled);
+    setElementValue('tbl-numbering-enabled', tableData.numbering_enabled);
     renderApprovalTab(tableData);
     renderAutomationTab(tableData);
     renderPublicFormTab(tableData);
+    renderNumberingSection(tableData);
 	
     const tvClassesInput = document.getElementById('tbl-table-view-classes-input');
     const tvClassesSelect = document.getElementById('table-view-classes-select');

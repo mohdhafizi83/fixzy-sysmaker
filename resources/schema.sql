@@ -104,6 +104,8 @@ CREATE TABLE tables (
     attachments_enabled        INTEGER DEFAULT 0,
     public_form_enabled      INTEGER DEFAULT 0,
     public_form_config       TEXT,
+    numbering_enabled      INTEGER DEFAULT 0,
+    numbering_config       TEXT,
     feature_source               TEXT DEFAULT NULL,
     google_sync_enabled          INTEGER DEFAULT 0,
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE

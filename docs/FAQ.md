@@ -168,6 +168,25 @@ form), a hidden honeypot field that silently drops bots, an optional
 arithmetic captcha, and CSRF protection on every post. Unknown form
 slugs return 404 so attackers can't enumerate your tables.
 
+## Auto Numbering
+
+### Can two records get the same reference number?
+
+No. The counter is incremented inside a database transaction with a
+row lock, so even 10 simultaneous inserts produce 10 unique
+sequential codes (this is tested, not assumed).
+
+### Can I still type my own number?
+
+Yes. Auto numbering only fills the field when it's empty on create.
+If an admin types `INV-2026-0001` manually, that value is kept.
+
+### When does the sequence restart?
+
+Depends on the date part: `YYYYMM` restarts monthly (0001 each new
+month), `YYYY` yearly, `YYYYMMDD` daily, and no date part means the
+counter runs forever.
+
 ## General
 
 ### Do I need Laravel knowledge to use the generated app?

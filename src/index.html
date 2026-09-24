@@ -1896,6 +1896,42 @@
         <input type="number" id="tbl-static-grid-columns" name="tbl-static-grid-columns" value="2" min="1" max="4" style="max-width: 100px;">
     </div>
 </div>
+
+<div class="form-group mt-2" style="border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+    <h4>Auto Numbering</h4>
+    <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 0.5rem;">
+        Auto-fill a column with a race-safe reference code on create (e.g. INV-202609-0001).
+    </p>
+    <label class="checkbox-label" style="font-weight: 600;">
+        <input type="checkbox" id="tbl-numbering-enabled" name="tbl-numbering-enabled"> Enable auto numbering for this table
+    </label>
+    <div id="numbering-panel" class="hidden" style="margin-top: 0.75rem;">
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+            <div>
+                <label style="font-weight: 600;">Target column</label><br>
+                <select id="num-field" style="padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 6px;"></select>
+            </div>
+            <div>
+                <label style="font-weight: 600;">Prefix</label><br>
+                <input type="text" id="num-prefix" placeholder="INV" maxlength="12" style="width: 110px; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+            </div>
+            <div>
+                <label style="font-weight: 600;">Date part</label><br>
+                <select id="num-token" style="padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                    <option value="">None</option>
+                    <option value="YYYY">YYYY</option>
+                    <option value="YYYYMM" selected>YYYYMM</option>
+                    <option value="YYYYMMDD">YYYYMMDD</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-weight: 600;">Sequence width</label><br>
+                <input type="number" id="num-width" value="4" min="1" max="8" style="width: 80px; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+            </div>
+        </div>
+        <p class="helper-text" id="num-preview" style="margin-top: 0.6rem; color: var(--secondary-color);"></p>
+    </div>
+</div>
                                 </div>
                             </div>
                         </div>

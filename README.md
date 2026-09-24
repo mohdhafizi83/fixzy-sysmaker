@@ -145,6 +145,7 @@ real code — the generated app ships only what you picked.
 | Automation (Scheduler) | Off | Date reminders, recurring records (daily/weekly/monthly), scheduled backups with restore (see below) |
 | File & Document Attachments | Off | Multi-file attachments per record, private storage + signed downloads, upload metadata (see below) |
 | Public Intake Forms | Off | Guest-facing submit forms + status lookup, rate-limited + captcha + honeypot (see below) |
+| Auto Numbering | Off | Race-safe reference codes per table (INV-202609-0001), prefix + date + width (see below) |
 | Real-time Notifications & Chat | Off | Live notification bell + chat module over WebSocket (see below) |
 | Google Sheets Sync | Off | Two-way sync of custom tables with Google Sheets (see below) |
 | Fake Data (Data Seeder) | Off | Factories + seeders with realistic sample data |
@@ -288,6 +289,22 @@ per minute per IP (per form); a hidden honeypot field that silently
 drops bots; optional arithmetic captcha; unknown slugs 404 (no
 enumeration); inserts are allowlist-only (only the columns you ticked
 are ever read from the request).
+
+### Auto Numbering (opt-in, per table)
+
+Give any table race-safe reference codes — invoices, tickets, orders.
+In Table Settings → Features → **Auto Numbering**: pick the target
+column, a prefix (e.g. `INV`), a date part (`YYYY`, `YYYYMM`,
+`YYYYMMDD` or none), and the sequence width. Sample:
+`INV-202609-0001`.
+
+The counter lives in a dedicated `numbering_sequences` table and is
+incremented inside a database transaction with a row lock, so
+**concurrent inserts never produce duplicate or skipped numbers**
+(verified with 10 parallel inserts → 10 unique sequential codes).
+Counters reset per period (daily/monthly/yearly) or never, depending
+on the date part you choose. A manually typed value always wins —
+auto numbering only fills empty fields on create.
 
 ### Real-time Notifications & Chat (opt-in)
 
