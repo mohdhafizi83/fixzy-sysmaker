@@ -121,6 +121,13 @@ CREATE TABLE tables (
     grid_inline_edit             INTEGER DEFAULT 0,
     grid_default_per_page        INTEGER DEFAULT 10,
     grid_per_page_options        TEXT DEFAULT '5,10,25,50',
+    grid_group_by                TEXT DEFAULT '',
+    grid_group_direction         TEXT DEFAULT 'asc',
+    grid_summaries               TEXT DEFAULT '',
+    grid_row_click               TEXT DEFAULT 'page',
+    grid_empty_heading           TEXT DEFAULT '',
+    grid_empty_icon              TEXT DEFAULT '',
+    grid_empty_description       TEXT DEFAULT '',
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
 

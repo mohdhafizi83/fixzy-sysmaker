@@ -1,0 +1,30 @@
+/* Fixzy SysMaker generated grid styles (sticky header + row density). */
+.fixzy-sticky-header .fi-ta-header-cell,
+.fixzy-sticky-header th.fi-ta-header-cell {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background-color: #fff;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+}
+.dark .fixzy-sticky-header .fi-ta-header-cell,
+.dark .fixzy-sticky-header th.fi-ta-header-cell {
+    background-color: #1c1c1d;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.fixzy-grid-compact .fi-ta-cell {
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+}
+.fixzy-grid-compact .fi-ta-header-cell {
+    padding-top: 0.375rem !important;
+    padding-bottom: 0.375rem !important;
+}
+.fixzy-grid-comfortable .fi-ta-cell {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+}
+.fixzy-grid-comfortable .fi-ta-header-cell {
+    padding-top: 1.25rem !important;
+    padding-bottom: 1.25rem !important;
+}

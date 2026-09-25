@@ -1750,6 +1750,39 @@
                                             <label for="tbl-grid-per-page-options" style="margin-top:.5rem;display:block">Choices offered (comma-separated)</label>
                                             <input type="text" id="tbl-grid-per-page-options" name="tbl-grid-per-page-options" value="5,10,25,50" placeholder="e.g. 5,10,25,50">
                                         </div>
+                                        <div class="form-group" id="grid-grouping-group" style="margin-top:.75rem; border-top:1px solid #eee; padding-top:.5rem;">
+                                            <label for="tbl-grid-group-by">Group rows by column (Horizontal template only)</label>
+                                            <div class="input-group">
+                                                <select id="tbl-grid-group-by" name="tbl-grid-group-by">
+                                                    <option value="">— no grouping —</option>
+                                                </select>
+                                                <select id="tbl-grid-group-direction" name="tbl-grid-group-direction" style="margin-left:.5rem">
+                                                    <option value="asc" selected>Ascending</option>
+                                                    <option value="desc">Descending</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="form-group" id="grid-summaries-group" style="margin-top:.75rem; border-top:1px solid #eee; padding-top:.5rem;">
+                                            <label>Summary row (Horizontal template, numeric columns)</label>
+                                            <div id="grid-summaries-rows"></div>
+                                            <button type="button" class="btn btn-small" id="btn-add-summary" style="margin-top:.35rem">+ Add summary</button>
+                                            <input type="hidden" id="tbl-grid-summaries" name="tbl-grid-summaries" value="">
+                                        </div>
+                                        <div class="form-group" style="margin-top:.75rem; border-top:1px solid #eee; padding-top:.5rem;">
+                                            <label for="tbl-grid-row-click">When a row is clicked</label>
+                                            <select id="tbl-grid-row-click" name="tbl-grid-row-click">
+                                                <option value="page" selected>Open the record page (current behavior)</option>
+                                                <option value="slideover">Open a slide-over panel</option>
+                                                <option value="none">Nothing (no row link)</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group" style="margin-top:.75rem; border-top:1px solid #eee; padding-top:.5rem;">
+                                            <label>Empty state (shown when there are no records)</label>
+                                            <input type="text" id="tbl-grid-empty-heading" name="tbl-grid-empty-heading" placeholder="Heading, e.g. No orders yet" style="margin-top:.3rem">
+                                            <input type="text" id="tbl-grid-empty-icon" name="tbl-grid-empty-icon" placeholder="Icon slug, e.g. heroicon-o-inbox-arrow-down" style="margin-top:.3rem">
+                                            <input type="text" id="tbl-grid-empty-description" name="tbl-grid-empty-description" placeholder="Optional description line" style="margin-top:.3rem">
+                                            <small style="color:#888;display:block;margin-top:.25rem">Icon slug: Filament heroicon name (heroicon-o-… outline or heroicon-c-… solid). Leave heading empty to keep the default empty state.</small>
+                                        </div>
                                     </div>
                                     <div class="permission-grid">
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-allow-csv-export" name="tbl-allow-csv-export" checked> Enable saving data to CSV files</label>

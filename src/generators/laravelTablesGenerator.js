@@ -23,6 +23,13 @@ const clampInt = (v, min, max, dflt) => {
 };
 
 /**
+ * [HELPER] Escape a string for embedding in a generated single-quoted PHP
+ * literal (backslashes first, then single quotes). Used by grid layout
+ * expansion phase A (grouping / empty state / summaries).
+ */
+const escPhp = (s) => String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+/**
  * [HELPER] Decide whether a field can be rendered as an inline-editable
  * column in the grid. Only safe scalar types qualify; primary/auto-increment,
  * relationship lookups, calculated/algorithm and media fields are excluded.
@@ -63,31 +70,31 @@ function buildInlineEditColumnPhp(field, fieldName, tableName, authorizationEnab
     if (dataType === 'BOOLEAN') {
         lines.push(`ToggleColumn::make('${esc(fieldName)}')`);
         lines.push(`->label(${labelPhp(toTitleCase(field.caption || field.field_name), field, tableName, localizationEnabled)})`);
-        lines.push(`->rules('boolean')`);
+        lines.push(`->rules(['boolean'])`);
         lines.push(saveClosure('$state'));
     } else if (field.display_type === 'options_list' && field.options_list_values) {
         const options = field.options_list_values.split(';;').map((o) => `'${esc(o)}'`).join(', ');
         lines.push(`SelectColumn::make('${esc(fieldName)}')`);
         lines.push(`->label(${labelPhp(toTitleCase(field.caption || field.field_name), field, tableName, localizationEnabled)})`);
         lines.push(`->options([${options}])`);
-        lines.push(`->rules('in:${field.options_list_values.split(';;').map((o) => esc(o)).join(',')}')`);
+        lines.push(`->rules(['in:${field.options_list_values.split(';;').map((o) => esc(o)).join(',')}'])`);
         lines.push(saveClosure('$state'));
     } else if (['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'].includes(dataType)) {
         lines.push(`TextInputColumn::make('${esc(fieldName)}')`);
         lines.push(`->label(${labelPhp(toTitleCase(field.caption || field.field_name), field, tableName, localizationEnabled)})`);
-        lines.push(`->rules('integer')`);
+        lines.push(`->rules(['integer'])`);
         lines.push(saveClosure('(int) $state'));
     } else if (['DECIMAL', 'FLOAT', 'DOUBLE'].includes(dataType)) {
         lines.push(`TextInputColumn::make('${esc(fieldName)}')`);
         lines.push(`->label(${labelPhp(toTitleCase(field.caption || field.field_name), field, tableName, localizationEnabled)})`);
-        lines.push(`->rules('numeric')`);
+        lines.push(`->rules(['numeric'])`);
         lines.push(saveClosure('(float) $state'));
     } else {
         // String types
         lines.push(`TextInputColumn::make('${esc(fieldName)}')`);
         lines.push(`->label(${labelPhp(toTitleCase(field.caption || field.field_name), field, tableName, localizationEnabled)})`);
         const maxLen = clampInt(field.max_length || field.length, 1, 64000, 255);
-        lines.push(`->rules('max:${maxLen}')`);
+        lines.push(`->rules(['max:${maxLen}'])`);
         lines.push(saveClosure('$state'));
     }
     return lines.join('\n                    ');
@@ -265,6 +272,20 @@ function generateTableColumnsParts(tableData, relationships, tableName, projectS
         }
 
         if(field.display_type === 'rich_html') lines.push(`->html()`);
+
+        // A2: Summary row (grid layout expansion phase A). Only for plain
+        // read-only TextColumns (not inline-editable, not image/icon) whose
+        // data type is numeric. grid_summaries JSON: {"<field>": "sum|avg|count|min|max"}.
+        if (controller === 'TextColumn' && !field.editable_in_tv && numericTypes.includes(field.data_type.toUpperCase())) {
+            let summaryMap = {};
+            try { summaryMap = JSON.parse(tableData.grid_summaries || '{}') || {}; } catch (e) { summaryMap = {}; }
+            const agg = String(summaryMap[field.field_name] || '').toLowerCase();
+            const cap = toTitleCase(field.caption || field.field_name);
+            if (agg === 'sum') lines.push(`->summarize(\\Filament\\Tables\\Columns\\Summarizers\\Sum::make()->label('Total ${escPhp(cap)}'))`);
+            else if (agg === 'avg') lines.push(`->summarize(\\Filament\\Tables\\Columns\\Summarizers\\Average::make()->label('Average ${escPhp(cap)}'))`);
+            else if (agg === 'count') lines.push(`->summarize(\\Filament\\Tables\\Columns\\Summarizers\\Count::make()->label('Count of ${escPhp(cap)}'))`);
+            else if (agg === 'min' || agg === 'max') lines.push(`->summarize(\\Filament\\Tables\\Columns\\Summarizers\\Range::make()->label('Range ${escPhp(cap)}'))`);
+        }
         
         if (field.display_type === 'options_list' && field.options_list_values) {
             const options = field.options_list_values.split(';;');
@@ -566,6 +587,56 @@ function buildTableSettingsContext(tableData, relationships, tableName, projectS
     ctx.grid_classes = gridClasses.length
         ? `->extraAttributes(['class' => '${gridClasses.join(' ')}'])`
         : '';
+
+    // --- GRID LAYOUT EXPANSION PHASE A (2026-09-25) ---
+    const isHorizontalTemplate = String(tableData.tv_template || 'horizontal') === 'horizontal';
+    const fieldNamesList = Object.values(tableData.fields || {})
+        .map((f) => f.field_name)
+        .filter((n) => typeof n === 'string' && n !== '');
+
+    // A1: Row grouping (native Filament CanGroupRecords). Horizontal template
+    // only — layout templates pair columns differently and grouping on top of
+    // them renders confusingly. Column must be a real field of this table.
+    ctx.grouping = '';
+    const groupBy = String(tableData.grid_group_by || '').trim();
+    if (isHorizontalTemplate && groupBy && fieldNamesList.includes(groupBy)) {
+        const dir = tableData.grid_group_direction === 'desc' ? 'desc' : 'asc';
+        ctx.grouping = `->groups([\\Filament\\Tables\\Grouping\\Group::make('${escPhp(groupBy)}')])->defaultGroup('${escPhp(groupBy)}', '${dir}')`;
+    }
+
+    // A3: Row-click behavior. 'page' keeps the current behavior (emits
+    // nothing extra). 'slideover' routes the row click to a slide-over
+    // ViewAction; 'none' removes the row link entirely. Overrides the
+    // edit-button row-interaction above when set to a non-default value.
+    ctx.record_action = '';
+    ctx.action_view_slideover = '';
+    const rowClick = ['page', 'slideover', 'none'].includes(tableData.grid_row_click)
+        ? tableData.grid_row_click
+        : 'page';
+    if (rowClick === 'slideover') {
+        ctx.disabled_row_interaction = '->recordUrl(null)';
+        ctx.record_action = "->recordAction('view')";
+        ctx.action_view_slideover = 'ViewAction::make()->slideOver(),';
+    } else if (rowClick === 'none') {
+        ctx.disabled_row_interaction = '->recordUrl(null)';
+    }
+
+    // A4: Custom empty state. Heading is the switch; icon must be a valid
+    // heroicon slug to avoid Filament rendering a broken icon reference.
+    ctx.empty_state = '';
+    const emptyHeading = String(tableData.grid_empty_heading || '').trim();
+    if (emptyHeading) {
+        let emptyChain = `->emptyStateHeading('${escPhp(emptyHeading)}')`;
+        const emptyIcon = String(tableData.grid_empty_icon || '').trim();
+        if (/^heroicon-[ocr]-[a-z0-9-]+$/.test(emptyIcon)) {
+            emptyChain += `->emptyStateIcon('${emptyIcon}')`;
+        }
+        const emptyDesc = String(tableData.grid_empty_description || '').trim();
+        if (emptyDesc) {
+            emptyChain += `->emptyStateDescription('${escPhp(emptyDesc)}')`;
+        }
+        ctx.empty_state = emptyChain;
+    }
 
     ctx.open_to_new_tab = tableData.dv_separate_page === 1 ? '->openRecordUrlInNewTab()' : '';
     ctx.disabled_detailview = tableData.enable_detail_view === 0 ? '->recordUrl(null)' : '';

@@ -12,7 +12,8 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
-use Filament\Tables\Table;
+{% if action_view_slideover %}use Filament\Actions\ViewAction;
+{% endif %}use Filament\Tables\Table;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -49,23 +50,27 @@ class {{ table_class_name or (table_name_plural ~ "Table") }}
             {{ disabled_row_interaction }}
 {% if grid_classes %}            {{ grid_classes }}
 {% endif %}            ->description('{{ add_description }}')
-            ->columns([
+{% if empty_state %}            {{ empty_state }}
+{% endif %}            ->columns([
                 {{ all_columns }}
             ])
             {{ show_all_for_print }}
             ->filters([
                 {{ trashed_filter }}
             ])
-            ->recordActions([
+{% if grouping %}            {{ grouping }}
+{% endif %}            ->recordActions([
 
                 {{ show_count_in_tv }}   
                     
                 {{ action_edit_button }}{{ approval_actions }}
-                {{ action_delete_button }}
+                {% if action_view_slideover %}{{ action_view_slideover }}
+                {% endif %}{{ action_delete_button }}
                 {{ action_forcedelete_button }}
                 {{ action_restore_button }}
             ])
-            ->toolbarActions([
+{% if record_action %}            {{ record_action }}
+{% endif %}            ->toolbarActions([
                 {{ action_mass_delete }}
             ]);
     }

@@ -16,7 +16,9 @@ import {
     populateCustomViewsTab,
     populateConstraintsTab,
     updateTableViewTemplatePreview,
-    toggleCardSizeGroup
+    toggleCardSizeGroup,
+    populateGridGroupByDropdown,
+    renderGridSummaryRows
 } from '../uiHandlers.js';
 
 export function populateTableSettings(tableName) {
@@ -24,6 +26,7 @@ export function populateTableSettings(tableName) {
     populateSortByDropdown(tableName);
     populateFocusFieldDropdown(tableName);
     populateRecordOwnerDropdown(tableName);
+    populateGridGroupByDropdown(tableName);
 	populateCustomViewsTab(tableName);
     populateConstraintsTab(tableName);
     
@@ -109,6 +112,16 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-grid-inline-edit', tableData.grid_inline_edit ?? 0);
     setElementValue('tbl-grid-default-per-page', tableData.grid_default_per_page || 10);
     setElementValue('tbl-grid-per-page-options', tableData.grid_per_page_options || '5,10,25,50');
+
+    // Grid layout expansion phase A (2026-09-25)
+    setElementValue('tbl-grid-group-by', tableData.grid_group_by || '');
+    setElementValue('tbl-grid-group-direction', tableData.grid_group_direction || 'asc');
+    setElementValue('tbl-grid-summaries', tableData.grid_summaries || '');
+    renderGridSummaryRows();
+    setElementValue('tbl-grid-row-click', tableData.grid_row_click || 'page');
+    setElementValue('tbl-grid-empty-heading', tableData.grid_empty_heading || '');
+    setElementValue('tbl-grid-empty-icon', tableData.grid_empty_icon || '');
+    setElementValue('tbl-grid-empty-description', tableData.grid_empty_description || '');
 
     // Logic to disable soft-delete features if the project uses hard delete
     const isHardDelete = appState.activeProject.data_delete_type === 'hard';

@@ -122,6 +122,14 @@ function openStore(dbPath) {
             grid_inline_edit: "INTEGER DEFAULT 0",
             grid_default_per_page: "INTEGER DEFAULT 10",
             grid_per_page_options: "TEXT DEFAULT '5,10,25,50'",
+            // Grid layout expansion phase A (2026-09-25)
+            grid_group_by: "TEXT DEFAULT ''",
+            grid_group_direction: "TEXT DEFAULT 'asc'",
+            grid_summaries: "TEXT DEFAULT ''",
+            grid_row_click: "TEXT DEFAULT 'page'",
+            grid_empty_heading: "TEXT DEFAULT ''",
+            grid_empty_icon: "TEXT DEFAULT ''",
+            grid_empty_description: "TEXT DEFAULT ''",
         };
         for (const [col, def] of Object.entries(gridCols)) {
             if (!tableCols.includes(col)) {

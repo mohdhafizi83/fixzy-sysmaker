@@ -3,6 +3,7 @@
 import { appState } from '../state.js';
 import { SaveManager } from '../saveManager.js';
 import { showCustomDialog } from '../ui/modalHandlers.js';
+import { showToast } from '../ui/toast.js';
 import { setElementValue, setRadioValue } from '../ui/formHelpers.js';
 import { populateTableSettings } from '../pages/tableSettings.js';
 import { populateFieldSettings } from '../pages/fieldSettings.js';
@@ -344,12 +345,160 @@ export function populateSortByDropdown(tableName, elementId = 'tbl-default-sort-
     }
 }
 
+// =====================================================================
+// GRID LAYOUT EXPANSION PHASE A (2026-09-25)
+// Group-by dropdown, summary-row repeater, row-click + empty-state inputs.
+// =====================================================================
+
+const GRID_SUMMARY_MAX = 5;
+const GRID_SUMMARY_AGGS = ['sum', 'avg', 'count', 'min', 'max'];
+
+/**
+ * [HELPER] Numeric field names of a table (summary-capable columns).
+ */
+function getNumericFieldNames(tableName) {
+    const table = appState.jsonData && appState.jsonData.database.table[tableName];
+    if (!table || !table.fields) return [];
+    const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
+    return Object.values(table.fields)
+        .filter((f) => numericTypes.includes(String(f.data_type || '').toUpperCase()))
+        .map((f) => f.field_name);
+}
+
+/**
+ * Populates the "Group rows by" dropdown with the table's own fields.
+ */
+export function populateGridGroupByDropdown(tableName) {
+    const sel = document.getElementById('tbl-grid-group-by');
+    if (!sel || !appState.jsonData) return;
+    const table = appState.jsonData.database.table[tableName];
+    sel.innerHTML = '<option value="">— no grouping —</option>';
+    if (table && table.fields) {
+        for (const fieldName in table.fields) {
+            const opt = document.createElement('option');
+            opt.value = fieldName;
+            opt.textContent = fieldName;
+            sel.appendChild(opt);
+        }
+    }
+}
+
+/**
+ * Renders the summary-row repeater rows from the current hidden JSON value.
+ * Each row: [field select] [aggregate select] [remove].
+ */
+export function renderGridSummaryRows() {
+    const container = document.getElementById('grid-summaries-rows');
+    if (!container) return;
+    let map = {};
+    try { map = JSON.parse(document.getElementById('tbl-grid-summaries').value || '{}') || {}; } catch (e) { map = {}; }
+    container.innerHTML = '';
+    for (const [field, agg] of Object.entries(map)) {
+        container.appendChild(buildSummaryRow(field, agg));
+    }
+}
+
+function buildSummaryRow(field, agg) {
+    const row = document.createElement('div');
+    row.className = 'input-group';
+    row.style.marginTop = '.3rem';
+    const fieldSel = document.createElement('select');
+    fieldSel.className = 'grid-summary-field';
+    const numericFields = getNumericFieldNames(currentGridTableName());
+    const allFieldNames = getAllFieldNames(currentGridTableName());
+    const options = allFieldNames.includes(field) ? allFieldNames : [field, ...numericFields];
+    options.forEach((fn) => {
+        const o = document.createElement('option');
+        o.value = fn;
+        o.textContent = fn + (numericFields.includes(fn) ? '' : ' (not numeric — will be ignored)');
+        if (fn === field) o.selected = true;
+        fieldSel.appendChild(o);
+    });
+    const aggSel = document.createElement('select');
+    aggSel.className = 'grid-summary-agg';
+    aggSel.style.marginLeft = '.4rem';
+    GRID_SUMMARY_AGGS.forEach((a) => {
+        const o = document.createElement('option');
+        o.value = a;
+        o.textContent = a === 'avg' ? 'average' : a;
+        if (a === agg) o.selected = true;
+        aggSel.appendChild(o);
+    });
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn btn-small';
+    removeBtn.style.marginLeft = '.4rem';
+    removeBtn.textContent = '×';
+    removeBtn.title = 'Remove this summary';
+    const sync = () => commitGridSummaries();
+    fieldSel.addEventListener('change', sync);
+    aggSel.addEventListener('change', sync);
+    removeBtn.addEventListener('click', () => { row.remove(); sync(); });
+    row.appendChild(fieldSel);
+    row.appendChild(aggSel);
+    row.appendChild(removeBtn);
+    return row;
+}
+
+function currentGridTableName() {
+    const titleEl = document.querySelector('#table-settings-page .table-name');
+    if (titleEl) return titleEl.textContent.trim();
+    const ws = document.getElementById('workspace-module-title');
+    return ws ? ws.dataset.tableName : '';
+}
+
+function getAllFieldNames(tableName) {
+    const table = appState.jsonData && appState.jsonData.database.table[tableName];
+    return table && table.fields ? Object.keys(table.fields) : [];
+}
+
+/**
+ * Serializes the repeater rows into the hidden tbl-grid-summaries input and
+ * fires a change event so the generic autosave picks it up.
+ */
+function commitGridSummaries() {
+    const hidden = document.getElementById('tbl-grid-summaries');
+    if (!hidden) return;
+    const map = {};
+    const rows = document.querySelectorAll('#grid-summaries-rows .input-group');
+    rows.forEach((row) => {
+        const f = row.querySelector('.grid-summary-field');
+        const a = row.querySelector('.grid-summary-agg');
+        if (f && a && f.value && !map[f.value]) map[f.value] = a.value;
+    });
+    hidden.value = Object.keys(map).length ? JSON.stringify(map) : '';
+    hidden.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+/**
+ * Wires the "+ Add summary" button (once). Called from renderer init.
+ */
+export function initializeGridSummaryEditor() {
+    const addBtn = document.getElementById('btn-add-summary');
+    if (!addBtn || addBtn.dataset.wired === '1') return;
+    addBtn.dataset.wired = '1';
+    addBtn.addEventListener('click', () => {
+        const count = document.querySelectorAll('#grid-summaries-rows .input-group').length;
+        if (count >= GRID_SUMMARY_MAX) {
+            showToast(`Maximum ${GRID_SUMMARY_MAX} summaries per table`, 'warning');
+            return;
+        }
+        const numeric = getNumericFieldNames(currentGridTableName());
+        const first = numeric[0] || '';
+        if (!first) {
+            showToast('This table has no numeric columns to summarize', 'warning');
+            return;
+        }
+        document.getElementById('grid-summaries-rows').appendChild(buildSummaryRow(first, 'sum'));
+        commitGridSummaries();
+    });
+}
+
 export function populateFocusFieldDropdown(tableName) {
     const defaultFocusDropdown = document.getElementById('tbl-default-focus');
     if (!defaultFocusDropdown || !appState.jsonData) return;
 
     defaultFocusDropdown.innerHTML = ''; // Clear the list
-
     const table = appState.jsonData.database.table[tableName];
     if (table && table.fields) {
         // ▼▼▼ MAIN UPDATE HERE ▼▼▼
@@ -463,6 +612,11 @@ function buildGridFeaturePreviewHtml() {
     const sticky = checked('tbl-grid-sticky-header');
     const inlineEdit = checked('tbl-grid-inline-edit');
     const chooser = checked('tbl-grid-column-manager');
+    const groupBy = (() => { const el = document.getElementById('tbl-grid-group-by'); return el ? el.value : ''; })();
+    const rowClick = (() => { const el = document.getElementById('tbl-grid-row-click'); return el ? el.value : 'page'; })();
+    const emptyHeading = (() => { const el = document.getElementById('tbl-grid-empty-heading'); return el ? el.value.trim() : ''; })();
+    let summaries = {};
+    try { summaries = JSON.parse((document.getElementById('tbl-grid-summaries') || {}).value || '{}') || {}; } catch (e) { summaries = {}; }
 
     const rowPad = density === 'compact' ? '2px' : (density === 'comfortable' ? '12px' : '6px');
     const headerStyle = `padding:${rowPad} 8px; background:#EEF2FF; font-weight:600; font-size:0.75em; border-bottom:2px solid #C7D2FE;`
@@ -477,12 +631,21 @@ function buildGridFeaturePreviewHtml() {
         ['Sample record C', 'Active', '23/09/2026'],
     ];
 
+    const groupRowHtml = groupBy
+        ? `<tr><td colspan="3" style="padding:3px 8px; background:#F1F5F9; font-size:0.7em; font-weight:600; color:#334155; border-bottom:1px solid #CBD5E1;">▾ ${groupBy}: Active (2)</td></tr>`
+        : '';
+    const summaryRowHtml = Object.keys(summaries).length
+        ? `<tr style="background:#F8FAFC; font-weight:600;"><td colspan="3" style="padding:4px 8px; font-size:0.7em; color:#475569; border-top:2px solid #CBD5E1;">Summary: ${Object.entries(summaries).map(([f, a]) => `${a}(${f})`).join(' · ')}</td></tr>`
+        : '';
+
     const tableHtml = `
         <div style="margin-top:10px; max-height:150px; overflow-y:auto; border:1px solid #ddd; border-radius:6px; background:#fff;">
             <table style="width:100%; border-collapse:collapse;">
                 <thead><tr>${headers.map(h => `<th style="${headerStyle}">${h}</th>`).join('')}</tr></thead>
                 <tbody>
+                    ${groupRowHtml}
                     ${rows.map(r => `<tr>${r.map((c, i) => `<td style="${inlineEdit && i === 0 ? editCellStyle : cellStyle}">${c}</td>`).join('')}</tr>`).join('')}
+                    ${summaryRowHtml}
                 </tbody>
             </table>
         </div>`;
@@ -492,6 +655,11 @@ function buildGridFeaturePreviewHtml() {
     if (density !== 'normal') badges.push(`<span style="background:#F3E8FF;color:#6B21A8;border-radius:10px;padding:1px 8px;font-size:0.7em;">${density} rows</span>`);
     if (inlineEdit) badges.push('<span style="background:#FEF3C7;color:#92400E;border-radius:10px;padding:1px 8px;font-size:0.7em;">inline edit</span>');
     if (chooser) badges.push('<span style="background:#D1FAE5;color:#065F46;border-radius:10px;padding:1px 8px;font-size:0.7em;">column chooser</span>');
+    if (groupBy) badges.push(`<span style="background:#CFFAFE;color:#155E75;border-radius:10px;padding:1px 8px;font-size:0.7em;">grouped by ${groupBy}</span>`);
+    if (Object.keys(summaries).length) badges.push(`<span style="background:#FFE4E6;color:#9F1239;border-radius:10px;padding:1px 8px;font-size:0.7em;">summary row (${Object.keys(summaries).length})</span>`);
+    if (rowClick === 'slideover') badges.push('<span style="background:#E0E7FF;color:#3730A3;border-radius:10px;padding:1px 8px;font-size:0.7em;">row → slide-over</span>');
+    else if (rowClick === 'none') badges.push('<span style="background:#F1F5F9;color:#475569;border-radius:10px;padding:1px 8px;font-size:0.7em;">row click off</span>');
+    if (emptyHeading) badges.push(`<span style="background:#FEF9C3;color:#854D0E;border-radius:10px;padding:1px 8px;font-size:0.7em;">custom empty state</span>`);
 
     if (badges.length === 0) return '';
     return `
@@ -561,7 +729,7 @@ export function initializeTemplatePreviewHandlers() {
         templateSelect.addEventListener('change', toggleCardSizeGroup);
     }
     // Live preview: card size dropdowns redraw the mock grid immediately.
-    ['tbl-card-columns', 'tbl-card-columns-tablet', 'tbl-grid-sticky-header', 'tbl-grid-row-density', 'tbl-grid-inline-edit', 'tbl-grid-column-manager'].forEach((id) => {
+    ['tbl-card-columns', 'tbl-card-columns-tablet', 'tbl-grid-sticky-header', 'tbl-grid-row-density', 'tbl-grid-inline-edit', 'tbl-grid-column-manager', 'tbl-grid-group-by', 'tbl-grid-row-click', 'tbl-grid-empty-heading', 'tbl-grid-summaries'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', updateTableViewTemplatePreview);
     });

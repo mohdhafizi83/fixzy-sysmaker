@@ -25,6 +25,7 @@ import {
     initializeOptionsListRules,
     initializeCalculatedFieldRules,
 	initializeTemplatePreviewHandlers,
+	initializeGridSummaryEditor,
     populateProjectDropdown,
 initializeTableSaveHandlers,
     initializeFieldSaveHandlers,
@@ -485,6 +486,7 @@ window.addEventListener('beforeunload', (event) => {
 	initializeOptionsListRules();
 	initializeCalculatedFieldRules();
 	initializeTemplatePreviewHandlers();
+	initializeGridSummaryEditor();
 	initApprovalTab();
 	initSchedulerTab();
 	initPublicFormTab();
