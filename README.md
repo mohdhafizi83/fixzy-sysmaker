@@ -556,7 +556,7 @@ Shipped:
   (email, Telegram, HTTP, Advanced Action/raw SQL, logic, loops, try/catch)
   compiling to real PHP (observers, listeners, scheduled commands)
 - [x] GUI Setup Wizard (one-click environment provisioning)
-- [x] 51-fixture golden test matrix + CI (ubuntu + macOS)
+- [x] 51-fixture golden test matrix + CI (Windows + ubuntu + macOS)
 
 Next:
 - [ ] Guided project templates (CRM, inventory, booking, helpdesk starters)
@@ -577,7 +577,9 @@ node test/pathguard_test.js         # security unit tests
 node test/audit_headless.js         # generator crash audit
 ```
 
-CI runs the full matrix on ubuntu + macOS (`.github/workflows/ci.yml`).
+CI runs the full matrix on **Windows**, ubuntu, and macOS
+(`.github/workflows/ci.yml`) — Windows is the primary target OS, so every
+push is verified there too.
 
 Key docs: `docs/FAQ.md`, `docs/FEATURE_MATRIX.md`, `docs/NATIVE_FEATURES.md`,
 `docs/HEADLESS_WEB.md`, `docs/BUGS.md`.
