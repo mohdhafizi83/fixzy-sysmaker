@@ -49,7 +49,7 @@ class User extends Authenticatable {{ implements_clause }}
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-        ];
+{{ casts_2fa }}        ];
     }
 {% if relationship_functions %}{{ relationship_functions }}
 

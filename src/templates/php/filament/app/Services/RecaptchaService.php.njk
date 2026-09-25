@@ -1,0 +1,77 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\FixzySetting;
+
+/**
+ * Google reCAPTCHA v2 verification (Fixzy SysMaker generated).
+ *
+ * The site key / secret are NOT baked into code: the admin pastes them
+ * once on the Auth Settings page (fixzy_settings table, env fallback
+ * RECAPTCHA_SITE_KEY / RECAPTCHA_SECRET).
+ *
+ * Verify the token server-side against Google's siteverify endpoint.
+ * A missing key pair fails CLOSED (verification refused) so a
+ * misconfigured deployment never silently disables the human check.
+ */
+class RecaptchaService
+{
+    private const VERIFY_URL = 'https://www.google.com/recaptcha/api/siteverify';
+
+    public static function siteKey(): string
+    {
+        return (string) (FixzySetting::get('recaptcha_site_key', '') ?: env('RECAPTCHA_SITE_KEY', ''));
+    }
+
+    public static function secret(): string
+    {
+        return (string) (FixzySetting::get('recaptcha_secret', '') ?: env('RECAPTCHA_SECRET', ''));
+    }
+
+    public static function isConfigured(): bool
+    {
+        return self::siteKey() !== '' && self::secret() !== '';
+    }
+
+    /**
+     * Verify a reCAPTCHA v2 response token.
+     *
+     * @param string|null $token  value of the g-recaptcha-response field
+     * @param string|null $remoteIp  client IP for Google's risk analysis
+     */
+    public static function verify(?string $token, ?string $remoteIp = null): bool
+    {
+        if (! self::isConfigured() || blank($token)) {
+            return false;
+        }
+
+        $payload = [
+            'secret' => self::secret(),
+            'response' => $token,
+        ];
+        if ($remoteIp) {
+            $payload['remoteip'] = $remoteIp;
+        }
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::timeout(10)
+                ->asForm()
+                ->post(self::VERIFY_URL, $payload);
+        } catch (\Throwable) {
+            // Network failure -> fail closed (login refused rather than
+            // silently skipping the human check).
+            return false;
+        }
+
+        if (! $response->successful()) {
+            return false;
+        }
+
+        $json = $response->json();
+
+        // reCAPTCHA v2 returns {success: bool, ...}. (v3 adds a score;
+        // for v2 we only require success=true.)
+        return is_array($json) && ($json['success'] ?? false) === true;
+    }
+}

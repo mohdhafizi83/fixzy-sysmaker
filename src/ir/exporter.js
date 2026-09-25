@@ -377,7 +377,11 @@ function exportIR(fullSchema) {
                 login_enabled: !p.hide_login,
                 email: !!p.module_auth_email,
                 email_2fa: !!p.module_auth_email_2fa,
+                // 'basic' = email one-time code, 'totp' = Google Authenticator.
+                two_fa_mode: p.module_auth_email_2fa ? (p.auth_2fa_mode || 'basic') : null,
                 email_captcha: !!p.module_auth_email_captcha,
+                // 'basic' = arithmetic check, 'recaptcha_v2' = Google reCAPTCHA v2.
+                captcha_mode: p.module_auth_email_captcha ? (p.auth_captcha_mode || 'basic') : null,
                 ldap: !!p.module_auth_ldap,
                 google_sso: !!p.module_auth_google_sso,
             },

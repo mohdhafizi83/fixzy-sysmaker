@@ -34,6 +34,8 @@
         
 
         
+
+        
         <x-filament::section heading="LDAP / Active Directory">
             <p class="text-sm text-gray-500 mb-4">
                 Users will log in with their directory username on the normal login form. Use a dedicated

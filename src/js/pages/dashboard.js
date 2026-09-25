@@ -5,6 +5,17 @@ import { setElementValue, setRadioValue } from '../ui/formHelpers.js';
 import { appState } from '../state.js';
 import { loadProjectData, SaveManager } from '../../renderer.js';
 
+// Show the 2FA / Captcha advanced-option groups only while the matching
+// parent radio (app-module-auth-extra) is checked.
+export function toggleAuthModeGroups() {
+    const is2fa = document.getElementById('app-module-auth-email-2fa')?.checked;
+    const isCaptcha = document.getElementById('app-module-auth-email-captcha')?.checked;
+    const fg2fa = document.getElementById('fg-2fa-mode');
+    const fgCaptcha = document.getElementById('fg-captcha-mode');
+    if (fg2fa) fg2fa.style.display = is2fa ? 'block' : 'none';
+    if (fgCaptcha) fgCaptcha.style.display = isCaptcha ? 'block' : 'none';
+}
+
 export function populateMainDashboard(projectData) {
     if (!projectData) {
         console.warn("No project data to display on the dashboard.");
@@ -25,8 +36,17 @@ export function populateMainDashboard(projectData) {
     if(themeSelect) setElementValue('app-stack-theme', projectData.stack_theme);
 	
 	setElementValue('app-module-auth-email-2fa', projectData.module_auth_email_2fa);
-    setElementValue('app-module-auth-email-captcha', projectData.module_auth_email_captcha);
-    setElementValue('app-module-auth-ldap', projectData.module_auth_ldap);
+	setElementValue('app-module-auth-email-captcha', projectData.module_auth_email_captcha);
+	// Advanced option (b): 'basic' (a) or 'totp' (Google Authenticator) /
+	// 'recaptcha_v2' (Google reCAPTCHA v2). Default 'basic' for old projects.
+	setRadioValue('app-auth-2fa-mode', projectData.auth_2fa_mode || 'basic');
+	setRadioValue('app-auth-captcha-mode', projectData.auth_captcha_mode || 'basic');
+	toggleAuthModeGroups();
+	document.querySelectorAll('input[name="app-module-auth-extra"]').forEach((r) => {
+	    r.removeEventListener('change', toggleAuthModeGroups);
+	    r.addEventListener('change', toggleAuthModeGroups);
+	});
+	setElementValue('app-module-auth-ldap', projectData.module_auth_ldap);
     setElementValue('app-module-auth-google-sso', projectData.module_auth_google_sso);
     setElementValue('app-module-authorization', projectData.module_authorization);
     setElementValue('app-module-log-audit', projectData.module_log_audit);
@@ -187,6 +207,14 @@ export function initializeProjectSaveHandlers() {
                     [is2fa ? 'module_auth_email_2fa' : 'module_auth_email_captcha']: input.checked ? 1 : 0,
                     [is2fa ? 'module_auth_email_captcha' : 'module_auth_email_2fa']: 0
                 });
+                return;
+            }
+            // Advanced-option radios: each group maps to its own TEXT column.
+            if (input.name === 'app-auth-2fa-mode' || input.name === 'app-auth-captcha-mode') {
+                if (!input.checked) return;
+                const modeKey = input.name === 'app-auth-2fa-mode' ? 'auth_2fa_mode' : 'auth_captcha_mode';
+                const mode = input.value === 'totp' || input.value === 'recaptcha_v2' ? input.value : 'basic';
+                SaveManager.addToQueue('project', appState.activeProject.project_id, { [modeKey]: mode });
                 return;
             }
             if (!input.checked) return;

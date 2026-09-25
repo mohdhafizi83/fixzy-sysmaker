@@ -112,6 +112,8 @@ DB_PASSWORD=your_password</code></pre>
                     nothing to configure.</li>
                 
                 
+                
+                
             </ul>
         </div>
     </x-filament::section>

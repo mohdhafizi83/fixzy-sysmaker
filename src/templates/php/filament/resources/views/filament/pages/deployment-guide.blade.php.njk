@@ -178,16 +178,33 @@ DB_PASSWORD=your_password</code></pre>
         </x-slot>
         <div class="prose max-w-none dark:prose-invert text-sm">
             <ul class="list-disc pl-5 space-y-2">
-                {% if captcha %}
+                {% if captcha and not recaptcha_mode %}
                 <li><strong>Human check (captcha):</strong> the login page asks a simple arithmetic question before
                     accepting a sign-in. This runs entirely on your server — no external captcha service, no API keys,
                     nothing to configure.</li>
                 {% endif %}
-                {% if two_fa %}
+                {% if recaptcha_mode %}
+                <li><strong>Google reCAPTCHA v2:</strong> the login page shows Google's "I'm not a robot" checkbox.
+                    Register your domain at <a href="https://www.google.com/recaptcha/admin" target="_blank">google.com/recaptcha/admin</a>
+                    (type: reCAPTCHA v2, "I'm not a robot" Checkbox), then paste the <strong>site key</strong> and
+                    <strong>secret key</strong> on the <em>Auth Settings</em> page in the admin panel. Sign-ins are
+                    refused until both keys are saved (the check fails closed). No composer package is needed —
+                    verification calls Google's <code>siteverify</code> endpoint from
+                    <code>App\Services\RecaptchaService</code>.</li>
+                {% endif %}
+                {% if two_fa and not totp_mode %}
                 <li><strong>Two-factor authentication (2FA):</strong> users can enable email-based 2FA from their
                     profile page (Filament native multi-factor authentication). After saving their password they will
                     receive a one-time code by email at each login. Make sure <code>MAIL_*</code> settings in
                     <code>.env</code> point to a working mail server, otherwise codes cannot be delivered.</li>
+                {% endif %}
+                {% if totp_mode %}
+                <li><strong>Google Authenticator 2FA (TOTP):</strong> each user links an authenticator app
+                    (Google Authenticator, Authy, 1Password, etc.) from their profile page — scan the QR code once,
+                    then enter the 6-digit rotating code at every login. Recovery codes are generated during setup,
+                    so users locked out of their phone can still sign in. The shared secret is encrypted at rest
+                    (<code>users.app_authentication_secret</code>); no API keys or external service required.
+                    Users who have not set up their authenticator yet are prompted to do so after their first login.</li>
                 {% endif %}
             </ul>
         </div>

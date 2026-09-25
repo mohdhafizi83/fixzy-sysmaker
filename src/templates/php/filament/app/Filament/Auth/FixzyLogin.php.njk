@@ -44,6 +44,21 @@ class FixzyLogin extends Login
             }, 'Incorrect answer — please try again.');
         {% endif %}
 
+        {% if recaptcha %}
+        // Google reCAPTCHA v2: the visible "I'm not a robot" widget is
+        // rendered by the panel render hook (fixzy-recaptcha-widget view).
+        // Its callback pushes the token into this field's Livewire state,
+        // and the token is verified server-side here.
+        $components[] = \Filament\Forms\Components\Hidden::make('g-recaptcha-response')
+            ->required()
+            ->rule(function (string $attribute, $value): bool {
+                return \App\Services\RecaptchaService::verify(
+                    $value ? (string) $value : null,
+                    request()->ip()
+                );
+            }, 'Human verification failed — please complete the reCAPTCHA and try again.');
+        {% endif %}
+
         return $schema->components($components);
     }
 

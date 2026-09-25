@@ -1,0 +1,38 @@
+
+<div id="fixzy-recaptcha-holder" class="mt-3 flex justify-center">
+    @if(\App\Services\RecaptchaService::isConfigured())
+        <div class="g-recaptcha"
+             data-sitekey="{{ \App\Services\RecaptchaService::siteKey() }}"
+             data-callback="fixzyRecaptchaDone"
+             data-expired-callback="fixzyRecaptchaExpired"></div>
+        <script>
+            (function () {
+                function recaptchaField() {
+                    // The FixzyLogin form has a Hidden field whose Livewire
+                    // state path ends with "g-recaptcha-response".
+                    var inputs = document.querySelectorAll('input[type="hidden"]');
+                    for (var i = 0; i < inputs.length; i++) {
+                        var model = inputs[i].getAttribute('wire:model') || '';
+                        if (model.indexOf('g-recaptcha-response') !== -1) return inputs[i];
+                    }
+                    return null;
+                }
+                function setToken(token) {
+                    var input = recaptchaField();
+                    if (!input) return;
+                    input.value = token || '';
+                    // Livewire syncs on the native input event.
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                window.fixzyRecaptchaDone = function (token) { setToken(token); };
+                window.fixzyRecaptchaExpired = function () { setToken(''); };
+            })();
+        </script>
+        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    @else
+        <div class="rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-2 text-sm dark:bg-yellow-950 dark:text-yellow-200 dark:border-yellow-800">
+            reCAPTCHA is enabled but not configured yet — sign-ins are blocked until the
+            site key and secret are saved in Auth Settings.
+        </div>
+    @endif
+</div>

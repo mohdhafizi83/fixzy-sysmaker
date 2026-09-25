@@ -30,6 +30,14 @@ function hasLdap(fullSchema) {
     return Number((fullSchema.project || {}).module_auth_ldap) === 1;
 }
 
+function hasTotp(fullSchema) {
+    return require('./authConfig').isTotp(fullSchema.project);
+}
+
+function hasRecaptcha(fullSchema) {
+    return require('./authConfig').isRecaptcha(fullSchema.project);
+}
+
 function writeIf(dir, file, content) {
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, file), content);
@@ -39,8 +47,10 @@ function generateAuthIntegrations(fullSchema, outputDir) {
     try {
         const google = hasGoogle(fullSchema);
         const ldap = hasLdap(fullSchema);
+        const totp = hasTotp(fullSchema);
+        const recaptcha = hasRecaptcha(fullSchema);
 
-        if (!google && !ldap) {
+        if (!google && !ldap && !totp && !recaptcha) {
             return { success: true, composerPackages: [], phpExtensions: [] };
         }
 
@@ -83,6 +93,27 @@ function generateAuthIntegrations(fullSchema, outputDir) {
             );
         }
 
+        // Google Authenticator (TOTP) 2FA: users table columns for the
+        // encrypted secret + hashed recovery codes. The provider itself is
+        // Filament's native AppAuthentication (no extra composer package).
+        if (totp) {
+            writeIf(
+                path.join(outputDir, 'database', 'migrations'),
+                '2026_09_25_000003_add_totp_columns_to_users_table.php',
+                renderTemplate('database/migrations/add_totp_columns_to_users_table.php.njk', {})
+            );
+        }
+
+        // Google reCAPTCHA v2: server-side verification service. Keys are
+        // pasted on the Auth Settings page (never baked into code).
+        if (recaptcha) {
+            writeIf(
+                path.join(outputDir, 'app', 'Services'),
+                'RecaptchaService.php',
+                renderTemplate('app/Services/RecaptchaService.php.njk', {})
+            );
+        }
+
         // Provider: wires routes + runtime config from the settings table.
         writeIf(
             path.join(outputDir, 'app', 'Providers'),
@@ -94,12 +125,16 @@ function generateAuthIntegrations(fullSchema, outputDir) {
         );
 
         // Admin-facing settings page (pasted keys live here, not in code).
+        // TOTP alone needs no keys, so skip the page unless a keyed
+        // integration (SSO / LDAP / reCAPTCHA) is enabled.
+        if (google || ldap || recaptcha) {
         writeIf(
             path.join(outputDir, 'app', 'Filament', 'Pages'),
             'AuthSettings.php',
             renderTemplate('app/Filament/Pages/AuthSettings.php.njk', {
                 google,
                 ldap,
+                recaptcha,
             })
         );
         writeIf(
@@ -108,8 +143,10 @@ function generateAuthIntegrations(fullSchema, outputDir) {
             renderTemplate('resources/views/filament/pages/auth-settings.blade.php.njk', {
                 google,
                 ldap,
+                recaptcha,
             })
         );
+        }
 
         // Register in bootstrap/providers.php when generating into a full app.
         const providersFile = path.join(outputDir, 'bootstrap', 'providers.php');
@@ -137,4 +174,4 @@ function generateAuthIntegrations(fullSchema, outputDir) {
     }
 }
 
-module.exports = { generateAuthIntegrations, hasGoogle, hasLdap };
+module.exports = { generateAuthIntegrations, hasGoogle, hasLdap, hasTotp, hasRecaptcha };

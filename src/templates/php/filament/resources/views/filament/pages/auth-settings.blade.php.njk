@@ -33,6 +33,29 @@
         </x-filament::section>
         {% endraw %}{% endif %}{% raw %}
 
+        {% endraw %}{% if recaptcha %}{% raw %}
+        <x-filament::section heading="Google reCAPTCHA v2">
+            <p class="text-sm text-gray-500 mb-4">
+                Register your site at
+                <a href="https://www.google.com/recaptcha/admin" target="_blank" class="text-primary-600 underline">google.com/recaptcha/admin</a>
+                (type: reCAPTCHA v2, "I'm not a robot" Checkbox) and paste the keys below. The login page will not
+                accept sign-ins until both keys are saved here.
+            </p>
+            <div class="grid gap-4 md:grid-cols-2">
+                <label class="block">
+                    <span class="text-sm font-medium">Site key</span>
+                    <input type="text" wire:model="settings.recaptcha_site_key"
+                           class="mt-1 w-full rounded-lg border-gray-300 shadow-sm dark:bg-gray-800 dark:border-gray-600 px-3 py-2 text-sm" />
+                </label>
+                <label class="block">
+                    <span class="text-sm font-medium">Secret key</span>
+                    <input type="password" wire:model="settings.recaptcha_secret"
+                           class="mt-1 w-full rounded-lg border-gray-300 shadow-sm dark:bg-gray-800 dark:border-gray-600 px-3 py-2 text-sm" />
+                </label>
+            </div>
+        </x-filament::section>
+        {% endraw %}{% endif %}{% raw %}
+
         {% endraw %}{% if ldap %}{% raw %}
         <x-filament::section heading="LDAP / Active Directory">
             <p class="text-sm text-gray-500 mb-4">

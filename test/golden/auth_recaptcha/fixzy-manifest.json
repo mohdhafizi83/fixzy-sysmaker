@@ -1,0 +1,7 @@
+{
+  "composer": [],
+  "php_extensions": [],
+  "providers": [
+    "App\\Providers\\AuthIntegrationsServiceProvider"
+  ]
+}

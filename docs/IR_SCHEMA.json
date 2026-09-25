@@ -96,8 +96,14 @@
             "email_2fa": {
               "type": "boolean"
             },
+            "two_fa_mode": {
+              "enum": ["basic", "totp", null]
+            },
             "email_captcha": {
               "type": "boolean"
+            },
+            "captcha_mode": {
+              "enum": ["basic", "recaptcha_v2", null]
             },
             "ldap": {
               "type": "boolean"

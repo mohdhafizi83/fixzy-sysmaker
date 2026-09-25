@@ -55,6 +55,12 @@ function openStore(dbPath) {
         if (!cols.includes('backup_config')) {
             db.exec("ALTER TABLE projects ADD COLUMN backup_config TEXT");
         }
+        if (!cols.includes('auth_2fa_mode')) {
+            db.exec("ALTER TABLE projects ADD COLUMN auth_2fa_mode TEXT DEFAULT 'basic'");
+        }
+        if (!cols.includes('auth_captcha_mode')) {
+            db.exec("ALTER TABLE projects ADD COLUMN auth_captcha_mode TEXT DEFAULT 'basic'");
+        }
         const tableCols = db.prepare("PRAGMA table_info(tables)").all().map((c) => c.name);
         if (!tableCols.includes('scheduler_config')) {
             db.exec("ALTER TABLE tables ADD COLUMN scheduler_config TEXT");

@@ -285,6 +285,53 @@ listed. The audit suite enforces this.
 Yes — per table, per token (default 60 requests/min, configurable).
 Exceeding it returns HTTP 429 with a retry hint.
 
+## Login Security (2FA & Captcha)
+
+### What's the difference between the two 2FA modes?
+
+Both add a second step after the password; they differ in where the code
+comes from:
+
+| | Basic (email code) | Google Authenticator (TOTP) |
+|---|---|---|
+| Code delivery | 6-digit code emailed to the user | Code generated in the user's authenticator app |
+| Setup per user | None — just sign in | Scan a QR code once (Settings → Security) |
+| Needs mail server | Yes | No |
+| Works offline | No | Yes (codes are time-based, ~30s each) |
+
+The TOTP mode uses Filament's native multi-factor engine
+(`Filament\Auth\MultiFactor\App`) — not a custom crypto implementation.
+Recovery codes are generated so a lost phone doesn't lock anyone out.
+
+### What's the difference between the two captcha modes?
+
+- **Basic** — a built-in arithmetic challenge (e.g. "7 + 5 = ?").
+  Verified locally; zero external services, zero keys, zero cost.
+- **Google reCAPTCHA v2** — the "I'm not a robot" checkbox. Stronger
+  bot protection (Google scores behaviour), but you must register your
+  site at google.com/recaptcha and paste the site key + secret into the
+  generated app's Auth Settings page. Keys are never baked into code.
+
+### Is the captcha verification fail-closed?
+
+Yes. If the secret key is missing, the verification call fails, or the
+token is invalid/expired, the login is **rejected** — there is no silent
+pass path. (This was verified by direct testing, not just code review.)
+
+### Can I use 2FA and captcha together?
+
+Yes — they're independent toggles. Captcha guards the password step
+(against automated credential stuffing); 2FA guards the account itself
+(against a stolen password). Combining them is the recommended setup for
+anything internet-facing.
+
+### Does enabling Google Authenticator change the database?
+
+One extra migration adds two encrypted columns to the users table
+(`app_authentication_secret`, `app_authentication_recovery_codes`).
+Secrets are stored encrypted at rest — verified: the stored bytes are
+ciphertext, and only the app with your `APP_KEY` can read them back.
+
 ## General
 
 ### Do I need Laravel knowledge to use the generated app?

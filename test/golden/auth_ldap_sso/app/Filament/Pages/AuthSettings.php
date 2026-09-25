@@ -36,6 +36,7 @@ class AuthSettings extends Page
             'google_client_id' => FixzySetting::get('google_client_id', ''),
             'google_client_secret' => FixzySetting::get('google_client_secret', ''),
             'google_redirect_uri' => FixzySetting::get('google_redirect_uri', rtrim(config('app.url'), '/') . '/auth/google/callback'),
+            
             'ldap_hosts' => FixzySetting::get('ldap_hosts', ''),
             'ldap_port' => FixzySetting::get('ldap_port', '389'),
             'ldap_base_dn' => FixzySetting::get('ldap_base_dn', ''),

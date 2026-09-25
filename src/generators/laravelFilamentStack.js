@@ -148,14 +148,27 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
 
         // Native login page (BUG-015): captcha human check and/or LDAP
         // directory auth, combined into one FixzyLogin class.
-        const captcha = Number((fullSchema.project || {}).module_auth_email_captcha) === 1;
+        // auth_captcha_mode selects basic (arithmetic) vs Google reCAPTCHA v2;
+        // in recaptcha mode the arithmetic check is replaced, not doubled.
+        const authConfig = require('./authConfig');
+        const captchaOn = Number((fullSchema.project || {}).module_auth_email_captcha) === 1;
+        const recaptcha = authConfig.isRecaptcha(fullSchema.project);
+        const captcha = captchaOn && !recaptcha;
         const ldap = Number((fullSchema.project || {}).module_auth_ldap) === 1;
-        if (captcha || ldap) {
+        if (captcha || recaptcha || ldap) {
             const authDir = path.join(outputDir, 'app', 'Filament', 'Auth');
             fs.mkdirSync(authDir, { recursive: true });
             fs.writeFileSync(
                 path.join(authDir, 'FixzyLogin.php'),
-                renderTemplate('app/Filament/Auth/FixzyLogin.php.njk', { captcha, ldap })
+                renderTemplate('app/Filament/Auth/FixzyLogin.php.njk', { captcha, recaptcha, ldap })
+            );
+        }
+        if (recaptcha) {
+            const viewsDir = path.join(outputDir, 'resources', 'views', 'filament');
+            fs.mkdirSync(viewsDir, { recursive: true });
+            fs.writeFileSync(
+                path.join(viewsDir, 'fixzy-recaptcha-widget.blade.php'),
+                renderTemplate('resources/views/filament/fixzy-recaptcha-widget.blade.php.njk', {})
             );
         }
 

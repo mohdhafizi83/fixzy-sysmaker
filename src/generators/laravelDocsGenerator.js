@@ -34,6 +34,8 @@ async function generateDeploymentGuidePage(fullSchema, basePath) {
             ldap: Number(fullSchema.project.module_auth_ldap) === 1,
             captcha: Number(fullSchema.project.module_auth_email_captcha) === 1,
             two_fa: Number(fullSchema.project.module_auth_email_2fa) === 1,
+            totp_mode: require('./authConfig').isTotp(fullSchema.project),
+            recaptcha_mode: require('./authConfig').isRecaptcha(fullSchema.project),
             debug_enabled: Number(fullSchema.project.debug_mode) === 1 || fullSchema.project.debug_mode === true,
         });
         fs.writeFileSync(path.join(viewsDir, 'deployment-guide.blade.php'), bladeOut);

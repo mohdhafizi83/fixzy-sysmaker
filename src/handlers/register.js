@@ -956,7 +956,7 @@ ipcMain.handle('project:update', async (event, data) => {
             'tables_per_row', 'extra_wide', 'panel_height', 'hide_login', 'allow_sql_tool',
             'allow_server_status', 'admins_group_access', 'allow_table_view_sql',
             'copy_children_async', 'allow_pwa_install', 'url', 'project_hook_workflow', 'stack_base', 'stack_database',
-			'stack_theme', 'module_auth_email_2fa', 'module_auth_email_captcha', 'module_auth_ldap',
+			'stack_theme', 'module_auth_email_2fa', 'auth_2fa_mode', 'module_auth_email_captcha', 'auth_captcha_mode', 'module_auth_ldap',
             'module_auth_google_sso', 'module_authorization', 'module_log_audit', 'module_log_activity', 'data_delete_type', 'module_fake_data', 'tenancy_type', 'tenant_table', 'debug_mode',
             'module_realtime', 'realtime_backend', 'module_google_sheets', 'module_scheduler', 'backup_config'
         ];
@@ -2514,15 +2514,27 @@ ipcMain.handle('preview:instant-run', async (event) => {
             await generateAuthIntegrations(fullSchema, previewPath);
 
             // Combined login page referenced by AdminPanelProvider when
-            // captcha or LDAP is enabled.
+            // captcha or LDAP is enabled. auth_captcha_mode selects basic
+            // (arithmetic) vs Google reCAPTCHA v2 (replaces the arithmetic check).
+            const authConfig = require('../generators/authConfig');
             const captchaOn = Number((fullSchema.project || {}).module_auth_email_captcha) === 1;
+            const recaptcha = authConfig.isRecaptcha(fullSchema.project);
+            const captcha = captchaOn && !recaptcha;
             const ldapOn = Number((fullSchema.project || {}).module_auth_ldap) === 1;
-            if (captchaOn || ldapOn) {
+            if (captcha || recaptcha || ldapOn) {
                 const authDir = path.join(previewPath, 'app', 'Filament', 'Auth');
                 fs.mkdirSync(authDir, { recursive: true });
                 fs.writeFileSync(
                     path.join(authDir, 'FixzyLogin.php'),
-                    renderTemplate('app/Filament/Auth/FixzyLogin.php.njk', { captcha: captchaOn, ldap: ldapOn })
+                    renderTemplate('app/Filament/Auth/FixzyLogin.php.njk', { captcha, recaptcha, ldap: ldapOn })
+                );
+            }
+            if (recaptcha) {
+                const viewsDir = path.join(previewPath, 'resources', 'views', 'filament');
+                fs.mkdirSync(viewsDir, { recursive: true });
+                fs.writeFileSync(
+                    path.join(viewsDir, 'fixzy-recaptcha-widget.blade.php'),
+                    renderTemplate('resources/views/filament/fixzy-recaptcha-widget.blade.php.njk', {})
                 );
             }
 

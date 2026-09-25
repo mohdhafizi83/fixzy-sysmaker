@@ -47,14 +47,25 @@ async function generateAdminPanelProvider(fullSchema, basePath) {
             top_navigation: project.menu_orientation === 'top',
             tenant_model: tenantModel,
             navigation_groups: navigationGroups,
-            // Auth flags (BUG-015): native Filament 4 email MFA + captcha login.
-            mfa_provider: Number(project.module_auth_email_2fa) === 1
-                ? '\\Filament\\Auth\\MultiFactor\\Email\\EmailAuthentication::make()'
-                : null,
+            // Auth flags (BUG-015): native Filament MFA + captcha login.
+            // Mode (b) selects the implementation: 'totp' = Google
+            // Authenticator (Filament App MFA provider, recoverable codes),
+            // otherwise the email one-time-code provider.
+            mfa_provider: (() => {
+                const authConfig = require('./authConfig');
+                if (authConfig.isTotp(project)) {
+                    return '\\Filament\\Auth\\MultiFactor\\App\\AppAuthentication::make()->recoverable()';
+                }
+                return Number(project.module_auth_email_2fa) === 1
+                    ? '\\Filament\\Auth\\MultiFactor\\Email\\EmailAuthentication::make()'
+                    : null;
+            })(),
             login_class: (Number(project.module_auth_email_captcha) === 1
-                || Number(project.module_auth_ldap) === 1)
+                || Number(project.module_auth_ldap) === 1
+                || require('./authConfig').isRecaptcha(project))
                 ? '\\App\\Filament\\Auth\\FixzyLogin::class'
                 : null,
+            recaptcha_login: require('./authConfig').isRecaptcha(project),
             google_sso: Number(project.module_auth_google_sso) === 1,
             ldap: Number(project.module_auth_ldap) === 1,
             // Real-time module (native Filament database notifications).

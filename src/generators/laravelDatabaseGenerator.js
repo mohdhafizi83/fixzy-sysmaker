@@ -301,6 +301,8 @@ async function generateFilamentUserModel(fullSchema, basePath) {
         const authorization = projectSettings.module_authorization === 1;
         const tenantMtm = projectSettings.tenancy_type === 'many_to_many' && projectSettings.tenant_table;
         const twoFa = Number(projectSettings.module_auth_email_2fa) === 1;
+        const authConfig = require('./authConfig');
+        const totp = authConfig.isTotp(projectSettings);
 
         // --- KEKAL 100% LOGIK ASAL ANDA (kini sebagai context values) ---
         const userContext = {
@@ -313,9 +315,53 @@ async function generateFilamentUserModel(fullSchema, basePath) {
             trait_shield: authorization ? ', HasRoles' : '',
             import_api_tokens: require('./apiConfig').anyApiEnabled(fullSchema) ? 'use Laravel\\Sanctum\\HasApiTokens;' : '',
             trait_api_tokens: require('./apiConfig').anyApiEnabled(fullSchema) ? ', HasApiTokens' : '',
-            import_2fa: twoFa ? 'use Filament\\Auth\\MultiFactor\\Email\\Contracts\\HasEmailAuthentication;' : '',
-            implements_2fa: twoFa ? 'HasEmailAuthentication' : '',
-            methods_2fa: twoFa ? `
+            import_2fa: twoFa
+                ? (totp
+                    ? 'use Filament\\Auth\\MultiFactor\\App\\Contracts\\HasAppAuthentication;\nuse Filament\\Auth\\MultiFactor\\App\\Contracts\\HasAppAuthenticationRecovery;'
+                    : 'use Filament\\Auth\\MultiFactor\\Email\\Contracts\\HasEmailAuthentication;')
+                : '',
+            implements_2fa: twoFa ? (totp ? 'HasAppAuthentication, HasAppAuthenticationRecovery' : 'HasEmailAuthentication') : '',
+            // Extra casts merged into casts() for TOTP mode (secret encrypted
+            // at rest; recovery codes stored hashed by Filament).
+            casts_2fa: totp ? "            'app_authentication_secret' => 'encrypted',\n            'app_authentication_recovery_codes' => 'encrypted:array',\n" : '',
+            methods_2fa: twoFa ? (totp ? `
+    /**
+     * Google Authenticator (TOTP) two-factor authentication, enabled
+     * project-wide (Fixzy SysMaker: module_auth_email_2fa + auth_2fa_mode=totp).
+     * Users set up their authenticator app from the profile page; the
+     * secret is encrypted at rest.
+     */
+    public function getAppAuthenticationSecret(): ?string
+    {
+        return $this->app_authentication_secret;
+    }
+
+    public function saveAppAuthenticationSecret(#[SensitiveParameter] ?string $secret): void
+    {
+        $this->forceFill(['app_authentication_secret' => $secret])->save();
+    }
+
+    public function getAppAuthenticationHolderName(): string
+    {
+        return $this->email;
+    }
+
+    /**
+     * @return ?array<string>
+     */
+    public function getAppAuthenticationRecoveryCodes(): ?array
+    {
+        return $this->app_authentication_recovery_codes;
+    }
+
+    /**
+     * @param  ?array<string>  $codes
+     */
+    public function saveAppAuthenticationRecoveryCodes(#[SensitiveParameter] ?array $codes): void
+    {
+        $this->forceFill(['app_authentication_recovery_codes' => $codes])->save();
+    }
+` : `
     /**
      * Email two-factor authentication is enabled project-wide
      * (Fixzy SysMaker: module_auth_email_2fa).
@@ -329,14 +375,14 @@ async function generateFilamentUserModel(fullSchema, basePath) {
     {
         // Project-wide enforcement: the setting cannot be toggled per user.
     }
-` : '',
+`) : '',
             import_tenant: tenantMtm ? `use Filament\\Models\\Contracts\\HasTenants;\nuse Illuminate\\Support\\Collection;\nuse Illuminate\\Database\\Eloquent\\Model;\nuse Filament\\Panel;\nuse Illuminate\\Database\\Eloquent\\Relations\\BelongsToMany;` : '',
             // Combined implements clause: tenant interface first (original
             // behaviour), then 2FA contract when enabled.
             implements_clause: (() => {
                 const ifs = [];
                 if (tenantMtm) ifs.push('HasTenants');
-                if (twoFa) ifs.push('HasEmailAuthentication');
+                if (twoFa) ifs.push(totp ? 'HasAppAuthentication, HasAppAuthenticationRecovery' : 'HasEmailAuthentication');
                 return ifs.length ? 'implements ' + ifs.join(', ') : '';
             })(),
             tenant_methods: '',

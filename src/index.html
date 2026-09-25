@@ -271,9 +271,25 @@
     <label class="checkbox-label sub-option">
         <input type="radio" id="app-module-auth-email-2fa" name="app-module-auth-extra"> Enable 2-Factor Authentication (2FA)
     </label>
+    <div class="sub-option" id="fg-2fa-mode" style="display:none; margin-top: 0.25rem;">
+        <label class="checkbox-label">
+            <input type="radio" name="app-auth-2fa-mode" value="basic" checked> Basic — one-time code sent to the user's email
+        </label>
+        <label class="checkbox-label">
+            <input type="radio" name="app-auth-2fa-mode" value="totp"> Google Authenticator — time-based code from an authenticator app (TOTP)
+        </label>
+    </div>
     <label class="checkbox-label sub-option">
         <input type="radio" id="app-module-auth-email-captcha" name="app-module-auth-extra"> Enable Captcha
     </label>
+    <div class="sub-option" id="fg-captcha-mode" style="display:none; margin-top: 0.25rem;">
+        <label class="checkbox-label">
+            <input type="radio" name="app-auth-captcha-mode" value="basic" checked> Basic — built-in arithmetic human check (no external service)
+        </label>
+        <label class="checkbox-label">
+            <input type="radio" name="app-auth-captcha-mode" value="recaptcha_v2"> Google reCAPTCHA v2 — "I'm not a robot" checkbox (needs a Google API key pair)
+        </label>
+    </div>
     <label class="checkbox-label">
         <input type="checkbox" id="app-module-auth-ldap" name="app-module-auth-ldap"> LDAP
     </label>

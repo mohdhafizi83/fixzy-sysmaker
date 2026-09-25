@@ -301,7 +301,12 @@ export function initializeStackSelectorHandlers() {
  * A standard radio button group doesn't allow having no option selected once a selection is made.
  */
 export function initializeAuthRadioLogic() {
-    const radios = document.querySelectorAll('input[name="app-module-auth-extra"]');
+    // 'app-module-auth-extra' is the 2FA/Captcha parent pair; the
+    // app-auth-*-mode groups are the advanced-option radios (basic vs
+    // Google Authenticator / reCAPTCHA v2) shown under each parent.
+    const radios = document.querySelectorAll(
+        'input[name="app-module-auth-extra"], input[name="app-auth-2fa-mode"], input[name="app-auth-captcha-mode"]'
+    );
     if (!radios) return;
 
     radios.forEach(radio => {

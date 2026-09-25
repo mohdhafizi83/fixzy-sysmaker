@@ -120,7 +120,7 @@ CLI environment variables:
 | Admin UI | Filament 5 resources: forms, tables, pages, relation managers |
 | Data I/O | CSV importers/exporters per table, native print action |
 | Security | Native audit trail (migration + observer), tenancy scoping, Shield-ready |
-| Auth | Optional Google SSO, LDAP / Active Directory, email 2FA, login captcha |
+| Auth | Optional Google SSO, LDAP / Active Directory, 2FA (email code or Google Authenticator TOTP), login captcha (built-in or Google reCAPTCHA v2) |
 | Automation | **Enterprise:** visual workflow engine — hooks, actions, logic, scheduled jobs |
 | Docs | In-app deployment guide (feature-aware) |
 
@@ -543,7 +543,9 @@ Shipped:
 - [x] Multi-tenancy, row ownership, native logging (Data Audit Trail +
   User Activity Log, independently selectable)
 - [x] Dashboard builder with stat/chart widgets
-- [x] Auth modules: Google SSO, LDAP/AD, email 2FA, login captcha (opt-in)
+- [x] Auth modules: Google SSO, LDAP/AD, 2FA — email code or Google Authenticator
+      (TOTP, recoverable), login captcha — built-in arithmetic or Google
+      reCAPTCHA v2 (opt-in)
 - [x] Real-time notifications & chat (opt-in): live bell + chat over Laravel
   Reverb (self-hosted) or Pusher (hosted), graceful degradation, SRI-pinned
   CDN assets
@@ -554,7 +556,7 @@ Shipped:
   (email, Telegram, HTTP, Advanced Action/raw SQL, logic, loops, try/catch)
   compiling to real PHP (observers, listeners, scheduled commands)
 - [x] GUI Setup Wizard (one-click environment provisioning)
-- [x] 26-fixture golden test matrix + CI (ubuntu + macOS)
+- [x] 51-fixture golden test matrix + CI (ubuntu + macOS)
 
 Next:
 - [ ] Guided project templates (CRM, inventory, booking, helpdesk starters)
@@ -568,7 +570,7 @@ Roadmap items are community-friendly — open an issue to vote or request.
 ## Development
 
 ```bash
-node test/golden.js                 # 26-fixture snapshot matrix
+node test/golden.js                 # 51-fixture snapshot matrix
 node test/e2e_smoke.js <fixture>    # generate + migrate + boot + HTTP check
 node test/gsheets_e2e.js            # Google Sheets sync vs mock Sheets API
 node test/pathguard_test.js         # security unit tests
