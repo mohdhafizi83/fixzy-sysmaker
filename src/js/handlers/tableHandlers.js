@@ -471,6 +471,49 @@ function commitGridSummaries() {
 }
 
 /**
+ * D2: Calendar field pickers. Populates the 4 selects with the current
+ * table's fields (date fields highlighted for start/end), toggles the
+ * picker panel with the enable checkbox, and serializes the selection to
+ * the hidden tbl-grid-calendar-config input.
+ */
+export function populateCalendarFieldDropdowns(tableName) {
+    const table = appState.jsonData && appState.jsonData.database.table[tableName];
+    const fields = (table && table.fields) || {};
+    const isDate = (f) => ['DATE', 'DATETIME', 'TIMESTAMP'].includes(String((fields[f] || {}).data_type || '').toUpperCase());
+    const fill = (id, opts, current) => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        sel.innerHTML = '<option value="">— none —</option>';
+        for (const fn of opts) {
+            const o = document.createElement('option');
+            o.value = fn;
+            o.textContent = fn + (isDate(fn) ? ' (date)' : '');
+            if (fn === current) o.selected = true;
+            sel.appendChild(o);
+        }
+    };
+    const all = Object.keys(fields);
+    const cfg = (() => { try { return JSON.parse(document.getElementById('tbl-grid-calendar-config').value || '{}') || {}; } catch (e) { return {}; } })();
+    fill('tbl-cal-start', all.filter(isDate), cfg.start_field);
+    fill('tbl-cal-end', all.filter(isDate), cfg.end_field);
+    fill('tbl-cal-title', all, cfg.title_field);
+    fill('tbl-cal-color', all, cfg.color_field);
+    const panel = document.getElementById('grid-calendar-fields');
+    if (panel) panel.style.display = (document.getElementById('tbl-grid-calendar-enabled') || {}).checked ? 'block' : 'none';
+}
+
+export function commitCalendarConfig() {
+    const cfg = {
+        start_field: (document.getElementById('tbl-cal-start') || {}).value || '',
+        end_field: (document.getElementById('tbl-cal-end') || {}).value || '',
+        title_field: (document.getElementById('tbl-cal-title') || {}).value || '',
+        color_field: (document.getElementById('tbl-cal-color') || {}).value || '',
+    };
+    const hidden = document.getElementById('tbl-grid-calendar-config');
+    if (hidden) { hidden.value = JSON.stringify(cfg); hidden.dispatchEvent(new Event('change', { bubbles: true })); }
+}
+
+/**
  * B4: Column-group repeater. Each row: [label input] [multi-select of
  * visible columns] [remove]. Serializes to JSON array in the hidden
  * tbl-grid-column-groups input and fires change for the generic autosave.
@@ -586,6 +629,24 @@ export function initializeGridSummaryEditor() {
             document.getElementById('grid-col-group-rows').appendChild(buildColGroupRow({ label: '', columns: [] }));
         });
     }
+
+    // D2: Calendar enable toggle + field pickers (once-only wiring).
+    const calToggle = document.getElementById('tbl-grid-calendar-enabled');
+    if (calToggle && calToggle.dataset.wired !== '1') {
+        calToggle.dataset.wired = '1';
+        calToggle.addEventListener('change', () => {
+            const panel = document.getElementById('grid-calendar-fields');
+            if (panel) panel.style.display = calToggle.checked ? 'block' : 'none';
+            if (calToggle.checked) commitCalendarConfig();
+        });
+    }
+    ['tbl-cal-start', 'tbl-cal-end', 'tbl-cal-title', 'tbl-cal-color'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el && el.dataset.wired !== '1') {
+            el.dataset.wired = '1';
+            el.addEventListener('change', commitCalendarConfig);
+        }
+    });
 }
 
 export function populateFocusFieldDropdown(tableName) {
@@ -774,6 +835,9 @@ function buildGridFeaturePreviewHtml() {
     // Phase D1 badge
     const splitView = checked('tbl-grid-split-view');
     if (splitView) badges.push('<span style="background:#E0E7FF;color:#3730A3;border-radius:10px;padding:1px 8px;font-size:0.7em;">split view (wide detail)</span>');
+    // Phase D2 badge
+    const calEnabled = checked('tbl-grid-calendar-enabled');
+    if (calEnabled) badges.push('<span style="background:#FCE7F3;color:#9D174D;border-radius:10px;padding:1px 8px;font-size:0.7em;">calendar page</span>');
 
     if (badges.length === 0) return '';
     return `
@@ -843,7 +907,7 @@ export function initializeTemplatePreviewHandlers() {
         templateSelect.addEventListener('change', toggleCardSizeGroup);
     }
     // Live preview: card size dropdowns redraw the mock grid immediately.
-    ['tbl-card-columns', 'tbl-card-columns-tablet', 'tbl-grid-sticky-header', 'tbl-grid-row-density', 'tbl-grid-inline-edit', 'tbl-grid-column-manager', 'tbl-grid-group-by', 'tbl-grid-row-click', 'tbl-grid-empty-heading', 'tbl-grid-summaries', 'tbl-grid-row-striping', 'tbl-grid-border-style', 'tbl-grid-content-width', 'tbl-grid-sticky-toolbar', 'tbl-grid-sticky-footer', 'tbl-grid-column-groups', 'tbl-grid-multi-view', 'tbl-grid-view-default', 'tbl-grid-split-view'].forEach((id) => {
+    ['tbl-card-columns', 'tbl-card-columns-tablet', 'tbl-grid-sticky-header', 'tbl-grid-row-density', 'tbl-grid-inline-edit', 'tbl-grid-column-manager', 'tbl-grid-group-by', 'tbl-grid-row-click', 'tbl-grid-empty-heading', 'tbl-grid-summaries', 'tbl-grid-row-striping', 'tbl-grid-border-style', 'tbl-grid-content-width', 'tbl-grid-sticky-toolbar', 'tbl-grid-sticky-footer', 'tbl-grid-column-groups', 'tbl-grid-multi-view', 'tbl-grid-view-default', 'tbl-grid-split-view', 'tbl-grid-calendar-enabled'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', updateTableViewTemplatePreview);
     });

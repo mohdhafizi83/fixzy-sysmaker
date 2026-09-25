@@ -1,0 +1,31 @@
+<x-filament-panels::page>
+    <x-filament::section>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+            <h2 style="font-size:1.25rem;font-weight:700;">{{ $this->monthLabel }}</h2>
+            <div style="display:flex;gap:.5rem;">
+                <x-filament::button color="gray" wire:click="goToToday" size="sm">Today</x-filament::button>
+                <x-filament::button color="gray" wire:click="prevMonth" size="sm">&larr; Prev</x-filament::button>
+                <x-filament::button color="gray" wire:click="nextMonth" size="sm">Next &rarr;</x-filament::button>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:#e5e7eb;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+            @foreach(['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] as $dow)
+                <div style="padding:.5rem;text-align:center;font-weight:600;background:#f9fafb;font-size:.85rem;">{{ $dow }}</div>
+            @endforeach
+
+            @foreach($this->weeks as $week)
+                @foreach($week as $cell)
+                    <div style="min-height:96px;padding:.4rem;background:{{ $cell['inMonth'] ? '#ffffff' : '#f9fafb' }};{{ $cell['isToday'] ? 'outline:2px solid #6366f1;outline-offset:-2px;' : '' }}">
+                        <div style="font-size:.8rem;font-weight:600;color:{{ $cell['inMonth'] ? '#111827' : '#9ca3af' }};">{{ $cell['day'] }}</div>
+                        @foreach($cell['records'] as $rec)
+                            <div style="margin-top:.25rem;padding:.2rem .4rem;border-radius:4px;font-size:.72rem;color:#fff;background:{{ $rec['color'] }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $rec['title'] }}">
+                                {{ $rec['title'] }}
+                            </div>
+                        @endforeach
+                    </div>
+                @endforeach
+            @endforeach
+        </div>
+    </x-filament::section>
+</x-filament-panels::page>

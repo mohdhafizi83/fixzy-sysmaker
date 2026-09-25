@@ -19,7 +19,8 @@ import {
     toggleCardSizeGroup,
     populateGridGroupByDropdown,
     renderGridSummaryRows,
-    renderGridColumnGroupRows
+    renderGridColumnGroupRows,
+    populateCalendarFieldDropdowns
 } from '../uiHandlers.js';
 
 export function populateTableSettings(tableName) {
@@ -136,6 +137,10 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-grid-view-default', tableData.grid_view_default || 'table');
     // Phase D1 (2026-09-25): split view
     setElementValue('tbl-grid-split-view', tableData.grid_split_view ?? 0);
+    // Phase D2 (2026-09-25): calendar view
+    setElementValue('tbl-grid-calendar-enabled', tableData.grid_calendar_enabled ?? 0);
+    setElementValue('tbl-grid-calendar-config', tableData.grid_calendar_config || '');
+    populateCalendarFieldDropdowns(tableName);
 
     // Logic to disable soft-delete features if the project uses hard delete
     const isHardDelete = appState.activeProject.data_delete_type === 'hard';

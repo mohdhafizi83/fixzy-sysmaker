@@ -1823,6 +1823,30 @@
                                             </label>
                                             <small style="color:#888;display:block;margin-top:.25rem">Clicking a row opens a wide slide-over with the record's fields in a 2-column detail grid. Overrides the row-click behavior above (unless set to "No action").</small>
                                         </div>
+                                        <div class="form-group" id="grid-calendar-group" style="margin-top:.75rem; border-top:1px solid #eee; padding-top:.5rem;">
+                                            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;">
+                                                <input type="checkbox" id="tbl-grid-calendar-enabled">
+                                                <span>Calendar view (read-only month page)</span>
+                                            </label>
+                                            <div id="grid-calendar-fields" style="display:none;margin-top:.5rem;padding-left:.5rem;">
+                                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;">
+                                                    <label style="font-size:.85em;">Start field (date)
+                                                        <select id="tbl-cal-start" style="width:100%"></select>
+                                                    </label>
+                                                    <label style="font-size:.85em;">End field (optional)
+                                                        <select id="tbl-cal-end" style="width:100%"></select>
+                                                    </label>
+                                                    <label style="font-size:.85em;">Title field
+                                                        <select id="tbl-cal-title" style="width:100%"></select>
+                                                    </label>
+                                                    <label style="font-size:.85em;">Color field (hex)
+                                                        <select id="tbl-cal-color" style="width:100%"></select>
+                                                    </label>
+                                                </div>
+                                                <small style="color:#888;display:block;margin-top:.25rem">Adds a nav page with a month grid. Start field must be a date/datetime column.</small>
+                                            </div>
+                                            <input type="hidden" id="tbl-grid-calendar-config" value="">
+                                        </div>
                                         <div class="form-group" id="grid-col-groups-group" style="margin-top:.75rem; border-top:1px solid #eee; padding-top:.5rem;">
                                             <label>Column groups (Horizontal template)</label>
                                             <div id="grid-col-group-rows"></div>

@@ -208,6 +208,9 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         await generateFilamentCreatePages(fullSchema, outputDir);
         await generateFilamentEditPages(fullSchema, outputDir);
 
+        // 2b. Calendar pages (Phase D2: read-only month view per opted-in table)
+        await require('./laravelCalendarGenerator').generateCalendarPages(fullSchema, outputDir);
+
         // 3. Relation Managers
         await generateFilamentRelationManagers(fullSchema, outputDir);
 
