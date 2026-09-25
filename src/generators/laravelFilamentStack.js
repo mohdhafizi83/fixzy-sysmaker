@@ -214,6 +214,9 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         // 2c. Tree pages (Phase D3: read-only hierarchy view per opted-in table)
         await require('./laravelTreeGenerator').generateTreePages(fullSchema, outputDir);
 
+        // 2d. Kanban board pages (Phase D4: drag-drop status board per opted-in table)
+        await require('./laravelKanbanGenerator').generateKanbanPages(fullSchema, outputDir);
+
         // 3. Relation Managers
         await generateFilamentRelationManagers(fullSchema, outputDir);
 

@@ -551,6 +551,64 @@ export function commitTreeConfig() {
 }
 
 /**
+ * D4: Kanban pickers. Status field limited to options_list fields; card
+ * fields = all fields (multi-select); transitions = free JSON textarea.
+ */
+export function populateKanbanDropdowns(tableName) {
+    const table = appState.jsonData && appState.jsonData.database.table[tableName];
+    const fields = (table && table.fields) || {};
+    const groupSel = document.getElementById('tbl-kanban-group');
+    const cardSel = document.getElementById('tbl-kanban-cards');
+    const transEl = document.getElementById('tbl-kanban-transitions');
+    if (!groupSel || !cardSel) return;
+    const cfg = (() => { try { return JSON.parse(document.getElementById('tbl-grid-kanban-config').value || '{}') || {}; } catch (e) { return {}; } })();
+    groupSel.innerHTML = '<option value="">— none —</option>';
+    for (const fn of Object.keys(fields)) {
+        if (fields[fn].display_type === 'options_list' && fields[fn].options_list_values) {
+            const o = document.createElement('option');
+            o.value = fn; o.textContent = fn;
+            if (fn === cfg.group_field) o.selected = true;
+            groupSel.appendChild(o);
+        }
+    }
+    cardSel.innerHTML = '';
+    const selectedCards = new Set(Array.isArray(cfg.card_fields) ? cfg.card_fields : []);
+    for (const fn of Object.keys(fields)) {
+        const o = document.createElement('option');
+        o.value = fn; o.textContent = fn;
+        o.selected = selectedCards.has(fn);
+        cardSel.appendChild(o);
+    }
+    if (transEl) transEl.value = cfg.allowed_transitions && Object.keys(cfg.allowed_transitions).length ? JSON.stringify(cfg.allowed_transitions) : '';
+    const panel = document.getElementById('grid-kanban-fields');
+    if (panel) panel.style.display = (document.getElementById('tbl-grid-kanban-enabled') || {}).checked ? 'block' : 'none';
+}
+
+export function commitKanbanConfig() {
+    const groupSel = document.getElementById('tbl-kanban-group');
+    const cardSel = document.getElementById('tbl-kanban-cards');
+    const transEl = document.getElementById('tbl-kanban-transitions');
+    let transitions = {};
+    const raw = (transEl && transEl.value.trim()) || '';
+    if (raw) {
+        try {
+            transitions = JSON.parse(raw);
+        } catch (e) {
+            if (transEl) transEl.style.borderColor = 'red';
+            return; // don't save invalid JSON
+        }
+    }
+    if (transEl) transEl.style.borderColor = '';
+    const cfg = {
+        group_field: (groupSel && groupSel.value) || '',
+        card_fields: cardSel ? Array.from(cardSel.selectedOptions).map((o) => o.value) : [],
+        allowed_transitions: transitions,
+    };
+    const hidden = document.getElementById('tbl-grid-kanban-config');
+    if (hidden) { hidden.value = JSON.stringify(cfg); hidden.dispatchEvent(new Event('change', { bubbles: true })); }
+}
+
+/**
  * B4: Column-group repeater. Each row: [label input] [multi-select of
  * visible columns] [remove]. Serializes to JSON array in the hidden
  * tbl-grid-column-groups input and fires change for the generic autosave.
@@ -702,6 +760,29 @@ export function initializeGridSummaryEditor() {
             el.addEventListener('change', commitTreeConfig);
         }
     });
+
+    // D4: Kanban enable toggle + pickers (once-only wiring).
+    const kanbanToggle = document.getElementById('tbl-grid-kanban-enabled');
+    if (kanbanToggle && kanbanToggle.dataset.wired !== '1') {
+        kanbanToggle.dataset.wired = '1';
+        kanbanToggle.addEventListener('change', () => {
+            const panel = document.getElementById('grid-kanban-fields');
+            if (panel) panel.style.display = kanbanToggle.checked ? 'block' : 'none';
+            if (kanbanToggle.checked) commitKanbanConfig();
+        });
+    }
+    ['tbl-kanban-group', 'tbl-kanban-cards'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el && el.dataset.wired !== '1') {
+            el.dataset.wired = '1';
+            el.addEventListener('change', commitKanbanConfig);
+        }
+    });
+    const kanbanTrans = document.getElementById('tbl-kanban-transitions');
+    if (kanbanTrans && kanbanTrans.dataset.wired !== '1') {
+        kanbanTrans.dataset.wired = '1';
+        kanbanTrans.addEventListener('change', commitKanbanConfig);
+    }
 }
 
 export function populateFocusFieldDropdown(tableName) {
@@ -896,6 +977,9 @@ function buildGridFeaturePreviewHtml() {
     // Phase D3 badge
     const treeEnabled = checked('tbl-grid-tree-enabled');
     if (treeEnabled) badges.push('<span style="background:#D1FAE5;color:#065F46;border-radius:10px;padding:1px 8px;font-size:0.7em;">tree page</span>');
+    // Phase D4 badge
+    const kanbanEnabled = checked('tbl-grid-kanban-enabled');
+    if (kanbanEnabled) badges.push('<span style="background:#FEF3C7;color:#92400E;border-radius:10px;padding:1px 8px;font-size:0.7em;">kanban board</span>');
 
     if (badges.length === 0) return '';
     return `
@@ -965,7 +1049,7 @@ export function initializeTemplatePreviewHandlers() {
         templateSelect.addEventListener('change', toggleCardSizeGroup);
     }
     // Live preview: card size dropdowns redraw the mock grid immediately.
-    ['tbl-card-columns', 'tbl-card-columns-tablet', 'tbl-grid-sticky-header', 'tbl-grid-row-density', 'tbl-grid-inline-edit', 'tbl-grid-column-manager', 'tbl-grid-group-by', 'tbl-grid-row-click', 'tbl-grid-empty-heading', 'tbl-grid-summaries', 'tbl-grid-row-striping', 'tbl-grid-border-style', 'tbl-grid-content-width', 'tbl-grid-sticky-toolbar', 'tbl-grid-sticky-footer', 'tbl-grid-column-groups', 'tbl-grid-multi-view', 'tbl-grid-view-default', 'tbl-grid-split-view', 'tbl-grid-calendar-enabled', 'tbl-grid-tree-enabled'].forEach((id) => {
+    ['tbl-card-columns', 'tbl-card-columns-tablet', 'tbl-grid-sticky-header', 'tbl-grid-row-density', 'tbl-grid-inline-edit', 'tbl-grid-column-manager', 'tbl-grid-group-by', 'tbl-grid-row-click', 'tbl-grid-empty-heading', 'tbl-grid-summaries', 'tbl-grid-row-striping', 'tbl-grid-border-style', 'tbl-grid-content-width', 'tbl-grid-sticky-toolbar', 'tbl-grid-sticky-footer', 'tbl-grid-column-groups', 'tbl-grid-multi-view', 'tbl-grid-view-default', 'tbl-grid-split-view', 'tbl-grid-calendar-enabled', 'tbl-grid-tree-enabled', 'tbl-grid-kanban-enabled'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', updateTableViewTemplatePreview);
     });

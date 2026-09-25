@@ -1,0 +1,111 @@
+<?php
+
+namespace App\Filament\Pages;
+
+use App\Models\Fakulti;
+use App\Filament\Resources\Fakultis\FakultiResource;
+use Filament\Notifications\Notification;
+use Filament\Pages\Page;
+
+class FakultiBoard extends Page
+{
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-view-columns';
+
+    protected static ?string $navigationLabel = 'Pelajar Fakulti Ekonomi Board';
+
+    protected static ?string $title = 'Pelajar Fakulti Ekonomi Board';
+
+    protected static ?string $slug = 'fakultis-board';
+
+    protected string $view = 'filament.pages.fakulti-board';
+
+    /** Allowed transitions map (empty = any transition allowed). */
+    protected const TRANSITIONS = ['Draft' => ['Review'], 'Review' => ['Approved', 'Draft']];
+
+    /** @var array<string, array<int, array{id: mixed, fields: array<string, string>}>> */
+    public array $columns = [];
+
+    public function mount(): void
+    {
+        $this->loadBoard();
+    }
+
+    public function reload(): void
+    {
+        $this->loadBoard();
+    }
+
+    /**
+     * Move a record to a new status column.
+     * SECURITY: authorization via Resource::canEdit() server-side, plus
+     * allowed-transition validation. The client only ever sends the record
+     * id and the target status; the record is re-loaded from the DB.
+     */
+    public function moveRecord(int|string $recordId, string $toStatus): void
+    {
+        if (! in_array($toStatus, self::COLUMN_ORDER, true)) {
+            Notification::make()->danger()->title('Unknown status.')->send();
+            $this->loadBoard();
+            return;
+        }
+        $record = Fakulti::find($recordId);
+        if (! $record) {
+            Notification::make()->danger()->title('Record not found.')->send();
+            $this->loadBoard();
+            return;
+        }
+
+        if (! FakultiResource::canEdit($record)) {
+            Notification::make()->danger()->title('You are not allowed to update this record.')->send();
+            $this->loadBoard();
+            return;
+        }
+
+        $allowed = self::TRANSITIONS;
+        $from = (string) $record->status_kerja;
+        if ($toStatus !== $from && ! empty($allowed)) {
+            // Strict semantics: when a transition map is configured, only
+            // explicitly listed moves are permitted. Statuses with no
+            // outgoing entry cannot be dragged anywhere.
+            if (! array_key_exists($from, $allowed) || ! in_array($toStatus, $allowed[$from], true)) {
+                Notification::make()->danger()
+                    ->title('Transition not allowed')
+                    ->body("Cannot move from '{$from}' to '{$toStatus}'.")
+                    ->send();
+                $this->loadBoard();
+                return;
+            }
+        }
+
+        $record->status_kerja = $toStatus;
+        $record->save();
+        Notification::make()->success()->title('Moved to ' . $toStatus . '.')->send();
+        $this->loadBoard();
+    }
+
+    protected function loadBoard(): void
+    {
+        $records = Fakulti::all();
+        $columns = [];
+        foreach (self::COLUMN_ORDER as $status) {
+            $columns[$status] = [];
+        }
+        foreach ($records as $r) {
+            $status = (string) ($r->status_kerja ?? '');
+            if (! isset($columns[$status])) {
+                $status = self::UNGROUPED;
+                if (! isset($columns[$status])) $columns[$status] = [];
+            }
+            $fields = [];
+            foreach (self::CARD_FIELDS as $f) {
+                $fields[$f] = (string) ($r->{$f} ?? '');
+            }
+            $columns[$status][] = ['id' => $r->getKey(), 'fields' => $fields];
+        }
+        $this->columns = $columns;
+    }
+
+    const COLUMN_ORDER = ['Draft', 'Review', 'Approved'];
+    const UNGROUPED = '(none)';
+    const CARD_FIELDS = ['nama_fakulti', 'is_aktif'];
+}

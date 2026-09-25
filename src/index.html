@@ -1865,6 +1865,25 @@
                                             </div>
                                             <input type="hidden" id="tbl-grid-tree-config" value="">
                                         </div>
+                                        <div class="form-group" id="grid-kanban-group" style="margin-top:.75rem; border-top:1px solid #eee; padding-top:.5rem;">
+                                            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;">
+                                                <input type="checkbox" id="tbl-grid-kanban-enabled">
+                                                <span>Kanban board (drag-drop status page)</span>
+                                            </label>
+                                            <div id="grid-kanban-fields" style="display:none;margin-top:.5rem;padding-left:.5rem;">
+                                                <label style="font-size:.85em;display:block;margin-bottom:.4rem;">Status field (options list)
+                                                    <select id="tbl-kanban-group" style="width:100%"></select>
+                                                </label>
+                                                <label style="font-size:.85em;display:block;margin-bottom:.4rem;">Card fields (multi-select)
+                                                    <select id="tbl-kanban-cards" multiple size="4" style="width:100%"></select>
+                                                </label>
+                                                <label style="font-size:.85em;display:block;">Allowed transitions (optional JSON)
+                                                    <textarea id="tbl-kanban-transitions" rows="2" style="width:100%;font-family:monospace;font-size:.8em;" placeholder='{"Draft": ["Review"], "Review": ["Approved", "Draft"]}'></textarea>
+                                                </label>
+                                                <small style="color:#888;display:block;margin-top:.25rem">Empty transitions = any move allowed. Drops are guarded server-side (canEdit + transition check).</small>
+                                            </div>
+                                            <input type="hidden" id="tbl-grid-kanban-config" value="">
+                                        </div>
                                         <div class="form-group" id="grid-col-groups-group" style="margin-top:.75rem; border-top:1px solid #eee; padding-top:.5rem;">
                                             <label>Column groups (Horizontal template)</label>
                                             <div id="grid-col-group-rows"></div>

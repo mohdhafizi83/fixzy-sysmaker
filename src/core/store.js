@@ -145,6 +145,8 @@ function openStore(dbPath) {
             grid_calendar_config: "TEXT DEFAULT ''",
             grid_tree_enabled: "INTEGER DEFAULT 0",
             grid_tree_config: "TEXT DEFAULT ''",
+            grid_kanban_enabled: "INTEGER DEFAULT 0",
+            grid_kanban_config: "TEXT DEFAULT ''",
         };
         for (const [col, def] of Object.entries(gridCols)) {
             if (!tableCols.includes(col)) {

@@ -21,7 +21,8 @@ import {
     renderGridSummaryRows,
     renderGridColumnGroupRows,
     populateCalendarFieldDropdowns,
-    populateTreeFieldDropdowns
+    populateTreeFieldDropdowns,
+    populateKanbanDropdowns
 } from '../uiHandlers.js';
 
 export function populateTableSettings(tableName) {
@@ -146,6 +147,10 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-grid-tree-enabled', tableData.grid_tree_enabled ?? 0);
     setElementValue('tbl-grid-tree-config', tableData.grid_tree_config || '');
     populateTreeFieldDropdowns(tableName);
+    // Phase D4 (2026-09-25): kanban board
+    setElementValue('tbl-grid-kanban-enabled', tableData.grid_kanban_enabled ?? 0);
+    setElementValue('tbl-grid-kanban-config', tableData.grid_kanban_config || '');
+    populateKanbanDropdowns(tableName);
 
     // Logic to disable soft-delete features if the project uses hard delete
     const isHardDelete = appState.activeProject.data_delete_type === 'hard';
