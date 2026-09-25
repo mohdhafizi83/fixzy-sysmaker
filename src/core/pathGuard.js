@@ -38,6 +38,31 @@ function isInside(resolved, root) {
 }
 
 /**
+ * Realpath of the nearest existing ancestor, with the non-existent tail
+ * re-appended. Handles platforms where the requested path's prefix is a
+ * symlink (e.g. macOS /var -> /private/var) without resolving anything
+ * that doesn't exist yet.
+ */
+function realpathNearest(abs) {
+    try {
+        return fs.realpathSync(abs);
+    } catch {
+        const missingTail = [];
+        let cur = abs;
+        while (true) {
+            try {
+                return path.join(fs.realpathSync(cur), ...missingTail);
+            } catch {
+                missingTail.unshift(path.basename(cur));
+                const parent = path.dirname(cur);
+                if (parent === cur) return abs;
+                cur = parent;
+            }
+        }
+    }
+}
+
+/**
  * Validate a destination path against the allowlist.
  * @param {string} dest  requested destination (may not exist yet)
  * @param {object} opts  { roots?: string[], env?: object }
@@ -62,29 +87,14 @@ function validateOutputPath(dest, opts = {}) {
         return { ok: false, reason: `outside allowed roots: ${roots.join(', ')}` };
     }
 
-    // 3. Symlink escape check: walk up to nearest existing ancestor,
-    //    realpath it, then re-append the non-existing tail.
-    let resolved;
-    try {
-        resolved = fs.realpathSync(abs);
-    } catch {
-        const missingTail = [];
-        let cur = abs;
-        while (true) {
-            try {
-                const real = fs.realpathSync(cur);
-                resolved = path.join(real, ...missingTail);
-                break;
-            } catch {
-                missingTail.unshift(path.basename(cur));
-                const parent = path.dirname(cur);
-                if (parent === cur) { resolved = abs; break; }
-                cur = parent;
-            }
-        }
-    }
-
-    if (!roots.some((r) => isInside(resolved, r))) {
+    // 3. Symlink escape check: realpath the nearest existing ancestor of
+    //    both the destination AND the roots, then compare. Canonicalizing
+    //    the roots matters on macOS where tmpdir()/home prefixes can be
+    //    symlinks (/var -> /private/var) — otherwise a legitimate path
+    //    "escapes" its own root after resolution.
+    const resolved = realpathNearest(abs);
+    const realRoots = roots.map((r) => realpathNearest(r));
+    if (!realRoots.some((r) => isInside(resolved, r))) {
         return { ok: false, reason: `symlink escape blocked: resolves to ${resolved}` };
     }
 
