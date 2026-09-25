@@ -89,13 +89,24 @@ t('empty path rejected', () => {
     assert.ok(!validateOutputPath(null, { roots }).ok);
 });
 
-t('FSM_OUTPUT_ROOTS env parsed (colon + comma)', () => {
-    const r1 = getRootsFromEnv({ FSM_OUTPUT_ROOTS: '/a:/b' });
-    assert.deepStrictEqual(r1, ['/a', '/b']);
+t('FSM_OUTPUT_ROOTS env parsed (platform delimiter + comma)', () => {
+    // Use the platform's own delimiter for the ':'-style case so the test
+    // is meaningful on Windows too (where ':' is inside drive letters).
+    const two = process.platform === 'win32' ? 'C:\\out1;C:\\out2' : '/a:/b';
+    const r1 = getRootsFromEnv({ FSM_OUTPUT_ROOTS: two });
+    assert.strictEqual(r1.length, 2, 'two roots expected, got: ' + JSON.stringify(r1));
     const r2 = getRootsFromEnv({ FSM_OUTPUT_ROOTS: '/x,/y' });
-    assert.deepStrictEqual(r2, ['/x', '/y']);
+    assert.deepStrictEqual(r2, [path.resolve('/x'), path.resolve('/y')]);
     const r3 = getRootsFromEnv({});
     assert.deepStrictEqual(r3, [path.join(os.homedir(), 'projects'), os.homedir()]);
+});
+
+t('Windows drive-letter roots not shredded by colon split', () => {
+    // Regression: splitting on ':' unconditionally turned 'C:\\Users\\x'
+    // into roots 'C' + '\\Users\\x'. Must stay one intact root on Windows.
+    if (process.platform !== 'win32') return;
+    const r = getRootsFromEnv({ FSM_OUTPUT_ROOTS: 'C:\\Users\\dev\\out' });
+    assert.deepStrictEqual(r, ['C:\\Users\\dev\\out']);
 });
 
 t('~ expansion in env roots', () => {

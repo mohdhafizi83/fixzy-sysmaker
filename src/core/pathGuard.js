@@ -24,8 +24,13 @@ function getDefaultRoots() {
 function getRootsFromEnv(env) {
     const raw = (env && env.FSM_OUTPUT_ROOTS) || '';
     if (!raw.trim()) return getDefaultRoots();
+    // Split on comma AND the platform path delimiter (';' on Windows,
+    // ':' on unix). Never split on ':' on Windows — drive letters
+    // (C:\Users\...) contain it and would shred the root into "C" +
+    // "\Users\...".
+    const delim = path.delimiter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     return raw
-        .split(/[:,]/)
+        .split(new RegExp(`[,${delim}]`))
         .map((s) => s.trim())
         .filter(Boolean)
         .map((s) => path.resolve(s.replace(/^~(?=$|\/|\\)/, os.homedir())));
