@@ -767,6 +767,10 @@ function buildGridFeaturePreviewHtml() {
     if (stickyToolbar) badges.push('<span style="background:#DBEAFE;color:#1E3A8A;border-radius:10px;padding:1px 8px;font-size:0.7em;">sticky toolbar</span>');
     if (stickyFooter) badges.push('<span style="background:#DBEAFE;color:#1E3A8A;border-radius:10px;padding:1px 8px;font-size:0.7em;">sticky pagination</span>');
     if (colGroupCount) badges.push(`<span style="background:#FFEDD5;color:#9A3412;border-radius:10px;padding:1px 8px;font-size:0.7em;">${colGroupCount} column group${colGroupCount > 1 ? 's' : ''}</span>`);
+    // Phase C badge
+    const multiView = checked('tbl-grid-multi-view');
+    const viewDefault = (() => { const el = document.getElementById('tbl-grid-view-default'); return el ? el.value : 'table'; })();
+    if (multiView) badges.push(`<span style="background:#CCFBF1;color:#115E59;border-radius:10px;padding:1px 8px;font-size:0.7em;">table ⇄ card (default: ${viewDefault})</span>`);
 
     if (badges.length === 0) return '';
     return `
@@ -836,7 +840,7 @@ export function initializeTemplatePreviewHandlers() {
         templateSelect.addEventListener('change', toggleCardSizeGroup);
     }
     // Live preview: card size dropdowns redraw the mock grid immediately.
-    ['tbl-card-columns', 'tbl-card-columns-tablet', 'tbl-grid-sticky-header', 'tbl-grid-row-density', 'tbl-grid-inline-edit', 'tbl-grid-column-manager', 'tbl-grid-group-by', 'tbl-grid-row-click', 'tbl-grid-empty-heading', 'tbl-grid-summaries', 'tbl-grid-row-striping', 'tbl-grid-border-style', 'tbl-grid-content-width', 'tbl-grid-sticky-toolbar', 'tbl-grid-sticky-footer', 'tbl-grid-column-groups'].forEach((id) => {
+    ['tbl-card-columns', 'tbl-card-columns-tablet', 'tbl-grid-sticky-header', 'tbl-grid-row-density', 'tbl-grid-inline-edit', 'tbl-grid-column-manager', 'tbl-grid-group-by', 'tbl-grid-row-click', 'tbl-grid-empty-heading', 'tbl-grid-summaries', 'tbl-grid-row-striping', 'tbl-grid-border-style', 'tbl-grid-content-width', 'tbl-grid-sticky-toolbar', 'tbl-grid-sticky-footer', 'tbl-grid-column-groups', 'tbl-grid-multi-view', 'tbl-grid-view-default'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', updateTableViewTemplatePreview);
     });

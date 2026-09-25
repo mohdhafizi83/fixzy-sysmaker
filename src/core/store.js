@@ -137,6 +137,9 @@ function openStore(dbPath) {
             grid_sticky_toolbar: "INTEGER DEFAULT 0",
             grid_sticky_footer: "INTEGER DEFAULT 0",
             grid_column_groups: "TEXT DEFAULT ''",
+            // Grid layout expansion phase C (2026-09-25)
+            grid_multi_view: "INTEGER DEFAULT 0",
+            grid_view_default: "TEXT DEFAULT 'table'",
         };
         for (const [col, def] of Object.entries(gridCols)) {
             if (!tableCols.includes(col)) {

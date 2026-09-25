@@ -44,17 +44,19 @@ class {{ table_class_name or (table_name_plural ~ "Table") }}
             {{ pagination_type }}
 {% if per_page %}            {{ per_page }}
 {% endif %}{% if column_manager %}            {{ column_manager }}
-{% endif %}{% if content_grid %}            {{ content_grid }}
+{% endif %}{% if content_grid and not multi_view %}            {{ content_grid }}
 {% endif %}            {{ open_to_new_tab }}
             {{ disabled_detailview }}
             {{ disabled_row_interaction }}
 {% if grid_classes %}            {{ grid_classes }}
 {% endif %}            ->description('{{ add_description }}')
 {% if empty_state %}            {{ empty_state }}
-{% endif %}            ->columns([
+{% endif %}{% if multi_view %}            {{ multi_view_content_grid }}
+            {{ multi_view_columns }}
+{% else %}            ->columns([
                 {{ all_columns }}
             ])
-            {{ show_all_for_print }}
+{% endif %}            {{ show_all_for_print }}
             ->filters([
                 {{ trashed_filter }}
             ])
@@ -71,7 +73,8 @@ class {{ table_class_name or (table_name_plural ~ "Table") }}
             ])
 {% if record_action %}            {{ record_action }}
 {% endif %}            ->toolbarActions([
-                {{ action_mass_delete }}
+{% if multi_view %}                {{ multi_view_toggle }}
+{% endif %}                {{ action_mass_delete }}
             ]);
     }
 }

@@ -131,6 +131,9 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-grid-sticky-footer', tableData.grid_sticky_footer ?? 0);
     setElementValue('tbl-grid-column-groups', tableData.grid_column_groups || '');
     renderGridColumnGroupRows();
+    // Phase C (2026-09-25): multi-view switcher
+    setElementValue('tbl-grid-multi-view', tableData.grid_multi_view ?? 0);
+    setElementValue('tbl-grid-view-default', tableData.grid_view_default || 'table');
 
     // Logic to disable soft-delete features if the project uses hard delete
     const isHardDelete = appState.activeProject.data_delete_type === 'hard';

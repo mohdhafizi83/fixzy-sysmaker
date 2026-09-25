@@ -374,6 +374,10 @@ if (field.data_type === 'JSON') {
     }
 
     // --- B4: Grouped column headers (native Filament ColumnGroup) ---
+    // Capture the plain (pre-grouping) column list first: the multi-view
+    // card variant (Phase C) needs plain columns wrapped in a Panel,
+    // regardless of whether B4 grouping is active for the table view.
+    const plainColumns = [...columnsCode];
     // grid_column_groups JSON: [{"label":"Contact","columns":["email","phone"]}, ...]
     // Only for the horizontal template (multi-level header bands don't make
     // sense inside card/panel layouts). Max 5 groups; a column can only be
@@ -413,7 +417,56 @@ if (field.data_type === 'JSON') {
         }
     }
 
-    return { all: columnsCode, images: imageColumns, others: otherColumns, inlineEditUsed, groupedUsed };
+    return { all: columnsCode, plain: plainColumns, images: imageColumns, others: otherColumns, inlineEditUsed, groupedUsed };
+}
+
+/**
+ * [HELPER] Phase C multi-view switcher (table ⇄ card) for horizontal or
+ * card templates. Emits a query-param-driven (?view=table|card) table:
+ * the card variant reuses the existing Panel + contentGrid machinery with
+ * the PLAIN (ungrouped) columns; the table variant uses the normal
+ * (possibly B4-grouped) horizontal columns. A toolbar link toggles the
+ * mode. Default = current behavior when grid_multi_view is off.
+ *
+ * Returns {} (no overrides) when the feature is not applicable.
+ */
+function buildMultiViewContext(tableData, parts, layout) {
+    const enabled = Number(tableData.grid_multi_view) === 1;
+    const tpl = String(tableData.tv_template || 'horizontal');
+    if (!enabled || !['horizontal', 'card'].includes(tpl)) {
+        return { multi_view: false, multi_view_columns: '', multi_view_toggle: '', multi_view_needs_panel_import: false };
+    }
+    const defaultView = tableData.grid_view_default === 'card' ? 'card' : 'table';
+    const xl = clampInt(tableData.card_columns, 1, 6, 3);
+    const md = clampInt(tableData.card_columns_tablet, 1, 2, 2);
+    const isCard = `(request()->query('view', '${defaultView}')) === 'card'`;
+
+    // Card variant: Panel-wrapped plain columns. If the base template is
+    // already card, reuse its generated layout code; otherwise wrap now.
+    const cardCols = (tpl === 'card' && layout.usesLayout)
+        ? layout.code
+        : `Panel::make([\n${parts.plain.map((c) => '                    ' + c).join(',\n')}\n                ])`;
+    // Table variant: the normal horizontal columns (grouped if B4 active).
+    const tableCols = parts.all.length
+        ? `[\n${parts.all.map((c) => '                    ' + c).join(',\n')}\n                ]`
+        : '[]';
+
+    const multiViewColumns = `->columns(${isCard} ? [${cardCols}] : ${tableCols})`;
+    const toggle =
+        `Action::make('switchToTable')->link()->label('Table view')`
+        + `->url(fn (): string => request()->fullUrlWithQuery(['view' => 'table']))`
+        + `->hidden(fn (): bool => (request()->query('view', '${defaultView}')) === 'table'),\n                `
+        + `Action::make('switchToCard')->link()->label('Card view')`
+        + `->url(fn (): string => request()->fullUrlWithQuery(['view' => 'card']))`
+        + `->hidden(fn (): bool => (request()->query('view', '${defaultView}')) === 'card'),`;
+
+    return {
+        multi_view: true,
+        multi_view_columns: multiViewColumns,
+        multi_view_toggle: toggle,
+        multi_view_content_grid: `->contentGrid(${isCard} ? ['md' => ${md}, 'xl' => ${xl}] : null)`,
+        multi_view_needs_panel_import: tpl !== 'card',
+    };
 }
 
 /**
@@ -733,14 +786,19 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
 
             // 2. Render template with settings context
             const apCfg = require('./approvalConfig').parseApprovalConfig(tableData);
+            const multiView = buildMultiViewContext(tableData, parts, layout);
             let tableContent = renderTemplate('app/Filament/Resources/TablesTable.php.njk', {
                 table_name_singular: modelNameSingular,
                 table_name_plural: modelNamePlural,
                 all_columns: columnsCode,
                 inline_edit_used: !!parts.inlineEditUsed,
-                layout_imports: (layout.layoutImports || []).concat(parts.groupedUsed ? ['Filament\\Tables\\Columns\\ColumnGroup'] : []).map((i) => `use ${i};`).join('\n'),
+                layout_imports: (layout.layoutImports || [])
+                    .concat(parts.groupedUsed ? ['Filament\\Tables\\Columns\\ColumnGroup'] : [])
+                    .concat(multiView.multi_view && multiView.multi_view_needs_panel_import ? ['Filament\\Tables\\Columns\\Layout\\Panel'] : [])
+                    .map((i) => `use ${i};`).join('\n'),
                 approval_actions: apCfg ? "\n                " + require('./approvalConfig').approvalActionsPhp(apCfg, modelNameSingular) : '',
                 ...buildTableSettingsContext(tableData, relationships, tableName, projectSettings, modelNameSingular),
+                ...multiView,
             });
 
             // Use Statement Cleanup

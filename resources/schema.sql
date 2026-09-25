@@ -134,6 +134,8 @@ CREATE TABLE tables (
     grid_sticky_toolbar          INTEGER DEFAULT 0,
     grid_sticky_footer           INTEGER DEFAULT 0,
     grid_column_groups           TEXT DEFAULT '',
+    grid_multi_view              INTEGER DEFAULT 0,
+    grid_view_default            TEXT DEFAULT 'table',
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
 
