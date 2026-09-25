@@ -114,6 +114,20 @@ function openStore(dbPath) {
         if (!tableCols.includes('approval_config')) {
             db.exec("ALTER TABLE tables ADD COLUMN approval_config TEXT");
         }
+        // Grid expansion (2026-09-25): opt-in grid/table-view features
+        const gridCols = {
+            grid_column_manager: "INTEGER DEFAULT 1",
+            grid_sticky_header: "INTEGER DEFAULT 0",
+            grid_row_density: "TEXT DEFAULT 'normal'",
+            grid_inline_edit: "INTEGER DEFAULT 0",
+            grid_default_per_page: "INTEGER DEFAULT 10",
+            grid_per_page_options: "TEXT DEFAULT '5,10,25,50'",
+        };
+        for (const [col, def] of Object.entries(gridCols)) {
+            if (!tableCols.includes(col)) {
+                db.exec(`ALTER TABLE tables ADD COLUMN ${col} ${def}`);
+            }
+        }
     }
     return db;
 }

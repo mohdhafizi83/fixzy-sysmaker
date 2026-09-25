@@ -15,6 +15,85 @@ const { renderTemplate } = require('../render/engine');
 const { labelPhp } = require('./localizationConfig');
 
 /**
+ * [HELPER] Clamp an integer setting server-side. Never trust the UI value.
+ */
+const clampInt = (v, min, max, dflt) => {
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : dflt;
+};
+
+/**
+ * [HELPER] Decide whether a field can be rendered as an inline-editable
+ * column in the grid. Only safe scalar types qualify; primary/auto-increment,
+ * relationship lookups, calculated/algorithm and media fields are excluded.
+ */
+function isInlineEditableField(field, isRelationshipField) {
+    if (field.primary_key === 1 || field.auto_increment === 1) return false;
+    if (isRelationshipField) return false;
+    if (field.calculated_enable === 1 || field.algorithm_enable === 1) return false;
+    if (['image', 'upload', 'gmap', 'youtube', 'attachments'].includes(field.media_type)) return false;
+    if (['rich_html', 'text_area'].includes(field.display_type)) return false;
+    const dataType = String(field.data_type || '').toUpperCase();
+    if (dataType === 'BOOLEAN') return true;
+    if (field.display_type === 'options_list' && field.options_list_values) return true;
+    const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
+    if (numericTypes.includes(dataType)) return true;
+    const stringTypes = ['VARCHAR', 'CHAR', 'TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT'];
+    if (stringTypes.includes(dataType)) return true;
+    return false;
+}
+
+/**
+ * [HELPER] Build the PHP code for an inline-editable table column.
+ * SECURITY: Filament's editable columns (Contracts\Editable) save WITHOUT
+ * checking Laravel model policies — the generated updateStateUsing closure
+ * therefore performs an explicit authorization check whenever the project
+ * enables the Authorization module (Shield), and mirrors the field's
+ * validation rules server-side.
+ */
+function buildInlineEditColumnPhp(field, fieldName, tableName, authorizationEnabled, localizationEnabled) {
+    const dataType = String(field.data_type || '').toUpperCase();
+    const esc = (s) => String(s).replace(/'/g, "\\'");
+    const lines = [];
+    const authGuard = authorizationEnabled
+        ? `if (! auth()->user()?->can('update', $record)) {\n                        abort(403);\n                    }\n                    `
+        : '';
+    const saveClosure = (cast) => `->updateStateUsing(function ($record, $state) {\n                    ${authGuard}if (is_null($state)) {\n                        $record->${field.field_name} = null;\n                    } else {\n                        $record->${field.field_name} = ${cast.replace('$state', '$state')};\n                    }\n                    $record->save();\n                    return $record;\n                })`;
+
+    if (dataType === 'BOOLEAN') {
+        lines.push(`ToggleColumn::make('${esc(fieldName)}')`);
+        lines.push(`->label(${labelPhp(toTitleCase(field.caption || field.field_name), field, tableName, localizationEnabled)})`);
+        lines.push(`->rules('boolean')`);
+        lines.push(saveClosure('$state'));
+    } else if (field.display_type === 'options_list' && field.options_list_values) {
+        const options = field.options_list_values.split(';;').map((o) => `'${esc(o)}'`).join(', ');
+        lines.push(`SelectColumn::make('${esc(fieldName)}')`);
+        lines.push(`->label(${labelPhp(toTitleCase(field.caption || field.field_name), field, tableName, localizationEnabled)})`);
+        lines.push(`->options([${options}])`);
+        lines.push(`->rules('in:${field.options_list_values.split(';;').map((o) => esc(o)).join(',')}')`);
+        lines.push(saveClosure('$state'));
+    } else if (['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT'].includes(dataType)) {
+        lines.push(`TextInputColumn::make('${esc(fieldName)}')`);
+        lines.push(`->label(${labelPhp(toTitleCase(field.caption || field.field_name), field, tableName, localizationEnabled)})`);
+        lines.push(`->rules('integer')`);
+        lines.push(saveClosure('(int) $state'));
+    } else if (['DECIMAL', 'FLOAT', 'DOUBLE'].includes(dataType)) {
+        lines.push(`TextInputColumn::make('${esc(fieldName)}')`);
+        lines.push(`->label(${labelPhp(toTitleCase(field.caption || field.field_name), field, tableName, localizationEnabled)})`);
+        lines.push(`->rules('numeric')`);
+        lines.push(saveClosure('(float) $state'));
+    } else {
+        // String types
+        lines.push(`TextInputColumn::make('${esc(fieldName)}')`);
+        lines.push(`->label(${labelPhp(toTitleCase(field.caption || field.field_name), field, tableName, localizationEnabled)})`);
+        const maxLen = clampInt(field.max_length || field.length, 1, 64000, 255);
+        lines.push(`->rules('max:${maxLen}')`);
+        lines.push(saveClosure('$state'));
+    }
+    return lines.join('\n                    ');
+}
+
+/**
  * [HELPER] Generates the array of PHP column code strings.
  * Contains ALL original logic (Media, Relationships, Formatting, Summaries, etc).
  * Returns { all: string[], images: string[], others: string[] } so the caller can
@@ -24,6 +103,7 @@ function generateTableColumnsParts(tableData, relationships, tableName, projectS
     const columnsCode = [];
     const imageColumns = [];
     const otherColumns = [];
+    let inlineEditUsed = false;
     // Note: modelNameSingular is passed in as an argument (Module Name) for correct type hinting
     const localizationEnabled = require('./localizationConfig').isLocalizationEnabled(projectSettings);
 
@@ -56,7 +136,12 @@ function generateTableColumnsParts(tableData, relationships, tableName, projectS
         .sort((a, b) => (a.field_order ?? 999) - (b.field_order ?? 999));
 
     for (const field of visibleFields) {
-        if (field.editable_in_tv === 1) continue;
+        // Inline edit (grid expansion 2026-09-25): when the table's grid
+        // inline-edit option is OFF, editable_in_tv fields keep the legacy
+        // behavior (skipped from the grid). When ON, safe scalar fields are
+        // rendered as Filament editable columns instead.
+        const inlineEditOn = tableData.grid_inline_edit === 1;
+        if (field.editable_in_tv === 1 && !inlineEditOn) continue;
 
         let controller;
         if (field.media_type === 'image') controller = 'ImageColumn';
@@ -81,6 +166,22 @@ function generateTableColumnsParts(tableData, relationships, tableName, projectS
             }
         } else {
             fieldName = field.field_name;
+        }
+
+        // Inline-editable column path (replaces the read-only column entirely).
+        if (field.editable_in_tv === 1 && inlineEditOn) {
+            if (isInlineEditableField(field, !!fkRelationship)) {
+                const editableCode = buildInlineEditColumnPhp(
+                    field, fieldName, tableName,
+                    Number(projectSettings && projectSettings.module_authorization) === 1,
+                    localizationEnabled
+                );
+                columnsCode.push(editableCode);
+                otherColumns.push(editableCode);
+                inlineEditUsed = true;
+                continue;
+            }
+            // Field marked editable but not safe for inline edit: render read-only.
         }
         
         let lines = [`${controller}::make('${fieldName}')`];
@@ -248,7 +349,7 @@ if (field.data_type === 'JSON') {
         else otherColumns.push(lines.join('\n                    '));
     }
 
-    return { all: columnsCode, images: imageColumns, others: otherColumns };
+    return { all: columnsCode, images: imageColumns, others: otherColumns, inlineEditUsed };
 }
 
 /**
@@ -429,6 +530,43 @@ function buildTableSettingsContext(tableData, relationships, tableName, projectS
     }
 
     ctx.disabled_pagination = tableData.allow_pagination === 0 ? '->paginated(false)' : '';
+
+    // --- GRID EXPANSION (2026-09-25) ---
+    // Column chooser: Filament shows it by default; only emit when disabled.
+    ctx.column_manager = tableData.grid_column_manager === 0 ? '->columnManager(false)' : '';
+
+    // Records-per-page choices (only meaningful when pagination is on).
+    // Only emit when the owner actually changed from Filament's defaults
+    // (options [5,10,25,50], default 10) so untouched tables stay identical.
+    ctx.per_page = '';
+    if (tableData.allow_pagination === 1) {
+        const rawOpts = String(tableData.grid_per_page_options || '5,10,25,50');
+        const opts = rawOpts
+            .split(',')
+            .map((s) => parseInt(s.trim(), 10))
+            .filter((n) => Number.isFinite(n) && n >= 1 && n <= 500);
+        const def = clampInt(tableData.grid_default_per_page, 1, 500, 10);
+        const optsChanged = JSON.stringify(opts) !== JSON.stringify([5, 10, 25, 50]);
+        const defChanged = def !== 10;
+        if (optsChanged || defChanged) {
+            if (opts.length > 0) {
+                const safeDef = opts.includes(def) ? def : opts[0];
+                ctx.per_page = `->defaultPaginationPageOption(${safeDef})->paginationPageOptions([${opts.join(', ')}])`;
+            } else {
+                ctx.per_page = `->defaultPaginationPageOption(${def})`;
+            }
+        }
+    }
+
+    // Sticky header + row density: CSS-layer classes emitted per table.
+    const gridClasses = [];
+    if (tableData.grid_sticky_header === 1) gridClasses.push('fixzy-sticky-header');
+    const density = ['compact', 'comfortable'].includes(tableData.grid_row_density) ? tableData.grid_row_density : 'normal';
+    if (density !== 'normal') gridClasses.push(`fixzy-grid-${density}`);
+    ctx.grid_classes = gridClasses.length
+        ? `->extraAttributes(['class' => '${gridClasses.join(' ')}'])`
+        : '';
+
     ctx.open_to_new_tab = tableData.dv_separate_page === 1 ? '->openRecordUrlInNewTab()' : '';
     ctx.disabled_detailview = tableData.enable_detail_view === 0 ? '->recordUrl(null)' : '';
     ctx.show_all_for_print = tableData.allow_print_view === 1
@@ -473,6 +611,7 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                 table_name_singular: modelNameSingular,
                 table_name_plural: modelNamePlural,
                 all_columns: columnsCode,
+                inline_edit_used: !!parts.inlineEditUsed,
                 layout_imports: (layout.layoutImports || []).map((i) => `use ${i};`).join('\n'),
                 approval_actions: apCfg ? "\n                " + require('./approvalConfig').approvalActionsPhp(apCfg, modelNameSingular) : '',
                 ...buildTableSettingsContext(tableData, relationships, tableName, projectSettings, modelNameSingular),
@@ -533,6 +672,7 @@ function generateSingleTableClass(basePath, resourceFolder, className, tableData
         table_name_plural: resourceFolder, // Namespace uses the custom folder
         table_class_name: className,
         all_columns: columnsCode,
+        inline_edit_used: !!parts.inlineEditUsed,
         layout_imports: (layout.layoutImports || []).map((i) => `use ${i};`).join('\n'),
         approval_actions: (() => {
             const ap = require('./approvalConfig').parseApprovalConfig(tableData);

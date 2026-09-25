@@ -353,6 +353,33 @@ Export supports **CSV and XLSX** natively (Filament v5 + OpenSpout,
 no extra dependencies). Round-trip stability is verified: export →
 re-import with an update profile leaves data byte-identical.
 
+### Grid & Table View Options (opt-in, per table)
+
+Beyond the six layout templates, Table Settings → Features exposes a
+**Grid options** group — every item is a per-table choice, defaulting to
+the classic behavior so existing apps are untouched:
+
+- **Column chooser** (on by default): end users can show/hide and
+  reorder columns per session via Filament's column manager. Tick off to
+  lock the column set the designer defined. Only applies to the
+  Horizontal template (Filament skips the manager on layout templates).
+- **Sticky header**: column headers stay pinned while scrolling long
+  lists. Implemented as a generated CSS asset (`public/css/fixzy-grid.css`)
+  registered by a generated service provider — no Vite build needed.
+- **Row density**: Normal / Compact / Comfortable row height.
+- **Inline edit**: fields marked *Editable in table view* render as
+  inline-editable columns (text input, toggle, or dropdown) directly in
+  the grid. When off, those fields keep the legacy behavior (hidden from
+  the grid). Security: every generated editable column carries an
+  explicit `can('update')` authorization check plus server-side
+  validation rules; primary keys, relationship lookups, calculated and
+  media fields are never inline-editable.
+- **Records per page**: pick the default page size and the choices
+  offered to users (e.g. 10, 25, 50).
+
+A live mock of these options renders in the Template preview pane as you
+toggle them.
+
 ### Localization — Bahasa Melayu (opt-in)
 
 Set the project language to **Malay** in Project Settings and the

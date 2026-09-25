@@ -102,6 +102,14 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-allow-restore-delete', tableData.allow_restore_delete);
     setElementValue('tbl-allow-force-delete', tableData.allow_force_delete);
 
+    // Grid expansion options (2026-09-25)
+    setElementValue('tbl-grid-column-manager', tableData.grid_column_manager ?? 1);
+    setElementValue('tbl-grid-sticky-header', tableData.grid_sticky_header ?? 0);
+    setElementValue('tbl-grid-row-density', tableData.grid_row_density || 'normal');
+    setElementValue('tbl-grid-inline-edit', tableData.grid_inline_edit ?? 0);
+    setElementValue('tbl-grid-default-per-page', tableData.grid_default_per_page || 10);
+    setElementValue('tbl-grid-per-page-options', tableData.grid_per_page_options || '5,10,25,50');
+
     // Logic to disable soft-delete features if the project uses hard delete
     const isHardDelete = appState.activeProject.data_delete_type === 'hard';
     const restoreCheckbox = document.getElementById('tbl-allow-restore-delete');
@@ -116,6 +124,9 @@ export function populateTableSettings(tableName) {
     if (paginationCheckbox && recordsPerPageGroup) {
         const toggleVisibility = () => {
             recordsPerPageGroup.classList.toggle('hidden', !paginationCheckbox.checked);
+            // Grid per-page choices only make sense when pagination is on
+            const gridPerPageGroup = document.getElementById('grid-per-page-group');
+            if (gridPerPageGroup) gridPerPageGroup.classList.toggle('hidden', !paginationCheckbox.checked);
         };
 
         // Attach the listener ONLY if it hasn't been attached yet

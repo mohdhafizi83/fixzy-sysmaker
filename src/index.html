@@ -1727,6 +1727,30 @@
                                             <label class="checkbox-label" style="margin-left: 1rem;"><input type="checkbox" id="tbl-sort-descending" name="tbl-sort-descending"> Descending</label>
                                         </div>
                                     </div>
+                                    <div class="form-group" id="grid-options-group">
+                                        <label class="checkbox-label"><input type="checkbox" id="tbl-grid-column-manager" name="tbl-grid-column-manager" checked> Enable column chooser (users can show/hide &amp; reorder columns; Horizontal template only)</label>
+                                        <label class="checkbox-label mt-1"><input type="checkbox" id="tbl-grid-sticky-header" name="tbl-grid-sticky-header"> Sticky column headers while scrolling</label>
+                                        <label class="checkbox-label mt-1"><input type="checkbox" id="tbl-grid-inline-edit" name="tbl-grid-inline-edit"> Enable inline editing from the grid (per-field: tick 'Editable in table view')</label>
+                                        <div class="form-group" style="margin-top:.5rem">
+                                            <label for="tbl-grid-row-density">Row density</label>
+                                            <select id="tbl-grid-row-density" name="tbl-grid-row-density">
+                                                <option value="normal" selected>Normal</option>
+                                                <option value="compact">Compact (more rows per screen)</option>
+                                                <option value="comfortable">Comfortable</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group" id="grid-per-page-group">
+                                            <label for="tbl-grid-default-per-page">Default records per page</label>
+                                            <select id="tbl-grid-default-per-page" name="tbl-grid-default-per-page">
+                                                <option value="5">5</option>
+                                                <option value="10" selected>10</option>
+                                                <option value="25">25</option>
+                                                <option value="50">50</option>
+                                            </select>
+                                            <label for="tbl-grid-per-page-options" style="margin-top:.5rem;display:block">Choices offered (comma-separated)</label>
+                                            <input type="text" id="tbl-grid-per-page-options" name="tbl-grid-per-page-options" value="5,10,25,50" placeholder="e.g. 5,10,25,50">
+                                        </div>
+                                    </div>
                                     <div class="permission-grid">
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-allow-csv-export" name="tbl-allow-csv-export" checked> Enable saving data to CSV files</label>
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-allow-csv-import" name="tbl-allow-csv-import" checked> Enable import CSV file</label>

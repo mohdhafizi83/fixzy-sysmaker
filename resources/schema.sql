@@ -115,6 +115,12 @@ CREATE TABLE tables (
     api_config           TEXT,
     feature_source               TEXT DEFAULT NULL,
     google_sync_enabled          INTEGER DEFAULT 0,
+    grid_column_manager          INTEGER DEFAULT 1,
+    grid_sticky_header           INTEGER DEFAULT 0,
+    grid_row_density             TEXT DEFAULT 'normal',
+    grid_inline_edit             INTEGER DEFAULT 0,
+    grid_default_per_page        INTEGER DEFAULT 10,
+    grid_per_page_options        TEXT DEFAULT '5,10,25,50',
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
 

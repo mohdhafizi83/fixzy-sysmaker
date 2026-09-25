@@ -195,6 +195,11 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         const tableResult = await generateFilamentTablesTable(fullSchema, outputDir);
         if (!tableResult.success) throw new Error(`Tables (Standard): ${tableResult.message}`);
 
+        // Grid enhancements (sticky header / row density CSS + provider).
+        // Only emits files when at least one table uses a non-default style.
+        const gridResult = require('./laravelGridEnhancementsGenerator').generateGridEnhancements(fullSchema, outputDir);
+        if (!gridResult.success) throw new Error(`Grid enhancements: ${gridResult.message}`);
+
         const formResult = await generateFilamentSchemasForm(fullSchema, outputDir);
         if (!formResult.success) throw new Error(`Forms (Standard): ${formResult.message}`);
 

@@ -438,12 +438,67 @@ export function updateTableViewTemplatePreview() {
     }
 
     if (selectedValue === 'card') {
-        previewArea.innerHTML = buildCardSizePreviewHtml();
+        previewArea.innerHTML = buildCardSizePreviewHtml() + buildGridFeaturePreviewHtml();
         return;
     }
 
     const imagePath = `../assets/images/${selectedValue}.png`;
-    previewArea.innerHTML = `<img src="${imagePath}" alt="Preview for the ${selectedValue} template" style="width: 100%; object-fit: contain;">`;
+    previewArea.innerHTML = `<img src="${imagePath}" alt="Preview for the ${selectedValue} template" style="width: 100%; object-fit: contain;">` + buildGridFeaturePreviewHtml();
+}
+
+/**
+ * [HELPER] Builds a live mock of the horizontal table grid reflecting the
+ * grid expansion options: sticky header, row density, inline edit, and the
+ * column chooser. Rendered for every template (sticky/density apply to all;
+ * column chooser badge notes it only works on the Horizontal template).
+ */
+function buildGridFeaturePreviewHtml() {
+    const checked = (id) => {
+        const el = document.getElementById(id);
+        return !!(el && el.checked);
+    };
+    const densityEl = document.getElementById('tbl-grid-row-density');
+    const density = densityEl ? densityEl.value : 'normal';
+
+    const sticky = checked('tbl-grid-sticky-header');
+    const inlineEdit = checked('tbl-grid-inline-edit');
+    const chooser = checked('tbl-grid-column-manager');
+
+    const rowPad = density === 'compact' ? '2px' : (density === 'comfortable' ? '12px' : '6px');
+    const headerStyle = `padding:${rowPad} 8px; background:#EEF2FF; font-weight:600; font-size:0.75em; border-bottom:2px solid #C7D2FE;`
+        + (sticky ? ' position:sticky; top:0; box-shadow:0 1px 0 rgba(0,0,0,.1);' : '');
+    const cellStyle = `padding:${rowPad} 8px; font-size:0.75em; border-bottom:1px solid #eee;`;
+    const editCellStyle = cellStyle + ' background:#FFFBEB; outline:1px dashed #F59E0B; outline-offset:-1px;';
+
+    const headers = ['Name', 'Status', 'Date'];
+    const rows = [
+        ['Sample record A', 'Active', '25/09/2026'],
+        ['Sample record B', 'Pending', '24/09/2026'],
+        ['Sample record C', 'Active', '23/09/2026'],
+    ];
+
+    const tableHtml = `
+        <div style="margin-top:10px; max-height:150px; overflow-y:auto; border:1px solid #ddd; border-radius:6px; background:#fff;">
+            <table style="width:100%; border-collapse:collapse;">
+                <thead><tr>${headers.map(h => `<th style="${headerStyle}">${h}</th>`).join('')}</tr></thead>
+                <tbody>
+                    ${rows.map(r => `<tr>${r.map((c, i) => `<td style="${inlineEdit && i === 0 ? editCellStyle : cellStyle}">${c}</td>`).join('')}</tr>`).join('')}
+                </tbody>
+            </table>
+        </div>`;
+
+    const badges = [];
+    if (sticky) badges.push('<span style="background:#DBEAFE;color:#1E40AF;border-radius:10px;padding:1px 8px;font-size:0.7em;">sticky header</span>');
+    if (density !== 'normal') badges.push(`<span style="background:#F3E8FF;color:#6B21A8;border-radius:10px;padding:1px 8px;font-size:0.7em;">${density} rows</span>`);
+    if (inlineEdit) badges.push('<span style="background:#FEF3C7;color:#92400E;border-radius:10px;padding:1px 8px;font-size:0.7em;">inline edit</span>');
+    if (chooser) badges.push('<span style="background:#D1FAE5;color:#065F46;border-radius:10px;padding:1px 8px;font-size:0.7em;">column chooser</span>');
+
+    if (badges.length === 0) return '';
+    return `
+        <div style="font-size:0.8em; color:var(--secondary-color); margin:10px 0 4px;">Grid options preview</div>
+        ${tableHtml}
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;">${badges.join('')}</div>
+    `;
 }
 
 /**
@@ -506,7 +561,7 @@ export function initializeTemplatePreviewHandlers() {
         templateSelect.addEventListener('change', toggleCardSizeGroup);
     }
     // Live preview: card size dropdowns redraw the mock grid immediately.
-    ['tbl-card-columns', 'tbl-card-columns-tablet'].forEach((id) => {
+    ['tbl-card-columns', 'tbl-card-columns-tablet', 'tbl-grid-sticky-header', 'tbl-grid-row-density', 'tbl-grid-inline-edit', 'tbl-grid-column-manager'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', updateTableViewTemplatePreview);
     });

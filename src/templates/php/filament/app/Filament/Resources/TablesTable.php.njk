@@ -22,6 +22,9 @@ use Filament\Tables\Columns\Summarizers\Average;
 use Filament\Tables\Columns\Summarizers\Range;
 use Filament\Tables\Columns\Summarizers\Count;
 {% if layout_imports %}{{ layout_imports }}
+{% endif %}{% if inline_edit_used %}use Filament\Tables\Columns\TextInputColumn;
+use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Columns\SelectColumn;
 {% endif %}use Filament\Support\Icons\Heroicon;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Enums\FontWeight;
@@ -38,11 +41,14 @@ class {{ table_class_name or (table_name_plural ~ "Table") }}
         return $table
             {{ disabled_pagination }}
             {{ pagination_type }}
-{% if content_grid %}            {{ content_grid }}
+{% if per_page %}            {{ per_page }}
+{% endif %}{% if column_manager %}            {{ column_manager }}
+{% endif %}{% if content_grid %}            {{ content_grid }}
 {% endif %}            {{ open_to_new_tab }}
             {{ disabled_detailview }}
             {{ disabled_row_interaction }}
-            ->description('{{ add_description }}')
+{% if grid_classes %}            {{ grid_classes }}
+{% endif %}            ->description('{{ add_description }}')
             ->columns([
                 {{ all_columns }}
             ])
