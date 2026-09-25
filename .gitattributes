@@ -1,2 +1,19 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Normalize line endings in the repo to LF.
+# eol=lf is MANDATORY for golden test files: the generators always write
+# "\n" regardless of platform, and GitHub's Windows runner images default
+# to core.autocrlf=true — without eol=lf, checkout converts goldens to
+# CRLF and every golden comparison fails on windows-latest.
+* text=auto eol=lf
+
+# Binary assets (never touch)
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.icns binary
+*.zip binary
+*.gz binary
+*.phar binary
+*.exe binary
+*.dll binary
+*.node binary

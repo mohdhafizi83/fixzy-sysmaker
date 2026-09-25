@@ -55,13 +55,25 @@ t('symlink escape rejected', () => {
     fs.mkdirSync(projDir, { recursive: true });
     const linkDir = path.join(projDir, 'escape');
     const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'fsm-outside-'));
+    let madeLink = false;
     try {
         fs.symlinkSync(outside, linkDir);
+        madeLink = true;
         const r = validateOutputPath(path.join(linkDir, 'app'), { roots });
         assert.ok(!r.ok, 'symlink escape must be blocked');
         assert.ok(/symlink escape/.test(r.reason));
+    } catch (e) {
+        // Windows without Developer Mode/admin cannot create symlinks
+        // (EPERM/ENOSYS). The guard logic is platform-independent;
+        // skip rather than false-fail the suite.
+        if (process.platform === 'win32' && (e.code === 'EPERM' || e.code === 'ENOSYS' || e.code === 'EINVAL')) {
+            console.log('  SKIP symlink escape rejected (symlinks need Windows dev mode)');
+            passed--; // don't count as a pass either way
+            return;
+        }
+        throw e;
     } finally {
-        fs.rmSync(linkDir, { force: true });
+        if (madeLink) fs.rmSync(linkDir, { force: true });
         fs.rmSync(outside, { recursive: true, force: true });
     }
 });
