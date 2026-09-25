@@ -112,6 +112,13 @@ function generateTableColumnsParts(tableData, relationships, tableName, projectS
     const otherColumns = [];
     // B4: field_name -> generated column code, so column groups can re-wrap them.
     const fieldCodeMap = {};
+    // D1: visible field names (dot-notation resolved) for split-view detail grid.
+    const visibleFieldNames = [];
+    // D1: TextEntry code per plain visible field for the split-view detail
+    // schema. Dot-notation (relationship) fields are skipped because the
+    // ViewAction fills the schema from $record->attributesToArray(), which
+    // does not contain relationship data.
+    const detailEntries = [];
     let inlineEditUsed = false;
     // Note: modelNameSingular is passed in as an argument (Module Name) for correct type hinting
     const localizationEnabled = require('./localizationConfig').isLocalizationEnabled(projectSettings);
@@ -174,6 +181,10 @@ function generateTableColumnsParts(tableData, relationships, tableName, projectS
             }
         } else {
             fieldName = field.field_name;
+        }
+        visibleFieldNames.push(fieldName);
+        if (!fieldName.includes('.')) {
+            detailEntries.push(`\\Filament\\Infolists\\Components\\TextEntry::make('${escPhp(fieldName)}')->label(${labelPhp(toTitleCase(field.caption || field.field_name), field, tableName, localizationEnabled)})`);
         }
 
         // Inline-editable column path (replaces the read-only column entirely).
@@ -417,7 +428,36 @@ if (field.data_type === 'JSON') {
         }
     }
 
-    return { all: columnsCode, plain: plainColumns, images: imageColumns, others: otherColumns, inlineEditUsed, groupedUsed };
+    return { all: columnsCode, plain: plainColumns, images: imageColumns, others: otherColumns, visibleFieldNames, detailEntries, inlineEditUsed, groupedUsed };
+}
+
+/**
+ * [HELPER] Phase D1 split view: clicking a row opens a WIDE slide-over
+ * showing the record's fields in a 2-column detail grid (the plan's
+ * "wide slide-over" split experience). Overrides the Phase A3 row-click
+ * keys when active. Skipped when row-click is explicitly 'none' (user
+ * wants no row interaction) or when there are no plain fields to show.
+ *
+ * Returns {} when inactive so the A3 values stand.
+ */
+function buildSplitViewContext(tableData, parts) {
+    if (Number(tableData.grid_split_view) !== 1) return {};
+    const rowClick = ['page', 'slideover', 'none'].includes(tableData.grid_row_click)
+        ? tableData.grid_row_click : 'page';
+    if (rowClick === 'none') return {};
+    const entries = (parts && parts.detailEntries) || [];
+    if (!entries.length) return {};
+    const detailSchema = entries.map((e) => '                    ' + e).join(',\n');
+    return {
+        disabled_row_interaction: '->recordUrl(null)',
+        record_action: "->recordAction('view')",
+        action_view_slideover: 'ViewAction::make()'
+            + "->slideOver()"
+            + "->modalWidth('4xl')"
+            + '->disabledSchema(false)'
+            + '->schema([\\Filament\\Schemas\\Components\\Grid::make(2)->schema([\n'
+            + detailSchema + '\n                ])]),',
+    };
 }
 
 /**
@@ -799,6 +839,7 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                 approval_actions: apCfg ? "\n                " + require('./approvalConfig').approvalActionsPhp(apCfg, modelNameSingular) : '',
                 ...buildTableSettingsContext(tableData, relationships, tableName, projectSettings, modelNameSingular),
                 ...multiView,
+                ...buildSplitViewContext(tableData, parts),
             });
 
             // Use Statement Cleanup

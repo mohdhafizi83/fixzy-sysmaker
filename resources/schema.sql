@@ -136,6 +136,7 @@ CREATE TABLE tables (
     grid_column_groups           TEXT DEFAULT '',
     grid_multi_view              INTEGER DEFAULT 0,
     grid_view_default            TEXT DEFAULT 'table',
+    grid_split_view              INTEGER DEFAULT 0,
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
 

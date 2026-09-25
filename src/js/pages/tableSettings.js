@@ -134,6 +134,8 @@ export function populateTableSettings(tableName) {
     // Phase C (2026-09-25): multi-view switcher
     setElementValue('tbl-grid-multi-view', tableData.grid_multi_view ?? 0);
     setElementValue('tbl-grid-view-default', tableData.grid_view_default || 'table');
+    // Phase D1 (2026-09-25): split view
+    setElementValue('tbl-grid-split-view', tableData.grid_split_view ?? 0);
 
     // Logic to disable soft-delete features if the project uses hard delete
     const isHardDelete = appState.activeProject.data_delete_type === 'hard';
