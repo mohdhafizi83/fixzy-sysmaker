@@ -139,6 +139,8 @@ CREATE TABLE tables (
     grid_split_view              INTEGER DEFAULT 0,
     grid_calendar_enabled        INTEGER DEFAULT 0,
     grid_calendar_config         TEXT DEFAULT '',
+    grid_tree_enabled            INTEGER DEFAULT 0,
+    grid_tree_config             TEXT DEFAULT '',
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
 

@@ -20,7 +20,8 @@ import {
     populateGridGroupByDropdown,
     renderGridSummaryRows,
     renderGridColumnGroupRows,
-    populateCalendarFieldDropdowns
+    populateCalendarFieldDropdowns,
+    populateTreeFieldDropdowns
 } from '../uiHandlers.js';
 
 export function populateTableSettings(tableName) {
@@ -141,6 +142,10 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-grid-calendar-enabled', tableData.grid_calendar_enabled ?? 0);
     setElementValue('tbl-grid-calendar-config', tableData.grid_calendar_config || '');
     populateCalendarFieldDropdowns(tableName);
+    // Phase D3 (2026-09-25): tree view
+    setElementValue('tbl-grid-tree-enabled', tableData.grid_tree_enabled ?? 0);
+    setElementValue('tbl-grid-tree-config', tableData.grid_tree_config || '');
+    populateTreeFieldDropdowns(tableName);
 
     // Logic to disable soft-delete features if the project uses hard delete
     const isHardDelete = appState.activeProject.data_delete_type === 'hard';

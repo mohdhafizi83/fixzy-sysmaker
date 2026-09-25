@@ -514,6 +514,43 @@ export function commitCalendarConfig() {
 }
 
 /**
+ * D3: Tree field pickers (parent self-ref + label). Mirrors the calendar
+ * picker pattern.
+ */
+export function populateTreeFieldDropdowns(tableName) {
+    const table = appState.jsonData && appState.jsonData.database.table[tableName];
+    const fields = (table && table.fields) || {};
+    const isInt = (f) => ['INTEGER', 'INT', 'BIGINT', 'SMALLINT', 'TINYINT', 'DECIMAL', 'NUMERIC'].includes(String((fields[f] || {}).data_type || '').toUpperCase());
+    const fill = (id, opts, current) => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        sel.innerHTML = '<option value="">— none —</option>';
+        for (const fn of opts) {
+            const o = document.createElement('option');
+            o.value = fn;
+            o.textContent = fn;
+            if (fn === current) o.selected = true;
+            sel.appendChild(o);
+        }
+    };
+    const all = Object.keys(fields);
+    const cfg = (() => { try { return JSON.parse(document.getElementById('tbl-grid-tree-config').value || '{}') || {}; } catch (e) { return {}; } })();
+    fill('tbl-tree-parent', all.filter(isInt), cfg.parent_field);
+    fill('tbl-tree-label', all, cfg.label_field);
+    const panel = document.getElementById('grid-tree-fields');
+    if (panel) panel.style.display = (document.getElementById('tbl-grid-tree-enabled') || {}).checked ? 'block' : 'none';
+}
+
+export function commitTreeConfig() {
+    const cfg = {
+        parent_field: (document.getElementById('tbl-tree-parent') || {}).value || '',
+        label_field: (document.getElementById('tbl-tree-label') || {}).value || '',
+    };
+    const hidden = document.getElementById('tbl-grid-tree-config');
+    if (hidden) { hidden.value = JSON.stringify(cfg); hidden.dispatchEvent(new Event('change', { bubbles: true })); }
+}
+
+/**
  * B4: Column-group repeater. Each row: [label input] [multi-select of
  * visible columns] [remove]. Serializes to JSON array in the hidden
  * tbl-grid-column-groups input and fires change for the generic autosave.
@@ -645,6 +682,24 @@ export function initializeGridSummaryEditor() {
         if (el && el.dataset.wired !== '1') {
             el.dataset.wired = '1';
             el.addEventListener('change', commitCalendarConfig);
+        }
+    });
+
+    // D3: Tree enable toggle + field pickers (once-only wiring).
+    const treeToggle = document.getElementById('tbl-grid-tree-enabled');
+    if (treeToggle && treeToggle.dataset.wired !== '1') {
+        treeToggle.dataset.wired = '1';
+        treeToggle.addEventListener('change', () => {
+            const panel = document.getElementById('grid-tree-fields');
+            if (panel) panel.style.display = treeToggle.checked ? 'block' : 'none';
+            if (treeToggle.checked) commitTreeConfig();
+        });
+    }
+    ['tbl-tree-parent', 'tbl-tree-label'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el && el.dataset.wired !== '1') {
+            el.dataset.wired = '1';
+            el.addEventListener('change', commitTreeConfig);
         }
     });
 }
@@ -838,6 +893,9 @@ function buildGridFeaturePreviewHtml() {
     // Phase D2 badge
     const calEnabled = checked('tbl-grid-calendar-enabled');
     if (calEnabled) badges.push('<span style="background:#FCE7F3;color:#9D174D;border-radius:10px;padding:1px 8px;font-size:0.7em;">calendar page</span>');
+    // Phase D3 badge
+    const treeEnabled = checked('tbl-grid-tree-enabled');
+    if (treeEnabled) badges.push('<span style="background:#D1FAE5;color:#065F46;border-radius:10px;padding:1px 8px;font-size:0.7em;">tree page</span>');
 
     if (badges.length === 0) return '';
     return `
@@ -907,7 +965,7 @@ export function initializeTemplatePreviewHandlers() {
         templateSelect.addEventListener('change', toggleCardSizeGroup);
     }
     // Live preview: card size dropdowns redraw the mock grid immediately.
-    ['tbl-card-columns', 'tbl-card-columns-tablet', 'tbl-grid-sticky-header', 'tbl-grid-row-density', 'tbl-grid-inline-edit', 'tbl-grid-column-manager', 'tbl-grid-group-by', 'tbl-grid-row-click', 'tbl-grid-empty-heading', 'tbl-grid-summaries', 'tbl-grid-row-striping', 'tbl-grid-border-style', 'tbl-grid-content-width', 'tbl-grid-sticky-toolbar', 'tbl-grid-sticky-footer', 'tbl-grid-column-groups', 'tbl-grid-multi-view', 'tbl-grid-view-default', 'tbl-grid-split-view', 'tbl-grid-calendar-enabled'].forEach((id) => {
+    ['tbl-card-columns', 'tbl-card-columns-tablet', 'tbl-grid-sticky-header', 'tbl-grid-row-density', 'tbl-grid-inline-edit', 'tbl-grid-column-manager', 'tbl-grid-group-by', 'tbl-grid-row-click', 'tbl-grid-empty-heading', 'tbl-grid-summaries', 'tbl-grid-row-striping', 'tbl-grid-border-style', 'tbl-grid-content-width', 'tbl-grid-sticky-toolbar', 'tbl-grid-sticky-footer', 'tbl-grid-column-groups', 'tbl-grid-multi-view', 'tbl-grid-view-default', 'tbl-grid-split-view', 'tbl-grid-calendar-enabled', 'tbl-grid-tree-enabled'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', updateTableViewTemplatePreview);
     });

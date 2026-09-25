@@ -211,6 +211,9 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         // 2b. Calendar pages (Phase D2: read-only month view per opted-in table)
         await require('./laravelCalendarGenerator').generateCalendarPages(fullSchema, outputDir);
 
+        // 2c. Tree pages (Phase D3: read-only hierarchy view per opted-in table)
+        await require('./laravelTreeGenerator').generateTreePages(fullSchema, outputDir);
+
         // 3. Relation Managers
         await generateFilamentRelationManagers(fullSchema, outputDir);
 

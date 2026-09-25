@@ -142,7 +142,9 @@ function openStore(dbPath) {
             grid_view_default: "TEXT DEFAULT 'table'",
             grid_split_view: "INTEGER DEFAULT 0",
             grid_calendar_enabled: "INTEGER DEFAULT 0",
-            grid_calendar_config: "TEXT DEFAULT '\"",
+            grid_calendar_config: "TEXT DEFAULT ''",
+            grid_tree_enabled: "INTEGER DEFAULT 0",
+            grid_tree_config: "TEXT DEFAULT ''",
         };
         for (const [col, def] of Object.entries(gridCols)) {
             if (!tableCols.includes(col)) {

@@ -1847,6 +1847,24 @@
                                             </div>
                                             <input type="hidden" id="tbl-grid-calendar-config" value="">
                                         </div>
+                                        <div class="form-group" id="grid-tree-group" style="margin-top:.75rem; border-top:1px solid #eee; padding-top:.5rem;">
+                                            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;">
+                                                <input type="checkbox" id="tbl-grid-tree-enabled">
+                                                <span>Tree view (read-only hierarchy page)</span>
+                                            </label>
+                                            <div id="grid-tree-fields" style="display:none;margin-top:.5rem;padding-left:.5rem;">
+                                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;">
+                                                    <label style="font-size:.85em;">Parent field (self-ref FK)
+                                                        <select id="tbl-tree-parent" style="width:100%"></select>
+                                                    </label>
+                                                    <label style="font-size:.85em;">Label field
+                                                        <select id="tbl-tree-label" style="width:100%"></select>
+                                                    </label>
+                                                </div>
+                                                <small style="color:#888;display:block;margin-top:.25rem">Adds a nav page with an expandable hierarchy. Parent field must be an integer self-reference column (e.g. parent_id).</small>
+                                            </div>
+                                            <input type="hidden" id="tbl-grid-tree-config" value="">
+                                        </div>
                                         <div class="form-group" id="grid-col-groups-group" style="margin-top:.75rem; border-top:1px solid #eee; padding-top:.5rem;">
                                             <label>Column groups (Horizontal template)</label>
                                             <div id="grid-col-group-rows"></div>
