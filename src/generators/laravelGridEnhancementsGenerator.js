@@ -22,14 +22,20 @@ const path = require('path');
 const PROVIDER_CLASS = 'App\\Providers\\FixzyGridServiceProvider';
 
 /**
- * [IR HELPER] True when any table in the schema uses sticky header or a
- * non-normal row density (i.e. the CSS asset is needed).
+ * [IR HELPER] True when any table in the schema uses a grid style that
+ * needs the shared CSS asset (sticky header, density, striping, border
+ * variant, contained width, sticky toolbar/footer).
  */
 function anyGridCssNeeded(fullSchema) {
     const tables = (fullSchema && fullSchema.database && fullSchema.database.table) || {};
     return Object.values(tables).some((t) =>
         Number(t.grid_sticky_header) === 1 ||
-        ['compact', 'comfortable'].includes(String(t.grid_row_density || 'normal'))
+        Number(t.grid_row_striping) === 1 ||
+        Number(t.grid_sticky_toolbar) === 1 ||
+        Number(t.grid_sticky_footer) === 1 ||
+        ['compact', 'comfortable'].includes(String(t.grid_row_density || 'normal')) ||
+        ['minimal', 'none'].includes(String(t.grid_border_style || 'default')) ||
+        ['contained_1280', 'contained_1600'].includes(String(t.grid_content_width || 'full'))
     );
 }
 
@@ -62,6 +68,80 @@ const GRID_CSS = `/* Fixzy SysMaker generated grid styles (sticky header + row d
 .fixzy-grid-comfortable .fi-ta-header-cell {
     padding-top: 1.25rem !important;
     padding-bottom: 1.25rem !important;
+}
+
+/* B1: Zebra striping. Targets tbody rows only (skips summary/group rows). */
+.fixzy-grid-striped .fi-ta-table > tbody > tr.fi-ta-row:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.025);
+}
+.dark .fixzy-grid-striped .fi-ta-table > tbody > tr.fi-ta-row:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* B1: Border style variants. 'minimal' = lighter dividers, 'none' = no dividers. */
+.fixzy-border-minimal.fi-ta .fi-ta-content-ctn {
+    --fixzy-divider: rgba(0, 0, 0, 0.045);
+}
+.fixzy-border-minimal.fi-ta .fi-ta-content-ctn,
+.fixzy-border-minimal.fi-ta .fi-ta-table > tbody > tr > td,
+.fixzy-border-minimal.fi-ta .fi-ta-table > thead > tr > th {
+    border-color: var(--fixzy-divider, rgba(0, 0, 0, 0.045)) !important;
+    box-shadow: none !important;
+}
+.dark .fixzy-border-minimal.fi-ta .fi-ta-content-ctn,
+.dark .fixzy-border-minimal.fi-ta .fi-ta-table > tbody > tr > td,
+.dark .fixzy-border-minimal.fi-ta .fi-ta-table > thead > tr > th {
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+.fixzy-border-none.fi-ta .fi-ta-content-ctn {
+    border-top: none !important;
+}
+.fixzy-border-none.fi-ta .fi-ta-table > tbody > tr > td,
+.fixzy-border-none.fi-ta .fi-ta-table > thead > tr > th {
+    border-top: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+}
+/* The row dividers come from divide-y on the content container. */
+.fixzy-border-none.fi-ta .fi-ta-content-ctn > *,
+.fixzy-border-none.fi-ta .fi-ta-table > tbody > tr {
+    border-top-width: 0 !important;
+}
+
+/* B2: Contained content width (centered). */
+.fixzy-grid-contained_1280.fi-ta {
+    max-width: 1280px;
+    margin-inline: auto;
+}
+.fixzy-grid-contained_1600.fi-ta {
+    max-width: 1600px;
+    margin-inline: auto;
+}
+
+/* B3: Sticky toolbar (header) — z-index 30 so it stacks above a sticky
+   header row (z-index 20) when both are enabled. */
+.fixzy-sticky-toolbar.fi-ta .fi-ta-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background-color: #fff;
+}
+.dark .fixzy-sticky-toolbar.fi-ta .fi-ta-header {
+    background-color: #1c1c1d;
+}
+/* B3: Sticky pagination footer pinned to the bottom of the viewport while
+   the table is on screen. */
+.fixzy-sticky-footer.fi-ta .fi-pagination {
+    position: sticky;
+    bottom: 0;
+    z-index: 25;
+    background-color: #fff;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    padding: 0.5rem 0.75rem;
+}
+.dark .fixzy-sticky-footer.fi-ta .fi-pagination {
+    background-color: #1c1c1d;
+    border-top-color: rgba(255, 255, 255, 0.08);
 }
 `;
 

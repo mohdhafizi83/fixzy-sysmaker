@@ -130,6 +130,13 @@ function openStore(dbPath) {
             grid_empty_heading: "TEXT DEFAULT ''",
             grid_empty_icon: "TEXT DEFAULT ''",
             grid_empty_description: "TEXT DEFAULT ''",
+            // Grid layout expansion phase B (2026-09-25)
+            grid_row_striping: "INTEGER DEFAULT 0",
+            grid_border_style: "TEXT DEFAULT 'default'",
+            grid_content_width: "TEXT DEFAULT 'full'",
+            grid_sticky_toolbar: "INTEGER DEFAULT 0",
+            grid_sticky_footer: "INTEGER DEFAULT 0",
+            grid_column_groups: "TEXT DEFAULT ''",
         };
         for (const [col, def] of Object.entries(gridCols)) {
             if (!tableCols.includes(col)) {

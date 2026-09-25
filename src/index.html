@@ -1783,6 +1783,37 @@
                                             <input type="text" id="tbl-grid-empty-description" name="tbl-grid-empty-description" placeholder="Optional description line" style="margin-top:.3rem">
                                             <small style="color:#888;display:block;margin-top:.25rem">Icon slug: Filament heroicon name (heroicon-o-… outline or heroicon-c-… solid). Leave heading empty to keep the default empty state.</small>
                                         </div>
+                                        <div class="form-group" style="margin-top:.75rem; border-top:1px solid #eee; padding-top:.5rem;">
+                                            <label>Row striping &amp; borders</label>
+                                            <label class="checkbox-label" style="margin-top:.3rem"><input type="checkbox" id="tbl-grid-row-striping" name="tbl-grid-row-striping"> Zebra striping (alternate row background)</label>
+                                            <label for="tbl-grid-border-style" style="margin-top:.5rem;display:block">Border style</label>
+                                            <select id="tbl-grid-border-style" name="tbl-grid-border-style">
+                                                <option value="default" selected>Default (current look)</option>
+                                                <option value="minimal">Minimal (lighter dividers)</option>
+                                                <option value="none">None (no dividers)</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group" style="margin-top:.75rem; border-top:1px solid #eee; padding-top:.5rem;">
+                                            <label for="tbl-grid-content-width">Table content width</label>
+                                            <select id="tbl-grid-content-width" name="tbl-grid-content-width">
+                                                <option value="full" selected>Full width (current behavior)</option>
+                                                <option value="contained_1280">Contained — max 1280px, centered</option>
+                                                <option value="contained_1600">Contained — max 1600px, centered</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group" style="margin-top:.75rem; border-top:1px solid #eee; padding-top:.5rem;">
+                                            <label>Sticky chrome</label>
+                                            <label class="checkbox-label" style="margin-top:.3rem"><input type="checkbox" id="tbl-grid-sticky-toolbar" name="tbl-grid-sticky-toolbar"> Keep the toolbar visible while scrolling</label>
+                                            <label class="checkbox-label"><input type="checkbox" id="tbl-grid-sticky-footer" name="tbl-grid-sticky-footer"> Keep pagination visible while scrolling</label>
+                                            <small style="color:#888;display:block;margin-top:.25rem">Combines with sticky header: toolbar stacks above the header row.</small>
+                                        </div>
+                                        <div class="form-group" id="grid-col-groups-group" style="margin-top:.75rem; border-top:1px solid #eee; padding-top:.5rem;">
+                                            <label>Column groups (Horizontal template)</label>
+                                            <div id="grid-col-group-rows"></div>
+                                            <button type="button" class="btn btn-small" id="btn-add-col-group" style="margin-top:.35rem">+ Add column group</button>
+                                            <input type="hidden" id="tbl-grid-column-groups" name="tbl-grid-column-groups" value="">
+                                            <small style="color:#888;display:block;margin-top:.25rem">Adds a header band above grouped columns. Max 5 groups; a column can only belong to one group.</small>
+                                        </div>
                                     </div>
                                     <div class="permission-grid">
                                         <label class="checkbox-label"><input type="checkbox" id="tbl-allow-csv-export" name="tbl-allow-csv-export" checked> Enable saving data to CSV files</label>

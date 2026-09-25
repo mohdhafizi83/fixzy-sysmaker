@@ -471,6 +471,86 @@ function commitGridSummaries() {
 }
 
 /**
+ * B4: Column-group repeater. Each row: [label input] [multi-select of
+ * visible columns] [remove]. Serializes to JSON array in the hidden
+ * tbl-grid-column-groups input and fires change for the generic autosave.
+ */
+const GRID_COL_GROUP_MAX = 5;
+
+export function renderGridColumnGroupRows() {
+    const container = document.getElementById('grid-col-group-rows');
+    if (!container) return;
+    let groups = [];
+    try { groups = JSON.parse(document.getElementById('tbl-grid-column-groups').value || '[]'); } catch (e) { groups = []; }
+    if (!Array.isArray(groups)) groups = [];
+    container.innerHTML = '';
+    groups.forEach((g) => container.appendChild(buildColGroupRow(g)));
+}
+
+function buildColGroupRow(group) {
+    const row = document.createElement('div');
+    row.className = 'input-group';
+    row.style.marginTop = '.3rem';
+    const labelInput = document.createElement('input');
+    labelInput.type = 'text';
+    labelInput.className = 'grid-col-group-label';
+    labelInput.placeholder = 'Group label, e.g. Contact';
+    labelInput.value = (group && group.label) || '';
+    const colSel = document.createElement('select');
+    colSel.className = 'grid-col-group-cols';
+    colSel.multiple = true;
+    colSel.size = 3;
+    colSel.style.marginLeft = '.4rem';
+    colSel.style.minWidth = '140px';
+    const selected = new Set(Array.isArray(group && group.columns) ? group.columns : []);
+    getAllFieldNames(currentGridTableName()).forEach((fn) => {
+        const o = document.createElement('option');
+        o.value = fn;
+        o.textContent = fn;
+        if (selected.has(fn)) o.selected = true;
+        colSel.appendChild(o);
+    });
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn btn-small';
+    removeBtn.style.marginLeft = '.4rem';
+    removeBtn.textContent = '×';
+    removeBtn.title = 'Remove this group';
+    const sync = () => commitGridColumnGroups();
+    labelInput.addEventListener('change', sync);
+    colSel.addEventListener('change', sync);
+    removeBtn.addEventListener('click', () => { row.remove(); sync(); });
+    row.appendChild(labelInput);
+    row.appendChild(colSel);
+    row.appendChild(removeBtn);
+    return row;
+}
+
+/**
+ * Serializes the column-group repeater rows into the hidden input.
+ * Enforces: max 5 groups, a column only in one group (first wins).
+ */
+function commitGridColumnGroups() {
+    const hidden = document.getElementById('tbl-grid-column-groups');
+    if (!hidden) return;
+    const used = new Set();
+    const groups = [];
+    const rows = document.querySelectorAll('#grid-col-group-rows .input-group');
+    rows.forEach((row) => {
+        if (groups.length >= GRID_COL_GROUP_MAX) return;
+        const labelEl = row.querySelector('.grid-col-group-label');
+        const colsEl = row.querySelector('.grid-col-group-cols');
+        const label = labelEl ? labelEl.value.trim() : '';
+        const cols = colsEl ? Array.from(colsEl.selectedOptions).map((o) => o.value).filter((c) => !used.has(c)) : [];
+        if (!label || cols.length === 0) return;
+        cols.forEach((c) => used.add(c));
+        groups.push({ label, columns: cols });
+    });
+    hidden.value = groups.length ? JSON.stringify(groups) : '';
+    hidden.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+/**
  * Wires the "+ Add summary" button (once). Called from renderer init.
  */
 export function initializeGridSummaryEditor() {
@@ -492,6 +572,20 @@ export function initializeGridSummaryEditor() {
         document.getElementById('grid-summaries-rows').appendChild(buildSummaryRow(first, 'sum'));
         commitGridSummaries();
     });
+
+    // B4: "+ Add column group" button (same once-only wiring pattern).
+    const addGroupBtn = document.getElementById('btn-add-col-group');
+    if (addGroupBtn && addGroupBtn.dataset.wired !== '1') {
+        addGroupBtn.dataset.wired = '1';
+        addGroupBtn.addEventListener('click', () => {
+            const count = document.querySelectorAll('#grid-col-group-rows .input-group').length;
+            if (count >= GRID_COL_GROUP_MAX) {
+                showToast(`Maximum ${GRID_COL_GROUP_MAX} column groups per table`, 'warning');
+                return;
+            }
+            document.getElementById('grid-col-group-rows').appendChild(buildColGroupRow({ label: '', columns: [] }));
+        });
+    }
 }
 
 export function populateFocusFieldDropdown(tableName) {
@@ -660,6 +754,19 @@ function buildGridFeaturePreviewHtml() {
     if (rowClick === 'slideover') badges.push('<span style="background:#E0E7FF;color:#3730A3;border-radius:10px;padding:1px 8px;font-size:0.7em;">row → slide-over</span>');
     else if (rowClick === 'none') badges.push('<span style="background:#F1F5F9;color:#475569;border-radius:10px;padding:1px 8px;font-size:0.7em;">row click off</span>');
     if (emptyHeading) badges.push(`<span style="background:#FEF9C3;color:#854D0E;border-radius:10px;padding:1px 8px;font-size:0.7em;">custom empty state</span>`);
+    // Phase B badges
+    const striping = checked('tbl-grid-row-striping');
+    const borderStyle = (() => { const el = document.getElementById('tbl-grid-border-style'); return el ? el.value : 'default'; })();
+    const contentWidth = (() => { const el = document.getElementById('tbl-grid-content-width'); return el ? el.value : 'full'; })();
+    const stickyToolbar = checked('tbl-grid-sticky-toolbar');
+    const stickyFooter = checked('tbl-grid-sticky-footer');
+    const colGroupCount = (() => { try { const g = JSON.parse((document.getElementById('tbl-grid-column-groups') || {}).value || '[]'); return Array.isArray(g) ? g.length : 0; } catch (e) { return 0; } })();
+    if (striping) badges.push('<span style="background:#FCE7F3;color:#9D174D;border-radius:10px;padding:1px 8px;font-size:0.7em;">zebra rows</span>');
+    if (borderStyle !== 'default') badges.push(`<span style="background:#F1F5F9;color:#334155;border-radius:10px;padding:1px 8px;font-size:0.7em;">${borderStyle} borders</span>`);
+    if (contentWidth !== 'full') badges.push(`<span style="background:#ECFCCB;color:#3F6212;border-radius:10px;padding:1px 8px;font-size:0.7em;">${contentWidth.replace('contained_', 'max ')}px</span>`);
+    if (stickyToolbar) badges.push('<span style="background:#DBEAFE;color:#1E3A8A;border-radius:10px;padding:1px 8px;font-size:0.7em;">sticky toolbar</span>');
+    if (stickyFooter) badges.push('<span style="background:#DBEAFE;color:#1E3A8A;border-radius:10px;padding:1px 8px;font-size:0.7em;">sticky pagination</span>');
+    if (colGroupCount) badges.push(`<span style="background:#FFEDD5;color:#9A3412;border-radius:10px;padding:1px 8px;font-size:0.7em;">${colGroupCount} column group${colGroupCount > 1 ? 's' : ''}</span>`);
 
     if (badges.length === 0) return '';
     return `
@@ -729,7 +836,7 @@ export function initializeTemplatePreviewHandlers() {
         templateSelect.addEventListener('change', toggleCardSizeGroup);
     }
     // Live preview: card size dropdowns redraw the mock grid immediately.
-    ['tbl-card-columns', 'tbl-card-columns-tablet', 'tbl-grid-sticky-header', 'tbl-grid-row-density', 'tbl-grid-inline-edit', 'tbl-grid-column-manager', 'tbl-grid-group-by', 'tbl-grid-row-click', 'tbl-grid-empty-heading', 'tbl-grid-summaries'].forEach((id) => {
+    ['tbl-card-columns', 'tbl-card-columns-tablet', 'tbl-grid-sticky-header', 'tbl-grid-row-density', 'tbl-grid-inline-edit', 'tbl-grid-column-manager', 'tbl-grid-group-by', 'tbl-grid-row-click', 'tbl-grid-empty-heading', 'tbl-grid-summaries', 'tbl-grid-row-striping', 'tbl-grid-border-style', 'tbl-grid-content-width', 'tbl-grid-sticky-toolbar', 'tbl-grid-sticky-footer', 'tbl-grid-column-groups'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', updateTableViewTemplatePreview);
     });

@@ -128,6 +128,12 @@ CREATE TABLE tables (
     grid_empty_heading           TEXT DEFAULT '',
     grid_empty_icon              TEXT DEFAULT '',
     grid_empty_description       TEXT DEFAULT '',
+    grid_row_striping            INTEGER DEFAULT 0,
+    grid_border_style            TEXT DEFAULT 'default',
+    grid_content_width           TEXT DEFAULT 'full',
+    grid_sticky_toolbar          INTEGER DEFAULT 0,
+    grid_sticky_footer           INTEGER DEFAULT 0,
+    grid_column_groups           TEXT DEFAULT '',
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
 

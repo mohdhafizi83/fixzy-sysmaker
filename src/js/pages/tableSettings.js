@@ -18,7 +18,8 @@ import {
     updateTableViewTemplatePreview,
     toggleCardSizeGroup,
     populateGridGroupByDropdown,
-    renderGridSummaryRows
+    renderGridSummaryRows,
+    renderGridColumnGroupRows
 } from '../uiHandlers.js';
 
 export function populateTableSettings(tableName) {
@@ -122,6 +123,14 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-grid-empty-heading', tableData.grid_empty_heading || '');
     setElementValue('tbl-grid-empty-icon', tableData.grid_empty_icon || '');
     setElementValue('tbl-grid-empty-description', tableData.grid_empty_description || '');
+    // Phase B (2026-09-25): striping, borders, width, sticky chrome, column groups
+    setElementValue('tbl-grid-row-striping', tableData.grid_row_striping ?? 0);
+    setElementValue('tbl-grid-border-style', tableData.grid_border_style || 'default');
+    setElementValue('tbl-grid-content-width', tableData.grid_content_width || 'full');
+    setElementValue('tbl-grid-sticky-toolbar', tableData.grid_sticky_toolbar ?? 0);
+    setElementValue('tbl-grid-sticky-footer', tableData.grid_sticky_footer ?? 0);
+    setElementValue('tbl-grid-column-groups', tableData.grid_column_groups || '');
+    renderGridColumnGroupRows();
 
     // Logic to disable soft-delete features if the project uses hard delete
     const isHardDelete = appState.activeProject.data_delete_type === 'hard';

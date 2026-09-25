@@ -110,6 +110,8 @@ function generateTableColumnsParts(tableData, relationships, tableName, projectS
     const columnsCode = [];
     const imageColumns = [];
     const otherColumns = [];
+    // B4: field_name -> generated column code, so column groups can re-wrap them.
+    const fieldCodeMap = {};
     let inlineEditUsed = false;
     // Note: modelNameSingular is passed in as an argument (Module Name) for correct type hinting
     const localizationEnabled = require('./localizationConfig').isLocalizationEnabled(projectSettings);
@@ -149,7 +151,6 @@ function generateTableColumnsParts(tableData, relationships, tableName, projectS
         // rendered as Filament editable columns instead.
         const inlineEditOn = tableData.grid_inline_edit === 1;
         if (field.editable_in_tv === 1 && !inlineEditOn) continue;
-
         let controller;
         if (field.media_type === 'image') controller = 'ImageColumn';
         else if (['upload', 'gmap', 'youtube'].includes(field.media_type) || field.data_type === 'BOOLEAN') controller = 'IconColumn';
@@ -185,6 +186,7 @@ function generateTableColumnsParts(tableData, relationships, tableName, projectS
                 );
                 columnsCode.push(editableCode);
                 otherColumns.push(editableCode);
+                fieldCodeMap[field.field_name] = editableCode;
                 inlineEditUsed = true;
                 continue;
             }
@@ -366,11 +368,52 @@ if (field.data_type === 'JSON') {
         }
         
         columnsCode.push(lines.join('\n                    '));
+        fieldCodeMap[field.field_name] = lines.join('\n                    ');
         if (controller === 'ImageColumn') imageColumns.push(lines.join('\n                    '));
         else otherColumns.push(lines.join('\n                    '));
     }
 
-    return { all: columnsCode, images: imageColumns, others: otherColumns, inlineEditUsed };
+    // --- B4: Grouped column headers (native Filament ColumnGroup) ---
+    // grid_column_groups JSON: [{"label":"Contact","columns":["email","phone"]}, ...]
+    // Only for the horizontal template (multi-level header bands don't make
+    // sense inside card/panel layouts). Max 5 groups; a column can only be
+    // in one group; unknown columns / unknown codes are skipped.
+    let groupedUsed = false;
+    const rawGroups = String(tableData.grid_column_groups || '').trim();
+    if (rawGroups && String(tableData.tv_template || 'horizontal') === 'horizontal') {
+        let groups = [];
+        try { groups = JSON.parse(rawGroups); } catch (e) { groups = []; }
+        if (Array.isArray(groups)) {
+            const usedFields = new Set();
+            const newColumns = [];
+            let added = 0;
+            for (const g of groups) {
+                if (added >= 5) break;
+                const label = String((g && g.label) || '').trim();
+                const cols = Array.isArray(g && g.columns) ? g.columns : [];
+                const codes = cols
+                    .map((c) => String(c))
+                    .filter((c) => fieldCodeMap[c] && !usedFields.has(c));
+                if (!label || codes.length === 0) continue;
+                codes.forEach((c) => usedFields.add(c));
+                newColumns.push(`ColumnGroup::make('${escPhp(label)}', [\n${codes.map((c) => '                    ' + fieldCodeMap[c]).join(',\n')}\n                ])`);
+                added++;
+            }
+            if (added > 0) {
+                // Ungrouped visible columns keep their original relative order.
+                const ungrouped = columnsCode.filter((code) => {
+                    const owner = Object.keys(fieldCodeMap).find((k) => fieldCodeMap[k] === code);
+                    return !(owner && usedFields.has(owner));
+                });
+                // Rebuild: groups first, then the remaining columns.
+                columnsCode.length = 0;
+                columnsCode.push(...newColumns, ...ungrouped);
+                groupedUsed = true;
+            }
+        }
+    }
+
+    return { all: columnsCode, images: imageColumns, others: otherColumns, inlineEditUsed, groupedUsed };
 }
 
 /**
@@ -584,6 +627,18 @@ function buildTableSettingsContext(tableData, relationships, tableName, projectS
     if (tableData.grid_sticky_header === 1) gridClasses.push('fixzy-sticky-header');
     const density = ['compact', 'comfortable'].includes(tableData.grid_row_density) ? tableData.grid_row_density : 'normal';
     if (density !== 'normal') gridClasses.push(`fixzy-grid-${density}`);
+    // B1: Zebra striping + border variant (CSS layer, FixzyGridServiceProvider).
+    if (Number(tableData.grid_row_striping) === 1) gridClasses.push('fixzy-grid-striped');
+    const borderStyle = ['minimal', 'none'].includes(String(tableData.grid_border_style || 'default'))
+        ? String(tableData.grid_border_style) : 'default';
+    if (borderStyle !== 'default') gridClasses.push(`fixzy-border-${borderStyle}`);
+    // B2: Contained content width.
+    const contentWidth = ['contained_1280', 'contained_1600'].includes(String(tableData.grid_content_width || 'full'))
+        ? String(tableData.grid_content_width) : 'full';
+    if (contentWidth !== 'full') gridClasses.push(`fixzy-grid-${contentWidth}`);
+    // B3: Sticky toolbar / sticky pagination footer.
+    if (Number(tableData.grid_sticky_toolbar) === 1) gridClasses.push('fixzy-sticky-toolbar');
+    if (Number(tableData.grid_sticky_footer) === 1) gridClasses.push('fixzy-sticky-footer');
     ctx.grid_classes = gridClasses.length
         ? `->extraAttributes(['class' => '${gridClasses.join(' ')}'])`
         : '';
@@ -683,7 +738,7 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
                 table_name_plural: modelNamePlural,
                 all_columns: columnsCode,
                 inline_edit_used: !!parts.inlineEditUsed,
-                layout_imports: (layout.layoutImports || []).map((i) => `use ${i};`).join('\n'),
+                layout_imports: (layout.layoutImports || []).concat(parts.groupedUsed ? ['Filament\\Tables\\Columns\\ColumnGroup'] : []).map((i) => `use ${i};`).join('\n'),
                 approval_actions: apCfg ? "\n                " + require('./approvalConfig').approvalActionsPhp(apCfg, modelNameSingular) : '',
                 ...buildTableSettingsContext(tableData, relationships, tableName, projectSettings, modelNameSingular),
             });
@@ -744,7 +799,7 @@ function generateSingleTableClass(basePath, resourceFolder, className, tableData
         table_class_name: className,
         all_columns: columnsCode,
         inline_edit_used: !!parts.inlineEditUsed,
-        layout_imports: (layout.layoutImports || []).map((i) => `use ${i};`).join('\n'),
+        layout_imports: (layout.layoutImports || []).concat(parts.groupedUsed ? ['Filament\\Tables\\Columns\\ColumnGroup'] : []).map((i) => `use ${i};`).join('\n'),
         approval_actions: (() => {
             const ap = require('./approvalConfig').parseApprovalConfig(tableData);
             return ap ? "\n                " + require('./approvalConfig').approvalActionsPhp(ap, modelNameSingular) : '';
