@@ -33,8 +33,9 @@ global.document = {
     querySelector: (sel) => stubElements['__preview__'] || null,
 };
 
-// Load the two real functions into this scope
+// Load the real functions into this scope
 eval(extractFn('buildCardSizePreviewHtml'));
+eval(extractFn('buildGridFeaturePreviewHtml'));
 eval(extractFn('updateTableViewTemplatePreview'));
 
 function colsOf(html, gridIndex) {
