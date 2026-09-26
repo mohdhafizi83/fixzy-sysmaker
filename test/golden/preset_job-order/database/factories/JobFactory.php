@@ -1,0 +1,31 @@
+<?php
+namespace Database\Factories;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\Job;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Job>
+ */
+class JobFactory extends Factory
+{
+    protected $model = Job::class;
+
+    public function definition(): array
+    {
+        return [
+            'created_by' => fake()->randomNumber(),
+            'updated_by' => fake()->randomNumber(),
+            'deleted_by' => fake()->randomNumber(),
+            'job_no' => fake()->jobTitle(),
+            'title' => fake()->sentence(4),
+            'customer_name' => fake()->name(),
+            'customer_phone' => fake()->phoneNumber(),
+            'site_address' => fake()->address(),
+            'scheduled_date' => fake()->date(),
+            'due_date' => fake()->date(),
+            'assigned_technician' => fake()->word(),
+            'job_status' => $this->faker->randomElement(['scheduled', 'in_progress', 'on_hold', 'completed', 'cancelled']),
+            'completion_notes' => fake()->text(),
+        ];
+    }
+}

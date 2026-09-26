@@ -400,6 +400,42 @@ Yes. Required rules, max lengths, and field types from the schema are
 enforced server-side on every submitted answer — the chat UI is a
 friendlier front door, not a bypass.
 
+## Starter Packs
+
+### Are Starter Packs complete business systems?
+
+No — and this is by design. A Starter Pack is a pre-composed *template*:
+tables, relations, menu groups, and workflow configuration that give you
+a 30-minute head start instead of a blank canvas. It is not a finished
+leave-management / booking / CRM product. Review the pack's preview
+caveats and adjust the configuration to your needs before generating.
+
+### Can I change what a pack installed?
+
+Everything. A pack installs ordinary designer content — the same tables,
+fields, relations, and custom modules you could create by hand. Edit
+fields, add tables, delete the custom module views, rewire the approval
+workflow: nothing a pack installs is locked.
+
+### What happens if a pack's table names clash with my existing tables?
+
+The installer refuses to run and lists the conflicting names. Nothing
+partial is written. Rename or remove your existing tables first, or
+author your own pack variant with different names.
+
+### Can I author my own Starter Packs?
+
+Yes. A pack is a declarative JSON manifest — see `src/presets/SCHEMA.md`.
+Drop it in `src/presets/` and it appears in the gallery automatically.
+No generator code needed.
+
+### Why is there no accounting / payroll / invoicing pack?
+
+Deliberately out of scope. Double-entry bookkeeping, tax rules, and
+payroll calculations carry correctness obligations a template generator
+should not pretend to own. Packs that touch money are labeled
+"tracking only" and stop there.
+
 ## General
 
 ### Do I need Laravel knowledge to use the generated app?

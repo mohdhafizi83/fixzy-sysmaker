@@ -1,0 +1,59 @@
+<?php
+namespace Database\Seeders;
+use Illuminate\Database\Seeder;
+use App\Models\User;
+use App\Models\Contact;
+use App\Models\Lead;
+use App\Models\Activity;
+
+class DatabaseSeeder extends Seeder {
+    public function run(): void {
+        // 1. Create Test User (Super Admin)
+        $user = User::firstOrCreate(
+            ['email' => 'admin@admin.com'],
+            ['name' => 'Super Admin', 'password' => bcrypt('password')]
+        );
+
+        // Assign the Super Admin Role
+        $role = \Spatie\Permission\Models\Role::firstOrCreate([
+            'name' => 'super_admin',
+            'guard_name' => 'web'
+        ]);
+        $user->assignRole($role);
+
+
+        // Seed Contact (Kalis Ralat Unique Constraint)
+        for ($i = 0; $i < 20; $i++) {
+            try {
+                Contact::factory()->create();
+            } catch (\Exception $e) {
+                // Ignore if data is duplicated or violates a Unique Constraint
+            }
+        }
+
+        // Seed Lead (Kalis Ralat Unique Constraint)
+        for ($i = 0; $i < 20; $i++) {
+            try {
+                Lead::factory()->create([
+                    'contact_id' => Contact::inRandomOrder()->first()?->id ?? null
+                ]);
+            } catch (\Exception $e) {
+                // Ignore if data is duplicated or violates a Unique Constraint
+            }
+        }
+
+        // Seed Activity (Kalis Ralat Unique Constraint)
+        for ($i = 0; $i < 20; $i++) {
+            try {
+                Activity::factory()->create([
+                    'lead_id' => Lead::inRandomOrder()->first()?->id ?? null
+                ]);
+            } catch (\Exception $e) {
+                // Ignore if data is duplicated or violates a Unique Constraint
+            }
+        }
+
+        // Filament Shield Security
+        $this->call(ShieldSeeder::class);
+    }
+}

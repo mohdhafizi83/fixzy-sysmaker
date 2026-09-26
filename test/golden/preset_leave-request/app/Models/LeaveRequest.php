@@ -1,0 +1,94 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+use App\Models\Concerns\HasAudits;
+
+use App\Models\Concerns\HasApproval;
+
+class LeaveRequest extends Model 
+{
+	use HasFactory;
+    use HasAudits;
+    
+    
+    use HasApproval;
+    
+    /**
+     *
+     * @var string
+     */
+    protected $table = 'leave_requests';
+    /**
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id';
+    /**
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        
+        'employee_name',
+        'employee_email',
+        'leave_type_id',
+        'start_date',
+        'end_date',
+        'days_requested',
+        'reason',
+        'approval_status'
+    
+    ];
+    
+    
+    /** Approval workflow (Fixzy SysMaker Approvals module) — generated. */
+    public const APPROVAL_STATUS_FIELD = 'approval_status';
+    public const APPROVAL_INITIAL = 'draft';
+
+    public const APPROVAL_STATUSES = [
+        'draft' => ['label' => 'Draft', 'color' => 'gray', 'final' => false],
+        'pending' => ['label' => 'Pending', 'color' => 'warning', 'final' => false],
+        'manager_review' => ['label' => 'Manager Review', 'color' => 'info', 'final' => false],
+        'approved' => ['label' => 'Approved', 'color' => 'success', 'final' => true],
+        'rejected' => ['label' => 'Rejected', 'color' => 'danger', 'final' => true],
+    ];
+
+    public const APPROVAL_TRANSITIONS = [
+        ['from' => 'draft', 'to' => 'pending', 'label' => 'Submit', 'roles' => '', 'require_comment' => false, 'notify' => ''],
+        ['from' => 'pending', 'to' => 'manager_review', 'label' => 'Forward to manager', 'roles' => '', 'require_comment' => false, 'notify' => ''],
+        ['from' => 'manager_review', 'to' => 'approved', 'label' => 'Approve', 'roles' => 'manager', 'require_comment' => false, 'notify' => 'submitter'],
+        ['from' => 'manager_review', 'to' => 'rejected', 'label' => 'Reject', 'roles' => 'manager', 'require_comment' => true, 'notify' => 'submitter'],
+    ];
+
+
+    public function leaveType()
+    {
+        return $this->belongsTo(LeaveType::class, 'leave_type_id', 'id');
+    }	
+
+
+
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->created_by)) {
+                $model->created_by = auth()->id();
+            }
+            if (empty($model->updated_by)) {
+                $model->updated_by = auth()->id();
+            }
+        });
+
+        static::updating(function ($model) {
+            $model->updated_by = auth()->id();
+        });
+    }
+
+}

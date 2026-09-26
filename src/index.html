@@ -49,6 +49,33 @@
     </div>
 </div>
 
+<!-- Starter Pack preview modal (populated by presetManager.js) -->
+<div id="preset-preview-modal" class="modal-overlay hidden">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h3 id="preset-preview-title">Starter Pack</h3>
+            <button id="preset-preview-close" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="preset-preview-tagline" class="module-description"></p>
+            <div id="preset-preview-conflicts" class="preset-conflicts hidden"></div>
+            <div id="preset-preview-caveats" class="preset-caveats hidden"></div>
+            <h4 style="margin: 12px 0 6px;">Tables</h4>
+            <div id="preset-preview-tables"></div>
+            <div id="preset-preview-modules"></div>
+        </div>
+        <div class="modal-footer">
+            <p id="preset-disclaimer" class="preset-disclaimer">
+                Starter Packs are pre-composed templates (tables, relations, layouts, and workflows) to jump-start your project.
+                They are NOT complete, ready-to-run business systems. Every table, field, and workflow rule can be edited,
+                removed, or extended to match your needs — review and adjust the configuration before generating.
+            </p>
+            <button class="btn btn-secondary" id="preset-preview-cancel">Cancel</button>
+            <button class="btn btn-primary" id="preset-install-btn">Install Pack</button>
+        </div>
+    </div>
+</div>
+
 <header class="main-header">
     <div class="title-group">
         <label for="app-title">App title:</label>
@@ -421,6 +448,17 @@
                     <input type="checkbox" id="app-debug-mode" name="app-debug-mode"> Enable Debug Mode & Debugbar
                 </label>
             </fieldset>
+
+<fieldset id="starter-packs-fieldset">
+    <legend>Starter Packs</legend>
+    <p class="module-description">
+        Jump-start your project with pre-composed templates (tables, relations, layouts, and workflows).
+        Everything a pack installs is fully editable afterwards.
+    </p>
+    <div id="starter-packs-grid" class="starter-packs-grid">
+        <!-- Pack cards rendered by presetManager.js -->
+    </div>
+</fieldset>
         </div>
     </div>
 </div>

@@ -1,0 +1,23 @@
+<?php
+namespace Database\Factories;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\LeaveType;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\LeaveType>
+ */
+class LeaveTypeFactory extends Factory
+{
+    protected $model = LeaveType::class;
+
+    public function definition(): array
+    {
+        return [
+            'created_by' => fake()->randomNumber(),
+            'updated_by' => fake()->randomNumber(),
+            'deleted_by' => fake()->randomNumber(),
+            'type_name' => fake()->name(),
+            'description' => fake()->paragraph(),
+        ];
+    }
+}

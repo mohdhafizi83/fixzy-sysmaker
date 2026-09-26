@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "slug": "leave-request",
+  "name": "Leave Request",
+  "tagline": "Employee leave applications with multi-level approval",
+  "category": "hr",
+  "caveats": [
+    "Tracking only — does not compute payroll deductions or leave balances."
+  ],
+  "tables": [
+    {
+      "ref": "leave_types",
+      "table_name": "leave_types",
+      "module_name": "Leave Types",
+      "menu_group": "Leave",
+      "fields": [
+        { "field_name": "type_name", "field_type": "VARCHAR", "required": 1, "caption": "Leave Type", "length": 100 },
+        { "field_name": "description", "field_type": "TEXT", "display_type": "text_area", "caption": "Description" }
+      ]
+    },
+    {
+      "ref": "leave_requests",
+      "table_name": "leave_requests",
+      "module_name": "Leave Requests",
+      "menu_group": "Leave",
+      "fields": [
+        { "field_name": "employee_name", "field_type": "VARCHAR", "required": 1, "caption": "Employee Name", "length": 150 },
+        { "field_name": "employee_email", "field_type": "VARCHAR", "caption": "Employee Email", "length": 150 },
+        { "field_name": "leave_type_id", "field_type": "INT", "required": 1, "caption": "Leave Type" },
+        { "field_name": "start_date", "field_type": "DATE", "required": 1, "caption": "Start Date" },
+        { "field_name": "end_date", "field_type": "DATE", "required": 1, "caption": "End Date" },
+        { "field_name": "days_requested", "field_type": "DECIMAL", "precision": 4, "length": 8, "caption": "Days Requested" },
+        { "field_name": "reason", "field_type": "TEXT", "display_type": "text_area", "required": 1, "caption": "Reason" },
+        { "field_name": "approval_status", "field_type": "VARCHAR", "required": 1, "length": 30, "caption": "Status", "display_type": "options_list", "options_list_values": "draft|pending|manager_review|approved|rejected", "default_value": "draft" }
+      ],
+      "table_settings": {
+        "approval_enabled": 1,
+        "approval_config": {
+          "statusField": "approval_status",
+          "initial": "draft",
+          "statuses": [
+            { "key": "draft", "label": "Draft", "color": "gray", "final": false },
+            { "key": "pending", "label": "Pending", "color": "warning", "final": false },
+            { "key": "manager_review", "label": "Manager Review", "color": "info", "final": false },
+            { "key": "approved", "label": "Approved", "color": "success", "final": true },
+            { "key": "rejected", "label": "Rejected", "color": "danger", "final": true }
+          ],
+          "transitions": [
+            { "from": "draft", "to": "pending", "label": "Submit", "roles": "", "require_comment": false, "notify": "" },
+            { "from": "pending", "to": "manager_review", "label": "Forward to manager", "roles": "", "require_comment": false, "notify": "" },
+            { "from": "manager_review", "to": "approved", "label": "Approve", "roles": "manager", "require_comment": false, "notify": "submitter" },
+            { "from": "manager_review", "to": "rejected", "label": "Reject", "roles": "manager", "require_comment": true, "notify": "submitter" }
+          ]
+        }
+      }
+    }
+  ],
+  "relationships": [
+    { "parent_ref": "leave_types", "child_ref": "leave_requests", "fk_field": "leave_type_id", "parent_field": "id" }
+  ],
+  "custom_modules": [
+    {
+      "ref": "pending_approvals",
+      "base_table_ref": "leave_requests",
+      "module_name": "Pending Approvals",
+      "menu_icon": "fa-solid fa-hourglass-half",
+      "menu_group": "Leave",
+      "filter_rules": { "condition": "AND", "rules": [ { "column": "approval_status", "operator": "IN", "value": "pending,manager_review" } ] },
+      "included_relations": [],
+      "settings_override": { "table_view_title": "Awaiting Your Approval" }
+    }
+  ],
+  "menu": { "groups": ["Leave"] }
+}

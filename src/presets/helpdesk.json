@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "slug": "helpdesk",
+  "name": "Helpdesk Tickets",
+  "tagline": "Support tickets with agent assignment and a kanban board",
+  "category": "support",
+  "caveats": [
+    "Status workflow only — no SLA timers or automatic email notifications beyond the core Notification module."
+  ],
+  "tables": [
+    {
+      "ref": "tickets",
+      "table_name": "tickets",
+      "module_name": "Tickets",
+      "menu_group": "Helpdesk",
+      "fields": [
+        { "field_name": "ticket_no", "field_type": "VARCHAR", "required": 1, "unique": 1, "caption": "Ticket No", "length": 30 },
+        { "field_name": "subject", "field_type": "VARCHAR", "required": 1, "caption": "Subject", "length": 200 },
+        { "field_name": "requester_name", "field_type": "VARCHAR", "required": 1, "caption": "Requester", "length": 150 },
+        { "field_name": "requester_email", "field_type": "VARCHAR", "caption": "Requester Email", "length": 150 },
+        { "field_name": "priority", "field_type": "VARCHAR", "required": 1, "length": 20, "caption": "Priority", "display_type": "options_list", "options_list_values": "low|medium|high|urgent", "default_value": "medium" },
+        { "field_name": "ticket_status", "field_type": "VARCHAR", "required": 1, "length": 30, "caption": "Status", "display_type": "options_list", "options_list_values": "new|open|in_progress|resolved|closed", "default_value": "new" },
+        { "field_name": "assigned_to", "field_type": "VARCHAR", "caption": "Assigned Agent", "length": 150 },
+        { "field_name": "description", "field_type": "TEXT", "display_type": "text_area", "required": 1, "caption": "Issue Description" }
+      ],
+      "table_settings": {
+        "numbering_enabled": 1,
+        "numbering_config": { "field": "ticket_no", "prefix": "TKT", "date_token": "", "width": 6, "reset": "never" }
+      }
+    },
+    {
+      "ref": "ticket_replies",
+      "table_name": "ticket_replies",
+      "module_name": "Ticket Replies",
+      "menu_group": "Helpdesk",
+      "fields": [
+        { "field_name": "ticket_id", "field_type": "INT", "required": 1, "caption": "Ticket" },
+        { "field_name": "reply_from", "field_type": "VARCHAR", "required": 1, "caption": "Reply From", "length": 150 },
+        { "field_name": "is_agent_reply", "field_type": "BOOLEAN", "required": 1, "caption": "Agent Reply", "default_value": "0" },
+        { "field_name": "message", "field_type": "TEXT", "display_type": "text_area", "required": 1, "caption": "Message" }
+      ]
+    }
+  ],
+  "relationships": [
+    { "parent_ref": "tickets", "child_ref": "ticket_replies", "fk_field": "ticket_id", "parent_field": "id" }
+  ],
+  "custom_modules": [
+    {
+      "ref": "ticket_board",
+      "base_table_ref": "tickets",
+      "module_name": "Ticket Board",
+      "menu_icon": "fa-solid fa-table-columns",
+      "menu_group": "Helpdesk",
+      "filter_rules": { "condition": "AND", "rules": [] },
+      "included_relations": [],
+      "settings_override": {
+        "table_view_title": "Ticket Board",
+        "grid_kanban_enabled": 1,
+        "grid_kanban_config": {
+          "group_field": "ticket_status",
+          "card_fields": ["subject", "priority", "assigned_to"],
+          "allowed_transitions": {
+            "new": ["open"],
+            "open": ["in_progress", "new"],
+            "in_progress": ["resolved", "open"],
+            "resolved": ["closed", "open"],
+            "closed": []
+          }
+        }
+      }
+    },
+    {
+      "ref": "urgent_tickets",
+      "base_table_ref": "tickets",
+      "module_name": "Urgent Tickets",
+      "menu_icon": "fa-solid fa-triangle-exclamation",
+      "menu_group": "Helpdesk",
+      "filter_rules": { "condition": "AND", "rules": [ { "column": "priority", "operator": "=", "value": "urgent" } ] },
+      "included_relations": [],
+      "settings_override": { "table_view_title": "Urgent Queue" }
+    }
+  ],
+  "menu": { "groups": ["Helpdesk"] }
+}

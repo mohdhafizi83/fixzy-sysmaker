@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "slug": "job-order",
+  "name": "Job / Work Order",
+  "tagline": "Service jobs with numbered orders, tasks, and status tracking",
+  "category": "operations",
+  "caveats": [
+    "Tracking only — no billing, costing, or invoicing logic."
+  ],
+  "tables": [
+    {
+      "ref": "jobs",
+      "table_name": "jobs",
+      "module_name": "Jobs",
+      "menu_group": "Work Orders",
+      "fields": [
+        { "field_name": "job_no", "field_type": "VARCHAR", "required": 1, "unique": 1, "caption": "Job No", "length": 30 },
+        { "field_name": "title", "field_type": "VARCHAR", "required": 1, "caption": "Job Title", "length": 200 },
+        { "field_name": "customer_name", "field_type": "VARCHAR", "required": 1, "caption": "Customer", "length": 150 },
+        { "field_name": "customer_phone", "field_type": "VARCHAR", "caption": "Customer Phone", "length": 30 },
+        { "field_name": "site_address", "field_type": "TEXT", "display_type": "text_area", "caption": "Site Address" },
+        { "field_name": "scheduled_date", "field_type": "DATE", "caption": "Scheduled Date" },
+        { "field_name": "due_date", "field_type": "DATE", "caption": "Due Date" },
+        { "field_name": "assigned_technician", "field_type": "VARCHAR", "caption": "Assigned Technician", "length": 150 },
+        { "field_name": "job_status", "field_type": "VARCHAR", "required": 1, "length": 30, "caption": "Status", "display_type": "options_list", "options_list_values": "scheduled|in_progress|on_hold|completed|cancelled", "default_value": "scheduled" },
+        { "field_name": "completion_notes", "field_type": "TEXT", "display_type": "text_area", "caption": "Completion Notes" }
+      ],
+      "table_settings": {
+        "numbering_enabled": 1,
+        "numbering_config": { "field": "job_no", "prefix": "JOB", "date_token": "YYYYMM", "width": 4, "reset": "monthly" }
+      }
+    },
+    {
+      "ref": "job_tasks",
+      "table_name": "job_tasks",
+      "module_name": "Job Tasks",
+      "menu_group": "Work Orders",
+      "fields": [
+        { "field_name": "job_id", "field_type": "INT", "required": 1, "caption": "Job" },
+        { "field_name": "task_name", "field_type": "VARCHAR", "required": 1, "caption": "Task", "length": 200 },
+        { "field_name": "task_order", "field_type": "INT", "caption": "Order" },
+        { "field_name": "is_done", "field_type": "BOOLEAN", "required": 1, "caption": "Done", "default_value": "0" },
+        { "field_name": "notes", "field_type": "TEXT", "display_type": "text_area", "caption": "Notes" }
+      ]
+    }
+  ],
+  "relationships": [
+    { "parent_ref": "jobs", "child_ref": "job_tasks", "fk_field": "job_id", "parent_field": "id" }
+  ],
+  "custom_modules": [
+    {
+      "ref": "active_jobs",
+      "base_table_ref": "jobs",
+      "module_name": "Active Jobs",
+      "menu_icon": "fa-solid fa-screwdriver-wrench",
+      "menu_group": "Work Orders",
+      "filter_rules": { "condition": "AND", "rules": [ { "column": "job_status", "operator": "IN", "value": "scheduled,in_progress,on_hold" } ] },
+      "included_relations": [],
+      "settings_override": { "table_view_title": "Active Jobs" }
+    }
+  ],
+  "menu": { "groups": ["Work Orders"] }
+}

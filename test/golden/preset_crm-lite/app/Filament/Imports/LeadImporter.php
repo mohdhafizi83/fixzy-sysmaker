@@ -1,0 +1,157 @@
+<?php
+
+namespace App\Filament\Imports;
+
+use App\Models\Lead;
+use App\Models\Contact;
+use Filament\Actions\Imports\ImportColumn;
+use Filament\Actions\Imports\Importer;
+use Filament\Actions\Imports\Models\Import;
+use Illuminate\Support\Number;
+use Filament\Forms\Components\Checkbox;
+
+class LeadImporter extends Importer
+{
+    protected static ?string $model = Lead::class;
+
+    public static function getColumns(): array
+    {
+        return [
+            ImportColumn::make('id')
+                ->label('ID')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('ID'),
+
+            ImportColumn::make('created_at')
+                ->label('Created At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Created At'),
+
+            ImportColumn::make('updated_at')
+                ->label('Updated At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Updated At'),
+
+            ImportColumn::make('deleted_at')
+                ->label('Deleted At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Deleted At'),
+
+            ImportColumn::make('created_by')
+                ->label('Created By')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Created By'),
+
+            ImportColumn::make('updated_by')
+                ->label('Updated By')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Updated By'),
+
+            ImportColumn::make('deleted_by')
+                ->label('Deleted By')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Deleted By'),
+
+            ImportColumn::make('lead_name')
+                ->label('Lead Name')
+                ->requiredMapping()
+                ->ignoreBlankState()
+                ->rules(['required', 'max:150'])
+                ->examples(['Sample Lead Name 1', 'Sample Lead Name 2'])
+                ->exampleHeader('Lead Name'),
+
+            ImportColumn::make('contact_id')
+                ->label('Contact')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Contact'),
+
+            ImportColumn::make('source')
+                ->label('Source')
+                ->ignoreBlankState()
+                ->rules(['max:100'])
+                ->examples(['Sample Source 1', 'Sample Source 2'])
+                ->exampleHeader('Source'),
+
+            ImportColumn::make('pipeline_stage')
+                ->label('Stage')
+                ->requiredMapping()
+                ->ignoreBlankState()
+                ->rules(['required', 'max:30'])
+                ->examples(['Sample Stage 1', 'Sample Stage 2'])
+                ->exampleHeader('Stage'),
+
+            ImportColumn::make('estimated_value')
+                ->label('Estimated Value')
+                ->numeric()
+                ->ignoreBlankState()
+                ->rules(['max:12'])
+                ->examples(['Sample Estimated Value 1', 'Sample Estimated Value 2'])
+                ->exampleHeader('Estimated Value'),
+
+            ImportColumn::make('expected_close_date')
+                ->label('Expected Close')
+                ->ignoreBlankState()
+                ->rules(['date'])
+                ->examples(['2024-01-01', '2024-12-31'])
+                ->exampleHeader('Expected Close'),
+
+            ImportColumn::make('owner_name')
+                ->label('Owner')
+                ->ignoreBlankState()
+                ->rules(['max:150'])
+                ->examples(['Sample Owner 1', 'Sample Owner 2'])
+                ->exampleHeader('Owner'),
+        ];
+    }
+
+    public function resolveRecord(): ?Lead
+    {
+    return new Lead();
+    }
+
+    public static function getCompletedNotificationBody(Import $import): string
+    {
+        $body = 'Your Leads import has completed and ' . Number::format($import->successful_rows) . ' ' . str('row')->plural($import->successful_rows) . ' imported.';
+
+        if ($failedRowsCount = $import->getFailedRowsCount()) {
+            $body .= ' ' . Number::format($failedRowsCount) . ' ' . str('row')->plural($failedRowsCount) . ' failed to import.';
+        }
+
+        return $body;
+    }
+    
+    public static function getOptionsFormComponents(): array
+    {
+        return [
+            Checkbox::make('updateExisting')
+                ->label('Update existing records'),
+        ];
+    }
+
+}

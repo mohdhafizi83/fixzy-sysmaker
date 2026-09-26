@@ -1,0 +1,210 @@
+<?php
+
+namespace App\Filament\Resources\PendingApprovals\Tables;
+
+
+
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Tables\Table;
+use Filament\Tables\Columns\TextColumn;
+use Illuminate\Contracts\View\View;
+
+
+class PendingApprovalsTable
+{
+    public static function configure(Table $table): Table
+    {
+        return $table
+            
+            
+            
+            
+            
+            ->description('')
+            ->columns([
+                TextColumn::make('id')
+                    ->label('Id')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                TextColumn::make('created_at')
+                    ->label('Created At')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->dateTime('d/m/Y h:i A'),
+                TextColumn::make('updated_at')
+                    ->label('Updated At')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->dateTime('d/m/Y h:i A'),
+                TextColumn::make('deleted_at')
+                    ->label('Deleted At')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->dateTime('d/m/Y h:i A'),
+                TextColumn::make('created_by')
+                    ->label('Created By')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                TextColumn::make('updated_by')
+                    ->label('Updated By')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                TextColumn::make('deleted_by')
+                    ->label('Deleted By')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                TextColumn::make('employee_name')
+                    ->label('Employee Name')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('employee_email')
+                    ->label('Employee Email')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('leave_type_id')
+                    ->label('Leave Type')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                TextColumn::make('start_date')
+                    ->label('Start Date')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->dateTime('d/m/Y'),
+                TextColumn::make('end_date')
+                    ->label('End Date')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->dateTime('d/m/Y'),
+                TextColumn::make('days_requested')
+                    ->label('Days Requested')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                TextColumn::make('reason')
+                    ->label('Reason')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('approval_status')
+                    ->label('Status')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->badge()->color(fn (?string $state): string => match ($state) {
+        'draft' => 'gray',
+        'pending' => 'warning',
+        'manager_review' => 'info',
+        'approved' => 'success',
+        'rejected' => 'danger',
+        default => 'gray',
+        })
+            ])
+            ->when((bool) request()->query('print'), fn (Table $table) => $table->paginated(false),)
+            ->filters([
+                
+            ])
+            ->recordActions([
+
+                   
+                    
+                
+                Action::make('approve_draft_to_pending')
+                    ->label('Submit')
+                    ->icon('heroicon-o-arrow-right-circle')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Submit')
+                    ->modalSubmitActionLabel('Submit')
+                    ->visible(fn ($record): bool => collect($record->visibleTransitionsFor(auth()->user()))
+                        ->contains(fn (array $tr): bool => $tr['from'] === 'draft' && $tr['to'] === 'pending'))
+                    ->action(function ($record, array $data): void {
+                        $record->transitionTo('pending', $data['approval_comment'] ?? null);
+                    }),
+                Action::make('approve_pending_to_manager_review')
+                    ->label('Forward to manager')
+                    ->icon('heroicon-o-arrow-right-circle')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Forward to manager')
+                    ->modalSubmitActionLabel('Forward to manager')
+                    ->visible(fn ($record): bool => collect($record->visibleTransitionsFor(auth()->user()))
+                        ->contains(fn (array $tr): bool => $tr['from'] === 'pending' && $tr['to'] === 'manager_review'))
+                    ->action(function ($record, array $data): void {
+                        $record->transitionTo('manager_review', $data['approval_comment'] ?? null);
+                    }),
+                Action::make('approve_manager_review_to_approved')
+                    ->label('Approve')
+                    ->icon('heroicon-o-arrow-right-circle')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Approve')
+                    ->modalSubmitActionLabel('Approve')
+                    ->visible(fn ($record): bool => collect($record->visibleTransitionsFor(auth()->user()))
+                        ->contains(fn (array $tr): bool => $tr['from'] === 'manager_review' && $tr['to'] === 'approved'))
+                    ->action(function ($record, array $data): void {
+                        $record->transitionTo('approved', $data['approval_comment'] ?? null);
+                    }),
+                Action::make('approve_manager_review_to_rejected')
+                    ->label('Reject')
+                    ->icon('heroicon-o-arrow-right-circle')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Reject')
+                    ->modalDescription('A comment is required for this step. Add one in the field below after confirming.')
+                    ->modalSubmitActionLabel('Reject')
+                    ->schema([
+                        \Filament\Forms\Components\Textarea::make('approval_comment')
+                            ->label('Comment')
+                            ->required(),
+                    ])
+                    ->visible(fn ($record): bool => collect($record->visibleTransitionsFor(auth()->user()))
+                        ->contains(fn (array $tr): bool => $tr['from'] === 'manager_review' && $tr['to'] === 'rejected'))
+                    ->action(function ($record, array $data): void {
+                        $record->transitionTo('rejected', $data['approval_comment'] ?? null);
+                    }),
+                
+                
+                
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                DeleteBulkAction::make(),
+            ]),
+            ]);
+    }
+}

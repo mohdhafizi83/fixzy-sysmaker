@@ -1,0 +1,48 @@
+<?php
+
+namespace App\Filament\Exports;
+
+use App\Models\Job;
+use Filament\Actions\Exports\ExportColumn;
+use Filament\Actions\Exports\Exporter;
+use Filament\Actions\Exports\Models\Export;
+use Illuminate\Support\Number;
+
+class JobExporter extends Exporter
+{
+    protected static ?string $model = Job::class;
+
+    public static function getColumns(): array
+    {
+        return [
+                        ExportColumn::make('id')->limit(50)->label('Id'),
+            ExportColumn::make('created_at')->limit(50)->label('Created At'),
+            ExportColumn::make('updated_at')->limit(50)->label('Updated At'),
+            ExportColumn::make('deleted_at')->limit(50)->label('Deleted At'),
+            ExportColumn::make('created_by')->limit(50)->label('Created By'),
+            ExportColumn::make('updated_by')->limit(50)->label('Updated By'),
+            ExportColumn::make('deleted_by')->limit(50)->label('Deleted By'),
+            ExportColumn::make('job_no')->limit(50)->label('Job No'),
+            ExportColumn::make('title')->limit(50)->label('Job Title'),
+            ExportColumn::make('customer_name')->limit(50)->label('Customer'),
+            ExportColumn::make('customer_phone')->limit(50)->label('Customer Phone'),
+            ExportColumn::make('site_address')->limit(50)->label('Site Address'),
+            ExportColumn::make('scheduled_date')->limit(50)->label('Scheduled Date'),
+            ExportColumn::make('due_date')->limit(50)->label('Due Date'),
+            ExportColumn::make('assigned_technician')->limit(50)->label('Assigned Technician'),
+            ExportColumn::make('job_status')->limit(50)->label('Status'),
+            ExportColumn::make('completion_notes')->limit(50)->label('Completion Notes'),
+        ];
+    }
+
+    public static function getCompletedNotificationBody(Export $export): string
+    {
+        $body = 'Your Jobs export has completed and ' . Number::format($export->successful_rows) . ' ' . str('row')->plural($export->successful_rows) . ' exported.';
+
+        if ($failedRowsCount = $export->getFailedRowsCount()) {
+            $body .= ' ' . Number::format($failedRowsCount) . ' ' . str('row')->plural($failedRowsCount) . ' failed to export.';
+        }
+
+        return $body;
+    }
+}

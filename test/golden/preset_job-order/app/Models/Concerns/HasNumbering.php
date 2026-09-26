@@ -1,0 +1,90 @@
+<?php
+
+namespace App\Models\Concerns;
+
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Race-safe auto numbering (Fixzy SysMaker generated code).
+ *
+ * Fills a configured column on create with a pattern like
+ * PREFIX-YYYYMM-0001. The sequence counter lives in the
+ * `numbering_sequences` table keyed by (table, period) and is
+ * incremented inside a DB transaction with a row lock, so concurrent
+ * inserts never produce duplicate or skipped numbers.
+ */
+trait HasNumbering
+{
+    /**
+     * Generated code overrides this with the compiled config:
+     *   ['field' => 'invoice_no', 'prefix' => 'INV',
+     *    'date_token' => 'YYYYMM', 'width' => 4, 'reset' => 'monthly']
+     */
+    protected static function numberingConfig(): array
+    {
+        return [];
+    }
+
+    public static function bootHasNumbering(): void
+    {
+        static::creating(function ($record) {
+            $cfg = static::numberingConfig();
+            if (empty($cfg['field'])) {
+                return;
+            }
+            // Respect a manually supplied value (e.g. admin typed one).
+            if (filled($record->{$cfg['field']})) {
+                return;
+            }
+            $record->{$cfg['field']} = static::nextNumber($cfg);
+        });
+    }
+
+    public static function nextNumber(array $cfg): string
+    {
+        $now = now();
+        $token = '';
+        if ($cfg['date_token'] === 'YYYY') {
+            $token = $now->format('Y');
+        } elseif ($cfg['date_token'] === 'YYYYMM') {
+            $token = $now->format('Ym');
+        } elseif ($cfg['date_token'] === 'YYYYMMDD') {
+            $token = $now->format('Ymd');
+        }
+
+        $table = (new static)->getTable();
+        $period = $cfg['reset'] === 'never' ? '*' : $token;
+
+        // Atomic upsert + increment. Works on SQLite, MySQL and
+        // Postgres: the INSERT seeds the row, the UPDATE takes the
+        // row lock and bumps the counter, the SELECT reads the new
+        // value inside the same transaction.
+        return DB::transaction(function () use ($table, $period, $cfg, $token, $now) {
+            DB::table('numbering_sequences')->insertOrIgnore([
+                'table_name' => $table,
+                'period' => $period,
+                'last_value' => 0,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            DB::table('numbering_sequences')
+                ->where('table_name', $table)
+                ->where('period', $period)
+                ->increment('last_value');
+            $value = (int) DB::table('numbering_sequences')
+                ->where('table_name', $table)
+                ->where('period', $period)
+                ->value('last_value');
+
+            $parts = [];
+            if ($cfg['prefix'] !== '') {
+                $parts[] = $cfg['prefix'];
+            }
+            if ($token !== '') {
+                $parts[] = $token;
+            }
+            $parts[] = str_pad((string) $value, $cfg['width'], '0', STR_PAD_LEFT);
+            return implode('-', $parts);
+        });
+    }
+}

@@ -1,0 +1,28 @@
+<?php
+namespace Database\Factories;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\Lead;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Lead>
+ */
+class LeadFactory extends Factory
+{
+    protected $model = Lead::class;
+
+    public function definition(): array
+    {
+        return [
+            'created_by' => fake()->randomNumber(),
+            'updated_by' => fake()->randomNumber(),
+            'deleted_by' => fake()->randomNumber(),
+            'lead_name' => fake()->name(),
+            'contact_id' => \App\Models\Contact::inRandomOrder()->value('id'),
+            'source' => $this->faker->randomElement(['website', 'referral', 'cold_call', 'event', 'social_media', 'other']),
+            'pipeline_stage' => $this->faker->randomElement(['new', 'contacted', 'qualified', 'proposal', 'won', 'lost']),
+            'estimated_value' => fake()->randomFloat(2, 10, 1000),
+            'expected_close_date' => fake()->date(),
+            'owner_name' => fake()->name(),
+        ];
+    }
+}

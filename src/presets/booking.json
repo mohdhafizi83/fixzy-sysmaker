@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "slug": "booking",
+  "name": "Booking & Reservation",
+  "tagline": "Reserve resources or slots with a calendar view",
+  "category": "scheduling",
+  "caveats": [
+    "No double-booking prevention logic — add validation rules or server-side checks for conflict-free scheduling."
+  ],
+  "tables": [
+    {
+      "ref": "booking_resources",
+      "table_name": "booking_resources",
+      "module_name": "Bookable Resources",
+      "menu_group": "Bookings",
+      "fields": [
+        { "field_name": "resource_name", "field_type": "VARCHAR", "required": 1, "caption": "Resource Name", "length": 150 },
+        { "field_name": "resource_code", "field_type": "VARCHAR", "required": 1, "unique": 1, "caption": "Resource Code", "length": 30 },
+        { "field_name": "capacity", "field_type": "INT", "caption": "Capacity" },
+        { "field_name": "location", "field_type": "VARCHAR", "caption": "Location", "length": 150 },
+        { "field_name": "is_active", "field_type": "BOOLEAN", "required": 1, "caption": "Active", "default_value": "1" }
+      ]
+    },
+    {
+      "ref": "bookings",
+      "table_name": "bookings",
+      "module_name": "Bookings",
+      "menu_group": "Bookings",
+      "fields": [
+        { "field_name": "booking_ref", "field_type": "VARCHAR", "required": 1, "unique": 1, "caption": "Booking Ref", "length": 30 },
+        { "field_name": "resource_id", "field_type": "INT", "required": 1, "caption": "Resource" },
+        { "field_name": "booker_name", "field_type": "VARCHAR", "required": 1, "caption": "Booker Name", "length": 150 },
+        { "field_name": "booker_email", "field_type": "VARCHAR", "caption": "Booker Email", "length": 150 },
+        { "field_name": "start_datetime", "field_type": "DATETIME", "required": 1, "caption": "Start" },
+        { "field_name": "end_datetime", "field_type": "DATETIME", "required": 1, "caption": "End" },
+        { "field_name": "attendees", "field_type": "INT", "caption": "Attendees" },
+        { "field_name": "notes", "field_type": "TEXT", "display_type": "text_area", "caption": "Notes" },
+        { "field_name": "booking_status", "field_type": "VARCHAR", "required": 1, "length": 30, "caption": "Status", "display_type": "options_list", "options_list_values": "pending|confirmed|cancelled|completed", "default_value": "pending" }
+      ],
+      "table_settings": {
+        "numbering_enabled": 1,
+        "numbering_config": { "field": "booking_ref", "prefix": "BKG", "date_token": "YYYYMMDD", "width": 4, "reset": "daily" }
+      }
+    }
+  ],
+  "relationships": [
+    { "parent_ref": "booking_resources", "child_ref": "bookings", "fk_field": "resource_id", "parent_field": "id" }
+  ],
+  "custom_modules": [
+    {
+      "ref": "booking_calendar",
+      "base_table_ref": "bookings",
+      "module_name": "Booking Calendar",
+      "menu_icon": "fa-solid fa-calendar-days",
+      "menu_group": "Bookings",
+      "filter_rules": { "condition": "AND", "rules": [] },
+      "included_relations": [],
+      "settings_override": {
+        "table_view_title": "Booking Calendar",
+        "grid_calendar_enabled": 1,
+        "grid_calendar_config": { "start_field": "start_datetime", "end_field": "end_datetime", "title_field": "booker_name", "color_field": "" }
+      }
+    }
+  ],
+  "menu": { "groups": ["Bookings"] }
+}

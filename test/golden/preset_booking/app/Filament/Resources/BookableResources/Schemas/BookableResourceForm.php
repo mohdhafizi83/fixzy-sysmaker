@@ -1,0 +1,107 @@
+<?php
+namespace App\Filament\Resources\BookableResources\Schemas;
+
+
+
+use Illuminate\Contracts\View\View;
+use Filament\Schemas\Schema;
+use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
+use Filament\Actions\Action;
+use Filament\Forms\Components\TextInput;
+
+class BookableResourceForm
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema->components([
+            Section::make("Detail View")
+                ->columns(fn (Page $livewire) => $livewire->gridColumns)
+    ->headerActions([
+        Action::make('1 Kolum')
+            ->icon('heroicon-o-queue-list')
+            ->iconButton()
+            ->color('gray')
+            ->tooltip('Display 1 column')
+            ->action(fn (Page $livewire) => $livewire->gridColumns = 1),
+
+        Action::make('2 Kolum')
+            ->icon('heroicon-o-view-columns')
+            ->iconButton()
+            ->color('gray')
+            ->tooltip('Display 2 column')
+            ->action(fn (Page $livewire) => $livewire->gridColumns = 2),
+
+        Action::make('3 Kolum')
+            ->icon('heroicon-o-table-cells')
+            ->iconButton()
+            ->color('gray')
+            ->tooltip('Display 3 column')
+            ->action(fn (Page $livewire) => $livewire->gridColumns = 3),
+    ])
+                ->schema([
+				TextInput::make('id')
+    ->integer()
+    ->readOnly()
+    ->maxLength(11)
+    ->label('ID')
+    ->trim(),
+                TextInput::make('created_at')
+    ->readOnly()
+    ->label('Created At')
+    ->trim(),
+                TextInput::make('updated_at')
+    ->readOnly()
+    ->label('Updated At')
+    ->trim(),
+                TextInput::make('deleted_at')
+    ->readOnly()
+    ->label('Deleted At')
+    ->trim(),
+                TextInput::make('created_by')
+    ->integer()
+    ->readOnly()
+    ->maxLength(20)
+    ->label('Created By')
+    ->trim(),
+                TextInput::make('updated_by')
+    ->integer()
+    ->readOnly()
+    ->maxLength(20)
+    ->label('Updated By')
+    ->trim(),
+                TextInput::make('deleted_by')
+    ->integer()
+    ->readOnly()
+    ->maxLength(20)
+    ->label('Deleted By')
+    ->trim(),
+                TextInput::make('resource_name')
+    ->maxLength(150)
+    ->required()->markAsRequired()
+    ->label('Resource Name')
+    ->trim(),
+                TextInput::make('resource_code')
+    ->maxLength(30)
+    ->required()->markAsRequired()
+    ->unique(ignoreRecord: true)
+    ->label('Resource Code')
+    ->trim(),
+                TextInput::make('capacity')
+    ->integer()
+    ->label('Capacity')
+    ->trim(),
+                TextInput::make('location')
+    ->maxLength(150)
+    ->label('Location')
+    ->trim(),
+                TextInput::make('is_active')
+    ->required()->markAsRequired()
+    ->default('1')
+    ->label('Active')
+    ->trim(),
+                ])
+                ->columnSpanFull(),
+        ]);
+    }
+}

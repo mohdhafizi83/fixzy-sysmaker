@@ -1772,6 +1772,54 @@ ipcMain.handle('custom-module:delete', async (event, viewId) => {
     }
 });
 
+// ---------------------------------------------------------
+// STARTER PACKS (presets): list / preview / install
+// ---------------------------------------------------------
+const { installPreset, checkCollisions, loadBundledPresets, presetSummary } = require('../core/presetInstaller');
+
+function bundledPresets() {
+    return loadBundledPresets(path.join(__dirname, '..', 'presets'));
+}
+
+ipcMain.handle('preset:list', async () => {
+    try {
+        return { success: true, presets: bundledPresets().map((p) => presetSummary(p.manifest)) };
+    } catch (error) {
+        console.error('Failed to list presets:', error);
+        return { success: false, message: error.message };
+    }
+});
+
+ipcMain.handle('preset:preview', async (event, slug) => {
+    try {
+        const found = bundledPresets().find((p) => p.manifest.slug === slug);
+        if (!found) return { success: false, message: `Unknown preset: ${slug}` };
+        const active = db.prepare('SELECT project_id FROM projects WHERE is_active = 1').get();
+        const conflicts = active ? checkCollisions(db, active.project_id, found.manifest) : { tables: [], modules: [] };
+        return { success: true, manifest: found.manifest, conflicts };
+    } catch (error) {
+        console.error('Failed to preview preset:', error);
+        return { success: false, message: error.message };
+    }
+});
+
+ipcMain.handle('preset:install', async (event, slug) => {
+    try {
+        const found = bundledPresets().find((p) => p.manifest.slug === slug);
+        if (!found) return { success: false, message: `Unknown preset: ${slug}` };
+        const active = db.prepare('SELECT project_id FROM projects WHERE is_active = 1').get();
+        if (!active) return { success: false, message: 'No active project. Create or open a project first.' };
+        const result = installPreset(db, active.project_id, found.manifest);
+        if (result.success) {
+            console.log(`Starter pack '${slug}' installed into project ${active.project_id}`);
+        }
+        return result;
+    } catch (error) {
+        console.error('Failed to install preset:', error);
+        return { success: false, message: error.message };
+    }
+});
+
 ipcMain.handle('project:get-initial-status', async (event, projectId) => {
   try {
     const tables = db.prepare('SELECT table_name FROM tables WHERE project_id = ?').all(projectId);

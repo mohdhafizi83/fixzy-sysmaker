@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "slug": "crm-lite",
+  "name": "CRM Lite",
+  "tagline": "Leads pipeline, contacts, and activity log",
+  "category": "sales",
+  "caveats": [
+    "No email integration — activities are manual logs, not synced communications."
+  ],
+  "tables": [
+    {
+      "ref": "crm_contacts",
+      "table_name": "crm_contacts",
+      "module_name": "Contacts",
+      "menu_group": "CRM",
+      "fields": [
+        { "field_name": "full_name", "field_type": "VARCHAR", "required": 1, "caption": "Full Name", "length": 150 },
+        { "field_name": "company", "field_type": "VARCHAR", "caption": "Company", "length": 150 },
+        { "field_name": "email", "field_type": "VARCHAR", "caption": "Email", "length": 150 },
+        { "field_name": "phone", "field_type": "VARCHAR", "caption": "Phone", "length": 30 },
+        { "field_name": "job_title", "field_type": "VARCHAR", "caption": "Job Title", "length": 100 },
+        { "field_name": "notes", "field_type": "TEXT", "display_type": "text_area", "caption": "Notes" }
+      ]
+    },
+    {
+      "ref": "crm_leads",
+      "table_name": "crm_leads",
+      "module_name": "Leads",
+      "menu_group": "CRM",
+      "fields": [
+        { "field_name": "lead_name", "field_type": "VARCHAR", "required": 1, "caption": "Lead Name", "length": 150 },
+        { "field_name": "contact_id", "field_type": "INT", "caption": "Contact" },
+        { "field_name": "source", "field_type": "VARCHAR", "caption": "Source", "length": 100, "display_type": "options_list", "options_list_values": "website|referral|cold_call|event|social_media|other" },
+        { "field_name": "pipeline_stage", "field_type": "VARCHAR", "required": 1, "length": 30, "caption": "Stage", "display_type": "options_list", "options_list_values": "new|contacted|qualified|proposal|won|lost", "default_value": "new" },
+        { "field_name": "estimated_value", "field_type": "DECIMAL", "length": 12, "precision": 2, "caption": "Estimated Value" },
+        { "field_name": "expected_close_date", "field_type": "DATE", "caption": "Expected Close" },
+        { "field_name": "owner_name", "field_type": "VARCHAR", "caption": "Owner", "length": 150 }
+      ]
+    },
+    {
+      "ref": "crm_activities",
+      "table_name": "crm_activities",
+      "module_name": "Activities",
+      "menu_group": "CRM",
+      "fields": [
+        { "field_name": "lead_id", "field_type": "INT", "required": 1, "caption": "Lead" },
+        { "field_name": "activity_type", "field_type": "VARCHAR", "required": 1, "length": 30, "caption": "Type", "display_type": "options_list", "options_list_values": "call|meeting|email|note|follow_up" },
+        { "field_name": "activity_date", "field_type": "DATETIME", "required": 1, "caption": "Date" },
+        { "field_name": "summary", "field_type": "VARCHAR", "required": 1, "caption": "Summary", "length": 200 },
+        { "field_name": "details", "field_type": "TEXT", "display_type": "text_area", "caption": "Details" }
+      ]
+    }
+  ],
+  "relationships": [
+    { "parent_ref": "crm_contacts", "child_ref": "crm_leads", "fk_field": "contact_id", "parent_field": "id" },
+    { "parent_ref": "crm_leads", "child_ref": "crm_activities", "fk_field": "lead_id", "parent_field": "id" }
+  ],
+  "custom_modules": [
+    {
+      "ref": "lead_pipeline",
+      "base_table_ref": "crm_leads",
+      "module_name": "Lead Pipeline",
+      "menu_icon": "fa-solid fa-filter",
+      "menu_group": "CRM",
+      "filter_rules": { "condition": "AND", "rules": [] },
+      "included_relations": [],
+      "settings_override": {
+        "table_view_title": "Lead Pipeline",
+        "grid_kanban_enabled": 1,
+        "grid_kanban_config": {
+          "group_field": "pipeline_stage",
+          "card_fields": ["lead_name", "estimated_value", "owner_name"],
+          "allowed_transitions": {
+            "new": ["contacted", "lost"],
+            "contacted": ["qualified", "lost"],
+            "qualified": ["proposal", "lost"],
+            "proposal": ["won", "lost"],
+            "won": [],
+            "lost": []
+          }
+        }
+      }
+    }
+  ],
+  "menu": { "groups": ["CRM"] }
+}

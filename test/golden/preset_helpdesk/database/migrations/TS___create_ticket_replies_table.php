@@ -1,0 +1,27 @@
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('ticket_replies', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('ticket_id')->nullable();
+            $table->string('reply_from', 150)->nullable();
+            $table->boolean('is_agent_reply')->nullable()->default('0');
+            $table->text('message')->nullable();
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->unsignedBigInteger('updated_by')->nullable();
+            $table->unsignedBigInteger('deleted_by')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('ticket_replies');
+    }
+};

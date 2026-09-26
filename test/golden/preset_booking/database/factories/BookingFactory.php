@@ -1,0 +1,30 @@
+<?php
+namespace Database\Factories;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\Booking;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Booking>
+ */
+class BookingFactory extends Factory
+{
+    protected $model = Booking::class;
+
+    public function definition(): array
+    {
+        return [
+            'created_by' => fake()->randomNumber(),
+            'updated_by' => fake()->randomNumber(),
+            'deleted_by' => fake()->randomNumber(),
+            'booking_ref' => fake()->word(),
+            'resource_id' => \App\Models\BookableResource::inRandomOrder()->value('id'),
+            'booker_name' => fake()->name(),
+            'booker_email' => fake()->safeEmail(),
+            'start_datetime' => fake()->dateTimeThisYear(),
+            'end_datetime' => fake()->dateTimeThisYear(),
+            'attendees' => fake()->randomNumber(),
+            'notes' => fake()->text(),
+            'booking_status' => $this->faker->randomElement(['pending', 'confirmed', 'cancelled', 'completed']),
+        ];
+    }
+}

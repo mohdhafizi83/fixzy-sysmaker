@@ -1,0 +1,178 @@
+<?php
+
+namespace App\Filament\Imports;
+
+use App\Models\Booking;
+use App\Models\BookableResource;
+use Filament\Actions\Imports\ImportColumn;
+use Filament\Actions\Imports\Importer;
+use Filament\Actions\Imports\Models\Import;
+use Illuminate\Support\Number;
+use Filament\Forms\Components\Checkbox;
+
+class BookingImporter extends Importer
+{
+    protected static ?string $model = Booking::class;
+
+    public static function getColumns(): array
+    {
+        return [
+            ImportColumn::make('id')
+                ->label('ID')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('ID'),
+
+            ImportColumn::make('created_at')
+                ->label('Created At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Created At'),
+
+            ImportColumn::make('updated_at')
+                ->label('Updated At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Updated At'),
+
+            ImportColumn::make('deleted_at')
+                ->label('Deleted At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Deleted At'),
+
+            ImportColumn::make('created_by')
+                ->label('Created By')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Created By'),
+
+            ImportColumn::make('updated_by')
+                ->label('Updated By')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Updated By'),
+
+            ImportColumn::make('deleted_by')
+                ->label('Deleted By')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Deleted By'),
+
+            ImportColumn::make('booking_ref')
+                ->label('Booking Ref')
+                ->requiredMapping()
+                ->ignoreBlankState()
+                ->rules(['required', 'max:30'])
+                ->examples(['Sample Booking Ref 1', 'Sample Booking Ref 2'])
+                ->exampleHeader('Booking Ref'),
+
+            ImportColumn::make('resource_id')
+                ->label('Resource')
+                ->requiredMapping()
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['required', 'integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Resource'),
+
+            ImportColumn::make('booker_name')
+                ->label('Booker Name')
+                ->requiredMapping()
+                ->ignoreBlankState()
+                ->rules(['required', 'max:150'])
+                ->examples(['Sample Booker Name 1', 'Sample Booker Name 2'])
+                ->exampleHeader('Booker Name'),
+
+            ImportColumn::make('booker_email')
+                ->label('Booker Email')
+                ->ignoreBlankState()
+                ->rules(['max:150'])
+                ->examples(['Sample Booker Email 1', 'Sample Booker Email 2'])
+                ->exampleHeader('Booker Email'),
+
+            ImportColumn::make('start_datetime')
+                ->label('Start')
+                ->requiredMapping()
+                ->ignoreBlankState()
+                ->rules(['required', 'datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Start'),
+
+            ImportColumn::make('end_datetime')
+                ->label('End')
+                ->requiredMapping()
+                ->ignoreBlankState()
+                ->rules(['required', 'datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('End'),
+
+            ImportColumn::make('attendees')
+                ->label('Attendees')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Attendees'),
+
+            ImportColumn::make('notes')
+                ->label('Notes')
+                ->ignoreBlankState()
+                ->examples(['Sample Notes 1', 'Sample Notes 2'])
+                ->exampleHeader('Notes'),
+
+            ImportColumn::make('booking_status')
+                ->label('Status')
+                ->requiredMapping()
+                ->ignoreBlankState()
+                ->rules(['required', 'max:30'])
+                ->examples(['Sample Status 1', 'Sample Status 2'])
+                ->exampleHeader('Status'),
+        ];
+    }
+
+    public function resolveRecord(): ?Booking
+    {
+    
+        return Booking::firstOrNew([
+            'booking_ref' => $this->data['booking_ref']
+        ]);
+    }
+
+    public static function getCompletedNotificationBody(Import $import): string
+    {
+        $body = 'Your Bookings import has completed and ' . Number::format($import->successful_rows) . ' ' . str('row')->plural($import->successful_rows) . ' imported.';
+
+        if ($failedRowsCount = $import->getFailedRowsCount()) {
+            $body .= ' ' . Number::format($failedRowsCount) . ' ' . str('row')->plural($failedRowsCount) . ' failed to import.';
+        }
+
+        return $body;
+    }
+    
+    public static function getOptionsFormComponents(): array
+    {
+        return [
+            Checkbox::make('updateExisting')
+                ->label('Update existing records'),
+        ];
+    }
+
+}

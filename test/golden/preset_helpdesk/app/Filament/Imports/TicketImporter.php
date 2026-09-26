@@ -1,0 +1,168 @@
+<?php
+
+namespace App\Filament\Imports;
+
+use App\Models\Ticket;
+
+use Filament\Actions\Imports\ImportColumn;
+use Filament\Actions\Imports\Importer;
+use Filament\Actions\Imports\Models\Import;
+use Illuminate\Support\Number;
+use Filament\Forms\Components\Checkbox;
+
+class TicketImporter extends Importer
+{
+    protected static ?string $model = Ticket::class;
+
+    public static function getColumns(): array
+    {
+        return [
+            ImportColumn::make('id')
+                ->label('ID')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('ID'),
+
+            ImportColumn::make('created_at')
+                ->label('Created At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Created At'),
+
+            ImportColumn::make('updated_at')
+                ->label('Updated At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Updated At'),
+
+            ImportColumn::make('deleted_at')
+                ->label('Deleted At')
+                ->ignoreBlankState()
+                ->rules(['datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Deleted At'),
+
+            ImportColumn::make('created_by')
+                ->label('Created By')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Created By'),
+
+            ImportColumn::make('updated_by')
+                ->label('Updated By')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Updated By'),
+
+            ImportColumn::make('deleted_by')
+                ->label('Deleted By')
+                ->numeric()
+                ->integer()
+                ->ignoreBlankState()
+                ->rules(['integer'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Deleted By'),
+
+            ImportColumn::make('ticket_no')
+                ->label('Ticket No')
+                ->requiredMapping()
+                ->ignoreBlankState()
+                ->rules(['required', 'max:30'])
+                ->examples(['Sample Ticket No 1', 'Sample Ticket No 2'])
+                ->exampleHeader('Ticket No'),
+
+            ImportColumn::make('subject')
+                ->label('Subject')
+                ->requiredMapping()
+                ->ignoreBlankState()
+                ->rules(['required', 'max:200'])
+                ->examples(['Sample Subject 1', 'Sample Subject 2'])
+                ->exampleHeader('Subject'),
+
+            ImportColumn::make('requester_name')
+                ->label('Requester')
+                ->requiredMapping()
+                ->ignoreBlankState()
+                ->rules(['required', 'max:150'])
+                ->examples(['Sample Requester 1', 'Sample Requester 2'])
+                ->exampleHeader('Requester'),
+
+            ImportColumn::make('requester_email')
+                ->label('Requester Email')
+                ->ignoreBlankState()
+                ->rules(['max:150'])
+                ->examples(['Sample Requester Email 1', 'Sample Requester Email 2'])
+                ->exampleHeader('Requester Email'),
+
+            ImportColumn::make('priority')
+                ->label('Priority')
+                ->requiredMapping()
+                ->ignoreBlankState()
+                ->rules(['required', 'max:20'])
+                ->examples(['Sample Priority 1', 'Sample Priority 2'])
+                ->exampleHeader('Priority'),
+
+            ImportColumn::make('ticket_status')
+                ->label('Status')
+                ->requiredMapping()
+                ->ignoreBlankState()
+                ->rules(['required', 'max:30'])
+                ->examples(['Sample Status 1', 'Sample Status 2'])
+                ->exampleHeader('Status'),
+
+            ImportColumn::make('assigned_to')
+                ->label('Assigned Agent')
+                ->ignoreBlankState()
+                ->rules(['max:150'])
+                ->examples(['Sample Assigned Agent 1', 'Sample Assigned Agent 2'])
+                ->exampleHeader('Assigned Agent'),
+
+            ImportColumn::make('description')
+                ->label('Issue Description')
+                ->requiredMapping()
+                ->ignoreBlankState()
+                ->rules(['required'])
+                ->examples(['Sample Issue Description 1', 'Sample Issue Description 2'])
+                ->exampleHeader('Issue Description'),
+        ];
+    }
+
+    public function resolveRecord(): ?Ticket
+    {
+    
+        return Ticket::firstOrNew([
+            'ticket_no' => $this->data['ticket_no']
+        ]);
+    }
+
+    public static function getCompletedNotificationBody(Import $import): string
+    {
+        $body = 'Your Tickets import has completed and ' . Number::format($import->successful_rows) . ' ' . str('row')->plural($import->successful_rows) . ' imported.';
+
+        if ($failedRowsCount = $import->getFailedRowsCount()) {
+            $body .= ' ' . Number::format($failedRowsCount) . ' ' . str('row')->plural($failedRowsCount) . ' failed to import.';
+        }
+
+        return $body;
+    }
+    
+    public static function getOptionsFormComponents(): array
+    {
+        return [
+            Checkbox::make('updateExisting')
+                ->label('Update existing records'),
+        ];
+    }
+
+}

@@ -1,0 +1,30 @@
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('crm_leads', function (Blueprint $table) {
+            $table->id();
+            $table->string('lead_name', 150)->nullable();
+            $table->foreignId('contact_id')->nullable();
+            $table->string('source', 100)->nullable();
+            $table->string('pipeline_stage', 30)->nullable()->default('new');
+            $table->decimal('estimated_value', 10, 2)->nullable();
+            $table->date('expected_close_date')->nullable();
+            $table->string('owner_name', 150)->nullable();
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->unsignedBigInteger('updated_by')->nullable();
+            $table->unsignedBigInteger('deleted_by')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('crm_leads');
+    }
+};

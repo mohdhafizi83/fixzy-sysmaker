@@ -94,6 +94,13 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
                             let nullMethod = (op === '!=' || op === 'NOT LIKE') ? 'whereNotNull' : 'whereNull';
                             if (index > 0 && condition === 'OR') nullMethod = (op === '!=' || op === 'NOT LIKE') ? 'orWhereNotNull' : 'orWhereNull';
                             inner += `\n${indent}$q->${nullMethod}('${col}');`;
+                        } else if (op === 'IN' || op === 'NOT IN') {
+                            // Comma-separated value list -> whereIn / whereNotIn.
+                            let inMethod = op === 'IN' ? 'whereIn' : 'whereNotIn';
+                            if (index > 0 && condition === 'OR') inMethod = op === 'IN' ? 'orWhereIn' : 'orWhereNotIn';
+                            const list = String(val).split(',').map((s) => s.trim()).filter((s) => s !== '')
+                                .map((s) => `'${s.replace(/'/g, "\\'")}'`).join(', ');
+                            if (list) inner += `\n${indent}$q->${inMethod}('${col}', [${list}]);`;
                         } else {
                             inner += `\n${indent}$q->${method}('${col}', '${op}', '${val}');`;
                         }

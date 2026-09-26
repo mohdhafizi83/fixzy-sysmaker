@@ -62,6 +62,7 @@ import { initFieldBehaviorTab } from './js/features/fieldBehaviorManager.js';
 import { initNumberingSection } from './js/features/numberingManager.js';
 import { initImportSection } from './js/features/importManager.js';
 import { initApiSection } from './js/features/apiManager.js';
+import { initStarterPacks } from './js/features/presetManager.js';
 
 import { initializeWorkflowBuilder } from './js/workflowBuilder.js';
 
@@ -497,6 +498,7 @@ window.addEventListener('beforeunload', (event) => {
 	initNumberingSection();
 	initImportSection();
 	initApiSection();
+	initStarterPacks();
 	initializeQueryBuilder();
     initializeTableHookBuilder();
     initializeProjectHookBuilder();

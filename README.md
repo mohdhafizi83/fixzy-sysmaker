@@ -588,6 +588,34 @@ main modules.
   numbering) appear disabled in a custom module's settings with a
   tooltip explaining why, so nothing feels "missing".
 
+### Starter Packs (pre-composed templates)
+
+Need a head start? The **Starter Packs** gallery (Project Settings →
+Core Modules → Starter Packs) installs pre-composed templates — tables,
+relations, menu groups, approval workflows, kanban/calendar boards, and
+auto-numbering — with one click.
+
+Five packs ship today:
+
+| Pack | Domain | Highlights |
+|---|---|---|
+| Leave Request | HR | Multi-step approval workflow (draft → pending → manager review → approved/rejected) |
+| Booking & Reservation | Scheduling | Resources + bookings, calendar view, daily booking refs |
+| Helpdesk Tickets | Support | Tickets + replies, kanban board, urgent queue, ticket numbering |
+| Job / Work Order | Operations | Numbered jobs + task checklists, active-jobs filter |
+| CRM Lite | Sales | Contacts, leads pipeline kanban, activity log |
+
+**Important: Starter Packs are NOT complete, ready-to-run business
+systems.** They are jump-start templates. Everything a pack installs is
+ordinary designer content — every table, field, and workflow rule can be
+edited, removed, or extended to match your needs. Review and adjust the
+configuration before generating. Each pack's preview modal spells out
+its caveats (e.g. the booking pack does not prevent double bookings out
+of the box).
+
+Authoring your own packs is supported too: a pack is a declarative JSON
+manifest (see `src/presets/SCHEMA.md`) — no generator code required.
+
 ### Form Layout Designer
 
 Every table (and custom module) form can be redesigned visually — no
