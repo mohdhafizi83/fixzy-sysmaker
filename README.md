@@ -51,8 +51,10 @@ The result — a generated Laravel + Filament admin, live after one click:
    - **macOS**: `Fixzy SysMaker x.x.x.dmg` (x64 and Apple Silicon)
 2. Install and launch the app.
 3. On first launch, the **Setup Wizard** checks your computer and installs
-   everything it needs (PHP runtime, Composer, preview environment) with one
-   click — no command line required.
+   everything it needs with one click — no command line required. The
+   Laravel + Filament preview environment is **downloaded on first run**
+   (SHA-256 verified) from the Fixzy preview-template GitHub release into
+   `~/.fixzy/preview_env`, so the installer stays small.
 4. Click **New Project** and start designing.
 
 > You can reopen the Setup Wizard any time from the **Setup** button in the

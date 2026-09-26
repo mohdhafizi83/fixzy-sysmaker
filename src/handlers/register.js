@@ -2480,13 +2480,18 @@ ipcMain.handle('preview:instant-run', async (event) => {
     const win = ctx.getWindow(event); 
     return new Promise(async (resolve, reject) => {
         try {
-            const templatePreviewPath = ctx.isPackaged ? path.join(process.resourcesPath, 'preview_env') : path.join(__dirname, '../../resources/preview_env');
+            // Template resolution (download-on-first-run): dev checkout uses
+            // resources/preview_env; packaged apps use ~/.fixzy/preview_env
+            // (downloaded by the setup wizard / setup:binaries).
+            const { resolvePreviewTemplate } = require('../core/setupRunner');
+            const templatePreviewPath = resolvePreviewTemplate(
+                ctx.isPackaged ? process.resourcesPath : path.join(__dirname, '../..'));
             const userDataPath = ctx.getPath('userData'); 
             const workingPreviewPath = path.join(userDataPath, 'preview_env');
 
             // 1. FIRST-TIME COPY (Physical)
             if (!fs.existsSync(workingPreviewPath)) {
-                if (!fs.existsSync(templatePreviewPath)) return resolve({ success: false, message: `Template not found: ${templatePreviewPath}` });
+                if (!fs.existsSync(path.join(templatePreviewPath, 'artisan'))) return resolve({ success: false, message: `Preview template not found at ${templatePreviewPath}. Run Setup (or \`npm run setup:binaries\`) to download it first.` });
 
                 const { response } = await ctx.dialog.showMessageBox(win, {
                     type: 'info', buttons: ['OK', 'Cancel'], title: 'Preview Environment Setup',

@@ -14,14 +14,11 @@ files:
   - src/**/*
   - resources/schema.sql
   - package.json
-  # preview_env is large; ship it (preview feature needs it). Trim later if size hurts.
-  - resources/preview_env/**/*
+  # preview_env is NOT bundled (download-on-first-run): the setup wizard fetches
+  # the template from GitHub releases into ~/.fixzy/preview_env (see setupRunner.js).
   - "!**/*.bak*"
-  - "!resources/preview_env/vendor/**/tests"
-  - "!resources/preview_env/node_modules"
 
 asarUnpack:
-  - resources/preview_env/**
   - bin/composer.phar
 
 # PHP is NOT bundled — provisioned per-platform via `npm run setup:binaries`
