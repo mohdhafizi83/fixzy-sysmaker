@@ -1,0 +1,109 @@
+<?php
+namespace App\Filament\Resources\Tempahans\Schemas;
+
+use App\Filament\Resources\Biliks\BilikResource;
+use App\Filament\Resources\SlotBiliks\SlotBilikResource;
+
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
+use Filament\Schemas\Schema;
+use Filament\Pages\Page;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Section;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+
+class TempahanForm
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema->components([
+            Section::make("Detail View")
+                ->columns(fn (Page $livewire) => $livewire->gridColumns)
+    ->headerActions([
+        Action::make('1 Kolum')
+            ->icon('heroicon-o-queue-list')
+            ->iconButton()
+            ->color('gray')
+            ->tooltip('Display 1 column')
+            ->action(fn (Page $livewire) => $livewire->gridColumns = 1),
+
+        Action::make('2 Kolum')
+            ->icon('heroicon-o-view-columns')
+            ->iconButton()
+            ->color('gray')
+            ->tooltip('Display 2 column')
+            ->action(fn (Page $livewire) => $livewire->gridColumns = 2),
+
+        Action::make('3 Kolum')
+            ->icon('heroicon-o-table-cells')
+            ->iconButton()
+            ->color('gray')
+            ->tooltip('Display 3 column')
+            ->action(fn (Page $livewire) => $livewire->gridColumns = 3),
+    ])
+                ->schema([
+				TextInput::make('id')
+    ->integer()
+    ->readOnly()
+    ->maxLength(11)
+    ->label('ID')
+    ->trim(),
+                TextInput::make('nama')
+    ->maxLength(255)
+    ->label('Nama')
+    ->trim(),
+                TextInput::make('created_at')
+    ->label('Created At')
+    ->trim(),
+                Select::make('room_number')
+    ->label('Room Number')
+    ->searchable()
+    ->preload()
+    ->relationship('bilik', 'no_bilik')
+    ->suffixActions([
+    Action::make('view_bilik')
+        ->icon('heroicon-o-eye')
+        ->modalContent(fn (Get $get): ?View => $get('room_number') ? view('filament.components.modal-iframe', ['src' => BilikResource::getUrl('edit', ['record' => $get('room_number')]) . '?iframe=1']) : null)
+        ->modalWidth('6xl')
+        ->modalSubmitAction(false)
+        ->hidden(fn (Get $get): bool => !$get('room_number')),
+    Action::make('create_bilik')
+        ->icon('heroicon-o-plus')
+        ->modalContent(fn (): View => view('filament.components.modal-iframe', ['src' => BilikResource::getUrl('create') . '?iframe=1']))
+        ->modalWidth('6xl')
+        ->modalSubmitAction(false),
+])
+    ,
+                TextInput::make('updated_at')
+    ->label('Updated At')
+    ->trim(),
+                Select::make('slot')
+    ->helperText(fn (Get $get) => filled($get('room_number')) ? (\App\Models\Bilik::find($get('room_number'))?->available_slots . ' available') : (null))
+    ->label('Slot')
+    ->searchable()
+    ->preload()
+    ->relationship('slotBilik', 'slot_label', fn (Builder $query, Get $get) => filled($get('room_number')) ? $query->where('bilik_id', $get('room_number')) : $query)
+    ->suffixActions([
+    Action::make('view_slot_bilik')
+        ->icon('heroicon-o-eye')
+        ->modalContent(fn (Get $get): ?View => $get('slot') ? view('filament.components.modal-iframe', ['src' => SlotBilikResource::getUrl('edit', ['record' => $get('slot')]) . '?iframe=1']) : null)
+        ->modalWidth('6xl')
+        ->modalSubmitAction(false)
+        ->hidden(fn (Get $get): bool => !$get('slot')),
+    Action::make('create_slot_bilik')
+        ->icon('heroicon-o-plus')
+        ->modalContent(fn (): View => view('filament.components.modal-iframe', ['src' => SlotBilikResource::getUrl('create') . '?iframe=1']))
+        ->modalWidth('6xl')
+        ->modalSubmitAction(false),
+])
+    ,
+                TextInput::make('deleted_at')
+    ->label('Deleted At')
+    ->trim(),
+                ])
+                ->columnSpanFull(),
+        ]);
+    }
+}

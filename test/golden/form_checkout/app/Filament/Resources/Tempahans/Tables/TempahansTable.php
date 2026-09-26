@@ -1,0 +1,103 @@
+<?php
+
+namespace App\Filament\Resources\Tempahans\Tables;
+
+
+
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\RestoreAction;
+use Filament\Tables\Table;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TrashedFilter;
+use Filament\Support\Enums\TextSize;
+use Illuminate\Contracts\View\View;
+
+
+class TempahansTable
+{
+    public static function configure(Table $table): Table
+    {
+        return $table
+            
+            
+            
+            
+            
+            ->description('')
+            ->columns([
+                TextColumn::make('nama')
+                    ->label('Nama')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->color('success')
+                    ->size(TextSize::Medium)
+                    ->searchable()
+                    ->toggleable()
+                    ->alignCenter(),
+                TextColumn::make('country')
+                    ->label('Country')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->color('success')
+                    ->size(TextSize::Medium)
+                    ->searchable()
+                    ->toggleable()
+                    ->alignCenter()
+                    ->badge()->color(fn (string $state): string => match ($state) {
+        'MY' => 'gray',
+        'SG' => 'info',
+        'TH' => 'primary',
+        }),
+                TextColumn::make('state')
+                    ->label('State')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->color('success')
+                    ->size(TextSize::Medium)
+                    ->searchable()
+                    ->toggleable()
+                    ->alignCenter()
+                    ->badge()->color(fn (string $state): string => match ($state) {
+        'Johor' => 'gray',
+        'Selangor' => 'info',
+        'Perlis' => 'primary',
+        }),
+                TextColumn::make('notes')
+                    ->label('Notes')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->color('success')
+                    ->size(TextSize::Medium)
+                    ->searchable()
+                    ->toggleable()
+                    ->alignCenter(),
+                IconColumn::make('agree')
+                    ->label('Agree')
+                    ->boolean()
+                    ->searchable()
+                    ->toggleable()
+                    ->alignCenter()
+            ])
+            ->when((bool) request()->query('print'), fn (Table $table) => $table->paginated(false),)
+            ->filters([
+                TrashedFilter::make(),
+            ])
+            ->recordActions([
+
+                   
+                    
+                
+                
+                ForceDeleteAction::make(),
+                RestoreAction::make(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                DeleteBulkAction::make(),
+            ]),
+            ]);
+    }
+}

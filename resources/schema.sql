@@ -143,6 +143,7 @@ CREATE TABLE tables (
     grid_tree_config             TEXT DEFAULT '',
     grid_kanban_enabled          INTEGER DEFAULT 0,
     grid_kanban_config           TEXT DEFAULT '',
+    form_layout_config           TEXT DEFAULT '',
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
 
@@ -287,6 +288,11 @@ CREATE TABLE fields (
 	algorithm_logic              TEXT,
 	calculation_builder_state    TEXT,
 	hook_functions               TEXT,
+    label_display                TEXT DEFAULT '',
+    form_group                   TEXT DEFAULT '',
+    visible_if                   TEXT DEFAULT '',
+    required_if_state            TEXT DEFAULT '',
+    depends_on                   TEXT DEFAULT '',
     FOREIGN KEY (table_id) REFERENCES tables(table_id) ON DELETE CASCADE
 );
 

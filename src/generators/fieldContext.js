@@ -58,6 +58,10 @@ function buildFormFieldContext(field, elementType, opts = {}) {
         is_relationship_self_ref: '',
         link_to_parent_record: '',
         multiple_validation: '',
+        is_inline_label: '',
+        is_hidden_label_placeholder: '',
+        is_visible_if: '',
+        is_required_if: '',
         keep_trim: true,
     };
 
@@ -209,7 +213,77 @@ function buildFormFieldContext(field, elementType, opts = {}) {
         ctx.is_integer = '';
     }
 
+    // --- Form Design & Layout (phase E) ---
+    // Per-field settings (already normalised by formLayoutConfig.parseFieldFormSettings)
+    // with a table-level label default fallback via opts.defaultLabelDisplay.
+    const fs_ = opts.formSettings || {};
+    const labelMode = fs_.label_display || opts.defaultLabelDisplay || '';
+    const labelKeepsOwnLabel = ['Checkbox', 'Radio'].includes(elementType);
+
+    if (labelMode === 'inline' && !labelKeepsOwnLabel) {
+        ctx.is_inline_label = '->inlineLabel()';
+    } else if (labelMode === 'hidden_placeholder' && !labelKeepsOwnLabel) {
+        ctx.is_hidden_label_placeholder = '->hiddenLabel()';
+        // Fall back to the caption as placeholder when none was set explicitly.
+        if (!ctx.is_placeholder) {
+            const ph = String(field.placeholder || field.caption || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            if (ph) ctx.is_placeholder = `->placeholder('${ph}')`;
+        }
+    }
+
+    // Conditional visibility: ->visible(fn (Get $get) => ...)
+    if (fs_.visible_if) {
+        ctx.is_visible_if = buildConditionClosure(fs_.visible_if, 'visible');
+    }
+    // Conditional required
+    if (fs_.required_if) {
+        ctx.is_required_if = buildConditionClosure(fs_.required_if, 'required');
+    }
+
+    // Dependent dropdown (E5): filter this Select's relationship query by
+    // another field's value (e.g. room slots filtered by room_number),
+    // optionally surfacing a remaining-count helper text.
+    if (fs_.depends_on && field.lookup_parent_table && elementType === 'Select') {
+        const dep = fs_.depends_on;
+        const depField = phpStr(dep.field);
+        const filterCol = phpStr(dep.filter_column);
+        // Append a modifyQueryUsing closure to the existing relationship() call.
+        if (ctx.is_relationship_normal) {
+            ctx.is_relationship_normal = ctx.is_relationship_normal.replace(
+                /\)$/,
+                `, fn (Builder $query, Get $get) => filled($get('${depField}')) ? $query->where('${filterCol}', $get('${depField}')) : $query)`
+            );
+        }
+        if (dep.count_column && dep.model_class) {
+            const countCol = phpStr(dep.count_column);
+            const helperPrefix = field.helper_text ? `'${phpStr(field.helper_text)} — ' . ` : '';
+            ctx.is_helper_text = `->helperText(fn (Get $get) => filled($get('${depField}')) ? (${helperPrefix}\\App\\Models\\${dep.model_class}::find($get('${depField}'))?->${countCol} . ' available') : (${field.helper_text ? `'${phpStr(field.helper_text)}'` : 'null'}))`;
+        }
+    }
+
     return ctx;
 }
 
-module.exports = { buildFormFieldContext };
+// Escape a literal for single-quoted PHP.
+function phpStr(s) {
+    return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+// Build a ->visible()/->required() closure from a normalised {field, op, value} rule.
+function buildConditionClosure(rule, kind) {
+    const g = `$get('${phpStr(rule.field)}')`;
+    let expr = '';
+    switch (rule.op) {
+        case 'equals':   expr = `${g} == '${phpStr(rule.value)}'`; break;
+        case 'not_equals': expr = `${g} != '${phpStr(rule.value)}'`; break;
+        case 'in':       expr = `in_array(${g}, [${rule.value.map(phpStr).map(v => `'${v}'`).join(', ')}], true)`; break;
+        case 'filled':   expr = `filled(${g})`; break;
+        case 'empty':    expr = `blank(${g})`; break;
+        case 'checked':  expr = `${g} == 1 || ${g} === true || ${g} === '1'`; break;
+        case 'unchecked': expr = `blank(${g}) || ${g} == 0 || ${g} === false || ${g} === '0'`; break;
+        default: return '';
+    }
+    return `->${kind}(fn (Get $get) => (${expr}))`;
+}
+
+module.exports = { buildFormFieldContext, buildConditionClosure };

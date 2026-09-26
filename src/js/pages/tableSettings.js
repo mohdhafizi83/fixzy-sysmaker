@@ -4,6 +4,7 @@ import { setElementValue, setRadioValue } from '../ui/formHelpers.js';
 import { renderApprovalTab } from '../features/approvalManager.js';
 import { renderAutomationTab } from '../features/schedulerManager.js';
 import { renderPublicFormTab } from '../features/publicFormManager.js';
+import { renderFormLayoutTab } from '../features/formLayoutDesigner.js';
 import { renderNumberingSection } from '../features/numberingManager.js';
 import { renderImportSection } from '../features/importManager.js';
 import { renderApiSection } from '../features/apiManager.js';
@@ -181,6 +182,32 @@ export function populateTableSettings(tableName) {
         toggleVisibility();
     }
 
+    // ▼▼▼ CUSTOM MODULE: features not generated per custom module are
+    // disabled with an explicit reason (silent-hide would look like a bug).
+    const cmWsActive = !document.getElementById('module-global-settings')?.classList.contains('hidden');
+    const cmBadge = document.getElementById('workspace-module-badge');
+    const cmIsCustom = cmWsActive && cmBadge && cmBadge.classList.contains('badge-custom');
+    const unsupportedInCustom = {
+        'tbl-approval-enabled': 'Approvals run per table (main module) and are not generated for Custom Modules.',
+        'tbl-api-enabled': 'REST API is generated per table (main module), not per Custom Module.',
+        'tbl-public-form-enabled': 'Public forms are generated per table (main module), not per Custom Module.',
+        'tbl-numbering-enabled': 'Auto numbering is a table-level (main module) feature.',
+    };
+    Object.entries(unsupportedInCustom).forEach(([id, reason]) => {
+        const cb = document.getElementById(id);
+        if (!cb) return;
+        if (cmIsCustom) {
+            if (cb.dataset.cmPrevDisabled === undefined) cb.dataset.cmPrevDisabled = cb.disabled ? '1' : '0';
+            cb.disabled = true;
+            if (cb.parentElement) cb.parentElement.title = reason;
+        } else if (cb.dataset.cmPrevDisabled !== undefined) {
+            cb.disabled = cb.dataset.cmPrevDisabled === '1';
+            delete cb.dataset.cmPrevDisabled;
+            if (cb.parentElement && cb.parentElement.title === reason) cb.parentElement.title = '';
+        }
+    });
+    // ▲▲▲ END CUSTOM MODULE feature gating ▲▲▲
+
     // Tab: Table view -> Template
     setElementValue('tbl-tv-template', tableData.tv_template);
     setElementValue('tbl-card-columns', tableData.card_columns);
@@ -222,6 +249,7 @@ export function populateTableSettings(tableName) {
     renderApprovalTab(tableData);
     renderAutomationTab(tableData);
     renderPublicFormTab(tableData);
+    renderFormLayoutTab(tableData);
     renderNumberingSection(tableData);
     renderImportSection(tableData);
     renderApiSection(tableData);

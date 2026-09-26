@@ -28,15 +28,15 @@ export function initializeTableSaveHandlers() {
                 if (input.closest('#parent-child-settings')) return;
                 if (input.id && input.id.startsWith('parentchild-')) return;
                 
-// ▼▼▼ MAJOR BUG FIX: PREVENT OVERWRITE WHEN IN CUSTOM/CREATE MODE ▼▼▼
-                const badgeEl = document.getElementById('workspace-module-badge');
+// ▼▼▼ MAJOR BUG FIX: PREVENT OVERWRITE WHEN IN CREATE MODE ▼▼▼
                 const titleEl = document.getElementById('workspace-module-title');
-                const isCustomMode = badgeEl && badgeEl.classList.contains('badge-custom');
                 const isCreateMode = titleEl && titleEl.textContent === "Create New Module";
                 
-                if (isCustomMode || isCreateMode) {
-                    // If this is a Custom Module, do NOT save to the original table!
-                    // The Custom Module auto-save system will handle it.
+                if (isCreateMode) {
+                    // Brand-new module: wait for the Create button — nothing to
+                    // route to yet. (Custom EDIT mode is NOT returned here:
+                    // the routing block below saves edits into the module's
+                    // settings_override instead of the main table.)
                     return; 
                 }
                 // ▲▲▲ END FIX ▲▲▲
@@ -1201,6 +1201,33 @@ export function initializeConstraintsTabHandlers() {
 }
 
 /**
+ * Anti-confusion banner for the Custom Module workspace: makes it explicit
+ * that edits here affect only this view, not the main module.
+ */
+function showCustomModuleBanner(moduleName, baseTableName) {
+    let banner = document.getElementById('cm-workspace-banner');
+    if (!banner) {
+        const titleEl = document.getElementById('workspace-module-title');
+        const host = titleEl && titleEl.parentElement;
+        if (!host) return;
+        banner = document.createElement('div');
+        banner.id = 'cm-workspace-banner';
+        banner.style.cssText = 'margin:8px 0; padding:8px 12px; border-left:4px solid var(--primary-color, #6366f1); background:rgba(99,102,241,0.08); border-radius:6px; font-size:0.85em;';
+        host.insertAdjacentElement('afterend', banner);
+    }
+    banner.innerHTML = `<i class="fas fa-eye" style="margin-right:6px;"></i>
+        Editing <strong>${moduleName || 'Custom Module'}</strong> — a custom view of table <strong>${baseTableName}</strong>.
+        Changes here apply to <strong>this view only</strong>; the main module is untouched.
+        Settings shown in green are overridden; everything else is inherited from the main module.`;
+    banner.style.display = 'block';
+}
+
+function hideCustomModuleBanner() {
+    const banner = document.getElementById('cm-workspace-banner');
+    if (banner) banner.style.display = 'none';
+}
+
+/**
  * Fills the "Custom Modules" tab with the list of views that have been created.
  * @param {string} tableName - Name of the current table.
  */
@@ -1816,6 +1843,7 @@ export function openModuleWorkspace(mode, tableName = null, moduleId = null) {
             titleEl.dataset.moduleId = '';         // CLEAR ID
         }
         if (badgeEl) { badgeEl.className = "module-badge badge-default"; badgeEl.textContent = "Default"; }
+        hideCustomModuleBanner();
         
         // Draw the field list
         if (tables[tableName]) {
@@ -1824,14 +1852,14 @@ export function openModuleWorkspace(mode, tableName = null, moduleId = null) {
 
     } else if (mode === 'custom') {
         const tableData = tables[tableName];
-        const moduleData = tableData?.custom_modules?.find(m => m.module_id == moduleId);
-        
+        const moduleData = tableData?.custom_modules?.find(m => m.module_id == moduleId);        
         if (titleEl) {
             titleEl.textContent = moduleData ? moduleData.module_name : "Unknown Module";
             titleEl.dataset.tableName = tableName; // SAVE CONTEXT
             titleEl.dataset.moduleId = moduleId;   // SAVE ID
         }
         if (badgeEl) { badgeEl.className = "module-badge badge-custom"; badgeEl.textContent = "Custom"; }
+        showCustomModuleBanner(moduleData ? moduleData.module_name : '', tableName);
 
         // Draw the field list
         if (tableData) {
@@ -2115,6 +2143,14 @@ function applyTableOverrides(tableName, moduleId) {
         // live preview looks — refresh both after applying the JSON.
         toggleCardSizeGroup();
         updateTableViewTemplatePreview();
+        // Grid view pickers (calendar/tree/kanban) read their current values
+        // from the hidden config inputs — re-populate so the visible selects
+        // reflect the overridden config, not the base table's.
+        try {
+            populateCalendarFieldDropdowns(tableName);
+            populateTreeFieldDropdowns(tableName);
+            populateKanbanDropdowns(tableName);
+        } catch (e) { /* pickers optional depending on page */ }
 
     } catch (e) {
         console.error("Error applying table overrides:", e);
@@ -2289,7 +2325,12 @@ export function setupCustomModuleSpecificSettings(tableName, moduleId, mode = 'e
             modData.filter_rules = JSON.stringify(finalData);
             
             // ▼▼▼ READ TABLE-LEVEL OVERRIDES FOR AUTO-SAVE ▼▼▼
-            const tableOverrides = { table_view_title: document.getElementById('tbl-table-view-title')?.value || '' };
+            // Merge into the EXISTING override JSON — never rebuild from scratch,
+            // or other overrides (form_layout_config, grid settings, ...) get wiped.
+            let tableOverrides = {};
+            try { tableOverrides = JSON.parse(modData.settings_override || '{}'); } catch (e) { tableOverrides = {}; }
+            const titleVal = document.getElementById('tbl-table-view-title')?.value || '';
+            if (titleVal !== '') tableOverrides.table_view_title = titleVal;
             modData.settings_override = JSON.stringify(tableOverrides);
 
             const payload = {
@@ -2301,6 +2342,7 @@ export function setupCustomModuleSpecificSettings(tableName, moduleId, mode = 'e
                 owner_field: modData.owner_field,
                 fields: modData.fields,
                 filter_rules: modData.filter_rules,
+                included_relations: modData.included_relations,
                 settings_override: modData.settings_override // <--- SEND TO BACKEND
             };
 

@@ -147,10 +147,25 @@ function openStore(dbPath) {
             grid_tree_config: "TEXT DEFAULT ''",
             grid_kanban_enabled: "INTEGER DEFAULT 0",
             grid_kanban_config: "TEXT DEFAULT ''",
+            // Form design & layout expansion (2026-09-25) phase E
+            form_layout_config: "TEXT DEFAULT ''",
         };
         for (const [col, def] of Object.entries(gridCols)) {
             if (!tableCols.includes(col)) {
                 db.exec(`ALTER TABLE tables ADD COLUMN ${col} ${def}`);
+            }
+        }
+        // Form design & layout expansion (2026-09-25) phase E — per-field
+        const fieldFormCols = {
+            label_display: "TEXT DEFAULT ''",
+            form_group: "TEXT DEFAULT ''",
+            visible_if: "TEXT DEFAULT ''",
+            required_if_state: "TEXT DEFAULT ''",
+            depends_on: "TEXT DEFAULT ''",
+        };
+        for (const [col, def] of Object.entries(fieldFormCols)) {
+            if (!fieldCols.includes(col)) {
+                db.exec(`ALTER TABLE fields ADD COLUMN ${col} ${def}`);
             }
         }
     }

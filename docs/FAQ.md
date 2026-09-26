@@ -332,6 +332,74 @@ One extra migration adds two encrypted columns to the users table
 Secrets are stored encrypted at rest — verified: the stored bytes are
 ciphertext, and only the app with your `APP_KEY` can read them back.
 
+## Custom Modules & Form Layout
+
+### What is a Custom Module?
+
+A **Custom Module** is a saved, filtered view of an existing table — the
+same data, reshaped for a different job. Example: the full `Staff`
+table plus a "My Faculty Staff" custom module that filters to one
+faculty, shows fewer columns, and uses a simpler form. The data lives
+in one place; the module is just a lens.
+
+### Can a custom module use the same form layouts as the main module?
+
+Yes — all of them. Default, grouped, wizard, accordion, inline,
+survey, checkout, modal, and conversational can each be set per
+custom module in its **Form Design** tab. If you don't override
+anything, the module inherits the main table's form layout.
+
+### How do I know if a setting is mine or inherited?
+
+Every override surface shows a badge:
+
+- **Overridden for this module** (green) — this module has its own
+  value; the main module is unaffected.
+- **Inherited from main module** (grey) — the module follows the main
+  table's setting.
+
+A **Reset to main module** button clears the override and goes back
+to inheriting.
+
+### If I edit a custom module, does the main table change?
+
+No. Changes made inside a custom module (form layout, grid settings,
+field behavior) are stored as a module-level override and apply to
+that module only. The main module and other custom modules are
+untouched. A banner in the workspace reminds you which module you're
+editing.
+
+### Can a custom module have its own kanban / calendar / tree?
+
+Yes. Each of those views is opt-in per custom module with its own
+field mapping (status field for kanban, date field for calendar,
+parent field for tree). They generate as standalone pages, just like
+the main module's versions.
+
+### How do conversational (chat) forms work for custom modules?
+
+Set the module's own form style to **conversational** and it gets a
+chat page at `/chat/{slug}` — the bot asks one field at a time and
+builds the record. The module gets the chat route only if its **own**
+override is conversational; inheriting the chat style from the main
+table deliberately does not create a second route (that would
+duplicate the main module's page). If two slugs collide, the
+generator auto-suffixes (`staff-chat-2`).
+
+### Why are Approvals / Public Form / REST API disabled in a custom module?
+
+Because they are inherently table-level: an approval workflow, a
+public intake form, or an API endpoint operates on the real table and
+its lifecycle — two modules can't run two different state machines on
+one table. Instead of hiding them, Fixzy SysMaker shows them disabled
+with a tooltip explaining why. Configure them on the main table.
+
+### Does the conversational chat form validate input?
+
+Yes. Required rules, max lengths, and field types from the schema are
+enforced server-side on every submitted answer — the chat UI is a
+friendlier front door, not a bypass.
+
 ## General
 
 ### Do I need Laravel knowledge to use the generated app?

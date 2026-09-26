@@ -32,11 +32,17 @@ async function generateSingleCreatePage(tableName, tableData, fullSchema, basePa
         r.child_table_name === tableName && r.show_count_in_tv === 1
     );
 
+    // Modal form style (phase E): create form opens inside a modal iframe,
+    // so the page must also slim down when opened with ?iframe=1 directly.
+    const { parseFormLayoutConfig } = require('./formLayoutConfig');
+    const isModalForm = (parseFormLayoutConfig(tableData) || {}).style === 'modal';
+
     const createContent = renderTemplate(TEMPLATE, {
         page_class_base: options.customPageName || modelNameSingular,
         resource_folder: resourceFolder,
         dynamic_grid: !!(tableData && tableData.column_grid_type === 'dynamic'),
-        iframe_layout: isChildInIframeContext,
+        iframe_layout: isChildInIframeContext || isModalForm,
+        modal_form_layout: isModalForm,
     });
 
     const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', resourceFolder, 'Pages');

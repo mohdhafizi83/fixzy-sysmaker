@@ -44,11 +44,16 @@ async function generateSingleListPage(tableName, tableData, fullSchema, basePath
     const gsheetsModuleOn = Number((fullSchema.project || {}).module_google_sheets) === 1;
     const gsheetsTableOn = Number(tableData.google_sync_enabled) === 1 && tableName !== 'users';
 
+    // Modal form style (phase E): Create opens in a modal iframe.
+    const { parseFormLayoutConfig } = require('./formLayoutConfig');
+    const isModalForm = (parseFormLayoutConfig(tableData) || {}).style === 'modal';
+
     const listContent = renderTemplate(TEMPLATE, {
         page_class_base: options.customPageName || modelNameSingular,
         resource_folder: resourceFolder,
         page_title: pageTitle,
         iframe_logic: needsIframeLogic,
+        modal_form: isModalForm,
         foreign_key: foreignKey,
         vertical_css: hasChildWithCount,
         print_css: tableData.allow_print_view === 1,

@@ -11,7 +11,9 @@ use Filament\Schemas\Schema;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Section;
-use Filament\Actions\Action;
+{% if wizard_active %}use Filament\Schemas\Components\Wizard;
+use Filament\Schemas\Components\Wizard\Step;
+{% endif %}use Filament\Actions\Action;
 use Filament\Forms\Components\ViewField;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -32,6 +34,11 @@ class {{ form_class_name or (table_name_singular ~ "Form") }}
 {
     public static function configure(Schema $schema): Schema
     {
+{%- if form_layout_active %}
+        return $schema->components([
+			{{ all_columns_form }}
+        ]);
+{%- else %}
         return $schema->components([
             Section::make("{{ detail_view_title }}")
                 {{ grid_column_control }}
@@ -40,5 +47,6 @@ class {{ form_class_name or (table_name_singular ~ "Form") }}
                 ])
                 ->columnSpanFull(),
         ]);
+{%- endif %}
     }
 }

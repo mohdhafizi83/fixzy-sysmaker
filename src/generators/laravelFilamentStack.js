@@ -116,6 +116,11 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         const publicFormResult = generatePublicFormModule(fullSchema, outputDir);
         if (!publicFormResult.success) throw new Error(`PublicForm: ${publicFormResult.error || publicFormResult.message}`);
 
+        // Conversational form module (chat-style intake, E6).
+        const { generateConversationalFormModule } = require('./laravelConversationalFormGenerator');
+        const conversationalResult = generateConversationalFormModule(fullSchema, outputDir);
+        if (!conversationalResult.success) throw new Error(`ConversationalForm: ${conversationalResult.error || conversationalResult.message}`);
+
         // Auto Numbering module (race-safe reference codes).
         const { generateNumberingModule } = require('./laravelNumberingGenerator');
         const numberingResult = generateNumberingModule(fullSchema, outputDir);

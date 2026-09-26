@@ -22,7 +22,13 @@ class List{{ resource_folder }} extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            {% if iframe_logic %}CreateAction::make()
+            {% if modal_form %}CreateAction::make()
+    ->label('Add')
+    ->modal(true)
+    ->modalContent(fn (): View => view('filament.components.modal-iframe', ['src' => static::getResource()::getUrl('create') . '?iframe=1']))
+    ->modalWidth('6xl')
+    ->modalSubmitAction(false)
+    ->modalHeading('Create'){% elseif iframe_logic %}CreateAction::make()
     ->when(
         session('is_in_iframe'),
         fn (CreateAction $action) => $action->url(fn (): string => static::getResource()::getUrl('create', [

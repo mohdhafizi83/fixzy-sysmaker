@@ -1023,7 +1023,7 @@ ipcMain.handle('table:update', async (event, data) => {
 
             // Build the SET clause for the 'tables' table
             const allowedColumns = [
-                'table_name', 'module_name', 'table_view_title', 'table_view_title_ms', 'table_description', 'show_quick_search', 'allow_pagination', 'pagination_type', 'default_sort_by', 'sort_descending', 'allow_csv_export', 'allow_csv_import', 'allow_print_view', 'allow_mass_delete', 'show_edit_button', 'show_delete_button', 'allow_restore_delete', 'allow_force_delete', 'tv_template', 'card_columns', 'card_columns_tablet', 'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input', 'detail_view_classes_input', 'detail_view_title', 'record_owner', 'default_focus', 'redirect_after_insert', 'enable_detail_view', 'delete_with_children', 'dv_allow_print_view', 'dv_separate_page', 'dv_hide_save_as_copy', 'dv_sticky_buttons', 'dv_allow_add_from_homepage', 'column_grid_type', 'static_grid_columns', 'table_hook_workflow', 'feature_source', 'google_sync_enabled', 'grid_column_manager', 'grid_sticky_header', 'grid_row_density', 'grid_inline_edit', 'grid_default_per_page', 'grid_per_page_options', 'grid_group_by', 'grid_group_direction', 'grid_summaries', 'grid_row_click', 'grid_empty_heading', 'grid_empty_icon', 'grid_empty_description', 'grid_row_striping', 'grid_border_style', 'grid_content_width', 'grid_sticky_toolbar', 'grid_sticky_footer', 'grid_column_groups', 'grid_multi_view', 'grid_view_default', 'grid_split_view', 'grid_calendar_enabled', 'grid_calendar_config', 'grid_tree_enabled', 'grid_tree_config', 'grid_kanban_enabled', 'grid_kanban_config', 'approval_enabled', 'approval_config', 'scheduler_config', 'attachments_enabled', 'public_form_enabled', 'public_form_config', 'numbering_enabled', 'numbering_config', 'import_enabled', 'import_config', 'api_enabled', 'api_config'
+                'table_name', 'module_name', 'table_view_title', 'table_view_title_ms', 'table_description', 'show_quick_search', 'allow_pagination', 'pagination_type', 'default_sort_by', 'sort_descending', 'allow_csv_export', 'allow_csv_import', 'allow_print_view', 'allow_mass_delete', 'show_edit_button', 'show_delete_button', 'allow_restore_delete', 'allow_force_delete', 'tv_template', 'card_columns', 'card_columns_tablet', 'hide_field_captions', 'use_first_field_as_title', 'table_view_classes_input', 'detail_view_classes_input', 'detail_view_title', 'record_owner', 'default_focus', 'redirect_after_insert', 'enable_detail_view', 'delete_with_children', 'dv_allow_print_view', 'dv_separate_page', 'dv_hide_save_as_copy', 'dv_sticky_buttons', 'dv_allow_add_from_homepage', 'column_grid_type', 'static_grid_columns', 'table_hook_workflow', 'feature_source', 'google_sync_enabled', 'grid_column_manager', 'grid_sticky_header', 'grid_row_density', 'grid_inline_edit', 'grid_default_per_page', 'grid_per_page_options', 'grid_group_by', 'grid_group_direction', 'grid_summaries', 'grid_row_click', 'grid_empty_heading', 'grid_empty_icon', 'grid_empty_description', 'grid_row_striping', 'grid_border_style', 'grid_content_width', 'grid_sticky_toolbar', 'grid_sticky_footer', 'grid_column_groups', 'grid_multi_view', 'grid_view_default', 'grid_split_view', 'grid_calendar_enabled', 'grid_calendar_config', 'grid_tree_enabled', 'grid_tree_config', 'grid_kanban_enabled', 'grid_kanban_config', 'form_layout_config', 'approval_enabled', 'approval_config', 'scheduler_config', 'attachments_enabled', 'public_form_enabled', 'public_form_config', 'numbering_enabled', 'numbering_config', 'import_enabled', 'import_config', 'api_enabled', 'api_config'
             ];
 
             // Google Sheets sync is only allowed on user-defined (custom) tables.
@@ -1066,6 +1066,40 @@ ipcMain.handle('table:update', async (event, data) => {
                 }
                 if (!transitions.some(t => !cfg.statuses.find(s => s.key === t.from && s.final))) {
                     throw new Error("Approval config needs at least one transition out of a non-final status.");
+                }
+            }
+
+            // Form layout config must be valid JSON with the expected shape.
+            // (Invalid content is normalised away at generation time, but we
+            // reject obviously broken payloads here so the UI gets feedback.)
+            if (fieldsToUpdate.hasOwnProperty('form_layout_config') && fieldsToUpdate.form_layout_config) {
+                const { FORM_STYLES } = require('../generators/formLayoutConfig');
+                let cfg = null;
+                try {
+                    cfg = JSON.parse(fieldsToUpdate.form_layout_config);
+                } catch (e) {
+                    throw new Error("Form layout configuration is not valid JSON.");
+                }
+                if (!cfg || typeof cfg !== 'object') {
+                    throw new Error("Form layout configuration must be an object.");
+                }
+                if (cfg.style && !FORM_STYLES.includes(cfg.style)) {
+                    throw new Error("Unknown form layout style: " + cfg.style);
+                }
+                if (cfg.groups && !Array.isArray(cfg.groups)) {
+                    throw new Error("Form layout groups must be an array.");
+                }
+                if (Array.isArray(cfg.groups)) {
+                    const seen = new Set();
+                    for (const g of cfg.groups) {
+                        if (!g || typeof g !== 'object' || typeof g.key !== 'string' || !/^[a-z][a-z0-9_]*$/.test(g.key)) {
+                            throw new Error("Form group keys must be lowercase identifiers (a-z, 0-9, _).");
+                        }
+                        if (seen.has(g.key)) {
+                            throw new Error("Duplicate form group key: " + g.key);
+                        }
+                        seen.add(g.key);
+                    }
                 }
             }
 
@@ -1160,7 +1194,7 @@ if (fieldsToUpdate.hasOwnProperty('field_name')) {
 		
         // List of columns allowed to be updated in the 'fields' table
         const allowedColumns = [
-		    'field_name', 'caption', 'caption_ms', 'description', 'data_type', 'length', 'precision', 'alignment', 'default_value', 'read_only', 'helper_text', 'placeholder', 'min_length', 'max_length', 'min_value', 'max_value', 'primary_key', 'zero_fill', 'required', 'display_type', 'auto_increment', 'unique', 'not_null', 'is_indexed', 'show_sum', 'show_avg_summary', 'show_count_summary', 'show_range_summary', 'allow_sorting', 'tv_wrap_header', 'tv_wrap_text', 'tv_enable_toggle', 'tv_description_tooltips', 'tv_text_limit', 'tv_text_size', 'tv_font_weight', 'tv_date_time_format', 'tv_alignment', 'tv_text_color', 'tv_icon', 'tv_icon_color', 'tv_currency_code', 'unsigned', 'enable_global_filter', 'enable_individual_filter', 'enable_range_filter', 'binary', 'hide_in_tv', 'editable_in_tv', 'hide_in_dv', 'media_type', 'media_link_behavior', 'media_link_display_as', 'media_link_other_field', 'allow_image_uploads', 'image_storage_provider', 'max_file_size', 'delete_image_server', 'dont_rename_image', 'tv_thumb_shape', 'tv_thumb_width', 'tv_thumb_height', 'tv_enable_zooming', 'tv_show_full_size', 'dv_thumb_shape', 'dv_thumb_width', 'dv_thumb_height', 'dv_enable_zooming', 'dv_show_full_size', 'allow_file_uploads', 'file_storage_provider', 'file_types', 'file_max_size', 'attach_max_files', 'attach_types', 'attach_max_size', 'delete_file_server', 'dont_rename_file', 'file_behavior', 'file_display_as', 'file_other_field', 'display_gmap', 'gmap_type', 'gmap_tv_width', 'gmap_tv_height', 'gmap_dv_height', 'accept_video_url', 'youtube_tv_width', 'youtube_tv_height', 'youtube_dv_width', 'youtube_dv_height', 'lookup_parent_table', 'lookup_caption_1', 'lookup_separator', 'lookup_caption_2', 'lookup_display_as', 'lookup_inherit_permissions', 'lookup_link_behavior', 'lookup_searchable', 'lookup_preload', 'options_list_values', 'options_display', 'options_quick_list', 'boolean_label_true', 'boolean_label_false', 'format_as', 'format_mask', 'off_autocomplete', 'column_span_full', 'repeater_simple_display_as', 'repeater_simple_format_as', 'repeater_simple_list_values', 'repeater_1_display_as', 'repeater_1_format_as', 'repeater_1_list_values', 'repeater_2_display_as', 'repeater_2_format_as', 'repeater_2_list_values', 'repeater_3_display_as', 'repeater_3_format_as', 'repeater_3_list_values', 'repeater_simple_required', 'repeater_1_required', 'repeater_2_required', 'repeater_3_required', 'prefix', 'suffix', 'suffix_icon', 'suffix_icon_color', 'calculated_enable', 'calculated_query', 'lookup_custom_query', 'algorithm_enable', 'algorithm_logic', 'calculation_builder_state', 'hook_functions'
+		    'field_name', 'caption', 'caption_ms', 'description', 'data_type', 'length', 'precision', 'alignment', 'default_value', 'read_only', 'helper_text', 'placeholder', 'min_length', 'max_length', 'min_value', 'max_value', 'primary_key', 'zero_fill', 'required', 'display_type', 'auto_increment', 'unique', 'not_null', 'is_indexed', 'show_sum', 'show_avg_summary', 'show_count_summary', 'show_range_summary', 'allow_sorting', 'tv_wrap_header', 'tv_wrap_text', 'tv_enable_toggle', 'tv_description_tooltips', 'tv_text_limit', 'tv_text_size', 'tv_font_weight', 'tv_date_time_format', 'tv_alignment', 'tv_text_color', 'tv_icon', 'tv_icon_color', 'tv_currency_code', 'unsigned', 'enable_global_filter', 'enable_individual_filter', 'enable_range_filter', 'binary', 'hide_in_tv', 'editable_in_tv', 'hide_in_dv', 'media_type', 'media_link_behavior', 'media_link_display_as', 'media_link_other_field', 'allow_image_uploads', 'image_storage_provider', 'max_file_size', 'delete_image_server', 'dont_rename_image', 'tv_thumb_shape', 'tv_thumb_width', 'tv_thumb_height', 'tv_enable_zooming', 'tv_show_full_size', 'dv_thumb_shape', 'dv_thumb_width', 'dv_thumb_height', 'dv_enable_zooming', 'dv_show_full_size', 'allow_file_uploads', 'file_storage_provider', 'file_types', 'file_max_size', 'attach_max_files', 'attach_types', 'attach_max_size', 'delete_file_server', 'dont_rename_file', 'file_behavior', 'file_display_as', 'file_other_field', 'display_gmap', 'gmap_type', 'gmap_tv_width', 'gmap_tv_height', 'gmap_dv_height', 'accept_video_url', 'youtube_tv_width', 'youtube_tv_height', 'youtube_dv_width', 'youtube_dv_height', 'lookup_parent_table', 'lookup_caption_1', 'lookup_separator', 'lookup_caption_2', 'lookup_display_as', 'lookup_inherit_permissions', 'lookup_link_behavior', 'lookup_searchable', 'lookup_preload', 'options_list_values', 'options_display', 'options_quick_list', 'boolean_label_true', 'boolean_label_false', 'format_as', 'format_mask', 'off_autocomplete', 'column_span_full', 'repeater_simple_display_as', 'repeater_simple_format_as', 'repeater_simple_list_values', 'repeater_1_display_as', 'repeater_1_format_as', 'repeater_1_list_values', 'repeater_2_display_as', 'repeater_2_format_as', 'repeater_2_list_values', 'repeater_3_display_as', 'repeater_3_format_as', 'repeater_3_list_values', 'repeater_simple_required', 'repeater_1_required', 'repeater_2_required', 'repeater_3_required', 'prefix', 'suffix', 'suffix_icon', 'suffix_icon_color', 'calculated_enable', 'calculated_query', 'lookup_custom_query', 'algorithm_enable', 'algorithm_logic', 'calculation_builder_state', 'hook_functions', 'label_display', 'form_group', 'visible_if', 'required_if_state', 'depends_on'
         ];
  
         const setClause = Object.keys(fieldsToUpdate)
@@ -1423,9 +1457,16 @@ ipcMain.handle('custom-module:save', async (event, data) => {
         let isNewView = false;
 
         if (viewId) { // Update existing module
+            // COALESCE: when a caller (e.g. the Create/Edit modal) omits
+            // filter_rules / included_relations / settings_override, keep the
+            // stored values instead of wiping them with NULL.
             db.prepare(
-                `UPDATE custom_modules SET module_name = ?, menu_icon = ?, filter_rules = ?, included_relations = ?, settings_override = ? WHERE module_id = ?`
-            ).run(module_name, menu_icon, filter_rules, included_relations, settings_override, viewId);
+                `UPDATE custom_modules SET module_name = ?, menu_icon = ?,
+                 filter_rules = COALESCE(?, filter_rules),
+                 included_relations = COALESCE(?, included_relations),
+                 settings_override = COALESCE(?, settings_override)
+                 WHERE module_id = ?`
+            ).run(module_name, menu_icon, filter_rules ?? null, included_relations ?? null, settings_override ?? null, viewId);
         } else { // Insert new module
             isNewView = true;
             const maxOrderResult = db.prepare('SELECT MAX(module_order) as max_order FROM custom_modules WHERE table_id = ?').get(table_id);

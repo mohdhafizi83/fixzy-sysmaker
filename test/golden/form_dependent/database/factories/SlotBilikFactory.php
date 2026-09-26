@@ -1,0 +1,20 @@
+<?php
+namespace Database\Factories;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\SlotBilik;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\SlotBilik>
+ */
+class SlotBilikFactory extends Factory
+{
+    protected $model = SlotBilik::class;
+
+    public function definition(): array
+    {
+        return [
+            'slot_label' => fake()->word(),
+            'bilik_id' => \App\Models\Bilik::inRandomOrder()->value('id'),
+        ];
+    }
+}

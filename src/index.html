@@ -1023,6 +1023,7 @@
             <button class="tab-link" data-tab="tab-field-media" id="fld-tab-media" name="fld-tab-media">Media</button>
             <button class="tab-link" data-tab="tab-field-lookup" id="fld-tab-lookup" name="fld-tab-lookup">Lookup field</button>
             <button class="tab-link" data-tab="tab-field-options" id="fld-tab-options" name="fld-tab-options">Form & Data Validations</button>
+            <button class="tab-link" data-tab="tab-field-behavior" id="fld-tab-behavior" name="fld-tab-behavior">Form Behavior</button>
             <button class="tab-link" data-tab="tab-field-calculated" id="fld-tab-calculated" name="fld-tab-calculated">Calculated field</button>
 			<button class="tab-link" data-tab="tab-field-algorithm" id="fld-tab-algorithm" name="fld-tab-algorithm">Algorithm field</button>
         </div>
@@ -1540,6 +1541,96 @@
         </div>
     </div>
 </div>
+<div id="tab-field-behavior" class="tab-pane">
+    <div class="card">
+        <div class="card-body">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="fld-label-display">Label position</label>
+                    <select id="fld-label-display" class="form-control">
+                        <option value="">Inherit form default</option>
+                        <option value="above">Above the element</option>
+                        <option value="inline">Beside the element</option>
+                        <option value="hidden_placeholder">No label (use as placeholder)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="fld-form-group">Form group</label>
+                    <select id="fld-form-group" class="form-control">
+                        <option value="">Ungrouped</option>
+                    </select>
+                    <small class="form-text text-muted">Groups are defined in Table Settings &gt; Record Form &gt; Form Layout.</small>
+                </div>
+            </div>
+            <fieldset style="margin-top: 1rem;">
+                <legend>Show this field only when...</legend>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="fld-vis-field">Other field</label>
+                        <select id="fld-vis-field" class="form-control"><option value="">— never condition —</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fld-vis-op">Condition</label>
+                        <select id="fld-vis-op" class="form-control">
+                            <option value="equals">equals</option>
+                            <option value="not_equals">not equals</option>
+                            <option value="in">is one of</option>
+                            <option value="filled">has any value</option>
+                            <option value="empty">is empty</option>
+                            <option value="checked">is checked</option>
+                            <option value="unchecked">is unchecked</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="fld-vis-value-group">
+                        <label for="fld-vis-value">Value (comma-separated for "is one of")</label>
+                        <input type="text" id="fld-vis-value" class="form-control">
+                    </div>
+                </div>
+            </fieldset>
+            <fieldset style="margin-top: 1rem;">
+                <legend>Dependent dropdown (this field is a lookup)</legend>
+                <p class="helper-text" style="color: var(--secondary-color);">Filter this dropdown's options by another field's value — e.g. slots filtered by the chosen Room. Leave parent field empty for no dependency.</p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="fld-dep-field">Parent field</label>
+                        <select id="fld-dep-field" class="form-control"><option value="">— no dependency —</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fld-dep-filter">Filter column on this field's lookup table</label>
+                        <input type="text" id="fld-dep-filter" class="form-control" placeholder="e.g. bilik_id">
+                    </div>
+                    <div class="form-group">
+                        <label for="fld-dep-count">Remaining-count column (optional helper text)</label>
+                        <input type="text" id="fld-dep-count" class="form-control" placeholder="e.g. available_slots">
+                    </div>
+                </div>
+            </fieldset>
+            <fieldset style="margin-top: 1rem;">
+                <legend>Make this field required when...</legend>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="fld-req-field">Other field</label>
+                        <select id="fld-req-field" class="form-control"><option value="">— no condition —</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fld-req-op">Condition</label>
+                        <select id="fld-req-op" class="form-control">
+                            <option value="equals">equals</option>
+                            <option value="not_equals">not equals</option>
+                            <option value="in">is one of</option>
+                            <option value="filled">has any value</option>
+                            <option value="checked">is checked</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="fld-req-value-group">
+                        <label for="fld-req-value">Value (comma-separated for "is one of")</label>
+                        <input type="text" id="fld-req-value" class="form-control">
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+    </div>
+</div>
 <div id="tab-field-calculated" class="tab-pane">
     <div class="card">
         <div class="card-body">
@@ -2008,6 +2099,7 @@
                         <button class="tab-link" data-tab="tab-detail-approvals" id="tbl-dv-tab-approvals" name="tbl-dv-tab-approvals">Approvals</button>
                         <button class="tab-link" data-tab="tab-detail-automation" id="tbl-dv-tab-automation" name="tbl-dv-tab-automation">Automation</button>
                         <button class="tab-link" data-tab="tab-detail-publicform" id="tbl-dv-tab-publicform" name="tbl-dv-tab-publicform">Public Form</button>
+                        <button class="tab-link" data-tab="tab-detail-formlayout" id="tbl-dv-tab-formlayout" name="tbl-dv-tab-formlayout">Form Layout</button>
                         <button class="tab-link" data-tab="tab-detail-parent-child" id="tbl-dv-tab-parent-child" name="tbl-dv-tab-parent-child">Parent-Child </button>
 						<button class="tab-link" data-tab="tab-detail-hooks">Hooks (Optional - for sophisticated App)</button>
                     </div>
@@ -2427,6 +2519,95 @@
                                         </div>
                                         <label class="checkbox-label"><input type="checkbox" id="pf-captcha"> Require human check (arithmetic captcha)</label>
                                         <label class="checkbox-label"><input type="checkbox" id="pf-lookup"> Enable public status lookup page</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="tab-detail-formlayout" class="tab-pane">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h4>Form Design &amp; Layout</h4>
+                                    <p class="helper-text" style="color: var(--secondary-color); margin-bottom: 1rem;">
+                                        Shape the record form: grouped sections with headers, multi-step wizard, accordion, inline labels, and more. Default keeps the current single-section form.
+                                    </p>
+                                    <div style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 10px;">
+                                        <span id="fl-source-badge" class="hidden" style="font-size: 0.8em; font-weight: 600;"></span>
+                                        <button type="button" id="fl-reset-to-main" class="btn btn-sm btn-secondary hidden" title="Discard this module's own layout and follow the main module again."><i class="fas fa-undo"></i> Reset to main module</button>
+                                    </div>
+                                    <div class="form-grid">
+                                        <div class="form-group">
+                                            <label for="fl-style">Form style</label>
+                                            <select id="fl-style" class="form-control">
+                                                <option value="default">Default (single section, as-is)</option>
+                                                <option value="grouped">Grouped sections (headers per group)</option>
+                                                <option value="wizard">Multi-step wizard</option>
+                                                <option value="accordion">Accordion (collapsible groups)</option>
+                                                <option value="inline">Inline / compact (labels beside fields)</option>
+                                                <option value="survey">Survey / feedback (single column)</option>
+                                                <option value="checkout">Order / checkout (2 columns)</option>
+                                                <option value="modal">Modal form (opens in a dialog)</option>
+                                                <option value="conversational">Conversational (chat-style, one question at a time)</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="fl-columns">Form columns</label>
+                                            <select id="fl-columns" class="form-control">
+                                                <option value="0">Inherit table grid</option>
+                                                <option value="1">1 column</option>
+                                                <option value="2">2 columns</option>
+                                                <option value="3">3 columns</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="fl-label-display">Default label position</label>
+                                            <select id="fl-label-display" class="form-control">
+                                                <option value="above">Above the element</option>
+                                                <option value="inline">Beside the element</option>
+                                                <option value="hidden_placeholder">No label (use as placeholder)</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group" id="fl-ungrouped-group">
+                                            <label for="fl-ungrouped-title">Ungrouped fields section title</label>
+                                            <input type="text" id="fl-ungrouped-title" class="form-control" value="Additional Info">
+                                        </div>
+                                    </div>
+
+                                    <div id="fl-groups-panel" style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: .5rem;">
+                                            <label style="font-weight:600;">Groups (section headers)</label>
+                                            <button type="button" class="btn btn-small" id="fl-add-group">+ Add group</button>
+                                        </div>
+                                        <div id="fl-groups-list" style="display:flex; flex-direction:column; gap:.5rem;"></div>
+                                        <p class="helper-text" style="color: var(--secondary-color); margin-top:.5rem;">
+                                            Assign each field to a group in the field's <b>Form Behavior</b> tab. Fields with no group go under the ungrouped title.
+                                        </p>
+                                    </div>
+
+                                    <div id="fl-wizard-panel" class="hidden" style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                                        <div class="form-group" style="max-width:240px;">
+                                            <label for="fl-wizard-start">Start on step</label>
+                                            <input type="number" id="fl-wizard-start" min="1" value="1" class="form-control">
+                                        </div>
+                                        <label class="checkbox-label"><input type="checkbox" id="fl-wizard-skippable"> Allow skipping steps</label>
+                                    </div>
+
+                                    <div id="fl-chat-panel" class="hidden" style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                                        <div class="form-group">
+                                            <label for="fl-chat-slug">Chat URL slug (optional; defaults to table name)</label>
+                                            <input type="text" id="fl-chat-slug" class="form-control" placeholder="e.g. tempah-bilik" style="max-width:320px;">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="fl-chat-greeting">Greeting message</label>
+                                            <input type="text" id="fl-chat-greeting" class="form-control" placeholder="Hi! Let us collect a few details.">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="fl-chat-farewell">Farewell message</label>
+                                            <input type="text" id="fl-chat-farewell" class="form-control" placeholder="Thank you! Your submission has been recorded.">
+                                        </div>
+                                        <p class="helper-text" style="color: var(--secondary-color);">
+                                            Conversational form is served at <b>/chat/&lt;slug&gt;</b> in the generated app (chat-style, one question at a time).
+                                        </p>
                                     </div>
                                 </div>
                             </div>

@@ -25,7 +25,7 @@ class Create{{ page_class_base }} extends CreateRecord
     {% if iframe_layout %}
     public function getLayout(): string
     {
-        if (session('is_in_iframe')) {
+        if (session('is_in_iframe'){% if modal_form_layout %} || request()->has('iframe'){% endif %}) {
             return 'filament.layouts.custom-iframe-layout';
         }
         

@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { toSingularPascalCase, toPluralPascalCase } = require('../utils');
 const { renderTemplate } = require('../render/engine');
+const { collectFeatureSources } = require('./customModuleSources');
 
 /**
  * [IR HELPER] Parse + validate grid_tree_config. Returns null when the
@@ -38,16 +39,11 @@ function parseTreeConfig(tableData) {
 async function generateTreePages(fullSchema, basePath) {
     const { database: { table: tables } } = fullSchema;
     let count = 0;
-    for (const tableName in tables) {
-        if (tableName === 'users') continue;
-        const tableData = tables[tableName];
+    for (const { nameSource, tableData } of collectFeatureSources(tables, parseTreeConfig, 'grid_tree_enabled')) {
         const cfg = parseTreeConfig(tableData);
-        if (!cfg) continue;
-
-        const nameSource = (tableData.module_name && tableData.module_name.trim() !== '')
-            ? tableData.module_name : tableName;
-        const modelSingular = toSingularPascalCase(nameSource);
-        const resourceFolder = toPluralPascalCase(nameSource);
+        const clean = nameSource.replace(/[^a-zA-Z0-9]/g, '');
+        const modelSingular = toSingularPascalCase(clean);
+        const resourceFolder = toPluralPascalCase(clean);
         const pageTitle = tableData.table_view_title || resourceFolder;
 
         const php = renderTemplate('app/Filament/Pages/TreePage.php.njk', {

@@ -169,4 +169,4 @@ function exportPhpArray(obj) {
     return lines.join('\n');
 }
 
-module.exports = { generatePublicFormModule };
+module.exports = { generatePublicFormModule, validationRulesFor };

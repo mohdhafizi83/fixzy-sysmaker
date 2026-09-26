@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { toSingularPascalCase, toPluralPascalCase } = require('../utils');
 const { renderTemplate } = require('../render/engine');
+const { collectFeatureSources } = require('./customModuleSources');
 
 /**
  * [IR HELPER] Parse + validate grid_kanban_config. Returns null when the
@@ -51,20 +52,15 @@ function parseKanbanConfig(tableData) {
  * [UTAMA] Generate a standalone Kanban board page per opted-in table.
  * Drag-and-drop uses vanilla HTML5 DnD calling a Livewire method that
  * guards with Resource::canEdit() + allowed-transition validation.
+ * Custom modules with an overridden kanban config get their own board.
  */
 async function generateKanbanPages(fullSchema, basePath) {
     const { database: { table: tables } } = fullSchema;
     let count = 0;
-    for (const tableName in tables) {
-        if (tableName === 'users') continue;
-        const tableData = tables[tableName];
+    for (const { nameSource, tableData } of collectFeatureSources(tables, parseKanbanConfig, 'grid_kanban_enabled')) {
         const cfg = parseKanbanConfig(tableData);
-        if (!cfg) continue;
-
-        const nameSource = (tableData.module_name && tableData.module_name.trim() !== '')
-            ? tableData.module_name : tableName;
-        const modelSingular = toSingularPascalCase(nameSource);
-        const resourceFolder = toPluralPascalCase(nameSource);
+        const modelSingular = toSingularPascalCase(nameSource.replace(/[^a-zA-Z0-9]/g, ''));
+        const resourceFolder = toPluralPascalCase(nameSource.replace(/[^a-zA-Z0-9]/g, ''));
         const pageTitle = tableData.table_view_title || resourceFolder;
 
         const phpLiteral = (v) => `'${String(v).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;

@@ -57,6 +57,8 @@ import { tenancyManager } from './js/features/tenancyManager.js';
 import { initApprovalTab } from './js/features/approvalManager.js';
 import { initSchedulerTab } from './js/features/schedulerManager.js';
 import { initPublicFormTab } from './js/features/publicFormManager.js';
+import { initFormLayoutTab } from './js/features/formLayoutDesigner.js';
+import { initFieldBehaviorTab } from './js/features/fieldBehaviorManager.js';
 import { initNumberingSection } from './js/features/numberingManager.js';
 import { initImportSection } from './js/features/importManager.js';
 import { initApiSection } from './js/features/apiManager.js';
@@ -490,6 +492,8 @@ window.addEventListener('beforeunload', (event) => {
 	initApprovalTab();
 	initSchedulerTab();
 	initPublicFormTab();
+	initFormLayoutTab();
+	initFieldBehaviorTab();
 	initNumberingSection();
 	initImportSection();
 	initApiSection();

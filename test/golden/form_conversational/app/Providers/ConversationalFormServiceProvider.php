@@ -1,0 +1,28 @@
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
+
+/**
+ * Conversational form routes (Fixzy SysMaker generated code).
+ *
+ * Chat-style intake pages under /chat/{slug} — standalone, outside the
+ * Filament admin panel. CSRF + session come from the `web` middleware;
+ * throttling is enforced on the POST-equivalent (Livewire updates are
+ * POST requests) via the throttle middleware below.
+ */
+class ConversationalFormServiceProvider extends ServiceProvider
+{
+    public function boot(): void
+    {
+        Route::middleware(['web', 'throttle:30,1'])
+            ->prefix('chat')
+            ->name('conversational.')
+            ->group(function (): void {
+                Route::get('/{slug}', \App\Livewire\ConversationalForm::class)
+                    ->name('show');
+            });
+    }
+}

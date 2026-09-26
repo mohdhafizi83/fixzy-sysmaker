@@ -4,6 +4,7 @@ import { setElementValue, setRadioValue } from '../ui/formHelpers.js';
 import { appState } from '../state.js';
 import { SaveManager } from '../../renderer.js';
 import { initializeValidationInputHandlers } from '../features/validation.js';
+import { renderFieldBehaviorTab } from '../features/fieldBehaviorManager.js';
 import { 
     populateParentTableDropdown,
     populateParentCaptionDropdowns,
@@ -360,6 +361,9 @@ const maxLengthValue = fieldData.length;
         loadValidationTab(currentFieldData.field_id, tableName); 
     }
     // ▲▲▲ END FIX ▲▲▲
+
+    // Phase E: Form Behavior tab (label position, group, conditionals)
+    renderFieldBehaviorTab(tableName, fieldName);
     
 // ========================================================
     // VISUAL PROTECTION FOR THE GLOBAL DELETE BUTTON (UI)

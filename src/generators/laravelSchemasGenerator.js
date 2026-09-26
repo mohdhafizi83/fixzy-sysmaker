@@ -11,21 +11,127 @@ const {
 const { renderTemplate } = require('../render/engine');
 const { buildFormFieldContext } = require('./fieldContext');
 const { labelPhp } = require('./localizationConfig');
+const { parseFormLayoutConfig, parseFieldFormSettings } = require('./formLayoutConfig');
+
+// Escape a literal for single-quoted PHP (used for group titles/descriptions).
+function phpEscape(s) {
+    return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+// Append phase-E layout modifiers (label mode / conditionals) to a hand-built
+// field code string, keeping the trailing comma. Used by the media/repeater
+// branches which don't go through FormField.php.njk.
+function applyFormModifiers(code, formSettings, defaultLabelDisplay, elementType) {
+    const labelMode = (formSettings && formSettings.label_display) || defaultLabelDisplay || '';
+    const keepsOwnLabel = ['Checkbox', 'Radio'].includes(elementType);
+    let mods = '';
+    if (!keepsOwnLabel) {
+        if (labelMode === 'inline') mods += '->inlineLabel()';
+        else if (labelMode === 'hidden_placeholder') mods += '->hiddenLabel()';
+    }
+    if (formSettings && formSettings.visible_if) {
+        mods += buildConditionClosure(formSettings.visible_if, 'visible');
+    }
+    if (formSettings && formSettings.required_if) {
+        mods += buildConditionClosure(formSettings.required_if, 'required');
+    }
+    if (!mods) return code;
+    if (code.trimEnd().endsWith(',')) {
+        return code.trimEnd().slice(0, -1) + mods + ',';
+    }
+    return code + mods;
+}
 
 /**
- * [HELPER] Generates the schema string for a form. 
- * Mengandungi 100% logik ASAL + sokongan Custom Module (readonly).
+ * [HELPER] Generates the schema string for a form.
+ * Phase E: layout-config aware. With no form_layout_config (or style
+ * "default" and no groups) this produces the exact same single-section
+ * field list as before. With groups configured, fields are bucketed into
+ * one Section per group (or Wizard steps for style "wizard").
  */
 function generateFormSchemaString(tableData, relationships, tableName, fullSchema) {
-    const formFieldsCode = [];
-    const modelNameSingular = toSingularPascalCase(tableName); // Keep using tableName for the internal variable
-    const localizationEnabled = require('./localizationConfig').isLocalizationEnabled(fullSchema.project || {});
+    const layout = parseFormLayoutConfig(tableData);
 
-    // --- MULA: LOGIK PENGESANAN TENANT FK ---
+    // ---- DEFAULT PATH (byte-identical to legacy behaviour) ----
+    if (!layout) {
+        return generateFieldCodesForList(visibleFormFields(tableData, fullSchema, tableName), tableData, relationships, tableName, fullSchema, { defaultLabelDisplay: '' });
+    }
+
+    // ---- GROUPED PATH ----
+    const fields = visibleFormFields(tableData, fullSchema, tableName);
+    const byGroup = new Map();
+    const ungrouped = [];
+    for (const field of fields) {
+        const settings = parseFieldFormSettings(field);
+        field.__formSettings = settings;
+        if (settings.form_group) {
+            if (!byGroup.has(settings.form_group)) byGroup.set(settings.form_group, []);
+            byGroup.get(settings.form_group).push(field);
+        } else {
+            ungrouped.push(field);
+        }
+    }
+
+    // Effective presentation per style (presets).
+    const style = layout.style;
+    let defaultLabelDisplay = layout.label_display;
+    let forceColumns = layout.columns;
+    if (style === 'inline') defaultLabelDisplay = 'inline';
+    if (style === 'survey') { if (!forceColumns) forceColumns = 1; }
+    if (style === 'checkout') { if (!forceColumns) forceColumns = 2; }
+    const accordionForce = style === 'accordion';
+
+    const sections = [];
+    const pushSection = (title, description, groupFields, collapsible, collapsed) => {
+        if (!groupFields.length) return;
+        const inner = generateFieldCodesForList(groupFields, tableData, relationships, tableName, fullSchema, { defaultLabelDisplay });
+        let sec = `Section::make('${phpEscape(title)}')`;
+        if (description) sec += `\n    ->description('${phpEscape(description)}')`;
+        if (collapsible) {
+            sec += `\n    ->collapsible()`;
+            if (collapsed) sec += `\n    ->collapsed()`;
+        }
+        const cols = forceColumns || 1;
+        sec += `\n    ->columns(${cols})`;
+        sec += `\n    ->schema([\n${inner}\n    ])`;
+        sections.push(sec);
+    };
+
+    for (const g of layout.groups) {
+        pushSection(g.title, g.description, byGroup.get(g.key) || [], accordionForce || g.collapsible, accordionForce ? false : g.collapsed);
+    }
+    if (ungrouped.length) {
+        pushSection(layout.ungrouped_title, '', ungrouped, accordionForce, false);
+    }
+
+    // No fields matched any group => fall back to plain list (defensive).
+    if (sections.length === 0) {
+        return generateFieldCodesForList(fields, tableData, relationships, tableName, fullSchema, { defaultLabelDisplay });
+    }
+
+    if (style === 'wizard') {
+        // Steps wrap fields directly (not Sections).
+        const stepCodes = [];
+        const pushStep = (title, stepFields) => {
+            if (!stepFields.length) return;
+            const inner = generateFieldCodesForList(stepFields, tableData, relationships, tableName, fullSchema, { defaultLabelDisplay });
+            stepCodes.push(`Step::make('${phpEscape(title)}')\n    ->schema([\n${inner}\n    ])`);
+        };
+        for (const g of layout.groups) pushStep(g.title, byGroup.get(g.key) || []);
+        if (ungrouped.length) pushStep(layout.ungrouped_title, ungrouped);
+        return `Wizard::make()\n    ->startOnStep(${layout.wizard.start_step})\n    ->steps([\n${stepCodes.join(',\n')}])`;
+    }
+
+    return sections.join(',\n');
+}
+
+// Shared visible-field filter (tenant FK hidden, hide_in_dv respected).
+function visibleFormFields(tableData, fullSchema, tableName) {
     const projectSettings = fullSchema.project || {};
     const isOneToMany = projectSettings.tenancy_type === 'one_to_many';
     const isManyToMany = projectSettings.tenancy_type === 'many_to_many';
     const tenantTable = projectSettings.tenant_table;
+    const relationships = fullSchema.database.relationships || [];
     let tenantFkField = null;
 
     if ((isOneToMany || isManyToMany) && tenantTable && tableName !== tenantTable && tableName !== 'users') {
@@ -37,24 +143,38 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
             else if (Object.values(tableData.fields).some(f => f.field_name === tenantTable + '_id')) tenantFkField = tenantTable + '_id';
         }
     }
-    // --- TAMAT LOGIK PENGESANAN TENANT FK ---
 
-    // Get visible & sorted fields
-    // LOGIK ASAL: filter visibleFields
-    const visibleFields = Object.values(tableData.fields)
+    return Object.values(tableData.fields)
         .filter(field => {
-            // Sembunyikan Tenant FK dari pandangan form secara automatik
             if (tenantFkField && field.field_name === tenantFkField) return false;
-
-            // Custom Module logic: if forced readonly, always display
             if (field.is_forced_readonly) return true;
-            // Otherwise, follow the hide_in_dv setting
             return field.hide_in_dv !== 1;
         })
         .sort((a, b) => (a.field_order ?? 999) - (b.field_order ?? 999));
+}
+
+// Render a list of fields into concatenated field code (the legacy loop body).
+function generateFieldCodesForList(visibleFields, tableData, relationships, tableName, fullSchema, opts) {
+    const formFieldsCode = [];
+    const localizationEnabled = require('./localizationConfig').isLocalizationEnabled(fullSchema.project || {});
+    const defaultLabelDisplay = (opts && opts.defaultLabelDisplay) || '';
 
     for (const field of visibleFields) {
-        
+        // Phase E: per-field form settings (label mode, conditionals).
+        const formSettings = field.__formSettings || parseFieldFormSettings(field);
+
+        // Resolve the dependent-dropdown count model: the parent field's
+        // lookup table (e.g. room_number -> Room -> available_slots).
+        if (formSettings.depends_on && !formSettings.depends_on.model_class) {
+            const parentField = Object.values(tableData.fields)
+                .find((f) => f.field_name === formSettings.depends_on.field);
+            if (parentField && parentField.lookup_parent_table) {
+                const pSrc = (fullSchema.database.table[parentField.lookup_parent_table]?.module_name || '').trim()
+                    || parentField.lookup_parent_table;
+                formSettings.depends_on.model_class = toSingularPascalCase(pSrc);
+            }
+        }
+
         // ============================================================
         // LOGIK 1: MEDAN STANDARD & HUBUNGAN (LINK)
         // ============================================================
@@ -83,7 +203,7 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
             }
 
             // Build render context for the field template
-            let parentOpts = { tableName, localizationEnabled };
+            let parentOpts = { tableName, localizationEnabled, formSettings, defaultLabelDisplay };
             if (field.lookup_parent_table) {
                 const parentTable = field.lookup_parent_table;
                 const parentTableData = fullSchema.database.table[parentTable];
@@ -93,6 +213,8 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
                 parentOpts = {
                     tableName,
                     localizationEnabled,
+                    formSettings,
+                    defaultLabelDisplay,
                     parentTable,
                     isSelfRef: parentTable === tableName,
                     relationshipName: toSingularCamelCase(parentNameSource),
@@ -135,7 +257,7 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
                  imageCode = imageCode.replace(',', '->disabled()->dehydrated(false),');
             }
 
-            formFieldsCode.push(imageCode);
+            formFieldsCode.push(applyFormModifiers(imageCode, formSettings, defaultLabelDisplay, 'FileUpload'));
         }
 
         else if (field.media_type === 'upload') {
@@ -157,7 +279,7 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
             }
 
             uploadCode = uploadCode.replace(/<<.*?>>/g, '').replace(/^\s*[\r\n]/gm, '');
-            formFieldsCode.push(uploadCode);
+            formFieldsCode.push(applyFormModifiers(uploadCode, formSettings, defaultLabelDisplay, 'FileUpload'));
         }
 
         else if (field.media_type === 'attachments') {
@@ -180,7 +302,7 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
             if (field.is_forced_readonly) {
                  attachCode = attachCode.replace(/,$/, '->disabled()->dehydrated(false),');
             }
-            formFieldsCode.push(attachCode);
+            formFieldsCode.push(applyFormModifiers(attachCode, formSettings, defaultLabelDisplay, 'FileUpload'));
         }
 
         else if (['gmap', 'youtube'].includes(field.media_type)) {
@@ -192,7 +314,7 @@ ViewField::make('${field.field_name}')
     ->view('filament.forms.components.${viewerType}-viewer')
     ->columnSpanFull(),`;
             mediaViewCode = mediaViewCode.replace(/<<.*?>>/g, '').replace(/^\s*[\r\n]/gm, '');
-            formFieldsCode.push(mediaViewCode);
+            formFieldsCode.push(applyFormModifiers(mediaViewCode, formSettings, defaultLabelDisplay, 'TextInput'));
         }
 
         // ============================================================
@@ -227,7 +349,7 @@ ViewField::make('${field.field_name}')
                  repeaterCode = repeaterCode.replace(',', '->disabled()->dehydrated(false),');
             }
 
-            formFieldsCode.push(repeaterCode);
+            formFieldsCode.push(applyFormModifiers(repeaterCode, formSettings, defaultLabelDisplay, 'Repeater'));
         }
 
         else if (field.display_type === 'repeater') {
@@ -275,7 +397,7 @@ ViewField::make('${field.field_name}')
                  repeaterCode = repeaterCode.replace(',', '->disabled()->dehydrated(false),');
             }
 
-            formFieldsCode.push(repeaterCode);
+            formFieldsCode.push(applyFormModifiers(repeaterCode, formSettings, defaultLabelDisplay, 'Repeater'));
         }
     } // Tamat loop fields
 
@@ -368,6 +490,8 @@ async function generateFilamentSchemasForm(fullSchema, basePath) {
                 import_resources: Array.from(importResources).join('\n'),
                 grid_column_control: gridColumnControl,
                 detail_view_title: tableData.detail_view_title || '',
+                form_layout_active: parseFormLayoutConfig(tableData) !== null,
+        wizard_active: (parseFormLayoutConfig(tableData) || {}).style === 'wizard',
                 all_columns_form: generateFormSchemaString(tableData, relationships, tableName, fullSchema),
             });
 
@@ -438,6 +562,8 @@ function generateSingleSchemaClass(basePath, resourceFolder, className, tableDat
         import_resources: Array.from(importResources).join('\n'),
         grid_column_control: `->columns(fn (Page $livewire) => $livewire->gridColumns ?? 2)`,
         detail_view_title: tableData.table_view_title || '',
+        form_layout_active: parseFormLayoutConfig(tableData) !== null,
+        wizard_active: (parseFormLayoutConfig(tableData) || {}).style === 'wizard',
         all_columns_form: generateFormSchemaString(tableData, relationships, tableName, fullSchema),
     });
 
@@ -527,9 +653,21 @@ async function generateFilamentSchemasCustomModules(fullSchema, basePath) {
                     }
                     // ▲▲▲ TAMAT PEMBAIKAN GENERATOR ▲▲▲        
                     
-                    // Must pass the original 'module_name' so the helper knows the Model name
+                    // Must pass the original 'module_name' so the helper knows the Model name.
+                    // Also spread the module's table-level settings_override so an
+                    // overridden form_layout_config (and other grid/form settings)
+                    // reaches parseFormLayoutConfig for this custom module.
+                    let tableOverrides = {};
+                    if (moduleObj.settings_override) {
+                        try {
+                            tableOverrides = JSON.parse(moduleObj.settings_override);
+                        } catch (e) {
+                            console.warn(`Failed to process table settings_override for module: ${moduleObj.module_name}`);
+                        }
+                    }
                     const virtualTableData = { 
                         ...tableData, 
+                        ...tableOverrides,
                         fields: virtualFields, 
                         table_view_title: moduleObj.module_name,
                         module_name: tableData.module_name // PENTING: Kekalkan module_name asal

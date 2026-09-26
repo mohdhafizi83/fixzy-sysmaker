@@ -34,4 +34,8 @@
 {% endif %}{% if is_relationship_self_ref %}    {{ is_relationship_self_ref }}
 {% endif %}{% if link_to_parent_record %}    {{ link_to_parent_record }}
 {% endif %}{% if multiple_validation %}    {{ multiple_validation }}
+{% endif %}{% if is_inline_label %}    {{ is_inline_label }}
+{% endif %}{% if is_hidden_label_placeholder %}    {{ is_hidden_label_placeholder }}
+{% endif %}{% if is_visible_if %}    {{ is_visible_if }}
+{% endif %}{% if is_required_if %}    {{ is_required_if }}
 {% endif %}{% if keep_trim %}    ->trim(),{% else %}    ,{% endif %}

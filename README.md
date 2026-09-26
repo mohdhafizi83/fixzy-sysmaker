@@ -556,9 +556,60 @@ Row-level ownership, tenant scoping (single and multi-tenant patterns), and
 generated native logging — a per-record Data Audit Trail plus an optional
 per-user Activity Log. No third-party auditing package required.
 
-### Custom modules
-Build screens that go beyond plain CRUD: custom views, module-level logic,
-and per-table overrides.
+### Custom modules (views of your tables)
+
+A **Custom Module** is a filtered, reshaped view of an existing table — a
+different slice of the same data for a different audience (e.g. a "My
+Faculty Staff" view of the full Staff table). Custom modules are **not**
+a second class of citizen: they now support the same layout power as
+main modules.
+
+- **Form layout per module** — every form style (default, grouped,
+  wizard, accordion, inline, survey, checkout, modal, conversational)
+  can be overridden per custom module. Edit it in the module's
+  **Form Design** tab; a badge shows whether the layout is *Inherited
+  from main module* or *Overridden for this module*, with one-click
+  **Reset to main module**.
+- **All grid settings overridable** — column set/order, template,
+  density, sticky header, page size, inline edit, card size: anything
+  the main module exposes can be overridden per custom module.
+- **Kanban / Calendar / Tree per module** — a custom module can render
+  as its own kanban board, month calendar, or hierarchy tree, each
+  opt-in with its own field mapping.
+- **Conversational (chat) forms per module** — a module whose own
+  layout is conversational gets its own `/chat/{slug}` page; slug
+  collisions auto-suffix. Modules inherit nothing here, so no
+  duplicate routes ever appear.
+- **Field behavior per module** — show/hide, required, and help text
+  set inside a custom module apply to that module only; they never
+  leak into the main table.
+- **Unsupported features are shown, not hidden** — features that are
+  inherently table-level (approvals, public forms, REST API, auto
+  numbering) appear disabled in a custom module's settings with a
+  tooltip explaining why, so nothing feels "missing".
+
+### Form Layout Designer
+
+Every table (and custom module) form can be redesigned visually — no
+code. Nine styles ship built-in:
+
+| Style | Shape |
+|---|---|
+| Default | Classic single-column Filament form |
+| Grouped | Fieldsets with headings, multi-column grids |
+| Wizard | Multi-step with progress bar and step validation |
+| Accordion | Collapsible sections, first-open configurable |
+| Inline | Compact label-beside-field layout |
+| Survey | Question-per-block with required markers |
+| Checkout | Summary sidebar + stepped fields |
+| Modal | Small dialog form for quick edits |
+| Conversational | Chat-driven form (`/chat/{slug}`) — the bot asks field by field |
+
+The designer stores its config as JSON on the table (or the custom
+module's override), and the generators compile it into native Filament
+v5 schemas — wizards become real Filament wizards, conversational forms
+become a Livewire chat component. Conditional visibility, field
+grouping, and required rules all survive to the generated code.
 
 ## Roadmap
 
@@ -583,7 +634,14 @@ Shipped:
   (email, Telegram, HTTP, Advanced Action/raw SQL, logic, loops, try/catch)
   compiling to real PHP (observers, listeners, scheduled commands)
 - [x] GUI Setup Wizard (one-click environment provisioning)
-- [x] 51-fixture golden test matrix + CI (Windows + ubuntu + macOS)
+- [x] Form Layout Designer — 9 form styles (default, grouped, wizard,
+  accordion, inline, survey, checkout, modal, conversational) compiled
+  to native Filament v5 schemas
+- [x] Custom module layout parity — every form style, all grid
+  settings, kanban/calendar/tree, and conversational chat forms
+  overridable per custom module (inherited-vs-overridden badges,
+  reset-to-main)
+- [x] 83-fixture golden test matrix + CI (Windows + ubuntu + macOS)
 
 Next:
 - [ ] Guided project templates (CRM, inventory, booking, helpdesk starters)
