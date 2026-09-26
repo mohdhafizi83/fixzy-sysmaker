@@ -4159,3 +4159,30 @@ input.is-invalid:focus {
     vertical-align: middle;
     white-space: nowrap;
 }
+
+/* --- Preview gate: disabled Show Preview passes hover to wrapper for tooltip --- */
+.preview-btn-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 10px;
+}
+
+#btn-show-preview:disabled {
+    pointer-events: none; /* let the wrapper span show its title tooltip */
+}
+
+.preview-help-btn {
+    background: none;
+    border: none;
+    color: #f59e0b;
+    font-size: 1.05rem;
+    cursor: pointer;
+    padding: 4px 6px;
+    line-height: 1;
+}
+
+.preview-help-btn:hover {
+    color: #d97706;
+    transform: scale(1.1);
+}
