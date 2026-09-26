@@ -1,0 +1,22 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+/**
+ * A single chat message (Fixzy SysMaker generated real-time module).
+ *
+ * Messages live in the database (durable history) and are additionally
+ * broadcast over the WebSocket so open chat windows update instantly.
+ */
+class ChatMessage extends Model
+{
+    protected $fillable = ['room', 'user_id', 'user_name', 'message'];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+}

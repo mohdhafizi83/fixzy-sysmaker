@@ -1,0 +1,29 @@
+<?php
+
+namespace App\Providers;
+
+use App\Observers\FixzyLiveObserver;
+use Illuminate\Support\ServiceProvider;
+
+/**
+ * Live dashboard wiring (Fixzy SysMaker generated code).
+ *
+ * Attaches the debounced FixzyLiveObserver to every model that backs
+ * a live dashboard widget, so create/update/delete on those tables
+ * broadcasts DataChanged to the fixzy.data.{table} channel.
+ */
+class LiveDashboardServiceProvider extends ServiceProvider
+{
+    public function boot(): void
+    {
+        $map = [
+        'inventori' => \App\Models\Inventori::class,
+        ];
+
+        foreach ($map as $table => $modelClass) {
+            if (class_exists($modelClass)) {
+                $modelClass::observe(FixzyLiveObserver::class);
+            }
+        }
+    }
+}

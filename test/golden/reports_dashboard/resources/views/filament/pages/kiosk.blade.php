@@ -1,0 +1,80 @@
+<x-filament-panels::page>
+    <div x-data="fixzyKiosk({ rotate: 20, pageSize: 4 })"
+         x-init="start()"
+         class="fixzy-kiosk">
+        <div class="fixzy-kiosk-header">
+            <div class="fixzy-kiosk-title">reports_dashboard</div>
+            <div class="fixzy-kiosk-clock" x-text="clock"></div>
+        </div>
+        <div class="fixzy-kiosk-body" x-ref="body">
+            {{ $this->content }}
+        </div>
+        <div class="fixzy-kiosk-footer">
+            <span x-text="'Page ' + (page + 1) + ' / ' + totalPages"></span>
+            <span class="fixzy-kiosk-live" :class="live ? 'is-live' : ''" x-text="live ? '● LIVE' : '○'"></span>
+        </div>
+    </div>
+</x-filament-panels::page>
+
+<style>
+    .fixzy-kiosk { min-height: 90vh; display: flex; flex-direction: column; gap: 1rem; }
+    .fixzy-kiosk-header { display: flex; justify-content: space-between; align-items: baseline; }
+    .fixzy-kiosk-title { font-size: 1.75rem; font-weight: 700; }
+    .fixzy-kiosk-clock { font-size: 1.5rem; font-variant-numeric: tabular-nums; opacity: .85; }
+    .fixzy-kiosk-body { flex: 1; }
+    .fixzy-kiosk-footer { display: flex; justify-content: space-between; font-size: .9rem; opacity: .7; }
+    .fixzy-kiosk-live.is-live { color: #10b981; font-weight: 700; }
+    /* Bigger text on kiosk for readability from a distance. */
+    .fixzy-kiosk .fi-section h2, .fixzy-kiosk .fi-wi-heading { font-size: 1.15rem; }
+    .fixzy-kiosk .fi-fo-stats-overview-stat-value { font-size: 2rem; }
+</style>
+
+<script>
+    function fixzyKiosk(cfg) {
+        return {
+            rotate: Math.max(5, cfg.rotate || 15),
+            pageSize: Math.max(1, cfg.pageSize || 4),
+            page: 0,
+            pages: [],
+            clock: '',
+            live: false,
+            timer: null,
+            start() {
+                this.tickClock();
+                setInterval(() => this.tickClock(), 1000);
+                this.$nextTick(() => this.buildPages());
+                // Watch for Echo presence (live widgets light the footer).
+                window.addEventListener('EchoLoaded', () => { this.live = true; });
+                if (window.Echo) this.live = true;
+            },
+            tickClock() {
+                const d = new Date();
+                this.clock = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
+                    + ' ' + d.toLocaleTimeString();
+            },
+            buildPages() {
+                const grid = this.$refs.body.querySelector('.fi-sc-grid') || this.$refs.body.firstElementChild;
+                if (!grid) return;
+                const items = Array.from(grid.children);
+                if (items.length <= this.pageSize) { this.pages = [items]; this.render(); return; }
+                this.pages = [];
+                for (let i = 0; i < items.length; i += this.pageSize) {
+                    this.pages.push(items.slice(i, i + this.pageSize));
+                }
+                this.render();
+                this.timer = setInterval(() => {
+                    this.page = (this.page + 1) % this.pages.length;
+                    this.render();
+                }, this.rotate * 1000);
+            },
+            render() {
+                if (!this.pages.length) return;
+                const active = new Set(this.pages[this.page]);
+                this.pages.flat().forEach((el) => {
+                    el.style.display = active.has(el) ? '' : 'none';
+                });
+            },
+        };
+    }
+</script>
+

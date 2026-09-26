@@ -23,6 +23,31 @@ abstract class BaseReportStats extends StatsOverviewWidget
         return $w === 'full' ? 'full' : (int) $w;
     }
 
+    /**
+     * Refresh layer (see BaseReportChart): poll = Livewire polling,
+     * live = Echo push, static = no polling (overrides the native
+     * 5s CanPoll default).
+     */
+    protected function getPollingInterval(): ?string
+    {
+        $mode = static::$cfg['refresh_mode'] ?? 'static';
+        if ($mode === 'poll') {
+            $iv = (int) (static::$cfg['refresh_interval'] ?? 10);
+            return max(2, min(300, $iv)) . 's';
+        }
+        return null;
+    }
+
+    public function getLiveTable(): string
+    {
+        return (string) (static::$cfg['table'] ?? '');
+    }
+
+    public function refreshMode(): string
+    {
+        return (string) (static::$cfg['refresh_mode'] ?? 'static');
+    }
+
     protected function getStats(): array
     {
         $cfg = static::$cfg;

@@ -111,7 +111,8 @@ CLI environment variables:
 - **Import existing databases** — upload or paste MySQL/MariaDB, PostgreSQL,
   SQL Server, or SQLite dumps and keep designing
 - **Menu management** — group, order, and label the generated app's navigation
-- **Dashboard builder** — stat cards and charts bound to any table
+- **Dashboard builder** — 12 widget types (stats, 10 charts, latest
+  records) bound to any table, with live/poll refresh and kiosk mode
 
 ### What you get per generated app
 
@@ -314,17 +315,36 @@ auto numbering only fills empty fields on create.
 ### Reports & Charts (Dashboard Builder)
 
 Widgets you design in the Dashboard Builder are **compiled into the
-generated app's dashboard** — no manual wiring. Four widget types:
+generated app's dashboard** — no manual wiring. Twelve widget types:
 
 - **Stat card** — count / sum / avg of any table, optional filter
-- **Bar chart** — group by a column, aggregate a numeric column
-- **Pie chart** — share of a grouped aggregate
+- **Comparison** — bar, pie, doughnut, polar area
+- **Trend** — line, area (filled), combo (bar + line on dual axes)
+- **Distribution** — radar, scatter plot, bubble (X/Y/size)
 - **Latest records** — a compact table of the newest rows
 
 Each widget carries its own width (1/2/3/full columns) and colour.
 Filters support a simple field/operator/value rule, a timeframe
 (today / this month / this year), and advanced AND/OR rule groups
-from the visual query builder.
+from the visual query builder. Scatter/bubble charts plot raw
+numeric X/Y pairs (bubble adds a size column, radii auto-normalised).
+
+**Live updates (per widget):**
+
+- **Static** — loads once (default)
+- **Auto-refresh** — Livewire polling at 5–300 s (no extra infra)
+- **Real-time** — WebSocket push: a debounced model observer
+  broadcasts `DataChanged` on the widget's source table and the
+  widget re-renders within ~1 s. Selecting real-time automatically
+  includes the Real-time module (Reverb) in the project — configure
+  the server on the in-app Real-time Settings page after deploying.
+
+**Kiosk display mode (project-level):** enable in the Dashboard
+Builder to get a wall/TV presentation at `/kiosk` — the same
+widgets, auto-rotating pages (10–60 s, configurable page size),
+big-type stats, live clock, and a LIVE indicator when the WebSocket
+is connected. Hidden from navigation; pair with live-mode widgets
+for real-time wallboards.
 
 **Security model:** the compiled report config is baked into the
 generated PHP as a protected static property — it never travels in
@@ -650,7 +670,8 @@ Shipped:
 - [x] SQL import (MySQL, PostgreSQL, SQL Server, SQLite)
 - [x] Multi-tenancy, row ownership, native logging (Data Audit Trail +
   User Activity Log, independently selectable)
-- [x] Dashboard builder with stat/chart widgets
+- [x] Dashboard builder: 12 widget types (stats, 10 chart types, latest
+  records) with per-widget live/poll refresh and kiosk wall-display mode
 - [x] Auth modules: Google SSO, LDAP/AD, 2FA — email code or Google Authenticator
       (TOTP, recoverable), login captcha — built-in arithmetic or Google
       reCAPTCHA v2 (opt-in)

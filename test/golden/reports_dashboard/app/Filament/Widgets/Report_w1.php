@@ -21,10 +21,16 @@ class Report_w1 extends BaseReportStats
         'aggregate' => "count",
         'label_field' => "",
         'value_field' => "",
+        'series_field' => "",
+        'size_field' => "",
+        'series_aggregate' => "sum",
         'filter_field' => "",
         'filter_operator' => "",
         'filter_value' => "",
         'timeframe' => "all",
+        'refresh_mode' => "poll",
+        'refresh_interval' => "15",
         'advanced' => null,
     ];
+
 }

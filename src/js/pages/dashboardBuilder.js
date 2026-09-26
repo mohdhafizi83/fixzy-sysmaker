@@ -5,11 +5,57 @@ let isEventsAttached = false;
 
 export function initDashboardBuilder() {
     renderDashboardWidgets();
+    initKioskControls();
     
     if (!isEventsAttached) {
         attachEventListeners();
         isEventsAttached = true;
     }
+}
+
+function initKioskControls() {
+    const enabledEl = document.getElementById('kiosk-enabled');
+    if (!enabledEl) return;
+    const project = appState.jsonData?.project || {};
+    enabledEl.checked = Number(project.kiosk_enabled) === 1;
+    document.getElementById('kiosk-rotate-seconds').value = String(project.kiosk_rotate_seconds || 15);
+    document.getElementById('kiosk-page-size').value = String(project.kiosk_page_size || 4);
+    toggleKioskGroups();
+
+    const saveKiosk = async () => {
+        const payload = {
+            project_id: appState.activeProject?.project_id,
+            kiosk_enabled: enabledEl.checked ? 1 : 0,
+            kiosk_rotate_seconds: parseInt(document.getElementById('kiosk-rotate-seconds').value, 10) || 15,
+            kiosk_page_size: parseInt(document.getElementById('kiosk-page-size').value, 10) || 4,
+        };
+        if (!payload.project_id) return;
+        try {
+            const res = await window.electronAPI.updateProject(payload);
+            if (res && res.success) {
+                // Mirror into the in-memory schema so generation sees it.
+                if (appState.jsonData) {
+                    appState.jsonData.project = { ...(appState.jsonData.project || {}), ...payload };
+                }
+            }
+        } catch (err) {
+            console.error('Failed to save kiosk settings:', err);
+        }
+    };
+
+    const toggleKioskGroups = () => {
+        const on = enabledEl.checked;
+        document.getElementById('kiosk-rotate-group').style.display = on ? 'block' : 'none';
+        document.getElementById('kiosk-pagesize-group').style.display = on ? 'block' : 'none';
+    };
+
+    enabledEl.removeEventListener('change', saveKiosk);
+    enabledEl.removeEventListener('change', toggleKioskGroups);
+    enabledEl.addEventListener('change', () => { toggleKioskGroups(); saveKiosk(); });
+    document.getElementById('kiosk-rotate-seconds').removeEventListener('change', saveKiosk);
+    document.getElementById('kiosk-rotate-seconds').addEventListener('change', saveKiosk);
+    document.getElementById('kiosk-page-size').removeEventListener('change', saveKiosk);
+    document.getElementById('kiosk-page-size').addEventListener('change', saveKiosk);
 }
 
 function attachEventListeners() {
@@ -25,6 +71,7 @@ function attachEventListeners() {
     // Listen for changes to show/hide dynamic inputs
     document.getElementById('widget-type')?.addEventListener('change', toggleWidgetFields);
     document.getElementById('widget-aggregate-type')?.addEventListener('change', toggleWidgetFields);
+    document.getElementById('widget-refresh-mode')?.addEventListener('change', toggleRefreshFields);
     
     // ▼▼▼ NEW LOGIC: Listen for table changes and populate the column dropdown ▼▼▼
     document.getElementById('widget-target-table')?.addEventListener('change', (e) => {
@@ -84,9 +131,11 @@ function attachEventListeners() {
 // NEW FUNCTION: Fill the column list based on the selected table
 function populateTableFieldsDropdown(tableName, selectedValues = {}) {
     const selects = ['widget-chart-label', 'widget-target-field', 'widget-filter-field'];
-    
+    // Numeric-only selects for scatter/bubble/combo axes.
+    const numericSelects = ['widget-series-field', 'widget-size-field'];
+
     // First clear all column dropdowns
-    selects.forEach(id => {
+    [...selects, ...numericSelects].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.innerHTML = '<option value="">-- Select Column --</option>';
     });
@@ -97,23 +146,47 @@ function populateTableFieldsDropdown(tableName, selectedValues = {}) {
     const tableData = appState.jsonData?.database?.table?.[tableName];
     if (!tableData || !tableData.fields) return;
 
+    const NUMERIC_TYPES = ['INT', 'INTEGER', 'BIGINT', 'SMALLINT', 'DECIMAL', 'FLOAT', 'DOUBLE', 'NUMBER', 'NUMERIC'];
+    const isNumeric = (f) => NUMERIC_TYPES.includes(String(f.data_type || '').toUpperCase());
+
     const fields = Object.keys(tableData.fields);
-    
+    const numericFields = fields.filter((name) => isNumeric(tableData.fields[name]));
+
     selects.forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
-        
+
         fields.forEach(field => {
             const opt = document.createElement('option');
             opt.value = field;
             opt.textContent = field;
             el.appendChild(opt);
         });
-        
-        // Select the existing value if in Edit mode
-        if (id === 'widget-chart-label' && selectedValues.chart_label_column) el.value = selectedValues.chart_label_column;
-        if (id === 'widget-target-field' && selectedValues.target_field) el.value = selectedValues.target_field;
-        if (id === 'widget-filter-field' && selectedValues.filter_field) el.value = selectedValues.filter_field;
+    });
+
+    numericSelects.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        numericFields.forEach(field => {
+            const opt = document.createElement('option');
+            opt.value = field;
+            opt.textContent = field;
+            el.appendChild(opt);
+        });
+    });
+
+    // Select the existing value if in Edit mode
+    const selectedMap = {
+        'widget-chart-label': selectedValues.chart_label_column,
+        'widget-target-field': selectedValues.target_field,
+        'widget-filter-field': selectedValues.filter_field,
+        'widget-series-field': selectedValues.chart_series_field,
+        'widget-size-field': selectedValues.chart_size_field,
+    };
+    Object.entries(selectedMap).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el && val) el.value = val;
     });
 }
 
@@ -137,6 +210,11 @@ if (widgets.length === 0) {
 let extraInfo = '';
     if (widget.filter_field && widget.filter_value) {
         extraInfo = `<br><small class="text-info"><i class="fa fa-filter"></i> Filter: ${widget.filter_field} ${widget.filter_operator} '${widget.filter_value}'</small>`;
+    }
+    if (widget.refresh_mode === 'live') {
+        extraInfo += ` <span class="badge badge-warning">⚡ live</span>`;
+    } else if (widget.refresh_mode === 'poll') {
+        extraInfo += ` <span class="badge badge-secondary">↻ ${widget.refresh_interval || 10}s</span>`;
     }
 
         const cardHTML = `
@@ -202,11 +280,16 @@ function openWidgetModal(widgetId = null) {
             populateTableFieldsDropdown(widget.target_table, {
                 chart_label_column: widget.chart_label_column,
                 target_field: widget.target_field,
-                filter_field: widget.filter_field
+                filter_field: widget.filter_field,
+                chart_series_field: widget.chart_series_field,
+                chart_size_field: widget.chart_size_field
             });
             document.getElementById('widget-filter-operator').value = widget.filter_operator || '=';
             document.getElementById('widget-filter-value').value = widget.filter_value || '';
             document.getElementById('widget-timeframe').value = widget.timeframe_range || 'all';
+            document.getElementById('widget-series-agg').value = widget.series_aggregate_type || 'sum';
+            document.getElementById('widget-refresh-mode').value = widget.refresh_mode || 'static';
+            document.getElementById('widget-refresh-interval').value = String(widget.refresh_interval || 10);
 // ▼▼▼ ADDED HERE: Advanced Query data load process ▼▼▼
             const advancedQueryInput = document.getElementById('widget-advanced-query');
             const advancedStatus = document.getElementById('advanced-query-status');
@@ -242,6 +325,7 @@ function openWidgetModal(widgetId = null) {
     }
 
     toggleWidgetFields();
+    toggleRefreshFields();
     document.getElementById('modal-widget-settings').style.display = 'block';
 }
 
@@ -253,33 +337,94 @@ function toggleWidgetFields() {
     const type = document.getElementById('widget-type').value;
     const aggregateSelect = document.getElementById('widget-aggregate-type');
     const aggregateVal = aggregateSelect.value;
-    
+
     const groupChart = document.getElementById('group-chart-label');
     const groupTargetField = document.getElementById('group-target-field');
+    const groupSeriesField = document.getElementById('group-series-field');
+    const groupSeriesAgg = document.getElementById('group-series-agg');
+    const groupSizeField = document.getElementById('group-size-field');
 
-    // 1. Control logic for the current table view
-    if (type === 'table_latest') {
+    const XY_TYPES = ['chart_scatter', 'chart_bubble'];
+    const GROUPED_CHART_TYPES = ['chart_bar', 'chart_pie', 'chart_doughnut', 'chart_polar', 'chart_line', 'chart_area', 'chart_radar', 'chart_combo'];
+    const isChart = type.startsWith('chart_');
+
+    // 1. Aggregate control — scatter/bubble plot raw points, no aggregation.
+    if (type === 'table_latest' || XY_TYPES.includes(type)) {
         aggregateSelect.disabled = true;
         aggregateSelect.value = '';
     } else {
         aggregateSelect.disabled = false;
     }
 
-    // 2. Control logic for the chart display
-    if (type === 'chart_bar' || type === 'chart_pie') {
-        if(groupChart) groupChart.style.display = 'block';
+    // 2. Group-by label (grouped charts only).
+    if (GROUPED_CHART_TYPES.includes(type)) {
+        if (groupChart) groupChart.style.display = 'block';
     } else {
-        if(groupChart) groupChart.style.display = 'none';
+        if (groupChart) groupChart.style.display = 'none';
         document.getElementById('widget-chart-label').value = '';
     }
 
-    // 3. Control logic for the Target Field (SUM/AVG only)
-    if (aggregateVal === 'sum' || aggregateVal === 'avg') {
-        if(groupTargetField) groupTargetField.style.display = 'block';
+    // 3. Target Field: SUM/AVG for non-charts, X-axis for scatter/bubble.
+    if (XY_TYPES.includes(type)) {
+        if (groupTargetField) {
+            groupTargetField.style.display = 'block';
+            const lbl = groupTargetField.querySelector('label');
+            if (lbl) lbl.textContent = 'X-Axis Column (Numeric)';
+        }
+    } else if (aggregateVal === 'sum' || aggregateVal === 'avg') {
+        if (groupTargetField) {
+            groupTargetField.style.display = 'block';
+            const lbl = groupTargetField.querySelector('label');
+            if (lbl) lbl.textContent = 'Target Column (SUM/AVG)';
+        }
     } else {
-        if(groupTargetField) groupTargetField.style.display = 'none';
-        document.getElementById('widget-target-field').value = '';
+        if (groupTargetField) {
+            groupTargetField.style.display = 'none';
+            document.getElementById('widget-target-field').value = '';
+        }
     }
+
+    // 4. Second numeric field: Y-axis (scatter/bubble) or line overlay (combo).
+    if (XY_TYPES.includes(type) || type === 'chart_combo') {
+        if (groupSeriesField) {
+            groupSeriesField.style.display = 'block';
+            const lbl = document.getElementById('label-series-field');
+            if (lbl) lbl.textContent = type === 'chart_combo' ? 'Line Overlay Column (Numeric)' : 'Y-Axis Column (Numeric)';
+        }
+    } else {
+        if (groupSeriesField) groupSeriesField.style.display = 'none';
+        document.getElementById('widget-series-field').value = '';
+    }
+
+    // 5. Combo line series aggregate.
+    if (type === 'chart_combo') {
+        if (groupSeriesAgg) groupSeriesAgg.style.display = 'block';
+    } else {
+        if (groupSeriesAgg) groupSeriesAgg.style.display = 'none';
+        document.getElementById('widget-series-agg').value = 'sum';
+    }
+
+    // 6. Bubble size column.
+    if (type === 'chart_bubble') {
+        if (groupSizeField) groupSizeField.style.display = 'block';
+    } else {
+        if (groupSizeField) groupSizeField.style.display = 'none';
+        document.getElementById('widget-size-field').value = '';
+    }
+
+    // Charts (non-scatter) with count aggregate don't need a target column —
+    // keep the label sane.
+    if (isChart && !XY_TYPES.includes(type) && aggregateVal === 'count') {
+        if (groupTargetField) groupTargetField.style.display = 'none';
+    }
+}
+
+function toggleRefreshFields() {
+    const mode = document.getElementById('widget-refresh-mode').value;
+    const intervalGroup = document.getElementById('group-refresh-interval');
+    const notice = document.getElementById('live-realtime-notice');
+    if (intervalGroup) intervalGroup.style.display = mode === 'poll' ? 'block' : 'none';
+    if (notice) notice.style.display = mode === 'live' ? 'block' : 'none';
 }
 
 async function saveWidgetData() {
@@ -301,6 +446,11 @@ async function saveWidgetData() {
         filter_operator: document.getElementById('widget-filter-operator').value,
         filter_value: document.getElementById('widget-filter-value').value,
         timeframe_range: document.getElementById('widget-timeframe').value,
+        chart_series_field: document.getElementById('widget-series-field').value,
+        chart_size_field: document.getElementById('widget-size-field').value,
+        series_aggregate_type: document.getElementById('widget-series-agg').value,
+        refresh_mode: document.getElementById('widget-refresh-mode').value,
+        refresh_interval: parseInt(document.getElementById('widget-refresh-interval').value, 10) || 10,
         
         // ▼▼▼ ADDED HERE: Pull the value from the hidden input ▼▼▼
         advanced_query: document.getElementById('widget-advanced-query').value
@@ -313,14 +463,31 @@ async function saveWidgetData() {
     }
     
     // Additional validation
-    if ((widgetData.aggregate_type === 'sum' || widgetData.aggregate_type === 'avg') && !widgetData.target_field) {
-        alert("For SUM or AVG calculations, please select a Target Column.");
-        return;
-    }
-    
-    if ((widgetData.widget_type === 'chart_bar' || widgetData.widget_type === 'chart_pie') && !widgetData.chart_label_column) {
-        alert("For Charts, selecting a 'Group Data By' column is mandatory.");
-        return;
+    const XY_TYPES = ['chart_scatter', 'chart_bubble'];
+    const GROUPED_CHART_TYPES = ['chart_bar', 'chart_pie', 'chart_doughnut', 'chart_polar', 'chart_line', 'chart_area', 'chart_radar', 'chart_combo'];
+
+    if (XY_TYPES.includes(widgetData.widget_type)) {
+        if (!widgetData.target_field || !widgetData.chart_series_field) {
+            alert("Scatter and Bubble charts need both an X-Axis and a Y-Axis numeric column.");
+            return;
+        }
+        if (widgetData.widget_type === 'chart_bubble' && !widgetData.chart_size_field) {
+            alert("Bubble charts need a Bubble Size column.");
+            return;
+        }
+    } else {
+        if ((widgetData.aggregate_type === 'sum' || widgetData.aggregate_type === 'avg') && !widgetData.target_field) {
+            alert("For SUM or AVG calculations, please select a Target Column.");
+            return;
+        }
+        if (GROUPED_CHART_TYPES.includes(widgetData.widget_type) && !widgetData.chart_label_column) {
+            alert("For Charts, selecting a 'Group Data By' column is mandatory.");
+            return;
+        }
+        if (widgetData.widget_type === 'chart_combo' && !widgetData.chart_series_field) {
+            alert("Combo charts need a Line Overlay column.");
+            return;
+        }
     }
 
     try {

@@ -149,6 +149,22 @@ last-write-wins using `updated_at` vs `last_synced_at`; the
 fields and primary keys are excluded from the sheet. Deploy installs
 `google/apiclient` via `fixzy-manifest.json`.
 
+### N. Data visualization (widgets, 2026-09-26)
+| Value | Trigger | Fixture |
+|---|---|---|
+| stat card | `widget_type = "stats"` | reports_dashboard |
+| bar / pie | `chart_bar` / `chart_pie` | reports_dashboard |
+| doughnut / polar | `chart_doughnut` / `chart_polar` | reports_dashboard |
+| line / area | `chart_line` / `chart_area` | reports_dashboard |
+| combo (dual-axis) | `chart_combo` (value_field + series_field) | reports_dashboard |
+| radar | `chart_radar` | reports_dashboard |
+| scatter / bubble | `chart_scatter` (X/Y) / `chart_bubble` (+size) | reports_dashboard |
+| latest table | `table_latest` | reports_dashboard |
+| refresh: static | `refresh_mode = "static"` (default) | reports_dashboard |
+| refresh: poll | `refresh_mode = "poll"` + `refresh_interval` | reports_dashboard |
+| refresh: live | `refresh_mode = "live"` (auto-enables `module_realtime`; observer + DataChanged + live views) | reports_dashboard |
+| kiosk mode | `project.kiosk_enabled = 1` (+rotate/page-size) | reports_dashboard |
+
 ## Stress combos (2–3 axes at once)
 | Fixture | Combo |
 |---|---|

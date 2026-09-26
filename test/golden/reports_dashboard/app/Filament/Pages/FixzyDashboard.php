@@ -25,6 +25,14 @@ class FixzyDashboard extends Dashboard
             \App\Filament\Widgets\Report_w2::class,
             \App\Filament\Widgets\Report_w3::class,
             \App\Filament\Widgets\Report_w4::class,
+            \App\Filament\Widgets\Report_w15::class,
+            \App\Filament\Widgets\Report_w7::class,
+            \App\Filament\Widgets\Report_w8::class,
+            \App\Filament\Widgets\Report_w9::class,
+            \App\Filament\Widgets\Report_w10::class,
+            \App\Filament\Widgets\Report_w11::class,
+            \App\Filament\Widgets\Report_w12::class,
+            \App\Filament\Widgets\Report_w13::class,
         ];
     }
 

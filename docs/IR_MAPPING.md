@@ -141,8 +141,10 @@ equivalents elsewhere).
 ## project_widgets → ir.widgets[]
 
 Dashboard widgets: type, target table/field, aggregate, filters, timeframe,
-advanced_query, span/icon/color. Class U (widgets) + presentation for
-span/color/icon.
+advanced_query, span/icon/color, refresh_mode/refresh_interval (static/poll/
+live). Kiosk display settings live on the project (kiosk_enabled,
+kiosk_rotate_seconds, kiosk_page_size). Class U (widgets) + presentation for
+span/color/icon/kiosk.
 
 ## fixzy_settings → NOT in IR
 

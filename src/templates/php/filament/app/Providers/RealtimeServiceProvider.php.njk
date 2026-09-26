@@ -100,6 +100,10 @@ class RealtimeServiceProvider extends ServiceProvider
         // Chat rooms: any authenticated user may join a room.
         Broadcast::channel('chat.*', fn ($user): bool => $user !== null);
 
+        // Live dashboard widgets: any authenticated user may watch a
+        // table's change feed (fixzy.data.{table}).
+        Broadcast::channel('fixzy.data.*', fn ($user): bool => $user !== null);
+
         // Per-user notification channel used by Filament's database
         // notifications broadcast (App.User.{id}).
         Broadcast::channel('App.User.*', fn ($user, $id): bool => (int) $user->getAuthIdentifier() === (int) $id);

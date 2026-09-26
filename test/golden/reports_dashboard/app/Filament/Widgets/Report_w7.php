@@ -1,0 +1,36 @@
+<?php
+
+namespace App\Filament\Widgets;
+
+/**
+ * Report widget "Value by Item (Polar)" (Fixzy SysMaker generated code).
+ * Compiled from the Dashboard Builder — edit in Fixzy SysMaker, not here.
+ */
+class Report_w7 extends BaseReportChart
+{
+    /** @var array<string, mixed> */
+    protected static array $cfg = [
+        'id' => "w7",
+        'title' => "Value by Item (Polar)",
+        'type' => "chart_polar",
+        'table' => "inventori",
+        'model' => "App\\Models\\Inventori",
+        'width' => "1",
+        'color' => "info",
+        'icon' => "",
+        'aggregate' => "avg",
+        'label_field' => "item_name",
+        'value_field' => "harga_seunit",
+        'series_field' => "",
+        'size_field' => "",
+        'series_aggregate' => "sum",
+        'filter_field' => "",
+        'filter_operator' => "",
+        'filter_value' => "",
+        'timeframe' => "all",
+        'refresh_mode' => "static",
+        'refresh_interval' => "10",
+        'advanced' => null,
+    ];
+
+}

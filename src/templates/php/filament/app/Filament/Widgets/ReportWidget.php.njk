@@ -10,4 +10,9 @@ class {{ widget.class }} extends {{ widget.base }}
 {
     /** @var array<string, mixed> */
     protected static array $cfg = {{ widget.cfg }};
+{% if widget.live_view %}
+    // Live mode: wrapper view subscribes this widget to Echo pushes on
+    // its source table (fixzy.data.{table}) and refreshes on change.
+    protected string $view = 'filament.widgets.{{ widget.live_view }}';
+{% endif %}
 }

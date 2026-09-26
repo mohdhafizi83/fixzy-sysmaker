@@ -377,11 +377,15 @@ async function tryGen(name, fn) {
     const repWdir = path.join(repOut, 'app', 'Filament', 'Widgets');
     const repDash = path.join(repOut, 'app', 'Filament', 'Pages', 'FixzyDashboard.php');
     const repWidgets = fs.existsSync(repWdir) ? fs.readdirSync(repWdir) : [];
-    // 4 valid widgets (w1-w4) + 4 shared files (ReportQuery + 3 bases) = 8.
-    // Stale table (w5) and non-numeric sum (w6) must NOT appear.
-    const repOk = repWidgets.length === 8
+    // 12 valid widgets (w1-w4, w7-w13, w15: all chart types + refresh
+    // modes) + 4 shared files (ReportQuery + 3 bases) = 16.
+    // Stale table (w5), non-numeric sum (w6) and scatter-on-text (w14)
+    // must NOT appear.
+    const repOk = repWidgets.length === 16
         && repWidgets.includes('Report_w1.php') && repWidgets.includes('Report_w4.php')
+        && repWidgets.includes('Report_w15.php')
         && !repWidgets.includes('Report_w5.php') && !repWidgets.includes('Report_w6.php')
+        && !repWidgets.includes('Report_w14.php')
         && fs.existsSync(repDash)
         && fs.readFileSync(repDash, 'utf8').includes('Report_w1::class')
         && !fs.readFileSync(repDash, 'utf8').includes('Report_w5');

@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Filament\Widgets;
+
+/**
+ * Report widget "Qty vs Price (Scatter)" (Fixzy SysMaker generated code).
+ * Compiled from the Dashboard Builder — edit in Fixzy SysMaker, not here.
+ */
+class Report_w12 extends BaseReportChart
+{
+    /** @var array<string, mixed> */
+    protected static array $cfg = [
+        'id' => "w12",
+        'title' => "Qty vs Price (Scatter)",
+        'type' => "chart_scatter",
+        'table' => "inventori",
+        'model' => "App\\Models\\Inventori",
+        'width' => "1",
+        'color' => "info",
+        'icon' => "",
+        'aggregate' => "count",
+        'label_field' => "",
+        'value_field' => "kuantiti",
+        'series_field' => "harga_seunit",
+        'size_field' => "",
+        'series_aggregate' => "sum",
+        'filter_field' => "",
+        'filter_operator' => "",
+        'filter_value' => "",
+        'timeframe' => "all",
+        'refresh_mode' => "live",
+        'refresh_interval' => "10",
+        'advanced' => null,
+    ];
+
+    // Live mode: wrapper view subscribes this widget to Echo pushes on
+    // its source table (fixzy.data.{table}) and refreshes on change.
+    protected string $view = 'filament.widgets.live-chart';
+
+}

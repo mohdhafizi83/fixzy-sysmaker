@@ -964,7 +964,8 @@ ipcMain.handle('project:update', async (event, data) => {
             'copy_children_async', 'allow_pwa_install', 'url', 'project_hook_workflow', 'stack_base', 'stack_database',
 			'stack_theme', 'module_auth_email_2fa', 'auth_2fa_mode', 'module_auth_email_captcha', 'auth_captcha_mode', 'module_auth_ldap',
             'module_auth_google_sso', 'module_authorization', 'module_log_audit', 'module_log_activity', 'data_delete_type', 'module_fake_data', 'tenancy_type', 'tenant_table', 'debug_mode',
-            'module_realtime', 'realtime_backend', 'module_google_sheets', 'module_scheduler', 'backup_config'
+            'module_realtime', 'realtime_backend', 'module_google_sheets', 'module_scheduler', 'backup_config',
+            'kiosk_enabled', 'kiosk_rotate_seconds', 'kiosk_page_size'
         ];
 
         const setClause = Object.keys(fieldsToUpdate)
@@ -2986,11 +2987,14 @@ ipcMain.handle('widget:save', (event, data) => {
             const stmt = db.prepare(`
                 UPDATE project_widgets 
                 SET title = ?, widget_type = ?, target_table = ?, aggregate_type = ?, target_field = ?, width_span = ?, color = ?, icon = ?,
-    chart_label_column = ?, filter_field = ?, filter_operator = ?, filter_value = ?, timeframe_range = ?, advanced_query = ?
+    chart_label_column = ?, filter_field = ?, filter_operator = ?, filter_value = ?, timeframe_range = ?, advanced_query = ?,
+    chart_series_field = ?, chart_size_field = ?, series_aggregate_type = ?, refresh_mode = ?, refresh_interval = ?
 WHERE id = ? AND project_id = ?
             `);
             stmt.run(
                 data.chart_label_column, data.filter_field, data.filter_operator, data.filter_value, data.timeframe_range, data.advanced_query,
+                data.chart_series_field, data.chart_size_field, data.series_aggregate_type,
+                data.refresh_mode || 'static', data.refresh_interval || 10,
 data.id, data.project_id
             );
             
@@ -3004,13 +3008,16 @@ data.id, data.project_id
             const stmt = db.prepare(`
                 INSERT INTO project_widgets (
                     project_id, title, widget_type, target_table, aggregate_type, target_field, width_span, color, icon, sort_order,
-                    chart_label_column, filter_field, filter_operator, filter_value, timeframe_range, advanced_query
+                    chart_label_column, filter_field, filter_operator, filter_value, timeframe_range, advanced_query,
+                    chart_series_field, chart_size_field, series_aggregate_type, refresh_mode, refresh_interval
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `);
             const info = stmt.run(
                 data.project_id, data.title, data.widget_type, data.target_table, data.aggregate_type, data.target_field, data.width_span, data.color, data.icon, nextOrder,
-                data.chart_label_column, data.filter_field, data.filter_operator, data.filter_value, data.timeframe_range, data.advanced_query
+                data.chart_label_column, data.filter_field, data.filter_operator, data.filter_value, data.timeframe_range, data.advanced_query,
+                data.chart_series_field, data.chart_size_field, data.series_aggregate_type,
+                data.refresh_mode || 'static', data.refresh_interval || 10
             );
             
             savedData = { ...data, id: info.lastInsertRowid, sort_order: nextOrder };

@@ -21,10 +21,16 @@ class Report_w3 extends BaseReportChart
         'aggregate' => "avg",
         'label_field' => "item_name",
         'value_field' => "harga_seunit",
+        'series_field' => "",
+        'size_field' => "",
+        'series_aggregate' => "sum",
         'filter_field' => "",
         'filter_operator' => "",
         'filter_value' => "",
         'timeframe' => "all",
+        'refresh_mode' => "static",
+        'refresh_interval' => "10",
         'advanced' => ["logic" => "AND", "rules" => [["table" => "inventori", "field" => "kuantiti", "operator" => ">=", "value" => "5"], ["table" => "other_table", "field" => "x", "operator" => "=", "value" => "1"]]],
     ];
+
 }

@@ -444,5 +444,16 @@ CREATE TABLE IF NOT EXISTS project_widgets (
     filter_value TEXT,            -- Nilai tapisan (Cth: 'aktif')
     timeframe_range TEXT,         -- Tapisan masa (Cth: 'this_month', 'this_year')
     advanced_query TEXT,          -- BARU: Untuk simpan JSON/SQL dari Query Builder
+    chart_series_field TEXT,      -- 2nd numeric field (scatter Y / combo line overlay)
+    chart_size_field TEXT,        -- Bubble size field (chart_bubble only)
+    series_aggregate_type TEXT,   -- Aggregate for the combo line series
+    refresh_mode TEXT DEFAULT 'static',  -- 'static' | 'poll' | 'live'
+    refresh_interval INTEGER DEFAULT 10, -- Poll interval in seconds (poll mode)
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
+
+-- Kiosk display mode (2026-09-26): wall/TV dashboard presentation.
+-- Lives on the project; widgets are shared with the admin dashboard.
+ALTER TABLE projects ADD COLUMN kiosk_enabled INTEGER DEFAULT 0;
+ALTER TABLE projects ADD COLUMN kiosk_rotate_seconds INTEGER DEFAULT 15;
+ALTER TABLE projects ADD COLUMN kiosk_page_size INTEGER DEFAULT 4;

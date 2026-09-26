@@ -210,6 +210,35 @@ The widget is skipped at generation time — you won't get a broken
 chart or a crash. Remove or repoint the widget in the Dashboard
 Builder.
 
+### How do I make a widget update in real time?
+
+In the widget's Data & Filtering tab, set **Live Updates** to
+**Real-time (WebSocket push)**. This auto-includes the Real-time
+module (Reverb) in your project. After deploying: fill in the
+WebSocket credentials on the in-app Real-time Settings page and
+run `php artisan reverb:start`. Any create/update/delete on the
+widget's source table then refreshes the widget within about a
+second (broadcasts are debounced to one wave per table per 2 s,
+so bulk imports don't flood the socket).
+
+If you don't want to run a WebSocket server, choose **Auto-refresh
+(polling)** instead — same visual result, just a few seconds of
+latency, zero extra infrastructure.
+
+### What is Kiosk Display Mode?
+
+A wall/TV presentation of your dashboard widgets at `/kiosk`
+(enabled in the Dashboard Builder). It auto-rotates through pages
+of widgets (rotate interval and page size configurable), renders
+stats in large type, shows a live clock, and lights a LIVE badge
+when the WebSocket is connected. It shares the same widgets as the
+admin dashboard — no duplicate setup. The page is hidden from
+navigation; open it directly on the TV browser.
+
+Note: `/kiosk` requires an authenticated admin session (it lives
+inside the Filament panel). For a public wallboard, keep an admin
+session logged in on that machine.
+
 ## Smart Import / Export
 
 ### What's the difference between update, skip, and insert mode?

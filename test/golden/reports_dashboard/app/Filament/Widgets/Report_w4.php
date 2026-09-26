@@ -21,10 +21,20 @@ class Report_w4 extends BaseReportTable
         'aggregate' => "count",
         'label_field' => "",
         'value_field' => "",
+        'series_field' => "",
+        'size_field' => "",
+        'series_aggregate' => "sum",
         'filter_field' => "",
         'filter_operator' => "",
         'filter_value' => "",
         'timeframe' => "all",
+        'refresh_mode' => "live",
+        'refresh_interval' => "10",
         'advanced' => null,
     ];
+
+    // Live mode: wrapper view subscribes this widget to Echo pushes on
+    // its source table (fixzy.data.{table}) and refreshes on change.
+    protected string $view = 'filament.widgets.live-table';
+
 }

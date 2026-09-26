@@ -41,6 +41,7 @@ function loadFullSchema(schema) {
             table: (schema.database && schema.database.table) || {},
             relationships: (schema.database && schema.database.relationships) || [],
             unified_menu: (schema.database && schema.database.unified_menu) || [],
+            widgets: (schema.database && schema.database.widgets) || [],
         },
     };
 }

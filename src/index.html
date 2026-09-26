@@ -3263,6 +3263,39 @@
         <button id="btn-add-widget" class="btn btn-primary">+ Add Widget</button>
     </div>
 
+    <div class="card shadow-sm mb-3">
+        <div class="card-body py-3">
+            <div class="d-flex align-items-center flex-wrap" style="gap: 1rem;">
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="checkbox" id="kiosk-enabled">
+                    <label class="form-check-label font-weight-bold" for="kiosk-enabled">
+                        <i class="fa fa-tv"></i> Kiosk Display Mode
+                    </label>
+                </div>
+                <div class="form-group mb-0" id="kiosk-rotate-group" style="display:none;">
+                    <label class="mr-2">Rotate every</label>
+                    <select id="kiosk-rotate-seconds" class="form-control d-inline-block" style="width: 100px;">
+                        <option value="10">10s</option>
+                        <option value="15" selected>15s</option>
+                        <option value="20">20s</option>
+                        <option value="30">30s</option>
+                        <option value="60">60s</option>
+                    </select>
+                </div>
+                <div class="form-group mb-0" id="kiosk-pagesize-group" style="display:none;">
+                    <label class="mr-2">Widgets per page</label>
+                    <select id="kiosk-page-size" class="form-control d-inline-block" style="width: 100px;">
+                        <option value="2">2</option>
+                        <option value="4" selected>4</option>
+                        <option value="6">6</option>
+                        <option value="8">8</option>
+                    </select>
+                </div>
+                <small class="text-muted">Wall/TV dashboard at <code>/kiosk</code> — auto-rotates your widgets. Live-mode widgets update in real time.</small>
+            </div>
+        </div>
+    </div>
+
     <div id="widget-list-container" class="row"></div>
 </div>
 
@@ -3303,8 +3336,22 @@
                             <label>Widget Type</label>
                             <select id="widget-type" class="form-control">
                                 <option value="stats">Stat (Metric Card)</option>
-                                <option value="chart_bar">Bar Chart</option>
-                                <option value="chart_pie">Pie Chart</option>
+                                <optgroup label="Comparison">
+                                    <option value="chart_bar">Bar Chart</option>
+                                    <option value="chart_pie">Pie Chart</option>
+                                    <option value="chart_doughnut">Doughnut Chart</option>
+                                    <option value="chart_polar">Polar Area Chart</option>
+                                </optgroup>
+                                <optgroup label="Trend">
+                                    <option value="chart_line">Line Chart</option>
+                                    <option value="chart_area">Area Chart</option>
+                                    <option value="chart_combo">Combo Chart (Bar + Line)</option>
+                                </optgroup>
+                                <optgroup label="Distribution">
+                                    <option value="chart_radar">Radar Chart</option>
+                                    <option value="chart_scatter">Scatter Plot</option>
+                                    <option value="chart_bubble">Bubble Chart</option>
+                                </optgroup>
                                 <option value="table_latest">Latest Records (Table)</option>
                             </select>
                         </div>
@@ -3362,6 +3409,23 @@
                             <select id="widget-target-field" class="form-control"></select>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-md-6 form-group" id="group-series-field" style="display: none;">
+                            <label id="label-series-field">Second Numeric Column (Y-Axis)</label>
+                            <select id="widget-series-field" class="form-control"></select>
+                        </div>
+                        <div class="col-md-3 form-group" id="group-series-agg" style="display: none;">
+                            <label>Line Series Calc</label>
+                            <select id="widget-series-agg" class="form-control">
+                                <option value="sum">Sum</option>
+                                <option value="avg">Average</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 form-group" id="group-size-field" style="display: none;">
+                            <label>Bubble Size Column</label>
+                            <select id="widget-size-field" class="form-control"></select>
+                        </div>
+                    </div>
 
                     <div class="p-3 border rounded bg-light">
                         <label class="font-weight-bold">Query Filtering</label>
@@ -3407,6 +3471,33 @@
                                 <option value="this_month">This Month</option>
                                 <option value="this_year">This Year</option>
                             </select>
+                        </div>
+
+                        <div class="mt-3 pt-3 border-top">
+                            <label class="font-weight-bold">Live Updates</label>
+                            <div class="row">
+                                <div class="col-md-6 form-group">
+                                    <select id="widget-refresh-mode" class="form-control">
+                                        <option value="static">Static (load only)</option>
+                                        <option value="poll">Auto-refresh (polling)</option>
+                                        <option value="live">Real-time (WebSocket push)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 form-group" id="group-refresh-interval" style="display: none;">
+                                    <label>Refresh Every (seconds)</label>
+                                    <select id="widget-refresh-interval" class="form-control">
+                                        <option value="5">5</option>
+                                        <option value="10" selected>10</option>
+                                        <option value="15">15</option>
+                                        <option value="30">30</option>
+                                        <option value="60">60</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="live-realtime-notice" class="alert alert-info py-2 small" style="display: none;">
+                                <i class="fa fa-bolt"></i> Real-time mode includes the <strong>Real-time module</strong> (Reverb) in this project.
+                                Configure your WebSocket server in the app's Real-time Settings after generating.
+                            </div>
                         </div>
                     </div>
                 </div>

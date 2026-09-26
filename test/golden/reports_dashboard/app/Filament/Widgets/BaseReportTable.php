@@ -57,6 +57,17 @@ abstract class BaseReportTable extends TableWidget
         return $query;
     }
 
+    public function refreshMode(): string
+    {
+        return (string) (static::$cfg['refresh_mode'] ?? 'static');
+    }
+
+    public function pollIntervalString(): string
+    {
+        $iv = (int) (static::$cfg['refresh_interval'] ?? 10);
+        return max(2, min(300, $iv)) . 's';
+    }
+
     public function table(Table $table): Table
     {
         $cfg = static::$cfg;

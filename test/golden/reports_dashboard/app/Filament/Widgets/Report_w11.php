@@ -1,0 +1,36 @@
+<?php
+
+namespace App\Filament\Widgets;
+
+/**
+ * Report widget "Item Profile (Radar)" (Fixzy SysMaker generated code).
+ * Compiled from the Dashboard Builder — edit in Fixzy SysMaker, not here.
+ */
+class Report_w11 extends BaseReportChart
+{
+    /** @var array<string, mixed> */
+    protected static array $cfg = [
+        'id' => "w11",
+        'title' => "Item Profile (Radar)",
+        'type' => "chart_radar",
+        'table' => "inventori",
+        'model' => "App\\Models\\Inventori",
+        'width' => "1",
+        'color' => "primary",
+        'icon' => "",
+        'aggregate' => "sum",
+        'label_field' => "item_name",
+        'value_field' => "kuantiti",
+        'series_field' => "",
+        'size_field' => "",
+        'series_aggregate' => "sum",
+        'filter_field' => "",
+        'filter_operator' => "",
+        'filter_value' => "",
+        'timeframe' => "all",
+        'refresh_mode' => "static",
+        'refresh_interval' => "10",
+        'advanced' => null,
+    ];
+
+}

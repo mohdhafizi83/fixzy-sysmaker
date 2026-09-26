@@ -99,6 +99,35 @@ function openStore(dbPath) {
         if (!fieldCols.includes('caption_ms')) {
             db.exec("ALTER TABLE fields ADD COLUMN caption_ms TEXT");
         }
+        // Chart expansion (2026-09-26): extra numeric fields for
+        // scatter/bubble/combo widgets.
+        const widgetCols = db.prepare("PRAGMA table_info(project_widgets)").all().map((c) => c.name);
+        if (!widgetCols.includes('chart_series_field')) {
+            db.exec("ALTER TABLE project_widgets ADD COLUMN chart_series_field TEXT");
+        }
+        if (!widgetCols.includes('chart_size_field')) {
+            db.exec("ALTER TABLE project_widgets ADD COLUMN chart_size_field TEXT");
+        }
+        if (!widgetCols.includes('series_aggregate_type')) {
+            db.exec("ALTER TABLE project_widgets ADD COLUMN series_aggregate_type TEXT");
+        }
+        // Live data visualization (2026-09-26): per-widget refresh mode.
+        if (!widgetCols.includes('refresh_mode')) {
+            db.exec("ALTER TABLE project_widgets ADD COLUMN refresh_mode TEXT DEFAULT 'static'");
+        }
+        if (!widgetCols.includes('refresh_interval')) {
+            db.exec("ALTER TABLE project_widgets ADD COLUMN refresh_interval INTEGER DEFAULT 10");
+        }
+        // Kiosk display mode (2026-09-26).
+        if (!cols.includes('kiosk_enabled')) {
+            db.exec("ALTER TABLE projects ADD COLUMN kiosk_enabled INTEGER DEFAULT 0");
+        }
+        if (!cols.includes('kiosk_rotate_seconds')) {
+            db.exec("ALTER TABLE projects ADD COLUMN kiosk_rotate_seconds INTEGER DEFAULT 15");
+        }
+        if (!cols.includes('kiosk_page_size')) {
+            db.exec("ALTER TABLE projects ADD COLUMN kiosk_page_size INTEGER DEFAULT 4");
+        }
         if (!tableCols.includes('google_sync_enabled')) {
             db.exec("ALTER TABLE tables ADD COLUMN google_sync_enabled INTEGER DEFAULT 0");
         }

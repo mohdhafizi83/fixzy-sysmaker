@@ -21,10 +21,16 @@ class Report_w2 extends BaseReportChart
         'aggregate' => "sum",
         'label_field' => "item_name",
         'value_field' => "kuantiti",
+        'series_field' => "",
+        'size_field' => "",
+        'series_aggregate' => "sum",
         'filter_field' => "kuantiti",
         'filter_operator' => ">",
         'filter_value' => "0",
         'timeframe' => "this_month",
+        'refresh_mode' => "static",
+        'refresh_interval' => "10",
         'advanced' => null,
     ];
+
 }

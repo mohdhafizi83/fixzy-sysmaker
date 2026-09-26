@@ -1,0 +1,18 @@
+@include('filament-widgets::chart-widget')
+
+@script
+    <script>
+        (() => {
+            const table = @js($this->getLiveTable());
+            if (!table) return;
+            const subscribe = () => {
+                window.Echo.private('fixzy.data.' + table).listen('.fixzy.data.changed', () => {
+                    $wire.$refresh();
+                });
+            };
+            window.addEventListener('EchoLoaded', () => subscribe());
+            if (window.Echo) subscribe();
+        })();
+    </script>
+@endscript
+
