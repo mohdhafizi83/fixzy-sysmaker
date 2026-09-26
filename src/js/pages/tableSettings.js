@@ -282,7 +282,10 @@ export function populateParentChildTab(currentTableName) {
         copyRecords: document.getElementById('parentchild-copy-records'),
         showLinkAbove: document.getElementById('parentchild-show-link-above'),
         showCount: document.getElementById('parentchild-show-count-in-tv'),
-        allowAdd: document.getElementById('parentchild-allow-add-from-tv')
+        allowAdd: document.getElementById('parentchild-allow-add-from-tv'),
+        tvTemplate: document.getElementById('parentchild-tv-template'),
+        cardColumns: document.getElementById('parentchild-card-columns'),
+        formStyle: document.getElementById('parentchild-form-style')
     };
     
     if (!childList || !appState.jsonData.database.relationships || !optionsPanel) return;
@@ -351,9 +354,15 @@ const populateForm = (childName) => {
             formElements.showLinkAbove.checked = relationData.show_link_above === 1;
             formElements.showCount.checked = relationData.show_count_in_tv === 1;
             formElements.allowAdd.checked = relationData.allow_add_from_tv === 1;
+            // Child relation layout overrides (2026-09-26). '' / 0 = inherit.
+            if (formElements.tvTemplate) formElements.tvTemplate.value = relationData.tv_template || '';
+            if (formElements.cardColumns) formElements.cardColumns.value = String(relationData.card_columns || 0);
+            if (formElements.formStyle) formElements.formStyle.value = relationData.form_style || '';
+            const cardGroup = document.getElementById('parentchild-card-columns-group');
+            if (cardGroup) cardGroup.style.display = (formElements.tvTemplate && formElements.tvTemplate.value === 'card') ? '' : 'none';
 
             // Lock (disable) the other inputs so the user understands these are Global settings
-            const inputsToDisable = [formElements.showIcon, formElements.autocloseModal, formElements.tabTitle, formElements.copyRecords, formElements.showLinkAbove, formElements.showCount, formElements.allowAdd];
+            const inputsToDisable = [formElements.showIcon, formElements.autocloseModal, formElements.tabTitle, formElements.copyRecords, formElements.showLinkAbove, formElements.showCount, formElements.allowAdd, formElements.tvTemplate, formElements.cardColumns, formElements.formStyle];
             inputsToDisable.forEach(input => {
                 if (input) {
                     input.disabled = isCustomModule;

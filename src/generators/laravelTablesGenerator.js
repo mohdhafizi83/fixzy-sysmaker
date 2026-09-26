@@ -1031,5 +1031,8 @@ module.exports = {
     generateFilamentTablesTable,
     generateSingleTableClass,
     generateTableColumnsString,
-    generateFilamentTablesCustomModules
+    generateFilamentTablesCustomModules,
+    // Reused by the RelationManager generator for child layout overrides (2026-09-26)
+    generateTableColumnsParts,
+    buildColumnsLayout
 }

@@ -312,6 +312,9 @@ CREATE TABLE parent_child_relationships (
     show_link_above   INTEGER DEFAULT 1,
     show_count_in_tv  INTEGER DEFAULT 0,
     allow_add_from_tv INTEGER DEFAULT 0,
+    tv_template       TEXT DEFAULT '',
+    card_columns      INTEGER DEFAULT 0,
+    form_style        TEXT DEFAULT '',
     on_delete         TEXT DEFAULT 'NO ACTION', -- Tambah ini (CASCADE, SET NULL, RESTRICT, NO ACTION)
     on_update         TEXT DEFAULT 'NO ACTION', -- Tambah ini
     FOREIGN KEY (parent_table_id) REFERENCES tables(table_id) ON DELETE CASCADE,
@@ -405,7 +408,12 @@ INSERT INTO fixzy_settings (setting_name, setting_value) VALUES
 ('project_hide_footer', '0'),
 ('max_entries', '150'),
 ('project_no_trim', '0'),
-('lock_core_components', '1');
+('lock_core_components', '1'),
+-- Global layout defaults (applied to new tables automatically; existing
+-- tables only when the user clicks "Apply" in Preferences).
+('global_tv_template', 'horizontal'),
+('global_card_columns', '3'),
+('global_form_layout_config', '');
 
 -- TABEL BARU: Menyimpan peraturan validasi untuk setiap column
 CREATE TABLE IF NOT EXISTS field_validations (

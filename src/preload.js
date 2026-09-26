@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   upsertRelationship: (data) => ipcRenderer.invoke('relationship:upsert', data),
   deleteRelationship: (data) => ipcRenderer.invoke('relationship:delete', data),
   saveAllSettings: (data) => ipcRenderer.invoke('settings:save-all', data),
+  applyGlobalLayout: (data) => ipcRenderer.invoke('layout:apply-global', data),
   saveMenuStructure: (data) => ipcRenderer.invoke('menu:save-structure', data),
   batchUpdate: (queueData) => ipcRenderer.invoke('database:batch-update', queueData),
   saveUnifiedMenu: (data) => ipcRenderer.invoke('menu:save-unified-structure', data),

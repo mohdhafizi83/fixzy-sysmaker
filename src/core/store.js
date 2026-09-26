@@ -168,6 +168,30 @@ function openStore(dbPath) {
                 db.exec(`ALTER TABLE fields ADD COLUMN ${col} ${def}`);
             }
         }
+        // Global layout defaults (2026-09-26) — seed keys for pre-existing
+        // databases created before the settings existed. INSERT OR IGNORE so
+        // user-configured values are never overwritten.
+        const seedSetting = db.prepare('INSERT OR IGNORE INTO fixzy_settings (setting_name, setting_value) VALUES (?, ?)');
+        seedSetting.run('global_tv_template', 'horizontal');
+        seedSetting.run('global_card_columns', '3');
+        seedSetting.run('global_form_layout_config', '');
+        // Child relation layout defaults (2026-09-26) — '' = inherit the
+        // child table's own layout (legacy behaviour).
+        seedSetting.run('global_child_tv_template', '');
+        seedSetting.run('global_child_card_columns', '');
+        seedSetting.run('global_child_form_style', '');
+        // Per-relation layout override columns on parent_child_relationships.
+        const relCols = db.prepare("PRAGMA table_info(parent_child_relationships)").all().map(c => c.name);
+        const relLayoutCols = {
+            tv_template: "TEXT DEFAULT ''",
+            card_columns: "INTEGER DEFAULT 0",
+            form_style: "TEXT DEFAULT ''",
+        };
+        for (const [col, def] of Object.entries(relLayoutCols)) {
+            if (!relCols.includes(col)) {
+                db.exec(`ALTER TABLE parent_child_relationships ADD COLUMN ${col} ${def}`);
+            }
+        }
     }
     return db;
 }

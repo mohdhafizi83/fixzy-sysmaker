@@ -4,8 +4,25 @@ namespace App\Filament\Resources\{{ parent_plural }}\RelationManagers;
 
 use App\Filament\Resources\{{ child_plural }}\{{ child_singular }}Resource;
 use Filament\Actions\CreateAction;
-use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables\Table;
+{% if form_override %}use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\TimePicker;
+{% endif %}use Filament\Resources\RelationManagers\RelationManager;
+{% if layout_imports %}{{ layout_imports }}
+{% endif %}use Filament\Tables\Table;
 
 class {{ child_singular }}RelationManager extends RelationManager
 {
@@ -18,6 +35,13 @@ class {{ child_singular }}RelationManager extends RelationManager
         return $table
             ->headerActions([
                 CreateAction::make(),
-            ]);
+            ]){{ table_override_lines }};
     }
-}
+{% if form_override %}
+    public function form(Schema $schema): Schema
+    {
+        return $schema->components([
+{{ form_schema }}
+        ]);
+    }
+{% endif %}}

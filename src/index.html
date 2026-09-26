@@ -76,9 +76,12 @@
             </div>
         </div>
         <button class="btn hidden" id="btn-save-all"><i class="fas fa-save"></i> Save Project</button>
-        <button id="btn-show-preview" class="btn btn-success" style="margin-right: 10px;">
+        <span class="preview-btn-group">
+            <button id="btn-show-preview" class="btn btn-success">
     <i class="fas fa-play-circle"></i> Show Preview
 </button>
+            <button id="preview-help-btn" class="preview-help-btn hidden" title="PHP is required for live preview — click for full install instructions"><i class="fas fa-info-circle"></i></button>
+        </span>
         <button class="btn btn-primary" id="app-generate_app" name="app-generate_app"><i class="fas fa-robot"></i> Generate app</button>
         <button class="btn" id="app-view_files" name="app-view_files"><i class="fas fa-folder-open"></i> View files</button>
         <button class="btn" id="setup-wizard-open-btn" title="Setup & Environment Check"><i class="fas fa-tools"></i> Setup</button>
@@ -2638,6 +2641,45 @@
                                                 <label class="checkbox-label"><input type="checkbox" id="parentchild-show-link-above" name="parentchild-show-link-above" checked> Show link above 'Record Form'</label>
                                                 <label class="checkbox-label"><input type="checkbox" id="parentchild-show-count-in-tv" name="parentchild-show-count-in-tv"> Show count of children in 'Table List' (TL)</label>
                                                 <label class="checkbox-label"><input type="checkbox" id="parentchild-allow-add-from-tv" name="parentchild-allow-add-from-tv"> Add new children from 'Table List'</label>
+                                                <div class="form-group">
+                                                    <label for="parentchild-tv-template">Child table view template</label>
+                                                    <select id="parentchild-tv-template" name="parentchild-tv-template">
+                                                        <option value="" selected>Inherit child table setting</option>
+                                                        <option value="horizontal">Horizontal (flat columns)</option>
+                                                        <option value="vertical_1">Vertical (single column panel)</option>
+                                                        <option value="vertical_2">Vertical (2-column grid)</option>
+                                                        <option value="left_image">Left image split</option>
+                                                        <option value="right_image">Right image split</option>
+                                                        <option value="card">Card grid</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group" id="parentchild-card-columns-group" style="display: none;">
+                                                    <label for="parentchild-card-columns">Child card columns (desktop)</label>
+                                                    <select id="parentchild-card-columns" name="parentchild-card-columns">
+                                                        <option value="0" selected>Inherit child table setting</option>
+                                                        <option value="1">1 per row</option>
+                                                        <option value="2">2 per row</option>
+                                                        <option value="3">3 per row</option>
+                                                        <option value="4">4 per row</option>
+                                                        <option value="5">5 per row</option>
+                                                        <option value="6">6 per row</option>
+                                                    </select>
+                                                    <small class="form-text text-muted">Only used when the template is Card grid.</small>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="parentchild-form-style">Child form style (create/edit modal)</label>
+                                                    <select id="parentchild-form-style" name="parentchild-form-style">
+                                                        <option value="" selected>Inherit child form layout</option>
+                                                        <option value="default">Default (single section)</option>
+                                                        <option value="grouped">Grouped</option>
+                                                        <option value="accordion">Accordion</option>
+                                                        <option value="inline">Inline</option>
+                                                        <option value="survey">Survey</option>
+                                                        <option value="checkout">Checkout</option>
+                                                        <option value="modal">Modal</option>
+                                                    </select>
+                                                    <small class="form-text text-muted">Wizard is intentionally excluded inside relation modals (falls back to Grouped).</small>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -3511,6 +3553,7 @@
                     <button class="tab-link active" data-tab="tab-general" id="fixzy-tab-general" name="fixzy-tab-general">General</button>
                     <button class="tab-link" data-tab="tab-field-defaults" id="fixzy-tab-field-defaults" name="fixzy-tab-field-defaults">Field defaults</button>
                     <button class="tab-link" data-tab="tab-table-defaults" id="fixzy-tab-table-defaults" name="fixzy-tab-table-defaults">Table defaults</button>
+                    <button class="tab-link" data-tab="tab-layout-defaults" id="fixzy-tab-layout-defaults" name="fixzy-tab-layout-defaults">Layout defaults</button>
                     <button class="tab-link" data-tab="tab-project-defaults" id="fixzy-tab-project-defaults" name="fixzy-tab-project-defaults">Project defaults</button>
                 </div>
                 <div class="tabs-content">
@@ -3614,6 +3657,115 @@
                             <label class="checkbox-label"><input type="checkbox" id="fixzy-table-hide-save-as-copy" name="fixzy-table-hide-save-as-copy"> Hide "Save as copy" when editing records</label>
                             <label class="checkbox-label"><input type="checkbox" id="fixzy-table-allow-add-from-homepage" name="fixzy-table-allow-add-from-homepage"> Allow adding new records from homepage</label>
                             <label class="checkbox-label"><input type="checkbox" id="fixzy-table-show-record-count" name="fixzy-table-show-record-count"> Show record count in homepage</label>
+                        </div>
+                    </div>
+                    <div id="tab-layout-defaults" class="tab-pane">
+                        <p>Global defaults for Table List templates and Record Form layouts. New tables inherit these automatically. Use "Apply" to push them onto existing tables in the current project (custom-module overrides are kept).</p>
+                        <div class="row" style="margin-top: 1rem;">
+                            <div class="col-md-6 form-group">
+                                <label for="fixzy-global-tv-template">Default Table List template</label>
+                                <select id="fixzy-global-tv-template" name="fixzy-global-tv-template">
+                                    <option value="horizontal" selected>Horizontal (flat columns)</option>
+                                    <option value="vertical_1">Vertical (single column panel)</option>
+                                    <option value="vertical_2">Vertical (2-column grid)</option>
+                                    <option value="left_image">Left image split</option>
+                                    <option value="right_image">Right image split</option>
+                                    <option value="card">Card grid</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 form-group" id="fixzy-global-card-columns-group" style="display: none;">
+                                <label for="fixzy-global-card-columns">Default card columns (desktop)</label>
+                                <select id="fixzy-global-card-columns" name="fixzy-global-card-columns">
+                                    <option value="1">1 per row</option>
+                                    <option value="2">2 per row</option>
+                                    <option value="3" selected>3 per row</option>
+                                    <option value="4">4 per row</option>
+                                    <option value="5">5 per row</option>
+                                    <option value="6">6 per row</option>
+                                </select>
+                                <small class="form-text text-muted">Only used when the template is Card grid.</small>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label for="fixzy-global-form-style">Default Record Form style</label>
+                                <select id="fixzy-global-form-style" name="fixzy-global-form-style">
+                                    <option value="default" selected>Default (single section)</option>
+                                    <option value="grouped">Grouped</option>
+                                    <option value="wizard">Wizard</option>
+                                    <option value="accordion">Accordion</option>
+                                    <option value="inline">Inline</option>
+                                    <option value="survey">Survey</option>
+                                    <option value="checkout">Checkout</option>
+                                    <option value="modal">Modal</option>
+                                </select>
+                                <small class="form-text text-muted">Conversational style is intentionally excluded from the global default (it needs per-table chat copy).</small>
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label for="fixzy-global-form-columns">Default form columns</label>
+                                <select id="fixzy-global-form-columns" name="fixzy-global-form-columns">
+                                    <option value="0" selected>Inherit</option>
+                                    <option value="1">1 column</option>
+                                    <option value="2">2 columns</option>
+                                    <option value="3">3 columns</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card" style="margin-top: 1rem;">
+                            <div class="card-body">
+                                <h4 style="margin-top:0;">Child relation defaults</h4>
+                                <p class="form-text text-muted" style="margin-top:0;">Default layout for child tables shown in relation tabs/modals. Leave on <b>Inherit</b> to keep each child table's own layout. Per-relation overrides (Parent-Child tab) always win over these defaults.</p>
+                                <div class="row">
+                                    <div class="col-md-4 form-group">
+                                        <label for="fixzy-global-child-tv-template">Child table view template</label>
+                                        <select id="fixzy-global-child-tv-template" name="fixzy-global-child-tv-template">
+                                            <option value="" selected>Inherit child table setting</option>
+                                            <option value="horizontal">Horizontal (flat columns)</option>
+                                            <option value="vertical_1">Vertical (single column panel)</option>
+                                            <option value="vertical_2">Vertical (2-column grid)</option>
+                                            <option value="left_image">Left image split</option>
+                                            <option value="right_image">Right image split</option>
+                                            <option value="card">Card grid</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 form-group" id="fixzy-global-child-card-columns-group" style="display: none;">
+                                        <label for="fixzy-global-child-card-columns">Child card columns (desktop)</label>
+                                        <select id="fixzy-global-child-card-columns" name="fixzy-global-child-card-columns">
+                                            <option value="" selected>Inherit</option>
+                                            <option value="1">1 per row</option>
+                                            <option value="2">2 per row</option>
+                                            <option value="3">3 per row</option>
+                                            <option value="4">4 per row</option>
+                                            <option value="5">5 per row</option>
+                                            <option value="6">6 per row</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 form-group">
+                                        <label for="fixzy-global-child-form-style">Child form style (relation modal)</label>
+                                        <select id="fixzy-global-child-form-style" name="fixzy-global-child-form-style">
+                                            <option value="" selected>Inherit child form layout</option>
+                                            <option value="default">Default (single section)</option>
+                                            <option value="grouped">Grouped</option>
+                                            <option value="accordion">Accordion</option>
+                                            <option value="inline">Inline</option>
+                                            <option value="survey">Survey</option>
+                                            <option value="checkout">Checkout</option>
+                                            <option value="modal">Modal</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card" style="margin-top: 1rem;">
+                            <div class="card-body">
+                                <label class="checkbox-label"><input type="checkbox" id="fixzy-apply-view" name="fixzy-apply-view"> Apply template to existing tables</label>
+                                <label class="checkbox-label mt-1"><input type="checkbox" id="fixzy-apply-form" name="fixzy-apply-form"> Apply form layout to existing tables</label>
+                                <label class="checkbox-label mt-1"><input type="checkbox" id="fixzy-apply-child" name="fixzy-apply-child"> Apply child relation defaults to existing relations</label>
+                                <button type="button" class="btn btn-primary mt-2" id="btn-apply-global-layout">
+                                    <i class="fas fa-magic"></i> Apply to Existing Tables
+                                </button>
+                                <small class="form-text text-muted" style="display:block;margin-top:.5rem;">Overwrites per-table template/form settings for non-core tables. Per-module overrides (settings_override) still win over the table values. Core and feature-generated tables are skipped. Applying child defaults only fills relations that have no per-relation override yet.</small>
+                            </div>
                         </div>
                     </div>
                     <div id="tab-project-defaults" class="tab-pane">
@@ -4499,6 +4651,32 @@
             
             <webview id="app-preview-iframe" src="" style="flex: 1; width: 100%; border: none; display: none; background: white;"></webview>
             
+        </div>
+    </div>
+</div>
+
+<!-- ============ PHP INSTALL HELP (opened from preview info icon) ============ -->
+<div id="php-help-modal" class="modal-overlay hidden" style="z-index: 9999;">
+    <div class="modal-content" style="max-width: 620px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-info-circle" style="color:#3b82f6;"></i> PHP Required for Live Preview</h3>
+            <button id="php-help-close-btn" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin-top:0; color:#475569;">
+                Live preview runs your generated app with a real PHP server. Code generation works
+                without PHP, but preview needs <strong>PHP 8.2 or newer</strong>.
+            </p>
+            <div id="php-help-body" style="margin: 12px 0; line-height: 1.55;"></div>
+            <p style="color:#64748b; font-size: 0.9rem;">
+                After installing, click <strong>Re-check</strong> or run the
+                <strong>Setup Wizard</strong> (Tools button in the header) to finish provisioning Composer
+                and the preview environment.
+            </p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="php-help-close-btn2">Close</button>
+            <button class="btn btn-primary" id="php-help-recheck-btn"><i class="fas fa-sync-alt"></i> Re-check</button>
         </div>
     </div>
 </div>

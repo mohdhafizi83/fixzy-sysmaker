@@ -1,7 +1,8 @@
 // js/ui/modalHandlers.js
 
-import { setIsCoreLockingEnabled } from '../state.js';
+import { setIsCoreLockingEnabled, appState } from '../state.js';
 import { applyFontSize } from './formHelpers.js';
+import { showToast } from './toast.js';
 
 /**
  * Displays a custom dialog (Alert/Confirm).
@@ -104,7 +105,22 @@ export function initializeModalHandlers() {
         if (fontSize) {
             settings.font_size = fontSize.value;
         }
-        
+
+        // Global layout defaults (Layout defaults tab). The form layout is
+        // stored as a compact JSON {style, columns}; empty string = no
+        // global form layout (tables keep the legacy default form).
+        settings.global_tv_template = document.getElementById('fixzy-global-tv-template')?.value || 'horizontal';
+        settings.global_card_columns = document.getElementById('fixzy-global-card-columns')?.value || '3';
+        const gStyle = document.getElementById('fixzy-global-form-style')?.value || 'default';
+        const gCols = parseInt(document.getElementById('fixzy-global-form-columns')?.value, 10) || 0;
+        settings.global_form_layout_config = (gStyle === 'default' && gCols === 0) ? '' : JSON.stringify({ style: gStyle, columns: gCols });
+
+        // Child relation layout defaults (2026-09-26). '' = inherit the
+        // child table's own layout (legacy behaviour).
+        settings.global_child_tv_template = document.getElementById('fixzy-global-child-tv-template')?.value || '';
+        settings.global_child_card_columns = document.getElementById('fixzy-global-child-card-columns')?.value || '';
+        settings.global_child_form_style = document.getElementById('fixzy-global-child-form-style')?.value || '';
+
         return settings;
     };
     
@@ -136,7 +152,92 @@ export function initializeModalHandlers() {
 
         const fontSizeRadio = document.querySelector(`input[name="fixzy-font-size"][value="${settings.font_size}"]`);
         if (fontSizeRadio) fontSizeRadio.checked = true;
+
+        // Layout defaults tab
+        setValue('fixzy-global-tv-template', settings.global_tv_template || 'horizontal');
+        setValue('fixzy-global-card-columns', settings.global_card_columns || '3');
+        let gStyle = 'default', gCols = 0;
+        if (settings.global_form_layout_config) {
+            try {
+                const cfg = JSON.parse(settings.global_form_layout_config);
+                if (cfg && typeof cfg === 'object') {
+                    gStyle = cfg.style || 'default';
+                    gCols = Number.isInteger(cfg.columns) ? cfg.columns : 0;
+                }
+            } catch (e) { /* treat as unset */ }
+        }
+        setValue('fixzy-global-form-style', gStyle);
+        setValue('fixzy-global-form-columns', String(gCols));
+        toggleGlobalCardColumnsGroup();
+
+        // Child relation layout defaults tab section
+        setValue('fixzy-global-child-tv-template', settings.global_child_tv_template || '');
+        setValue('fixzy-global-child-card-columns', settings.global_child_card_columns || '');
+        setValue('fixzy-global-child-form-style', settings.global_child_form_style || '');
+        toggleGlobalChildCardColumnsGroup();
     };
+
+    // Card-columns selector only makes sense when the template is Card grid.
+    const toggleGlobalCardColumnsGroup = () => {
+        const group = document.getElementById('fixzy-global-card-columns-group');
+        const tpl = document.getElementById('fixzy-global-tv-template');
+        if (group && tpl) group.style.display = tpl.value === 'card' ? '' : 'none';
+    };
+    const globalTplSelect = document.getElementById('fixzy-global-tv-template');
+    if (globalTplSelect) globalTplSelect.addEventListener('change', toggleGlobalCardColumnsGroup);
+
+    // Child card-columns selector only makes sense when the child template is Card grid.
+    const toggleGlobalChildCardColumnsGroup = () => {
+        const group = document.getElementById('fixzy-global-child-card-columns-group');
+        const tpl = document.getElementById('fixzy-global-child-tv-template');
+        if (group && tpl) group.style.display = tpl.value === 'card' ? '' : 'none';
+    };
+    const globalChildTplSelect = document.getElementById('fixzy-global-child-tv-template');
+    if (globalChildTplSelect) globalChildTplSelect.addEventListener('change', toggleGlobalChildCardColumnsGroup);
+
+    // "Apply to Existing Tables" — pushes the saved global defaults onto
+    // every eligible table in the active project (destructive: confirm first).
+    const applyBtn = document.getElementById('btn-apply-global-layout');
+    if (applyBtn) {
+        applyBtn.addEventListener('click', async () => {
+            const applyView = document.getElementById('fixzy-apply-view')?.checked;
+            const applyForm = document.getElementById('fixzy-apply-form')?.checked;
+            const applyChild = document.getElementById('fixzy-apply-child')?.checked;
+            if (!applyView && !applyForm && !applyChild) {
+                showToast('Tick at least one "Apply" option first.', 'warning');
+                return;
+            }
+            if (!appState.activeProject || !appState.activeProject.project_id) {
+                showToast('No active project — open a project first.', 'error');
+                return;
+            }
+            const confirmed = await showCustomDialog({
+                title: 'Apply global layout defaults?',
+                message: 'This overwrites the Table List template and/or Record Form layout of every non-core table in the current project. Per-module overrides are kept. This cannot be undone from here.',
+                showCancelButton: true
+            });
+            if (!confirmed) return;
+
+            // Persist the current modal values first so we apply what the user sees.
+            const saveRes = await window.electronAPI.saveAllSettings(gatherFixzySettings());
+            if (!saveRes || !saveRes.success) {
+                showToast(`Failed to save settings: ${saveRes && saveRes.message}`, 'error');
+                return;
+            }
+
+            const res = await window.electronAPI.applyGlobalLayout({
+                projectId: appState.activeProject.project_id,
+                applyTableView: !!applyView,
+                applyFormLayout: !!applyForm,
+                applyChildLayout: !!applyChild
+            });
+            if (res && res.success) {
+                showToast(`Applied to ${res.updated} table(s); ${res.skipped} core/feature table(s) skipped.`, 'success');
+            } else {
+                showToast(`Apply failed: ${res && res.message}`, 'error');
+            }
+        });
+    }
     
     if (configBtn) {
         configBtn.addEventListener('click', async () => {

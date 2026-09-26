@@ -634,6 +634,12 @@ ipcMain.handle('table:create', async (event, projectId) => {
             ).run(projectId, newName, newName, newName, nextOrder);
             const tableId = info.lastInsertRowid;
 
+            // New tables inherit the global layout defaults (Preferences >
+            // Layout defaults). No-op when the user never changed them.
+            const gDefaults = getGlobalLayoutDefaults();
+            db.prepare('UPDATE tables SET tv_template = ?, card_columns = ?, form_layout_config = ? WHERE table_id = ?')
+                .run(gDefaults.tv_template, gDefaults.card_columns, gDefaults.form_layout_config, tableId);
+
 // Add `hide_in_tv` and `hide_in_dv` to the column list
             const insertFieldStmt = db.prepare(`
                 INSERT INTO fields (table_id, field_name, caption, data_type, length, primary_key, auto_increment, unsigned, read_only, field_order, hide_in_tv, hide_in_dv)
@@ -1238,6 +1244,131 @@ ipcMain.handle('settings:save-all', async (event, settingsData) => {
     }
 });
 
+// --- GLOBAL LAYOUT DEFAULTS (2026-09-26) ------------------------------------
+// Reads the global table-view / form-layout defaults from fixzy_settings and
+// normalises them. New tables inherit these automatically (table:create);
+// existing tables only change when the user explicitly applies them via
+// 'layout:apply-global' (Apply button in the Preferences modal).
+function getGlobalLayoutDefaults() {
+    const get = (name) => {
+        const row = db.prepare('SELECT setting_value FROM fixzy_settings WHERE setting_name = ?').get(name);
+        return row ? row.setting_value : null;
+    };
+    const { FORM_STYLES } = require('../generators/formLayoutConfig');
+
+    let tvTemplate = String(get('global_tv_template') || 'horizontal');
+    if (!['horizontal', 'vertical_1', 'vertical_2', 'left_image', 'right_image', 'card'].includes(tvTemplate)) {
+        tvTemplate = 'horizontal';
+    }
+    let cardColumns = parseInt(get('global_card_columns'), 10);
+    if (!Number.isInteger(cardColumns) || cardColumns < 1 || cardColumns > 6) cardColumns = 3;
+
+    // Normalise the form layout JSON through the same IR helper the
+    // generators use, so a broken stored payload can never reach tables.
+    let formLayoutConfig = '';
+    const rawForm = get('global_form_layout_config');
+    if (rawForm) {
+        let cfg = null;
+        try { cfg = JSON.parse(rawForm); } catch (e) { cfg = null; }
+        if (cfg && typeof cfg === 'object') {
+            if (!FORM_STYLES.includes(String(cfg.style || 'default'))) cfg.style = 'default';
+            let cols = parseInt(cfg.columns, 10);
+            if (!Number.isInteger(cols) || cols < 0 || cols > 3) cols = 0;
+            formLayoutConfig = JSON.stringify({ style: String(cfg.style || 'default'), columns: cols });
+        }
+    }
+
+    return { tv_template: tvTemplate, card_columns: cardColumns, form_layout_config: formLayoutConfig };
+}
+
+// Child relation layout defaults (2026-09-26). '' / 0 means "inherit the
+// child table's own layout" — the legacy behaviour. These are the fallback
+// for relations whose own tv_template/card_columns/form_style are unset.
+function getGlobalChildLayoutDefaults() {
+    const get = (name) => {
+        const row = db.prepare('SELECT setting_value FROM fixzy_settings WHERE setting_name = ?').get(name);
+        return row ? row.setting_value : null;
+    };
+    const { FORM_STYLES } = require('../generators/formLayoutConfig');
+
+    let tvTemplate = String(get('global_child_tv_template') || '').trim();
+    if (tvTemplate && !['horizontal', 'vertical_1', 'vertical_2', 'left_image', 'right_image', 'card'].includes(tvTemplate)) {
+        tvTemplate = '';
+    }
+    let cardColumns = parseInt(get('global_child_card_columns'), 10);
+    if (!Number.isInteger(cardColumns) || cardColumns < 0 || cardColumns > 6) cardColumns = 0;
+    let formStyle = String(get('global_child_form_style') || '').trim();
+    // Conversational is per-table chat copy; never a global child default.
+    if (formStyle && !FORM_STYLES.includes(formStyle)) formStyle = '';
+
+    return { tv_template: tvTemplate, card_columns: cardColumns, form_style: formStyle };
+}
+
+// Apply the global layout defaults to every eligible table in a project.
+// Skips: the core 'users' table and feature-generated tables (feature_source
+// set) — those have generator-owned layouts. Custom-module overrides live in
+// settings_override and are untouched, so per-module overrides still win.
+ipcMain.handle('layout:apply-global', async (event, { projectId, applyTableView, applyFormLayout, applyChildLayout }) => {
+    if (!projectId) return { success: false, message: 'Project ID not supplied.' };
+    try {
+        const defaults = getGlobalLayoutDefaults();
+        const tables = db.prepare(
+            'SELECT table_id, table_name, feature_source FROM tables WHERE project_id = ?'
+        ).all(projectId);
+
+        const CORE_TABLES = ['users', 'sessions', 'jobs', 'failed_jobs', 'cache', 'password_reset_tokens', 'permissions', 'roles'];
+        const setClauses = [];
+        const params = [];
+        if (applyTableView) { setClauses.push('tv_template = ?'); params.push(defaults.tv_template); }
+        if (applyFormLayout) { setClauses.push('form_layout_config = ?'); params.push(defaults.form_layout_config); }
+        if (setClauses.length === 0 && !applyChildLayout) return { success: false, message: 'Nothing selected to apply.' };
+
+        const applyStmt = setClauses.length
+            ? db.prepare(`UPDATE tables SET ${setClauses.join(', ')} WHERE table_id = ?`)
+            : null;
+        let updated = 0, skipped = 0;
+        const tx = db.transaction(() => {
+            if (applyStmt) {
+                for (const t of tables) {
+                    if (CORE_TABLES.includes(t.table_name) || (t.feature_source && String(t.feature_source).trim() !== '')) {
+                        skipped++;
+                        continue;
+                    }
+                    applyStmt.run(...params, t.table_id);
+                    updated++;
+                }
+            }
+            // Child relation defaults: stamp the global child layout onto every
+            // relation whose own override is still unset (per-relation overrides
+            // already chosen by the user are never overwritten).
+            if (applyChildLayout) {
+                const childDefaults = getGlobalChildLayoutDefaults();
+                const rels = db.prepare(`
+                    SELECT r.relationship_id FROM parent_child_relationships r
+                    JOIN tables p ON r.parent_table_id = p.table_id
+                    WHERE p.project_id = ?
+                `).all(projectId);
+                const stampStmt = db.prepare(`
+                    UPDATE parent_child_relationships
+                    SET tv_template = COALESCE(NULLIF(tv_template, ''), ?),
+                        card_columns = CASE WHEN card_columns IS NULL OR card_columns = 0 THEN ? ELSE card_columns END,
+                        form_style = COALESCE(NULLIF(form_style, ''), ?)
+                    WHERE relationship_id = ?
+                `);
+                for (const r of rels) {
+                    stampStmt.run(childDefaults.tv_template, childDefaults.card_columns, childDefaults.form_style, r.relationship_id);
+                    updated++;
+                }
+            }
+        });
+        tx();
+        return { success: true, updated, skipped };
+    } catch (error) {
+        console.error('Failed to apply global layout defaults:', error);
+        return { success: false, message: error.message };
+    }
+});
+
 ipcMain.handle('menu:save-structure', async (event, { projectId, menuData }) => {
     if (!projectId) {
         return { success: false, message: 'Project ID not supplied.' };
@@ -1314,6 +1445,7 @@ ipcMain.handle('relationship:update', async (event, data) => {
         const allowedColumns = [
                     'show_tab', 'show_icon', 'autoclose_modal', 'tab_title', 'copy_records',
                     'show_link_above', 'show_count_in_tv', 'allow_add_from_tv',
+                    'tv_template', 'card_columns', 'form_style', // child relation layout overrides (2026-09-26)
                     'on_delete', 'on_update' // <--- ADD THESE TWO FIELDS
                 ];
 
@@ -2857,6 +2989,11 @@ async function getFullProjectSchema(projectId) {
     if (!project)
       throw new Error(`Project with ID ${projectId} not found.`);
 
+    // Child relation layout: expose the live global child layout defaults so
+    // the RelationManager generator can resolve per-relation inheritance
+    // without a separate IPC round-trip.
+    project.fixzy_global_child_layout = getGlobalChildLayoutDefaults();
+
     // ▼▼▼ NEW ADDITION: Fetch Dashboard Widgets Data ▼▼▼
     const widgets = db
       .prepare("SELECT * FROM project_widgets WHERE project_id = ? ORDER BY sort_order ASC")
@@ -3514,7 +3651,11 @@ async function runComposerInstall(projectPath) {
 ipcMain.handle('setup:check', async () => {
     try {
         const { checkSetup } = require('../core/setupRunner');
-        return checkSetup();
+        const status = checkSetup();
+        // Renderer needs the OS to show the right install instructions
+        // (contextIsolation hides process.platform from the UI).
+        status.platform = process.platform;
+        return status;
     } catch (e) {
         return { error: e.message };
     }
