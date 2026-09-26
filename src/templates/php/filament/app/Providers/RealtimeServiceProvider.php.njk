@@ -28,6 +28,11 @@ class RealtimeServiceProvider extends ServiceProvider
     {
         $this->applyBroadcastSettings();
         $this->registerChannels();
+        // pusher-js authorizes private channels via POST /broadcasting/auth;
+        // Laravel ships the controller but NOT the route — register it.
+        \Illuminate\Support\Facades\Broadcast::routes([
+            'middleware' => ['web', 'auth'],
+        ]);
         $this->registerEchoClient();
     }
 
@@ -87,7 +92,10 @@ class RealtimeServiceProvider extends ServiceProvider
         if ($isReverb && config()->has('reverb.apps.apps')) {
             $apps = config('reverb.apps.apps');
             if (is_array($apps) && array_key_exists(0, $apps)) {
-                $apps[0]['id'] = FixzySetting::get('broadcast_app_id', $apps[0]['id'] ?? 'fixzy-app');
+                // Reverb's ConfigApplicationProvider keys the app by
+                // 'app_id' (NOT 'id') — see findById()/find('app_id', …).
+                $appId = FixzySetting::get('broadcast_app_id', $apps[0]['app_id'] ?? 'fixzy-app');
+                $apps[0]['app_id'] = $appId;
                 $apps[0]['key'] = FixzySetting::get('broadcast_key', $apps[0]['key'] ?? '');
                 $apps[0]['secret'] = FixzySetting::get('broadcast_secret', $apps[0]['secret'] ?? '');
                 config(['reverb.apps.apps' => $apps]);
@@ -98,15 +106,17 @@ class RealtimeServiceProvider extends ServiceProvider
     protected function registerChannels(): void
     {
         // Chat rooms: any authenticated user may join a room.
-        Broadcast::channel('chat.*', fn ($user): bool => $user !== null);
+        Broadcast::channel('chat.{room}', fn ($user): bool => $user !== null);
 
-        // Live dashboard widgets: any authenticated user may watch a
-        // table's change feed (fixzy.data.{table}).
-        Broadcast::channel('fixzy.data.*', fn ($user): bool => $user !== null);
+        // Live dashboard widgets subscribe to the per-table change feed
+        // (fixzy.data.{table}). NOTE: Laravel channel patterns use {param}
+        // placeholders — a literal '*' is a regex quantifier and NEVER
+        // matches, so 'fixzy.data.*' would silently reject every subscribe.
+        Broadcast::channel('fixzy.data.{table}', fn ($user): bool => $user !== null);
 
         // Per-user notification channel used by Filament's database
         // notifications broadcast (App.User.{id}).
-        Broadcast::channel('App.User.*', fn ($user, $id): bool => (int) $user->getAuthIdentifier() === (int) $id);
+        Broadcast::channel('App.User.{id}', fn ($user, $id): bool => (int) $user->getAuthIdentifier() === (int) $id);
         Broadcast::channel('Illuminate.Notifications.*', fn ($user, $id): bool => (int) $user->getAuthIdentifier() === (int) $id);
     }
 
@@ -127,15 +137,23 @@ class RealtimeServiceProvider extends ServiceProvider
             return '';
         }
 
+        $forceTls = filter_var(FixzySetting::get('broadcast_force_tls', '0'), FILTER_VALIDATE_BOOLEAN);
+        $scheme = (string) (FixzySetting::get('broadcast_scheme') ?? 'http');
+
         $config = [
             'broadcaster' => 'pusher',
             'key' => (string) (FixzySetting::get('broadcast_key') ?? ''),
+            // pusher-js 8 requires 'cluster'; for self-hosted Reverb it is
+            // a placeholder — wsHost/wsPort below override the endpoint.
+            'cluster' => (string) (FixzySetting::get('broadcast_cluster') ?? 'mt1'),
             'wsHost' => (string) (FixzySetting::get('broadcast_host') ?? 'localhost'),
             'wsPort' => (int) (FixzySetting::get('broadcast_port') ?? 8080),
             'wssPort' => (int) (FixzySetting::get('broadcast_wss_port') ?? 443),
-            'forceTLS' => filter_var(FixzySetting::get('broadcast_force_tls', '0'), FILTER_VALIDATE_BOOLEAN),
+            'forceTLS' => $forceTls,
             'enabledTransports' => ['ws', 'wss'],
-            'encrypted' => true,
+            // pusher-js 'encrypted' picks wss vs ws; must follow the
+            // configured scheme or plain-HTTP local Reverb never connects.
+            'encrypted' => $forceTls || $scheme === 'https',
         ];
 
         $json = json_encode($config);
@@ -147,7 +165,11 @@ class RealtimeServiceProvider extends ServiceProvider
 
         $boot = '<script>' . "\n"
             . '    window.Pusher = window.Pusher || Pusher;' . "\n"
-            . '    window.Echo = new Echo(' . $json . ');' . "\n"
+            // The laravel-echo IIFE exposes the class as Echo.default
+            // (it's a namespace object); fall back to Echo for builds
+            // that export the constructor directly.
+            . '    var EchoCtor = (Echo && Echo.default) ? Echo.default : Echo;' . "\n"
+            . '    window.Echo = new EchoCtor(' . $json . ');' . "\n"
             . "    window.dispatchEvent(new CustomEvent('EchoLoaded'));" . "\n"
             . '</script>';
 

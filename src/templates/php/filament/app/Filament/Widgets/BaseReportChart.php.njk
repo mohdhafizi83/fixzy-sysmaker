@@ -235,7 +235,7 @@ abstract class BaseReportChart extends ChartWidget
      * axis). Grouped charts keep the default axis; the combo line gets
      * its own right-hand axis so different magnitudes stay readable.
      */
-    protected function getOptions(): array
+    protected function getOptions(): ?array
     {
         $type = static::$cfg['type'] ?? '';
 
@@ -266,7 +266,11 @@ abstract class BaseReportChart extends ChartWidget
             ];
         }
 
-        return [];
+        // Return null (NOT []) when there are no custom options: a PHP []
+        // serializes to a JS ARRAY, and Chart.js's options merge throws
+        // "Cannot convert undefined or null to object" on it. The Filament
+        // chart component does `options ??= {}`, so null is the safe shape.
+        return null;
     }
 
     protected function emptyData(): array

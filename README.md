@@ -346,6 +346,18 @@ big-type stats, live clock, and a LIVE indicator when the WebSocket
 is connected. Hidden from navigation; pair with live-mode widgets
 for real-time wallboards.
 
+![Kiosk mode](docs/assets/kiosk-mode.png)
+
+*Kiosk display: immersive full-width layout (admin chrome hidden),
+auto-rotating widget pages, live clock.*
+
+**Dashboard charts (live data):**
+
+![Dashboard charts](docs/assets/dashboard-charts.png)
+
+*Dashboard Builder widgets rendering real data — stat cards,
+bar/pie/line charts from the same IR.*
+
 **Security model:** the compiled report config is baked into the
 generated PHP as a protected static property — it never travels in
 the Livewire payload, so it cannot be tampered with from the browser.

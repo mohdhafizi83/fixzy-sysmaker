@@ -11,6 +11,9 @@ use Filament\Pages\Dashboard;
  * auto-rotating pages, big-type stats, live clock. Opens at /kiosk
  * (hidden from navigation). Pair with live-mode widgets for real-time
  * wallboards; poll/static widgets rotate too.
+ *
+ * getWidgets() is overridden with ONLY the generated report widgets so
+ * the default Account/Filament-info cards never appear on the wall.
  */
 class KioskDashboard extends Dashboard
 {
@@ -24,4 +27,26 @@ class KioskDashboard extends Dashboard
     }
 
     protected string $view = 'filament.pages.kiosk';
+
+    /**
+     * @return array<class-string<\Filament\Widgets\Widget>>
+     */
+    public function getWidgets(): array
+    {
+        return [
+            \App\Filament\Widgets\Report_w1::class,
+            \App\Filament\Widgets\Report_w2::class,
+            \App\Filament\Widgets\Report_w3::class,
+            \App\Filament\Widgets\Report_w4::class,
+            \App\Filament\Widgets\Report_w15::class,
+            \App\Filament\Widgets\Report_w7::class,
+            \App\Filament\Widgets\Report_w8::class,
+            \App\Filament\Widgets\Report_w9::class,
+            \App\Filament\Widgets\Report_w10::class,
+            \App\Filament\Widgets\Report_w11::class,
+            \App\Filament\Widgets\Report_w12::class,
+            \App\Filament\Widgets\Report_w13::class,
+        ];
+    }
+
 }

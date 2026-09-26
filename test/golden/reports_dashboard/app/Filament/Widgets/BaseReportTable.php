@@ -57,6 +57,11 @@ abstract class BaseReportTable extends TableWidget
         return $query;
     }
 
+    public function getLiveTable(): string
+    {
+        return (string) (static::$cfg['table'] ?? '');
+    }
+
     public function refreshMode(): string
     {
         return (string) (static::$cfg['refresh_mode'] ?? 'static');

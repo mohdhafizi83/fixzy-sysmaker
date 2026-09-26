@@ -222,7 +222,9 @@ function generateReportModule(fullSchema, outputDir) {
         const kioskEnabled = Number((fullSchema.project || {}).kiosk_enabled) === 1;
         if (kioskEnabled) {
             emit(path.join('app', 'Filament', 'Pages', 'KioskDashboard.php'),
-                'app/Filament/Pages/KioskDashboard.php.njk');
+                'app/Filament/Pages/KioskDashboard.php.njk', {
+                    widget_classes: classNames.map((c) => `            \\App\\Filament\\Widgets\\${c}::class,`).join('\n'),
+                });
             const rotate = Math.max(5, parseInt(fullSchema.project.kiosk_rotate_seconds, 10) || 15);
             const pageSize = Math.max(1, Math.min(12, parseInt(fullSchema.project.kiosk_page_size, 10) || 4));
             emit(path.join('resources', 'views', 'filament', 'pages', 'kiosk.blade.php'),

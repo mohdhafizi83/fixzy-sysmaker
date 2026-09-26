@@ -17,7 +17,10 @@
 </x-filament-panels::page>
 
 <style>
-    .fixzy-kiosk { min-height: 90vh; display: flex; flex-direction: column; gap: 1rem; }
+    /* Immersive kiosk: hide admin chrome (nav, topbar, debug bar). */
+    .fi-sidebar, .fi-topbar, #debugbar, #debugbar-placeholder { display: none !important; }
+    .fi-body { margin-inline-start: 0 !important; }
+    .fixzy-kiosk { min-height: 100vh; display: flex; flex-direction: column; gap: 1rem; }
     .fixzy-kiosk-header { display: flex; justify-content: space-between; align-items: baseline; }
     .fixzy-kiosk-title { font-size: 1.75rem; font-weight: 700; }
     .fixzy-kiosk-clock { font-size: 1.5rem; font-variant-numeric: tabular-nums; opacity: .85; }
