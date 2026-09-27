@@ -83,6 +83,24 @@ async function generateAdminPanelProvider(fullSchema, basePath) {
                 : null,
             // Localization module (Malay): locale middleware + switcher.
             localization_enabled: require('./localizationConfig').isLocalizationEnabled(project),
+            // Theme system v1: neutral theme -> Filament color expression.
+            // Presets map to named Filament palette constants; custom themes
+            // pass the validated hex string (Filament generates the full
+            // shade palette from it). resolveTheme() guarantees the hex is
+            // #rgb/#rrggbb, so interpolation is injection-safe.
+            theme_primary_expr: (() => {
+                const { resolveTheme } = require('../core/theme');
+                const theme = resolveTheme(project.theme_config);
+                const PRESET_CONST = {
+                    'fixzy-amber': 'Color::Amber',
+                    'fixzy-emerald': 'Color::Emerald',
+                    'fixzy-slate': 'Color::Slate',
+                };
+                if (theme.mode === 'custom') {
+                    return `'${theme.primary}'`;
+                }
+                return PRESET_CONST[theme.preset] || 'Color::Amber';
+            })(),
         });
 
         const outputPath = path.join(providersPath, 'AdminPanelProvider.php');
