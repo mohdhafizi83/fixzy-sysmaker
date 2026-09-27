@@ -19,6 +19,10 @@ class CreateGoogleSheet{{ model_class }}Action
 {
     protected const TABLE_KEY = '{{ table_key }}';
 
+    /**
+     * Build the action: opens the linked Google Sheet when one already exists for this table, otherwise creates one.
+     * @return  Action  The configured Filament action.
+     */
     public static function make(): Action
     {
         $existing = GoogleSheetSync::where('table_key', self::TABLE_KEY)->first();

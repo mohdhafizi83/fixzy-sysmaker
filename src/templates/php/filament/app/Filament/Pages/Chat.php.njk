@@ -39,11 +39,17 @@ class Chat extends Page
     /** @var array<int, array<string, mixed>> */
     public array $messages = [];
 
+    /**
+     * Load the initial message history on page open.
+     */
     public function mount(): void
     {
         $this->loadMessages();
     }
 
+    /**
+     * Fetch the latest 50 messages for the room, ordered oldest first.
+     */
     public function loadMessages(): void
     {
         $this->messages = ChatMessage::query()
@@ -63,6 +69,9 @@ class Chat extends Page
             ->all();
     }
 
+    /**
+     * Validate and persist a new chat message (plain text only).
+     */
     public function send(): void
     {
         $text = trim($this->newMessage);

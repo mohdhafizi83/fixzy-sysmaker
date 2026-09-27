@@ -42,11 +42,18 @@ class GoogleSheetsSyncService
      */
     public static bool $importing = false;
 
+    /**
+     * Load the configured sync targets from config.
+     */
     public function __construct()
     {
         $this->targets = config('fixzy_sheets.targets', []);
     }
 
+    /**
+     * Whether a service-account JSON file is stored and readable on disk.
+     * @return  bool  True when credentials exist.
+     */
     public static function credentialsConfigured(): bool
     {
         $path = \App\Models\FixzySetting::get('gsheets_service_account_path');

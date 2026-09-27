@@ -5,6 +5,9 @@ namespace App\Filament\Pages;
 use App\Models\{{ model_class }};
 use Filament\Pages\Page;
 
+/**
+ * Hierarchical tree page for {{ page_title }} parent/child records.
+ */
 class {{ page_class }} extends Page
 {
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-queue-list';
@@ -23,11 +26,19 @@ class {{ page_class }} extends Page
     /** Collapsed node ids. */
     public array $collapsed = [];
 
+    /**
+     * Load the tree rows on page open.
+     */
     public function mount(): void
     {
         $this->loadTree();
     }
 
+    /**
+     * Expand or collapse a single tree node.
+     *
+     * @param  int|string  $id  Identifier of the node to toggle.
+     */
     public function toggle(int|string $id): void
     {
         $id = (string) $id;
@@ -38,11 +49,17 @@ class {{ page_class }} extends Page
         }
     }
 
+    /**
+     * Collapse every branch in the tree.
+     */
     public function collapseAll(): void
     {
         $this->collapsed = array_map('strval', array_column(array_filter($this->rows, fn ($r) => $r['hasChildren']), 'id'));
     }
 
+    /**
+     * Clear all collapsed nodes so the tree is fully expanded.
+     */
     public function expandAll(): void
     {
         $this->collapsed = [];

@@ -1,3 +1,6 @@
+// Filament Form Schema generator (Fixzy SysMaker).
+// Builds form field code strings (sections/wizards/conditionals) and
+// emits <Model>Form.php schema classes for tables and custom modules.
 const fs = require('fs');
 const path = require('path');
 
@@ -14,6 +17,7 @@ const { labelPhp } = require('./localizationConfig');
 const { parseFormLayoutConfig, parseFieldFormSettings } = require('./formLayoutConfig');
 
 // Escape a literal for single-quoted PHP (used for group titles/descriptions).
+/** @param {*} s value @returns {string} escaped for single-quoted PHP literals */
 function phpEscape(s) {
     return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
@@ -21,6 +25,13 @@ function phpEscape(s) {
 // Append phase-E layout modifiers (label mode / conditionals) to a hand-built
 // field code string, keeping the trailing comma. Used by the media/repeater
 // branches which don't go through FormField.php.njk.
+/**
+ * @param {string} code field code string built by hand
+ * @param {object|null} formSettings parsed field form settings (visible_if/required_if/label_display)
+ * @param {string} defaultLabelDisplay group-level default label mode
+ * @param {string} elementType Filament field element type (Checkbox/Radio keep own label)
+ * @returns {string} code with layout modifier chains appended
+ */
 function applyFormModifiers(code, formSettings, defaultLabelDisplay, elementType) {
     const labelMode = (formSettings && formSettings.label_display) || defaultLabelDisplay || '';
     const keepsOwnLabel = ['Checkbox', 'Radio'].includes(elementType);
@@ -82,6 +93,7 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
     const accordionForce = style === 'accordion';
 
     const sections = [];
+    /** Append a Section::make(...) block for a field group (no-op when empty). @param {string} title @param {string} description @param {object[]} groupFields @param {boolean} collapsible @param {boolean} collapsed @returns {void} */
     const pushSection = (title, description, groupFields, collapsible, collapsed) => {
         if (!groupFields.length) return;
         const inner = generateFieldCodesForList(groupFields, tableData, relationships, tableName, fullSchema, { defaultLabelDisplay });
@@ -112,6 +124,7 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
     if (style === 'wizard') {
         // Steps wrap fields directly (not Sections).
         const stepCodes = [];
+        /** Append a Step::make(...) block for wizard style (no-op when empty). @param {string} title @param {object[]} stepFields @returns {void} */
         const pushStep = (title, stepFields) => {
             if (!stepFields.length) return;
             const inner = generateFieldCodesForList(stepFields, tableData, relationships, tableName, fullSchema, { defaultLabelDisplay });
@@ -126,6 +139,12 @@ function generateFormSchemaString(tableData, relationships, tableName, fullSchem
 }
 
 // Shared visible-field filter (tenant FK hidden, hide_in_dv respected).
+/**
+ * @param {object} tableData table row data
+ * @param {object} fullSchema assembled project schema (tenancy settings)
+ * @param {string} tableName base table name
+ * @returns {object[]} visible form fields, ordered by field_order
+ */
 function visibleFormFields(tableData, fullSchema, tableName) {
     const projectSettings = fullSchema.project || {};
     const isOneToMany = projectSettings.tenancy_type === 'one_to_many';
@@ -154,6 +173,15 @@ function visibleFormFields(tableData, fullSchema, tableName) {
 }
 
 // Render a list of fields into concatenated field code (the legacy loop body).
+/**
+ * @param {object[]} visibleFields fields to render
+ * @param {object} tableData table row data
+ * @param {object[]} relationships schema relationships
+ * @param {string} tableName base table name
+ * @param {object} fullSchema assembled project schema
+ * @param {{defaultLabelDisplay?: string}} opts render options
+ * @returns {string} concatenated Filament field code
+ */
 function generateFieldCodesForList(visibleFields, tableData, relationships, tableName, fullSchema, opts) {
     const formFieldsCode = [];
     const localizationEnabled = require('./localizationConfig').isLocalizationEnabled(fullSchema.project || {});
@@ -591,6 +619,13 @@ function generateSingleSchemaClass(basePath, resourceFolder, className, tableDat
     console.log(`   - Form Schema generated: ${className}.php`);
 }
 
+/**
+ * Generate a Filament Form Schema class per custom module (virtual fields
+ * with readonly/order/settings overrides applied).
+ * @param {object} fullSchema assembled project schema
+ * @param {string} basePath generated app root
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
 async function generateFilamentSchemasCustomModules(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;

@@ -1,3 +1,8 @@
+// src/js/uiHandlers.js
+//
+// Backward-compatible re-export barrel for the split handler modules, plus the
+// form display rules and the validation tab loader.
+
 export * from './handlers/fieldHandlers.js';
 export * from './handlers/tableHandlers.js';
 export * from './handlers/menuHandlers.js';
@@ -14,12 +19,20 @@ import {
 } from './state.js';
 import { showCustomDialog } from './ui/modalHandlers.js';
 
+/**
+ * Warns when a rich-HTML or text-area display type is chosen on a non-TEXT data type.
+ * @returns {void}
+ */
 export function initializeFormDisplayRules() {
     const displayTypeRadios = document.querySelectorAll('input[name="fld-display-type"]');
     const dataTypeSelect = document.getElementById('fld-data-type');
     if (displayTypeRadios.length === 0 || !dataTypeSelect) return;
 
     // Helper function to check compatibility with TEXT data types
+    /**
+     * Shows a warning dialog if the selected display type needs a TEXT-family data type.
+     * @returns {void}
+     */
     const checkTextCompatibility = () => {
         const selectedRadio = document.querySelector('input[name="fld-display-type"]:checked');
         if (!selectedRadio) return;
@@ -41,6 +54,10 @@ export function initializeFormDisplayRules() {
     });
 }
 
+/**
+ * Blocks multi-select/checkboxes options display on data types that can't store lists.
+ * @returns {void}
+ */
 export function initializeOptionsListRules() {
     const multiSelectRadio = document.querySelector('input[name="fld-options-display"][value="multi"]');
     const checkboxesRadio = document.querySelector('input[name="fld-options-display"][value="checkboxes"]');
@@ -49,6 +66,7 @@ export function initializeOptionsListRules() {
 
     if (!multiSelectRadio || !checkboxesRadio || !dataTypeSelect || !dropdownRadio) return;
 
+    // Reverts the radio selection when the data type can't hold a list of options.
     const checkCompatibility = (event) => {
         const currentDataType = dataTypeSelect.value.toUpperCase();
         
@@ -69,6 +87,12 @@ export function initializeOptionsListRules() {
 }
 
 // Function to load the Validation tab (Auto-Save & jQuery-free version)
+/**
+ * Loads validation rules for a column and renders the rule inputs with live auto-save.
+ * @param {string|number} columnId Column id whose rules are loaded.
+ * @param {string} tableName Table that owns the column.
+ * @returns {Promise<void>}
+ */
 export async function loadValidationTab(columnId, tableName) {
     const container = document.getElementById('validationRulesContainer');
     if (!container) return;
@@ -141,6 +165,7 @@ export async function loadValidationTab(columnId, tableName) {
         // 4. ATTACH EVENT LISTENERS FOR AUTO-SAVE
         
         // Helper function to trigger save
+        // Reads the rule inputs and queues the validation save for this column.
         const triggerAutoSave = async () => {
             const statusEl = document.getElementById('val-save-status');
             if (statusEl) statusEl.innerHTML = '<span class="text-info"><i class="fas fa-sync fa-spin"></i> Saving...</span>';
@@ -183,6 +208,15 @@ export async function loadValidationTab(columnId, tableName) {
 }
 
 // Helper to build input HTML based on the config
+/**
+ * Builds the HTML inputs for one validation rule per its declared input kind.
+ * @param {Object} rule Validation rule config {inputs, labels, ...}.
+ * @param {Array} allCols All column names of the table.
+ * @param {Array} dateCols Date-type column names for date rules.
+ * @param {string} savedVal1 Previously saved value for the first input.
+ * @param {string} savedVal2 Previously saved value for the second input.
+ * @returns {string} Input HTML string, '' when the rule takes no inputs.
+ */
 function renderValidationInputs(rule, allCols, dateCols, savedVal1, savedVal2) {
     if (rule.inputs === 'none') return '';
 

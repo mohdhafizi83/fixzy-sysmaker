@@ -11,6 +11,9 @@ use Filament\Actions\Imports\Models\Import;
 use Illuminate\Support\Number;
 use Filament\Forms\Components\Checkbox;
 
+/**
+ * Generated importer for {{ frase_model_name }} rows from CSV/XLSX.
+ */
 class {{ model_name }}Importer extends Importer
 {
     protected static ?string $model = {{ model_name }}::class;
@@ -23,6 +26,10 @@ class {{ model_name }}Importer extends Importer
      */
     protected static ?array $profile = {{ import_profile }};
 {% endif %}
+    /**
+     * Mappable import columns with type casts and rules.
+     * @return  array  ImportColumn definitions.
+     */
     public static function getColumns(): array
     {
         return [
@@ -43,6 +50,10 @@ class {{ model_name }}Importer extends Importer
 {% endif %}{% endfor %}        ];
     }
 {% if import_profile %}
+    /**
+     * Locate the record this row should update according to the smart-import profile, or a fresh instance to insert.
+     * @return  ?{{ model_name }}  Existing record to update, or a new instance.
+     */
     public function resolveRecord(): ?{{ model_name }}
     {
         $mode = static::$profile['mode'] ?? 'update';
@@ -75,6 +86,9 @@ class {{ model_name }}Importer extends Importer
         return $existing;
     }
 
+    /**
+     * Persist the record unless the dry-run option is set (validation already ran upstream).
+     */
     public function saveRecord(): void
     {
         // Dry-run: validation already ran upstream; skip persistence.
@@ -85,11 +99,21 @@ class {{ model_name }}Importer extends Importer
         parent::saveRecord();
     }
 {% else %}
+    /**
+     * Resolve which record this imported row maps to (generated custom logic).
+     * @return  ?{{ model_name }}  Resolved record instance.
+     */
     public function resolveRecord(): ?{{ model_name }}
     {
 {{ resolve_logic }}
     }
 {% endif %}
+    /**
+     * Notification body shown when the import finishes.
+     *
+     * @param  Import  $import  The completed import job.
+     * @return  string  Human-readable completion summary.
+     */
     public static function getCompletedNotificationBody(Import $import): string
     {
 {% if import_profile %}        $dryRun = ! empty($import->options['dry_run']);
@@ -104,6 +128,10 @@ class {{ model_name }}Importer extends Importer
         return $body;
     }
     
+    /**
+     * Extra options form shown before importing (dry run / update existing).
+     * @return  array  Form component definitions.
+     */
     public static function getOptionsFormComponents(): array
     {
         return [

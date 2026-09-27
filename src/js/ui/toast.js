@@ -1,5 +1,13 @@
 // src/js/ui/toast.js
+//
+// Transient toast notifications (success / error / info) shown in a fixed container.
 
+/**
+ * Shows a toast notification that auto-dismisses after a short delay.
+ * @param {string} message Message text to display.
+ * @param {('success'|'error'|'info')} [type] Toast style and icon.
+ * @returns {void}
+ */
 export function showToast(message, type = 'success') {
     // 1. Find or create the container
     let container = document.getElementById('toast-container');

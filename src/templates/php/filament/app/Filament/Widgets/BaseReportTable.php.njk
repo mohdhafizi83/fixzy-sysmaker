@@ -21,6 +21,10 @@ abstract class BaseReportTable extends TableWidget
     /** @var array<string, mixed> */
     protected static array $cfg = [];
 
+    /**
+     * Grid column span derived from the report width config.
+     * @return  int | string | array  Column span ("full" or an integer).
+     */
     public function getColumnSpan(): int | string | array
     {
         $w = static::$cfg['width'] ?? '1';
@@ -57,22 +61,40 @@ abstract class BaseReportTable extends TableWidget
         return $query;
     }
 
+    /**
+     * Source table name used for live refresh.
+     * @return  string  Configured table name.
+     */
     public function getLiveTable(): string
     {
         return (string) (static::$cfg['table'] ?? '');
     }
 
+    /**
+     * Refresh strategy for the widget.
+     * @return  string  "static", "poll" or "push".
+     */
     public function refreshMode(): string
     {
         return (string) (static::$cfg['refresh_mode'] ?? 'static');
     }
 
+    /**
+     * Poll interval as a CSS-friendly string, clamped to 2-300 seconds.
+     * @return  string  e.g. "10s".
+     */
     public function pollIntervalString(): string
     {
         $iv = (int) (static::$cfg['refresh_interval'] ?? 10);
         return max(2, min(300, $iv)) . 's';
     }
 
+    /**
+     * Introspect the source table and build up to 8 text columns, skipping secret fields.
+     *
+     * @param  Table  $table  The table instance to configure.
+     * @return  Table  The configured table.
+     */
     public function table(Table $table): Table
     {
         $cfg = static::$cfg;

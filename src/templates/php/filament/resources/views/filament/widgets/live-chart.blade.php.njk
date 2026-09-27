@@ -1,7 +1,13 @@
-{% raw %}@include('filament-widgets::chart-widget')
+{% raw %}{{-- Live chart widget: renders the standard Filament chart widget, then
+     subscribes to this table's private Echo channel so the chart refreshes
+     the moment any record changes (no polling). --}}
+@include('filament-widgets::chart-widget')
 
 @script
     <script>
+        {{-- Echo subscription: listen on fixzy.data.<table> for the
+             .fixzy.data.changed broadcast and $refresh the Livewire widget.
+             Tolerates Echo loading after this script (EchoLoaded event). --}}
         (() => {
             const table = @js($this->getLiveTable());
             if (!table) return;

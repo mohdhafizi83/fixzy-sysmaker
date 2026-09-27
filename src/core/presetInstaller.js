@@ -13,10 +13,12 @@
 
 const { validateManifest } = require('./presetSchema');
 
+/** Convert snake_case to Title Case, e.g. 'leave_request' -> 'Leave Request'. @param {string} name raw identifier @returns {string} humanized title */
 function titleCase(name) {
     return String(name).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/** Serialize a value to a JSON string, passing through strings and substituting fallback for null/undefined. @param {*} v value to encode @param {string} fallback JSON used when v is null/undefined @returns {string} JSON string */
 function jsonOr(v, fallback) {
     if (v === undefined || v === null) return fallback;
     if (typeof v === 'string') return v; // already JSON string
@@ -66,16 +68,19 @@ function installPreset(db, projectId, manifest, opts = {}) {
 
     const tx = db.transaction(() => {
         // ---- helpers -----------------------------------------------------
+        /** Next free table_order for this project (MAX+1). @returns {number} */
         const nextTableOrder = () => {
             const r = db.prepare('SELECT MAX(table_order) AS m FROM tables WHERE project_id = ?').get(projectId);
             return (r && r.m !== null ? r.m : 0) + 1;
         };
+        /** Next free menu item order within a group (null group = top-level). @param {number|null} groupId menu group id or null @returns {number} */
         const nextMenuOrder = (groupId) => {
             const r = groupId === null || groupId === undefined
                 ? db.prepare('SELECT MAX(item_order) AS m FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL').get(projectId)
                 : db.prepare('SELECT MAX(item_order) AS m FROM menu_items WHERE menu_group_id = ?').get(groupId);
             return (r && r.m !== null ? r.m : -1) + 1;
         };
+        /** Find or create a menu group by name; returns its id (null when no name). @param {string} [groupName] @returns {number|null} menu_group_id */
         const ensureMenuGroup = (groupName) => {
             if (!groupName) return null;
             const existing = db.prepare('SELECT menu_group_id FROM menu_groups WHERE project_id = ? AND group_name = ?').get(projectId, groupName);

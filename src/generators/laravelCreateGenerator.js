@@ -1,3 +1,7 @@
+// Filament Create page generator (Fixzy SysMaker).
+//
+// Renders app/Filament/Resources/<Folder>/Pages/Create<Model>.php for
+// standard tables and custom modules from PagesCreate.php.njk.
 const fs = require('fs');
 const path = require('path');
 const { toSingularPascalCase, toPluralPascalCase } = require('../utils');
@@ -8,6 +12,12 @@ const TEMPLATE = 'app/Filament/Resources/PagesCreate.php.njk';
 /**
  * [HELPER] Menjana satu fail Create Page.
  * Digunakan oleh Generator Standard dan Custom Module.
+ * @param {string} tableName base table name
+ * @param {object} tableData table row data
+ * @param {object} fullSchema assembled project schema
+ * @param {string} basePath generated app root
+ * @param {{modelName?: string, resourceFolder?: string, customPageName?: string}} [options] naming overrides for custom modules
+ * @returns {Promise<void>}
  */
 async function generateSingleCreatePage(tableName, tableData, fullSchema, basePath, options = {}) {
     const { database: { relationships } } = fullSchema;
@@ -56,6 +66,12 @@ async function generateSingleCreatePage(tableName, tableData, fullSchema, basePa
 }
 
 // [UTAMA] Standard Create Pages
+/**
+ * Generate Create pages for every non-users base table.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} basePath generated app root
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
 async function generateFilamentCreatePages(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;
@@ -69,6 +85,12 @@ async function generateFilamentCreatePages(fullSchema, basePath) {
     }
 }
 
+/**
+ * Generate Create pages for every custom module (one per module view).
+ * @param {object} fullSchema assembled project schema
+ * @param {string} basePath generated app root
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
 async function generateFilamentCreateCustomModules(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;

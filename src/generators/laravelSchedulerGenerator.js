@@ -23,6 +23,14 @@ const { renderTemplate } = require('../render/engine');
 const { getFormattedTimestamp } = require('../utils');
 const { collectSchedules, anySchedulesEnabled } = require('./schedulerConfig');
 
+/**
+ * Generate the Scheduler module (run model, reminder notification,
+ * runner command, status page, provider, migration) when any schedule
+ * is configured.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} outputDir generated app root
+ * @returns {{success: boolean, files: string[], skipped?: boolean, schedules?: number, message?: string}}
+ */
 function generateSchedulerModule(fullSchema, outputDir) {
     try {
         if (!anySchedulesEnabled(fullSchema)) {
@@ -32,6 +40,7 @@ function generateSchedulerModule(fullSchema, outputDir) {
         const written = [];
         const entries = collectSchedules(fullSchema);
 
+        /** Render a template to outputDir/relPath once (idempotent: skips existing files). @param {string} relPath @param {string} template njk path @param {object} [context] @returns {void} */
         const emit = (relPath, template, context) => {
             const abs = path.join(outputDir, relPath);
             fs.mkdirSync(path.dirname(abs), { recursive: true });
@@ -87,12 +96,19 @@ function generateSchedulerModule(fullSchema, outputDir) {
     }
 }
 
+/** Escape a value for a single-quoted PHP string literal. @param {*} v @returns {string} */
 function phpLit(v) {
     return String(v === null || v === undefined ? '' : v)
         .replace(/\\/g, '\\\\')
         .replace(/'/g, "\\'");
 }
 
+/**
+ * Register SchedulerServiceProvider in bootstrap/providers.php and the
+ * fixzy-manifest.json (both idempotent).
+ * @param {string} outputDir generated app root
+ * @returns {void}
+ */
 function registerProvider(outputDir) {
     const providerClass = 'App\\Providers\\SchedulerServiceProvider';
     const providersFile = path.join(outputDir, 'bootstrap', 'providers.php');

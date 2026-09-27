@@ -14,6 +14,9 @@ use Livewire\Component;
  * eval/exec here.
  */
 #[Layout('livewire.conversational-layout')]
+/**
+ * Livewire chat-style form that collects answers one question at a time.
+ */
 class ConversationalForm extends Component
 {
     public string $slug = '';
@@ -36,6 +39,11 @@ class ConversationalForm extends Component
         return {{ registry_php }};
     }
 
+    /**
+     * Start a conversation for the given form slug.
+     *
+     * @param  string  $slug  Registered conversational form slug.
+     */
     public function mount(string $slug): void
     {
         $form = static::registry()[$slug] ?? null;
@@ -123,6 +131,9 @@ class ConversationalForm extends Component
         return 'reply with the number: ' . (implode(', ', $parts) ?: '(none available)');
     }
 
+    /**
+     * Validate the current answer and advance to the next question.
+     */
     public function submit(): void
     {
         if ($this->done) {
@@ -207,6 +218,10 @@ class ConversationalForm extends Component
         $this->messages[] = ['role' => 'bot', 'text' => $form['farewell']];
     }
 
+    /**
+     * Render the chat component.
+     * @return  \Illuminate\View\View  The component view.
+     */
     public function render(): \Illuminate\View\View
     {
         return view('livewire.conversational-form');

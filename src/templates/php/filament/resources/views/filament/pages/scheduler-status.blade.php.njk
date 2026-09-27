@@ -1,4 +1,8 @@
 {% raw %}<x-filament-panels::page>
+    {{-- Scheduler status: lists the reminder / recurring / backup jobs compiled
+         from the Fixzy SysMaker design, the backup files on disk (with a
+         confirm-guarded restore), and a log of recent job fires. "Run
+         scheduler now" triggers the runNow Livewire action manually. --}}
     <x-filament::section>
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
             <div>

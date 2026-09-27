@@ -15,6 +15,10 @@ class ChatMessage extends Model
 {
     protected $fillable = ['room', 'user_id', 'user_name', 'message'];
 
+    /**
+     * Author of the chat message.
+     * @return  BelongsTo  Belongs-to relation.
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

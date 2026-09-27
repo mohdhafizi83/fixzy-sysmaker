@@ -11,16 +11,27 @@ import { showCustomDialog } from '../ui/modalHandlers.js';
 
 let currentSlug = null;
 
+/** Escapes HTML special chars (&, <, >, ") in a value. @param {*} s Value. @returns {string} Escaped string. */
 function esc(s) {
     return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+/**
+ * Coerces a value to an object, JSON-parsing strings when needed.
+ * @param {*} v Object, JSON string, or anything.
+ * @returns {Object} Parsed object, or {} when unparseable.
+ */
 function asObj(v) {
     if (v && typeof v === 'object') return v;
     if (typeof v === 'string') { try { return JSON.parse(v); } catch { return {}; } }
     return {};
 }
 
+/**
+ * Renders the starter-pack cards grid; clicking a card opens its preview modal.
+ * @param {Object[]} presets Preset descriptors {slug, name, tagline, category}.
+ * @returns {void}
+ */
 function renderCards(presets) {
     const grid = document.getElementById('starter-packs-grid');
     if (!grid) return;
@@ -38,6 +49,11 @@ function renderCards(presets) {
     });
 }
 
+/**
+ * Summarises a preset table's enabled workflows (approval chain, auto-numbering) as display notes.
+ * @param {Object} table Preset table definition with table_settings.
+ * @returns {string[]} Note strings, empty when no workflows are enabled.
+ */
 function workflowSummary(table) {
     const notes = [];
     const ts = table.table_settings || {};
@@ -53,6 +69,11 @@ function workflowSummary(table) {
     return notes;
 }
 
+/**
+ * Describes a preset custom module's headline feature (calendar/kanban/tree/filtered view).
+ * @param {Object} mod Preset custom module with settings_override.
+ * @returns {string} Short feature label.
+ */
 function moduleFeatureNote(mod) {
     const ov = asObj(mod.settings_override);
     if (ov.grid_calendar_enabled) return 'Calendar view';
@@ -64,6 +85,11 @@ function moduleFeatureNote(mod) {
     return 'Filtered view';
 }
 
+/**
+ * Fetches a preset preview from the main process and fills the preview modal (tables, modules, caveats, conflicts).
+ * @param {string} slug Preset slug to preview.
+ * @returns {void}
+ */
 function openPreview(slug) {
     window.electronAPI.previewPreset(slug).then((res) => {
         if (!res.success) { showCustomDialog({ title: 'Error', message: res.message }); return; }
@@ -127,11 +153,19 @@ function openPreview(slug) {
     });
 }
 
+/**
+ * Hides the preview modal and clears the remembered slug.
+ * @returns {void}
+ */
 function closePreview() {
     document.getElementById('preset-preview-modal').classList.add('hidden');
     currentSlug = null;
 }
 
+/**
+ * Installs the remembered preset via IPC, reloads project data on success, shows conflict errors otherwise.
+ * @returns {void}
+ */
 function doInstall() {
     if (!currentSlug) return;
     const btn = document.getElementById('preset-install-btn');
@@ -163,6 +197,10 @@ function doInstall() {
     });
 }
 
+/**
+ * Loads the available preset list into the cards grid and wires the preview modal buttons.
+ * @returns {void}
+ */
 export function initStarterPacks() {
     if (!window.electronAPI || !window.electronAPI.listPresets) return;
     window.electronAPI.listPresets().then((res) => {

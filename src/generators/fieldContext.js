@@ -165,6 +165,8 @@ function buildFormFieldContext(field, elementType, opts = {}) {
 
     // Multiple validation rules
     if (field.validations && Array.isArray(field.validations)) {
+        // Convert a comma-separated string into a PHP array literal of strings.
+        /** @param {string} str comma-separated rule names @returns {string} PHP array literal like ['a', 'b'] */
         const toPhpArray = (str) => {
             if (!str) return '[]';
             const items = str.split(',').map(s => `'${s.trim()}'`).join(', ');
@@ -265,11 +267,18 @@ function buildFormFieldContext(field, elementType, opts = {}) {
 }
 
 // Escape a literal for single-quoted PHP.
+/** @param {*} s value to stringify @returns {string} escaped for single-quoted PHP literals */
 function phpStr(s) {
     return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
 // Build a ->visible()/->required() closure from a normalised {field, op, value} rule.
+/**
+ * Compile a conditional rule into a Filament closure fragment.
+ * @param {{field: string, op: string, value?: *}} rule normalised rule from formLayoutConfig
+ * @param {'visible'|'required'} kind which Filament modifier to emit
+ * @returns {string} PHP closure fragment ('' for unsupported ops)
+ */
 function buildConditionClosure(rule, kind) {
     const g = `$get('${phpStr(rule.field)}')`;
     let expr = '';

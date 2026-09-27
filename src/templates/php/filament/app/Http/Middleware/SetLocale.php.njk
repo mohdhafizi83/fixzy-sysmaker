@@ -15,6 +15,13 @@ use Illuminate\Support\Facades\App;
  */
 class SetLocale
 {
+    /**
+     * Apply the session locale (en/ms) to the application for this request.
+     *
+     * @param  Request  $request  Incoming request.
+     * @param  Closure  $next  Next middleware handler.
+     * @return  mixed  The downstream response.
+     */
     public function handle(Request $request, Closure $next)
     {
         $supported = ['en', 'ms'];

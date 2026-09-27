@@ -1,7 +1,15 @@
+// js/features/queryBuilder.js
+//
+// Thin entry point that opens the shared configurable Query Builder in 'general' mode.
+
 import { showConfigurableQueryBuilder } from '../handlers/logicBuilderHandlers.js';
 /**
  * Opens the Query Builder in 'general' mode.
  * Now supports custom parameters for the Dashboard Builder.
+ * @param {HTMLTextAreaElement|null} targetTextarea Textarea receiving the generated SQL.
+ * @param {string|null} overrideTableName Table to query, bypassing UI detection.
+ * @param {Function|null} customCallback Called with (sql, state) instead of writing to the textarea.
+ * @returns {void}
  */
 export function openGeneralQueryBuilder(targetTextarea, overrideTableName = null, customCallback = null) {
     let tableName = overrideTableName; // Use the passed-in table if provided

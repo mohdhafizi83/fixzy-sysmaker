@@ -28,20 +28,30 @@ const fs = require('fs');
 const path = require('path');
 const { renderTemplate } = require('../render/engine');
 
+/** @param {object} fullSchema @returns {boolean} true when the realtime module flag is on */
 function isRealtimeEnabled(fullSchema) {
     return Number((fullSchema.project || {}).module_realtime) === 1;
 }
 
+/** @param {object} fullSchema @returns {'pusher'|'reverb'} the configured realtime broadcast backend */
 function backendOf(fullSchema) {
     const b = String((fullSchema.project || {}).realtime_backend || 'reverb');
     return b === 'pusher' ? 'pusher' : 'reverb';
 }
 
+/** Write a file, creating the directory first. @param {string} dir @param {string} file @param {string} content @returns {void} */
 function writeIf(dir, file, content) {
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, file), content);
 }
 
+/**
+ * Generate the Realtime chat module (Reverb or Pusher backend, chat model,
+ * event, Filament chat page, settings store) when enabled.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} outputDir generated app root
+ * @returns {{success: boolean, composerPackages: string[], npmPackages: string[], backend: string|null, message?: string}}
+ */
 function generateRealtimeModule(fullSchema, outputDir) {
     try {
         if (!isRealtimeEnabled(fullSchema)) {

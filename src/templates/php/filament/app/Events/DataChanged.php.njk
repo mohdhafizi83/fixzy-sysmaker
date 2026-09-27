@@ -17,6 +17,11 @@ class DataChanged implements ShouldBroadcastNow
 {
     use Dispatchable;
 
+    /**
+     * Create the broadcast event for a data change.
+     *
+     * @param  string  $table  Name of the table whose rows changed.
+     */
     public function __construct(
         public string $table,
     ) {}
@@ -31,6 +36,10 @@ class DataChanged implements ShouldBroadcastNow
         ];
     }
 
+    /**
+     * Broadcast event name listened for by live dashboard widgets.
+     * @return  string  The wire event name.
+     */
     public function broadcastAs(): string
     {
         return 'fixzy.data.changed';

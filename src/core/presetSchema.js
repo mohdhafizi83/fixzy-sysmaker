@@ -25,10 +25,12 @@ const { FIELD_TYPES, DISPLAY_TYPES, NAME_RE, TABLE_SETTINGS_KEYS, FIELD_SETTING_
 const SLUG_RE = /^[a-z][a-z0-9-]{1,62}$/;
 const APPROVAL_COLORS = ['gray', 'info', 'warning', 'success', 'danger'];
 
+/** True for non-null, non-array plain objects. @param {*} v @returns {boolean} */
 function isPlainObject(v) {
     return v !== null && typeof v === 'object' && !Array.isArray(v);
 }
 
+/** Coerce a value to a plain object, accepting a JSON string encoding one. @param {*} v object or JSON string @returns {object|null} parsed object or null */
 function asObject(v) {
     // Accept either an object or a JSON string encoding one.
     if (isPlainObject(v)) return v;
@@ -38,6 +40,7 @@ function asObject(v) {
     return null;
 }
 
+/** Validate an approval_config object (statuses, transitions, initial state); pushes messages into errors. @param {object} cfg approval config @param {string} where dotted path for error messages @param {string[]} errors accumulator @returns {void} */
 function validateApprovalConfig(cfg, where, errors) {
     if (!isPlainObject(cfg)) { errors.push(`${where}: approval_config must be an object`); return; }
     if (!cfg.statusField || typeof cfg.statusField !== 'string') errors.push(`${where}: approval_config.statusField is required`);
@@ -63,6 +66,12 @@ function validateApprovalConfig(cfg, where, errors) {
     });
 }
 
+/**
+ * Validate a Starter Pack manifest (schema_version 1): slug/name/category
+ * metadata, tables + fields, relationships, custom modules, and menu.
+ * @param {object} manifest parsed preset JSON
+ * @returns {{valid: boolean, errors: string[], warnings: string[]}}
+ */
 function validateManifest(manifest) {
     const errors = [];
     const warnings = [];

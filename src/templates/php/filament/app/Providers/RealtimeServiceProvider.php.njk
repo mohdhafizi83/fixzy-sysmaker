@@ -24,6 +24,9 @@ use Illuminate\Support\ServiceProvider;
  */
 class RealtimeServiceProvider extends ServiceProvider
 {
+    /**
+     * Wire broadcast settings, channels, the auth route and the Echo client.
+     */
     public function boot(): void
     {
         $this->applyBroadcastSettings();

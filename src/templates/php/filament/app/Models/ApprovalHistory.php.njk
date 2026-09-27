@@ -21,11 +21,19 @@ class ApprovalHistory extends Model
         'user_id',
     ];
 
+    /**
+     * Parent record this approval entry belongs to.
+     * @return  \Illuminate\Database\Eloquent\Relations\MorphTo  Morph-to relation.
+     */
     public function record()
     {
         return $this->morphTo('record');
     }
 
+    /**
+     * User who performed the approval transition.
+     * @return  \Illuminate\Database\Eloquent\Relations\BelongsTo  Belongs-to relation.
+     */
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');

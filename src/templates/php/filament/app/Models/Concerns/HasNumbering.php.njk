@@ -25,6 +25,9 @@ trait HasNumbering
         return [];
     }
 
+    /**
+     * Assign the next sequential number on create unless one was supplied manually.
+     */
     public static function bootHasNumbering(): void
     {
         static::creating(function ($record) {
@@ -40,6 +43,12 @@ trait HasNumbering
         });
     }
 
+    /**
+     * Compute the next document number for the given numbering config.
+     *
+     * @param  array  $cfg  Numbering configuration array.
+     * @return  string  The generated number.
+     */
     public static function nextNumber(array $cfg): string
     {
         $now = now();

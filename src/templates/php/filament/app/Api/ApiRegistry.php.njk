@@ -28,6 +28,12 @@ class ApiRegistry
 {% endfor %}
     ];
 
+    /**
+     * Look up the generated API configuration for a table slug.
+     *
+     * @param  string  $slug  Table slug registered in the registry.
+     * @return  ?array<string, mixed>  The table config, or null when the slug is unknown.
+     */
     public static function for(string $slug): ?array
     {
         return self::$tables[$slug] ?? null;

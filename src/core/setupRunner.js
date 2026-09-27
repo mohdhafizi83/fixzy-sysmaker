@@ -63,6 +63,7 @@ function resolvePreviewTemplate(rootDir) {
     return previewTemplateDir();
 }
 
+/** GitHub token for private-repo downloads: FSM_PREVIEW_TOKEN or GITHUB_TOKEN. @returns {string|null} */
 function previewToken() {
     return process.env.FSM_PREVIEW_TOKEN || process.env.GITHUB_TOKEN || null;
 }
@@ -139,6 +140,7 @@ async function downloadReleaseAsset(dest) {
     await downloadToFile(`https://api.github.com/repos/${PREVIEW_ENV_REPO}/releases/assets/${asset.id}`, tmpTgz);
 }
 
+/** Compute SHA-256 hex digest of a file (streamed). @param {string} file path to file @returns {Promise<string>} hex digest */
 function sha256File(file) {
     return new Promise((resolve, reject) => {
         const h = crypto.createHash('sha256');
@@ -187,6 +189,11 @@ async function ensurePreviewTemplate({ onLog = () => {} } = {}) {
     return { ok: true, source: dir };
 }
 
+/**
+ * Default bin/root directories: packaged Electron (app.asar.unpacked/bin)
+ * or the dev checkout (repo root two levels up from src/core).
+ * @returns {{binDir: string, rootDir: string}}
+ */
 function defaultDirs() {
     // Packaged (Electron asar): resources live under process.resourcesPath.
     if (process.resourcesPath && fs.existsSync(path.join(process.resourcesPath, 'app.asar.unpacked', 'bin'))) {
@@ -200,6 +207,7 @@ function defaultDirs() {
     return { binDir: path.join(rootDir, 'bin'), rootDir };
 }
 
+/** True if a system `php` on PATH reports version >= 8.2. @returns {boolean} */
 function systemPhpOk() {
     try {
         const out = execFileSync('php', ['-r', 'echo PHP_VERSION;'], { encoding: 'utf8' });
@@ -260,6 +268,13 @@ function checkSetup(opts = {}) {
     };
 }
 
+/**
+ * Spawn a command, stream stdout/stderr through onLog, resolve with exit code.
+ * @param {string} cmd executable
+ * @param {string[]} args arguments
+ * @param {{onLog?: (line: string) => void}} [opts] extra spawn options + onLog
+ * @returns {Promise<number>} exit code (-1 on spawn error)
+ */
 function run(cmd, args, { onLog = () => {}, ...spawnOpts } = {}) {
     return new Promise((resolve) => {
         let child;

@@ -34,6 +34,9 @@ class GoogleSheetsSettings extends Page
 
     public ?string $uploadJson = null;
 
+    /**
+     * Load saved Google Sheets settings into the form.
+     */
     public function mount(): void
     {
         $this->settings = [
@@ -51,6 +54,9 @@ class GoogleSheetsSettings extends Page
         'gsheets_poll_minutes',
     ];
 
+    /**
+     * Persist allowed settings and store the uploaded service-account JSON file.
+     */
     public function save(): void
     {
         foreach (self::ALLOWED_KEYS as $key) {
@@ -81,6 +87,10 @@ class GoogleSheetsSettings extends Page
         session()->flash('fixzy_settings_saved', 'Google Sheets settings saved.');
     }
 
+    /**
+     * Whether Google service-account credentials are present on disk.
+     * @return  bool  True when credentials are configured.
+     */
     public function getCredentialsConfiguredProperty(): bool
     {
         return GoogleSheetsSyncService::credentialsConfigured();

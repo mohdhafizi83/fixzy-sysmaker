@@ -22,6 +22,10 @@ class GoogleSheetSync extends Model
         'last_synced_at' => 'datetime',
     ];
 
+    /**
+     * Direct edit URL for the linked spreadsheet.
+     * @return  ?string  Google Sheets URL, or null when unlinked.
+     */
     public function sheetUrl(): ?string
     {
         return $this->spreadsheet_id

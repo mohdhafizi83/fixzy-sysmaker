@@ -31,6 +31,9 @@ class RealtimeSettings extends Page
 
     public array $settings = [];
 
+    /**
+     * Load saved realtime / broadcast settings into the form.
+     */
     public function mount(): void
     {
         $this->settings = [
@@ -59,6 +62,9 @@ class RealtimeSettings extends Page
         'broadcast_scheme',
     ];
 
+    /**
+     * Persist allowed realtime settings via FixzySetting.
+     */
     public function save(): void
     {
         foreach (self::ALLOWED_KEYS as $key) {

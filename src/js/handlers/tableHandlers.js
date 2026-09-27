@@ -1,4 +1,8 @@
 // src/js/handlers/tableHandlers.js
+//
+// Table settings handlers: generic field saves, relationship saves, grid view
+// features (summaries, calendar, tree, kanban, column groups), template preview,
+// constraints, custom modules, and the module workspace.
 
 import { appState } from '../state.js';
 import { SaveManager } from '../saveManager.js';
@@ -10,6 +14,10 @@ import { populateFieldSettings } from '../pages/fieldSettings.js';
 import { populateMenuManagement } from './menuHandlers.js';
 import { loadProjectData } from '../../renderer.js';
 
+/**
+ * Wires generic autosave for all tbl-* inputs in the table and workspace settings containers.
+ * @returns {void}
+ */
 export function initializeTableSaveHandlers() {
     // Collect both the old and new containers
     const containers = [
@@ -175,6 +183,10 @@ if (isCustomModule) {
     });
 }
 
+/**
+ * Wires the relationship editor: add/remove FK relationships with duplicate and self-reference checks.
+ * @returns {void}
+ */
 export function initializeRelationshipSaveHandlers() {
     console.log("🛠️ Relationship Handlers: Init called."); 
 
@@ -327,6 +339,12 @@ export function initializeRelationshipSaveHandlers() {
 //
 // List of functions to move:
 // 
+/**
+ * Fills the default-sort-by dropdown with the table's field names.
+ * @param {string} tableName Table whose fields populate the dropdown.
+ * @param {string} [elementId] Id of the select element to fill.
+ * @returns {void}
+ */
 export function populateSortByDropdown(tableName, elementId = 'tbl-default-sort-by') {
     const sortByDropdown = document.getElementById(elementId);
     if (!sortByDropdown || !appState.jsonData) return;
@@ -355,6 +373,8 @@ const GRID_SUMMARY_AGGS = ['sum', 'avg', 'count', 'min', 'max'];
 
 /**
  * [HELPER] Numeric field names of a table (summary-capable columns).
+ * @param {string} tableName Table whose numeric fields are listed.
+ * @returns {string[]} Numeric field names.
  */
 function getNumericFieldNames(tableName) {
     const table = appState.jsonData && appState.jsonData.database.table[tableName];
@@ -367,6 +387,8 @@ function getNumericFieldNames(tableName) {
 
 /**
  * Populates the "Group rows by" dropdown with the table's own fields.
+ * @param {string} tableName Table whose fields populate the dropdown.
+ * @returns {void}
  */
 export function populateGridGroupByDropdown(tableName) {
     const sel = document.getElementById('tbl-grid-group-by');
@@ -386,6 +408,7 @@ export function populateGridGroupByDropdown(tableName) {
 /**
  * Renders the summary-row repeater rows from the current hidden JSON value.
  * Each row: [field select] [aggregate select] [remove].
+ * @returns {void}
  */
 export function renderGridSummaryRows() {
     const container = document.getElementById('grid-summaries-rows');
@@ -398,6 +421,12 @@ export function renderGridSummaryRows() {
     }
 }
 
+/**
+ * Builds one summary repeater row (field select + aggregate select + remove button).
+ * @param {string} field Field name preselected in the row.
+ * @param {string} agg Aggregate function preselected (sum/avg/count/min/max).
+ * @returns {HTMLDivElement} The constructed row element.
+ */
 function buildSummaryRow(field, agg) {
     const row = document.createElement('div');
     row.className = 'input-group';
@@ -430,6 +459,7 @@ function buildSummaryRow(field, agg) {
     removeBtn.style.marginLeft = '.4rem';
     removeBtn.textContent = '×';
     removeBtn.title = 'Remove this summary';
+    // Commits the repeater rows back to the hidden JSON on any edit.
     const sync = () => commitGridSummaries();
     fieldSel.addEventListener('change', sync);
     aggSel.addEventListener('change', sync);
@@ -440,6 +470,10 @@ function buildSummaryRow(field, agg) {
     return row;
 }
 
+/**
+ * Resolves the table currently being edited (table settings title or workspace module title).
+ * @returns {string} Table name, or '' when unknown.
+ */
 function currentGridTableName() {
     const titleEl = document.querySelector('#table-settings-page .table-name');
     if (titleEl) return titleEl.textContent.trim();
@@ -447,6 +481,11 @@ function currentGridTableName() {
     return ws ? ws.dataset.tableName : '';
 }
 
+/**
+ * Returns all field names of a table from the loaded project JSON.
+ * @param {string} tableName Table to look up.
+ * @returns {string[]} Field names, empty when the table is missing.
+ */
 function getAllFieldNames(tableName) {
     const table = appState.jsonData && appState.jsonData.database.table[tableName];
     return table && table.fields ? Object.keys(table.fields) : [];
@@ -455,6 +494,7 @@ function getAllFieldNames(tableName) {
 /**
  * Serializes the repeater rows into the hidden tbl-grid-summaries input and
  * fires a change event so the generic autosave picks it up.
+ * @returns {void}
  */
 function commitGridSummaries() {
     const hidden = document.getElementById('tbl-grid-summaries');
@@ -475,6 +515,8 @@ function commitGridSummaries() {
  * table's fields (date fields highlighted for start/end), toggles the
  * picker panel with the enable checkbox, and serializes the selection to
  * the hidden tbl-grid-calendar-config input.
+ * @param {string} tableName Table whose fields populate the pickers.
+ * @returns {void}
  */
 export function populateCalendarFieldDropdowns(tableName) {
     const table = appState.jsonData && appState.jsonData.database.table[tableName];
@@ -502,6 +544,10 @@ export function populateCalendarFieldDropdowns(tableName) {
     if (panel) panel.style.display = (document.getElementById('tbl-grid-calendar-enabled') || {}).checked ? 'block' : 'none';
 }
 
+/**
+ * Serializes the calendar picker selections into the hidden tbl-grid-calendar-config input.
+ * @returns {void}
+ */
 export function commitCalendarConfig() {
     const cfg = {
         start_field: (document.getElementById('tbl-cal-start') || {}).value || '',
@@ -516,6 +562,8 @@ export function commitCalendarConfig() {
 /**
  * D3: Tree field pickers (parent self-ref + label). Mirrors the calendar
  * picker pattern.
+ * @param {string} tableName Table whose fields populate the pickers.
+ * @returns {void}
  */
 export function populateTreeFieldDropdowns(tableName) {
     const table = appState.jsonData && appState.jsonData.database.table[tableName];
@@ -541,6 +589,10 @@ export function populateTreeFieldDropdowns(tableName) {
     if (panel) panel.style.display = (document.getElementById('tbl-grid-tree-enabled') || {}).checked ? 'block' : 'none';
 }
 
+/**
+ * Serializes the tree view field selections into the hidden tbl-grid-tree-config input.
+ * @returns {void}
+ */
 export function commitTreeConfig() {
     const cfg = {
         parent_field: (document.getElementById('tbl-tree-parent') || {}).value || '',
@@ -553,6 +605,8 @@ export function commitTreeConfig() {
 /**
  * D4: Kanban pickers. Status field limited to options_list fields; card
  * fields = all fields (multi-select); transitions = free JSON textarea.
+ * @param {string} tableName Table whose fields populate the pickers.
+ * @returns {void}
  */
 export function populateKanbanDropdowns(tableName) {
     const table = appState.jsonData && appState.jsonData.database.table[tableName];
@@ -584,6 +638,10 @@ export function populateKanbanDropdowns(tableName) {
     if (panel) panel.style.display = (document.getElementById('tbl-grid-kanban-enabled') || {}).checked ? 'block' : 'none';
 }
 
+/**
+ * Serializes kanban group/card selections and the transitions JSON textarea into the hidden config input.
+ * @returns {void}
+ */
 export function commitKanbanConfig() {
     const groupSel = document.getElementById('tbl-kanban-group');
     const cardSel = document.getElementById('tbl-kanban-cards');
@@ -615,6 +673,10 @@ export function commitKanbanConfig() {
  */
 const GRID_COL_GROUP_MAX = 5;
 
+/**
+ * Renders the column-group repeater rows from the current hidden tbl-grid-column-groups JSON value.
+ * @returns {void}
+ */
 export function renderGridColumnGroupRows() {
     const container = document.getElementById('grid-col-group-rows');
     if (!container) return;
@@ -625,6 +687,11 @@ export function renderGridColumnGroupRows() {
     groups.forEach((g) => container.appendChild(buildColGroupRow(g)));
 }
 
+/**
+ * Builds one column-group repeater row (label input + multi-select of columns + remove button).
+ * @param {Object} group Existing group {label, columns} to prefill, or empty for a new row.
+ * @returns {HTMLDivElement} The constructed row element.
+ */
 function buildColGroupRow(group) {
     const row = document.createElement('div');
     row.className = 'input-group';
@@ -654,6 +721,7 @@ function buildColGroupRow(group) {
     removeBtn.style.marginLeft = '.4rem';
     removeBtn.textContent = '×';
     removeBtn.title = 'Remove this group';
+    // Commits all column-group rows to the hidden input on any edit.
     const sync = () => commitGridColumnGroups();
     labelInput.addEventListener('change', sync);
     colSel.addEventListener('change', sync);
@@ -667,6 +735,7 @@ function buildColGroupRow(group) {
 /**
  * Serializes the column-group repeater rows into the hidden input.
  * Enforces: max 5 groups, a column only in one group (first wins).
+ * @returns {void}
  */
 function commitGridColumnGroups() {
     const hidden = document.getElementById('tbl-grid-column-groups');
@@ -690,6 +759,7 @@ function commitGridColumnGroups() {
 
 /**
  * Wires the "+ Add summary" button (once). Called from renderer init.
+ * @returns {void}
  */
 export function initializeGridSummaryEditor() {
     const addBtn = document.getElementById('btn-add-summary');
@@ -785,6 +855,11 @@ export function initializeGridSummaryEditor() {
     }
 }
 
+/**
+ * Fills the default-focus-field dropdown with the table's field names.
+ * @param {string} tableName Table whose fields populate the dropdown.
+ * @returns {void}
+ */
 export function populateFocusFieldDropdown(tableName) {
     const defaultFocusDropdown = document.getElementById('tbl-default-focus');
     if (!defaultFocusDropdown || !appState.jsonData) return;
@@ -816,6 +891,11 @@ export function populateFocusFieldDropdown(tableName) {
     }
 }
 
+/**
+ * Fills the record-owner dropdown with user-type fields from the table.
+ * @param {string} tableName Table whose fields are scanned for owner candidates.
+ * @returns {void}
+ */
 export function populateRecordOwnerDropdown(tableName) {
     const recordOwnerDropdown = document.getElementById('tbl-record-owner');
     if (!recordOwnerDropdown || !appState.jsonData) return;
@@ -860,6 +940,7 @@ export function populateRecordOwnerDropdown(tableName) {
  * For the 'card' template we render a LIVE mock grid that reflects the
  * configured card size (cards per row on tablet/desktop) instead of a
  * static image, so the user sees the real proportions.
+ * @returns {void}
  */
 export function updateTableViewTemplatePreview() {
     const templateSelect = document.getElementById('tbl-tv-template');
@@ -891,6 +972,7 @@ export function updateTableViewTemplatePreview() {
  * grid expansion options: sticky header, row density, inline edit, and the
  * column chooser. Rendered for every template (sticky/density apply to all;
  * column chooser badge notes it only works on the Horizontal template).
+ * @returns {string} Preview HTML for the grid feature options.
  */
 function buildGridFeaturePreviewHtml() {
     const checked = (id) => {
@@ -993,6 +1075,7 @@ function buildGridFeaturePreviewHtml() {
  * [HELPER] Builds a live HTML mock of the card grid using the currently
  * selected card size values. Shows two mini-grids: tablet width and
  * desktop width, each with sample cards (image block + text lines).
+ * @returns {string} Preview HTML for the card-size mock grids.
  */
 function buildCardSizePreviewHtml() {
     const clamp = (sel, min, max, dflt) => {
@@ -1030,6 +1113,7 @@ function buildCardSizePreviewHtml() {
 /**
  * Shows the "Card size" settings group only when the selected Table List
  * template is 'card'. Called on populate and on template change.
+ * @returns {void}
  */
 export function toggleCardSizeGroup() {
     const templateSelect = document.getElementById('tbl-tv-template');
@@ -1041,6 +1125,7 @@ export function toggleCardSizeGroup() {
 /**
  * Attaches an event listener to the 'tbl-tv-template' dropdown
  * so it updates the image every time the selection changes.
+ * @returns {void}
  */
 export function initializeTemplatePreviewHandlers() {
     const templateSelect = document.getElementById('tbl-tv-template');
@@ -1055,12 +1140,17 @@ export function initializeTemplatePreviewHandlers() {
     });
 }
 
+/**
+ * Toggles the static-columns input group with the column-grid-type radio selection.
+ * @returns {void}
+ */
 export function initializeColumnGridHandlers() {
     const radioGroup = document.querySelectorAll('input[name="tbl-column-grid-type"]');
     const staticColumnsGroup = document.getElementById('tbl-static-grid-columns-group');
 
     if (radioGroup.length === 0 || !staticColumnsGroup) return;
 
+    // Enables the static-columns input only when the 'static' grid radio is selected.
     const toggleStaticInput = () => {
         const staticRadio = document.getElementById('tbl-column-grid-static');
         if (staticRadio) {
@@ -1080,6 +1170,7 @@ export function initializeColumnGridHandlers() {
 /**
  * Fills the "Constraints" tab with the list of existing constraints.
  * @param {string} tableName - Name of the current table.
+ * @returns {void}
  */
 export function populateConstraintsTab(tableName) {
     const container = document.getElementById('constraints-list-container');
@@ -1114,6 +1205,7 @@ export function populateConstraintsTab(tableName) {
 
 /**
  * Installs all event listeners for the constraint management feature.
+ * @returns {void}
  */
 export function initializeConstraintsTabHandlers() {
     const tableSettingsPage = document.getElementById('table-settings-page');
@@ -1128,6 +1220,7 @@ export function initializeConstraintsTabHandlers() {
         closeBtn: document.getElementById('add-constraint-modal-close'),
     };
 
+    // Hides the add-constraint modal.
     const closeModal = () => modal.classList.add('hidden');
     
     tableSettingsPage.addEventListener('click', e => {
@@ -1203,6 +1296,9 @@ export function initializeConstraintsTabHandlers() {
 /**
  * Anti-confusion banner for the Custom Module workspace: makes it explicit
  * that edits here affect only this view, not the main module.
+ * @param {string} moduleName Display name of the custom module.
+ * @param {string} baseTableName Underlying table the module reads from.
+ * @returns {void}
  */
 function showCustomModuleBanner(moduleName, baseTableName) {
     let banner = document.getElementById('cm-workspace-banner');
@@ -1222,6 +1318,10 @@ function showCustomModuleBanner(moduleName, baseTableName) {
     banner.style.display = 'block';
 }
 
+/**
+ * Removes the custom-module workspace banner from the DOM.
+ * @returns {void}
+ */
 function hideCustomModuleBanner() {
     const banner = document.getElementById('cm-workspace-banner');
     if (banner) banner.style.display = 'none';
@@ -1230,6 +1330,7 @@ function hideCustomModuleBanner() {
 /**
  * Fills the "Custom Modules" tab with the list of views that have been created.
  * @param {string} tableName - Name of the current table.
+ * @returns {void}
  */
 export function populateCustomViewsTab(tableName) {
     const container = document.getElementById('custom-modules-list-container');
@@ -1267,6 +1368,7 @@ window.populateCustomViewsTab = populateCustomViewsTab;
 
 /**
  * Main function to install all event listeners for the Custom Modules feature.
+ * @returns {void}
  */
 export function initializeCustomViews() {
     const modulesSetupWorkspace = document.getElementById('modules-setup-workspace');
@@ -1304,6 +1406,9 @@ const currentTableName = document.getElementById('modules-setup-table-select').v
 
 /**
  * Displays the Custom Module modal with the correct data.
+ * @param {string} tableName Base table the module is built on.
+ * @param {Object|null} [viewData] Existing module data when editing, null when creating.
+ * @returns {void}
  */
 export function populateCustomModuleModal(tableName, viewData = null) {
     const modal = document.getElementById('custom-module-config-modal');
@@ -1417,6 +1522,7 @@ export function populateCustomModuleModal(tableName, viewData = null) {
 
 /**
  * Modal navigation logic and module data saving.
+ * @returns {void}
  */
 export function initializeCustomModuleModalLogic() {
     const modal = document.getElementById('custom-module-config-modal');
@@ -1452,6 +1558,7 @@ export function initializeCustomModuleModalLogic() {
         btnNext.classList.remove('hidden');
     });
 
+    // Hides the custom module config modal.
     const closeMyModal = () => modal.classList.add('hidden');
     btnCancel.addEventListener('click', closeMyModal);
     btnClose.addEventListener('click', closeMyModal);
@@ -1542,6 +1649,11 @@ const currentTableName = document.getElementById('modules-setup-table-select').v
     });
 }
 
+/**
+ * Deletes a custom view after user confirmation, then refreshes the modules dashboard.
+ * @param {string|number} viewId Module id of the custom view to delete.
+ * @returns {Promise<void>}
+ */
 export async function deleteCustomView(viewId) {
     showCustomDialog({
         title: "Delete View",
@@ -1595,6 +1707,7 @@ export async function deleteCustomView(viewId) {
 
 /**
  * PHASE 1 & 2: Controls the Dashboard and Modules Setup workspace
+ * @returns {void}
  */
 export function initializeModulesSetupTab() {
     const tabBtn = document.getElementById('tab-modules-setup-btn');
@@ -1625,6 +1738,11 @@ export function initializeModulesSetupTab() {
 
     if (btnMoveUp && btnMoveDown) {
         // Movement helper function
+        /**
+         * Moves the active field-list item up or one position relative to its sibling.
+         * @param {('up'|'down')} direction Direction to move the active item.
+         * @returns {Promise<void>}
+         */
         const moveItem = (direction) => {
             // Find the currently 'active' / clicked element
             const activeLink = document.querySelector('#module-field-list a.active');
@@ -1765,6 +1883,10 @@ const tableData = appState.jsonData.database.table[baseTable];
 
 /**
  * Opens the workspace based on the mode (default / custom / create)
+ * @param {('default'|'custom'|'create')} mode Workspace mode to open.
+ * @param {string|null} [tableName] Base table name for the module.
+ * @param {string|number|null} [moduleId] Custom module id when editing an existing view.
+ * @returns {void}
  */
 export function openModuleWorkspace(mode, tableName = null, moduleId = null) {
     // Safely hide the Dashboard
@@ -1870,6 +1992,11 @@ export function openModuleWorkspace(mode, tableName = null, moduleId = null) {
 
 /**
  * Helper function to draw the field list on the left side of the workspace
+ * @param {Object} fieldsObj Field name -> field config map to render.
+ * @param {('default'|'custom')} [mode] Workspace mode controlling row actions.
+ * @param {Object|null} [moduleData] Custom module data for override badges.
+ * @param {string} [tableName] Base table the fields belong to.
+ * @returns {void}
  */
 function renderWorkspaceFields(fieldsObj, mode = 'default', moduleData = null, tableName = '') {
     const fieldList = document.getElementById('module-field-list');
@@ -1971,6 +2098,7 @@ masterLi.addEventListener('click', (e) => {
 
 /**
  * Draws the cards for Default Modules and Custom Modules
+ * @returns {void}
  */
 export function renderModulesDashboard() {
     const grid = document.getElementById('modules-dashboard-grid');
@@ -2034,6 +2162,10 @@ export function renderModulesDashboard() {
 
 /**
  * MAGIC FUNCTION: Reads the override JSON and pastes it onto the UI
+ * @param {string} tableName Base table of the field.
+ * @param {string} fieldName Field whose overrides are applied.
+ * @param {string|number} moduleId Custom module whose overrides are read.
+ * @returns {void}
  */
 function applyFieldOverrides(tableName, fieldName, moduleId) {
     const tableData = appState.jsonData.database.table[tableName];
@@ -2087,6 +2219,9 @@ function applyFieldOverrides(tableName, fieldName, moduleId) {
 
 /**
  * MAGIC FUNCTION 2: Reads the table override JSON and pastes it onto the UI
+ * @param {string} tableName Table whose overrides are applied.
+ * @param {string|number} moduleId Custom module whose overrides are read.
+ * @returns {void}
  */
 function applyTableOverrides(tableName, moduleId) {
     const tableData = appState.jsonData.database.table[tableName];
@@ -2159,6 +2294,8 @@ function applyTableOverrides(tableName, moduleId) {
 
 /**
  * UX HELPER FUNCTION: Gives a visual effect (green highlight) on the changed row
+ * @param {HTMLElement} li List item to flash with the highlight.
+ * @returns {void}
  */
 function highlightLi(li) {
     li.style.transition = 'background-color 0.3s';
@@ -2168,6 +2305,9 @@ function highlightLi(li) {
 
 /**
  * PHASE 3: Saves the new field order to the database
+ * @param {string} tableName Table whose field order changed.
+ * @param {string|number} moduleId Custom module whose field order changed.
+ * @returns {Promise<void>}
  */
 async function saveFieldOrder(tableName, moduleId) {
     const tableData = appState.jsonData.database.table[tableName];
@@ -2243,6 +2383,11 @@ async function saveFieldOrder(tableName, moduleId) {
 }
 
 // --- HELPER TO EXTRACT NESTED DATA ---
+/**
+ * Reads a filter group element's condition and nested rules into a plain data object.
+ * @param {HTMLElement} groupEl The .cm-filter-group element to read.
+ * @returns {Object} {condition, rules} extracted from the DOM.
+ */
 export function extractGroupData(groupEl) {
     const condition = groupEl.querySelector(':scope > .group-header .group-condition').value;
     const rules = [];
@@ -2268,6 +2413,10 @@ export function extractGroupData(groupEl) {
 
 /**
  * PHASE 3: Nested query builder + dynamic auto-save system
+ * @param {string} tableName Base table of the custom module.
+ * @param {string|number} moduleId Custom module id being configured.
+ * @param {('edit'|'create')} [mode] Modal mode for the settings session.
+ * @returns {void}
  */
 export function setupCustomModuleSpecificSettings(tableName, moduleId, mode = 'edit') {
     const specificSettingsDiv = document.getElementById('custom-module-specific-settings');
@@ -2314,6 +2463,10 @@ export function setupCustomModuleSpecificSettings(tableName, moduleId, mode = 'e
 
         // --- DEBOUNCED AUTO-SAVE SYSTEM ---
         let autoSaveTimeout;
+        /**
+         * Reads the filter tree from the DOM and persists it into the module's settings_override.
+         * @returns {Promise<void>}
+         */
         const triggerAutoSave = async () => {
             // Don't save in create-module mode (wait for the Create button)
             if (mode === 'create') return; 
@@ -2356,6 +2509,10 @@ export function setupCustomModuleSpecificSettings(tableName, moduleId, mode = 'e
             }
         };
 
+        /**
+         * Restarts the 600ms debounce timer before firing the auto-save.
+         * @returns {void}
+         */
         const debounceAutoSave = () => {
             clearTimeout(autoSaveTimeout);
             autoSaveTimeout = setTimeout(() => {
@@ -2373,6 +2530,13 @@ export function setupCustomModuleSpecificSettings(tableName, moduleId, mode = 'e
 
 
         // RECURSIVE RENDER FUNCTION
+        /**
+         * Recursively renders a filter group (condition select, rule rows, nested groups, add buttons).
+         * @param {Object} groupData Group data {condition, rules}.
+         * @param {HTMLElement} container Container element to append the group into.
+         * @param {boolean} [isRoot] Whether this is the outermost group.
+         * @returns {void}
+         */
         const renderRuleGroup = (groupData, container, isRoot = false) => {
             const groupEl = document.createElement('div');
             groupEl.className = 'cm-filter-group';
@@ -2433,6 +2597,12 @@ export function setupCustomModuleSpecificSettings(tableName, moduleId, mode = 'e
         };
 
         // RULE ITEM RENDER FUNCTION
+        /**
+         * Renders a single filter rule row (field, operator, value) with remove wiring.
+         * @param {Object} ruleData Rule data {field, operator, value}.
+         * @param {HTMLElement} container Container element to append the row into.
+         * @returns {void}
+         */
         const renderRuleItem = (ruleData, container) => {
             const row = document.createElement('div');
             row.className = 'cm-filter-rule-row';
@@ -2459,6 +2629,7 @@ export function setupCustomModuleSpecificSettings(tableName, moduleId, mode = 'e
         // ▼▼▼ BIND AUTO-SAVE TO THE TABLE TITLE BOX ▼▼▼
         const globalSettingsBox = document.getElementById('module-global-settings');
         if (globalSettingsBox && !globalSettingsBox.dataset.cmBound) {
+            // Debounces a save whenever any tbl-* input changes inside a custom-module workspace.
             const handleGlobalChange = (e) => {
                 if (document.getElementById('workspace-module-badge')?.classList.contains('badge-custom')) {
                     if (e.target.id && e.target.id.startsWith('tbl-')) debounceAutoSave();

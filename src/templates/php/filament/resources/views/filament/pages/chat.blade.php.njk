@@ -1,4 +1,7 @@
 {% raw %}<x-filament-panels::page>
+    {{-- Chat page: live team chat. The message list is an Alpine x-for bound to
+         the Livewire `messages` property via $wire.entangle, so sends and
+         incoming broadcasts re-render bubbles without a page reload. --}}
     @if(session('fixzy_settings_error'))
         <div class="rounded-lg bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm dark:bg-red-950 dark:text-red-200 dark:border-red-800">
             {{ session('fixzy_settings_error') }}
@@ -53,6 +56,10 @@
 
     @script
     <script>
+        {{-- Subscribe to this room's private Echo channel; on each broadcasted
+             chat.message.created event, reload messages from the server.
+             Handles both load orders: Echo already present, or loaded later
+             (EchoLoaded event fires when the websocket bundle finishes). --}}
         const subscribe = () => {
             window.Echo.private(@js('chat.' . $this->room)).listen('.chat.message.created', () => {
                 $wire.call('loadMessages')

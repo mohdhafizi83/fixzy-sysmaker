@@ -32,9 +32,11 @@ const GROUPED_CHARTS = ['chart_bar', 'chart_pie', 'chart_doughnut', 'chart_polar
 // Charts needing a second numeric field (target_field = X, chart_series_field = Y).
 const XY_CHARTS = ['chart_scatter', 'chart_bubble'];
 
+/** True when a SQL data type is numeric (INT/DECIMAL/FLOAT/...). @param {string} t data_type string @returns {boolean} */
 function isNumericType(t) {
     return NUMERIC_TYPES.includes((t || '').toUpperCase());
 }
+/** True when a SQL data type is date-like (DATE/DATETIME/TIMESTAMP). @param {string} t data_type string @returns {boolean} */
 function isDateType(t) {
     return DATE_TYPES.includes((t || '').toUpperCase());
 }
@@ -42,6 +44,11 @@ function isDateType(t) {
 // Validate one widget row against the schema. Returns a cleaned config
 // or null when the widget references something that doesn't exist
 // (stale widget after a table/field delete — skip, don't crash).
+/**
+ * @param {object} widget project_widgets row
+ * @param {object} tables schema tables map (for field validation)
+ * @returns {object|null} cleaned widget config or null when invalid/stale
+ */
 function parseReportWidget(widget, tables) {
     if (!widget || !WIDGET_TYPES.includes(widget.widget_type)) return null;
     const tableName = widget.target_table;
@@ -134,17 +141,20 @@ function parseReportWidget(widget, tables) {
 }
 
 // Collect all valid report widgets from the IR.
+/** @param {object} fullSchema @returns {object[]} valid widget configs */
 function collectReportWidgets(fullSchema) {
     const widgets = (fullSchema && fullSchema.database && fullSchema.database.widgets) || [];
     const tables = (fullSchema && fullSchema.database && fullSchema.database.table) || {};
     return widgets.map((w) => parseReportWidget(w, tables)).filter(Boolean);
 }
 
+/** @param {object} fullSchema @returns {boolean} true if any valid report widget exists */
 function anyReportsEnabled(fullSchema) {
     return collectReportWidgets(fullSchema).length > 0;
 }
 
 // PHP literal for the compiled registry (one entry per widget).
+/** @param {object[]} cfgs cleaned widget configs @returns {string} PHP array literal of registry entries */
 function reportRegistryPhp(cfgs) {
     const entries = cfgs.map((c) => {
         const parts = [];

@@ -13,6 +13,11 @@
 const fs = require('fs');
 const path = require('path');
 
+/**
+ * Expected path of the bundled PHP 8.4.12 binary for the current platform.
+ * @param {string} baseBinPath directory containing php-8.4.12/
+ * @returns {string} absolute path to php.exe (win) or php (unix)
+ */
 function bundledPhpPath(baseBinPath) {
     const exe = process.platform === 'win32' ? 'php.exe' : 'php';
     return path.join(baseBinPath, 'php-8.4.12', exe);

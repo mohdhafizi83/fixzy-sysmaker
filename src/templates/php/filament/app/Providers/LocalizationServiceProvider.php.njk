@@ -14,6 +14,9 @@ use Illuminate\Support\ServiceProvider;
  */
 class LocalizationServiceProvider extends ServiceProvider
 {
+    /**
+     * Register the /fixzy-locale/{code} locale switch route.
+     */
     public function boot(): void
     {
         Route::middleware(['web'])

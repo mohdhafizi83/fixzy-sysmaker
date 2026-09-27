@@ -13,6 +13,11 @@
 
 const SENSITIVE_RE = /(password|passwd|secret|token|api_key|apikey|private_key|otp|pin$)/i;
 
+/**
+ * Parse a table's API profile from api_enabled + api_config JSON.
+ * @param {object} tableData row from `tables` with api_enabled/api_config
+ * @returns {{readRoles: string[], writeRoles: string[], fields: string[], rateLimit: number}|null} null when API disabled
+ */
 function getApiProfile(tableData) {
     if (!tableData || !Number(tableData.api_enabled)) return null;
     let cfg = {};
@@ -31,6 +36,12 @@ function getApiProfile(tableData) {
 
 // Field allowlist resolution: explicit list ∩ existing fields, minus
 // sensitive columns. Empty explicit list = all non-sensitive fields.
+/**
+ * Resolve which fields the API may expose for a table.
+ * @param {object} tableData table row with fields map
+ * @param {object|null} profile profile from getApiProfile
+ * @returns {string[]} allowed field names
+ */
 function resolveApiFields(tableData, profile) {
     const allFields = Object.keys((tableData && tableData.fields) || {});
     const safe = allFields.filter((f) => !SENSITIVE_RE.test(f));
@@ -38,11 +49,13 @@ function resolveApiFields(tableData, profile) {
     return profile.fields.filter((f) => safe.includes(f));
 }
 
+/** True when the table has api_enabled set. @param {object} tableData @returns {boolean} */
 function isApiEnabled(tableData) {
     return getApiProfile(tableData) !== null;
 }
 
 // Any table in the schema has the API on?
+/** @param {object} fullSchema assembled project schema @returns {boolean} true if any table enables the API */
 function anyApiEnabled(fullSchema) {
     const tables = (fullSchema && fullSchema.database && fullSchema.database.table) || {};
     return Object.values(tables).some((t) => isApiEnabled(t));

@@ -20,10 +20,19 @@ const { renderTemplate } = require('../render/engine');
 const { getFormattedTimestamp } = require('../utils');
 const { anyAttachmentsEnabled, attachmentOptions } = require('./attachmentConfig');
 
+/**
+ * Generate shared Attachments-module files (model, signed-download
+ * controller, provider, relation manager, migration) when attachments
+ * are enabled anywhere in the schema.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} outputDir generated app root
+ * @returns {{success: boolean, files: string[], skipped?: boolean, message?: string}}
+ */
 function generateAttachmentModule(fullSchema, outputDir) {
     try {
         const written = [];
 
+        /** Render a template to outputDir/relPath once (skips existing files). @param {string} relPath path relative to outputDir @param {string} template njk template path @param {object} [context] template context @returns {void} */
         const emit = (relPath, template, context) => {
             const abs = path.join(outputDir, relPath);
             fs.mkdirSync(path.dirname(abs), { recursive: true });

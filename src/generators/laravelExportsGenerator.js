@@ -1,3 +1,6 @@
+// CSV/Excel export generator (Fixzy SysMaker).
+// Emits Filament export classes (Jobs + column mapping) for tables that
+// enable the export feature.
 const fs = require('fs');
 const path = require('path');
 const pluralize = require('pluralize');

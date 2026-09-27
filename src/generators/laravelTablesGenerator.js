@@ -1,3 +1,6 @@
+// Filament Table class generator (Fixzy SysMaker).
+// Builds table column code (media, relationships, formatting, inline edit,
+// card layouts) and emits <Model>Table.php classes for tables/modules.
 const pluralize = require('pluralize');
 const fs = require('fs');
 const path = require('path');
@@ -60,11 +63,13 @@ function isInlineEditableField(field, isRelationshipField) {
  */
 function buildInlineEditColumnPhp(field, fieldName, tableName, authorizationEnabled, localizationEnabled) {
     const dataType = String(field.data_type || '').toUpperCase();
+    /** Escape single quotes for PHP literals. @param {*} s @returns {string} */
     const esc = (s) => String(s).replace(/'/g, "\\'");
     const lines = [];
     const authGuard = authorizationEnabled
         ? `if (! auth()->user()?->can('update', $record)) {\n                        abort(403);\n                    }\n                    `
         : '';
+    /** Build the ->updateStateUsing(...) closure with optional auth guard. @param {string} cast cast expression applied to $state @returns {string} PHP closure code */
     const saveClosure = (cast) => `->updateStateUsing(function ($record, $state) {\n                    ${authGuard}if (is_null($state)) {\n                        $record->${field.field_name} = null;\n                    } else {\n                        $record->${field.field_name} = ${cast.replace('$state', '$state')};\n                    }\n                    $record->save();\n                    return $record;\n                })`;
 
     if (dataType === 'BOOLEAN') {
@@ -538,6 +543,7 @@ function buildColumnsLayout(tvTemplate, parts) {
     const tpl = String(tvTemplate || 'horizontal');
     const indent = '                '; // matches template's ->columns([ ... ]) body
 
+    /** Indent and comma-join column code lines. @param {string[]} cols column code strings @returns {string} */
     const joinCols = (cols) => cols.map((c) => indent + '    ' + c).join(',\n');
 
     switch (tpl) {
@@ -663,6 +669,7 @@ function buildTableSettingsContext(tableData, relationships, tableName, projectS
     //   card_columns_tablet  -> tablet (md) cards per row (1-2, default 2)
     ctx.content_grid = '';
     if (String(tableData.tv_template || 'horizontal') === 'card') {
+        /** Parse int and clamp to [min,max]; dflt when not finite. @param {*} v @param {number} min @param {number} max @param {number} dflt @returns {number} */
         const clampInt = (v, min, max, dflt) => {
             const n = parseInt(v, 10);
             return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : dflt;
@@ -926,6 +933,13 @@ function generateSingleTableClass(basePath, resourceFolder, className, tableData
     console.log(`   - Table Class generated: ${className}.php`);
 }
 
+/**
+ * Generate a Filament Table class per custom module (virtual fields from
+ * settings_override applied on the base table).
+ * @param {object} fullSchema assembled project schema
+ * @param {string} basePath generated app root
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
 async function generateFilamentTablesCustomModules(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;

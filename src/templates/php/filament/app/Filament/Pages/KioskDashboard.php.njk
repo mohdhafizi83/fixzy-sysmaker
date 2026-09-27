@@ -21,6 +21,10 @@ class KioskDashboard extends Dashboard
 
     protected static ?string $title = 'Kiosk Display';
 
+    /**
+     * Keep the kiosk dashboard out of the sidebar navigation.
+     * @return  bool  Always false; reached via direct URL only.
+     */
     public static function shouldRegisterNavigation(): bool
     {
         return false;

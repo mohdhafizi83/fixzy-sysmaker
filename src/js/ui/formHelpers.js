@@ -10,6 +10,7 @@
  * Helper to set the value of a radio input.
  * @param {string} name - The 'name' attribute of the radio group.
  * @param {any} value - The value to select.
+ * @returns {void}
  */
 export function setRadioValue(name, value) {
     const radios = document.querySelectorAll(`input[name="${name}"]`);
@@ -24,6 +25,7 @@ export function setRadioValue(name, value) {
  * It can handle regular inputs, checkboxes, radios, and multi-select dropdowns.
  * @param {string} id - The ID of the element to update.
  * @param {any} value - The value to set.
+ * @returns {void}
  */
 export function setElementValue(id, value) {
     const element = document.getElementById(id);
@@ -53,6 +55,8 @@ export function setElementValue(id, value) {
 /**
  * Helper to get the value of a form element (Get Value).
  * You may need this later too.
+ * @param {string} id - The ID of the element to read.
+ * @returns {any} The element's current value, or null when the element is missing.
  */
 export function getElementValue(id) {
     const element = document.getElementById(id);
@@ -68,6 +72,7 @@ export function getElementValue(id) {
  * Applies the font size to the root element (<html>).
  * Moved from uiHandlers.js to avoid a circular dependency.
  * @param {string} size - Size choice ('small', 'medium', 'large').
+ * @returns {void}
  */
 export function applyFontSize(size) {
     let fontSizeValue = '16px';

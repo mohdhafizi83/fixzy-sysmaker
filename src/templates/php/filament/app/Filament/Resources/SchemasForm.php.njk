@@ -30,8 +30,17 @@ use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\KeyValue;
 
+/**
+ * Generated form schema fragment for this table's fields.
+ */
 class {{ form_class_name or (table_name_singular ~ "Form") }}
 {
+    /**
+     * Build the form components for the schema.
+     *
+     * @param  Schema  $schema  The form schema to fill.
+     * @return  Schema  The configured schema.
+     */
     public static function configure(Schema $schema): Schema
     {
 {%- if form_layout_active %}

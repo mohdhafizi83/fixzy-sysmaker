@@ -39,6 +39,12 @@ class AttachmentsRelationManager extends RelationManager
     /** @var array<int, string> Empty = any type allowed. */
     public const ALLOWED_TYPES = [{% for t in allowed_types %}'{{ t }}'{% if not loop.last %}, {% endif %}{% endfor %}];
 
+    /**
+     * File upload form enforcing the max-files, size and MIME-type limits.
+     *
+     * @param  Schema  $schema  The relation form schema.
+     * @return  Schema  The schema with the upload field.
+     */
     public function form(Schema $schema): Schema
     {
         $field = FileUpload::make('file')
@@ -58,6 +64,12 @@ class AttachmentsRelationManager extends RelationManager
         return $schema->components([$field]);
     }
 
+    /**
+     * Attachment list with name, size and MIME columns.
+     *
+     * @param  Table  $table  The relation table instance.
+     * @return  Table  The configured table.
+     */
     public function table(Table $table): Table
     {
         return $table

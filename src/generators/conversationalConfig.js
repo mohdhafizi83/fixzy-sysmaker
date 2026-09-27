@@ -8,6 +8,11 @@
 
 const { parseFormLayoutConfig } = require('./formLayoutConfig');
 
+/**
+ * Parse a table's conversational chat config from form_layout_config.
+ * @param {object} tableData row from the tables store
+ * @returns {{slug: string|null, greeting: string, farewell: string}|null} null when style != conversational
+ */
 function parseConversationalConfig(tableData) {
     const cfg = parseFormLayoutConfig(tableData);
     if (!cfg || cfg.style !== 'conversational') return null;
@@ -19,6 +24,7 @@ function parseConversationalConfig(tableData) {
     };
 }
 
+/** Parse a JSON string without throwing; returns null on bad input. @param {*} raw string/object/null @returns {object|null} */
 function parseJsonSafe(raw) {
     if (!raw) return null;
     if (typeof raw === 'object') return raw;
@@ -29,6 +35,10 @@ function parseJsonSafe(raw) {
 // settings_override.form_layout_config counts here — we deliberately do NOT
 // fall back to the table config, because the main module already owns the
 // table's chat route. Auto-inheriting would duplicate routes unexpectedly.
+/**
+ * @param {object} moduleObj custom module row with settings_override
+ * @returns {{slug: string, greeting: string, farewell: string}|null} null when the module did not opt in
+ */
 function parseModuleConversationalConfig(moduleObj) {
     const overrides = parseJsonSafe(moduleObj.settings_override) || {};
     if (!overrides.form_layout_config) return null;
@@ -50,6 +60,12 @@ function parseModuleConversationalConfig(moduleObj) {
     };
 }
 
+/**
+ * Collect all conversational forms (base tables + opted-in custom modules),
+ * de-colliding slugs deterministically (-2, -3 suffixes).
+ * @param {object} fullSchema assembled project schema
+ * @returns {Array<object>} form descriptors with table_name, slug, greeting, farewell
+ */
 function collectConversationalForms(fullSchema) {
     const tables = (fullSchema && fullSchema.database && fullSchema.database.table) || {};
     const out = [];
@@ -81,6 +97,7 @@ function collectConversationalForms(fullSchema) {
     return out;
 }
 
+/** @param {object} fullSchema @returns {boolean} true if any conversational form exists */
 function anyConversationalEnabled(fullSchema) {
     return collectConversationalForms(fullSchema).length > 0;
 }

@@ -1,4 +1,7 @@
 // src/js/handlers/menuHandlers.js
+//
+// Unified menu management: renders groups/items in the Menu & Appearance tab,
+// the add/edit menu-item modal, reorder buttons, and persistence of the menu structure.
 
 import { appState } from '../state.js';
 import { SaveManager } from '../saveManager.js';
@@ -6,6 +9,11 @@ import { showCustomDialog } from '../ui/modalHandlers.js';
 import { resolveVariables } from '../utils.js';
 import { loadProjectData } from '../../renderer.js';
 
+/**
+ * Renders the unified menu list (groups with nested items, or standalone items) in the menu manager.
+ * @param {Object[]} unifiedMenu Unified menu entries from project data.
+ * @returns {void}
+ */
 export function populateMenuManagement(unifiedMenu) {
     const unifiedMenuList = document.getElementById('unified-menu-list');
     if (!unifiedMenu || unifiedMenu.length === 0) {
@@ -13,6 +21,11 @@ export function populateMenuManagement(unifiedMenu) {
         return;
     }
 
+    /**
+     * Builds a menu group element with editable name, reorder buttons, and nested item markup.
+     * @param {Object} group Group entry {id, name, items}.
+     * @returns {HTMLDivElement} The constructed group element.
+     */
     const createGroupElement = (group) => {
         const groupEl = document.createElement('div');
         groupEl.className = 'menu-group-item';
@@ -56,6 +69,11 @@ export function populateMenuManagement(unifiedMenu) {
         return groupEl;
     };
 
+/**
+ * Builds a standalone custom menu item row with type-derived icon, label/URL fields, and action buttons.
+ * @param {Object} item Menu item entry {item_id, item_label, item_detail, table_id, module_id}.
+ * @returns {HTMLDivElement} The constructed item element.
+ */
 const createItemElement = (item) => {
         const itemEl = document.createElement('div');
         itemEl.className = 'custom-menu-item';
@@ -118,6 +136,10 @@ const createItemElement = (item) => {
     }
 }
 
+/**
+ * Wires the menu manager tab: add-group/add-menu buttons, reorder clicks, and structure persistence.
+ * @returns {void}
+ */
 export function initializeMenuManagementHandlers() {
     const menuManagementTab = document.getElementById('tab-menu-appearance');
     if (!menuManagementTab) return;
@@ -127,6 +149,11 @@ export function initializeMenuManagementHandlers() {
     const addCustomMenuBtn = document.getElementById('app-add_custom_menu');
     const unifiedMenuList = document.getElementById('unified-menu-list');
 
+/**
+ * Opens the add/edit menu item modal, listing unassigned tables and custom views for selection.
+ * @param {HTMLElement|null} itemEl Existing item element to edit, or null to add a new item.
+ * @returns {void}
+ */
 function openCustomMenuModal(itemEl = null) {
     const modal = document.getElementById('custom-menu-modal');
     if (!modal) return;
@@ -173,6 +200,7 @@ function openCustomMenuModal(itemEl = null) {
 
     const newOkBtn = elements.okBtn.cloneNode(true);
     elements.okBtn.parentNode.replaceChild(newOkBtn, elements.okBtn);
+    // Hides the menu item modal.
     const closeModal = () => modal.classList.add('hidden');
     elements.cancelBtn.addEventListener('click', closeModal, { once: true });
     elements.closeBtn.addEventListener('click', closeModal, { once: true });
@@ -187,6 +215,10 @@ function openCustomMenuModal(itemEl = null) {
         });
     });
 
+    /**
+     * Collects table ids and custom-view ids already used by the unified menu.
+     * @returns {{tableIds: Set, cvIds: Set}} Sets of already-assigned ids.
+     */
     const getUsedIds = () => {
         const ids = { tableIds: new Set(), cvIds: new Set() };
         appState.jsonData.database.unified_menu.forEach(item => {
@@ -349,6 +381,10 @@ function openCustomMenuModal(itemEl = null) {
     modal.classList.remove('hidden');
 }
 
+    /**
+     * Reads the current DOM order of groups/items and persists it via the saveUnifiedMenu IPC.
+     * @returns {Promise<void>}
+     */
     const saveUnifiedStructure = async () => {
         if (!unifiedMenuList) return;
         
@@ -451,6 +487,7 @@ function openCustomMenuModal(itemEl = null) {
     });
 
     // ▼▼▼ NEW SYSTEM: ORDER MANAGEMENT USING UP/DOWN BUTTONS ▼▼▼
+    // Disables move-up on the first and move-down on the last top-level menu entry.
     const updateMoveButtonStates = () => {
         const items = unifiedMenuList.querySelectorAll('.menu-group-item, .custom-menu-item');
         items.forEach((item, index) => {
@@ -514,12 +551,17 @@ function openCustomMenuModal(itemEl = null) {
     // ▲▲▲ END NEW SYSTEM ▲▲▲
 }
 
+/**
+ * Shows/hides homepage menu dependent options with the 'menu at homepage' checkbox.
+ * @returns {void}
+ */
 export function initializeHomepageMenuHandlers() {
     const menuAtHomepageCheckbox = document.getElementById('app-menu_at_homepage');
     const dependentOptions = document.querySelectorAll('.homepage-menu-option');
 
     if (!menuAtHomepageCheckbox || dependentOptions.length === 0) return;
 
+    // Reveals or hides all .homepage-menu-option blocks based on the checkbox state.
     const toggleOptionsVisibility = () => {
         const isChecked = menuAtHomepageCheckbox.checked;
         dependentOptions.forEach(option => {
@@ -535,6 +577,11 @@ export function initializeHomepageMenuHandlers() {
     toggleOptionsVisibility();
 }
 
+/**
+ * Disables nested move-up on the first and move-down on the last item within a group container.
+ * @param {HTMLElement|null} container The .menu-selector container holding nested items.
+ * @returns {void}
+ */
 function updateNestedMoveButtonStates(container) {
     if (!container) return;
     const items = container.querySelectorAll('.nested-menu-item');

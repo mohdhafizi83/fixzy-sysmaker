@@ -26,6 +26,11 @@ import {
     populateKanbanDropdowns
 } from '../uiHandlers.js';
 
+/**
+ * Populates every tab of the table settings page for the given table.
+ * @param {string} tableName Table whose settings are loaded.
+ * @returns {void}
+ */
 export function populateTableSettings(tableName) {
 
     populateSortByDropdown(tableName);
@@ -165,6 +170,7 @@ export function populateTableSettings(tableName) {
     const recordsPerPageGroup = document.getElementById('records-per-page-group');
 
     if (paginationCheckbox && recordsPerPageGroup) {
+        // Hides the per-page input groups until pagination is enabled.
         const toggleVisibility = () => {
             recordsPerPageGroup.classList.toggle('hidden', !paginationCheckbox.checked);
             // Grid per-page choices only make sense when pagination is on
@@ -269,6 +275,11 @@ export function populateTableSettings(tableName) {
 	updateTableViewTemplatePreview();
 }
 
+/**
+ * Renders the Parent-Child tab: child table list and per-relationship display options form.
+ * @param {string} currentTableName Parent table whose child relationships are shown.
+ * @returns {void}
+ */
 export function populateParentChildTab(currentTableName) {
     const childList = document.getElementById('child-table-list');
     const listPanel = childList.parentElement; 
@@ -319,6 +330,7 @@ export function populateParentChildTab(currentTableName) {
             childList.appendChild(li);
         });
         
+// Fills the relationship options form for the selected child table.
 const populateForm = (childName) => {
             const relationData = children.find(c => c.child_table_name === childName);
             if (!relationData) return;

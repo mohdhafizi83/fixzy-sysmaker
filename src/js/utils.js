@@ -3,6 +3,9 @@
 /**
  * Search and replace '##variable.name##' placeholders
  * with actual values from the scope object.
+ * @param {string} configString String containing '##variable.name##' placeholders.
+ * @param {Object} variableScope Map of variable names to their replacement values.
+ * @returns {string} The string with placeholders replaced.
  */
 export function resolveVariables(configString, variableScope) {
     if (!configString || !variableScope) {

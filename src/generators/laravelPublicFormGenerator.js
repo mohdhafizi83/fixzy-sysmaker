@@ -18,6 +18,7 @@ const { getFormattedTimestamp } = require('../utils');
 const { parsePublicFormConfig, collectPublicForms } = require('./publicFormConfig');
 
 // Map an IR field to a Laravel validation rule string.
+/** @param {object} field field row @returns {string[]} Laravel validation rules (required/nullable first) */
 function validationRulesFor(field) {
     const rules = [];
     const dt = (field.data_type || '').toUpperCase();
@@ -36,6 +37,13 @@ function validationRulesFor(field) {
     return rules;
 }
 
+/**
+ * Generate the Public Intake Form module (controller, provider, views,
+ * public_reference migration) when any table enables a public form.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} outputDir generated app root
+ * @returns {{success: boolean, files: string[], skipped?: boolean, error?: string}}
+ */
 function generatePublicFormModule(fullSchema, outputDir) {
     try {
         const written = [];
@@ -82,6 +90,7 @@ function generatePublicFormModule(fullSchema, outputDir) {
             };
         });
 
+        /** Render a template to outputDir/relPath once (skips existing files). @param {string} relPath @param {string} template njk path @param {object} [context] @returns {void} */
         const emit = (relPath, template, context) => {
             const abs = path.join(outputDir, relPath);
             fs.mkdirSync(path.dirname(abs), { recursive: true });
@@ -144,7 +153,9 @@ function generatePublicFormModule(fullSchema, outputDir) {
 }
 
 // Render the compiled registry as a PHP array literal (pretty, stable).
+/** @param {object} obj compiled slug -> form registry @returns {string} PHP array literal */
 function exportPhpArray(obj) {
+    /** Escape for single-quoted PHP literals. @param {*} s @returns {string} */
     const esc = (s) => String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
     const lines = [];
     lines.push('[');

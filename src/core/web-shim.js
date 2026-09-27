@@ -10,6 +10,7 @@
 (function () {
     'use strict';
 
+    /** POST args as a JSON array to /ipc/<channel>; unwrap {ok,result} or throw. @param {string} channel IPC channel name @param {...*} args handler arguments @returns {Promise<*>} handler result */
     async function invoke(channel, ...args) {
         const res = await fetch('/ipc/' + encodeURIComponent(channel), {
             method: 'POST',
@@ -23,6 +24,7 @@
 
     const listeners = {}; // channel -> [callbacks]
 
+    /** Open the SSE stream at /events and dispatch pushed {channel,data} to listeners. @returns {void} */
     function connectEvents() {
         const es = new EventSource('/events');
         es.addEventListener('ipc', (e) => {
@@ -34,6 +36,7 @@
         es.onerror = () => { /* EventSource auto-reconnects */ };
     }
 
+    /** Register a callback for push events on a channel. @param {string} channel event channel @param {Function} cb callback receiving event data @returns {void} */
     function on(channel, cb) {
         if (!listeners[channel]) listeners[channel] = [];
         listeners[channel].push(cb);

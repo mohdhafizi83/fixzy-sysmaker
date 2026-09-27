@@ -5,6 +5,9 @@ namespace App\Filament\Resources\{{ resource_folder }}\Pages;
 use App\Filament\Resources\{{ resource_folder }}\{{ page_class_base }}Resource;
 use Filament\Resources\Pages\CreateRecord;
 
+/**
+ * Generated create page for the {{ page_class_base }} resource.
+ */
 class Create{{ page_class_base }} extends CreateRecord
 {
     protected static string $resource = {{ page_class_base }}Resource::class;
@@ -23,6 +26,10 @@ class Create{{ page_class_base }} extends CreateRecord
     }
     
     {% if iframe_layout %}
+    /**
+     * Use the stripped-down iframe layout when the page is embedded.
+     * @return  string  Blade layout name.
+     */
     public function getLayout(): string
     {
         if (session('is_in_iframe'){% if modal_form_layout %} || request()->has('iframe'){% endif %}) {

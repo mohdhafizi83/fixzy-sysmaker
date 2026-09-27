@@ -33,10 +33,12 @@ const REQUIRED_OPS = ['equals', 'not_equals', 'in', 'filled', 'checked'];
 const GROUP_KEY_RE = /^[a-z][a-z0-9_]*$/;
 const FIELD_NAME_RE = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 
+/** True for boolean-true, 1, or '1'. @param {*} v @returns {boolean} */
 function truthy(v) {
     return v === true || v === 1 || v === '1';
 }
 
+/** Parse a JSON string without throwing; pass through objects; null on failure. @param {*} raw @returns {object|null} */
 function parseJson(raw) {
     if (!raw) return null;
     if (typeof raw === 'object') return raw;

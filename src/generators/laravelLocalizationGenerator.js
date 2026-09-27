@@ -14,6 +14,13 @@ const path = require('path');
 const { renderTemplate } = require('../render/engine');
 const { isLocalizationEnabled, defaultLocale, collectLocalizationStrings } = require('./localizationConfig');
 
+/**
+ * Generate the Localization module (middleware, provider, switcher view,
+ * en/ms JSON) when the project selects Malay.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} outputDir generated app root
+ * @returns {{success: boolean, files: string[], skipped?: boolean, error?: string, message?: string}}
+ */
 function generateLocalizationModule(fullSchema, outputDir) {
     try {
         if (!isLocalizationEnabled(fullSchema.project || {})) {
@@ -21,6 +28,7 @@ function generateLocalizationModule(fullSchema, outputDir) {
         }
 
         const written = [];
+        /** Write generated content to outputDir/relPath and track it. @param {string} relPath @param {string} content @returns {void} */
         const emit = (relPath, content) => {
             const abs = path.join(outputDir, relPath);
             fs.mkdirSync(path.dirname(abs), { recursive: true });

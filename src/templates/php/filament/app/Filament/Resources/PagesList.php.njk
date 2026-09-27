@@ -10,10 +10,17 @@ use Filament\Support\Facades\FilamentView;
 use Illuminate\Contracts\View\View;
 use Illuminate\Contracts\Support\Htmlable;
 
+/**
+ * Generated list page for the {{ page_class_base }} resource.
+ */
 class List{{ resource_folder }} extends ListRecords
 {
     protected static string $resource = {{ page_class_base }}Resource::class;
 
+    /**
+     * Page heading.
+     * @return  string | Htmlable  The list page title.
+     */
     public function getTitle(): string | Htmlable
     {
         return '{{ page_title }}'; 
@@ -49,6 +56,10 @@ class List{{ resource_folder }} extends ListRecords
         return $query;
     }{% endif %}
     
+    /**
+     * Render the list, optionally stacking row actions vertically via a CSS hook.
+     * @return  View  The page view.
+     */
     public function render(): View
     {
         {% if vertical_css %}
@@ -94,6 +105,9 @@ class List{{ resource_folder }} extends ListRecords
     }
     
     {% if iframe_logic %}
+    /**
+     * Remember iframe embedding (and foreign key) in the session.
+     */
     public function mount(): void
     {
         parent::mount();
@@ -107,6 +121,10 @@ class List{{ resource_folder }} extends ListRecords
         }
     }
     
+    /**
+     * Use the stripped-down iframe layout when the session iframe flag is set.
+     * @return  string  Blade layout name.
+     */
     public function getLayout(): string
     {
         if (session('is_in_iframe')) {

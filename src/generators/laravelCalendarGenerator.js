@@ -1,3 +1,7 @@
+// Calendar page generator (Fixzy SysMaker).
+//
+// Emits a standalone read-only month-grid page (vanilla Blade + Livewire
+// payload) per table/custom module that opts in via grid_calendar_config.
 const fs = require('fs');
 const path = require('path');
 const { toSingularPascalCase, toPluralPascalCase } = require('../utils');
@@ -25,6 +29,7 @@ function parseCalendarConfig(tableData) {
     const st = String(fields[startField].data_type || '').toUpperCase();
     if (!['DATE', 'DATETIME', 'TIMESTAMP'].includes(st)) return null;
 
+    /** @param {string} f field name @returns {boolean} true when the field's data_type is date-like */
     const dateType = (f) => ['DATE', 'DATETIME', 'TIMESTAMP'].includes(String((fields[f] || {}).data_type || '').toUpperCase());
     const endField = cfg.end_field && fields[cfg.end_field] && dateType(cfg.end_field) ? String(cfg.end_field) : '';
     const colorField = cfg.color_field && fields[cfg.color_field] ? String(cfg.color_field) : '';

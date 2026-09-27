@@ -14,12 +14,20 @@ const { renderTemplate } = require('../render/engine');
 const { getFormattedTimestamp } = require('../utils');
 const { anyNumberingEnabled } = require('./numberingConfig');
 
+/**
+ * Generate shared Auto-Numbering module files (HasNumbering trait +
+ * sequences migration) when any table enables numbering.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} outputDir generated app root
+ * @returns {{success: boolean, files: string[], skipped?: boolean, error?: string}}
+ */
 function generateNumberingModule(fullSchema, outputDir) {
     try {
         if (!anyNumberingEnabled(fullSchema)) {
             return { success: true, files: [], skipped: true };
         }
         const written = [];
+        /** Render a template to outputDir/relPath and track it. @param {string} relPath @param {string} template njk path @param {object} [context] @returns {void} */
         const emit = (relPath, template, context) => {
             const abs = path.join(outputDir, relPath);
             fs.mkdirSync(path.dirname(abs), { recursive: true });

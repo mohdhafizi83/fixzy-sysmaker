@@ -16,11 +16,18 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+/** Built-in allowlist roots: ~/projects and $HOME. @returns {string[]} absolute root paths */
 function getDefaultRoots() {
     const home = os.homedir();
     return [path.join(home, 'projects'), home];
 }
 
+/**
+ * Parse allowed roots from env.FSM_OUTPUT_ROOTS (comma/platform-delimiter
+ * separated, `~` expanded); falls back to getDefaultRoots() when unset.
+ * @param {object} env environment object (usually process.env)
+ * @returns {string[]} resolved absolute root paths
+ */
 function getRootsFromEnv(env) {
     const raw = (env && env.FSM_OUTPUT_ROOTS) || '';
     if (!raw.trim()) return getDefaultRoots();

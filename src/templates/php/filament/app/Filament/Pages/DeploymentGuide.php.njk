@@ -5,6 +5,9 @@ namespace {{ namespace }};
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Config;
 
+/**
+ * In-app deployment and database migration guide page.
+ */
 class DeploymentGuide extends Page
 {
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-rocket-launch';
@@ -24,6 +27,9 @@ class DeploymentGuide extends Page
     public $currentConnection;
     public $isSqlite;
 
+    /**
+     * Detect the active database connection at runtime for the guide display.
+     */
     public function mount()
     {
         // This logic runs at runtime (when the application is opened)

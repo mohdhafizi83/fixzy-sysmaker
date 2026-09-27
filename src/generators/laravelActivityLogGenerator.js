@@ -18,11 +18,13 @@ const path = require('path');
 const { renderTemplate } = require('../render/engine');
 const { getFormattedTimestamp } = require('../utils');
 
+/** @param {object} fullSchema @returns {boolean} true when project.module_log_activity is on */
 function isActivityLogEnabled(fullSchema) {
     const project = (fullSchema && fullSchema.project) || {};
     return Number(project.module_log_activity) === 1;
 }
 
+/** Write a file, creating the directory first. @param {string} dir target directory @param {string} filename file name @param {string} content file contents @returns {string} written file path */
 function writeIf(dir, filename, content) {
     fs.mkdirSync(dir, { recursive: true });
     const outPath = path.join(dir, filename);
@@ -30,6 +32,13 @@ function writeIf(dir, filename, content) {
     return outPath;
 }
 
+/**
+ * Generate the User Activity Log module (model, listener, provider, admin
+ * page + view, migration) and register the provider in the manifest.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} outputDir generated app root
+ * @returns {{success: boolean, message: string}}
+ */
 function generateActivityLogModule(fullSchema, outputDir) {
     try {
         if (!isActivityLogEnabled(fullSchema)) {

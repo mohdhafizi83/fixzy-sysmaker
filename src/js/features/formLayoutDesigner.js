@@ -12,6 +12,10 @@
 import { appState } from '../state.js';
 import { SaveManager } from '../saveManager.js';
 
+/**
+ * Resolves the table name of the currently open workspace table.
+ * @returns {string|null} Table name from the workspace title, or null.
+ */
 function currentTableName() {
     const titleEl = document.getElementById('workspace-module-title');
     return (titleEl && (titleEl.dataset.tableName || titleEl.textContent.trim())) || null;
@@ -20,6 +24,10 @@ function currentTableName() {
 // Custom-module context: when the workspace badge says "Custom", the form
 // layout is edited per-module via settings_override.form_layout_config.
 // Effective config = module override ?? main-module (table) config.
+/**
+ * Resolves the currently open custom module object, if in custom-module mode.
+ * @returns {Object|null} The custom module, or null when not in custom mode.
+ */
 function currentCustomModule() {
     const badgeEl = document.getElementById('workspace-module-badge');
     const titleEl = document.getElementById('workspace-module-title');
@@ -32,6 +40,11 @@ function currentCustomModule() {
     return tableData.custom_modules.find((m) => m.module_id === modId) || null;
 }
 
+/**
+ * Parses a JSON string without throwing; passes objects through unchanged.
+ * @param {*} raw JSON string, object, or falsy value.
+ * @returns {Object|null} Parsed value or null on failure.
+ */
 function parseJsonSafe(raw) {
     if (!raw) return null;
     if (typeof raw === 'object') return raw;
@@ -41,6 +54,10 @@ function parseJsonSafe(raw) {
 // Returns { config, overridden } where config is the effective layout JSON
 // (module override if present, else the table's own config) and overridden
 // says whether the module carries its own copy.
+/**
+ * Returns the effective form layout config plus whether the custom module overrides it.
+ * @returns {{config: Object|null, overridden: boolean, module: Object|null}} Effective layout info.
+ */
 function effectiveLayoutConfig() {
     const mod = currentCustomModule();
     if (mod) {
@@ -54,6 +71,10 @@ function effectiveLayoutConfig() {
     return { config: tableData ? parseJsonSafe(tableData.form_layout_config) : null, overridden: false, module: mod };
 }
 
+/**
+ * Resolves the table data object for the currently open workspace table.
+ * @returns {Object|null} The table data from appState, or null when unknown.
+ */
 function currentTableData() {
     const tableName = currentTableName();
     return tableName && appState.jsonData?.database?.table?.[tableName]
@@ -61,9 +82,17 @@ function currentTableData() {
         : null;
 }
 
+/** Escapes &, <, and > for safe HTML interpolation. @param {*} s Value. @returns {string} Escaped string. */
 function escapeHtml(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+/** Escapes HTML special chars plus double quotes for attribute interpolation. @param {*} s Value. @returns {string} Escaped string. */
 function escapeAttr(s) { return escapeHtml(s).replace(/"/g, '&quot;'); }
 
+/**
+ * Converts a group title into a unique snake_case key, de-duplicating against existing keys.
+ * @param {string} title Human-readable group title.
+ * @param {Set<string>} existingKeys Keys already in use.
+ * @returns {string} Unique group key (e.g. 'your_info', 'your_info_2').
+ */
 function groupKeyify(title, existingKeys) {
     let base = String(title || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
     if (!base || /^[0-9]/.test(base)) base = 'group_' + base;
@@ -75,6 +104,10 @@ function groupKeyify(title, existingKeys) {
 // In-memory working copy of groups (rendered list). Rebuilt on render.
 let workingGroups = [];
 
+/**
+ * Reads the full form layout config (style, columns, labels, groups, wizard, chat) from the form inputs.
+ * @returns {Object} Config object matching the form_layout_config JSON shape.
+ */
 function readConfigFromDom() {
     const style = document.getElementById('fl-style')?.value || 'default';
     const columns = parseInt(document.getElementById('fl-columns')?.value || '0', 10) || 0;
@@ -104,10 +137,19 @@ function readConfigFromDom() {
     return cfg;
 }
 
+/**
+ * True when the config equals the legacy default (no groups, inherited columns, labels above).
+ * @param {Object} cfg Layout config to test.
+ * @returns {boolean} Whether the config can be treated as empty.
+ */
 function isConfigEmpty(cfg) {
     return cfg.style === 'default' && cfg.columns === 0 && cfg.groups.length === 0 && cfg.label_display === 'above';
 }
 
+/**
+ * Saves the layout: into the custom module's settings_override in custom mode, else into tables.form_layout_config.
+ * @returns {void}
+ */
 function saveConfig() {
     const cfg = readConfigFromDom();
     const mod = currentCustomModule();
@@ -141,6 +183,10 @@ function saveConfig() {
 }
 
 // Small indicator: is this layout overridden per-module or inherited?
+/**
+ * Updates the badge showing whether the current module overrides or inherits the form layout.
+ * @returns {void}
+ */
 function updateLayoutSourceBadge() {
     const badge = document.getElementById('fl-source-badge');
     if (!badge) return;
@@ -157,6 +203,10 @@ function updateLayoutSourceBadge() {
     if (resetBtn) resetBtn.classList.toggle('hidden', !overridden);
 }
 
+/**
+ * Deletes the custom module's layout override so it inherits the main module layout again.
+ * @returns {void}
+ */
 function resetLayoutToMain() {
     const mod = currentCustomModule();
     if (!mod) return;
@@ -170,6 +220,12 @@ function resetLayoutToMain() {
     renderFormLayoutTab(currentTableData());
 }
 
+/**
+ * Builds the DOM row for one layout group (title, description, collapsible options, remove button).
+ * @param {Object} g Group object {key, title, description, collapsible, collapsed}.
+ * @param {number} index Index of the group in workingGroups.
+ * @returns {HTMLDivElement} The constructed row.
+ */
 function renderGroupRow(g, index) {
     const row = document.createElement('div');
     row.style.cssText = 'border:1px solid var(--border-color); border-radius:8px; padding:8px; display:grid; grid-template-columns: 1fr 1fr auto; gap:8px; align-items:start;';
@@ -189,6 +245,10 @@ function renderGroupRow(g, index) {
     return row;
 }
 
+/**
+ * Re-renders the groups list from workingGroups and wires each row's edit/remove handlers.
+ * @returns {void}
+ */
 function renderGroupsList() {
     const list = document.getElementById('fl-groups-list');
     if (!list) return;
@@ -227,6 +287,10 @@ function renderGroupsList() {
     });
 }
 
+/**
+ * Shows/hides the groups, wizard, and chat panels according to the selected form style.
+ * @returns {void}
+ */
 function updatePanelVisibility() {
     const style = document.getElementById('fl-style')?.value || 'default';
     const groupsPanel = document.getElementById('fl-groups-panel');
@@ -238,6 +302,11 @@ function updatePanelVisibility() {
     if (chatPanel) chatPanel.classList.toggle('hidden', style !== 'conversational');
 }
 
+/**
+ * Populates the Form Layout tab inputs from the effective layout config (module override or table config).
+ * @param {Object} tableData Table data being edited.
+ * @returns {void}
+ */
 function renderFormLayoutTab(tableData) {
     const styleEl = document.getElementById('fl-style');
     if (!styleEl) return;
@@ -272,6 +341,10 @@ function renderFormLayoutTab(tableData) {
     updateLayoutSourceBadge();
 }
 
+/**
+ * Registers change listeners on all layout inputs plus the add-group and reset-to-main buttons.
+ * @returns {void}
+ */
 function initFormLayoutTab() {
     ['fl-style', 'fl-columns', 'fl-label-display', 'fl-ungrouped-title', 'fl-wizard-start', 'fl-wizard-skippable', 'fl-chat-slug', 'fl-chat-greeting', 'fl-chat-farewell'].forEach((id) => {
         const el = document.getElementById(id);

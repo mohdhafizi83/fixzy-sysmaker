@@ -15,6 +15,9 @@ use Illuminate\Support\ServiceProvider;
  */
 class ConversationalFormServiceProvider extends ServiceProvider
 {
+    /**
+     * Register the throttled /chat/{slug} conversational form route.
+     */
     public function boot(): void
     {
         Route::middleware(['web', 'throttle:30,1'])

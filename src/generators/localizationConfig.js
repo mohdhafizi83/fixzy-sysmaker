@@ -13,16 +13,19 @@
 // __('fixzy.<tableKey>.<field>') so they switch with the locale;
 // otherwise the literal English caption is emitted unchanged.
 
+/** True when the project's language_select is Malay (the localization toggle). @param {object} project @returns {boolean} */
 function isLocalizationEnabled(project) {
     const sel = ((project && project.language_select) || '').toLowerCase();
     return sel.includes('malay') || sel === 'ms';
 }
 
+/** @param {object} project @returns {'ms'|'en'} default locale for the generated app */
 function defaultLocale(project) {
     const sel = ((project && project.language_select) || '').toLowerCase();
     return sel.includes('malay') || sel === 'ms' ? 'ms' : 'en';
 }
 
+/** @returns {string[]} locales shipped by the generated app */
 function supportedLocales() {
     return ['en', 'ms'];
 }
@@ -31,6 +34,7 @@ function supportedLocales() {
 // Returns { en: {key: val}, ms: {key: val} } with keys like
 // "fixzy.<tableKey>.<field>" for captions and
 // "fixzy.<tableKey>.__label" / ".__label_plural" for resource labels.
+/** @param {object} fullSchema @returns {{en: object, ms: object}} translation maps keyed by fixzy.* keys */
 function collectLocalizationStrings(fullSchema) {
     const en = {};
     const ms = {};
@@ -52,6 +56,7 @@ function collectLocalizationStrings(fullSchema) {
 }
 
 // snake_case table name -> safe JSON key (already snake; keep as-is).
+/** @param {string} tableName @returns {string} sanitized key */
 function tableKey(tableName) {
     return String(tableName).replace(/[^a-zA-Z0-9_]/g, '_');
 }
@@ -61,6 +66,13 @@ function tableKey(tableName) {
 // literal English caption (byte-identical to the non-localized path).
 // enLiteral is the already-computed English label for this call site
 // (call sites differ: some title-case the caption, some don't).
+/**
+ * @param {string} enLiteral English label for this call site
+ * @param {object} field field row (caption_ms checked)
+ * @param {string} tableName owning table name
+ * @param {boolean} localizationEnabled module toggle
+ * @returns {string} PHP expression: __('key') call or quoted literal
+ */
 function labelPhp(enLiteral, field, tableName, localizationEnabled) {
     if (localizationEnabled && field && field.caption_ms && String(field.caption_ms).trim() !== '') {
         return `__('fixzy.${tableKey(tableName)}.${field.field_name}')`;
@@ -68,6 +80,7 @@ function labelPhp(enLiteral, field, tableName, localizationEnabled) {
     return `'${String(enLiteral).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
 }
 
+/** Convert snake_case to Title Case. @param {string} s @returns {string} humanized title */
 function titleCase(s) {
     return String(s || '')
         .replace(/_/g, ' ')

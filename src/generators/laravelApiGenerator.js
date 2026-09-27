@@ -14,6 +14,7 @@ const { toSingularPascalCase } = require('../utils');
 const { getApiProfile, resolveApiFields, isApiEnabled } = require('./apiConfig');
 
 // Map a field's IR to Laravel validation rules (string list).
+/** @param {object} field field row from the schema @returns {string[]} Laravel validation rule strings */
 function fieldRules(field) {
     const rules = [];
     const dt = String(field.data_type || '').toUpperCase();
@@ -34,11 +35,13 @@ function fieldRules(field) {
     return rules;
 }
 
+/** Serialize a JS list as a JSON array literal (valid PHP 7.4+ array syntax via json). @param {Array} list @returns {string} JSON array string */
 function phpArrayJson(list) {
     return JSON.stringify(list);
 }
 
 // PHP associative array literal from a JS object ({"a":1} → ['a'=>1]).
+/** @param {object} obj plain object @returns {string} PHP ['k' => v, ...] literal */
 function phpAssoc(obj) {
     const parts = Object.entries(obj).map(([k, v]) => {
         const val = Array.isArray(v) ? phpArrayJson(v) : JSON.stringify(v);
@@ -47,6 +50,13 @@ function phpAssoc(obj) {
     return '[' + parts.join(', ') + ']';
 }
 
+/**
+ * Generate the REST API module (registry, controller, middleware, provider,
+ * token pages, Sanctum migration) for all API-enabled tables.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} outputDir generated app root
+ * @returns {{success: boolean, files: string[], skipped?: boolean, error?: string, message?: string}}
+ */
 function generateApiModule(fullSchema, outputDir) {
     try {
         const tables = (fullSchema && fullSchema.database && fullSchema.database.table) || {};
@@ -56,6 +66,7 @@ function generateApiModule(fullSchema, outputDir) {
         }
 
         const written = [];
+        /** Write generated content to outputDir/relPath and track it. @param {string} relPath path relative to outputDir @param {string} content file contents @returns {void} */
         const emit = (relPath, content) => {
             const abs = path.join(outputDir, relPath);
             fs.mkdirSync(path.dirname(abs), { recursive: true });

@@ -19,6 +19,12 @@ use Illuminate\Support\Facades\Schema;
  */
 class ReportQuery
 {
+    /**
+     * Apply the report's safe filters to an Eloquent query builder.
+     *
+     * @param  Builder  $query  Query builder to modify.
+     * @param  array  $cfg  Report configuration array.
+     */
     public static function apply(Builder $query, array $cfg): void
     {
         $table = $cfg['table'] ?? '';

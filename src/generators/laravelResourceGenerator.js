@@ -1,3 +1,6 @@
+// Filament Resource class generator (Fixzy SysMaker).
+// Emits app/Filament/Resources/<Folder>/<Model>Resource.php (navigation,
+// cluster wiring, filter/query closures) for base tables and custom modules.
 const fs = require('fs');
 const path = require('path');
 
@@ -77,6 +80,13 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         try {
             const parsed = typeof options.filterRules === 'string' ? JSON.parse(options.filterRules) : options.filterRules;
 
+            /**
+             * Recursively compile a filter rule group into Eloquent query
+             * chain fragments ($q->where / orWhere / whereIn / null checks).
+             * @param {object} group {condition: 'AND'|'OR', rules: []}
+             * @param {number} [depth=3] indentation depth
+             * @returns {string} PHP query chain inner code ('' when empty)
+             */
             function buildQueryString(group, depth = 3) {
                 if (!group || !group.rules || group.rules.length === 0) return '';
                 let condition = group.condition || 'AND';
@@ -361,6 +371,12 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
 // MAIN FUNCTIONS (LOOP)
 // ===================================================================================
 
+/**
+ * Generate a Filament Resource class for every non-users base table.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} basePath generated app root
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
 async function generateFilamentResources(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;
@@ -375,6 +391,13 @@ async function generateFilamentResources(fullSchema, basePath) {
     }
 }
 
+/**
+ * Generate a Filament Resource class per custom module (virtual table =
+ * base table + settings_override merged).
+ * @param {object} fullSchema assembled project schema
+ * @param {string} basePath generated app root
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
 async function generateFilamentResourcesCustomModules(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;

@@ -18,6 +18,10 @@ use Laravel\Socialite\Facades\Socialite;
  */
 class GoogleController extends Controller
 {
+    /**
+     * Start the Google OAuth flow by redirecting to Google.
+     * @return  \Symfony\Component\HttpFoundation\Response  Redirect to Google.
+     */
     public function redirect(): \Symfony\Component\HttpFoundation\Response
     {
         $this->assertConfigured();
@@ -25,6 +29,10 @@ class GoogleController extends Controller
         return Socialite::driver('google')->redirect();
     }
 
+    /**
+     * Handle the OAuth callback: log the user in, auto-provisioning the account on first sign-in.
+     * @return  \Illuminate\Http\RedirectResponse  Redirect into the app.
+     */
     public function callback(): \Illuminate\Http\RedirectResponse
     {
         $this->assertConfigured();
@@ -62,16 +70,28 @@ class GoogleController extends Controller
         }
     }
 
+    /**
+     * Google client ID: runtime setting first, env fallback.
+     * @return  ?string  Configured client ID.
+     */
     public static function clientId(): ?string
     {
         return FixzySetting::get('google_client_id', env('GOOGLE_CLIENT_ID'));
     }
 
+    /**
+     * Google client secret: runtime setting first, env fallback.
+     * @return  ?string  Configured client secret.
+     */
     public static function clientSecret(): ?string
     {
         return FixzySetting::get('google_client_secret', env('GOOGLE_CLIENT_SECRET'));
     }
 
+    /**
+     * OAuth redirect URI: runtime setting first, app URL fallback.
+     * @return  string  Absolute callback URL.
+     */
     public static function redirectUri(): string
     {
         return FixzySetting::get('google_redirect_uri', rtrim(config('app.url'), '/') . '/auth/google/callback');

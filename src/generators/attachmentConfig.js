@@ -10,6 +10,7 @@
 //   attach_types      TEXT    comma-separated extensions, empty = any
 //   attach_max_size   INTEGER KB per file (default 10240)
 
+/** True if the table enables attachments via the table flag or any attachments-type field. @param {object} tableData @returns {boolean} */
 function tableHasAttachments(tableData) {
     if (!tableData) return false;
     if (Number(tableData.attachments_enabled) === 1) return true;
@@ -27,6 +28,7 @@ function tableUsesGenericAttachments(tableData) {
     return !!tableData && Number(tableData.attachments_enabled) === 1;
 }
 
+/** @param {object} fullSchema assembled project schema @returns {boolean} true if any table needs the shared attachments module files */
 function anyAttachmentsEnabled(fullSchema) {
     const tables = (fullSchema && fullSchema.database && fullSchema.database.table) || {};
     // Shared module files (model, controller, provider, manager, migration)

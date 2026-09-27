@@ -1,4 +1,7 @@
 // src/js/features/tenancyManager.js
+//
+// Multi-tenancy wizard: lets a project pick a tenant entity and mark tables as
+// tenant-scoped (hidden FK injection), with rollback back to standard mode.
 import { appState } from '../state.js';
 import { SaveManager, loadProjectData } from '../../renderer.js'; 
 import { showCustomDialog } from '../ui/modalHandlers.js';
@@ -24,6 +27,10 @@ class TenancyManager {
         this.summaryContainer = document.getElementById('tenancy-summary-container');
     }
 
+    /**
+     * Initialises the manager once: syncs the tracked tenancy type and wires listeners.
+     * @returns {void}
+     */
     init() {
         if (this.initialized) return;
 // Sync the internal tracker with the database when opened
@@ -34,6 +41,10 @@ class TenancyManager {
         console.log("TenancyManager initialized.");
     }
 
+    /**
+     * Attaches delegated change listeners and modal open/close/save button handlers.
+     * @returns {void}
+     */
     attachEventListeners() {
         
 // Use event delegation on document.body so it survives refreshes
@@ -68,6 +79,10 @@ class TenancyManager {
     }
         
     // Function to make sure the summary box (read-only) shows when the project first loads
+    /**
+     * Refreshes the Architecture tab: shows the read-only tenancy summary when configured, else the configure button.
+     * @returns {void}
+     */
     refreshUIState() {
         const tenantTable = appState.activeProject?.tenant_table;
         const tenancyType = appState.activeProject?.tenancy_type;
@@ -86,6 +101,10 @@ class TenancyManager {
         }
     }
 
+    /**
+     * Opens the tenancy wizard modal, pre-populating the tenant dropdown and privacy-table checkboxes.
+     * @returns {void}
+     */
 openWizard() {
         const allTables = Object.keys(appState.jsonData?.database?.table || {}).filter(t => t !== 'users');
         const dropdownExisting = document.getElementById('wizard-existing-table');
@@ -134,6 +153,11 @@ openWizard() {
         this.modal.classList.remove('hidden');
     }
     
+    /**
+     * Reacts to a tenancy-type radio change: rolls back to standard or opens the wizard for multi-tenancy.
+     * @param {Event} event Change event from the app-tenancy_type radio.
+     * @returns {Promise<void>}
+     */
 async handleTenancyTypeChange(event) {
         const newType = event.target.value;
         const currentTenant = appState.activeProject?.tenant_table;
@@ -168,6 +192,10 @@ async handleTenancyTypeChange(event) {
     }
 
     // NEW FUNCTION: Force the interface and the queue back to the starting point
+    /**
+     * Reverts the tenancy radio UI and queued settings back to the last known good tenancy type.
+     * @returns {void}
+     */
     revertRadioToCurrentState() {
         const correctRadio = document.querySelector(`input[name="app-tenancy_type"][value="${this.currentTenancyType}"]`);
         if (correctRadio) correctRadio.checked = true;
@@ -177,12 +205,21 @@ async handleTenancyTypeChange(event) {
         SaveManager.addToQueue('project', appState.activeProject.project_id, { tenancy_type: this.currentTenancyType });
     }
 
+    /**
+     * Hides the wizard modal and reverts the radio selection to the current state.
+     * @returns {void}
+     */
     closeWizard() {
         this.modal.classList.add('hidden');
         // If the wizard is closed (cancelled), make sure the UI radio reverts
         this.revertRadioToCurrentState();
     }
 
+    /**
+     * Provisions multi-tenancy: saves tenancy settings, creates/reuses the tenant table,
+     * and injects hidden tenant FK columns into the selected privacy tables.
+     * @returns {Promise<void>}
+     */
 async processTenancySetup() {
         const typeRadios = document.querySelector('input[name="app-tenancy_type"]:checked');
         const tenancyType = typeRadios ? typeRadios.value : 'standard';
@@ -236,6 +273,12 @@ if (tenancyType === 'standard') {
             });
             await SaveManager.processQueue();
 
+            /**
+             * Creates a field on a table via IPC then applies the given config to it.
+             * @param {string|number} tableId Target table id.
+             * @param {Object} fieldConfig Field attributes to set after creation.
+             * @returns {Promise<void>}
+             */
             const createAndSetupField = async (tableId, fieldConfig) => {
                 const newField = await window.electronAPI.createField(tableId);
                 const updatedField = { ...newField, ...fieldConfig };
@@ -347,6 +390,11 @@ if (tenancyType === 'standard') {
         }
     }
 
+    /**
+     * Removes tenancy: deletes the tenant FK columns from secured tables and resets project tenancy settings.
+     * @param {string} tenantTableName Name of the tenant table whose FKs are removed.
+     * @returns {Promise<void>}
+     */
 async rollbackTenancy(tenantTableName) {
         try {
             const overlay = document.getElementById('loading-overlay');
@@ -442,6 +490,12 @@ async rollbackTenancy(tenantTableName) {
     }
     
     // Updates the summary display UI in the Architecture tab
+    /**
+     * Renders the read-only tenancy summary (entity name, type, secured-table chips) in the Architecture tab.
+     * @param {string} tenantName Tenant entity/table name to display.
+     * @param {string[]} securedTables Tables carrying the tenant FK.
+     * @returns {void}
+     */
     updateDashboardSummary(tenantName, securedTables) {
         const typeRadios = document.querySelector('input[name="app-tenancy_type"]:checked');
         const tenancyType = typeRadios ? typeRadios.value : 'Unknown';

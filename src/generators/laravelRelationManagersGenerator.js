@@ -1,3 +1,6 @@
+// Filament RelationManager generator (Fixzy SysMaker).
+// Emits hasMany/belongsToMany/hasManyDeep relation manager classes for
+// parent resources based on the schema relationships.
 const fs = require('fs');
 const path = require('path');
 const {

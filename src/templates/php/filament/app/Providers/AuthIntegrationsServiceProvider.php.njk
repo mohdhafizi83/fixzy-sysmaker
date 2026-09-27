@@ -17,6 +17,9 @@ use App\Http\Controllers\Auth\GoogleController;
  */
 class AuthIntegrationsServiceProvider extends ServiceProvider
 {
+    /**
+     * Register auth integration routes and apply runtime Google config.
+     */
     public function boot(): void
     {
         $this->registerRoutes();

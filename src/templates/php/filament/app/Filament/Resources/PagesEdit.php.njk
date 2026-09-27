@@ -12,6 +12,9 @@ use Filament\Resources\Pages\EditRecord;
 {% if iframe_child %}use Filament\Support\Facades\FilamentView;
 use Illuminate\Contracts\View\View;{% endif %}
 
+/**
+ * Generated edit page for the {{ page_class_base }} resource.
+ */
 class Edit{{ page_class_base }} extends EditRecord
 {
     protected static string $resource = {{ page_class_base }}Resource::class;
@@ -55,6 +58,11 @@ class Edit{{ page_class_base }} extends EditRecord
     }
     
 {% if iframe_parent %}
+    /**
+     * Load the record and remember whether we are embedded in an iframe.
+     *
+     * @param  string|int  $record  Record key to edit.
+     */
     public function mount(string|int $record): void
     {
         parent::mount($record);
@@ -65,6 +73,10 @@ class Edit{{ page_class_base }} extends EditRecord
         }
     }
 	
+    /**
+     * Use the stripped-down iframe layout when the ?iframe query flag is present.
+     * @return  string  Blade layout name.
+     */
     public function getLayout(): string
     {
         if (request()->has('iframe')) {
@@ -73,6 +85,10 @@ class Edit{{ page_class_base }} extends EditRecord
         return parent::getLayout();
     }{% endif %}
 {% if iframe_child %}
+    /**
+     * Register a render hook that reloads the parent window when the modal closes.
+     * @return  View  The page view.
+     */
     public function render(): View
     {
         FilamentView::registerRenderHook(
@@ -92,6 +108,10 @@ class Edit{{ page_class_base }} extends EditRecord
         return parent::render();
     }{% endif %}
 {% if iframe_child_layout %}
+    /**
+     * Use the stripped-down iframe layout when the session iframe flag is set.
+     * @return  string  Blade layout name.
+     */
     public function getLayout(): string
     {
         if (session('is_in_iframe')) {

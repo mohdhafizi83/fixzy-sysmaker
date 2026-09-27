@@ -1,3 +1,6 @@
+// Filament Edit page generator (Fixzy SysMaker).
+// Renders app/Filament/Resources/<Folder>/Pages/Edit<Model>.php for
+// standard tables and custom modules from PagesEdit.php.njk.
 const fs = require('fs');
 const path = require('path');
 const { toSingularPascalCase, toPluralPascalCase } = require('../utils');
@@ -65,6 +68,12 @@ async function generateSingleEditPage(tableName, tableData, fullSchema, basePath
 }
 
 // [UTAMA] Standard Edit Pages
+/**
+ * Generate Edit pages for every non-users base table.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} basePath generated app root
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
 async function generateFilamentEditPages(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;
@@ -78,6 +87,12 @@ async function generateFilamentEditPages(fullSchema, basePath) {
     }
 }
 
+/**
+ * Generate Edit pages for every custom module (one per module view).
+ * @param {object} fullSchema assembled project schema
+ * @param {string} basePath generated app root
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
 async function generateFilamentEditCustomModules(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;

@@ -11,6 +11,7 @@ const os = require('os');
 const path = require('path');
 const Database = require('better-sqlite3');
 
+/** Data directory for headless/web mode: FSM_DATA_DIR or ~/.fixzy. @returns {string} absolute data dir */
 function defaultDataDir() {
     return process.env.FSM_DATA_DIR || path.join(os.homedir(), '.fixzy');
 }

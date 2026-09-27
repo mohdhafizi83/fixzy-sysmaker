@@ -8,10 +8,17 @@ use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
 use Illuminate\Support\Number;
 
+/**
+ * Generated exporter for {{ frase_model_name }} records (CSV/XLSX).
+ */
 class {{ model_name }}Exporter extends Exporter
 {
     protected static ?string $model = {{ model_name }}::class;
 
+    /**
+     * Columns included in the export.
+     * @return  array  Export column definitions.
+     */
     public static function getColumns(): array
     {
         return [
@@ -19,6 +26,12 @@ class {{ model_name }}Exporter extends Exporter
         ];
     }
 
+    /**
+     * Notification body shown when the export finishes.
+     *
+     * @param  Export  $export  The completed export job.
+     * @return  string  Human-readable completion summary.
+     */
     public static function getCompletedNotificationBody(Export $export): string
     {
         $body = 'Your {{ frase_model_name }} export has completed and ' . Number::format($export->successful_rows) . ' ' . str('row')->plural($export->successful_rows) . ' exported.';

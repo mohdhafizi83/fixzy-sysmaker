@@ -7,6 +7,10 @@ import { loadProjectData, SaveManager } from '../../renderer.js';
 
 // Show the 2FA / Captcha advanced-option groups only while the matching
 // parent radio (app-module-auth-extra) is checked.
+/**
+ * Shows/hides the 2FA and Captcha advanced-option groups with their parent radio selection.
+ * @returns {void}
+ */
 export function toggleAuthModeGroups() {
     const is2fa = document.getElementById('app-module-auth-email-2fa')?.checked;
     const isCaptcha = document.getElementById('app-module-auth-email-captcha')?.checked;
@@ -16,6 +20,11 @@ export function toggleAuthModeGroups() {
     if (fgCaptcha) fgCaptcha.style.display = isCaptcha ? 'block' : 'none';
 }
 
+/**
+ * Fills every project-settings input on the dashboard from the saved project data.
+ * @param {Object} projectData Active project record.
+ * @returns {void}
+ */
 export function populateMainDashboard(projectData) {
     if (!projectData) {
         console.warn("No project data to display on the dashboard.");
@@ -61,6 +70,7 @@ export function populateMainDashboard(projectData) {
     setElementValue('app-module-scheduler', projectData.module_scheduler);
     loadBackupSettings(projectData);
     setElementValue('app-realtime_backend', projectData.realtime_backend || 'reverb');
+    // Realtime backend selector is only meaningful when the realtime module is on.
     const toggleRealtimeBackendVisibility = () => {
         const fgBackend = document.getElementById('fg-realtime-backend');
         const realtimeChecked = document.getElementById('app-module-realtime')?.checked;
@@ -93,6 +103,7 @@ export function populateMainDashboard(projectData) {
     }
 
     // 2. Logic to show/hide the Tenant Table dropdown
+    // Tenant-table selector only shows for multi-tenant projects.
     const toggleTenantTableVisibility = () => {
         const fgTenant = document.getElementById('fg-tenant-table');
         const selectedTenancy = document.querySelector('input[name="app-tenancy_type"]:checked')?.value;
@@ -165,12 +176,22 @@ export function populateMainDashboard(projectData) {
     }
 }
 
+/**
+ * Attaches autosave listeners to all project inputs in the header and dashboard form.
+ * @returns {void}
+ */
 export function initializeProjectSaveHandlers() {
     const form = document.getElementById('main-dashboard-page');
     // 'app-title' sits outside 'main-dashboard-page', so we need to target it separately
     const header = document.querySelector('.main-header'); 
     if (!form || !header) return;
 
+    /**
+     * Maps a changed app-* input to its project column and queues the save (special-casing
+     * title, hook logic, backup settings, and the auth radio pairs).
+     * @param {Event} event Change/input event from a project setting input.
+     * @returns {void}
+     */
     const handleInputChange = (event) => {
         if (appState.isPopulatingData) return;
         if (!appState.isAutoSaveEnabled) return;
@@ -248,6 +269,11 @@ export function initializeProjectSaveHandlers() {
 
 // --- Backup settings (project-level backup_config JSON) -----------------
 
+/**
+ * Loads the project's backup_config JSON into the backup settings inputs.
+ * @param {Object} projectData Active project record.
+ * @returns {void}
+ */
 export function loadBackupSettings(projectData) {
     let cfg = {};
     try {
@@ -268,6 +294,10 @@ export function loadBackupSettings(projectData) {
     }
 }
 
+/**
+ * Shows the weekday checkboxes only when the backup schedule is set to weekly.
+ * @returns {void}
+ */
 function toggleBackupWeekdayVisibility() {
     const freq = document.getElementById('app-backup-frequency');
     const wrap = document.getElementById('app-backup-weekday-wrap');
@@ -276,6 +306,10 @@ function toggleBackupWeekdayVisibility() {
     }
 }
 
+/**
+ * Serializes the backup settings inputs into backup_config JSON and queues the project save.
+ * @returns {void}
+ */
 export function saveBackupSettings() {
     if (!appState.activeProject) return;
     const enabled = document.getElementById('app-backup-enabled');

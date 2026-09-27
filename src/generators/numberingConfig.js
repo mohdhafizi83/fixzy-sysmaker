@@ -12,6 +12,11 @@
 // Example: INV-202609-0001. The period key (prefix + token value)
 // scopes the sequence so counters reset per period.
 
+/**
+ * Parse a table's auto-numbering config from numbering_enabled + numbering_config.
+ * @param {object} tableData row from the tables store
+ * @returns {{field: string, prefix: string, date_token: string, width: number, reset: string}|null} null when disabled/invalid
+ */
 function parseNumberingConfig(tableData) {
     if (!tableData || Number(tableData.numbering_enabled) !== 1) return null;
     let cfg = null;
@@ -32,12 +37,14 @@ function parseNumberingConfig(tableData) {
     return { field, prefix, date_token: token, width, reset };
 }
 
+/** @param {object} fullSchema @returns {boolean} true if any table enables auto numbering */
 function anyNumberingEnabled(fullSchema) {
     const tables = (fullSchema && fullSchema.database && fullSchema.database.table) || {};
     return Object.values(tables).some((t) => parseNumberingConfig(t) !== null);
 }
 
 // PHP literal for embedding a config array in generated code.
+/** @param {object|null} cfg parsed numbering config @returns {string} PHP array literal or 'null' */
 function numberingConfigPhp(cfg) {
     if (!cfg) return 'null';
     return `['field' => '${cfg.field}', 'prefix' => '${cfg.prefix}', 'date_token' => '${cfg.date_token}', 'width' => ${cfg.width}, 'reset' => '${cfg.reset}']`;

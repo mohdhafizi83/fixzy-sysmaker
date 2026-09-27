@@ -31,6 +31,9 @@ class MailSettings extends Page
 
     public array $settings = [];
 
+    /**
+     * Load saved SMTP settings into the form.
+     */
     public function mount(): void
     {
         $this->settings = [
@@ -44,6 +47,9 @@ class MailSettings extends Page
         ];
     }
 
+    /**
+     * Persist every non-empty mail setting via FixzySetting.
+     */
     public function save(): void
     {
         $allowed = array_keys($this->settings);
@@ -58,6 +64,9 @@ class MailSettings extends Page
         session()->flash('fixzy_settings_saved', 'Mail settings saved. Workflow emails now use this SMTP server.');
     }
 
+    /**
+     * Send a test email through the configured SMTP server to verify settings.
+     */
     public function testSend(): void
     {
         $to = $this->settings['mail_from_address'] ?? '';

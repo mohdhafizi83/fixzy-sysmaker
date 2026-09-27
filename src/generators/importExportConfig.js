@@ -18,6 +18,11 @@
 // (getFormats), so no extra dependency is needed — the generated
 // exporter exposes both formats automatically.
 
+/**
+ * Parse a table's smart-import profile from import_enabled + import_config.
+ * @param {object} tableData row from the tables store
+ * @returns {{match_field: string, mode: string, dry_run: boolean}|null} null when disabled or unusable (legacy path)
+ */
 function parseImportConfig(tableData) {
     if (!tableData || Number(tableData.import_enabled) !== 1) return null;
     let cfg = {};
@@ -44,12 +49,14 @@ function parseImportConfig(tableData) {
     };
 }
 
+/** @param {object} fullSchema @returns {boolean} true if any table has a smart-import profile */
 function anyImportProfilesEnabled(fullSchema) {
     const tables = (fullSchema && fullSchema.database && fullSchema.database.table) || {};
     return Object.values(tables).some((t) => parseImportConfig(t) !== null);
 }
 
 // PHP literal for the baked profile (null → legacy path).
+/** @param {object|null} cfg profile from parseImportConfig @returns {string} PHP array literal or 'null' */
 function importConfigPhp(cfg) {
     if (!cfg) return 'null';
     return `['match_field' => ${JSON.stringify(cfg.match_field)}, 'mode' => ${JSON.stringify(cfg.mode)}, 'dry_run' => ${cfg.dry_run ? 'true' : 'false'}]`;

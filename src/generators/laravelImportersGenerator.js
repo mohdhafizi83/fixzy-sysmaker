@@ -1,3 +1,6 @@
+// Filament Importer generator (Fixzy SysMaker).
+// Emits one Filament Importer class per table (CSV column mapping,
+// record resolution, smart-import profile wiring).
 const fs = require('fs');
 const path = require('path');
 const { toSingularPascalCase, toTitleCase, toCamelCase } = require('../utils');
@@ -153,6 +156,13 @@ function generateResolveRecordLogic(tableData, modelName, tables) {
     return phpCode;
 }
 
+/**
+ * Generate a Filament Importer class per table (CSV mapping, record
+ * resolution, smart-import profile).
+ * @param {object} fullSchema assembled project schema
+ * @param {string} basePath generated app root
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
 async function generateFilamentImporters(fullSchema, basePath) {
     try {
         const importersDir = path.join(basePath, 'app', 'Filament', 'Imports');

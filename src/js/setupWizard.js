@@ -22,8 +22,20 @@ let logEl = null;
 let subscribed = false;
 let lastCheckStatus = null;
 
+/**
+ * Shortcut for document.getElementById.
+ * @param {string} id Element id.
+ * @returns {HTMLElement|null} The element, or null.
+ */
 function $(id) { return document.getElementById(id); }
 
+/**
+ * Updates one wizard status row's icon and optional detail text.
+ * @param {string} id Row id (node/php/composer/preview).
+ * @param {('ok'|'bad'|'warn'|'pending')} state Status state to display.
+ * @param {string} [detail] Detail text to show next to the icon.
+ * @returns {void}
+ */
 function setRow(id, state, detail) {
     const icon = $('wiz-' + id + '-icon');
     const detailEl = $('wiz-' + id + '-detail');
@@ -31,6 +43,11 @@ function setRow(id, state, detail) {
     if (detailEl && detail != null) detailEl.textContent = detail;
 }
 
+/**
+ * Appends a line to the live setup log and scrolls to the bottom.
+ * @param {string} line Log line text.
+ * @returns {void}
+ */
 function appendLog(line) {
     if (!logEl) return;
     const div = document.createElement('div');
@@ -39,6 +56,11 @@ function appendLog(line) {
     logEl.scrollTop = logEl.scrollHeight;
 }
 
+/**
+ * Renders all four environment check rows and enables/disables the Run Setup button.
+ * @param {Object} status Environment check result from checkEnvironment.
+ * @returns {boolean} True when the environment is fully ready.
+ */
 function renderCheck(status) {
     setRow('node', status.node.ok ? 'ok' : 'bad', 'Node.js ' + status.node.detail + (status.node.ok ? ' (OK)' : ' — 20+ required'));
     setRow('php', status.php.ok ? 'ok' : 'warn', status.php.ok ? 'PHP ' + status.php.detail : (status.php.detail + ' — needed for live preview only'));
@@ -58,6 +80,10 @@ function renderCheck(status) {
     return status.ready;
 }
 
+/**
+ * Re-runs the environment check via IPC and re-renders the wizard rows.
+ * @returns {Promise<void>}
+ */
 async function refreshStatus() {
     const status = await window.electronAPI.setupCheck();
     if (!status || status.error) {
@@ -108,12 +134,22 @@ const PHP_HELP = {
         variable, e.g. <code>FSM_PHP_BIN=/opt/php/bin/php</code>.</p>`,
 };
 
+/**
+ * Returns the platform-specific PHP install help HTML for the help modal.
+ * @param {string} platform Platform key ('win32', 'darwin', else linux).
+ * @returns {string} Help HTML string.
+ */
 function phpHelpHtml(platform) {
     if (platform === 'win32') return PHP_HELP.win32;
     if (platform === 'darwin') return PHP_HELP.darwin;
     return PHP_HELP.linux;
 }
 
+/**
+ * Enables or gates the live-preview button based on whether PHP is available.
+ * @param {Object} status Environment check result.
+ * @returns {void}
+ */
 function gatePreviewButton(status) {
     const btn = $('btn-show-preview');
     if (!btn) return;
@@ -138,6 +174,11 @@ function gatePreviewButton(status) {
     }
 }
 
+/**
+ * Opens the PHP install help modal with instructions for the given platform.
+ * @param {string} platform Platform key for the help content.
+ * @returns {void}
+ */
 function openPhpHelp(platform) {
     const modal = $('php-help-modal');
     const body = $('php-help-body');
@@ -146,6 +187,10 @@ function openPhpHelp(platform) {
     modal.classList.remove('hidden');
 }
 
+/**
+ * Wires the PHP help modal: close buttons, recheck button, and the info-icon opener.
+ * @returns {void}
+ */
 function initPhpHelp() {
     const close = () => {
         const modal = $('php-help-modal');
@@ -174,6 +219,10 @@ function initPhpHelp() {
     });
 }
 
+/**
+ * Runs the one-click environment setup via IPC, streaming log output and refreshing status.
+ * @returns {Promise<void>}
+ */
 async function runSetup() {
     const runBtn = $('wiz-run-btn');
     if (runBtn) { runBtn.disabled = true; runBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Setting up...'; }
@@ -192,6 +241,10 @@ async function runSetup() {
     }
 }
 
+/**
+ * Opens the setup wizard modal, subscribes to the live setup log, and refreshes status.
+ * @returns {void}
+ */
 export function openSetupWizard() {
     const modal = $('setup-wizard-modal');
     if (!modal) return;
@@ -207,11 +260,19 @@ export function openSetupWizard() {
     refreshStatus();
 }
 
+/**
+ * Hides the setup wizard modal.
+ * @returns {void}
+ */
 export function closeSetupWizard() {
     const modal = $('setup-wizard-modal');
     if (modal) modal.classList.add('hidden');
 }
 
+/**
+ * Wires the setup wizard: open/close/skip/run buttons and the PHP help modal.
+ * @returns {void}
+ */
 export function initSetupWizard() {
     logEl = $('wiz-log');
     initPhpHelp();
@@ -229,6 +290,7 @@ export function initSetupWizard() {
  * Call after app boot: if the environment is not ready on first run,
  * show the wizard automatically. Users who skip can reopen via the
  * header "Setup" button.
+ * @returns {Promise<void>}
  */
 export async function maybeShowSetupWizard() {
     if (!window.electronAPI || typeof window.electronAPI.setupCheck !== 'function') return;

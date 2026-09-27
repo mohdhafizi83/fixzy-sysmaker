@@ -15,6 +15,11 @@
 // (added via migration when a public form is enabled) so lookups can be
 // matched without exposing the internal id.
 
+/**
+ * Parse a table's public intake form config from public_form_enabled + public_form_config.
+ * @param {object} tableData row from the tables store
+ * @returns {{slug: string, allowed_fields: string[], intro_text: string, success_text: string, captcha_required: boolean, status_field_default: string, lookup_enabled: boolean}|null} null when disabled/invalid
+ */
 function parsePublicFormConfig(tableData) {
     if (!tableData || Number(tableData.public_form_enabled) !== 1) return null;
     let cfg = tableData.public_form_config;
@@ -37,12 +42,14 @@ function parsePublicFormConfig(tableData) {
     };
 }
 
+/** @param {object} fullSchema @returns {boolean} true if any table enables a public form */
 function anyPublicFormEnabled(fullSchema) {
     const tables = (fullSchema && fullSchema.database && fullSchema.database.table) || {};
     return Object.values(tables).some((t) => parsePublicFormConfig(t) !== null);
 }
 
 // Collect all enabled public forms keyed by slug (for route registration).
+/** @param {object} fullSchema @returns {Array<object>} enabled form descriptors with table_name + config */
 function collectPublicForms(fullSchema) {
     const tables = (fullSchema && fullSchema.database && fullSchema.database.table) || {};
     const out = [];

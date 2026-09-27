@@ -60,6 +60,12 @@ const PRESETS = {
     },
 };
 
+/**
+ * Converts a status label into a unique snake_case key, de-duplicating against existing keys.
+ * @param {string} label Human-readable status label.
+ * @param {string[]} existingKeys Keys already in use.
+ * @returns {string} Unique status key (e.g. 'in_review', 'in_review_2').
+ */
 function slugify(label, existingKeys) {
     let base = String(label || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
     if (!base || !/^[a-z]/.test(base)) base = 'status_' + base;
@@ -68,6 +74,10 @@ function slugify(label, existingKeys) {
     return key;
 }
 
+/**
+ * Resolves the table_id of the currently open workspace table.
+ * @returns {string|number|null} The table id, or null in custom-module mode / unknown table.
+ */
 function currentTableId() {
     const badgeEl = document.getElementById('workspace-module-badge');
     const isCustomMode = badgeEl && badgeEl.classList.contains('badge-custom');
@@ -78,6 +88,10 @@ function currentTableId() {
     return data ? data.table_id : null;
 }
 
+/**
+ * Reads the full approval workflow (status field, statuses, transitions) from the editor rows.
+ * @returns {Object} Config object shaped {statusField, initial, statuses, transitions}.
+ */
 function readConfigFromDom() {
     const statuses = [];
     document.querySelectorAll('#approval-status-rows tr').forEach((tr) => {
@@ -111,6 +125,11 @@ function readConfigFromDom() {
     return { statusField, initial, statuses, transitions };
 }
 
+/**
+ * Checks an approval config for structural problems (missing statuses, dupes, bad transitions).
+ * @param {Object} cfg Config from readConfigFromDom.
+ * @returns {string[]} Human-readable error messages; empty when valid.
+ */
 function validateConfig(cfg) {
     const errors = [];
     if (!cfg.statusField) errors.push('Pick the status field that stores the current status.');
@@ -129,6 +148,11 @@ function validateConfig(cfg) {
     return errors;
 }
 
+/**
+ * Builds a status editor table row (label, color, initial radio, final checkbox, delete).
+ * @param {Object} s Status object {key, label, color, final, isInitial}.
+ * @returns {HTMLTableRowElement} The constructed row.
+ */
 function renderStatusRow(s) {
     const tr = document.createElement('tr');
     tr.dataset.key = s.key || '';
@@ -143,6 +167,12 @@ function renderStatusRow(s) {
     return tr;
 }
 
+/**
+ * Builds a transition editor row (from/to selects, label, roles, require-comment, notify).
+ * @param {Object} t Transition object {from, to, label, roles, require_comment, notify}.
+ * @param {Object[]} statuses Available statuses used to fill the from/to dropdowns.
+ * @returns {HTMLTableRowElement} The constructed row.
+ */
 function renderTransitionRow(t, statuses) {
     const tr = document.createElement('tr');
     const opts = statuses.map(s => `<option value="${s.key}">${escapeHtml(s.label)}</option>`);
@@ -161,6 +191,10 @@ function renderTransitionRow(t, statuses) {
     return tr;
 }
 
+/**
+ * Rebuilds from/to dropdown options in transition rows after statuses change, preserving valid selections.
+ * @returns {void}
+ */
 function refreshTransitionOptions() {
     const statuses = readConfigFromDom().statuses;
     document.querySelectorAll('#approval-transition-rows select').forEach(sel => {
@@ -170,10 +204,16 @@ function refreshTransitionOptions() {
     });
 }
 
+/** Escapes &, <, and > for safe HTML interpolation. @param {*} s Value. @returns {string} Escaped string. */
 function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+/** Escapes HTML special chars plus double quotes for attribute interpolation. @param {*} s Value. @returns {string} Escaped string. */
 function escapeAttr(s) { return escapeHtml(s).replace(/"/g, '&quot;'); }
 
 let saveTimer = null;
+/**
+ * Validates the DOM config and, if valid, debounces a save into tables.approval_config.
+ * @returns {void}
+ */
 function saveConfig() {
     const cfg = readConfigFromDom();
     const errors = validateConfig(cfg);
@@ -192,6 +232,11 @@ function saveConfig() {
     }, 300);
 }
 
+/**
+ * Replaces the editor with a named preset workflow (simple / review / two_step).
+ * @param {string} name Preset key from PRESETS.
+ * @returns {void}
+ */
 function loadPreset(name) {
     const preset = PRESETS[name];
     if (!preset) return;
@@ -206,6 +251,12 @@ function loadPreset(name) {
     saveConfig();
 }
 
+/**
+ * Fills the status-field dropdown with text-like columns of the table.
+ * @param {Object} tableData Table data whose fields populate the dropdown.
+ * @param {string} selected Field name to preselect.
+ * @returns {void}
+ */
 function renderStatusFieldSelect(tableData, selected) {
     const sel = document.getElementById('approval-status-field');
     if (!sel) return;
@@ -221,6 +272,11 @@ function renderStatusFieldSelect(tableData, selected) {
     if (selected && options.some(o => o.name === selected)) sel.value = selected;
 }
 
+/**
+ * Shows/hides the approval panel and seeds the editor from table data (simple preset on first enable).
+ * @param {Object} tableData Table data with approval_enabled/approval_config fields.
+ * @returns {void}
+ */
 function renderApprovalTab(tableData) {
     const enabled = Number(tableData.approval_enabled) === 1;
     const panel = document.getElementById('approval-config-panel');
@@ -256,6 +312,10 @@ function renderApprovalTab(tableData) {
     }
 }
 
+/**
+ * Registers all Approval tab listeners: enable switch, preset picker, status field, add-status/transition buttons.
+ * @returns {void}
+ */
 export function initApprovalTab() {
     const enabledBox = document.getElementById('tbl-approval-enabled');
     if (enabledBox) {

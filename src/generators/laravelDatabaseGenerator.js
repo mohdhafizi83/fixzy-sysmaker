@@ -1,7 +1,9 @@
+// Laravel database layer generator (Fixzy SysMaker).
+//
+// Emits Eloquent models (incl. User), migrations (tables, pivot, FKs),
+// factories, the DatabaseSeeder, and native audit files from the IR.
 const fs = require('fs');
 const path = require('path');
-
-// IMPORT FUNGSI BANTUAN DARI UTILS
 const { 
     toSingularPascalCase,
     toPluralCamelCase,
@@ -11,7 +13,7 @@ const {
     getFakerFormatter,
     toPascalCase // Ditambah
 } = require('../utils');
-const { renderTemplate } = require('../render/engine');
+const { renderTemplate, withBannerPhp } = require('../render/engine');
 
 // ========================================================================
 // HELPER: LOGIK PENAMAAN (MODULE NAME vs TABLE NAME)
@@ -19,6 +21,9 @@ const { renderTemplate } = require('../render/engine');
 
 /**
  * Get the Model Name (Class Name) based on the Module Name (if present).
+ * @param {string} tableName base table name
+ * @param {object} tables map of table name -> table data
+ * @returns {string} singular PascalCase model class name
  */
 function getModelClassName(tableName, tables) {
     if (tableName === 'users') return 'User';
@@ -33,6 +38,10 @@ function getModelClassName(tableName, tables) {
 
 /**
  * Mendapatkan Nama Fungsi Relation berdasarkan Module Name.
+ * @param {string} tableName base table name
+ * @param {object} tables map of table name -> table data
+ * @param {boolean} [isPlural=false] pluralize the relation name
+ * @returns {string} camelCase relation function name
  */
 function getRelationFunctionName(tableName, tables, isPlural = false) {
     if (tableName === 'users') return isPlural ? 'users' : 'user';
@@ -49,6 +58,9 @@ function getRelationFunctionName(tableName, tables, isPlural = false) {
 
 /**
  * Generate Laravel Filament Model files from the database schema.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} basePath generated app root
+ * @returns {Promise<{success: boolean, message: string}>}
  */
 async function generateFilamentModels(fullSchema, basePath) {
     try {
@@ -272,7 +284,7 @@ let helperMethods = [];
             });
 
             const outputFilePath = path.join(modelsPath, `${className}.php`);
-            fs.writeFileSync(outputFilePath, modelContent);
+            fs.writeFileSync(outputFilePath, withBannerPhp(modelContent));
             console.log(`Model generated: ${outputFilePath}`);
         }
         
@@ -285,6 +297,9 @@ let helperMethods = [];
 
 /**
  * Menjana fail Model User.php Laravel Filament secara spesifik.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} basePath generated app root
+ * @returns {Promise<{success: boolean, message: string}>}
  */
 async function generateFilamentUserModel(fullSchema, basePath) {
     try {
@@ -454,6 +469,13 @@ async function generateFilamentUserModel(fullSchema, basePath) {
     }
 }
 
+/**
+ * Generate create-table migrations for every table, the tenancy pivot
+ * migration, and a later add-foreign-keys migration per child table.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} outputBasePath generated app root
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
 async function generateLaravelMigrations(fullSchema, outputBasePath) {
     try {
         // ▼▼▼ PEMBAIKAN 1: Panggil project (projectSettings) dari fullSchema ▼▼▼
@@ -540,7 +562,7 @@ if (tableData.constraints && tableData.constraints.length > 0) {
                  content += `            $table->softDeletes();\n`;
             }
 content += `        });\n    }\n\n    public function down(): void\n    {\n        Schema::dropIfExists('${tableName}');\n    }\n};`;
-            fs.writeFileSync(path.join(migrationsPath, fileName), content);
+            fs.writeFileSync(path.join(migrationsPath, fileName), withBannerPhp(content));
         }
 
         // --- MULA: AUTO-JANA PIVOT TABLE UNTUK MANY-TO-MANY TENANCY ---
@@ -566,7 +588,7 @@ content += `        });\n    }\n\n    public function down(): void\n    {\n     
                 content += `            $table->timestamps();\n`;
                 content += `        });\n    }\n\n    public function down(): void\n    {\n        Schema::dropIfExists('${pivotTable}');\n    }\n};`;
                 
-                fs.writeFileSync(path.join(migrationsPath, fileName), content);
+                fs.writeFileSync(path.join(migrationsPath, fileName), withBannerPhp(content));
                 console.log(`Pivot Table Migration generated: ${fileName}`);
             }
         }
@@ -595,7 +617,7 @@ content += `        });\n    }\n\n    public function down(): void\n    {\n     
             content += `        });\n    }\n\n    public function down(): void\n    {\n        Schema::table('${tableName}', function (Blueprint $table) {\n`;
             childRels.forEach(rel => { content += `            $table->dropForeign(['${rel.fk_child_field}']);\n`; });
             content += `        });\n    }\n};`;
-            fs.writeFileSync(path.join(migrationsPath, fileName), content);
+            fs.writeFileSync(path.join(migrationsPath, fileName), withBannerPhp(content));
         }
         return { success: true, message: 'Migrations generated successfully.' };
     } catch (error) { return { success: false, message: error.message }; }
@@ -604,6 +626,9 @@ content += `        });\n    }\n\n    public function down(): void\n    {\n     
 /**
  * Generate the dedicated Migration file for the 'users' table.
  * Ia menggabungkan lajur asas Laravel dengan lajur tersuai Fixzy SysMaker.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} basePath generated app root
+ * @returns {Promise<{success: boolean, message: string}>}
  */
 async function generateLaravelUserMigration(fullSchema, basePath) {
     try {
@@ -669,7 +694,7 @@ async function generateLaravelUserMigration(fullSchema, basePath) {
 
         // Write the file with Laravel's official migration name so it always runs first
         const fileName = '0001_01_01_000000_create_users_table.php';
-        fs.writeFileSync(path.join(migrationsPath, fileName), content);
+        fs.writeFileSync(path.join(migrationsPath, fileName), withBannerPhp(content));
 
         return { success: true, message: 'User Migration generated successfully.' };
     } catch (error) { 
@@ -677,6 +702,13 @@ async function generateLaravelUserMigration(fullSchema, basePath) {
     }
 }
 
+/**
+ * Generate Eloquent factories for every non-users table (faker-driven,
+ * FK-aware, options-list-aware).
+ * @param {object} fullSchema assembled project schema
+ * @param {string} basePath generated app root
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
 async function generateLaravelFactories(fullSchema, basePath) {
     try {
         const { database: { table: tables, relationships } } = fullSchema;
@@ -750,6 +782,12 @@ fieldsArr.forEach(field => {
                 
                 if (isArrayType) {
                     // SMART HELPER: Replaces getFakerFormatter which failed to read JSON
+                    /**
+                     * Pick a faker expression for a field from its name/format hint.
+                     * @param {string} fieldName field name
+                     * @param {string} formatAs format hint ('email'|'tel'|...)
+                     * @returns {string} PHP faker expression
+                     */
                     const getRealFaker = (fieldName, formatAs) => {
                         const nameLower = fieldName.toLowerCase();
                         if (formatAs === 'email' || nameLower.includes('email')) {
@@ -803,12 +841,20 @@ fieldsArr.forEach(field => {
             });
             
             const content = `<?php\nnamespace Database\\Factories;\nuse Illuminate\\Database\\Eloquent\\Factories\\Factory;\nuse App\\Models\\${modelName};\n\n/**\n * @extends \\Illuminate\\Database\\Eloquent\\Factories\\Factory<\\App\\Models\\${modelName}>\n */\nclass ${className} extends Factory\n{\n    protected $model = ${modelName}::class;\n\n    public function definition(): array\n    {\n        return [\n${columns.join('\n')}\n        ];\n    }\n}\n`;
-            fs.writeFileSync(path.join(factoriesPath, `${className}.php`), content);
+            fs.writeFileSync(path.join(factoriesPath, `${className}.php`), withBannerPhp(content));
         }
         return { success: true, message: 'Factories generated successfully.' };
     } catch (error) { return { success: false, message: error.message }; }
 }
 
+/**
+ * Generate DatabaseSeeder: topologically sorts tables by FK dependency,
+ * seeds a Super Admin user (+ role when authorization is on), then
+ * factory-seeds each table with unique-constraint-safe retries.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} basePath generated app root
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
 async function generateLaravelDatabaseSeeder(fullSchema, basePath) {
     try {
         const { project: projectSettings, database: { table: tables, relationships } } = fullSchema;
@@ -820,6 +866,7 @@ async function generateLaravelDatabaseSeeder(fullSchema, basePath) {
         let visited = new Set();
         let tempVisited = new Set();
         
+        /** DFS post-order visit: parents before children (seed order). @param {string} table table name @returns {void} */
         const visit = (table) => {
             if (tempVisited.has(table)) return; 
             if (visited.has(table)) return;
@@ -895,7 +942,7 @@ async function generateLaravelDatabaseSeeder(fullSchema, basePath) {
         }
 
         const content = `<?php\nnamespace Database\\Seeders;\nuse Illuminate\\Database\\Seeder;\n${importStatements.join('\n')}\n\nclass DatabaseSeeder extends Seeder {\n    public function run(): void {\n${runContent.join('\n')}\n    }\n}`;
-        fs.writeFileSync(path.join(seedersPath, 'DatabaseSeeder.php'), content);
+        fs.writeFileSync(path.join(seedersPath, 'DatabaseSeeder.php'), withBannerPhp(content));
         
         return { success: true, message: 'DatabaseSeeder generated successfully.' };
     } catch (error) { 
@@ -911,6 +958,9 @@ async function generateLaravelDatabaseSeeder(fullSchema, basePath) {
  * pair with plain app code: audits migration, Audit model, AuditObserver,
  * HasAudits trait, and a read-only AuditsRelationManager.
  * Only emitted when project.module_log_audit === 1.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} basePath generated app root
+ * @returns {Promise<{success: boolean, message: string}>}
  */
 async function generateNativeAuditFiles(fullSchema, basePath) {
     try {

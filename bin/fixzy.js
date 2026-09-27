@@ -13,6 +13,7 @@
 const path = require('path');
 const fs = require('fs');
 
+/** Parse argv into {key:value} flags plus positional args under `_`. @param {string[]} argv argument tokens @returns {object} parsed flags, positionals in args._ */
 function parseArgs(argv) {
     const args = { _: [] };
     for (let i = 0; i < argv.length; i++) {
@@ -29,6 +30,7 @@ function parseArgs(argv) {
     return args;
 }
 
+/** Print CLI usage/help text to stdout. @returns {void} */
 function usage() {
     console.log(`fixzy — Fixzy SysMaker CLI (multi-stack admin system generator)
 
@@ -46,11 +48,13 @@ Env:
 `);
 }
 
+/** Open the Fixzy SysMaker store via core/store (FSM_DATA_DIR honored). @returns {import('better-sqlite3').Database} */
 function openDb() {
     const { openStore } = require('../src/core/store');
     return openStore();
 }
 
+/** `fixzy list` — print all projects (id, title, stack, active flag). @returns {void} */
 function cmdList() {
     const db = openDb();
     const rows = db.prepare('SELECT project_id, app_title, stack_base, is_active FROM projects ORDER BY project_id').all();
@@ -64,6 +68,14 @@ function cmdList() {
     db.close();
 }
 
+/**
+ * `fixzy generate` — headless generation from a stored project or fixture.
+ * Validates the output path against the allowlist, assembles the full schema
+ * (via the IPC handler registry or fixture JSON), runs the IR gate, then
+ * generates the Laravel+Filament stack.
+ * @param {object} args parsed CLI args (--project|--fixture, --out, --zip)
+ * @returns {Promise<void>}
+ */
 async function cmdGenerate(args) {
     const { validateOutputPath } = require('../src/core/pathGuard');
     const { generateLaravelFilamentStack } = require('../src/generators/laravelFilamentStack');
@@ -174,6 +186,12 @@ async function cmdGenerate(args) {
     }
 }
 
+/**
+ * `fixzy serve` — start the web UI + IPC-over-HTTP server.
+ * Refuses non-localhost binds unless FSM_ALLOW_REMOTE=1 (no auth in v1).
+ * @param {object} args parsed CLI args (--port, --host)
+ * @returns {Promise<void>}
+ */
 async function cmdServe(args) {
     const host = args.host || '127.0.0.1';
     if (host !== '127.0.0.1' && host !== 'localhost' && process.env.FSM_ALLOW_REMOTE !== '1') {
@@ -191,6 +209,7 @@ async function cmdServe(args) {
     });
 }
 
+/** `fixzy fixtures` — run the golden fixture test suite, exit with its status. @returns {void} */
 function cmdFixtures() {
     const { spawnSync } = require('child_process');
     const r = spawnSync(process.execPath, [path.join(__dirname, '..', 'test', 'golden.js')], { stdio: 'inherit' });

@@ -15,6 +15,9 @@ use Illuminate\Support\ServiceProvider;
  */
 class AttachmentServiceProvider extends ServiceProvider
 {
+    /**
+     * Route local-disk temporary URLs through the signed attachment download route.
+     */
     public function boot(): void
     {
         // Serve private files on the `local` disk through our signed

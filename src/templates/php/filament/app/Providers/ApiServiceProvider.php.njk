@@ -15,6 +15,9 @@ use Illuminate\Support\ServiceProvider;
  */
 class ApiServiceProvider extends ServiceProvider
 {
+    /**
+     * Register the token-authenticated REST routes for generated tables.
+     */
     public function boot(): void
     {
         // ApiJsonRequest runs BEFORE auth:sanctum so unauthenticated

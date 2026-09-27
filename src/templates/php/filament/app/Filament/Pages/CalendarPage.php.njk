@@ -6,6 +6,9 @@ use App\Models\{{ model_class }};
 use Filament\Pages\Page;
 use Illuminate\Support\Carbon;
 
+/**
+ * Month-grid calendar page showing {{ page_title }} records by their start date.
+ */
 class {{ page_class }} extends Page
 {
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-calendar-days';
@@ -21,6 +24,9 @@ class {{ page_class }} extends Page
     public int $year;
     public int $month;
 
+    /**
+     * Initialise the displayed year/month from query string, defaulting to today.
+     */
     public function mount(): void
     {
         $now = Carbon::now();
@@ -28,6 +34,9 @@ class {{ page_class }} extends Page
         $this->month = (int) request()->query('month', $now->month);
     }
 
+    /**
+     * Step the calendar back one month.
+     */
     public function prevMonth(): void
     {
         $d = Carbon::create($this->year, $this->month, 1)->subMonth();
@@ -35,6 +44,9 @@ class {{ page_class }} extends Page
         $this->month = $d->month;
     }
 
+    /**
+     * Step the calendar forward one month.
+     */
     public function nextMonth(): void
     {
         $d = Carbon::create($this->year, $this->month, 1)->addMonth();
@@ -42,6 +54,9 @@ class {{ page_class }} extends Page
         $this->month = $d->month;
     }
 
+    /**
+     * Jump the calendar to the current month.
+     */
     public function goToToday(): void
     {
         $now = Carbon::now();
@@ -49,6 +64,10 @@ class {{ page_class }} extends Page
         $this->month = $now->month;
     }
 
+    /**
+     * Human-readable label for the displayed month.
+     * @return  string  e.g. "September 2026".
+     */
     public function getMonthLabelProperty(): string
     {
         return Carbon::create($this->year, $this->month, 1)->format('F Y');

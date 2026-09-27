@@ -86,6 +86,12 @@ function createIpcShim() {
     };
 }
 
+/**
+ * Build the web-mode server: static renderer + POST /ipc/<channel> bridge +
+ * SSE /events push. Registers all app IPC handlers against an in-process shim.
+ * @param {object} [opts] { host, port, srcDir, repoRoot, preloadPath, db, dbPath, userData }
+ * @returns {{server: import('http').Server, ipc: object, db: object, apiMap: object, host: string, port: number}}
+ */
 function createWebServer(opts = {}) {
     const host = opts.host || '127.0.0.1';
     const port = opts.port || 7788;
@@ -136,12 +142,14 @@ function createWebServer(opts = {}) {
 
     const apiMap = extractApiMap(preloadPath);
 
+    /** Write a JSON response with the given status code. @param {import('http').ServerResponse} res @param {number} code HTTP status @param {object} obj serializable payload @returns {void} */
     function sendJson(res, code, obj) {
         const body = JSON.stringify(obj);
         res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(body);
     }
 
+    /** Buffer the request body as text; rejects past 50 MB. @param {import('http').IncomingMessage} req @returns {Promise<string>} raw body text */
     function readBody(req) {
         return new Promise((resolve, reject) => {
             let data = '';

@@ -24,12 +24,21 @@ use Filament\Forms\Components\TimePicker;
 {% if layout_imports %}{{ layout_imports }}
 {% endif %}use Filament\Tables\Table;
 
+/**
+ * Generated relation manager for {{ child_singular }} children of the parent record.
+ */
 class {{ child_singular }}RelationManager extends RelationManager
 {
     protected static string $relationship = '{{ relationship_name }}';
     
     protected static ?string $relatedResource = {{ child_singular }}Resource::class;
 
+    /**
+     * Child record table with a create header action.
+     *
+     * @param  Table  $table  The relation table instance.
+     * @return  Table  The configured table.
+     */
     public function table(Table $table): Table
     {
         return $table
@@ -38,6 +47,12 @@ class {{ child_singular }}RelationManager extends RelationManager
             ]){{ table_override_lines }};
     }
 {% if form_override %}
+    /**
+     * Form schema for creating/editing related child records.
+     *
+     * @param  Schema  $schema  The relation form schema.
+     * @return  Schema  The configured schema.
+     */
     public function form(Schema $schema): Schema
     {
         return $schema->components([

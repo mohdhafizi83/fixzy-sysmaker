@@ -19,6 +19,11 @@ class ChatMessageCreated implements ShouldBroadcastNow
     use Dispatchable;
     use SerializesModels;
 
+    /**
+     * Create the broadcast event for a new chat message.
+     *
+     * @param  ChatMessage  $message  The chat message that was just created.
+     */
     public function __construct(
         public ChatMessage $message,
     ) {}
@@ -33,6 +38,10 @@ class ChatMessageCreated implements ShouldBroadcastNow
         ];
     }
 
+    /**
+     * Broadcast event name listened for by the chat page.
+     * @return  string  The wire event name.
+     */
     public function broadcastAs(): string
     {
         return 'chat.message.created';

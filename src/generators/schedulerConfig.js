@@ -16,6 +16,7 @@ const pluralize = require('pluralize');
 
 const DATE_TYPES = ['DATE', 'DATETIME', 'TIMESTAMP', 'TIMESTAMPTZ'];
 
+/** Escape a value for a single-quoted PHP string literal. @param {*} v @returns {string} PHP-safe escaped string */
 function phpStr(v) {
     return String(v === null || v === undefined ? '' : v)
         .replace(/\\/g, '\\\\')
@@ -36,6 +37,7 @@ function modelClassName(tableName, tables) {
         .join('');
 }
 
+/** True when the field's data_type is date-like. @param {object} fieldData field row @returns {boolean} */
 function isDateField(fieldData) {
     const dt = String((fieldData && fieldData.data_type) || '').toUpperCase();
     return DATE_TYPES.some((d) => dt === d || dt.startsWith(d));

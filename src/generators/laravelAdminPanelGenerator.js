@@ -1,3 +1,9 @@
+// AdminPanelProvider generator (Fixzy SysMaker).
+//
+// Renders app/Providers/Filament/AdminPanelProvider.php from the project
+// config: navigation groups, tenancy, auth/MFA/captcha login class,
+// realtime, dashboard class, and localization flags all map to template
+// variables consumed by AdminPanelProvider.php.njk.
 const fs = require('fs');
 const path = require('path');
 const { renderTemplate } = require('../render/engine');

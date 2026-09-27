@@ -38,6 +38,7 @@ const BASE_BY_TYPE = {
 };
 
 // PHP literal for any JSON-safe value (scalars + nested arrays/objects).
+/** @param {*} v JSON-safe value @returns {string} PHP literal (null/array/object/scalar) */
 function phpLiteral(v) {
     if (v === null || v === undefined) return 'null';
     if (Array.isArray(v)) {
@@ -55,6 +56,11 @@ function phpLiteral(v) {
 // snake_case (consumed by ReportQuery / widget bases). `tables` is the
 // IR table map, used to bake the Eloquent model class name for the
 // latest-records widget (Filament TableWidget requires Eloquent).
+/**
+ * @param {object} cfg widget config (camelCase keys from reportConfig.js)
+ * @param {object} tables IR table map (for baking the model class name)
+ * @returns {string} PHP array literal with snake_case keys
+ */
 function cfgPhp(cfg, tables) {
     const { getModelClassName } = require('./laravelDatabaseGenerator');
     const map = {
@@ -87,6 +93,7 @@ function cfgPhp(cfg, tables) {
     return "[\n" + lines.join('\n') + "\n    ]";
 }
 
+/** Derive a deterministic valid PHP class name from the widget id. @param {object} cfg widget config @returns {string} class name like Report_<id> */
 function widgetClassName(cfg) {
     // Deterministic, valid PHP class name derived from the widget id.
     const id = String(cfg.id || '').replace(/[^A-Za-z0-9]/g, '');
@@ -95,6 +102,7 @@ function widgetClassName(cfg) {
 
 // Nunjucks autoescape is OFF (templates emit code), so any user-supplied
 // string interpolated into Blade/HTML must be escaped here at generation.
+/** Escape HTML special chars (&, <, >, "). @param {*} s @returns {string} HTML-escaped string */
 function escapeHtml(s) {
     return String(s)
         .replace(/&/g, '&amp;')
@@ -103,6 +111,13 @@ function escapeHtml(s) {
         .replace(/"/g, '&quot;');
 }
 
+/**
+ * Generate the Reports module (query engine, widget base classes, one
+ * widget class per configured widget, live transport wiring).
+ * @param {object} fullSchema assembled project schema
+ * @param {string} outputDir generated app root
+ * @returns {{success: boolean, files: string[], skipped?: boolean, error?: string}}
+ */
 function generateReportModule(fullSchema, outputDir) {
     try {
         const written = [];
@@ -111,6 +126,7 @@ function generateReportModule(fullSchema, outputDir) {
             return { success: true, files: [], skipped: true };
         }
 
+        /** Render a template to outputDir/relPath once (idempotent re-generation). @param {string} relPath @param {string} template njk path @param {object} [context] @returns {void} */
         const emit = (relPath, template, context) => {
             const abs = path.join(outputDir, relPath);
             fs.mkdirSync(path.dirname(abs), { recursive: true });

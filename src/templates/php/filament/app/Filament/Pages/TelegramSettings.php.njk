@@ -30,6 +30,9 @@ class TelegramSettings extends Page
 
     public array $settings = [];
 
+    /**
+     * Load saved Telegram bot settings.
+     */
     public function mount(): void
     {
         $this->settings = [
@@ -38,6 +41,9 @@ class TelegramSettings extends Page
         ];
     }
 
+    /**
+     * Persist every non-empty Telegram setting via FixzySetting.
+     */
     public function save(): void
     {
         $allowed = array_keys($this->settings);
@@ -52,6 +58,9 @@ class TelegramSettings extends Page
         session()->flash('fixzy_settings_saved', 'Telegram settings saved. Workflow "Send Telegram" actions now use this bot.');
     }
 
+    /**
+     * Send a test message via the Telegram bot API to verify settings.
+     */
     public function testSend(): void
     {
         $token = $this->settings['telegram_bot_token'] ?? '';

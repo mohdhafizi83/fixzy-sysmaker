@@ -58,6 +58,10 @@ class ActivityLogPage extends Page
     /** @var \Illuminate\Support\Collection<int, {% if audit_enabled %}Audit{% else %}mixed{% endif %}> */
     public $dataChangeRecords;
 
+    /**
+     * Access gate: super admins always pass; other users need the view_any_activity_log permission.
+     * @return  bool  Whether the current user may view the log.
+     */
     public static function canAccess(): bool
     {
         $user = Auth::user();
@@ -76,6 +80,9 @@ class ActivityLogPage extends Page
         {% endif %}
     }
 
+    /**
+     * Apply deep-link query filters (user, event, date range, tab) on page load.
+     */
     public function mount(): void
     {
         // Deep-link support: /activity-log?user=1&tab=data&event=logged_in&from=...&to=...
@@ -110,6 +117,11 @@ class ActivityLogPage extends Page
         }
     }
 
+    /**
+     * Switch which dataset table is displayed.
+     *
+     * @param  string  $tab  Requested tab: "auth" or "data".
+     */
     public function setTab(string $tab): void
     {
         // Both datasets are already loaded by refreshRecords() on mount,

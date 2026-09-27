@@ -19,6 +19,12 @@ use Illuminate\Validation\ValidationException;
  */
 class FixzyLogin extends Login
 {
+    /**
+     * Login form; adds the captcha human-check component when captcha is enabled.
+     *
+     * @param  Schema  $schema  The login form schema.
+     * @return  Schema  The composed login form schema.
+     */
     public function form(Schema $schema): Schema
     {
         $components = [
@@ -77,6 +83,10 @@ class FixzyLogin extends Login
             ->extraInputAttributes(['tabindex' => 1]);
     }
 
+    /**
+     * Authenticate locally first; on failure fall back to the LDAP directory before giving up.
+     * @return  ?LoginResponse  Login response on success, null when no redirect is returned.
+     */
     public function authenticate(): ?LoginResponse
     {
         // getState() runs ALL form validation first — including the

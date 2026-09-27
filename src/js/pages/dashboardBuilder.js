@@ -1,8 +1,17 @@
+// src/js/pages/dashboardBuilder.js
+//
+// Dashboard widget builder: kiosk-mode settings, widget CRUD modal, and the
+// widget card list rendered from database.widgets.
+
 import { appState } from '../state.js';
 import { openGeneralQueryBuilder } from '../features/queryBuilder.js';
 
 let isEventsAttached = false;
 
+/**
+ * Initialises the dashboard builder: renders widgets, kiosk controls, and one-time event listeners.
+ * @returns {void}
+ */
 export function initDashboardBuilder() {
     renderDashboardWidgets();
     initKioskControls();
@@ -13,6 +22,10 @@ export function initDashboardBuilder() {
     }
 }
 
+/**
+ * Loads kiosk settings into the inputs and wires save/toggle listeners for the kiosk controls.
+ * @returns {void}
+ */
 function initKioskControls() {
     const enabledEl = document.getElementById('kiosk-enabled');
     if (!enabledEl) return;
@@ -22,6 +35,7 @@ function initKioskControls() {
     document.getElementById('kiosk-page-size').value = String(project.kiosk_page_size || 4);
     toggleKioskGroups();
 
+    // Persists kiosk enabled/rotate/page-size via IPC and mirrors into in-memory schema.
     const saveKiosk = async () => {
         const payload = {
             project_id: appState.activeProject?.project_id,
@@ -43,6 +57,7 @@ function initKioskControls() {
         }
     };
 
+    // Shows rotate/page-size groups only while kiosk mode is enabled.
     const toggleKioskGroups = () => {
         const on = enabledEl.checked;
         document.getElementById('kiosk-rotate-group').style.display = on ? 'block' : 'none';
@@ -58,6 +73,10 @@ function initKioskControls() {
     document.getElementById('kiosk-page-size').addEventListener('change', saveKiosk);
 }
 
+/**
+ * Attaches one-time listeners for add/edit/delete widget buttons and the advanced query builder.
+ * @returns {void}
+ */
 function attachEventListeners() {
        
     document.getElementById('btn-add-widget')?.addEventListener('click', () => {
@@ -129,6 +148,12 @@ function attachEventListeners() {
 }
 
 // NEW FUNCTION: Fill the column list based on the selected table
+/**
+ * Fills the widget column dropdowns from the selected table's fields (numeric-only for chart axes).
+ * @param {string} tableName Source table whose columns populate the dropdowns.
+ * @param {Object} [selectedValues] Existing widget column selections to preselect in edit mode.
+ * @returns {void}
+ */
 function populateTableFieldsDropdown(tableName, selectedValues = {}) {
     const selects = ['widget-chart-label', 'widget-target-field', 'widget-filter-field'];
     // Numeric-only selects for scatter/bubble/combo axes.
@@ -147,7 +172,7 @@ function populateTableFieldsDropdown(tableName, selectedValues = {}) {
     if (!tableData || !tableData.fields) return;
 
     const NUMERIC_TYPES = ['INT', 'INTEGER', 'BIGINT', 'SMALLINT', 'DECIMAL', 'FLOAT', 'DOUBLE', 'NUMBER', 'NUMERIC'];
-    const isNumeric = (f) => NUMERIC_TYPES.includes(String(f.data_type || '').toUpperCase());
+    const isNumeric = (f) => NUMERIC_TYPES.includes(String(f.data_type || '').toUpperCase()); // numeric column check
 
     const fields = Object.keys(tableData.fields);
     const numericFields = fields.filter((name) => isNumeric(tableData.fields[name]));
@@ -190,6 +215,10 @@ function populateTableFieldsDropdown(tableName, selectedValues = {}) {
     });
 }
 
+/**
+ * Renders the widget cards grid from database.widgets, sorted by sort_order.
+ * @returns {void}
+ */
 export function renderDashboardWidgets() {
     const container = document.getElementById('widget-list-container');
     if (!container) return;
@@ -243,6 +272,11 @@ let extraInfo = '';
     });
 }
 
+/**
+ * Opens the widget modal for adding a new widget or editing an existing one by id.
+ * @param {number|null} [widgetId] Widget id to edit, or null for a new widget.
+ * @returns {void}
+ */
 function openWidgetModal(widgetId = null) {
     const tableSelect = document.getElementById('widget-target-table');
     tableSelect.innerHTML = '<option value="">-- Select Source Table --</option>';
@@ -329,10 +363,18 @@ function openWidgetModal(widgetId = null) {
     document.getElementById('modal-widget-settings').style.display = 'block';
 }
 
+/**
+ * Hides the widget settings modal.
+ * @returns {void}
+ */
 function closeWidgetModal() {
     document.getElementById('modal-widget-settings').style.display = 'none';
 }
 
+/**
+ * Shows/hides widget form groups (aggregate, label, target/series/size fields) per widget type.
+ * @returns {void}
+ */
 function toggleWidgetFields() {
     const type = document.getElementById('widget-type').value;
     const aggregateSelect = document.getElementById('widget-aggregate-type');
@@ -419,6 +461,10 @@ function toggleWidgetFields() {
     }
 }
 
+/**
+ * Shows the interval input for 'poll' refresh mode and the realtime notice for 'live'.
+ * @returns {void}
+ */
 function toggleRefreshFields() {
     const mode = document.getElementById('widget-refresh-mode').value;
     const intervalGroup = document.getElementById('group-refresh-interval');
@@ -427,6 +473,10 @@ function toggleRefreshFields() {
     if (notice) notice.style.display = mode === 'live' ? 'block' : 'none';
 }
 
+/**
+ * Validates and saves the widget form via IPC, updating the in-memory widget list and re-rendering.
+ * @returns {Promise<void>}
+ */
 async function saveWidgetData() {
     const widgetData = {
         id: document.getElementById('widget-id').value,
@@ -512,6 +562,11 @@ async function saveWidgetData() {
     }
 }
 
+/**
+ * Deletes a widget by id via IPC and refreshes the widget cards grid.
+ * @param {number} widgetId Id of the widget to delete.
+ * @returns {Promise<void>}
+ */
 async function deleteWidget(widgetId) {
     if (!confirm("Are you sure you want to delete this widget?")) return;
     

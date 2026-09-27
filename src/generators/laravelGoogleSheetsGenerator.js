@@ -34,11 +34,12 @@ const { toSingularPascalCase, toTitleCase } = require('../utils');
 const CORE_BLOCKED_TABLES = ['users', 'sessions', 'jobs', 'failed_jobs', 'cache', 'password_reset_tokens', 'permissions', 'roles'];
 const NEVER_SYNCED_FIELDS = ['created_at', 'updated_at', 'deleted_at', 'remember_token', 'sync_uuid', 'sheet_synced_at'];
 
+/** @param {object} fullSchema @returns {boolean} true when the Google Sheets module flag is on */
 function isSheetsEnabled(fullSchema) {
     return Number((fullSchema.project || {}).module_google_sheets) === 1;
 }
 
-/** Syncable = opted-in, not core, not feature-generated. */
+/** Syncable = opted-in, not core, not feature-generated. @param {object} fullSchema @returns {Array<{tableName: string, tableData: object}>} */
 function collectSyncedTables(fullSchema) {
     const tables = (fullSchema.database && fullSchema.database.table) || {};
     const out = [];
@@ -52,7 +53,7 @@ function collectSyncedTables(fullSchema) {
     return out;
 }
 
-/** Map a Fixzy field data_type to a sheet sync type. */
+/** Map a Fixzy field data_type to a sheet sync type. @param {object} field field row @returns {'number'|'bool'|'date'|'datetime'|'text'} */
 function sheetTypeOf(field) {
     const type = String(field.data_type || '').toUpperCase();
     if (['INT', 'INTEGER', 'BIGINT', 'SMALLINT', 'DECIMAL', 'FLOAT', 'DOUBLE'].includes(type)) return 'number';
@@ -62,6 +63,12 @@ function sheetTypeOf(field) {
     return 'text';
 }
 
+/**
+ * Build the syncable column map for a table (skips keys, timestamps,
+ * repeaters, and file/image fields).
+ * @param {object} tableData table row data
+ * @returns {Array<{field: string, header: string, type: string}>}
+ */
 function buildColumns(tableData) {
     const cols = [];
     for (const field of Object.values(tableData.fields || {})) {
@@ -82,11 +89,19 @@ function buildColumns(tableData) {
     return cols;
 }
 
+/** Write a file, creating the directory first. @param {string} dir @param {string} file @param {string} content @returns {void} */
 function writeIf(dir, file, content) {
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, file), content);
 }
 
+/**
+ * Merge composer packages + providers into fixzy-manifest.json (deduped).
+ * @param {string} outputDir generated app root
+ * @param {string[]} composerPackages packages to add
+ * @param {string[]} providers providers to add
+ * @returns {void}
+ */
 function mergeManifest(outputDir, composerPackages, providers) {
     const manifestPath = path.join(outputDir, 'fixzy-manifest.json');
     let manifest = { composer: [], php_extensions: [], npm: [], providers: [] };
@@ -110,6 +125,13 @@ function mergeManifest(outputDir, composerPackages, providers) {
 
 const POLL_INTERVAL_MINUTES = 5;
 
+/**
+ * Generate the Google Sheets sync module (config, service, job, provider,
+ * settings page, per-table migrations/observers/actions) when enabled.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} outputDir generated app root
+ * @returns {{success: boolean, composerPackages: string[], syncedTables: string[], message?: string}}
+ */
 function generateGoogleSheetsModule(fullSchema, outputDir) {
     try {
         if (!isSheetsEnabled(fullSchema)) {

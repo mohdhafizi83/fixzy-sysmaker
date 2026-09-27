@@ -1,3 +1,6 @@
+// Hierarchical tree view generator (Fixzy SysMaker).
+// Emits a nested-set/parent-child tree page per table that opts in via
+// tree_config (parent_id self-reference).
 const fs = require('fs');
 const path = require('path');
 const { toSingularPascalCase, toPluralPascalCase } = require('../utils');

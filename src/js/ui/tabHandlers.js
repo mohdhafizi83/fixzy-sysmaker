@@ -1,5 +1,11 @@
 // js/ui/tabHandlers.js
+//
+// Generic tab switching for the settings tab groups.
 
+/**
+ * Wires every .tab-link element to show its target tab panel and hide siblings.
+ * @returns {void}
+ */
 export function initializeTabSystems() {
     // Find all tab containers in the document
     const allTabContainers = document.querySelectorAll('.tabs-container');

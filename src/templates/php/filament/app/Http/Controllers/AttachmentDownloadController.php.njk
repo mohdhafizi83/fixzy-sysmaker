@@ -17,6 +17,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class AttachmentDownloadController extends Controller
 {
+    /**
+     * Stream a private attachment when the signed URL is valid and the path is safe.
+     *
+     * @param  Request  $request  Incoming request carrying the signature.
+     * @param  string  $path  Stored file path to download.
+     * @return  StreamedResponse  The file response.
+     */
     public function __invoke(Request $request, string $path): StreamedResponse
     {
         abort_unless($request->hasValidSignature(), 403, 'Link is invalid or expired.');

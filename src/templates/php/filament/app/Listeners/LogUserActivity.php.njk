@@ -22,16 +22,31 @@ use Illuminate\Auth\Events\Logout;
  */
 class LogUserActivity
 {
+    /**
+     * Log a successful sign-in.
+     *
+     * @param  Login  $event  The login event.
+     */
     public function handleLogin(Login $event): void
     {
         $this->record($event->user?->getKey(), ActivityLog::EVENT_LOGGED_IN, 'Signed in');
     }
 
+    /**
+     * Log a sign-out.
+     *
+     * @param  Logout  $event  The logout event.
+     */
     public function handleLogout(Logout $event): void
     {
         $this->record($event->user?->getKey(), ActivityLog::EVENT_LOGGED_OUT, 'Signed out');
     }
 
+    /**
+     * Log a failed sign-in attempt (account name only; passwords are never stored).
+     *
+     * @param  Failed  $event  The failed-login event.
+     */
     public function handleFailed(Failed $event): void
     {
         // $event->credentials holds the attempted [account => password] pair.

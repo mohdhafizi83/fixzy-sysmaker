@@ -29,6 +29,9 @@ class ActivityLogServiceProvider extends ServiceProvider
         Failed::class => 'handleFailed',
     ];
 
+    /**
+     * Register auth event listeners after boot, avoiding double registration with Laravel's discovery.
+     */
     public function boot(): void
     {
         // Laravel 12 auto-discovers listeners in app/Listeners by event

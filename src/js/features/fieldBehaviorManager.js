@@ -15,6 +15,10 @@ const VALUELESS_OPS = ['filled', 'empty', 'checked', 'unchecked'];
 // fieldHandlers.js already routes fld-* changes into the module's
 // custom_module_fields.settings_override. Writing via SaveManager here too
 // would leak the override into the main module.
+/**
+ * Resolves the currently open custom module object, if in custom-module mode.
+ * @returns {Object|null} The custom module, or null when not in custom mode.
+ */
 function currentCustomModule() {
     const badgeEl = document.getElementById('workspace-module-badge');
     const titleEl = document.getElementById('workspace-module-title');
@@ -28,6 +32,11 @@ function currentCustomModule() {
 }
 
 // Effective form layout config: module override ?? table config.
+/**
+ * Returns the form layout config, preferring the custom module's settings_override over the table's own.
+ * @param {string} tableName Table whose layout is resolved.
+ * @returns {Object|null} Parsed layout config or null.
+ */
 function effectiveLayoutConfig(tableName) {
     const parse = (raw) => { if (!raw) return null; if (typeof raw === 'object') return raw; try { return JSON.parse(raw); } catch (e) { return null; } };
     const mod = currentCustomModule();
@@ -45,6 +54,12 @@ function effectiveLayoutConfig(tableName) {
 // Last field rendered in the Form Behavior tab (set by renderFieldBehaviorTab).
 let lastContext = null;
 
+/**
+ * Lists sibling fields of a table (excluding the current one) ordered by field_order.
+ * @param {string} tableName Table whose fields are listed.
+ * @param {string} excludeFieldName Field to omit.
+ * @returns {Array<{name: string, label: string}>} Sibling field descriptors.
+ */
 function siblingFields(tableName, excludeFieldName) {
     const fields = appState.jsonData?.database?.table?.[tableName]?.fields || {};
     return Object.values(fields)
@@ -53,6 +68,14 @@ function siblingFields(tableName, excludeFieldName) {
         .map((f) => ({ name: f.field_name, label: f.caption || f.field_name }));
 }
 
+/**
+ * Populates a field <select> with sibling options plus a placeholder, preselecting the saved value.
+ * @param {HTMLSelectElement|null} selectEl Target select element.
+ * @param {Array<{name: string, label: string}>} siblings Options to add.
+ * @param {string} selected Value to preselect.
+ * @param {string} placeholder Placeholder option text.
+ * @returns {void}
+ */
 function fillFieldDropdown(selectEl, siblings, selected, placeholder) {
     if (!selectEl) return;
     selectEl.innerHTML = `<option value="">${placeholder}</option>`;
@@ -65,6 +88,13 @@ function fillFieldDropdown(selectEl, siblings, selected, placeholder) {
     });
 }
 
+/**
+ * Loads a saved condition rule's value into the value input (blank when no rule).
+ * @param {Object|null} rule Rule object {field, op, value} or null.
+ * @param {string} valueInputId DOM id of the value input.
+ * @param {string[]} [valueGroupIds] Unused group ids kept for call-site compatibility.
+ * @returns {void}
+ */
 function ruleToForm(rule, valueInputId, valueGroupIds) {
     // Populate value input; hide value group for valueless ops.
     const valueEl = document.getElementById(valueInputId);
@@ -72,6 +102,13 @@ function ruleToForm(rule, valueInputId, valueGroupIds) {
     if (valueEl) valueEl.value = Array.isArray(rule.value) ? rule.value.join(', ') : (rule.value ?? '');
 }
 
+/**
+ * Reads field/op/value selects into a condition rule object, or null when incomplete.
+ * @param {string} fieldSelId DOM id of the field select.
+ * @param {string} opSelId DOM id of the operator select.
+ * @param {string} valueInputId DOM id of the value input.
+ * @returns {Object|null} Rule {field, op[, value]} or null.
+ */
 function formToRule(fieldSelId, opSelId, valueInputId) {
     const field = document.getElementById(fieldSelId)?.value || '';
     const op = document.getElementById(opSelId)?.value || '';
@@ -87,6 +124,11 @@ function formToRule(fieldSelId, opSelId, valueInputId) {
     return { field, op, value: raw };
 }
 
+/**
+ * Dims/disables the value input when the chosen operator needs no value (filled/empty/checked/unchecked).
+ * @param {string} opPrefix ID prefix ('fld-vis' or 'fld-req').
+ * @returns {void}
+ */
 function updateValueVisibility(opPrefix) {
     const op = document.getElementById(`${opPrefix}-op`)?.value || '';
     const group = document.getElementById(`${opPrefix}-value-group`);
@@ -95,6 +137,12 @@ function updateValueVisibility(opPrefix) {
     if (val) val.disabled = VALUELESS_OPS.includes(op);
 }
 
+/**
+ * Fills the Form Behavior tab (label display, group, visible-if, required-if, dependency) for one field.
+ * @param {string} tableName Table containing the field.
+ * @param {string} fieldName Field being edited.
+ * @returns {void}
+ */
 function renderFieldBehaviorTab(tableName, fieldName) {
     const fieldData = appState.jsonData?.database?.table?.[tableName]?.fields?.[fieldName];
     if (!fieldData) return;
@@ -146,6 +194,13 @@ function renderFieldBehaviorTab(tableName, fieldName) {
     updateValueVisibility('fld-req');
 }
 
+/**
+ * Persists the Form Behavior tab inputs (label, group, visible_if, required_if, depends_on) for the field.
+ * Skipped in custom-module mode, where fieldHandlers.js owns the override routing.
+ * @param {string} tableName Table containing the field.
+ * @param {string} fieldName Field being saved.
+ * @returns {void}
+ */
 function saveBehavior(tableName, fieldName) {
     const fieldData = appState.jsonData?.database?.table?.[tableName]?.fields?.[fieldName];
     if (!fieldData || !fieldData.field_id) return;
@@ -168,6 +223,10 @@ function saveBehavior(tableName, fieldName) {
     });
 }
 
+/**
+ * Wires change listeners on all Form Behavior inputs; saves resolve table/field from lastContext.
+ * @returns {void}
+ */
 function initFieldBehaviorTab() {
     // Wire saves lazily: the current table/field is resolved at save time
     // from the workspace title (same pattern as publicFormManager).

@@ -15,6 +15,12 @@ use Filament\Forms\Components\TextInput;
  */
 class CaptchaLogin extends Login
 {
+    /**
+     * Login form extended with a simple arithmetic human-check question.
+     *
+     * @param  Schema  $schema  The login form schema.
+     * @return  Schema  The schema with the captcha field appended.
+     */
     public function form(Schema $schema): Schema
     {
         $captcha = session()->get('fixzy_captcha');

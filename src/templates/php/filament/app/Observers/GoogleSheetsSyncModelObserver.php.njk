@@ -20,6 +20,11 @@ class GoogleSheetsSync{{ model_class }}Observer
 {
     protected const TABLE_KEY = '{{ table_key }}';
 
+    /**
+     * Push the saved record to the linked Google Sheet (skipped while importing).
+     *
+     * @param  Model  $record  The saved model record.
+     */
     public function saved(Model $record): void
     {
         if (GoogleSheetsSyncService::$importing) {
@@ -34,6 +39,11 @@ class GoogleSheetsSync{{ model_class }}Observer
         }
     }
 
+    /**
+     * Push the deletion to the linked Google Sheet (skipped while importing).
+     *
+     * @param  Model  $record  The deleted model record.
+     */
     public function deleted(Model $record): void
     {
         if (GoogleSheetsSyncService::$importing) {

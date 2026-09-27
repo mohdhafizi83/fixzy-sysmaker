@@ -1,3 +1,8 @@
+// src/js/sidebar.js
+//
+// Sidebar tree: generates the table/field menu, handles selection, activation,
+// move up/down, delete, and core-field lock prompts.
+
 import { showPage } from './pageManager.js';
 // Import functions from uiHandlers.js
 import {   
@@ -13,6 +18,12 @@ import { populateFieldSettings, setupMediaTab } from './pages/fieldSettings.js';
 import { appState } from './state.js'; 
 import { loadProjectData } from '../renderer.js'; 
 
+/**
+ * Expands the parent table's submenu and activates the named field's settings page.
+ * @param {string} tableName Parent table that owns the field.
+ * @param {string} fieldName Field link to select.
+ * @returns {Promise<void>} Resolves once the field page is populated (or not found).
+ */
 export function focusOnSidebarField(tableName, fieldName) {
     return new Promise(resolve => {
         const allLinks = document.querySelectorAll('#table-list a');
@@ -27,6 +38,7 @@ export function focusOnSidebarField(tableName, fieldName) {
             return;
         }
 
+        // Selects the field link and populates the field settings page in populate mode.
         const selectAndPopulate = () => {
             const fieldLinks = parentLink.parentElement.querySelectorAll('.submenu-level-3 a');
             const targetFieldLink = Array.from(fieldLinks).find(
@@ -71,6 +83,11 @@ document.getElementById('field-settings-page').classList.remove('hidden');
 }
 
 // New function to activate a link manually
+/**
+ * Activates a table's sidebar link and loads its table settings page.
+ * @param {string} tableName Table link to activate.
+ * @returns {void}
+ */
 export function setActiveSidebarLink(tableName) {
     if (!tableName) return;
 
@@ -98,6 +115,10 @@ document.getElementById('table-settings-page').classList.remove('hidden');
     }
 }
 
+/**
+ * Wires the sidebar action buttons: new table/field, delete, and move up/down.
+ * @returns {void}
+ */
 export function initializeSidebarButtons() {
     const newTableBtn = document.getElementById('btn-new-table');
 	const newFieldBtn = document.getElementById('btn-new-field');
@@ -105,6 +126,11 @@ export function initializeSidebarButtons() {
     const moveUpBtn = document.getElementById('btn-move-up');
     const moveDownBtn = document.getElementById('btn-move-down');
 
+    /**
+     * Swaps the active table or field with its sibling in the given direction and persists the order.
+     * @param {('up'|'down')} direction Direction to move the active item.
+     * @returns {Promise<void>}
+     */
     const handleMove = async (direction) => {
         const activeLink = document.querySelector('#table-list a.active');
         if (!activeLink) return;
@@ -222,6 +248,7 @@ export function initializeSidebarButtons() {
                 .filter(r => r.parent_table_name === tableNameToDelete)
                 .map(r => r.child_table_name);
 
+// Deletes the given tables via IPC and returns to the Project Setup view.
 const performDelete = async (tablesToDelete) => {
     const result = await window.electronAPI.deleteTables({
         projectId: appState.activeProject.project_id,
@@ -312,6 +339,10 @@ const performDelete = async (tablesToDelete) => {
 	
 }
 
+/**
+ * Rebuilds the whole sidebar tree (tables with nested field submenus) from the loaded project JSON.
+ * @returns {Promise<void>}
+ */
 export async function generateSidebarMenu() {
     try {
         const tables = appState.jsonData.database.table;
@@ -353,6 +384,10 @@ export async function generateSidebarMenu() {
     }
 }
 
+/**
+ * Wires sidebar link interactivity: expand/collapse, activation, and core-field lock dialogs.
+ * @returns {void}
+ */
 export function initializeSidebarInteractivity() {
     const sidebarList = document.getElementById('table-list');
     if (!sidebarList) return;
@@ -361,6 +396,7 @@ export function initializeSidebarInteractivity() {
     const fieldLockMessage = "This core system field cannot be modified.\n\nTo proceed, you can disable this protection in Configuration. This is highly discouraged and there is no guarantee the final generated application will work properly.";
     const tableLockMessage = "The 'users' table is a core system component and cannot be modified.\n\nTo proceed, you can disable this protection in Configuration. This is highly discouraged and there is no guarantee the final generated application will work properly.";
 
+    // Collapses every open submenu except the optional exception link.
     const closeAllSubmenus = (exceptThisLink = null) => {
         const allTableLinks = sidebarList.querySelectorAll('.has-submenu > a');
         allTableLinks.forEach(link => {

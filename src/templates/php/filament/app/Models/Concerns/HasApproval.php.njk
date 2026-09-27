@@ -109,6 +109,10 @@ trait HasApproval
         return $this;
     }
 
+    /**
+     * Name of the column holding the approval status.
+     * @return  string  Status column name.
+     */
     public function approvalStatusField(): string
     {
         return static::APPROVAL_STATUS_FIELD;
@@ -120,6 +124,10 @@ trait HasApproval
         return static::APPROVAL_INITIAL;
     }
 
+    /**
+     * Whether the record sits in a final approval state and can no longer change.
+     * @return  bool  True when the current status is final.
+     */
     public function isApprovalLocked(): bool
     {
         $status = static::APPROVAL_STATUSES[(string) $this->{$this->approvalStatusField()}] ?? null;

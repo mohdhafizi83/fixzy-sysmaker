@@ -31,14 +31,17 @@
 const fs = require('fs');
 const path = require('path');
 const pluralize = require('pluralize');
+const { withBannerPhp } = require('../render/engine');
 
 const IDENT = /^[a-z_][a-z0-9_]*$/i;
 
+/** Validate a lowercase snake_case identifier; throws when unsafe. @param {string} name identifier @param {string} kind description used in the error @returns {string} the validated name */
 function safeIdent(name, kind) {
     if (typeof name === 'string' && IDENT.test(name)) return name;
     throw new Error(`unsafe ${kind}: ${JSON.stringify(name)}`);
 }
 
+/** Render a value as a single-quoted PHP string literal. @param {*} v @returns {string} PHP string literal */
 function phpString(v) {
     return "'" + String(v).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
 }
@@ -51,10 +54,12 @@ function phpString(v) {
 // $__wf_loopItem (the current loop element).
 const TOKEN_RE = /##(?:variable\.)?([a-zA-Z_][a-zA-Z0-9_]*)##/g;
 
+/** Map a token name to its PHP variable name ('item' -> loop item). @param {string} raw token name @returns {string} variable name without '$' */
 function tokenVarName(raw) {
     return raw === 'item' ? '__wf_loopItem' : raw;
 }
 
+/** Compile a ##variable##-tokenized string into a PHP concat expression. @param {*} raw string possibly containing tokens @returns {string} PHP expression (''' when empty) */
 function compileTokenText(raw) {
     if (raw === null || raw === undefined) return "''";
     const s = String(raw);
@@ -75,6 +80,7 @@ function compileTokenText(raw) {
 // Compile a math expression string (data_transformer) to a PHP expression.
 // Tokens become variables; only arithmetic chars are allowed. Returns null
 // when the expression contains anything else (fail-safe, never raw eval).
+/** @param {*} raw math expression with ##token## vars @returns {string|null} PHP arithmetic expression or null */
 function compileMathExpr(raw) {
     let s = String(raw || '');
     TOKEN_RE.lastIndex = 0;
@@ -86,6 +92,7 @@ function compileMathExpr(raw) {
 }
 
 // Map UI date format tokens (DD/MM/YYYY style) to PHP date() format chars.
+/** @param {string} fmt UI date format @returns {string} PHP date() format string */
 function mapDateFormat(fmt) {
     return String(fmt || 'YYYY-MM-DD').replace(
         /YYYY|MMMM|MMM|MM|DD|HH|hh|mm|ss/g,
@@ -95,6 +102,7 @@ function mapDateFormat(fmt) {
 
 // Compile one logic-builder value item to a PHP expression.
 // Returns null when the item type is not supported in v1.
+/** @param {object} item logic-builder value item {type, value, field?} @returns {string|null} PHP expression or null */
 function compileValue(item) {
     if (!item || typeof item !== 'object') return null;
     switch (item.type) {
@@ -129,6 +137,7 @@ const LOGIC_OPS = { and: '&&', or: '||' };
 
 // Compile a flat condition token list (value op value [logicop ...]) to a PHP
 // boolean expression. Returns null if unsupported.
+/** @param {object[]} tokens flat token list (values + operators + parens) @returns {string|null} PHP boolean expression or null */
 function compileFlat(tokens) {
     if (!Array.isArray(tokens) || tokens.length === 0) return null;
     const parts = [];
@@ -168,6 +177,7 @@ function compileFlat(tokens) {
 // Compile a logic-builder token list that may contain if / then / else_if / else
 // into a nested PHP ternary: (cond) ? a : (cond2 ? b : c).
 // Falls back to the flat compiler when no control tokens are present.
+/** @param {object[]} tokens logic-builder token list (may include if/then/else) @returns {string|null} PHP ternary expression or null */
 function compileCondition(tokens) {
     if (!Array.isArray(tokens) || tokens.length === 0) return null;
     const hasControl = tokens.some((t) => t && ['if', 'then', 'else', 'else_if'].includes(t.type));
@@ -229,6 +239,7 @@ function compileCondition(tokens) {
 
 // Compile a WHERE clause ({logic:'and'|'or', rules:[{field,operator,value}]})
 // into a chain of ->where(...) calls on $query.
+/** @param {object} where {logic:'and'|'or', rules:[{field,operator,value}]} @param {string} indent indentation for generated lines @returns {string|null} PHP where chain or null when empty */
 function compileWhere(where, indent) {
     const rules = (where && Array.isArray(where.rules)) ? where.rules : [];
     if (rules.length === 0) return null;
@@ -247,6 +258,7 @@ function compileWhere(where, indent) {
 }
 
 // Compile http_request header rows [{key,value}] into a ->withHeaders([...]) chain.
+/** @param {Array<{key: string, value: string}>} headers header rows @returns {string} ->withHeaders(...) chain ('' when none valid) */
 function compileHeaders(headers) {
     const rows = Array.isArray(headers)
         ? headers.filter((h) => h && h.key && /^[A-Za-z0-9-]+$/.test(String(h.key)))
@@ -261,6 +273,7 @@ function compileHeaders(headers) {
 // ---- DB statement compilers (shared by standalone blocks and Advanced
 // Action scripts). Each takes {table, details} and returns PHP lines or null.
 
+/** Compile an insert_record statement into DB::table(...)->insert([...]) lines. @param {object} item {table, details:{values:[{field,value}]}} @returns {string[]|null} PHP lines or null when unusable */
 function compileInsertStmt(item) {
     if (!item.table) return null;
     const table = safeIdent(item.table, 'table');
@@ -277,6 +290,7 @@ function compileInsertStmt(item) {
     return lines;
 }
 
+/** Compile an update_record statement (WHERE required; unbounded refused). @param {object} item {table, details:{set:[{field,value}], where}} @returns {string[]|null} PHP lines or null */
 function compileUpdateStmt(item) {
     if (!item.table) return null;
     const table = safeIdent(item.table, 'table');
@@ -296,6 +310,7 @@ function compileUpdateStmt(item) {
     return lines;
 }
 
+/** Compile a delete_record statement (WHERE required; unbounded refused). @param {object} item {table, details:{where}} @returns {string[]|null} PHP lines or null */
 function compileDeleteStmt(item) {
     if (!item.table) return null;
     const table = safeIdent(item.table, 'table');
@@ -314,6 +329,13 @@ function compileDeleteStmt(item) {
 // Returns { lines: [...] } or { error: 'reason' }.
 const RAW_SQL_FORBIDDEN = /\b(drop|truncate|alter|create|rename|grant|revoke|attach|detach|shutdown|kill|set\s+global|load_file|into\s+outfile|into\s+dumpfile)\b/i;
 
+/**
+ * Compile a raw SQL token (Advanced Action -> custom_query) into a safe
+ * parameterized DB call. DDL/multi-statement SQL is rejected; ##var##
+ * tokens become ? placeholders with bound PHP variables.
+ * @param {string} raw raw SQL text from the workflow block
+ * @returns {{lines: string[]}|{error: string}} generated lines or rejection reason
+ */
 function compileRawSql(raw) {
     let sql = String(raw || '').trim();
     if (!sql) return { error: 'custom_query is empty' };
@@ -351,6 +373,12 @@ function compileRawSql(raw) {
     return { lines };
 }
 
+/**
+ * Compile one action block's configData (flat token list) into PHP statements.
+ * @param {object} block workflow action block {type, configData, table, details}
+ * @param {string} [recordVar] record variable name for this_record_data
+ * @returns {string[]} PHP statement lines (unsupported blocks become // comments)
+ */
 function compileAction(block, recordVar) {
     const lines = [];
     let tokens = [];
@@ -361,6 +389,7 @@ function compileAction(block, recordVar) {
     }
     if (!Array.isArray(tokens)) tokens = [];
 
+    /** Append an explicit "not supported in v1" skip comment. @param {string} why what was skipped @returns {void} */
     const pushUnsupported = (why) =>
         lines.push(`// [fixzy] ${why} — not supported in v1, skipped.`);
 
@@ -514,6 +543,13 @@ function compileAction(block, recordVar) {
 
 // Walk the block graph starting from a block id, emitting PHP statements.
 // condition blocks branch on out-true / out-false connections.
+/**
+ * @param {object} ctx workflow context from buildCtx
+ * @param {string|null} startId starting block id
+ * @param {string} indentStr indentation for generated lines
+ * @param {Set<string>} visited block ids already emitted (cycle guard)
+ * @returns {string[]} PHP statement lines
+ */
 function walkChain(ctx, startId, indentStr, visited) {
     const lines = [];
     let cur = startId;
@@ -593,6 +629,12 @@ function walkChain(ctx, startId, indentStr, visited) {
     return lines;
 }
 
+/**
+ * Build the traversal context: block map + nextOf(blockId, outPoint) lookup.
+ * @param {object} blocks map of block id -> block
+ * @param {Array<{fromBlock: string, fromPoint: string, toBlock: string}>} connections graph edges
+ * @returns {{blocks: object, nextOf: (id: string, point: string) => string|null}}
+ */
 function buildCtx(blocks, connections) {
     const nextMap = new Map(); // `${blockId}:${point}` -> toBlock
     for (const c of connections || []) {
@@ -605,10 +647,12 @@ function buildCtx(blocks, connections) {
     };
 }
 
+/** Find all hook_trigger blocks with a hook_type set. @param {object} blocks block map @returns {Array<[string, object]>} [blockId, block] pairs */
 function findTriggers(blocks) {
     return Object.entries(blocks || {}).filter(([, b]) => b.type === 'hook_trigger' && b.hook_type);
 }
 
+/** Derive the Eloquent model class name for a table (module_name aware). @param {string} tableName @param {object} tables table map @returns {string} PascalCase singular class name */
 function modelClassName(tableName, tables) {
     if (tableName === 'users') return 'User';
     const t = (tables || {})[tableName];
@@ -639,6 +683,13 @@ const PROJECT_EVENT = {
     before_user_deleted: ["'eloquent.deleting: App\\Models\\User'", '$event'],
 };
 
+/**
+ * Compile every trigger chain of a workflow graph into PHP body lines.
+ * @param {object} blocks workflow block map
+ * @param {Array} connections graph edges
+ * @param {string} recordVar record variable name for this_record_data
+ * @returns {string[]} PHP statement lines
+ */
 function compileWorkflowBody(blocks, connections, recordVar) {
     const ctx = buildCtx(blocks, connections);
     const triggers = findTriggers(blocks);
@@ -652,6 +703,13 @@ function compileWorkflowBody(blocks, connections, recordVar) {
 
 // ---------- file builders ----------
 
+/**
+ * Render a model observer PHP file from compiled hook methods.
+ * @param {string} modelClass Eloquent model class name
+ * @param {string} tableName source table name (for the docblock)
+ * @param {Array<{name: string, body: string[]}>} methods observer methods
+ * @returns {string} full PHP file contents
+ */
 function buildObserverPhp(modelClass, tableName, methods) {
     const parts = [];
     parts.push('<?php');
@@ -683,6 +741,11 @@ function buildObserverPhp(modelClass, tableName, methods) {
     return parts.join('\n');
 }
 
+/**
+ * Render the ProjectWorkflowListener PHP file from compiled project hooks.
+ * @param {Array<{method: string, typeHint: string, body: string[]}>} projectHooks compiled hooks
+ * @returns {string} full PHP file contents
+ */
 function buildListenerPhp(projectHooks) {
     const parts = [];
     parts.push('<?php');
@@ -715,6 +778,15 @@ function buildListenerPhp(projectHooks) {
     return parts.join('\n');
 }
 
+/**
+ * Render the WorkflowServiceProvider PHP file (observer registration,
+ * event listeners, scheduled command, mail settings overlay).
+ * @param {Array<{modelClass: string, observerClass: string}>} tableObservers observer registrations
+ * @param {Array<{method: string, eventClass: string}>} projectHooks event listener registrations
+ * @param {boolean} hasScheduled whether the on_scheduled_task hook exists
+ * @param {string[]|null} startupBody compiled on_startup workflow body
+ * @returns {string} full PHP file contents
+ */
 function buildProviderPhp(tableObservers, projectHooks, hasScheduled, startupBody) {
     const parts = [];
     parts.push('<?php');
@@ -786,6 +858,11 @@ function buildProviderPhp(tableObservers, projectHooks, hasScheduled, startupBod
     return parts.join('\n');
 }
 
+/**
+ * Render the ScheduledWorkflowCommand (fixzy:scheduled-workflow) PHP file.
+ * @param {string[]} body compiled workflow body lines
+ * @returns {string} full PHP file contents
+ */
 function buildScheduledCommandPhp(body) {
     const parts = [];
     parts.push('<?php');
@@ -823,13 +900,15 @@ function buildScheduledCommandPhp(body) {
 /**
  * Generate workflow hook code for the whole project.
  * @param {Object} fullSchema { project, database: { table } }
- * @param {string} outputDir
+ * @param {string} outputDir generated app root
+ * @returns {Promise<{success: boolean, files?: string[], message?: string}>}
  */
 async function generateWorkflowHooks(fullSchema, outputDir) {
     try {
         const project = fullSchema.project || {};
         const tables = (fullSchema.database && fullSchema.database.table) || {};
 
+        /** Parse a stored workflow JSON string into {blocks,...} or null. @param {*} raw JSON string/null @returns {object|null} */
         const parse = (raw) => {
             if (!raw || typeof raw !== 'string' || raw.trim() === '' || raw === 'null') return null;
             try {
@@ -861,7 +940,7 @@ async function generateWorkflowHooks(fullSchema, outputDir) {
             const observerClass = `${modelClass}WorkflowObserver`;
             fs.writeFileSync(
                 path.join(observersDir, `${observerClass}.php`),
-                buildObserverPhp(modelClass, tableName, methods)
+                withBannerPhp(buildObserverPhp(modelClass, tableName, methods))
             );
             tableObservers.push({ modelClass, observerClass });
         }
@@ -895,6 +974,7 @@ async function generateWorkflowHooks(fullSchema, outputDir) {
                 });
             }
         }
+        /** Return a workflow's connections array, [] when missing. @param {object} wf parsed workflow @returns {Array} */
         function wfConnectionsSafe(wf) { return wf.connections || []; }
 
         const hasScheduled = scheduledBody !== null;
@@ -903,7 +983,7 @@ async function generateWorkflowHooks(fullSchema, outputDir) {
             fs.mkdirSync(cmdDir, { recursive: true });
             fs.writeFileSync(
                 path.join(cmdDir, 'ScheduledWorkflowCommand.php'),
-                buildScheduledCommandPhp(scheduledBody)
+                withBannerPhp(buildScheduledCommandPhp(scheduledBody))
             );
         }
 
@@ -947,7 +1027,7 @@ async function generateWorkflowHooks(fullSchema, outputDir) {
             fs.mkdirSync(listenersDir, { recursive: true });
             fs.writeFileSync(
                 path.join(listenersDir, 'ProjectWorkflowListener.php'),
-                buildListenerPhp(projectHooks)
+                withBannerPhp(buildListenerPhp(projectHooks))
             );
         }
 
@@ -956,7 +1036,7 @@ async function generateWorkflowHooks(fullSchema, outputDir) {
 
         fs.writeFileSync(
             path.join(providersDir, 'WorkflowServiceProvider.php'),
-            buildProviderPhp(tableObservers, projectHooks, hasScheduled, startupBody)
+            withBannerPhp(buildProviderPhp(tableObservers, projectHooks, hasScheduled, startupBody))
         );
 
         // Register in bootstrap/providers.php when generating into a full app.

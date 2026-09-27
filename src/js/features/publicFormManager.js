@@ -20,6 +20,10 @@
 import { appState } from '../state.js';
 import { SaveManager } from '../saveManager.js';
 
+/**
+ * Resolves the table name of the currently open workspace table.
+ * @returns {string|null} Table name, or null in custom-module mode.
+ */
 function currentTableName() {
     const badgeEl = document.getElementById('workspace-module-badge');
     const isCustomMode = badgeEl && badgeEl.classList.contains('badge-custom');
@@ -28,6 +32,10 @@ function currentTableName() {
     return (titleEl && (titleEl.dataset.tableName || titleEl.textContent.trim())) || null;
 }
 
+/**
+ * Resolves the table data object for the currently open workspace table.
+ * @returns {Object|null} The table data from appState, or null when unknown.
+ */
 function currentTableData() {
     const tableName = currentTableName();
     return tableName && appState.jsonData?.database?.table?.[tableName]
@@ -35,14 +43,26 @@ function currentTableData() {
         : null;
 }
 
+/** Escapes &, <, and > for safe HTML interpolation. @param {*} s Value. @returns {string} Escaped string. */
 function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+/** Escapes HTML special chars plus double quotes for attribute interpolation. @param {*} s Value. @returns {string} Escaped string. */
 function escapeAttr(s) { return escapeHtml(s).replace(/"/g, '&quot;'); }
 
+/**
+ * Converts arbitrary text into a URL-safe slug (lowercase, hyphens, max 60 chars).
+ * @param {string} s Text to slugify.
+ * @returns {string} Slug safe for the /f/<slug> public URL.
+ */
 function slugify(s) {
     return String(s || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
 }
 
 // Fields eligible to be public: skip system/audit columns and the PK.
+/**
+ * Lists fields that may appear on the public form (no audit columns, PK, or read-only fields).
+ * @param {Object} tableData Table data whose fields are filtered.
+ * @returns {Array<{name: string, label: string}>} Eligible field descriptors.
+ */
 function publicEligibleFields(tableData) {
     const fields = tableData?.fields || {};
     const skip = ['created_at', 'updated_at', 'deleted_at', 'public_reference'];
@@ -51,6 +71,10 @@ function publicEligibleFields(tableData) {
         .map(([name, f]) => ({ name, label: f.caption || name }));
 }
 
+/**
+ * Reads the public form profile (slug, allowed fields, texts, captcha, lookup) from the form inputs.
+ * @returns {Object} Config object matching the public_form_config JSON shape.
+ */
 function readConfigFromDom() {
     const allowed = [];
     document.querySelectorAll('#pf-field-picker input[type=checkbox]:checked').forEach((cb) => {
@@ -67,6 +91,10 @@ function readConfigFromDom() {
     };
 }
 
+/**
+ * Refreshes the URL preview and serialises the config into tables.public_form_config via the autosave queue.
+ * @returns {void}
+ */
 function saveConfig() {
     const tableData = currentTableData();
     if (!tableData || !tableData.table_id) return;
@@ -75,6 +103,10 @@ function saveConfig() {
     SaveManager.addToQueue('table', tableData.table_id, { public_form_config: JSON.stringify(cfg) });
 }
 
+/**
+ * Updates the #pf-url-preview text with the public /f/<slug> URL for the current slug.
+ * @returns {void}
+ */
 function updateUrlPreview() {
     const slug = slugify(document.getElementById('pf-slug')?.value || '');
     const el = document.getElementById('pf-url-preview');
@@ -82,6 +114,12 @@ function updateUrlPreview() {
     el.textContent = slug ? `Public URL: /f/${slug}` : '';
 }
 
+/**
+ * Renders the checkbox picker of public-eligible fields, prechecking the saved selection.
+ * @param {Object} tableData Table data whose eligible fields are listed.
+ * @param {string[]} selected Field names that should start checked.
+ * @returns {void}
+ */
 function renderFieldPicker(tableData, selected) {
     const picker = document.getElementById('pf-field-picker');
     if (!picker) return;
@@ -101,6 +139,11 @@ function renderFieldPicker(tableData, selected) {
     picker.querySelectorAll('input[type=checkbox]').forEach((cb) => cb.addEventListener('change', saveConfig));
 }
 
+/**
+ * Shows/hides the public form panel and populates its inputs from table data.
+ * @param {Object} tableData Table data with public_form_enabled/public_form_config fields.
+ * @returns {void}
+ */
 function renderPublicFormTab(tableData) {
     const enabled = Number(tableData?.public_form_enabled) === 1;
     const panel = document.getElementById('public-form-panel');
@@ -131,6 +174,10 @@ function renderPublicFormTab(tableData) {
     updateUrlPreview();
 }
 
+/**
+ * Registers change listeners for the public form enable switch and all config inputs.
+ * @returns {void}
+ */
 function initPublicFormTab() {
     const enabledBox = document.getElementById('tbl-public-form-enabled');
     if (enabledBox) {

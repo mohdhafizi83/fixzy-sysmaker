@@ -25,6 +25,12 @@ class PublicFormController extends Controller
      */
     protected const FORMS = {{ registry_php }};
 
+    /**
+     * Render a public form with a fresh arithmetic captcha.
+     *
+     * @param  string  $slug  Public form slug.
+     * @return  mixed  The form view.
+     */
     public function show(string $slug)
     {
         $form = self::FORMS[$slug] ?? null;
@@ -42,6 +48,13 @@ class PublicFormController extends Controller
         ]);
     }
 
+    /**
+     * Handle a public form submission with rate limiting and honeypot checks.
+     *
+     * @param  Request  $request  Submitted form request.
+     * @param  string  $slug  Public form slug.
+     * @return  mixed  Redirect back with errors, or to the success page.
+     */
     public function submit(Request $request, string $slug)
     {
         $form = self::FORMS[$slug] ?? null;
@@ -107,6 +120,12 @@ class PublicFormController extends Controller
         return redirect()->route('public.form.success', ['slug' => $slug, 'ref' => $ref]);
     }
 
+    /**
+     * Show the post-submission success page.
+     *
+     * @param  string  $slug  Public form slug.
+     * @return  mixed  The success view.
+     */
     public function success(string $slug)
     {
         $form = self::FORMS[$slug] ?? null;
@@ -120,6 +139,12 @@ class PublicFormController extends Controller
         ]);
     }
 
+    /**
+     * Show the status lookup form for a lookup-enabled public form.
+     *
+     * @param  string  $slug  Public form slug.
+     * @return  mixed  The lookup view.
+     */
     public function lookupForm(string $slug)
     {
         $form = self::FORMS[$slug] ?? null;
@@ -129,6 +154,13 @@ class PublicFormController extends Controller
         return view('public.lookup', ['slug' => $slug, 'form' => $form]);
     }
 
+    /**
+     * Rate-limited status lookup that prevents record enumeration.
+     *
+     * @param  Request  $request  Lookup request.
+     * @param  string  $slug  Public form slug.
+     * @return  mixed  Lookup result view or redirect back with errors.
+     */
     public function lookup(Request $request, string $slug)
     {
         $form = self::FORMS[$slug] ?? null;

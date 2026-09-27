@@ -5,6 +5,11 @@ import { SaveManager } from '../saveManager.js';
 import { showCustomDialog } from '../ui/modalHandlers.js';
 
 // --- FIELD SAVE HANDLER ---
+/**
+ * Wires the generic autosave for all fld-* inputs in both field-settings containers,
+ * routing saves to the main fields table or the custom module's settings_override.
+ * @returns {void}
+ */
 export function initializeFieldSaveHandlers() {
     // 1. Watch both the old and the new container
     const containers = [
@@ -13,6 +18,15 @@ export function initializeFieldSaveHandlers() {
     ];
 
     // --- HELPER FUNCTION: UPDATE THE UI & SAVE TO THE DATABASE AT ONCE ---
+    /**
+     * Sets a UI input's value and queues the matching field column update in one step.
+     * @param {string|number} fieldId Field id to save.
+     * @param {string} elementId DOM id of the input to update.
+     * @param {*} value New value (booleans coerced to 1/0 for the DB).
+     * @param {string|null} dbColumnName DB column name; derived from elementId when null.
+     * @param {string|null} tableName Table name (context only).
+     * @returns {void}
+     */
     const updateAndSave = (fieldId, elementId, value, dbColumnName = null, tableName = null) => {
         const el = document.getElementById(elementId);
         if (el) {
@@ -213,6 +227,10 @@ export function initializeFieldSaveHandlers() {
 
 // --- DATA TYPE & DISPLAY RULES ---
 
+/**
+ * Binds display-type radios to the data-type rules and the format-as select to mask-group visibility.
+ * @returns {void}
+ */
 export function initializeDisplayTypeRules() {
     const displayTypeRadios = document.querySelectorAll('input[name="fld-display-type"]');
     const formatAsSelect = document.getElementById('fld-format-as');
@@ -220,6 +238,7 @@ export function initializeDisplayTypeRules() {
 
     if (displayTypeRadios.length === 0 || !formatAsSelect || !formatMaskGroup) return;
 
+    // Shows the format-mask input only when format-as is 'custom'.
     const toggleMaskVisibility = () => {
         formatMaskGroup.classList.toggle('hidden', formatAsSelect.value !== 'custom');
     };
@@ -231,6 +250,10 @@ export function initializeDisplayTypeRules() {
     formatAsSelect.addEventListener('change', toggleMaskVisibility);
 }
 
+/**
+ * Guards against non-integer data types on auto-increment fields and applies data-type UI rules on change.
+ * @returns {void}
+ */
 export function initializeDataTypeRules() {
     const dataTypeSelect = document.getElementById('fld-data-type');
     if (!dataTypeSelect) return;
@@ -261,6 +284,11 @@ export function initializeDataTypeRules() {
     });
 }
 
+/**
+ * Shows/hides/disables field-setting controls (length, precision, unsigned, summaries, media, etc.)
+ * based on the currently selected data type.
+ * @returns {void}
+ */
 export function applyDataTypeRules() {
     const dataTypeSelect = document.getElementById('fld-data-type');
     if (!dataTypeSelect) return;
@@ -496,6 +524,10 @@ export function applyDataTypeRules() {
 
 // --- MEDIA & OPTIONS ---
 
+/**
+ * Switches the visible media-options panel per media-type radio and auto-sets the table-view icon.
+ * @returns {void}
+ */
 export function initializeMediaTabHandlers() {
     const mediaRadios = document.querySelectorAll('input[name="fld-media-type"]');
     const allPanels = document.querySelectorAll('.media-options-panel');
@@ -526,6 +558,10 @@ export function initializeMediaTabHandlers() {
     });
 }
 
+/**
+ * Copies a chosen quick-list preset from the dropdown into the options-list values textarea.
+ * @returns {void}
+ */
 export function initializeOptionsListHandlers() {
     const quickListSelect = document.getElementById('options-quick-list');
     const valuesInput = document.getElementById('fld-options-list-values');
@@ -538,6 +574,10 @@ export function initializeOptionsListHandlers() {
     }
 }
 
+/**
+ * Opens the auto-default picker modal and copies the chosen value into the default-value input.
+ * @returns {void}
+ */
 export function initializeAutoDefaultHandlers() {
     const autoDefaultBtn = document.getElementById('auto-default-btn');
     const autoDefaultModal = document.getElementById('auto-default-modal');
@@ -550,6 +590,7 @@ export function initializeAutoDefaultHandlers() {
 
     if (!autoDefaultBtn || !autoDefaultModal || !defaultValueInput || !selectValue || !btnOk || !btnCancel || !btnClose) return;
 
+    // Hides the auto-default picker modal.
     const closeModal = () => autoDefaultModal.classList.add('hidden');
 
     autoDefaultBtn.addEventListener('click', () => {
@@ -566,6 +607,10 @@ export function initializeAutoDefaultHandlers() {
     btnClose.addEventListener('click', closeModal);
 }
 
+/**
+ * Toggles link display-as and other-field groups based on the media link behavior selection.
+ * @returns {void}
+ */
 export function initializeLinkOptionsHandlers() {
     const behaviorSelect = document.getElementById('fld-media-link-behavior');
     const displayAsGroup = document.getElementById('link-display-as-group');
@@ -593,6 +638,12 @@ export function initializeLinkOptionsHandlers() {
     });
 }
 
+/**
+ * Fills the media-link 'other field' dropdown with the table's fields except the current one.
+ * @param {string} tableName Table whose fields populate the dropdown.
+ * @param {string} currentFieldName Field excluded from the list.
+ * @returns {void}
+ */
 export function populateOtherFieldDropdown(tableName, currentFieldName) {
     const otherFieldSelect = document.getElementById('fld-media-link-other-field');
     if (!otherFieldSelect || !appState.jsonData) return;
@@ -610,6 +661,10 @@ export function populateOtherFieldDropdown(tableName, currentFieldName) {
     }
 }
 
+/**
+ * Enables/disables image upload option controls with the main allow-image checkbox and wires zoom dependencies.
+ * @returns {void}
+ */
 export function initializeImageOptionsHandlers() {
     const mainCheckbox = document.getElementById('fld-allow-image-uploads');
     const imageOptionsTabs = document.getElementById('image-options-tabs');
@@ -633,6 +688,7 @@ export function initializeImageOptionsHandlers() {
     const dvShowFullSize = document.getElementById('fld-dv-show-full-size');
     const dvEnableZooming = document.getElementById('fld-dv-enable-zooming');
 
+    // Reveals/hides the image options tabs with the allow-image-uploads checkbox.
     const toggleImageOptions = () => {
         const isEnabled = mainCheckbox.checked;
         imageOptionsTabs.classList.toggle('hidden', !isEnabled);
@@ -644,6 +700,7 @@ export function initializeImageOptionsHandlers() {
         }
     };
 
+    // 'Show full size' and 'enable zooming' are mutually exclusive in TV and DV.
     const handleZoomDependency = () => {
         if (tvShowFullSize && tvEnableZooming) {
             const isDisabled = tvShowFullSize.checked;
@@ -664,6 +721,12 @@ export function initializeImageOptionsHandlers() {
     if(mainCheckbox) toggleImageOptions();
 }
 
+/**
+ * Fills the file-upload 'other field' dropdown with the table's fields except the current one.
+ * @param {string} tableName Table whose fields populate the dropdown.
+ * @param {string} currentFieldName Field excluded from the list.
+ * @returns {void}
+ */
 export function populateFileOtherFieldDropdown(tableName, currentFieldName) {
     const otherFieldSelect = document.getElementById('fld-file-other-field');
     if (!otherFieldSelect || !appState.jsonData) return;
@@ -681,6 +744,10 @@ export function populateFileOtherFieldDropdown(tableName, currentFieldName) {
     }
 }
 
+/**
+ * Enables/disables file upload option controls with the main checkbox and cascades behavior/display-as groups.
+ * @returns {void}
+ */
 export function initializeFileUploadOptionsHandlers() {
     const mainCheckbox = document.getElementById('fld-allow-file-uploads');
     const dependentControls = [
@@ -700,6 +767,7 @@ export function initializeFileUploadOptionsHandlers() {
     const displayAsSelect = document.getElementById('fld-file-display-as');
     const otherFieldGroup = document.getElementById('fld-file-other-field-group');
 
+    // Enables/disables all file upload option controls with the main checkbox.
     const toggleAllOptions = () => {
         const isEnabled = mainCheckbox.checked;
         dependentControls.forEach(control => {
@@ -734,6 +802,10 @@ export function initializeFileUploadOptionsHandlers() {
     if (mainCheckbox) toggleAllOptions();
 }
 
+/**
+ * Shows/hides the Google Maps and YouTube detail groups with their respective checkboxes.
+ * @returns {void}
+ */
 export function initializeMediaVisibilityHandlers() {
     const gmapCheckbox = document.getElementById('fld-display-gmap');
     const gmapDetails = document.getElementById('gmap-details');
@@ -756,6 +828,11 @@ export function initializeMediaVisibilityHandlers() {
 
 // --- LOOKUP & DATABASE PROPERTIES ---
 
+/**
+ * Fills the lookup parent-table dropdown with all project tables except the current one.
+ * @param {string} currentTableName Child table excluded from the parent options.
+ * @returns {void}
+ */
 export function populateParentTableDropdown(currentTableName) {
     const parentTableSelect = document.getElementById('fld-lookup-parent-table');
     parentTableSelect.innerHTML = '<option value=""></option>';
@@ -774,6 +851,11 @@ export function populateParentTableDropdown(currentTableName) {
     });
 }
 
+/**
+ * Fills both lookup caption dropdowns with the parent table's field names.
+ * @param {string} tableName Parent table whose fields populate the caption selects.
+ * @returns {void}
+ */
 export function populateParentCaptionDropdowns(tableName) {
     const caption1Select = document.getElementById('fld-lookup-caption-1');
     const caption2Select = document.getElementById('fld-lookup-caption-2');
@@ -799,6 +881,10 @@ export function populateParentCaptionDropdowns(tableName) {
     }
 }
 
+/**
+ * Wires lookup field selects: parent-table change triggers a manual save, and display-as radios toggle dropdown options.
+ * @returns {void}
+ */
 export function initializeLookupFieldHandlers() {
     const parentTableSelect = document.getElementById('fld-lookup-parent-table');
     const caption1Select = document.getElementById('fld-lookup-caption-1');
@@ -808,6 +894,12 @@ export function initializeLookupFieldHandlers() {
     if (!parentTableSelect || !caption1Select) return;
 
     // Function to send data manually to SaveManager
+    /**
+     * Resolves the current field from the page title and queues a single-column field save.
+     * @param {string} fieldName DB column name to save.
+     * @param {*} value Value to store.
+     * @returns {void}
+     */
     const triggerManualSave = (fieldName, value) => {
         if (appState.isPopulatingData || !appState.isAutoSaveEnabled) return;
 
@@ -865,6 +957,7 @@ export function initializeLookupFieldHandlers() {
     // They are handled by 'initializeFieldSaveHandlers' (generic handler) 
     // to save data to the 'fields' table only, without triggering an upsert relationship.
 
+    // Shows the lookup dropdown options only when display-as is 'dropdown'.
     const toggleDropdownOptions = () => {
         const selectedRadio = document.querySelector('input[name="fld-lookup-display-as"]:checked');
         if (selectedRadio && dropdownOptions) {
@@ -874,6 +967,10 @@ export function initializeLookupFieldHandlers() {
     displayAsRadios.forEach(radio => radio.addEventListener('change', toggleDropdownOptions));
 }
 
+/**
+ * Builds the default lookup SELECT from parent table, captions, separator, and the parent's primary key.
+ * @returns {string} SQL query string, or '' when parent/caption missing.
+ */
 function generateDefaultLookupQuery() {
     const parentTable = document.getElementById('fld-lookup-parent-table').value;
     const caption1 = document.getElementById('fld-lookup-caption-1').value;
@@ -893,6 +990,10 @@ function generateDefaultLookupQuery() {
     return `SELECT \`${parentTable}\`.\`${pkField}\`, ${captionFields} FROM \`${parentTable}\` ORDER BY 2`;
 }
 
+/**
+ * Opens the advanced lookup modal with the current (or default-generated) custom query and saves it on OK.
+ * @returns {void}
+ */
 export function initializeAdvancedLookupHandlers() {
     const modal = document.getElementById('advanced-lookup-modal');
     const openBtn = document.getElementById('fld-lookup-advanced-btn');
@@ -903,6 +1004,7 @@ export function initializeAdvancedLookupHandlers() {
     const queryTextarea = document.getElementById('fld-lookup-custom-query');
     const hiddenQueryInput = document.getElementById('fld-lookup-custom-query-hidden');
 
+    // Opens the modal with the current query, generating a default one when empty.
     const openModal = () => {
         let currentQuery = hiddenQueryInput.value;
         if (!currentQuery) {
@@ -912,8 +1014,10 @@ export function initializeAdvancedLookupHandlers() {
         modal.classList.remove('hidden');
     };
 
+    // Hides the advanced lookup modal.
     const closeModal = () => modal.classList.add('hidden');
 
+    // Persists the textarea contents into the hidden query input, then closes.
     const saveAndClose = () => {
         hiddenQueryInput.value = queryTextarea.value;
         closeModal();
@@ -928,15 +1032,20 @@ export function initializeAdvancedLookupHandlers() {
     });
 }
 
+/**
+ * Disables the calculated-field checkbox with an explanation when conflicting options are set.
+ * @returns {void}
+ */
 export function initializeCalculatedFieldRules() {
     const enableCheckbox = document.getElementById('fld-calculated-enable');
 
     if (!enableCheckbox) return;
 
+    // Collects validation errors for the calculated field configuration.
     const validateConditions = () => {
-        const getEl = (id) => document.getElementById(id);
-        const getValue = (id) => getEl(id)?.value;
-        const isChecked = (id) => getEl(id)?.checked;
+        const getEl = (id) => document.getElementById(id); // shorthand element lookup
+        const getValue = (id) => getEl(id)?.value; // shorthand value read
+        const isChecked = (id) => getEl(id)?.checked; // shorthand checked read
         const errors = [];
 
         if (!isChecked('fld-read-only')) errors.push("Field must be set as 'Read Only'.");
@@ -973,6 +1082,7 @@ export function initializeCalculatedFieldRules() {
         }
     });
 
+    // Reverts the calculated checkbox with a dialog when validation fails.
     const checkAndDisableCalculatedField = () => {
         if (!enableCheckbox.checked) return;
         const validationErrors = validateConditions();
@@ -1002,6 +1112,10 @@ export function initializeCalculatedFieldRules() {
     });
 }
 
+/**
+ * Enforces mutual-exclusion rules among primary key, auto-increment, required, and read-only checkboxes.
+ * @returns {void}
+ */
 export function initializeDatabasePropertiesHandlers() {
     const primaryKeyCheckbox = document.getElementById('fld-primary-key');
     const autoIncrementCheckbox = document.getElementById('fld-auto-increment');
@@ -1076,6 +1190,10 @@ export function initializeDatabasePropertiesHandlers() {
     });
 }
 
+/**
+ * Strips invalid characters as the user types in numeric and identifier (table/module/field name) inputs.
+ * @returns {void}
+ */
 export function initializeRealtimeValidation() {
     const numericInputs = [
         document.getElementById('fld-length'),
@@ -1094,6 +1212,7 @@ export function initializeRealtimeValidation() {
     const moduleNameInput = document.getElementById('tbl-module-name');
     const fieldNameInput = document.getElementById('fld-field-name');
 
+    // Restricts an identifier input to letters/underscore and restores the last valid value on empty blur.
     const setupNameValidation = (inputElement) => {
         if (!inputElement) return;
         let previousValidValue = '';
@@ -1115,6 +1234,10 @@ export function initializeRealtimeValidation() {
     setupNameValidation(fieldNameInput);
 }
 
+/**
+ * Validates unique-checkbox changes against field type/population state and reverts invalid toggles.
+ * @returns {void}
+ */
 export function initializeUniqueFieldHandler() {
     const uniqueCheckbox = document.getElementById('fld-unique');
     if (!uniqueCheckbox) return;
@@ -1199,6 +1322,10 @@ export function initializeUniqueFieldHandler() {
     });
 }
 
+/**
+ * Pushes index on/off changes for the current field straight to the backend via updateFieldIndex.
+ * @returns {void}
+ */
 export function initializeIndexCheckboxHandler() {
     const indexCheckbox = document.getElementById('fld-is-indexed');
     if (!indexCheckbox) return;
@@ -1217,6 +1344,10 @@ export function initializeIndexCheckboxHandler() {
     });
 }
 
+/**
+ * Blocks unchecking 'wrap text' on JSON fields so table-view stays readable.
+ * @returns {void}
+ */
 export function initializeWrapTextRule() {
     const wrapTextCheckbox = document.getElementById('fld-tv-wrap-text');
     if (!wrapTextCheckbox) return;
@@ -1235,6 +1366,10 @@ export function initializeWrapTextRule() {
     });
 }
 
+/**
+ * Applies sensible display defaults (center alignment, danger icon, description) for YouTube/gmap media.
+ * @returns {void}
+ */
 export function initializeMediaTypeDefaultRules() {
     const mediaRadios = document.querySelectorAll('input[name="fld-media-type"]');
     if (!mediaRadios.length) return;
@@ -1265,6 +1400,10 @@ export function initializeMediaTypeDefaultRules() {
     });
 }
 
+/**
+ * Auto-checks 'wrap text' when the data type changes to TEXT/LONGTEXT.
+ * @returns {void}
+ */
 export function initializeDataTypeDefaultRules() {
     const dataTypeSelect = document.getElementById('fld-data-type');
     if (!dataTypeSelect) return;
@@ -1282,6 +1421,10 @@ export function initializeDataTypeDefaultRules() {
     });
 }
 
+/**
+ * Queues an upsert or delete of the FK relationship when the lookup parent table is set or cleared.
+ * @returns {void}
+ */
 export function initializeLookupFieldSaveHandler() {
     const parentTableSelect = document.getElementById('fld-lookup-parent-table');
     if (!parentTableSelect) return;

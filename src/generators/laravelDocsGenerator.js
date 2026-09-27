@@ -1,8 +1,17 @@
+// Deployment Guide page generator (Fixzy SysMaker).
+// Emits the in-app DeploymentGuide Filament page + feature-aware Blade
+// checklist for the generated app.
 const fs = require('fs');
 const path = require('path');
 
 const { renderTemplate } = require('../render/engine');
 
+/**
+ * Generate the DeploymentGuide.php page + deployment-guide.blade.php view.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} basePath generated app root
+ * @returns {Promise<{success: boolean, message?: string}>}
+ */
 async function generateDeploymentGuidePage(fullSchema, basePath) {
     try {
         console.log("Generating Deployment Guide from Templates...");

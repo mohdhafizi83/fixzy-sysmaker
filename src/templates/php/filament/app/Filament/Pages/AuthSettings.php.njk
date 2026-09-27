@@ -30,6 +30,9 @@ class AuthSettings extends Page
 
     public array $settings = [];
 
+    /**
+     * Load saved auth integration settings (Google, reCAPTCHA, LDAP) into the form.
+     */
     public function mount(): void
     {
         $this->settings = [
@@ -47,6 +50,9 @@ class AuthSettings extends Page
         ];
     }
 
+    /**
+     * Persist every non-empty auth setting via FixzySetting.
+     */
     public function save(): void
     {
         $allowed = array_keys($this->settings);

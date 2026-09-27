@@ -1,4 +1,7 @@
 // src/js/handlers/projectHandlers.js
+//
+// Project-level settings handlers: theme preview, localization, security tab,
+// CSS class pickers, project switcher dropdown, stack selector, and new-project modal.
 
 import { appState, setIsCoreLockingEnabled } from '../state.js';
 import { SaveManager } from '../saveManager.js';
@@ -6,6 +9,10 @@ import { showCustomDialog } from '../ui/modalHandlers.js';
 import { setElementValue, setRadioValue } from '../ui/formHelpers.js';
 //import { loadProjectData } from '../../renderer.js'; // Follow the path you fixed earlier
 
+/**
+ * Wires the theme select and view-mode radios to the theme preview image updater.
+ * @returns {void}
+ */
 export function initializeThemeHandlers() {
     const themeSelect = document.getElementById('app-theme-select');
     const viewModeRadios = document.querySelectorAll('input[name="view_mode"]');
@@ -22,6 +29,10 @@ export function initializeThemeHandlers() {
     updatePreviewImage();
 }
 
+/**
+ * Populates the date/time format dropdowns and wires the combined date-time preview input.
+ * @returns {void}
+ */
 export function initializeLocalizationHandlers() {
     const dateFormatSelect = document.getElementById('app-date-format');
     const timeFormatSelect = document.getElementById('app-time-format');
@@ -51,6 +62,10 @@ export function initializeLocalizationHandlers() {
     timeFormatSelect.innerHTML = timeFormats.map(f => `<option value="${f}">${f}</option>`).join('');
 
     // Function to update the preview
+    /**
+     * Writes the selected date and time formats into the preview input.
+     * @returns {void}
+     */
     const updateDateTimePreview = () => {
         const selectedDate = dateFormatSelect.value;
         const selectedTime = timeFormatSelect.value;
@@ -65,6 +80,10 @@ export function initializeLocalizationHandlers() {
     updateDateTimePreview();
 }
 
+/**
+ * Wires the security tab: hide-login warning dialog and open-browser button for the app URL.
+ * @returns {void}
+ */
 export function initializeSecurityTabHandlers() {
     const openBrowserBtn = document.getElementById('open-browser-btn');
     const appUrlInput = document.getElementById('app-url');
@@ -104,6 +123,10 @@ export function initializeSecurityTabHandlers() {
     });
 }
 
+/**
+ * Copies preset CSS class selections into the table/detail view class inputs for both view types.
+ * @returns {void}
+ */
 export function initializeClassSelectorHandlers() {
     // Group for Table View
     const tvSelect = document.getElementById('table-view-classes-select');
@@ -132,6 +155,10 @@ export function initializeClassSelectorHandlers() {
     }
 }
 
+/**
+ * Rebuilds the project switcher dropdown; each entry switches the active project and refreshes state.
+ * @returns {Promise<void>}
+ */
 export async function populateProjectDropdown() {
     const projectListContainer = document.getElementById('project-menu-list');
     let newProjectBtn = document.getElementById('new-project-btn-dropdown');
@@ -186,6 +213,10 @@ export async function populateProjectDropdown() {
     });
 }
 
+/**
+ * Enables the New Field / Move Up / Move Down / Delete buttons only when a submenu item is selected.
+ * @returns {void}
+ */
 export function updateActionButtonsState() {
     // Changed the search from the sidebar to #table-list
     const activeLink = document.querySelector('#table-list a.active');
@@ -208,6 +239,7 @@ export function updateActionButtonsState() {
  * @param {('table'|'field')} pageType - Page type ('table' or 'field').
  * @param {boolean} isLocked - Set 'true' to lock, 'false' to unlock.
  * @param {string} [message] - Message to display when locked.
+ * @returns {void}
  */
 export function applyFormLock(pageType, isLocked, message = '') {
     const pageId = `${pageType}-settings-page`;
@@ -227,6 +259,11 @@ export function applyFormLock(pageType, isLocked, message = '') {
     }
 }
 
+/**
+ * Wires the base stack selector: shows the matching detail groups, description, and renames
+ * visible selects so only relevant fields participate in saving.
+ * @returns {void}
+ */
 export function initializeStackSelectorHandlers() {
     const baseStackSelect = document.getElementById('app-stack_base');
     const detailGroups = document.querySelectorAll('.stack-detail-group');
@@ -253,6 +290,7 @@ export function initializeStackSelectorHandlers() {
         'pern': 'A powerful alternative to the MERN/MEAN stack that replaces the NoSQL MongoDB database with the relational PostgreSQL database, ideal for applications requiring complex queries and data integrity.'
     };
 
+    // Refreshes description, visible detail groups, and save-relevant select ids for the chosen stack.
     const updateStackDetails = () => {
         if (!baseStackSelect) return;
 
@@ -299,6 +337,7 @@ export function initializeStackSelectorHandlers() {
 /**
  * Adds logic to radio buttons to allow them to be deselected.
  * A standard radio button group doesn't allow having no option selected once a selection is made.
+ * @returns {void}
  */
 export function initializeAuthRadioLogic() {
     // 'app-module-auth-extra' is the 2FA/Captcha parent pair; the
@@ -329,6 +368,10 @@ export function initializeAuthRadioLogic() {
     });
 }
 
+/**
+ * Opens the 'New Project' modal in user-initiated mode and focuses the name input.
+ * @returns {void}
+ */
 export function showNewProjectModal() {
     configureNewProjectModal('user-initiated'); // <-- ADD THIS LINE
 
@@ -346,6 +389,7 @@ export function showNewProjectModal() {
 /**
  * Configures the 'New Project' modal based on the scenario.
  * @param {string} scenario - 'first-run' or 'user-initiated'.
+ * @returns {void}
  */
 export function configureNewProjectModal(scenario) {
     const modal = document.getElementById('new-project-modal');
@@ -365,12 +409,14 @@ export function configureNewProjectModal(scenario) {
 
 /**
  * Shows the SQL import error troubleshooting guide modal.
+ * @returns {void}
  */
 export function showImportErrorGuide() {
     const modal = document.getElementById('sql-import-error-modal');
     if (!modal) return;
 
     const okBtn = document.getElementById('sql-import-error-ok-btn');
+    // Hides the SQL import error guide modal.
     const closeModal = () => modal.classList.add('hidden');
     
     // Use cloneNode to make sure old event listeners are removed
@@ -381,6 +427,10 @@ export function showImportErrorGuide() {
     modal.classList.remove('hidden');
 }
 
+/**
+ * Swaps the theme preview image based on the selected theme and view mode (TV/DV).
+ * @returns {void}
+ */
 function updatePreviewImage() {
     const themeSelect = document.getElementById('app-theme-select');
     const previewImage = document.getElementById('theme-preview-image');

@@ -11,6 +11,10 @@
 import { appState } from '../state.js';
 import { SaveManager } from '../saveManager.js';
 
+/**
+ * Resolves the table data object for the currently open workspace table.
+ * @returns {Object|null} The table data from appState, or null in custom-module mode / unknown table.
+ */
 function currentTableData() {
     const badgeEl = document.getElementById('workspace-module-badge');
     const isCustomMode = badgeEl && badgeEl.classList.contains('badge-custom');
@@ -22,8 +26,18 @@ function currentTableData() {
         : null;
 }
 
+/**
+ * Escapes &, <, and > for safe HTML interpolation.
+ * @param {*} s Value to escape.
+ * @returns {string} HTML-escaped string.
+ */
 function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
+/**
+ * Maps a date token to its counter reset period.
+ * @param {string} token Date token ('YYYY', 'YYYYMM', 'YYYYMMDD', or '').
+ * @returns {string} Reset period: 'daily', 'monthly', 'yearly', or 'never'.
+ */
 function resetForToken(token) {
     if (token === 'YYYYMMDD') return 'daily';
     if (token === 'YYYYMM') return 'monthly';
@@ -31,6 +45,10 @@ function resetForToken(token) {
     return 'never';
 }
 
+/**
+ * Reads the numbering profile (target field, prefix, date token, width) from the form inputs.
+ * @returns {Object} Config object shaped {field, prefix, date_token, width, reset}.
+ */
 function readConfigFromDom() {
     const field = document.getElementById('num-field')?.value || '';
     const prefix = (document.getElementById('num-prefix')?.value || '').toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 12);
@@ -41,6 +59,10 @@ function readConfigFromDom() {
     return { field, prefix, date_token: token, width, reset: resetForToken(token) };
 }
 
+/**
+ * Refreshes the sample preview and serialises the config into tables.numbering_config via the autosave queue.
+ * @returns {void}
+ */
 function saveConfig() {
     const tableData = currentTableData();
     if (!tableData || !tableData.table_id) return;
@@ -49,6 +71,11 @@ function saveConfig() {
     SaveManager.addToQueue('table', tableData.table_id, { numbering_config: JSON.stringify(cfg) });
 }
 
+/**
+ * Builds an example reference code from the config using today's date and a placeholder counter.
+ * @param {Object} cfg Numbering config {prefix, date_token, width}.
+ * @returns {string} Sample code like 'INV-202609-0001'.
+ */
 function sampleNumber(cfg) {
     const now = new Date();
     const y = now.getFullYear();
@@ -65,6 +92,10 @@ function sampleNumber(cfg) {
     return parts.join('-');
 }
 
+/**
+ * Updates the #num-preview text with a sample code for the current config.
+ * @returns {void}
+ */
 function updatePreview() {
     const el = document.getElementById('num-preview');
     if (!el) return;
@@ -73,6 +104,12 @@ function updatePreview() {
     el.textContent = `Sample: ${sampleNumber(cfg)} (counter resets ${cfg.reset})`;
 }
 
+/**
+ * Fills the target-field dropdown with the table's columns, selecting the saved one.
+ * @param {Object} tableData Table data whose fields populate the dropdown.
+ * @param {string} selected Field name to preselect.
+ * @returns {void}
+ */
 function renderFieldSelect(tableData, selected) {
     const sel = document.getElementById('num-field');
     if (!sel) return;
@@ -93,6 +130,11 @@ function renderFieldSelect(tableData, selected) {
     });
 }
 
+/**
+ * Shows/hides the numbering panel and populates its inputs from table data.
+ * @param {Object} tableData Table data with numbering_enabled/numbering_config fields.
+ * @returns {void}
+ */
 function renderNumberingSection(tableData) {
     const enabled = Number(tableData?.numbering_enabled) === 1;
     const panel = document.getElementById('numbering-panel');
@@ -115,6 +157,10 @@ function renderNumberingSection(tableData) {
     updatePreview();
 }
 
+/**
+ * Registers change listeners for the numbering enable switch and config inputs.
+ * @returns {void}
+ */
 function initNumberingSection() {
     const enabledBox = document.getElementById('tbl-numbering-enabled');
     if (enabledBox) {

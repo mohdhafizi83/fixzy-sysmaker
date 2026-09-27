@@ -12,6 +12,12 @@ use Filament\Actions\Action;
  */
 class PrintAction extends Action
 {
+    /**
+     * Client-side print action: toggles a print-mode CSS class and calls window.print().
+     *
+     * @param  ?string  $name  Action name.
+     * @return  static  The configured action instance.
+     */
     public static function make(?string $name = 'print'): static
     {
         return parent::make($name)

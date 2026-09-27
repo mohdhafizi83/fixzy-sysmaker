@@ -26,6 +26,11 @@ class PullGoogleSheetsJob implements ShouldQueue
 
     public int $timeout = 600;
 
+    /**
+     * Pull every configured Google Sheet target into the database, logging per-target results.
+     *
+     * @param  GoogleSheetsSyncService  $service  Google Sheets sync service.
+     */
     public function handle(GoogleSheetsSyncService $service): void
     {
         if (! GoogleSheetsSyncService::credentialsConfigured()) {

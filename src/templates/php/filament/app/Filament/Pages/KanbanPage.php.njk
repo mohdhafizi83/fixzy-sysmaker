@@ -7,6 +7,9 @@ use App\Filament\Resources\{{ resource_folder }}\{{ resource_class }};
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
+/**
+ * Kanban board page for {{ page_title }} with status columns and allowed transitions.
+ */
 class {{ page_class }} extends Page
 {
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-view-columns';
@@ -25,11 +28,17 @@ class {{ page_class }} extends Page
     /** @var array<string, array<int, array{id: mixed, fields: array<string, string>}>> */
     public array $columns = [];
 
+    /**
+     * Load the board columns on page open.
+     */
     public function mount(): void
     {
         $this->loadBoard();
     }
 
+    /**
+     * Reload the board after card moves.
+     */
     public function reload(): void
     {
         $this->loadBoard();

@@ -19,6 +19,9 @@ use Illuminate\Support\ServiceProvider;
  */
 class SchedulerServiceProvider extends ServiceProvider
 {
+    /**
+     * Schedule the scheduler runner command every minute when the module is enabled.
+     */
     public function boot(): void
     {
         // Guard: the runner command only exists when the module is on.

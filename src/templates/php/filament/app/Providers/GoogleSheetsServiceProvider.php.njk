@@ -15,6 +15,9 @@ use Illuminate\Support\ServiceProvider;
  */
 class GoogleSheetsServiceProvider extends ServiceProvider
 {
+    /**
+     * Observe synced models and schedule the runtime-configurable sheet pull job.
+     */
     public function boot(): void
     {
 {%- for target in targets %}

@@ -7,6 +7,8 @@ import { showToast } from './toast.js';
 /**
  * Displays a custom dialog (Alert/Confirm).
  * Supports Promises (await) and legacy callbacks.
+ * @param {{title: string, message: string, onOk?: Function, onCancel?: Function, showCancelButton?: boolean}} options Dialog options.
+ * @returns {Promise<boolean>} Resolves true on OK, false on cancel.
  */
 export function showCustomDialog({ title, message, onOk, onCancel, showCancelButton = false }) {
     return new Promise((resolve) => {
@@ -29,6 +31,11 @@ export function showCustomDialog({ title, message, onOk, onCancel, showCancelBut
         const newCloseBtn = closeBtn.cloneNode(true);
         closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
 
+        /**
+         * Hides the dialog, resolves the promise with the result, and runs legacy callbacks.
+         * @param {boolean} result True when confirmed, false when cancelled.
+         * @returns {void}
+         */
         const closeModalAndResolve = (result) => {
             modal.classList.add('hidden');
             
@@ -54,6 +61,7 @@ export function showCustomDialog({ title, message, onOk, onCancel, showCancelBut
 
 /**
  * Manages the Configuration (Preferences) modal.
+ * @returns {void}
  */
 export function initializeModalHandlers() {
     const configBtn = document.getElementById('config-btn');
@@ -78,6 +86,10 @@ export function initializeModalHandlers() {
         });
     }
 
+    /**
+     * Reads all Fixzy setting inputs into a plain {id: value} object for saving.
+     * @returns {Object} Map of setting ids to their current input values.
+     */
     const gatherFixzySettings = () => {
         const settings = {};
         const settingIds = [
@@ -125,10 +137,15 @@ export function initializeModalHandlers() {
     };
     
     // Internal helper to populate settings (originally populateSettingsModal)
+    /**
+     * Loads all settings via IPC and fills the settings modal inputs.
+     * @returns {Promise<void>}
+     */
     const populateSettingsModalInternal = async () => {
         const settings = await window.electronAPI.getAllSettings();
         if (!settings) return;
 
+        // Sets one input's value, handling checkbox vs text controls.
         const setValue = (id, value) => {
             const element = document.getElementById(id);
             if (element) {
@@ -269,6 +286,10 @@ export function initializeModalHandlers() {
     }
 }
 
+/**
+ * Loads all app settings via IPC and populates the settings modal inputs.
+ * @returns {Promise<void>}
+ */
 async function populateSettingsModal() {
     const settings = await window.electronAPI.getAllSettings();
     if (!settings) {
@@ -276,6 +297,7 @@ async function populateSettingsModal() {
         return;
     }
 
+    // Sets one input's value, handling checkbox vs text controls.
     const setValue = (id, value) => {
         const element = document.getElementById(id);
         if (element) {

@@ -17,6 +17,10 @@ abstract class BaseReportStats extends StatsOverviewWidget
     /** @var array<string, mixed> */
     protected static array $cfg = [];
 
+    /**
+     * Grid column span derived from the report width config.
+     * @return  int | string | array  Column span ("full" or an integer).
+     */
     public function getColumnSpan(): int | string | array
     {
         $w = static::$cfg['width'] ?? '1';
@@ -38,11 +42,19 @@ abstract class BaseReportStats extends StatsOverviewWidget
         return null;
     }
 
+    /**
+     * Source table name used for live refresh.
+     * @return  string  Configured table name.
+     */
     public function getLiveTable(): string
     {
         return (string) (static::$cfg['table'] ?? '');
     }
 
+    /**
+     * Refresh strategy for the widget.
+     * @return  string  "static", "poll" or "push".
+     */
     public function refreshMode(): string
     {
         return (string) (static::$cfg['refresh_mode'] ?? 'static');

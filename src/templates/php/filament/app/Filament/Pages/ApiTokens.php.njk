@@ -40,6 +40,10 @@ class ApiTokens extends Page
     /** @var \Illuminate\Database\Eloquent\Collection<int, PersonalAccessToken> */
     public $tokens;
 
+    /**
+     * Only super admins may manage API tokens.
+     * @return  bool  Whether the current user may access the page.
+     */
     public static function canAccess(): bool
     {
         $user = Auth::user();
@@ -51,16 +55,25 @@ class ApiTokens extends Page
             || (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin());
     }
 
+    /**
+     * Load the current user's tokens on page open.
+     */
     public function mount(): void
     {
         $this->refreshTokens();
     }
 
+    /**
+     * Reload the token list from the database.
+     */
     public function refreshTokens(): void
     {
         $this->tokens = Auth::user()->tokens()->latest()->get();
     }
 
+    /**
+     * Create a new personal access token with full abilities for the current user.
+     */
     public function createToken(): void
     {
         $name = trim($this->tokenName);
@@ -84,6 +97,11 @@ class ApiTokens extends Page
             ->send();
     }
 
+    /**
+     * Delete one of the current user's tokens.
+     *
+     * @param  int  $id  Token id to revoke.
+     */
     public function revokeToken(int $id): void
     {
         $token = Auth::user()->tokens()->find($id);

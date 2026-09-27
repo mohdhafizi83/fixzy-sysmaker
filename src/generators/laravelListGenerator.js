@@ -1,3 +1,6 @@
+// Filament List page generator (Fixzy SysMaker).
+// Renders app/Filament/Resources/<Folder>/Pages/List<Model>.php for
+// standard tables and custom modules from PagesList.php.njk.
 const fs = require('fs');
 const path = require('path');
 const { toSingularPascalCase, toPluralPascalCase } = require('../utils');
@@ -71,6 +74,12 @@ async function generateSingleListPage(tableName, tableData, fullSchema, basePath
 }
 
 // [UTAMA] Standard List Pages
+/**
+ * Generate List pages for every non-users base table.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} basePath generated app root
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
 async function generateFilamentListPages(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;
@@ -85,6 +94,12 @@ async function generateFilamentListPages(fullSchema, basePath) {
 }
 
 // Custom Module List Pages
+/**
+ * Generate List pages for every custom module (one per module view).
+ * @param {object} fullSchema assembled project schema
+ * @param {string} basePath generated app root
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
 async function generateFilamentListCustomModules(fullSchema, basePath) {
     try {
         const { database: { table: tables } } = fullSchema;

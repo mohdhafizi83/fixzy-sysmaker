@@ -1,4 +1,9 @@
 {% raw %}<x-filament-panels::page>
+    {{-- Tree view: hierarchical record list rendered server-side. Each row is
+         indented by its depth; parent rows get a ▶/▼ toggle that calls the
+         Livewire toggle action, and collapsed branches are filtered out of
+         the loop via $this->hiddenIds. Expand/collapse-all are Livewire
+         actions (expandAll / collapseAll). --}}
     <x-filament::section>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
             <span style="font-size:.85rem;color:#6b7280;">{{ count($this->rows) }} records</span>

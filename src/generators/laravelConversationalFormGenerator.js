@@ -15,6 +15,12 @@ const { collectConversationalForms } = require('./conversationalConfig');
 const { parseFieldFormSettings } = require('./formLayoutConfig');
 const { validationRulesFor } = require('./laravelPublicFormGenerator');
 
+/**
+ * Build the compiled conversational-form registry keyed by slug:
+ * model, table, chat copy, and per-field chat descriptors.
+ * @param {object} fullSchema assembled project schema
+ * @returns {object} registry map (slug -> form definition)
+ */
 function buildRegistry(fullSchema) {
     const tables = (fullSchema.database && fullSchema.database.table) || {};
     const { getModelClassName } = require('./laravelDatabaseGenerator');
@@ -31,6 +37,7 @@ function buildRegistry(fullSchema) {
             const mod = tableData.custom_modules.find((m) => m.module_id === f.module_id);
             if (mod && Array.isArray(mod.fields)) {
                 mod.fields.forEach((mf) => {
+                    /** Parsed settings_override JSON for this module field. @type {object} */
                     const ov = (() => { try { return JSON.parse(mf.settings_override || '{}'); } catch (e) { return {}; } })();
                     moduleFieldOverrides[mf.field_id] = ov;
                 });
@@ -93,6 +100,7 @@ function buildRegistry(fullSchema) {
     return registry;
 }
 
+/** Map a field's IR to a chat input type. @param {object} field field row @returns {'select'|'boolean'|'email'|'date'|'number'|'decimal'|'textarea'|'text'} */
 function fieldTypeFor(field) {
     const dt = (field.data_type || '').toUpperCase();
     const name = (field.field_name || '').toLowerCase();
@@ -106,6 +114,7 @@ function fieldTypeFor(field) {
     return 'text';
 }
 
+/** Parse ';;'-separated option list values for a field. @param {object} field field row @returns {string[]|null} options, null for lookup fields */
 function optionsFor(field) {
     if (field.lookup_parent_table) return null; // resolved via model at runtime
     const raw = field.options_list_values || '';
@@ -113,10 +122,12 @@ function optionsFor(field) {
 }
 
 // PHP literal escaper for single-quoted strings.
+/** @param {*} s value @returns {string} escaped for single-quoted PHP literals */
 function phpEsc(s) {
     return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r/g, '\\r').replace(/\n/g, '\\n');
 }
 
+/** Compile a {field,op,value} rule into a PHP array literal. @param {object|null} rule normalized rule @returns {string} PHP literal or 'null' */
 function rulePhp(rule) {
     if (!rule) return 'null';
     if (rule.value === undefined) return `['field' => '${phpEsc(rule.field)}', 'op' => '${phpEsc(rule.op)}']`;
@@ -126,6 +137,7 @@ function rulePhp(rule) {
     return `['field' => '${phpEsc(rule.field)}', 'op' => '${phpEsc(rule.op)}', 'value' => '${phpEsc(rule.value)}']`;
 }
 
+/** Render the full registry as a PHP array literal for the Livewire engine. @param {object} registry from buildRegistry @returns {string} PHP array literal */
 function exportRegistryPhp(registry) {
     const lines = ['['];
     Object.entries(registry).forEach(([slug, r]) => {
@@ -145,6 +157,13 @@ function exportRegistryPhp(registry) {
     return lines.join('\n');
 }
 
+/**
+ * Generate the Conversational Form module (Livewire engine, chat views,
+ * provider) when any form opts into the conversational style.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} outputDir generated app root
+ * @returns {{success: boolean, files: string[], skipped?: boolean, error?: string}}
+ */
 function generateConversationalFormModule(fullSchema, outputDir) {
     try {
         const written = [];
@@ -153,6 +172,7 @@ function generateConversationalFormModule(fullSchema, outputDir) {
             return { success: true, files: [], skipped: true };
         }
 
+        /** Render a template to outputDir/relPath once (skips existing files). @param {string} relPath @param {string} template njk path @param {object} [context] @returns {void} */
         const emit = (relPath, template, context) => {
             const abs = path.join(outputDir, relPath);
             fs.mkdirSync(path.dirname(abs), { recursive: true });

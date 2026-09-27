@@ -1,3 +1,6 @@
+// Kanban board page generator (Fixzy SysMaker).
+// Emits a drag-and-drop Kanban Filament page per table that opts in via
+// kanban_config (status field drives the columns).
 const fs = require('fs');
 const path = require('path');
 const { toSingularPascalCase, toPluralPascalCase } = require('../utils');
@@ -63,6 +66,7 @@ async function generateKanbanPages(fullSchema, basePath) {
         const resourceFolder = toPluralPascalCase(nameSource.replace(/[^a-zA-Z0-9]/g, ''));
         const pageTitle = tableData.table_view_title || resourceFolder;
 
+        /** Escape a value for a single-quoted PHP string literal. @param {*} v @returns {string} */
         const phpLiteral = (v) => `'${String(v).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
         const php = renderTemplate('app/Filament/Pages/KanbanPage.php.njk', {
             page_class: `${modelSingular}Board`,

@@ -19,16 +19,28 @@ class RecaptchaService
 {
     private const VERIFY_URL = 'https://www.google.com/recaptcha/api/siteverify';
 
+    /**
+     * reCAPTCHA site key: runtime setting first, env fallback.
+     * @return  string  Configured site key.
+     */
     public static function siteKey(): string
     {
         return (string) (FixzySetting::get('recaptcha_site_key', '') ?: env('RECAPTCHA_SITE_KEY', ''));
     }
 
+    /**
+     * reCAPTCHA secret: runtime setting first, env fallback.
+     * @return  string  Configured secret.
+     */
     public static function secret(): string
     {
         return (string) (FixzySetting::get('recaptcha_secret', '') ?: env('RECAPTCHA_SECRET', ''));
     }
 
+    /**
+     * Whether both reCAPTCHA keys are present.
+     * @return  bool  True when site key and secret are set.
+     */
     public static function isConfigured(): bool
     {
         return self::siteKey() !== '' && self::secret() !== '';

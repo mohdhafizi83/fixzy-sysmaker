@@ -17,6 +17,10 @@ import { SaveManager } from '../saveManager.js';
 
 let bound = false;
 
+/**
+ * Resolves the table data object for the currently open workspace table.
+ * @returns {Object|null} The table data from appState, or null in custom-module mode / unknown table.
+ */
 function currentTableData() {
     const badgeEl = document.getElementById('workspace-module-badge');
     const isCustomMode = badgeEl && badgeEl.classList.contains('badge-custom');
@@ -28,6 +32,10 @@ function currentTableData() {
         : null;
 }
 
+/**
+ * Reads the current import profile (match field, mode, dry-run flag) from the form inputs.
+ * @returns {Object} Config object shaped {match_field, mode, dry_run}.
+ */
 function readConfigFromDom() {
     return {
         match_field: document.getElementById('imp-match-field')?.value || '',
@@ -36,6 +44,10 @@ function readConfigFromDom() {
     };
 }
 
+/**
+ * Serialises the DOM-read import profile into tables.import_config via the autosave queue.
+ * @returns {void}
+ */
 function saveConfig() {
     const tableData = currentTableData();
     if (!tableData || !tableData.table_id) return;
@@ -43,6 +55,12 @@ function saveConfig() {
     SaveManager.addToQueue('table', tableData.table_id, { import_config: JSON.stringify(cfg) });
 }
 
+/**
+ * Fills the match-field dropdown with the table's columns, selecting the saved one.
+ * @param {Object} tableData Table data whose fields populate the dropdown.
+ * @param {string} selected Field name to preselect.
+ * @returns {void}
+ */
 function renderFieldSelect(tableData, selected) {
     const sel = document.getElementById('imp-match-field');
     if (!sel) return;
@@ -63,12 +81,21 @@ function renderFieldSelect(tableData, selected) {
     });
 }
 
+/**
+ * Shows or hides the import config panel based on the tbl-import-enabled checkbox.
+ * @returns {void}
+ */
 function togglePanel() {
     const enabled = !!document.getElementById('tbl-import-enabled')?.checked;
     const panel = document.getElementById('import-panel');
     if (panel) panel.classList.toggle('hidden', !enabled);
 }
 
+/**
+ * Populates the Import section UI (enable switch, match field, mode, dry-run) from table data.
+ * @param {Object} tableData Table data with import_enabled/import_config fields.
+ * @returns {void}
+ */
 export function renderImportSection(tableData) {
     if (!tableData) return;
 
@@ -96,6 +123,10 @@ export function renderImportSection(tableData) {
     togglePanel();
 }
 
+/**
+ * Registers change listeners for the Import section inputs (runs once).
+ * @returns {void}
+ */
 export function initImportSection() {
     if (bound) return;
     bound = true;

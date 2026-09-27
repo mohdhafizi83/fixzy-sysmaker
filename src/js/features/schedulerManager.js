@@ -18,6 +18,10 @@ import { SaveManager } from '../saveManager.js';
 
 const DATE_TYPES = ['DATE', 'DATETIME', 'TIMESTAMP', 'TIMESTAMPTZ'];
 
+/**
+ * Resolves the table name of the currently open workspace table.
+ * @returns {string|null} Table name, or null in custom-module mode.
+ */
 function currentTableName() {
     const badgeEl = document.getElementById('workspace-module-badge');
     const isCustomMode = badgeEl && badgeEl.classList.contains('badge-custom');
@@ -26,6 +30,10 @@ function currentTableName() {
     return (titleEl && (titleEl.dataset.tableName || titleEl.textContent.trim())) || null;
 }
 
+/**
+ * Resolves the table data object for the currently open workspace table.
+ * @returns {Object|null} The table data from appState, or null when unknown.
+ */
 function currentTableData() {
     const tableName = currentTableName();
     return tableName && appState.jsonData?.database?.table?.[tableName]
@@ -33,11 +41,21 @@ function currentTableData() {
         : null;
 }
 
+/**
+ * True when the field's data type is a date-like type (DATE/DATETIME/TIMESTAMP).
+ * @param {Object} fieldData Field definition to check.
+ * @returns {boolean} Whether the field can drive reminders.
+ */
 function isDateField(fieldData) {
     const dt = String((fieldData && fieldData.data_type) || '').toUpperCase();
     return DATE_TYPES.some((d) => dt === d || dt.startsWith(d));
 }
 
+/**
+ * Lists the table's date-like fields usable as reminder anchors.
+ * @param {Object} tableData Table data whose fields are filtered.
+ * @returns {Array<{name: string, label: string}>} Date field descriptors.
+ */
 function dateFieldOptions(tableData) {
     const fields = tableData?.fields || {};
     return Object.entries(fields)
@@ -45,9 +63,15 @@ function dateFieldOptions(tableData) {
         .map(([name, f]) => ({ name, label: f.caption || name }));
 }
 
+/** Escapes &, <, and > for safe HTML interpolation. @param {*} s Value. @returns {string} Escaped string. */
 function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+/** Escapes HTML special chars plus double quotes for attribute interpolation. @param {*} s Value. @returns {string} Escaped string. */
 function escapeAttr(s) { return escapeHtml(s).replace(/"/g, '&quot;'); }
 
+/**
+ * Reads the scheduler profile (reminder rows + recurring cycle) from the editor inputs.
+ * @returns {Object} Config object shaped {reminders, recurring|null}.
+ */
 function readConfigFromDom() {
     const reminders = [];
     document.querySelectorAll('#scheduler-reminder-rows tr').forEach((tr) => {
@@ -77,6 +101,11 @@ function readConfigFromDom() {
     return { reminders, recurring };
 }
 
+/**
+ * Checks the scheduler config for duplicate reminder fields and invalid recurrence values.
+ * @param {Object} cfg Config from readConfigFromDom.
+ * @returns {string[]} Human-readable error messages; empty when valid.
+ */
 function validateConfig(cfg) {
     const errors = [];
     const seen = new Set();
@@ -91,6 +120,10 @@ function validateConfig(cfg) {
 }
 
 let saveTimer = null;
+/**
+ * Validates the DOM config and, if valid, debounces a save into tables.scheduler_config (null when empty).
+ * @returns {void}
+ */
 function saveConfig() {
     const cfg = readConfigFromDom();
     const msg = document.getElementById('scheduler-validation-msg');
@@ -111,6 +144,12 @@ function saveConfig() {
     }, 300);
 }
 
+/**
+ * Builds a reminder editor row (date-field select, offset days, notify target, delete).
+ * @param {Object} r Reminder object {field, offsetDays, notify}.
+ * @param {Array<{name: string, label: string}>} dateOptions Date fields for the dropdown.
+ * @returns {HTMLTableRowElement} The constructed row.
+ */
 function renderReminderRow(r, dateOptions) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -127,6 +166,10 @@ function renderReminderRow(r, dateOptions) {
     return tr;
 }
 
+/**
+ * Shows the day input for monthly recurrence and the weekday input for weekly recurrence.
+ * @returns {void}
+ */
 function toggleRecurringGroups() {
     const rec = document.getElementById('scheduler-recurring-enabled')?.value || '';
     const dayGroup = document.getElementById('scheduler-recurring-day-group');
@@ -135,6 +178,11 @@ function toggleRecurringGroups() {
     if (wdGroup) wdGroup.style.display = rec === 'weekly' ? '' : 'none';
 }
 
+/**
+ * Populates the Automation tab: master-switch warning, reminder rows, and recurring-cycle inputs.
+ * @param {Object} tableData Table data with scheduler_config field.
+ * @returns {void}
+ */
 function renderAutomationTab(tableData) {
     const tbody = document.getElementById('scheduler-reminder-rows');
     if (!tbody || !tableData) return;
@@ -165,6 +213,10 @@ function renderAutomationTab(tableData) {
     toggleRecurringGroups();
 }
 
+/**
+ * Registers listeners for the add-reminder button and recurring-cycle inputs.
+ * @returns {void}
+ */
 export function initSchedulerTab() {
     const addBtn = document.getElementById('scheduler-add-reminder');
     if (addBtn) addBtn.addEventListener('click', () => {

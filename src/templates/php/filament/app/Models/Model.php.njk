@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 {{ import_audit }}
 {{ import_tenant_trait }}{{ approval_import }}{{ numbering_import }}
 
+/**
+ * Generated Eloquent model for the {{ table_name }} table.
+ */
 class {{ class_name }} extends Model {{ class_implements_audit }}
 {
 	{{ trait_factory }}

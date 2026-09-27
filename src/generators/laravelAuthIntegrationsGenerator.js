@@ -22,27 +22,39 @@ const fs = require('fs');
 const path = require('path');
 const { renderTemplate } = require('../render/engine');
 
+/** @param {object} fullSchema @returns {boolean} true when Google SSO flag is on */
 function hasGoogle(fullSchema) {
     return Number((fullSchema.project || {}).module_auth_google_sso) === 1;
 }
 
+/** @param {object} fullSchema @returns {boolean} true when LDAP flag is on */
 function hasLdap(fullSchema) {
     return Number((fullSchema.project || {}).module_auth_ldap) === 1;
 }
 
+/** @param {object} fullSchema @returns {boolean} true when 2FA mode is TOTP */
 function hasTotp(fullSchema) {
     return require('./authConfig').isTotp(fullSchema.project);
 }
 
+/** @param {object} fullSchema @returns {boolean} true when captcha mode is reCAPTCHA v2 */
 function hasRecaptcha(fullSchema) {
     return require('./authConfig').isRecaptcha(fullSchema.project);
 }
 
+/** Write a file, creating the directory first. @param {string} dir target directory @param {string} file file name @param {string} content contents @returns {void} */
 function writeIf(dir, file, content) {
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, file), content);
 }
 
+/**
+ * Generate auth integration files (Google SSO, LDAP, TOTP columns,
+ * reCAPTCHA service, settings page) per project flags, plus the manifest.
+ * @param {object} fullSchema assembled project schema
+ * @param {string} outputDir generated app root
+ * @returns {{success: boolean, composerPackages: string[], phpExtensions: string[], message?: string}}
+ */
 function generateAuthIntegrations(fullSchema, outputDir) {
     try {
         const google = hasGoogle(fullSchema);

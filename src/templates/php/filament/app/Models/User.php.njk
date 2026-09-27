@@ -13,6 +13,9 @@ use Illuminate\Notifications\Notifiable;
 {{ import_tenant }}
 {{ import_2fa }}
 
+/**
+ * Application user account: authentication, notifications and optional Shield/API-token traits.
+ */
 class User extends Authenticatable {{ implements_clause }}
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */

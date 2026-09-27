@@ -5,7 +5,10 @@
    token into the login form's g-recaptcha-response field (Livewire state)
    via the native input event; data-expired-callback clears it so a stale
    token can never be resubmitted. #}
-{% raw %}<div id="fixzy-recaptcha-holder" class="mt-3 flex justify-center">
+{% raw %}{{-- reCAPTCHA v2 login widget: shows Google's "I'm not a robot" checkbox and
+     pushes the verification token into the login form's Livewire state via the
+     fixzyRecaptchaDone / fixzyRecaptchaExpired callbacks defined below. --}}
+<div id="fixzy-recaptcha-holder" class="mt-3 flex justify-center">
     @if(\App\Services\RecaptchaService::isConfigured())
         <div class="g-recaptcha"
              data-sitekey="{{ \App\Services\RecaptchaService::siteKey() }}"

@@ -1,4 +1,8 @@
 {% raw %}<x-filament-panels::page>
+    {{-- Kanban board: one column per status, cards moved by HTML5 drag-and-drop.
+         Drops call window.__kanbanDrop (defined at the bottom), which forwards
+         to the Livewire moveRecord action. Touch devices get a "Move to"
+         select instead — HTML5 DnD does not work there. --}}
     <style>
         .fz-kb-board { display:flex;gap:1rem;align-items:flex-start;overflow-x:auto;padding-bottom:1rem;-webkit-overflow-scrolling:touch; }
         .fz-kb-col { flex:0 0 260px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:.6rem; }

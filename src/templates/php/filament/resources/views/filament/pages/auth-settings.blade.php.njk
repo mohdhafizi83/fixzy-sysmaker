@@ -1,4 +1,8 @@
 {% raw %}<x-filament-panels::page>
+    {{-- Auth settings page: one form (wire:submit="save") whose sections are
+         emitted only when the feature was enabled in the Fixzy SysMaker design:
+         Google SSO, reCAPTCHA v2, and LDAP / Active Directory. Values are
+         stored in the database at runtime, never in .env or code. --}}
     @if(session('fixzy_settings_saved'))
         <div class="rounded-lg bg-green-50 border border-green-200 text-green-800 px-4 py-3 text-sm dark:bg-green-950 dark:text-green-200 dark:border-green-800">
             {{ session('fixzy_settings_saved') }}

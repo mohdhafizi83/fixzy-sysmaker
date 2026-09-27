@@ -35,8 +35,17 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Contracts\View\View;
 
 
+/**
+ * Generated table configuration fragment for this table.
+ */
 class {{ table_class_name or (table_name_plural ~ "Table") }}
 {
+    /**
+     * Apply pagination, columns and display options to the table.
+     *
+     * @param  Table  $table  The table instance to configure.
+     * @return  Table  The configured table.
+     */
     public static function configure(Table $table): Table
     {
         return $table

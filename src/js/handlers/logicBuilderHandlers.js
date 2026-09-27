@@ -1639,6 +1639,7 @@ case 'custom_query': {
  * @param {string} config.cancelButtonId - ID of the cancel button.
  * @param {string} config.doneButtonId - ID of the done button.
  * @param {function} [config.onComplete] - Optional callback when 'Done' is clicked, receives the logic JSON.
+ * @returns {void}
  */
 export function openModalLogicBuilder(config) {
     const modal = document.getElementById(config.modalId);
@@ -1789,6 +1790,7 @@ export function openModalLogicBuilder(config) {
 /**
  * Initializer function for the Algorithm Builder in field settings.
  * It defines the configuration and calls the core function.
+ * @returns {void}
  */
 export function initializeAlgorithmBuilder() {
     // New state-based grammar
@@ -1855,6 +1857,7 @@ export function initializeAlgorithmBuilder() {
 /**
  * Initializer function for the Algorithm Builder for the 'Table Hook'.
  * @deprecated This functionality is now handled by the Workflow Builder in workflowBuilder.js
+ * @returns {void}
  */
 export function initializeTableHookBuilder() {
     // This functionality is now handled by the Workflow Builder in workflowBuilder.js
@@ -1863,6 +1866,7 @@ export function initializeTableHookBuilder() {
 /**
  * Initializer function for the Algorithm Builder for the 'Project Hook'.
  * @deprecated This functionality is now handled by the Workflow Builder in workflowBuilder.js
+ * @returns {void}
  */
 export function initializeProjectHookBuilder() {
     // This functionality is now handled by the Workflow Builder in workflowBuilder.js
@@ -1871,6 +1875,7 @@ export function initializeProjectHookBuilder() {
 /**
  * Core function to display and manage the configurable Query Builder.
  * @param {object} config - Objek konfigurasi.
+ * @returns {void}
  */
 export function showConfigurableQueryBuilder(config) {
     const modal = document.getElementById('configurable-query-builder-modal');
@@ -1945,6 +1950,7 @@ export function showConfigurableQueryBuilder(config) {
 
 /**
  * Initializer function for the 'Calculation' mode.
+ * @returns {void}
  */
 export function initializeCalculationBuilder() {
     const openBtn = document.getElementById('open-calculation-builder-btn');
@@ -2008,6 +2014,7 @@ export function initializeCalculationBuilder() {
 
 /**
  * Initializer function for the 'General' mode.
+ * @returns {void}
  */
 export function initializeQueryBuilder() {
 
@@ -2081,6 +2088,7 @@ export function initializeQueryBuilder() {
  * @param {object} options - Objek konfigurasi.
  * @param {HTMLTextAreaElement} options.targetTextarea - Target textarea that receives the output.
  * @param {object} options.context - Information about where the helper was opened.
+ * @returns {void}
  */
 export function openQueryHelperModal(options) {
     const modal = document.getElementById('query-helper-modal');
@@ -2298,6 +2306,10 @@ export function openQueryHelperModal(options) {
     populateInitialUI(state.mainTable);
 }
 
+/**
+ * Builds the default lookup SELECT from the parent table, captions, and its primary key.
+ * @returns {string} SQL query string for the lookup dropdown.
+ */
 function generateDefaultLookupQuery() {
     const parentTable = document.getElementById('fld-lookup-parent-table').value;
     const caption1 = document.getElementById('fld-lookup-caption-1').value;
@@ -2322,6 +2334,7 @@ function generateDefaultLookupQuery() {
  * Manages UI dependencies in the Calculation Builder's 'Advanced' mode.
  * It enables/disables 'DISTINCT' and the second expression field
  * based on the operator selection.
+ * @returns {void}
  */
 function handleAdvancedCalcDependencies() {
     const modal = document.getElementById('configurable-query-builder-modal');
@@ -2346,6 +2359,7 @@ function getTablesFromFilters(filterState) {
     const tables = new Set();
     if (!filterState || !filterState.rules) return tables;
 
+    // Recursively walks rule groups, adding each rule's table.
     function traverse(rules) {
         rules.forEach(rule => {
             if (rule.type === 'rule') {
@@ -2389,6 +2403,11 @@ function buildJoinClause(mainTable, tablesInFilters) {
     return joinClauses;
 }
 
+/**
+ * Builds the query builder's field lists, dropdowns, and rule container for a table.
+ * @param {string} tableName Table whose fields populate the builder UI.
+ * @returns {void}
+ */
 function setupBuilderUI(tableName) {
     const numericTypes = ['TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'BIGINT', 'DECIMAL', 'FLOAT', 'DOUBLE'];
     const fields = appState.jsonData.database.table[tableName].fields;
@@ -2428,6 +2447,11 @@ function setupBuilderUI(tableName) {
     }
 }
 
+/**
+ * Reads the current builder UI into a JSON state string for the given mode.
+ * @param {('calculation'|'general')} mode Builder mode controlling which inputs are read.
+ * @returns {string} JSON-serialized builder state.
+ */
 function getBuilderStateAsJson(mode) {
     let state = { mode };
 
@@ -2457,6 +2481,13 @@ function getBuilderStateAsJson(mode) {
     return JSON.stringify(state);
 }
 
+/**
+ * Restores the builder UI from a saved JSON state for the given table and mode.
+ * @param {string} jsonState Saved JSON state string to restore.
+ * @param {string} tableName Table the state was saved against.
+ * @param {('calculation'|'general')} mode Builder mode to restore.
+ * @returns {void}
+ */
 function populateBuilderFromState(jsonState, tableName, mode) {
     if (!jsonState) return;
     try {
@@ -2497,6 +2528,12 @@ function populateBuilderFromState(jsonState, tableName, mode) {
     }
 }
 
+/**
+ * Generates the SELECT query for calculation mode from the builder state.
+ * @param {string} tableName Table being aggregated over.
+ * @param {Object} state Builder state {selectedFields, filters, sorting, ...}.
+ * @returns {string} SQL query string ending with ';'.
+ */
 function generateCalculationQuery(tableName, state) {
     const pkField = Object.keys(appState.jsonData.database.table[tableName].fields).find(f => appState.jsonData.database.table[tableName].fields[f].primary_key === 1);
     if (!pkField) {
@@ -2540,6 +2577,12 @@ function generateCalculationQuery(tableName, state) {
     return query + ';';
 }
 
+/**
+ * Generates the general SELECT query (fields, joins, where, order) from the builder state.
+ * @param {string} tableName Main table in the FROM clause.
+ * @param {Object} state Builder state {selectedFields, filters, sorting}.
+ * @returns {string} SQL query string ending with ';'.
+ */
 function generateGeneralQuery(tableName, state) {
     // Add the table-name prefix to avoid ambiguity errors
     const selectClause = 'SELECT\n    ' + (state.selectedFields.length === 0 ? '*' : state.selectedFields.map(f => `\`${tableName}\`.\`${f}\``).join(',\n    '));
@@ -2554,6 +2597,12 @@ function generateGeneralQuery(tableName, state) {
     return `${selectClause}${fromClause}${whereClause}${orderByClause};`;
 }
 
+/**
+ * Creates a filter rule row element (table/field/operator/value selects) with optional saved data.
+ * @param {string} tableName Main table used to resolve related-table options.
+ * @param {Object|null} [data] Saved rule data {table, field, operator, value} to prefill.
+ * @returns {HTMLElement} The constructed rule element.
+ */
 function createRuleElement(tableName, data = null) {
     const newRule = document.createElement('div');
     newRule.className = 'cqb-rule';
@@ -2606,6 +2655,10 @@ function createRuleElement(tableName, data = null) {
     return newRule;
 }
 
+/**
+ * Creates an empty nested rule-group element with AND/OR logic toggle and add buttons.
+ * @returns {HTMLElement} The constructed rule-group element.
+ */
 function createRuleGroupElement() {
     const groupEl = document.createElement('div');
     groupEl.className = 'cqb-rule-group';
@@ -2614,6 +2667,12 @@ function createRuleGroupElement() {
     return groupEl;
 }
 
+/**
+ * Creates a sort-rule row element (field select + direction select) with optional saved data.
+ * @param {string} tableName Table whose fields populate the sort dropdown.
+ * @param {Object|null} [data] Saved sort data {field, direction} to prefill.
+ * @returns {HTMLElement} The constructed sort-rule element.
+ */
 function createSortElement(tableName, data = null) {
     const newSortRule = document.createElement('div');
     newSortRule.className = 'cqb-sort-rule';
@@ -2627,6 +2686,11 @@ function createSortElement(tableName, data = null) {
     return newSortRule;
 }
 
+/**
+ * Recursively converts a nested filter state tree into a parenthesized SQL WHERE clause.
+ * @param {Object|null} filterState Filter state {logic, rules} tree.
+ * @returns {string} SQL WHERE condition string, '' when empty.
+ */
 function buildNestedWhereClause(filterState) {
     if (!filterState || !filterState.rules || filterState.rules.length === 0) return '';
     const logic = filterState.logic || 'AND';
@@ -2676,6 +2740,12 @@ function buildNestedWhereClause(filterState) {
     return conditions.length > 0 ? `(${conditions.join(` ${logic} `)})` : '';
 }
 
+/**
+ * Moves selected list items from the source list to the destination list.
+ * @param {string} sourceSelector CSS selector of the source list.
+ * @param {string} destinationSelector CSS selector of the destination list.
+ * @returns {void}
+ */
 function moveFields(sourceSelector, destinationSelector) {
     const source = document.querySelector(sourceSelector);
     const destination = document.querySelector(destinationSelector);
@@ -2685,6 +2755,12 @@ function moveFields(sourceSelector, destinationSelector) {
 
 // src/js/handlers/logicBuilderHandlers.js
 
+/**
+ * Adds a new rule or nested group to the nearest rule-container of the clicked button.
+ * @param {HTMLElement} button The add button that was clicked.
+ * @param {('rule'|'group')} type Kind of element to add.
+ * @returns {void}
+ */
 function addRuleOrGroup(button, type) {
     // Find the nearest parent container. We add '#cv-filter-builder-container' to support Custom Modules.
     const parentContainer = button.closest('.cqb-rule-group, #cqb-container, #cv-filter-builder-container');
@@ -2719,6 +2795,11 @@ function addRuleOrGroup(button, type) {
     }
 }
 
+/**
+ * Reads a rule-container's logic and nested rules into a {logic, rules} state object.
+ * @param {HTMLElement} container The rules container element.
+ * @returns {{logic: string, rules: Array}} Filter state read from the DOM.
+ */
 function readRuleState(container) {
     const logicRadio = container.parentElement.querySelector(':scope > .qb-logic-toggle input:checked');
     const logic = logicRadio ? logicRadio.value : 'AND';
@@ -2739,6 +2820,13 @@ function readRuleState(container) {
     return { logic, rules };
 }
 
+/**
+ * Rebuilds a container's rule UI from a saved filter group (logic, rules, nested groups).
+ * @param {HTMLElement} container Target rules container.
+ * @param {Object} filterGroup Saved filter group {logic, rules}.
+ * @param {string} tableName Table context for rule rows.
+ * @returns {void}
+ */
 function buildRulesUI(container, filterGroup, tableName) {
     if (!filterGroup) return;
     const logicRadio = container.parentElement.querySelector(`:scope > .qb-logic-toggle input[value="${filterGroup.logic}"]`);

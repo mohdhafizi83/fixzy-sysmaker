@@ -19,6 +19,13 @@ use Illuminate\Support\Facades\RateLimiter;
  */
 class ApiController extends Controller
 {
+    /**
+     * List records for a registered table with allowlisted filters and pagination.
+     *
+     * @param  Request  $request  Incoming API request.
+     * @param  string  $slug  Registered table slug.
+     * @return  JsonResponse  Paginated list of exposed records.
+     */
     public function index(Request $request, string $slug): JsonResponse
     {
         $cfg = $this->authorizeTable($request, $slug, 'read');
@@ -52,6 +59,14 @@ class ApiController extends Controller
         ]);
     }
 
+    /**
+     * Fetch a single record by id.
+     *
+     * @param  Request  $request  Incoming API request.
+     * @param  string  $slug  Registered table slug.
+     * @param  string  $id  Record primary key.
+     * @return  JsonResponse  The exposed record, or 404.
+     */
     public function show(Request $request, string $slug, string $id): JsonResponse
     {
         $cfg = $this->authorizeTable($request, $slug, 'read');
@@ -67,6 +82,13 @@ class ApiController extends Controller
         return response()->json(['data' => $this->expose($row, $cfg['fields'])]);
     }
 
+    /**
+     * Create a record from a validated payload.
+     *
+     * @param  Request  $request  Incoming API request.
+     * @param  string  $slug  Registered table slug.
+     * @return  JsonResponse  The created record with 201 status.
+     */
     public function store(Request $request, string $slug): JsonResponse
     {
         $cfg = $this->authorizeTable($request, $slug, 'write');
@@ -84,6 +106,14 @@ class ApiController extends Controller
         return response()->json(['data' => $this->expose($row, $cfg['fields'])], 201);
     }
 
+    /**
+     * Update an existing record from a validated payload.
+     *
+     * @param  Request  $request  Incoming API request.
+     * @param  string  $slug  Registered table slug.
+     * @param  string  $id  Record primary key.
+     * @return  JsonResponse  The updated record, or 404.
+     */
     public function update(Request $request, string $slug, string $id): JsonResponse
     {
         $cfg = $this->authorizeTable($request, $slug, 'write');

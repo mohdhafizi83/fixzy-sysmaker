@@ -121,8 +121,15 @@ module.exports = function registerIpcHandlers(ctx) {
     // Find a free TCP port for the preview server (8080 may be taken by other
     // local services; hardcoding it caused instant-preview to hang forever).
     const net = require('net');
+    /**
+     * Find a free TCP port by trying sequential ports on 127.0.0.1.
+     * @param {number} [startPort=8080] first port to probe
+     * @param {number} [tries=20] max ports to attempt
+     * @returns {Promise<number>} the first free port
+     */
     function findFreePort(startPort = 8080, tries = 20) {
         return new Promise((resolve, reject) => {
+            /** Probe port p; recurse with p+1 on 'error' until tries run out. @param {number} p port to probe @param {number} left remaining attempts @returns {void} */
             const tryPort = (p, left) => {
                 const srv = net.createServer();
                 srv.once('error', () => {
@@ -136,8 +143,16 @@ module.exports = function registerIpcHandlers(ctx) {
         });
     }
 
+/**
+ * Copy a directory tree recursively, reporting progress every 100 files.
+ * @param {string} src source directory
+ * @param {string} dest destination directory
+ * @param {(copied: number, total: number, percentage: number) => void} onProgress progress callback
+ * @returns {Promise<void>}
+ */
 async function copyDirWithProgress(src, dest, onProgress) {
     let totalFiles = 0;
+    /** Recursively count files under dir into totalFiles. @param {string} dir directory to walk @returns {Promise<void>} */
     async function countFiles(dir) {
         const entries = await fs.promises.readdir(dir, { withFileTypes: true });
         for (let entry of entries) {
@@ -151,6 +166,7 @@ async function copyDirWithProgress(src, dest, onProgress) {
     await countFiles(src);
 
     let copiedFiles = 0;
+    /** Copy one directory tree, bumping copiedFiles and firing progress. @param {string} source source dir @param {string} destination dest dir @returns {Promise<void>} */
     async function copyRecursive(source, destination) {
         await fs.promises.mkdir(destination, { recursive: true });
         const entries = await fs.promises.readdir(source, { withFileTypes: true });
@@ -1250,7 +1266,12 @@ ipcMain.handle('settings:save-all', async (event, settingsData) => {
 // normalises them. New tables inherit these automatically (table:create);
 // existing tables only change when the user explicitly applies them via
 // 'layout:apply-global' (Apply button in the Preferences modal).
+/**
+ * Read and normalise the global table-view / form-layout defaults.
+ * @returns {{tv_template: string, card_columns: number, form_layout_config: string}} sanitized global defaults
+ */
 function getGlobalLayoutDefaults() {
+    /** Fetch one setting value by name, null when absent. @param {string} name setting_name @returns {string|null} */
     const get = (name) => {
         const row = db.prepare('SELECT setting_value FROM fixzy_settings WHERE setting_name = ?').get(name);
         return row ? row.setting_value : null;
@@ -1285,7 +1306,12 @@ function getGlobalLayoutDefaults() {
 // Child relation layout defaults (2026-09-26). '' / 0 means "inherit the
 // child table's own layout" — the legacy behaviour. These are the fallback
 // for relations whose own tv_template/card_columns/form_style are unset.
+/**
+ * Read and normalise the global child-relation layout defaults.
+ * @returns {{tv_template: string, card_columns: number, form_layout_config: string}} sanitized child-layout fallbacks
+ */
 function getGlobalChildLayoutDefaults() {
+    /** Fetch one setting value by name, null when absent. @param {string} name setting_name @returns {string|null} */
     const get = (name) => {
         const row = db.prepare('SELECT setting_value FROM fixzy_settings WHERE setting_name = ?').get(name);
         return row ? row.setting_value : null;
@@ -1778,6 +1804,7 @@ ipcMain.handle('custom-module:delete', async (event, viewId) => {
 // ---------------------------------------------------------
 const { installPreset, checkCollisions, loadBundledPresets, presetSummary } = require('../core/presetInstaller');
 
+/** Load all bundled starter-pack presets from the presets/ directory. @returns {Array<{manifest: object, ...}>} parsed presets */
 function bundledPresets() {
     return loadBundledPresets(path.join(__dirname, '..', 'presets'));
 }
@@ -2619,6 +2646,10 @@ ipcMain.handle('preview:instant-run', async (event) => {
             }
 
             // Helper function to start the server uniformly
+            /**
+             * Spawn `artisan serve` for the preview and resolve on first ready signal.
+             * @returns {void}
+             */
             const startServerAndResolve = () => {
                 win?.webContents.send('show-overlay', { message: 'Starting Local Server...', progress: 99 });
                 previewServerProcess = spawn(phpPath, ['artisan', 'serve', `--port=${port}`], { cwd: previewPath });
@@ -3041,6 +3072,12 @@ ipcMain.handle('widget:delete', (event, id) => {
     }
 });
 
+/**
+ * Assemble the full project schema (project + tables + relationships +
+ * unified menu + widgets) from the SQLite store.
+ * @param {number|string} projectId project id
+ * @returns {Promise<object|null>} full schema payload, null on error
+ */
 async function getFullProjectSchema(projectId) {
   try {
     const project = db
@@ -3269,6 +3306,13 @@ async function handleImportPreflight(win, projectId, sqlContent) {
   }
 }
 
+/**
+ * Parse a SQL schema dump and insert tables/fields/relationships into the store.
+ * @param {string} sql SQL script content
+ * @param {number|string} projectId target project id
+ * @param {string} dialect source dialect ('MySQL'|'PostgreSQL'|'TSQL'|'SQLite')
+ * @returns {{success: boolean, message?: string, tables?: number, relationships?: number}}
+ */
 function importSchema(sql, projectId, dialect) {
     const dialectMap = {
         'MySQL': 'mysql', 'PostgreSQL': 'postgresql', 'TSQL': 'mysql', 'SQLite': 'sqlite'
@@ -3291,6 +3335,11 @@ function importSchema(sql, projectId, dialect) {
         processedSql = processedSql.replace(/\s+ENGINE=\w+\s*DEFAULT\s*CHARSET=\w+(\s*COLLATE=\w+)?(\s*COMMENT='.*?')?;/gi, ";");
     }
     
+    /**
+     * Extract the plain column name from a parsed SQL column-reference node.
+     * @param {object} columnRef AST column reference
+     * @returns {string} column name ('parse_error' when unreadable)
+     */
     const getFieldNameFromAST = (columnRef) => {
         if (!columnRef || !columnRef.column) return 'parse_error';
         if (typeof columnRef.column === 'string') return columnRef.column;
@@ -3298,6 +3347,11 @@ function importSchema(sql, projectId, dialect) {
         return String(columnRef.column);
     };
     
+    /**
+     * Pull a literal default value out of a DEFAULT AST node.
+     * @param {object} defaultNode DEFAULT clause AST node
+     * @returns {string|null} string default ('NULL', quoted string, number, function expr) or null
+     */
     const extractDefaultValue = (defaultNode) => {
         if (!defaultNode || !defaultNode.value) return null;
         const valueNode = defaultNode.value;
@@ -3307,6 +3361,11 @@ function importSchema(sql, projectId, dialect) {
         return null;
     };
     
+    /**
+     * Convert snake_case/kebab-case/camelCase to Title Case for captions.
+     * @param {string} str raw identifier
+     * @returns {string} humanized Title Case string
+     */
     const toTitleCase = (str) => {
         if (!str) return '';
         return str
@@ -3318,6 +3377,11 @@ function importSchema(sql, projectId, dialect) {
             .replace(/\b\w/g, char => char.toUpperCase());
     };
     
+    /**
+     * Read the constraint/index name from a parsed constraint rule.
+     * @param {object} rule parsed constraint rule
+     * @returns {string|null} trimmed constraint name or null
+     */
     const getConstraintName = (rule) => {
         let name = rule.index || rule.constraint;
         if (name && typeof name === 'object') {
@@ -3640,6 +3704,10 @@ const checkPKStmt = db.prepare('SELECT 1 FROM fields WHERE table_id = ? AND prim
         return { success: false, message: `SQL Parsing Error: ${error.message}. Please check the console for more details.` };
     }
 }
+/**
+ * Resolve (and create) the userData/generated folder for generated apps.
+ * @returns {string} absolute path to the generated output folder
+ */
 function getGeneratedFolderPath() {
   // This path will differ for each user and OS, e.g.:
   // Windows: C:\Users\YourName\AppData\Roaming\fixzy-sysmaker
@@ -3654,6 +3722,11 @@ function getGeneratedFolderPath() {
 
   return generatedPath;
 }
+/**
+ * Run `composer install` in a generated project using bundled PHP/Composer.
+ * @param {string} projectPath generated project root
+ * @returns {Promise<{success: boolean, message?: string}>}
+ */
 async function runComposerInstall(projectPath) {
   return new Promise((resolve, reject) => {
     // Determine the path to PHP and Composer based on the app mode
@@ -3724,6 +3797,7 @@ ipcMain.handle('setup:check', async () => {
 ipcMain.handle('setup:run', async (event) => {
     const { runSetup } = require('../core/setupRunner');
     const win = ctx.getWindow ? ctx.getWindow(event) : null;
+    /** Forward a setup log line to the renderer and console. @param {string} line raw log line @returns {void} */
     const onLog = (line) => {
         const text = String(line).replace(/\s+$/, '');
         if (!text) return;

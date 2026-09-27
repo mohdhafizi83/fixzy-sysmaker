@@ -14,6 +14,9 @@ use Illuminate\Support\ServiceProvider;
  */
 class PublicFormServiceProvider extends ServiceProvider
 {
+    /**
+     * Register the public form, submission and status-lookup routes under /f.
+     */
     public function boot(): void
     {
         Route::middleware('web')

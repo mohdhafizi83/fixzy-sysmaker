@@ -7,6 +7,7 @@
 //
 // All string values are escaped for single-quoted PHP literals.
 
+/** Escape a value for a single-quoted PHP string literal. @param {*} v value to stringify @returns {string} PHP-safe escaped string */
 function phpStr(v) {
     return String(v === null || v === undefined ? '' : v)
         .replace(/\\/g, '\\\\')

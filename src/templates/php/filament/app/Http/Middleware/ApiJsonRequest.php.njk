@@ -12,6 +12,13 @@ use Illuminate\Http\Request;
  */
 class ApiJsonRequest
 {
+    /**
+     * Force a JSON Accept header on api/* requests so failures answer JSON, never a login redirect.
+     *
+     * @param  Request  $request  Incoming request.
+     * @param  Closure  $next  Next middleware handler.
+     * @return  mixed  The downstream response.
+     */
     public function handle(Request $request, Closure $next)
     {
         if ($request->is('api/*')) {

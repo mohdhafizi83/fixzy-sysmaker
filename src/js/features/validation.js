@@ -3,6 +3,7 @@
 /**
  * Initializes event listeners for validation inputs.
  * Example: automatically copies the 'Length' value to 'Max Length'.
+ * @returns {void}
  */
 export function initializeValidationInputHandlers() {
     const lengthInput = document.getElementById('fld-length');
@@ -11,6 +12,10 @@ export function initializeValidationInputHandlers() {
     if (!lengthInput || !maxLengthInput) return;
 
     // This function copies the value from 'Length' to 'Max length'
+    /**
+     * Mirrors the Length input's value into the Max Length input.
+     * @returns {void}
+     */
     const syncLengthValue = () => {
         maxLengthInput.value = lengthInput.value;
     };
@@ -22,6 +27,7 @@ export function initializeValidationInputHandlers() {
  * [FIXED] Manages the UI display when a validation checkbox is ticked.
  * Name restored to the original: toggleValidationInputs
  * @param {string} ruleType - Rule type (e.g. 'unique', 'required')
+ * @returns {void}
  */
 export function toggleValidationInputs(ruleType) {
     const checkbox = document.getElementById(`val_check_${ruleType}`);
@@ -41,6 +47,7 @@ export function toggleValidationInputs(ruleType) {
 /**
  * Saves validation data to the database via the Electron API.
  * @param {string|number} columnId - ID of the column/field being edited.
+ * @returns {Promise<void>}
  */
 export async function saveValidationData(columnId) {
     const validationsToSave = [];

@@ -14,6 +14,12 @@ import {
     loadValidationTab 
 } from '../uiHandlers.js';
 
+/**
+ * Fills the field settings page inputs for the given table/field from the loaded project JSON.
+ * @param {string} tableName Table that owns the field.
+ * @param {string} fieldName Field being edited.
+ * @returns {void}
+ */
 export function populateFieldSettings(tableName, fieldName) {
 
     const maxLengthInput = document.getElementById('fld-max-length');
@@ -109,6 +115,10 @@ const maxLengthValue = fieldData.length;
     populateParentCaptionDropdowns(fieldData.lookup_parent_table);
     const parentTableSelect = document.getElementById('fld-lookup-parent-table');
 
+    /**
+     * Recomputes visibility/enablement of all dependent field-setting groups from FK and media type.
+     * @returns {void}
+     */
     const updateAllFieldDependencies = () => {
         const isForeignKey = parentTableSelect.value !== '';
         const mediaType = document.querySelector('input[name="fld-media-type"]:checked').value;
@@ -394,6 +404,9 @@ const maxLengthValue = fieldData.length;
 /**
  * Ensures the Media tab has a clean default state when opened.
  * This function is called from sidebar.js when the user clicks on a field.
+ * @param {string} tableName Table that owns the field.
+ * @param {string} fieldName Field whose media options are set up.
+ * @returns {void}
  */
 export function setupMediaTab(tableName, fieldName) {
     // Populate the 'The other field' dropdown for both the Link and File panels

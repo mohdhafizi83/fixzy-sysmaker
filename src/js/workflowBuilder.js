@@ -1,4 +1,7 @@
 // src/js/workflowBuilder.js
+//
+// Visual hook-logic workflow canvas: draggable blocks, SVG connectors, and the
+// block configuration modals, serialized to a hidden JSON input.
 
 import { openModalLogicBuilder } from './uiHandlers.js';
 import { appState } from './state.js';
@@ -7,6 +10,8 @@ import { SaveManager } from './saveManager.js'; // ✅ Correct import (avoids ci
 
 /**
  * Reusable core function that sets up one workflow builder instance.
+ * @param {Object} config Builder config {containerId, hiddenInputId, hookType}.
+ * @returns {void}
  */
 function setupBuilderInstance(config) {
     const container = document.getElementById(config.containerId);
@@ -30,6 +35,10 @@ function setupBuilderInstance(config) {
     };
 
     // --- SAVE STATE FUNCTION (POINT A) ---
+    /**
+     * Serializes blocks and connections to JSON and writes them into the hidden input with a change event.
+     * @returns {void}
+     */
     const saveState = () => {
         const workflowData = {
             blocks: state.blocks,
@@ -52,6 +61,11 @@ function setupBuilderInstance(config) {
         }
     };
 
+    /**
+     * Computes a connection point's center position relative to the canvas.
+     * @param {HTMLElement} pointEl The connection point element.
+     * @returns {{x: number, y: number}} Canvas-relative coordinates.
+     */
     const getPointPosition = (pointEl) => {
         const canvasRect = state.canvas.getBoundingClientRect();
         const pointRect = pointEl.getBoundingClientRect();
@@ -61,6 +75,13 @@ function setupBuilderInstance(config) {
         };
     };
 
+    /**
+     * Creates an SVG bezier path between two points with click-to-select behaviour.
+     * @param {{x: number, y: number}} startPos Start point coordinates.
+     * @param {{x: number, y: number}} endPos End point coordinates.
+     * @param {Object} connection Connection record to bind to the path.
+     * @returns {SVGPathElement} The connector path element.
+     */
     const createConnectorPath = (startPos, endPos, connection) => {
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         const c1x = startPos.x + Math.abs(endPos.x - startPos.x) * 0.6;
@@ -82,6 +103,10 @@ function setupBuilderInstance(config) {
         return path;
     };
 
+    /**
+     * Clears the SVG layer and redraws every saved connection from current block positions.
+     * @returns {void}
+     */
     const redrawConnections = () => {
         state.svg.innerHTML = '';
         state.connections.forEach(conn => {
@@ -97,6 +122,11 @@ function setupBuilderInstance(config) {
         });
     };
     
+    /**
+     * Recomputes the bezier path of every connection touching the given block.
+     * @param {string} blockId Id of the block that moved.
+     * @returns {void}
+     */
     const updateBlockConnections = (blockId) => {
         state.connections.forEach(conn => {
             if (conn.fromBlock === blockId || conn.toBlock === blockId) {
@@ -115,6 +145,11 @@ function setupBuilderInstance(config) {
         });
     };
 
+    /**
+     * Removes a block from the canvas and drops its connections from state.
+     * @param {string} blockId Id of the block to delete.
+     * @returns {void}
+     */
     function deleteBlock(blockId) {
         container.querySelector(`[data-block-id='${blockId}']`)?.remove();
         delete state.blocks[blockId];
@@ -123,6 +158,11 @@ function setupBuilderInstance(config) {
         saveState();
     }
 
+    /**
+     * Re-renders an existing block in place after its configuration changed.
+     * @param {string} blockId Id of the block to rebuild.
+     * @returns {void}
+     */
     function rebuildBlock(blockId) {
         const blockEl = container.querySelector(`[data-block-id='${blockId}']`);
         const blockState = state.blocks[blockId];
@@ -141,6 +181,11 @@ function setupBuilderInstance(config) {
         redrawConnections();
     }
 	
+    /**
+     * Adds click-to-insert variable chips into a block's inputs from its variable list.
+     * @param {HTMLElement} blockEl The block element whose inputs get variable helpers.
+     * @returns {void}
+     */
     function injectVariableHelpers(blockEl) {
         blockEl.querySelectorAll('input[type="text"], textarea').forEach(input => {
             if (input.classList.contains('variable-name-input')) return;
@@ -161,6 +206,11 @@ function setupBuilderInstance(config) {
         });
     }
 	
+    /**
+     * Builds the display HTML for a comment block's configured text.
+     * @param {Object} configData Comment block config {text}.
+     * @returns {string} Rendered comment HTML.
+     */
     function generateCommentHTML(configData) {
         let comments = [];
         try {
@@ -178,6 +228,15 @@ function setupBuilderInstance(config) {
         return '';
     }
     
+    /**
+     * Creates a workflow block element of the given type at (x, y), optionally restoring saved data.
+     * @param {string} type Block type (trigger/action/condition/comment/etc.).
+     * @param {number} x X position on the canvas.
+     * @param {number} y Y position on the canvas.
+     * @param {string|null} [existingId] Existing block id when restoring a saved workflow.
+     * @param {Object|null} [existingData] Saved block config to prefill.
+     * @returns {HTMLElement} The constructed block element.
+     */
     function createWorkflowBlock(type, x, y, existingId = null, existingData = null) {
         const blockId = existingId || `block_${new Date().getTime()}`;
         const block = document.createElement('div');
@@ -480,6 +539,11 @@ function setupBuilderInstance(config) {
         return block;
     }
 
+    /**
+     * Opens the hook-type picker modal listing available project/table hook points for a trigger block.
+     * @param {string} blockId Id of the trigger block choosing its hook.
+     * @returns {void}
+     */
     function openHookTypeModal(blockId) {
         const modal = document.getElementById('hook-type-modal');
         const blockData = state.blocks[blockId];
@@ -499,8 +563,10 @@ function setupBuilderInstance(config) {
         const currentSelection = modal.querySelector(`input[name="hook_selection"][value="${blockData.hook_type}"]`);
         if (currentSelection) currentSelection.checked = true;
 
+        // Hides the hook-type modal.
         const closeModal = () => modal.classList.add('hidden');
         
+        // Applies the selected hook to the block, updates its label, and saves.
         const okHandler = () => {
             const selected = modal.querySelector('input[name="hook_selection"]:checked');
             if (selected) {
@@ -524,6 +590,11 @@ function setupBuilderInstance(config) {
         modal.classList.remove('hidden');
     }
     
+    /**
+     * Opens the configuration UI for a block (hook picker for triggers, JSON editor otherwise).
+     * @param {string} blockId Id of the block to configure.
+     * @returns {void}
+     */
     function openBlockConfiguration(blockId) {
         const blockType = state.blocks[blockId]?.type;
         if (blockType === 'hook_trigger') {
@@ -626,6 +697,11 @@ function setupBuilderInstance(config) {
         });
     }
 	
+    /**
+     * Begins dragging a block from its title bar, tracking the grab offset.
+     * @param {MouseEvent} e Mousedown event on the block title.
+     * @returns {void}
+     */
     function startDragBlock(e) {
         if (e.target.classList.contains('connection-point') || e.target.classList.contains('delete-block-btn')) return;
         e.preventDefault();
@@ -638,6 +714,11 @@ function setupBuilderInstance(config) {
         document.addEventListener('mouseup', stopDragBlock, { once: true });
     }
     
+    /**
+     * Moves the dragged block to the cursor position (snapped to a 10px grid) and updates its connectors.
+     * @param {MouseEvent} e Mousemove event during the drag.
+     * @returns {void}
+     */
     function dragBlock(e) {
         if (!state.draggedBlock) return;
         const canvasRect = state.canvas.getBoundingClientRect();
@@ -653,12 +734,21 @@ function setupBuilderInstance(config) {
         updateBlockConnections(blockId);
     }
 
+    /**
+     * Ends the drag: removes the move listener and persists the new positions.
+     * @returns {void}
+     */
     function stopDragBlock() {
         document.removeEventListener('mousemove', dragBlock);
         state.draggedBlock = null;
         saveState();
     }
 
+    /**
+     * Starts a connection drag from an output point, drawing a temporary line to the cursor.
+     * @param {MouseEvent} e Mousedown event on an output connection point.
+     * @returns {void}
+     */
     function startConnecting(e) {
         if (!e.target.classList.contains('output')) return;
         e.preventDefault();
@@ -677,6 +767,11 @@ function setupBuilderInstance(config) {
         document.addEventListener('mouseup', endConnecting, { once: true });
     }
 
+    /**
+     * Updates the temporary connector line endpoint while dragging toward an input point.
+     * @param {MouseEvent} e Mousemove event during the connect drag.
+     * @returns {void}
+     */
     function drawTempConnector(e) {
         if (!state.isConnecting) return;
         const canvasRect = state.canvas.getBoundingClientRect();
@@ -685,6 +780,11 @@ function setupBuilderInstance(config) {
         state.tempLine.setAttribute('y2', endPos.y);
     }
 
+    /**
+     * Finishes the connect drag: commits a connection when dropped on a valid input point of another block.
+     * @param {MouseEvent} e Mouseup event ending the connect drag.
+     * @returns {void}
+     */
     function endConnecting(e) {
         if (!state.isConnecting) return;
         state.svg.removeChild(state.tempLine);
@@ -933,6 +1033,12 @@ function setupBuilderInstance(config) {
         }
     });
 
+    /**
+     * Inserts a variable token at the cursor position of an input and closes the helper menu.
+     * @param {HTMLInputElement|HTMLTextAreaElement} input Target input element.
+     * @param {string} value Variable token text to insert.
+     * @returns {void}
+     */
     const insertVariable = (input, value) => {
         const start = input.selectionStart;
         const end = input.selectionEnd;
@@ -957,6 +1063,10 @@ function setupBuilderInstance(config) {
         }
     });
 
+    /**
+     * Removes the currently selected connection from state and redraws the connectors.
+     * @returns {void}
+     */
     function deleteSelectedConnection() {
         if (!state.selectedConnection) return;
         
@@ -1007,6 +1117,7 @@ function setupBuilderInstance(config) {
 
 /**
  * Main function to initialize both workflow builders.
+ * @returns {void}
  */
 export function initializeWorkflowBuilder() {
     // 1. Setup for the Project Hook
