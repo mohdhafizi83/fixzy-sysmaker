@@ -187,6 +187,9 @@ or regenerate: `node test/golden.js <fixture> --update`.
   HasEmailAuthentication + panel ->multiFactorAuthentication(EmailAuthentication::make()).
 - module_auth_email_captcha -> generated App\Filament\Auth\CaptchaLogin
   (native session arithmetic challenge, no third-party) wired via ->login().
+  (Note 2026-09-27: class was later consolidated into
+  App\Filament\Auth\FixzyLogin covering captcha/recaptcha/LDAP in one
+  class; the standalone CaptchaLogin template was removed as dead code.)
 - project_hook_workflow / table_hook_workflow -> compiled by new
   src/generators/laravelWorkflowGenerator.js into Observers (table CRUD
   events), ProjectWorkflowListener (auth/eloquent events),

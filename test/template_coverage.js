@@ -32,8 +32,12 @@ const fixtures = fs.readdirSync(FIXTURES_DIR).filter((f) => f.endsWith('.json'))
 
 // Patched engine must be in require cache before generators load.
 const { generateLaravelFilamentStack } = require('../src/generators/laravelFilamentStack');
+const { asLegacyFullSchema } = require('../src/ir/adapter');
 
 function loadFullSchema(schema) {
+    // IR-shaped fixtures ({ ir_version, _source }) must go through the IR
+    // adapter, same as the app's import path.
+    if (schema && schema.ir_version) return asLegacyFullSchema(schema);
     return {
         project: schema.project,
         database: {
