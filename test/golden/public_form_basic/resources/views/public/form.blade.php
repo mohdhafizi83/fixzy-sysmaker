@@ -23,6 +23,14 @@
         button:hover { background: #ea580c; }
         .lookup-link { display: block; margin-top: 20px; font-size: 14px; color: #f97316; }
         .errors-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
+        button:active { transform: translateY(1px); }
+        @media (max-width: 640px) {
+            body { padding: 12px; }
+            .card { padding: 20px 16px; border-radius: 10px; }
+            h1 { font-size: 21px; }
+            input[type=text], input[type=email], input[type=number], input[type=date], textarea { font-size: 16px; } /* prevent iOS auto-zoom on focus */
+            button[type=submit] { width: 100%; padding: 14px 28px; }
+        }
     </style>
 </head>
 <body>

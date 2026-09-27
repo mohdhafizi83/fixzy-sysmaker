@@ -18,6 +18,13 @@
         .badge { display: inline-block; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; border-radius: 999px; padding: 2px 12px; font-weight: 600; font-size: 13px; }
         .muted { color: #6b7280; font-size: 13px; }
         a { color: #f97316; }
+        button:active { transform: translateY(1px); }
+        @media (max-width: 640px) {
+            body { padding: 12px; }
+            .card { padding: 20px 16px; margin-top: 16px; border-radius: 10px; }
+            input { font-size: 16px; } /* prevent iOS auto-zoom on focus */
+            button[type=submit] { width: 100%; padding: 14px 28px; }
+        }
     </style>
 </head>
 <body>

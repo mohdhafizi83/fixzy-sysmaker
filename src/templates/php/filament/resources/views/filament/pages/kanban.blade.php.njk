@@ -1,28 +1,50 @@
 {% raw %}<x-filament-panels::page>
-    <div style="display:flex;gap:1rem;align-items:flex-start;overflow-x:auto;padding-bottom:1rem;">
+    <style>
+        .fz-kb-board { display:flex;gap:1rem;align-items:flex-start;overflow-x:auto;padding-bottom:1rem;-webkit-overflow-scrolling:touch; }
+        .fz-kb-col { flex:0 0 260px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:.6rem; }
+        .fz-kb-col-title { font-weight:700;font-size:.85rem;margin-bottom:.5rem;color:#374151; }
+        .fz-kb-card { background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:.6rem;margin-bottom:.5rem;box-shadow:0 1px 2px rgba(0,0,0,.05);cursor:grab; }
+        .fz-kb-card:active { cursor:grabbing; }
+        .fz-kb-empty { color:#c4c8cf;font-size:.8rem;text-align:center;padding:1rem 0; }
+        @media (max-width: 640px) {
+            .fz-kb-col { flex-basis: 82vw; }
+        }
+    </style>
+    <div class="fz-kb-board">
         @foreach($this->columns as $status => $cards)
-            <div data-status="{{ $status }}"
+            <div class="fz-kb-col" data-status="{{ $status }}"
                  ondragover="event.preventDefault(); this.style.background='rgba(99,102,241,.08)';"
                  ondragleave="this.style.background='';"
-                 ondrop="event.preventDefault(); this.style.background=''; window.__kanbanDrop(this.dataset.status, event.dataTransfer.getData('text/plain'));"
-                 style="flex:0 0 260px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:.6rem;">
-                <div style="font-weight:700;font-size:.85rem;margin-bottom:.5rem;color:#374151;">
+                 ondrop="event.preventDefault(); this.style.background=''; window.__kanbanDrop(this.dataset.status, event.dataTransfer.getData('text/plain'));">
+                <div class="fz-kb-col-title">
                     {{ $status }} <span style="color:#9ca3af;font-weight:400;">({{ count($cards) }})</span>
                 </div>
                 @foreach($cards as $card)
-                    <div draggable="true"
-                         ondragstart="event.dataTransfer.setData('text/plain', '{{ $card['id'] }}'); event.dataTransfer.effectAllowed='move';"
-                         style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:.6rem;margin-bottom:.5rem;box-shadow:0 1px 2px rgba(0,0,0,.05);cursor:grab;">
+                    <div class="fz-kb-card" draggable="true"
+                         ondragstart="event.dataTransfer.setData('text/plain', '{{ $card['id'] }}'); event.dataTransfer.effectAllowed='move';">
                         @foreach($card['fields'] as $fname => $fval)
                             <div style="font-size:.8rem;margin-bottom:.15rem;">
                                 <span style="color:#6b7280;">{{ $fname }}:</span>
                                 <span style="color:#111827;font-weight:500;">{{ $fval }}</span>
                             </div>
                         @endforeach
+                        {{-- Touch fallback: HTML5 drag-and-drop does not work on touch devices, so offer a Move picker --}}
+                        <div class="fz-kb-move" style="margin-top:.4rem;display:flex;gap:.4rem;align-items:center;">
+                            <label style="font-size:.7rem;color:#6b7280;">Move to</label>
+                            <select style="flex:1;font-size:.75rem;padding:.25rem .4rem;border:1px solid #d1d5db;border-radius:6px;background:#fff;"
+                                    onchange="if (this.value) window.__kanbanDrop(this.value, '{{ $card['id'] }}');">
+                                <option value="">Select status…</option>
+                                @foreach($this->columns as $colStatus => $colCards)
+                                    @if($colStatus !== $status)
+                                        <option value="{{ $colStatus }}">{{ $colStatus }}</option>
+                                    @endif
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
                 @endforeach
                 @if(count($cards) === 0)
-                    <div style="color:#c4c8cf;font-size:.8rem;text-align:center;padding:1rem 0;">Drop cards here</div>
+                    <div class="fz-kb-empty">Drop cards here</div>
                 @endif
             </div>
         @endforeach
@@ -33,5 +55,11 @@
             var comp = window.Livewire && window.Livewire.first();
             if (comp) comp.call('moveRecord', recordId, toStatus);
         };
+        // Show the Move picker only on touch devices (mouse users drag the cards).
+        if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+            document.querySelectorAll('.fz-kb-card').forEach(function (c) { c.draggable = false; });
+        } else {
+            document.querySelectorAll('.fz-kb-move').forEach(function (m) { m.style.display = 'none'; });
+        }
     </script>
 </x-filament-panels::page>{% endraw %}

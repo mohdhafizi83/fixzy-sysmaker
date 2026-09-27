@@ -12,6 +12,13 @@
         .ref { display: inline-block; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; font-family: ui-monospace, monospace; font-size: 18px; font-weight: 700; padding: 8px 16px; border-radius: 8px; margin: 12px 0; }
         .msg { color: #4b5563; line-height: 1.6; }
         a { color: #f97316; }
+        .ref { user-select: all; }
+        @media (max-width: 640px) {
+            body { padding: 12px; }
+            .card { padding: 28px 18px; margin-top: 16px; border-radius: 10px; }
+            h1 { font-size: 21px; }
+            .ref { font-size: 16px; padding: 8px 12px; word-break: break-all; }
+        }
     </style>
 </head>
 <body>

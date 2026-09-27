@@ -1,11 +1,20 @@
 @php
     $form = \App\Livewire\ConversationalForm::registry()[$slug] ?? null;
 @endphp
-<div style="max-width:560px;margin:40px auto;font-family:-apple-system,'Segoe UI',Roboto,sans-serif;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.1);overflow:hidden;">
+<style>
+    .fz-chat { max-width:560px;margin:40px auto;font-family:-apple-system,'Segoe UI',Roboto,sans-serif;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.1);overflow:hidden; }
+    .fz-chat-box { height:420px;overflow-y:auto;padding:16px;background:#f3f4f6; }
+    @media (max-width: 640px) {
+        .fz-chat { margin:0; border-radius:0; box-shadow:none; min-height:100vh; display:flex; flex-direction:column; }
+        .fz-chat-box { height:auto; flex:1; min-height:55vh; }
+        .fz-chat input { font-size:16px; } /* prevent iOS auto-zoom on focus */
+    }
+</style>
+<div class="fz-chat">
     <div style="background:#f97316;color:#fff;padding:16px 20px;font-weight:600;">
         💬 Chat
     </div>
-    <div style="height:420px;overflow-y:auto;padding:16px;background:#f3f4f6;" id="chat-box">
+    <div class="fz-chat-box" id="chat-box">
         @foreach($messages as $m)
             <div style="display:flex;justify-content:{{ $m['role'] === 'user' ? 'flex-end' : 'flex-start' }};margin-bottom:10px;">
                 <div style="max-width:75%;padding:10px 14px;border-radius:14px;font-size:15px;line-height:1.4;
