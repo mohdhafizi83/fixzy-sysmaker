@@ -12,7 +12,7 @@ Run one: `node test/golden.js <fixture>`
 - Template coverage: `node test/template_coverage.js` — 123/123 `.njk`
   templates rendered by at least one fixture.
 - Branch coverage: `node test/branch_coverage.js` — 165/165 `{% if %}` /
-  `{% else %}` / `{% for %}` branch directions exercised across 92 fixtures
+  `{% else %}` / `{% for %}` branch directions exercised across 97 fixtures
   (0 never-taken). Selftest: `node test/branch_coverage.js --selftest`.
 - Fixture generator for coverage gaps: `test/make_fasa_c_fixtures.js`.
 

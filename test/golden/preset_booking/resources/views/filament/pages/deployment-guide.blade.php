@@ -47,19 +47,18 @@ This attribution banner must not be removed or altered. --}}
         <div class="prose max-w-none dark:prose-invert text-sm">
             <ol class="list-decimal pl-5 space-y-2">
                 <li>
-                    <strong>Prepare an Empty Database:</strong><br>
-                    Open phpMyAdmin or your database terminal, and create a new database (example: <code>booking_pack</code>).
+                    <strong>Prepare an Empty Database (SQLite):</strong><br>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">No database server required — the app ships with a file-based database at database/database.sqlite.</p>
+                    
+                    
                 </li>
                 <li>
                     <strong>Update the <code>.env</code> file:</strong><br>
                     Open the <code>.env</code> file in your project's root folder and change this section:
-                    <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 border border-gray-300 dark:border-gray-700"><code>DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=booking_pack
-DB_USERNAME=root
-DB_PASSWORD=your_password</code></pre>
+                    <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 border border-gray-300 dark:border-gray-700"><code>DB_CONNECTION=sqlite
+</code></pre>
                 </li>
+                
                 <li>
                     <strong>Run Migrations:</strong><br>
                     Open a terminal in the project folder and run the following command to build the table structure:
