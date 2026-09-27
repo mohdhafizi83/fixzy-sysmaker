@@ -25,7 +25,8 @@ has two zones per entity/field:
 | app_title | meta.app_name | U | |
 | date_format, time_format | meta.formats.date/time | U | |
 | language_select, timezone_select | meta.locale / meta.timezone | U | |
-| theme_select, use_3d_effects, rtl, compact, panel_height, tables_per_row, extra_wide | presentation.theme.* | U(presentation) | stack may ignore |
+| theme_config | features.theme | U | Theme system v1: JSON {mode: preset\|custom, preset, primary hex, name}; normalized by src/core/theme.js resolveTheme() |
+| theme_select, use_3d_effects, rtl, compact, panel_height, tables_per_row, extra_wide | presentation.theme.* | legacy | Bootswatch-era fields; no longer written by the UI (theme system v1). Kept for backward-compatible reads only |
 | menu_orientation, menu_at_homepage | presentation.navigation_layout | U(presentation) | |
 | hide_login | features.auth.login_enabled (inverted) | U | |
 | allow_sql_tool, allow_server_status, allow_table_view_sql | features.tools.* | U | |
@@ -169,3 +170,26 @@ Exception: field_default_type/length feed the maker, not generated code.
 
 Rule for Phase 2+: generators receive ONLY the IR object. Any Filament term
 found inside IR export = bug; add to normalizer + test.
+
+---
+
+## Theme contract (theme system v1, 2026-09-27)
+
+IR carries `features.theme = { mode, preset, primary, name }` — neutral
+presentation tokens only. Each stack generator maps them its own way:
+
+| stack | mapping |
+|---|---|
+| laravel_filament | preset -> `Color::Amber/Emerald/Slate` constant; custom -> hex string in `->colors(['primary' => '#rrggbb'])` (Filament ColorManager auto-generates the 11-shade palette) |
+| future stacks | map `primary` hex to the stack's own accent/theming API; presets are just named hex shortcuts |
+
+Guarantees from `src/core/theme.js resolveTheme()` (single normalizer,
+shared by exporter and generators):
+- never throws; invalid/empty input -> `fixzy-amber` preset
+- `primary` is always `#rgb` or `#rrggbb` (regex-validated) -> safe to
+  interpolate into generated code
+- custom mode requires a valid hex, else falls back to preset
+
+Built-in presets: fixzy-amber `#f59e0b`, fixzy-emerald `#10b981`,
+fixzy-slate `#475569`. User themes live in the `saved_themes` table and
+are selected by name+hex (no stack-specific data stored).

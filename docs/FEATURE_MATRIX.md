@@ -185,3 +185,16 @@ fields and primary keys are excluded from the sheet. Deploy installs
   - `calculated_enable` — generator gap (see docs/BUGS.md BUG-001)
   - morph relations — not representable in current schema dump shape (no
     `relationship_type` for morph); out of scope until IR v2 adds it.
+
+### O. Theme system v1 (project-level theme_config, 2026-09-27)
+| Value | Schema trigger | Fixture |
+|---|---|---|
+| Preset amber (default) | theme_config empty/absent | base_simple |
+| Preset emerald | theme_config {mode:preset, preset:fixzy-emerald} | theme_emerald |
+| Custom hex | theme_config {mode:custom, primary:#7c3aed, name} | theme_custom |
+| Invalid -> fallback amber | theme_config with bad hex | theme_invalid |
+
+Generated mapping: `->colors(['primary' => Color::X or '#rrggbb'])` in
+AdminPanelProvider. Custom hex -> Filament ColorManager auto-palette
+(verified in live login-page HTML). User themes reusable via saved_themes
+table (global store). Neutral contract in docs/IR_MAPPING.md.
