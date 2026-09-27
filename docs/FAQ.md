@@ -467,6 +467,25 @@ should not pretend to own. Packs that touch money are labeled
 
 ## General
 
+### Which databases does the generated app support?
+
+SQLite (default), MySQL/MariaDB, and PostgreSQL — plus cloud PostgreSQL
+providers: Supabase, Neon, and managed RDS/Cloud SQL. Pick the engine per
+project in the Technologies Stack tab; the generated `.env` defaults,
+deployment guide, and deploy provisioner all follow your choice.
+
+For Supabase specifically: use the **session-mode** pooler (port 5432) or
+a direct connection. Do not use transaction-mode pooling (port 6543) —
+it breaks Laravel's prepared statements.
+
+### Why no MongoDB / Cassandra / DynamoDB / Couchbase?
+
+The generated app is a relational admin panel: foreign keys, joins, and
+SQL aggregation power every list, relation manager, and chart. NoSQL
+engines cannot express those without redesigning the entire product, and
+the community Laravel drivers for them are incomplete. We support the
+SQL family well instead of supporting everything shallowly.
+
 ### Do I need Laravel knowledge to use the generated app?
 
 No for basic use — the app is a complete admin panel out of the box.

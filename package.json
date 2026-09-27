@@ -29,6 +29,7 @@
     "mysql2": "^3.16.1",
     "node-sql-parser": "^5.3.11",
     "nunjucks": "^3.2.4",
+    "pg": "^8.23.0",
     "pluralize": "^8.0.0"
   },
   "allowScripts": {

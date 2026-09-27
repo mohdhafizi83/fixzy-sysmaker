@@ -35,8 +35,16 @@ async function generateDeploymentGuidePage(fullSchema, basePath) {
         fs.writeFileSync(path.join(pagesDir, 'DeploymentGuide.php'), phpOut);
 
         // 4. JANA BLADE VIEW (deployment-guide.blade.php)
+        // DB support Tier 1+2: engine-aware env block + provider notes.
+        const { envLines, engineGuide } = require('../core/dbSupport');
+        const guide = engineGuide(fullSchema.project.stack_database);
         const bladeOut = renderTemplate('resources/views/filament/pages/deployment-guide.blade.php.njk', {
             app_db_name: appDbName,
+            db_label: guide.label,
+            db_env_lines: envLines(fullSchema.project.stack_database, {
+                dbName: appDbName,
+            }).filter((l) => !l.startsWith('#')),
+            db_notes: guide.notes,
             // Feature-aware sections (English): only show checklists for
             // features the owner enabled in the designer.
             google_sso: Number(fullSchema.project.module_auth_google_sso) === 1,

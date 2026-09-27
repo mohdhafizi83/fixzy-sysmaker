@@ -198,3 +198,17 @@ Generated mapping: `->colors(['primary' => Color::X or '#rrggbb'])` in
 AdminPanelProvider. Custom hex -> Filament ColorManager auto-palette
 (verified in live login-page HTML). User themes reusable via saved_themes
 table (global store). Neutral contract in docs/IR_MAPPING.md.
+
+### P. Database engine (project-level stack_database, 2026-09-27)
+| Value | Engine | Fixture | Verified |
+|---|---|---|---|
+| sqlite (default) | sqlite | base_simple | e2e_smoke (all fixtures) |
+| mysql_mariadb | mysql | db_mysql | e2e_engine: migrate+seed+boot+HTTP 200 |
+| postgresql | pgsql | db_pgsql | e2e_engine: migrate+seed+boot+HTTP 200 |
+| supabase / neon / cloud_postgres | pgsql (cloud preset) | db_supabase | e2e_engine: migrate+seed+boot+HTTP 200 |
+
+Neutral module: src/core/dbSupport.js (normalizeEngine throws on unknown;
+envLines + engineGuide drive .env + in-app deployment guide).
+Deploy provisioner branches per engine (sqlite file / mysql2 / pg).
+Test servers: test/db_engines_up.sh (host MySQL + Docker PG).
+Non-support (documented): MongoDB, Cassandra, DynamoDB, Couchbase, Bigtable.

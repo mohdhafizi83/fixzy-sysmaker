@@ -118,7 +118,7 @@ CLI environment variables:
 
 | Layer | Output |
 |---|---|
-| Database | Migrations (FKs, indexes, soft deletes), seeders, factories |
+| Database | Migrations (FKs, indexes, soft deletes), seeders, factories — targeting SQLite, MySQL/MariaDB, PostgreSQL, or cloud PostgreSQL (Supabase, Neon, RDS) |
 | Models | Eloquent models with relations, `BelongsToTenant` / `HasAudits` traits |
 | Admin UI | Filament 5 resources: forms, tables, pages, relation managers |
 | Data I/O | CSV importers/exporters per table, native print action |
@@ -162,6 +162,30 @@ real code — the generated app ships only what you picked.
 Plus the always-on baseline every generated app receives: migrations, Eloquent
 models with relations, Filament 5 resources (forms/tables/pages), CSV
 import/export per table, and a feature-aware deployment guide.
+
+### Database support (Tier 1 + Tier 2)
+
+Pick the target engine per project in the **Technologies Stack** tab. The
+choice drives generated `.env` defaults, the in-app deployment guide, and
+the one-click deploy provisioner.
+
+| Tier | Engine | Status |
+|---|---|---|
+| 1 | SQLite | Default; zero-config, file-based |
+| 1 | MySQL / MariaDB | Full support (Laravel first-class driver) |
+| 1 | PostgreSQL | Full support (Laravel first-class driver) |
+| 2 | Supabase | Cloud PostgreSQL — connect via session-mode pooler (port 5432) or direct; transaction-mode pooling (6543) is not compatible with Laravel's prepared statements |
+| 2 | Neon | Cloud PostgreSQL — pooled endpoint for runtime, direct endpoint for migrations |
+| 2 | Managed PostgreSQL (AWS RDS / Cloud SQL / DigitalOcean) | Standard Postgres wire protocol; enable SSL (`DB_SSLMODE=require`) |
+
+All engines run the same generated migrations (Laravel Schema Builder),
+relations, joins, and chart aggregations — verified end-to-end (migrate +
+seed + boot + HTTP) against MySQL and PostgreSQL test servers.
+
+Not supported (by design): NoSQL engines (MongoDB, Cassandra, DynamoDB,
+Couchbase, Bigtable). The generated app is a relational admin panel —
+foreign keys, joins, and SQL aggregation are core to every screen, and
+those databases cannot express them without redesigning the whole product.
 
 ### Logging: Data Audit Trail & User Activity (opt-in)
 

@@ -109,6 +109,10 @@ async function deployApp(event, deployConfig) {
         generatedPath, 
         dbConfig 
     } = deployConfig;
+    // DB support Tier 1+2: engine comes from the project's stack_database
+    // (normalized via src/core/dbSupport.js). Unknown engines throw loud.
+    const { normalizeEngine } = require('./core/dbSupport');
+    const dbEngine = normalizeEngine(dbConfig && dbConfig.engine);
 
     try {
         win.webContents.send(STATUS_CHANNEL, { step: 1, message: 'Downloading Template...' });
@@ -139,27 +143,87 @@ async function deployApp(event, deployConfig) {
         if (fs.existsSync(envExamplePath)) {
             let envContent = fs.readFileSync(envExamplePath, 'utf8');
             envContent = envContent.replace(/^APP_URL=.*$/m, 'APP_URL=http://localhost');
-            envContent = envContent.replace(/^DB_CONNECTION=.*$/m, 'DB_CONNECTION=mysql');
-            envContent = envContent.replace(/^DB_DATABASE=.*$/m, `DB_DATABASE=${dbConfig.dbName}`);
-            envContent = envContent.replace(/^DB_USERNAME=.*$/m, `DB_USERNAME=${dbConfig.user}`);
-            envContent = envContent.replace(/^DB_PASSWORD=.*$/m, `DB_PASSWORD=${dbConfig.password}`);
+            // Engine-aware .env (Tier 1+2). Cloud Postgres presets get SSL.
+            const { envLines } = require('./core/dbSupport');
+            const lines = envLines(dbConfig.engine || 'sqlite', {
+                dbName: dbConfig.dbName,
+                user: dbConfig.user,
+                password: dbConfig.password,
+                host: dbConfig.host || '127.0.0.1',
+                port: dbConfig.port,
+                sslmode: dbConfig.sslmode,
+            });
+            const setEnv = (key, value) => {
+                const re = new RegExp(`^${key}=.*$`, 'm');
+                if (re.test(envContent)) envContent = envContent.replace(re, `${key}=${value}`);
+                else envContent += `\n${key}=${value}`;
+            };
+            for (const line of lines) {
+                if (line.startsWith('#')) continue;
+                const [key, ...rest] = line.split('=');
+                setEnv(key, rest.join('='));
+            }
+            // sqlite: drop stale host/port/user/pass so Laravel uses the file
+            if (dbEngine === 'sqlite') {
+                for (const k of ['DB_HOST', 'DB_PORT', 'DB_USERNAME', 'DB_PASSWORD']) {
+                    envContent = envContent.replace(new RegExp(`^${k}=.*\\n`, 'm'), '');
+                }
+            }
             fs.writeFileSync(envPath, envContent);
         } else {
             throw new Error('.env.example not found!');
         }
 
         // --- STEP 4: Database Setup ---
-        win.webContents.send(STATUS_CHANNEL, { step: 4, message: 'Creating Database...' });
-        const connection = await mysql.createConnection({
-            host: 'localhost',
-            user: 'root',
-            password: dbConfig.rootPassword
-        });
-        await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.dbName}\`;`);
-        await connection.query(`CREATE USER IF NOT EXISTS '${dbConfig.user}'@'localhost' IDENTIFIED BY '${dbConfig.password}';`);
-        await connection.query(`GRANT ALL PRIVILEGES ON \`${dbConfig.dbName}\`.* TO '${dbConfig.user}'@'localhost';`);
-        await connection.query(`FLUSH PRIVILEGES;`);
-        await connection.end();
+        if (dbEngine === 'sqlite') {
+            win.webContents.send(STATUS_CHANNEL, { step: 4, message: 'Preparing SQLite database file...' });
+            const dbFile = path.join(projectPath, 'database', 'database.sqlite');
+            fs.mkdirSync(path.dirname(dbFile), { recursive: true });
+            if (!fs.existsSync(dbFile)) fs.writeFileSync(dbFile, '');
+        } else if (dbEngine === 'mysql') {
+            win.webContents.send(STATUS_CHANNEL, { step: 4, message: 'Creating MySQL database...' });
+            const connection = await mysql.createConnection({
+                host: dbConfig.host || 'localhost',
+                port: dbConfig.port ? Number(dbConfig.port) : 3306,
+                user: dbConfig.superuser || 'root',
+                password: dbConfig.rootPassword
+            });
+            await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.dbName}\`;`);
+            await connection.query(`CREATE USER IF NOT EXISTS '${dbConfig.user}'@'localhost' IDENTIFIED BY '${dbConfig.password}';`);
+            await connection.query(`GRANT ALL PRIVILEGES ON \`${dbConfig.dbName}\`.* TO '${dbConfig.user}'@'localhost';`);
+            await connection.query(`FLUSH PRIVILEGES;`);
+            await connection.end();
+        } else {
+            // pgsql (incl. cloud Postgres presets). Provisioning uses the
+            // postgres superuser credentials supplied in dbConfig; for
+            // managed/cloud databases the DB usually already exists, so a
+            // failure here is a warning, not fatal (migrations will still
+            // run against the configured DB).
+            win.webContents.send(STATUS_CHANNEL, { step: 4, message: 'Preparing PostgreSQL database...' });
+            try {
+                const { Client } = require('pg');
+                const client = new Client({
+                    host: dbConfig.host || '127.0.0.1',
+                    port: dbConfig.port ? Number(dbConfig.port) : 5432,
+                    user: dbConfig.superuser || 'postgres',
+                    password: dbConfig.rootPassword || '',
+                    database: 'postgres',
+                    ssl: dbConfig.sslmode ? { rejectUnauthorized: false } : undefined,
+                });
+                await client.connect();
+                const exists = await client.query(
+                    'SELECT 1 FROM pg_database WHERE datname = $1', [dbConfig.dbName]);
+                if (exists.rowCount === 0) {
+                    await client.query(`CREATE DATABASE "${dbConfig.dbName}"`);
+                }
+                await client.end();
+            } catch (e) {
+                win.webContents.send(LOG_CHANNEL,
+                    `WARNING: Could not auto-create PostgreSQL database `
+                    + `'${dbConfig.dbName}' (${e.message}). If it already `
+                    + 'exists (typical for managed/cloud Postgres), you can ignore this.');
+            }
+        }
 
         // --- STEP 5: Composer ---
         win.webContents.send(STATUS_CHANNEL, { step: 5, message: 'Install Composer & Key...' });

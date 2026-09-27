@@ -2174,6 +2174,9 @@ ipcMain.handle('generate-app', async (event) => { // Note 'event' added here
                 projectPath: destinationPath,
                 generatedPath: stagingPath,
                 dbConfig: {
+                    // DB support Tier 1+2: engine follows the project's
+                    // stack_database (sqlite/mysql_mariadb/postgresql/cloud).
+                    engine: activeProject.stack_database || 'sqlite',
                     host: 'localhost',
                     user: dbUser,
                     password: dbPass,

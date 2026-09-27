@@ -43,20 +43,19 @@
 
         <div class="prose max-w-none dark:prose-invert text-sm">
             <ol class="list-decimal pl-5 space-y-2">
-                <li>
-                    <strong>Prepare an Empty Database:</strong><br>
-                    Open phpMyAdmin or your database terminal, and create a new database (example: <code>{% endraw %}{{ app_db_name }}{% raw %}</code>).
+                {% endraw %}<li>
+                    <strong>Prepare an Empty Database ({{ db_label }}):</strong><br>
+                    {% for note in db_notes %}<p class="text-sm text-gray-600 dark:text-gray-400">{{ note }}</p>
+                    {% endfor %}
+                    {% if db_label != "SQLite" %}Open phpMyAdmin or your database terminal, and create a new database (example: <code>{{ app_db_name }}</code>).{% endif %}
                 </li>
                 <li>
                     <strong>Update the <code>.env</code> file:</strong><br>
                     Open the <code>.env</code> file in your project's root folder and change this section:
-                    <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 border border-gray-300 dark:border-gray-700"><code>DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE={% endraw %}{{ app_db_name }}{% raw %}
-DB_USERNAME=root
-DB_PASSWORD=your_password</code></pre>
+                    <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 border border-gray-300 dark:border-gray-700"><code>{% for line in db_env_lines %}{{ line }}
+{% endfor %}</code></pre>
                 </li>
+                {% raw %}
                 <li>
                     <strong>Run Migrations:</strong><br>
                     Open a terminal in the project folder and run the following command to build the table structure:
