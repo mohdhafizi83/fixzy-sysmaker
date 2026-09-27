@@ -10,23 +10,13 @@ import { setElementValue, setRadioValue } from '../ui/formHelpers.js';
 //import { loadProjectData } from '../../renderer.js'; // Follow the path you fixed earlier
 
 /**
- * Wires the theme select and view-mode radios to the theme preview image updater.
+ * Theme preview handlers were replaced by the theme system v1
+ * (src/js/features/themeManager.js). Kept as a no-op so existing call
+ * sites stay valid until they are cleaned up.
  * @returns {void}
  */
 export function initializeThemeHandlers() {
-    const themeSelect = document.getElementById('app-theme-select');
-    const viewModeRadios = document.querySelectorAll('input[name="view_mode"]');
-
-    if (themeSelect) {
-        themeSelect.addEventListener('change', updatePreviewImage);
-    }
-
-    viewModeRadios.forEach(radio => {
-        radio.addEventListener('change', updatePreviewImage);
-    });
-
-    // Call once to set the correct image when the app loads
-    updatePreviewImage();
+    // Intentionally empty: theme tab is wired by initThemeTab() in themeManager.
 }
 
 /**
@@ -427,25 +417,6 @@ export function showImportErrorGuide() {
     modal.classList.remove('hidden');
 }
 
-/**
- * Swaps the theme preview image based on the selected theme and view mode (TV/DV).
- * @returns {void}
- */
-function updatePreviewImage() {
-    const themeSelect = document.getElementById('app-theme-select');
-    const previewImage = document.getElementById('theme-preview-image');
-    const selectedViewRadio = document.querySelector('input[name="view_mode"]:checked');
-
-    // Make sure all elements exist
-    if (!themeSelect || !previewImage || !selectedViewRadio) {
-        console.warn("Theme preview elements not found.");
-        return;
-    }
-
-    const theme = themeSelect.value; // e.g. "bootstrap", "darkly"
-    const viewMode = selectedViewRadio.value === 'table_view' ? 'TV' : 'DV'; // Convert to 'TV' or 'DV'
-
-    // Build the new image filename
-    previewImage.src = `../assets/images/northwind-${theme}-${viewMode}.png`;
-}
+// updatePreviewImage (Bootswatch image swap) removed with theme system v1:
+// the Theme tab now renders a live CSS swatch via src/js/features/themeManager.js.
 

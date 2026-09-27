@@ -4,6 +4,7 @@
 import { setElementValue, setRadioValue } from '../ui/formHelpers.js';
 import { appState } from '../state.js';
 import { loadProjectData, SaveManager } from '../../renderer.js';
+import { loadThemeSettings } from '../features/themeManager.js';
 
 // Show the 2FA / Captcha advanced-option groups only while the matching
 // parent radio (app-module-auth-extra) is checked.
@@ -142,11 +143,8 @@ export function populateMainDashboard(projectData) {
         previewInput.value = `${dateFormatSelect.value} ${timeFormatSelect.value}`;
     }
     
-    // Tab: Theme
-    setElementValue('app-theme-select', projectData.theme_select);
-    setElementValue('app-use_3d_effects', projectData.use_3d_effects);
-    setElementValue('app-rtl', projectData.rtl);
-    setElementValue('app-compact', projectData.compact);
+    // Tab: Theme (system v1: presets + custom, theme_config JSON)
+    loadThemeSettings(projectData);
     
     // Tab: Menu management
     setRadioValue('app-menu_orientation', projectData.menu_orientation);
@@ -168,7 +166,6 @@ export function populateMainDashboard(projectData) {
     
     // Fire events
     document.getElementById('app-date-order')?.dispatchEvent(new Event('change'));
-    document.getElementById('app-theme-select')?.dispatchEvent(new Event('change'));
 	
     const menuCheckbox = document.getElementById('app-menu_at_homepage');
     if (menuCheckbox) {

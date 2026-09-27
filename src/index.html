@@ -915,38 +915,38 @@
                     <div class="card">
                         <div class="card-body">
                             <div class="theme-controls">
-                                <select id="app-theme-select" name="app-theme-select">
-                                    <option value="bootstrap" selected>Bootstrap</option>
-                                    <option value="cerulean">Cerulean</option>
-                                    <option value="cosmo">Cosmo</option>
-                                    <option value="cyborg">Cyborg</option>
-                                    <option value="darkly">Darkly</option>
-                                    <option value="flatly">Flatly</option>
-                                    <option value="journal">Journal</option>
-                                    <option value="paper">Paper</option>
-                                    <option value="readable">Readable</option>
-                                    <option value="sandstone">Sandstone</option>
-                                    <option value="simplex">Simplex</option>
-                                    <option value="slate">Slate</option>
-                                    <option value="spacelab">Spacelab</option>
-                                    <option value="superhero">Superhero</option>
-                                    <option value="united">United</option>
-                                    <option value="yeti">Yeti</option>
+                                <label class="checkbox-label" for="app-theme-preset" style="display:block; margin-bottom:4px;">Theme</label>
+                                <select id="app-theme-preset" name="app-theme-preset">
+                                    <option value="preset:fixzy-amber" selected>Amber</option>
+                                    <option value="preset:fixzy-emerald">Emerald</option>
+                                    <option value="preset:fixzy-slate">Slate</option>
+                                    <option value="custom">Custom…</option>
                                 </select>
-                                <label class="checkbox-label"><input type="checkbox" id="app-use_3d_effects" name="app-use_3d_effects"> Use 3D effects</label>
-                                <label class="checkbox-label"><input type="checkbox" id="app-rtl" name="app-rtl"> RTL</label>
-                                <label class="checkbox-label"><input type="checkbox" id="app-compact" name="app-compact" checked> Compact</label>
+                            </div>
+
+                            <div id="theme-custom-panel" style="display:none; margin-top: 12px; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px;">
+                                <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                                    <label>Primary color <input type="color" id="app-theme-custom-color" value="#7c3aed" style="vertical-align:middle;"></label>
+                                    <label>Theme name <input type="text" id="app-theme-custom-name" placeholder="e.g. My Brand" maxlength="64" style="width:160px;"></label>
+                                    <button type="button" id="btn-theme-save-custom" class="btn btn-sm btn-primary" title="Save this color as a reusable theme">Save as Theme</button>
+                                    <button type="button" id="btn-theme-delete" class="btn btn-sm btn-danger" style="display:none;" title="Delete this saved theme">Delete Theme</button>
+                                </div>
+                                <p style="margin:8px 0 0; font-size:0.85em; opacity:0.8;">Editing the color applies it to this project instantly. "Save as Theme" stores it for reuse in other projects.</p>
                             </div>
 
                             <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1rem 0;">
 
-                            <div class="radio-group-horizontal">
-                                <label><input type="radio" name="view_mode" id="app-view_mode_table" value="table_view" checked> Preview 'Table List'</label>
-                                <label><input type="radio" name="view_mode" id="app-view_mode_detail" value="detail_view"> Preview 'Record Form'</label>
-                            </div>
-
-                            <div class="theme-preview-window">
-                                <img id="theme-preview-image" src="../assets/images/northwind-bootstrap-TV.png" alt="Theme Preview">
+                            <div id="theme-swatch-preview" style="--tp:#f59e0b; display:none;">
+                                <div style="background:var(--tp); color:#fff; padding:10px 14px; border-radius:6px 6px 0 0; font-weight:600;">Header &amp; primary actions</div>
+                                <div style="border:1px solid var(--border-color); border-top:none; border-radius:0 0 6px 6px; padding:12px;">
+                                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                        <span style="background:var(--tp); color:#fff; border-radius:4px; padding:4px 12px; font-size:0.85em;">Button</span>
+                                        <span style="border:2px solid var(--tp); color:var(--tp); border-radius:4px; padding:2px 10px; font-size:0.85em;">Outline</span>
+                                        <span style="width:14px; height:14px; border-radius:50%; background:var(--tp); display:inline-block;"></span>
+                                        <span style="font-size:0.85em;">links, badges &amp; highlights follow <b>--primary</b></span>
+                                    </div>
+                                    <div style="margin-top:10px; height:6px; border-radius:3px; background:linear-gradient(90deg, var(--tp) 35%, var(--border-color) 35%);"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
