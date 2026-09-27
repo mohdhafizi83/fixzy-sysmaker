@@ -7,6 +7,15 @@ goldens in `test/golden/<name>/`.
 Run all: `node test/golden.js`
 Run one: `node test/golden.js <fixture>`
 
+## Coverage gates (7.7a, verified 2026-09-27)
+
+- Template coverage: `node test/template_coverage.js` — 123/123 `.njk`
+  templates rendered by at least one fixture.
+- Branch coverage: `node test/branch_coverage.js` — 165/165 `{% if %}` /
+  `{% else %}` / `{% for %}` branch directions exercised across 92 fixtures
+  (0 never-taken). Selftest: `node test/branch_coverage.js --selftest`.
+- Fixture generator for coverage gaps: `test/make_fasa_c_fixtures.js`.
+
 ## Axes
 
 ### A. Tenancy / ownership (project-level + table-level)

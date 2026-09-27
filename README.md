@@ -704,7 +704,10 @@ Shipped:
   settings, kanban/calendar/tree, and conversational chat forms
   overridable per custom module (inherited-vs-overridden badges,
   reset-to-main)
-- [x] 83-fixture golden test matrix + CI (Windows + ubuntu + macOS)
+- [x] 91-fixture golden test matrix + CI (Windows + ubuntu + macOS)
+- [x] 100% branch-level template coverage — every {% if %}/{% else %}/
+  {% for %} direction in all 123 Nunjucks templates exercised
+  (`node test/branch_coverage.js`)
 
 Next:
 - [ ] Guided project templates (CRM, inventory, booking, helpdesk starters)
@@ -718,7 +721,8 @@ Roadmap items are community-friendly — open an issue to vote or request.
 ## Development
 
 ```bash
-node test/golden.js                 # 51-fixture snapshot matrix
+node test/golden.js                 # 91-fixture snapshot matrix
+node test/branch_coverage.js        # branch-level .njk coverage (165/165)
 node test/e2e_smoke.js <fixture>    # generate + migrate + boot + HTTP check
 node test/gsheets_e2e.js            # Google Sheets sync vs mock Sheets API
 node test/pathguard_test.js         # security unit tests
