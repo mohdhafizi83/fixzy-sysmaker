@@ -46,6 +46,10 @@
     const INVOKE_METHODS = {
         openUrl: 'open-url',
         getActiveProject: 'project:get-active',
+        listThemes: 'theme:list',
+        saveTheme: 'theme:save',
+        deleteTheme: 'theme:delete',
+        applyGlobalLayout: 'layout:apply-global',
         createProject: 'project:create',
         createTable: 'table:create',
         createField: 'field:create',
@@ -108,6 +112,7 @@
     const SEND_METHODS = {
         openFolder: 'open-folder',
         stopPreviewServer: 'stop-preview-server',
+        sendCustomDialogResponse: 'custom-dialog-response',
     };
 
     const api = {};

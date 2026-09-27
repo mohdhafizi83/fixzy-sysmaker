@@ -58,7 +58,10 @@ function initKioskControls() {
     };
 
     // Shows rotate/page-size groups only while kiosk mode is enabled.
-    const toggleKioskGroups = () => {
+    // Function declaration (hoisted) — called above before this line;
+    // a const arrow here would throw a TDZ ReferenceError and leave
+    // appState.isPopulatingData stuck true (blocking all autosave).
+    function toggleKioskGroups() {
         const on = enabledEl.checked;
         document.getElementById('kiosk-rotate-group').style.display = on ? 'block' : 'none';
         document.getElementById('kiosk-pagesize-group').style.display = on ? 'block' : 'none';
