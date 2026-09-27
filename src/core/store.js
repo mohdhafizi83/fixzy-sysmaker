@@ -129,6 +129,17 @@ function openStore(dbPath) {
         if (!cols.includes('kiosk_page_size')) {
             db.exec("ALTER TABLE projects ADD COLUMN kiosk_page_size INTEGER DEFAULT 4");
         }
+        // Theme system v1 (2026-09-27): stack-neutral theme config per project
+        // plus a global store of user-defined themes.
+        if (!cols.includes('theme_config')) {
+            db.exec("ALTER TABLE projects ADD COLUMN theme_config TEXT DEFAULT ''");
+        }
+        db.exec(`CREATE TABLE IF NOT EXISTS saved_themes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            primary_hex TEXT NOT NULL,
+            created_at TEXT DEFAULT (datetime('now'))
+        )`);
         if (!tableCols.includes('google_sync_enabled')) {
             db.exec("ALTER TABLE tables ADD COLUMN google_sync_enabled INTEGER DEFAULT 0");
         }

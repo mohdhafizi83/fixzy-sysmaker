@@ -457,3 +457,18 @@ CREATE TABLE IF NOT EXISTS project_widgets (
 ALTER TABLE projects ADD COLUMN kiosk_enabled INTEGER DEFAULT 0;
 ALTER TABLE projects ADD COLUMN kiosk_rotate_seconds INTEGER DEFAULT 15;
 ALTER TABLE projects ADD COLUMN kiosk_page_size INTEGER DEFAULT 4;
+
+-- Theme system v1 (2026-09-27): stack-neutral theme config on the project.
+-- JSON: { mode: 'preset'|'custom', preset: 'fixzy-amber'|'fixzy-emerald'|
+--         'fixzy-slate', primary: '#rrggbb' (custom only), name: '...' }
+-- The legacy theme_select (Bootswatch names) is no longer written by the
+-- UI; kept only for backward-compatible reads of old databases.
+ALTER TABLE projects ADD COLUMN theme_config TEXT DEFAULT '';
+
+-- User-defined themes reusable across projects (global store).
+CREATE TABLE IF NOT EXISTS saved_themes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    primary_hex TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+);

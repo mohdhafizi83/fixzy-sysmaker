@@ -950,6 +950,50 @@ ipcMain.handle('projects:get-all', async () => {
     }
 });
 
+// Theme system v1 (2026-09-27): user-defined themes reusable across
+// projects. primary_hex is validated here (#rgb/#rrggbb only) so bad
+// values never reach the saved_themes store or the generators.
+const THEME_HEX_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+ipcMain.handle('theme:list', async () => {
+    try {
+        return db.prepare('SELECT id, name, primary_hex FROM saved_themes ORDER BY name').all();
+    } catch (error) {
+        console.error('Failed to list saved themes:', error);
+        return [];
+    }
+});
+
+ipcMain.handle('theme:save', async (event, { name, primaryHex }) => {
+    try {
+        const cleanName = String(name || '').trim();
+        if (!cleanName) return { success: false, error: 'Theme name is required.' };
+        if (!THEME_HEX_RE.test(String(primaryHex || ''))) {
+            return { success: false, error: 'Theme color must be a hex value like #10b981.' };
+        }
+        const existing = db.prepare('SELECT id FROM saved_themes WHERE name = ?').get(cleanName);
+        if (existing) {
+            db.prepare('UPDATE saved_themes SET primary_hex = ? WHERE name = ?').run(primaryHex, cleanName);
+            return { success: true, id: existing.id, updated: true };
+        }
+        const info = db.prepare('INSERT INTO saved_themes (name, primary_hex) VALUES (?, ?)').run(cleanName, primaryHex);
+        return { success: true, id: info.lastInsertRowid };
+    } catch (error) {
+        console.error('Failed to save theme:', error);
+        return { success: false, error: String(error.message || error) };
+    }
+});
+
+ipcMain.handle('theme:delete', async (event, { themeId }) => {
+    try {
+        db.prepare('DELETE FROM saved_themes WHERE id = ?').run(themeId);
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to delete theme:', error);
+        return { success: false, error: String(error.message || error) };
+    }
+});
+
 ipcMain.handle('project:set-active', async (event, projectId) => {
     try {
         const setActiveTransaction = db.transaction(() => {
@@ -974,6 +1018,7 @@ ipcMain.handle('project:update', async (event, data) => {
         const allowedColumns = [
             'app_title', 'date_order', 'separator', 'char_encoding', 'language_select',
             'timezone_select', 'use_24hr_format', 'enforce_mysql_encoding', 'theme_select',
+            'theme_config',
             'use_3d_effects', 'rtl', 'compact', 'menu_orientation', 'menu_at_homepage',
             'tables_per_row', 'extra_wide', 'panel_height', 'hide_login', 'allow_sql_tool',
             'allow_server_status', 'admins_group_access', 'allow_table_view_sql',

@@ -7,6 +7,8 @@
 
 'use strict';
 
+const { resolveTheme } = require('../core/theme');
+
 // --- display_type (maker vocabulary) -> neutral input_kind -------------------
 const INPUT_KIND_MAP = {
     text_input: 'text',
@@ -406,6 +408,9 @@ function exportIR(fullSchema) {
                 server_status: !!p.allow_server_status,
             },
             replication: { copy_children_async: !!p.copy_children_async },
+            // Theme system v1: neutral presentation tokens. Generators map
+            // {mode, preset, primary} to their stack's theming mechanism.
+            theme: resolveTheme(p.theme_config),
         },
         entities,
         relations,

@@ -188,6 +188,17 @@
             }
           }
         },
+        "theme": {
+          "type": "object",
+          "description": "Stack-neutral theme tokens (theme system v1). Generators map these to their stack's theming mechanism (Filament: ColorManager custom palette).",
+          "required": ["mode", "primary"],
+          "properties": {
+            "mode": { "enum": ["preset", "custom"] },
+            "preset": { "enum": ["fixzy-amber", "fixzy-emerald", "fixzy-slate"] },
+            "primary": { "type": "string" },
+            "name": { "type": "string" }
+          }
+        },
         "realtime": {
           "type": "object",
           "properties": {
