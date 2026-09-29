@@ -496,6 +496,35 @@ SysMaker exposes.
 
 Never. Every generated file is plain, readable PHP/Blade. You own it.
 
+## MCP (AI assistant integration)
+
+### What can AI assistants do with Fixzy SysMaker?
+
+Run `fixzy mcp` and any MCP-capable assistant (Claude Desktop, Cursor,
+Windsurf, ...) can drive the same engine the GUI uses: list projects,
+read and validate schemas, create projects/tables/fields/relationships,
+and generate the Laravel + Filament app — all from natural-language
+conversation. The AI never free-writes application code; every step goes
+through the same validation the GUI enforces. Full reference:
+`docs/MCP.md`.
+
+### Is it safe to let an AI touch my projects?
+
+By default the server is **read-only** — it can inspect but not change
+anything. Schema mutation needs `--allow-write`, generation needs
+`--allow-generate`, and every output path is checked against the same
+allowlist as the CLI (traversal and symlink escapes are rejected).
+Deploy, update, and composer controls are deliberately never exposed as
+MCP tools: touching a live deployment stays a human decision.
+
+### Does the MCP server replace the GUI?
+
+No — it's a second door into the same room. The GUI is best for visual
+design; MCP is best for bulk or conversational work ("add an audit
+status field to all 12 tables") and for wiring Fixzy SysMaker into AI
+workflows. Both write to the same store, so you can mix freely: design
+80% by hand, let the assistant finish the rest.
+
 ### Where do I report bugs or request features?
 
 Open an issue on the repository. See `docs/BUGS.md` for known issues and

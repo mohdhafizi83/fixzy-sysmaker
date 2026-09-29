@@ -7,6 +7,7 @@
  *   generate --project <name|id> --out <dir>  Headless generate (no Electron)
  *   fixtures                                  Run golden fixture tests
  *   list                                      List projects in the store
+ *   mcp [--allow-write] [--allow-generate]    MCP server on stdio (AI agents)
  */
 'use strict';
 
@@ -40,11 +41,20 @@ Usage:
   fixzy generate --fixture <name> --out <dir> [--zip]
   fixzy list
   fixzy fixtures
+  fixzy mcp [--allow-write] [--allow-generate]
+
+MCP mode:
+  Speaks the Model Context Protocol over stdio (JSON-RPC) so AI hosts
+  (Claude Desktop, Cursor, ...) can inspect and build Fixzy SysMaker
+  projects. Read-only by default; add --allow-write (or FSM_MCP_ALLOW_WRITE=1)
+  for schema mutation tools and --allow-generate (or FSM_MCP_ALLOW_GENERATE=1)
+  for the generate tool. Deploy/update are never exposed.
 
 Env:
   FSM_DATA_DIR       store directory (default ~/.fixzy)
   FSM_OUTPUT_ROOTS   allowed output roots (default: ~/projects:$HOME)
   FSM_ALLOW_REMOTE=1 required to bind non-localhost
+  FSM_MCP_ALLOW_WRITE=1 / FSM_MCP_ALLOW_GENERATE=1  MCP tool gating
 `);
 }
 
@@ -216,6 +226,21 @@ function cmdFixtures() {
     process.exit(r.status || 0);
 }
 
+/**
+ * `fixzy mcp` — start the MCP server on stdio for AI agent hosts.
+ * Read-only unless --allow-write / --allow-generate (or env flags) are set.
+ * @param {object} args parsed CLI args (--allow-write, --allow-generate)
+ * @returns {Promise<void>}
+ */
+async function cmdMcp(args) {
+    const { startStdioMcp } = require('../src/mcp/server');
+    await startStdioMcp({
+        allowWrite: args['allow-write'] === true || process.env.FSM_MCP_ALLOW_WRITE === '1',
+        allowGenerate: args['allow-generate'] === true || process.env.FSM_MCP_ALLOW_GENERATE === '1',
+    });
+    // Keep the process alive; the transport owns stdin.
+}
+
 (async () => {
     const args = parseArgs(process.argv.slice(2));
     const cmd = args._[0];
@@ -224,6 +249,7 @@ function cmdFixtures() {
         if (cmd === 'generate') return await cmdGenerate(args);
         if (cmd === 'list') return cmdList();
         if (cmd === 'fixtures') return cmdFixtures();
+        if (cmd === 'mcp') return await cmdMcp(args);
         usage();
         process.exit(cmd ? 1 : 0);
     } catch (e) {

@@ -190,4 +190,5 @@ module.exports = {
     reportRegistryPhp,
     isNumericType,
     isDateType,
+    WIDGET_TYPES,
 };

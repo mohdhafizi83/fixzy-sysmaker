@@ -18,8 +18,10 @@ Fixzy SysMaker is built for **semi-technical and non-technical users**: design
 your data and admin screens through a guided interface, then hand clean,
 production-quality code to your team (or deploy it yourself).
 
-Runs three ways from one engine: **desktop app (Electron)**, **local web UI**,
-and **headless CLI** for CI pipelines.
+Runs four ways from one engine: **desktop app (Electron)**, **local web UI**,
+**headless CLI** for CI pipelines, and an **MCP server** so AI assistants
+(Claude Desktop, Cursor, ...) can design and generate through the same
+validated pipeline ([docs/MCP.md](docs/MCP.md)).
 
 ## Screenshots
 
@@ -703,6 +705,10 @@ Shipped:
 - [x] Multi-stack architecture: stack-neutral IR + pluggable generators
 - [x] Laravel + Filament generator (full stack: DB, models, resources, I/O) — benchmark target
 - [x] Desktop (Windows/macOS), local web UI, and headless CLI from one engine
+- [x] **MCP server** (`fixzy mcp`) — AI assistants (Claude Desktop, Cursor,
+  ...) can inspect, design, validate, and generate through the same engine:
+  read-only by default, write/generate gated, deploy never exposed
+  ([docs/MCP.md](docs/MCP.md))
 - [x] SQL import (MySQL, PostgreSQL, SQL Server, SQLite)
 - [x] Multi-tenancy, row ownership, native logging (Data Audit Trail +
   User Activity Log, independently selectable)
@@ -751,6 +757,7 @@ node test/e2e_smoke.js <fixture>    # generate + migrate + boot + HTTP check
 node test/gsheets_e2e.js            # Google Sheets sync vs mock Sheets API
 node test/pathguard_test.js         # security unit tests
 node test/audit_headless.js         # generator crash audit
+node test/mcp_test.js               # MCP server: gating, write flow, stdout purity
 ```
 
 CI runs the full matrix on **Windows**, ubuntu, and macOS
@@ -758,11 +765,12 @@ CI runs the full matrix on **Windows**, ubuntu, and macOS
 push is verified there too.
 
 Key docs: `docs/FAQ.md`, `docs/FEATURE_MATRIX.md`, `docs/NATIVE_FEATURES.md`,
-`docs/HEADLESS_WEB.md`, `docs/BUGS.md`.
+`docs/HEADLESS_WEB.md`, `docs/MCP.md`, `docs/BUGS.md`.
 
 Architecture: the app stores your design in a local SQLite database; generators
 are pure functions that turn the schema into PHP files. The same IPC handler
-registry powers Electron, the web shim, and the CLI — one engine, three shells.
+registry powers Electron, the web shim, the CLI, and the MCP server — one
+engine, four shells.
 
 ## Security
 
