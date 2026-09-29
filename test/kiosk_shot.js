@@ -1,10 +1,11 @@
 // Capture kiosk-mode screenshot for README.
 const { chromium } = require('playwright-core');
+const { resolveChrome } = require('./chromePath');
 const BASE = 'http://127.0.0.1:8899';
 
 (async () => {
     const browser = await chromium.launch({
-        executablePath: '/home/fizi/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome',
+        executablePath: resolveChrome(),
         args: ['--no-sandbox', '--disable-dev-shm-usage'],
     });
     const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });

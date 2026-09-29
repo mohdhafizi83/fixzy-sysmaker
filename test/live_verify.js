@@ -4,6 +4,7 @@
 // 3. Insert a row directly via artisan tinker (bypassing the UI).
 // 4. Assert the widget value changes WITHOUT a page reload (push via Echo).
 const { chromium } = require('playwright-core');
+const { resolveChrome } = require('./chromePath');
 
 const BASE = 'http://127.0.0.1:8899';
 const APP = '/tmp/fsm-live-test/app';
@@ -13,7 +14,7 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 (async () => {
     const browser = await chromium.launch({
-        executablePath: '/home/fizi/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome',
+        executablePath: resolveChrome(),
         args: ['--no-sandbox', '--disable-dev-shm-usage'],
     });
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
