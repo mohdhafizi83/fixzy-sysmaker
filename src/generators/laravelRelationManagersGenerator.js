@@ -102,7 +102,8 @@ function generateSingleRelationManager(rel, basePath, fullSchema) {
         if (layout.tv_template) {
             const { generateTableColumnsParts, buildColumnsLayout } = require('./laravelTablesGenerator');
             const childModelSingular = toSingularPascalCase(childNameSource);
-            const parts = generateTableColumnsParts(childTableData, relationships, rel.child_table_name, projectSettings, childModelSingular);
+            const tables = (fullSchema.database && fullSchema.database.table) || {};
+            const parts = generateTableColumnsParts(childTableData, relationships, rel.child_table_name, projectSettings, childModelSingular, tables);
             const tvLayout = buildColumnsLayout(layout.tv_template, parts);
             const colsCode = tvLayout.usesLayout
                 ? tvLayout.code

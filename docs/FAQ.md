@@ -1,5 +1,22 @@
 # Frequently Asked Questions
 
+## Help & Documentation
+
+### How do I learn what a field does while designing?
+
+Click or focus any field, checkbox or dropdown in the studio and a contextual help
+panel opens on the right with a plain-language explanation of that exact setting —
+what it does, when to use it, and any gotchas. The panel stays open while you work;
+press `Esc` or the × button to close it, and use the book icon in the top bar to
+toggle it back on. Your preference is remembered between sessions.
+
+### Where did the floating "?" button go?
+
+It was replaced by the contextual help panel. Instead of one generic tutorial
+modal, every control now explains itself at the moment you touch it — the same
+pattern AppGini uses. The old welcome modal content lives on as the
+"getting started" text shown when you open the panel without a focused field.
+
 ## Logging
 
 ### What is the difference between "Data Audit Trail" and "User Activity Log"?

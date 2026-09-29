@@ -1010,5 +1010,6 @@ module.exports = {
     generateLaravelFactories,
     generateLaravelDatabaseSeeder,
     generateNativeAuditFiles,
+    getRelationFunctionName,
     getModelClassName
 };

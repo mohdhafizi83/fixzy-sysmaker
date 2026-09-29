@@ -17,7 +17,7 @@ This attribution banner must not be removed or altered. --}}
             {{ $this->content }}
         </div>
         <div class="fixzy-kiosk-footer">
-            <span x-text="'Page ' + (page + 1) + ' / ' + totalPages"></span>
+            <span x-text="'Page ' + (page + 1) + ' / ' + pages.length"></span>
             <span class="fixzy-kiosk-live" :class="live ? 'is-live' : ''" x-text="live ? '● LIVE' : '○'"></span>
         </div>
     </div>

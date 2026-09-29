@@ -58,6 +58,7 @@ import { initApprovalTab } from './js/features/approvalManager.js';
 import { initSchedulerTab } from './js/features/schedulerManager.js';
 import { initPublicFormTab } from './js/features/publicFormManager.js';
 import { initFormLayoutTab } from './js/features/formLayoutDesigner.js';
+import { initContextHelp } from './js/features/contextHelp.js';
 import { initFieldBehaviorTab } from './js/features/fieldBehaviorManager.js';
 import { initNumberingSection } from './js/features/numberingManager.js';
 import { initImportSection } from './js/features/importManager.js';
@@ -496,6 +497,7 @@ window.addEventListener('beforeunload', (event) => {
 	initSchedulerTab();
 	initPublicFormTab();
 	initFormLayoutTab();
+	initContextHelp();
 	initFieldBehaviorTab();
 	initNumberingSection();
 	initImportSection();

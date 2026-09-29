@@ -29,17 +29,33 @@ Main configuration — pick stack, database, theme, deletion strategy, core modu
 
 ![Main configuration](docs/screenshots/main-config.png)
 
+Contextual help — click any field and its explanation opens in a side panel:
+
+![Contextual help panel](docs/screenshots/help-panel.png)
+
+Models design — tables and fields with types, lengths and validation:
+
+![Models design](docs/screenshots/models-design.png)
+
 Menu management — group and order the generated app's navigation:
 
 ![Menu management](docs/screenshots/menu-management.png)
 
-Dashboard builder — stats and chart widgets bound to any table:
+Dashboard builder — stats and chart widgets bound to any table (all 12 widget types):
 
 ![Dashboard builder](docs/screenshots/dashboard-builder.png)
 
 The result — a generated Laravel + Filament admin, live after one click:
 
 ![Generated app](docs/screenshots/generated-app.png)
+
+Generated list page — populated records, search, filters, summary and pagination:
+
+![Generated list](docs/screenshots/generated-list.png)
+
+Kiosk mode — auto-rotating full-screen wall display:
+
+![Kiosk mode](docs/screenshots/kiosk.png)
 
 ---
 

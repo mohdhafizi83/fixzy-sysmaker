@@ -111,7 +111,7 @@ function buildInlineEditColumnPhp(field, fieldName, tableName, authorizationEnab
  * Returns { all: string[], images: string[], others: string[] } so the caller can
  * wrap columns into a layout component based on the tv_template setting.
  */
-function generateTableColumnsParts(tableData, relationships, tableName, projectSettings, modelNameSingular) {
+function generateTableColumnsParts(tableData, relationships, tableName, projectSettings, modelNameSingular, tables) {
     const columnsCode = [];
     const imageColumns = [];
     const otherColumns = [];
@@ -171,10 +171,22 @@ function generateTableColumnsParts(tableData, relationships, tableName, projectS
         const isAttachments = field.media_type === 'attachments';
         
         let fieldName;
-        // Dot-notation logic for Relationships
+        // Dot-notation logic for Relationships. The relation method on the model
+        // is derived from the PARENT table's module_name (see getRelationFunctionName
+        // in laravelDatabaseGenerator), so the column path must use the same
+        // resolution — using the raw parent table name breaks whenever
+        // module_name differs from the table name (e.g. fakulti -> faculty()).
         const fkRelationship = relationships.find(r => r.child_table_name === tableName && r.fk_child_field === field.field_name);
         if (fkRelationship) {
-            const parentCamel = fkRelationship.parent_table_name === fkRelationship.child_table_name ? 'parent' : toSingularCamelCase(fkRelationship.parent_table_name);
+            let parentCamel;
+            if (fkRelationship.parent_table_name === fkRelationship.child_table_name) {
+                parentCamel = 'parent';
+            } else if (tables && tables[fkRelationship.parent_table_name]) {
+                const { getRelationFunctionName } = require('./laravelDatabaseGenerator');
+                parentCamel = getRelationFunctionName(fkRelationship.parent_table_name, tables, false);
+            } else {
+                parentCamel = toSingularCamelCase(fkRelationship.parent_table_name);
+            }
             
             if(field.lookup_caption_1 && field.lookup_caption_2) {
                 const combined = `${field.lookup_caption_1}_${field.lookup_caption_2}`;
@@ -517,8 +529,8 @@ function buildMultiViewContext(tableData, parts, layout) {
 /**
  * [HELPER] Backwards-compatible wrapper: returns the joined PHP columns string.
  */
-function generateTableColumnsString(tableData, relationships, tableName, projectSettings, modelNameSingular) {
-    return generateTableColumnsParts(tableData, relationships, tableName, projectSettings, modelNameSingular).all.join(',\n                ');
+function generateTableColumnsString(tableData, relationships, tableName, projectSettings, modelNameSingular, tables) {
+    return generateTableColumnsParts(tableData, relationships, tableName, projectSettings, modelNameSingular, tables).all.join(',\n                ');
 }
 
 /**
@@ -825,7 +837,7 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
             const modelNamePlural = toPluralPascalCase(nameSource); // StudentInfos
 
             // 1. Generate columns + template-aware layout wrapper
-            const parts = generateTableColumnsParts(tableData, relationships, tableName, projectSettings, modelNameSingular);
+            const parts = generateTableColumnsParts(tableData, relationships, tableName, projectSettings, modelNameSingular, tables);
             const layout = buildColumnsLayout(tableData.tv_template, parts);
             const columnsCode = layout.usesLayout
                 ? layout.code
@@ -882,7 +894,7 @@ async function generateFilamentTablesTable(fullSchema, basePath) {
  * [NEW] Generates a dedicated Table Class file for Custom Module.
  */
 function generateSingleTableClass(basePath, resourceFolder, className, tableData, fullSchema, tableName) {
-    const { project: projectSettings, database: { relationships } } = fullSchema;
+    const { project: projectSettings, database: { relationships, table: tables } } = fullSchema;
 
     // Custom Module uses the Standard Model (Module Name)
     const nameSource = (tableData.module_name && tableData.module_name.trim() !== '')
@@ -894,7 +906,7 @@ function generateSingleTableClass(basePath, resourceFolder, className, tableData
     // namespace App\Filament\Resources\PendingRegistrations\Tables;
 
     // 1. Render template (custom class name, custom namespace folder)
-    const parts = generateTableColumnsParts(tableData, relationships, tableName, projectSettings, modelNameSingular);
+    const parts = generateTableColumnsParts(tableData, relationships, tableName, projectSettings, modelNameSingular, tables);
     const layout = buildColumnsLayout(tableData.tv_template, parts);
     const columnsCode = layout.usesLayout
         ? layout.code
