@@ -23,6 +23,17 @@ class AnakFactory extends Factory
             'fk_induk' => \App\Models\Induk::inRandomOrder()->value('id'),
             'status_opt' => $this->faker->randomElement(['baru', 'proses', 'selesai']),
             'qty' => fake()->randomNumber(),
+            'note_txt' => fake()->text(),
+            'rich_desc' => fake()->text(),
+            'is_active' => fake()->boolean(),
+            'prio_radio' => $this->faker->randomElement(['low', 'mid', 'high']),
+            'due_dt' => fake()->dateTimeThisYear(),
+            'amount_dec' => fake()->randomFloat(2, 10, 1000),
+            'child_photo' => fake()->word(),
+            'child_doc' => fake()->word(),
+            'child_files' => fake()->word(),
+            'child_map' => fake()->word(),
+            'child_video' => fake()->word(),
         ];
     }
 }

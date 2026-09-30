@@ -49,10 +49,28 @@ class Anak extends Model
         'nama_anak',
         'fk_induk',
         'status_opt',
-        'qty'
+        'qty',
+        'note_txt',
+        'rich_desc',
+        'is_active',
+        'prio_radio',
+        'due_dt',
+        'amount_dec',
+        'child_photo',
+        'child_doc',
+        'child_files',
+        'child_map',
+        'child_video'
     
     ];
     
+
+    protected function casts(): array
+    {
+        return [
+            'child_files' => 'array',
+        ];
+    }
     
 
 
@@ -63,5 +81,21 @@ class Anak extends Model
 
 
 
+
+    public function getCleanYoutubeUrl(string $fieldName): string
+    {
+        $url = $this->{$fieldName};
+        if (blank($url)) {
+            return '';
+        }
+
+        preg_match('/(?:v=|\/v\/|watch\?v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/', $url, $matches);
+
+        if (isset($matches[1])) {
+            return 'https://www.youtube.com/embed/' . $matches[1];
+        }
+
+        return $url;
+    }
 
 }

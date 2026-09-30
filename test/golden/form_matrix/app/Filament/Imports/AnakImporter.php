@@ -72,6 +72,85 @@ class AnakImporter extends Importer
                 ->rules(['integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Quantity'),
+
+            ImportColumn::make('5')
+                ->label('Note')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Note 1', 'Sample Note 2'])
+                ->exampleHeader('Note'),
+
+            ImportColumn::make('6')
+                ->label('Rich Description')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Rich Description 1', 'Sample Rich Description 2'])
+                ->exampleHeader('Rich Description'),
+
+            ImportColumn::make('7')
+                ->label('Active')
+                ->boolean()
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['1', '2'])
+                ->exampleHeader('Active'),
+
+            ImportColumn::make('8')
+                ->label('Priority')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Priority 1', 'Sample Priority 2'])
+                ->exampleHeader('Priority'),
+
+            ImportColumn::make('9')
+                ->label('Due Date')
+                ->ignoreBlankState()
+                ->rules(['max:255', 'datetime'])
+                ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
+                ->exampleHeader('Due Date'),
+
+            ImportColumn::make('10')
+                ->label('Amount')
+                ->numeric()
+                ->ignoreBlankState()
+                ->rules(['max:10'])
+                ->examples(['Sample Amount 1', 'Sample Amount 2'])
+                ->exampleHeader('Amount'),
+
+            ImportColumn::make('11')
+                ->label('Photo')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Photo 1', 'Sample Photo 2'])
+                ->exampleHeader('Photo'),
+
+            ImportColumn::make('12')
+                ->label('Document')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Document 1', 'Sample Document 2'])
+                ->exampleHeader('Document'),
+
+            ImportColumn::make('13')
+                ->label('Files')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Files 1', 'Sample Files 2'])
+                ->exampleHeader('Files'),
+
+            ImportColumn::make('14')
+                ->label('Map')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Map 1', 'Sample Map 2'])
+                ->exampleHeader('Map'),
+
+            ImportColumn::make('15')
+                ->label('Video')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Video 1', 'Sample Video 2'])
+                ->exampleHeader('Video'),
         ];
     }
 

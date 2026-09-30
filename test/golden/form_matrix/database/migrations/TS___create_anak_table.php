@@ -19,6 +19,17 @@ return new class extends Migration
             $table->foreignId('fk_induk')->nullable();
             $table->string('status_opt', 255)->nullable();
             $table->integer('qty')->nullable();
+            $table->text('note_txt')->nullable();
+            $table->text('rich_desc')->nullable();
+            $table->tinyInteger('is_active')->nullable();
+            $table->string('prio_radio', 255)->nullable();
+            $table->dateTime('due_dt')->nullable();
+            $table->decimal('amount_dec', 10, 2)->nullable();
+            $table->string('child_photo', 255)->nullable();
+            $table->string('child_doc', 255)->nullable();
+            $table->text('child_files')->nullable();
+            $table->string('child_map', 255)->nullable();
+            $table->string('child_video', 255)->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

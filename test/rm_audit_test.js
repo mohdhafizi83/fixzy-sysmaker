@@ -5,6 +5,7 @@
 const { chromium } = require('playwright-core');
 const { resolveChrome } = require('./chromePath');
 const { execSync } = require('child_process');
+const path = require('path');
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const APP = 'http://127.0.0.1:8901';
 const DB = '/tmp/fsm-matrix-app/database/database.sqlite';
@@ -87,13 +88,48 @@ async function login(p) {
     check('RM7b. child form FK lists parent', parentOpts.includes('Parent Alpha'), JSON.stringify(parentOpts).slice(0, 60));
     await page.selectOption('#form\\.fk_induk', { label: 'Parent Alpha' });
     await page.selectOption('#form\\.status_opt', 'proses');
-    await page.fill('#form\\.qty', '12');
+    await page.fill('#form\\.' + 'qty', '12');
+    // ---- full element sweep inside the RM-opened child form ----
+    await page.fill('#form\\.note_txt', 'RM child note');
+    const rich = page.locator('#form\\.rich_desc [contenteditable="true"], .tiptap.ProseMirror').first();
+    let richFilled = false;
+    if (await rich.count()) { await rich.click(); await page.keyboard.type('RM rich text'); richFilled = true; }
+    check('RM6b. rich editor present in RM child form', richFilled);
+    await page.locator('#form\\.is_active').check({ force: true }).catch(() => {});
+    await page.locator('input[type=radio][value=high], label:has-text("high") input[type=radio]').first().check({ force: true }).catch(() => {});
+    await page.fill('#form\\.due_dt', '2026-10-05T09:45');
+    await page.fill('#form\\.amount_dec', '1234.56');
+    const fileInputs = await page.locator('input[type=file]').count();
+    check('RM6c. 3 file inputs in RM child form (photo/doc/files)', fileInputs >= 3, 'count=' + fileInputs);
+    if (fileInputs >= 3) {
+      await page.locator('input[type=file]').nth(0).setInputFiles(path.join(__dirname, 'fixtures', 'media_test.png'));
+      await sleep(2200);
+      await page.locator('input[type=file]').nth(1).setInputFiles(path.join(__dirname, 'fixtures', 'media_test.pdf'));
+      await sleep(2200);
+      await page.locator('input[type=file]').nth(2).setInputFiles([path.join(__dirname, 'fixtures', 'media_test.txt')]);
+      await sleep(2500);
+    }
+    await page.fill('#form\\.child_map', '<iframe src="https://maps.google.com/maps?q=KL&output=embed" width="600" height="450"></iframe>');
+    await page.fill('#form\\.child_video', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
     await page.getByRole('button', { name: 'Create', exact: true }).first().click();
     await sleep(4000);
     const kids = q('SELECT * FROM anak');
     check('RM8. child created', kids.length === 1 && kids[0].nama_anak === 'Child One', kids.length ? kids[0].nama_anak : 'none');
     check('RM9. child FK linked to parent', kids.length === 1 && String(kids[0].fk_induk) === String(parentId), kids.length ? String(kids[0].fk_induk) + ' vs ' + parentId : '');
     check('RM10. child status saved', kids.length === 1 && kids[0].status_opt === 'proses', kids.length ? String(kids[0].status_opt) : '');
+    // ---- media + element DB round-trip assertions (RM child) ----
+    const k = kids[0] || {};
+    check('RM10b. note_txt saved', String(k.note_txt) === 'RM child note', String(k.note_txt).slice(0, 40));
+    check('RM10c. rich_desc saved with typed text', String(k.rich_desc || '').includes('RM rich text'), String(k.rich_desc).slice(0, 60));
+    check('RM10d. is_active checkbox saved', String(k.is_active) === '1', String(k.is_active));
+    check('RM10e. prio_radio saved high', String(k.prio_radio) === 'high', String(k.prio_radio));
+    check('RM10f. due_dt saved with time', String(k.due_dt || '').startsWith('2026-10-05') && String(k.due_dt).includes('09:45'), String(k.due_dt));
+    check('RM10g. amount_dec saved', String(k.amount_dec) === '1234.56', String(k.amount_dec));
+    check('RM10h. child_photo saved path', String(k.child_photo || '').includes('child-photo') && String(k.child_photo).endsWith('.png'), String(k.child_photo).slice(0, 50));
+    check('RM10i. child_doc saved path', String(k.child_doc || '').includes('child-doc') && String(k.child_doc).endsWith('.pdf'), String(k.child_doc).slice(0, 50));
+    check('RM10j. child_files saved', String(k.child_files || '').includes('.txt'), String(k.child_files).slice(0, 80));
+    check('RM10k. child_map saved iframe', String(k.child_map || '').includes('maps.google.com'), String(k.child_map).slice(0, 60));
+    check('RM10l. child_video saved', String(k.child_video || '').includes('dQw4w9WgXcQ'), String(k.child_video).slice(0, 60));
     // child visible in RM table
     await page.goto(`${APP}/admin/induks/${parentId}/edit`, { waitUntil: 'networkidle' });
     await sleep(1500);

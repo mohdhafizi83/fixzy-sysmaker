@@ -10,14 +10,20 @@ namespace App\Filament\Resources\Anaks\Tables;
 
 
 
+use App\Models\Anak;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\RestoreAction;
 use Filament\Tables\Table;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
 use Illuminate\Contracts\View\View;
 
 
@@ -79,7 +85,103 @@ class AnaksTable
                     ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable()
-                    ->numeric()
+                    ->numeric(),
+                TextColumn::make('note_txt')
+                    ->label('Note')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('rich_desc')
+                    ->label('Rich Description')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->html(),
+                TextColumn::make('is_active')
+                    ->label('Active')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                TextColumn::make('prio_radio')
+                    ->label('Priority')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->badge()->color(fn (string $state): string => match ($state) {
+        'low' => 'gray',
+        'mid' => 'info',
+        'high' => 'primary',
+        }),
+                TextColumn::make('due_dt')
+                    ->label('Due Date')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->dateTime('d F Y h:i A'),
+                TextColumn::make('amount_dec')
+                    ->label('Amount')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                ImageColumn::make('child_photo')
+                    ->label('Photo')
+                    ->square()
+                    ->imageWidth(50)
+                    ->imageHeight(50)
+                    ->disk('public')
+                    ->searchable()
+                    ->toggleable(),
+                IconColumn::make('child_doc')
+                    ->label('Document')
+                    ->icon(fn ($state): ?string => $state ? 'heroicon-o-document-arrow-down' : null)
+                    ->url(fn (?Anak $record) => $record?->child_doc ? Storage::disk('public')->url($record->child_doc) : null, shouldOpenInNewTab: true)
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('child_files')
+                    ->label('Files')
+                    ->formatStateUsing(function ($state): string { $n = is_array($state) ? count($state) : (filled($state) ? 1 : 0); return $n === 1 ? '1 file' : $n . ' files'; })
+                    ->badge()
+                    ->color('gray')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                IconColumn::make('child_map')
+                    ->label('Map')
+                    ->action(
+                    Action::make('Show Google Map')
+                        ->modalHeading(false)->modalFooter(null)
+                        ->modalContent(function (Anak $record): HtmlString {
+                            if (blank($record->child_map)) { return new HtmlString('<p class="text-center">No map link provided.</p>'); }
+                            $iframeCode = $record->child_map;
+                            $responsiveIframeCode = str_replace('width="600"', 'width="100%"', $iframeCode);
+                            $responsiveIframeCode = str_replace('height="450"', 'height="450px"', $responsiveIframeCode);
+                            return new HtmlString($responsiveIframeCode);
+                        })
+                )
+                    ->searchable()
+                    ->toggleable(),
+                IconColumn::make('child_video')
+                    ->label('Video')
+                    ->action(
+                    Action::make('Show Youtube Video')
+                        ->modalHeading(false)->modalFooter(null)
+                        ->modalContent(fn (Anak $record): HtmlString => new HtmlString(
+                            $record->child_video
+                                ? '<iframe src="' . e($record->getCleanYoutubeUrl('child_video')) . '" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
+                                : '<p class="text-center">No video link provided.</p>'
+                        ))
+                )
+                    ->searchable()
+                    ->toggleable()
             ])
             
             ->filters([

@@ -12,8 +12,15 @@ namespace App\Filament\Resources\Anaks\Schemas;
 use Illuminate\Contracts\View\View;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\ViewField;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\Radio;
 
 /**
  * Generated form schema fragment for this table's fields.
@@ -60,6 +67,64 @@ class AnakForm
     ->maxLength(255)
     ->label('Quantity')
     ->trim(),
+                Textarea::make('note_txt')
+    ->maxLength(255)
+    ->label('Note')
+    ->trim(),
+                RichEditor::make('rich_desc')
+    ->maxLength(255)
+    ->label('Rich Description')
+    ,
+                Checkbox::make('is_active')
+    ->label('Active')
+    ,
+                Radio::make('prio_radio')
+    ->label('Priority')
+    ->options(['low' => 'Low', 'mid' => 'Mid', 'high' => 'High'])
+    ,
+                DateTimePicker::make('due_dt')
+    ->label('Due Date')
+    ,
+                TextInput::make('amount_dec')
+    ->numeric()->rule('decimal:0,2')
+    ->label('Amount')
+    ->trim(),
+                FileUpload::make('child_photo')
+    ->label('Photo')
+    ->image()
+    ->imageEditor()
+    ->directory('child-photo')
+    ->disk('public')
+    ->downloadable(),
+                FileUpload::make('child_doc')
+    ->label('Document')
+    ->directory('child-doc')
+    ->disk('public')
+    ->acceptedFileTypes(['application/pdf', 'text/plain'])
+    ->downloadable()
+    ->openable(),
+                FileUpload::make('child_files')
+    ->label('Files')
+    ->multiple()
+    ->maxFiles(2)
+    ->maxSize(1024)
+    ->directory('attachments/child-files')
+    ->disk('local')
+    ->visibility('private')
+    ->columnSpanFull()
+    ->acceptedFileTypes(['application/pdf', 'text/plain']),
+                TextInput::make('child_map')
+    ->label('Map')
+    ->columnSpanFull(),
+ViewField::make('child_map')
+    ->view('filament.forms.components.map-viewer')
+    ->columnSpanFull(),
+                TextInput::make('child_video')
+    ->label('Video')
+    ->columnSpanFull(),
+ViewField::make('child_video')
+    ->view('filament.forms.components.video-viewer')
+    ->columnSpanFull(),
                 ])
                 ->columnSpanFull(),
         ]);

@@ -115,6 +115,18 @@ const anakFields = [
     F('fk_induk', 'Parent', 'INT', { extra: { lookup_parent_table: 'induk', lookup_caption_1: 'nama_induk', lookup_display_as: 'dropdown' } }),
     F('status_opt', 'Status', 'VARCHAR', { extra: { display_type: 'options_list', options_display: 'dropdown', options_list_values: 'baru;;proses;;selesai' } }),
     F('qty', 'Quantity', 'INT', {}),
+    // full element sweep inside the RM form (added 2026-09-30)
+    F('note_txt', 'Note', 'TEXT', { extra: { display_type: 'text_area' } }),
+    F('rich_desc', 'Rich Description', 'TEXT', { extra: { display_type: 'rich_html' } }),
+    F('is_active', 'Active', 'TINYINT', { extra: { display_type: 'check_box' } }),
+    F('prio_radio', 'Priority', 'VARCHAR', { extra: { display_type: 'options_list', options_display: 'radios', options_list_values: 'low;;mid;;high' } }),
+    F('due_dt', 'Due Date', 'DATETIME', { extra: { display_type: 'datetime_input' } }),
+    F('amount_dec', 'Amount', 'DECIMAL', { length: 10, precision: 2 }),
+    F('child_photo', 'Photo', 'VARCHAR', { extra: { media_type: 'image', allow_image_uploads: 1, image_storage_provider: 'public', dv_thumb_shape: 'square' } }),
+    F('child_doc', 'Document', 'VARCHAR', { extra: { media_type: 'upload', allow_file_uploads: 1, file_storage_provider: 'public', file_types: 'pdf,txt' } }),
+    F('child_files', 'Files', 'VARCHAR', { extra: { media_type: 'attachments', allow_file_uploads: 1, attach_max_files: 2, attach_types: 'pdf,txt', attach_max_size: 1024 } }),
+    F('child_map', 'Map', 'VARCHAR', { extra: { media_type: 'gmap', display_gmap: 1 } }),
+    F('child_video', 'Video', 'VARCHAR', { extra: { media_type: 'youtube', accept_video_url: 1 } }),
 ];
 const anakKadFields = [
     F('id', 'ID', 'INT', { extra: { primary_key: 1, auto_increment: 1 } }),

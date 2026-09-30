@@ -33,6 +33,17 @@ class AnakExporter extends Exporter
             ExportColumn::make('induk.nama_induk')->limit(50)->label('Nama Induk'),
             ExportColumn::make('status_opt')->limit(50)->label('Status'),
             ExportColumn::make('qty')->limit(50)->label('Quantity'),
+            ExportColumn::make('note_txt')->limit(50)->label('Note'),
+            ExportColumn::make('rich_desc')->limit(50)->label('Rich Description'),
+            ExportColumn::make('is_active')->limit(50)->label('Active'),
+            ExportColumn::make('prio_radio')->limit(50)->label('Priority'),
+            ExportColumn::make('due_dt')->limit(50)->label('Due Date'),
+            ExportColumn::make('amount_dec')->limit(50)->label('Amount'),
+            ExportColumn::make('child_photo')->limit(50)->label('Photo'),
+            ExportColumn::make('child_doc')->limit(50)->label('Document'),
+            ExportColumn::make('child_files')->limit(50)->label('Files'),
+            ExportColumn::make('child_map')->limit(50)->label('Map'),
+            ExportColumn::make('child_video')->limit(50)->label('Video'),
         ];
     }
 
