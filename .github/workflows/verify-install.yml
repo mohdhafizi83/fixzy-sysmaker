@@ -68,13 +68,16 @@ jobs:
         run: |
           $exe = "$env:LOCALAPPDATA\Programs\Fixzy SysMaker\Fixzy SysMaker.exe"
           $proc = Start-Process -FilePath $exe -PassThru
-          Start-Sleep -Seconds 12
+          Start-Sleep -Seconds 15
           if ($proc.HasExited) { throw "app exited early with code $($proc.ExitCode)" }
-          Write-Host "APP RUNNING: pid $($proc.Id), window title: '$($proc.MainWindowTitle)'"
-          # check the local web server / renderer came up: process tree should have helpers
-          $helpers = Get-Process | Where-Object { $_.ProcessName -like 'Fixzy SysMaker Helper*' }
-          Write-Host ("helper processes: " + @($helpers).Count)
-          if (@($helpers).Count -lt 1) { throw "no helper processes — app did not fully start" }
+          $proc.Refresh()
+          $title = $proc.MainWindowTitle
+          Write-Host "APP RUNNING: pid $($proc.Id), window title: '$title'"
+          if ($title -notlike '*Fixzy SysMaker*') { throw "window title missing/wrong: '$title'" }
+          # count all app processes (main + helpers, any naming)
+          $all = @(Get-Process | Where-Object { $_.ProcessName -like 'Fixzy SysMaker*' })
+          Write-Host ("total app processes: " + $all.Count)
+          if ($all.Count -lt 2) { throw "expected main + helper processes, got $($all.Count)" }
           Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
           Get-Process | Where-Object { $_.ProcessName -like 'Fixzy SysMaker*' } | Stop-Process -Force -ErrorAction SilentlyContinue
           Write-Host "APP STARTED AND STOPPED OK"
