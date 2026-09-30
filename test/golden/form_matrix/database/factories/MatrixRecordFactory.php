@@ -39,6 +39,12 @@ class MatrixRecordFactory extends Factory
             'lk_radios' => \App\Models\Character::inRandomOrder()->value('id'),
             'rep_simple' => [$this->faker->word(), $this->faker->word(), $this->faker->word()],
             'rep_complex' => [['rep_complex_1' => $this->faker->unique()->safeEmail(), 'rep_complex_2' => $this->faker->word()], ['rep_complex_1' => $this->faker->unique()->safeEmail(), 'rep_complex_2' => $this->faker->word()]],
+            'img_profile' => fake()->word(),
+            'img_avatar' => fake()->word(),
+            'file_doc' => fake()->word(),
+            'file_multi' => fake()->word(),
+            'map_loc' => fake()->word(),
+            'vid_clip' => fake()->word(),
         ];
     }
 }

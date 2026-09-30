@@ -191,6 +191,48 @@ class MatrixRecordImporter extends Importer
                 ->rules(['max:255', 'array'])
                 ->examples(['Sample Repeater Complex 1', 'Sample Repeater Complex 2'])
                 ->exampleHeader('Repeater Complex'),
+
+            ImportColumn::make('21')
+                ->label('Profile Picture')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Profile Picture 1', 'Sample Profile Picture 2'])
+                ->exampleHeader('Profile Picture'),
+
+            ImportColumn::make('22')
+                ->label('Avatar Circular')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Avatar Circular 1', 'Sample Avatar Circular 2'])
+                ->exampleHeader('Avatar Circular'),
+
+            ImportColumn::make('23')
+                ->label('Document')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Document 1', 'Sample Document 2'])
+                ->exampleHeader('Document'),
+
+            ImportColumn::make('24')
+                ->label('Attachments')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Attachments 1', 'Sample Attachments 2'])
+                ->exampleHeader('Attachments'),
+
+            ImportColumn::make('25')
+                ->label('Location Map')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Location Map 1', 'Sample Location Map 2'])
+                ->exampleHeader('Location Map'),
+
+            ImportColumn::make('26')
+                ->label('Video Clip')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Video Clip 1', 'Sample Video Clip 2'])
+                ->exampleHeader('Video Clip'),
         ];
     }
 

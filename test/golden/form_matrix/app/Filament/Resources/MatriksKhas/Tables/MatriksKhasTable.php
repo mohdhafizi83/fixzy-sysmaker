@@ -10,6 +10,8 @@ namespace App\Filament\Resources\MatriksKhas\Tables;
 
 
 
+use App\Models\MatrixRecord;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -17,8 +19,11 @@ use Filament\Actions\EditAction;
 use Filament\Actions\RestoreAction;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
 use Illuminate\Contracts\View\View;
 
 
@@ -256,7 +261,66 @@ class MatriksKhasTable
             }
             
             return '';
-        })
+        }),
+                ImageColumn::make('img_profile')
+                    ->label('Profile Picture')
+                    ->square()
+                    ->imageWidth(50)
+                    ->imageHeight(50)
+                    ->disk('public')
+                    ->searchable()
+                    ->toggleable(),
+                ImageColumn::make('img_avatar')
+                    ->label('Avatar Circular')
+                    ->square()
+                    ->imageWidth(50)
+                    ->imageHeight(50)
+                    ->disk('public')
+                    ->searchable()
+                    ->toggleable(),
+                IconColumn::make('file_doc')
+                    ->label('Document')
+                    ->icon(fn ($state): ?string => $state ? 'heroicon-o-document-arrow-down' : null)
+                    ->url(fn (?MatrixRecord $record) => $record?->file_doc ? Storage::disk('public')->url($record->file_doc) : null, shouldOpenInNewTab: true)
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('file_multi')
+                    ->label('Attachments')
+                    ->formatStateUsing(function ($state): string { $n = is_array($state) ? count($state) : (filled($state) ? 1 : 0); return $n === 1 ? '1 file' : $n . ' files'; })
+                    ->badge()
+                    ->color('gray')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                IconColumn::make('map_loc')
+                    ->label('Location Map')
+                    ->action(
+                    Action::make('Show Google Map')
+                        ->modalHeading(false)->modalFooter(null)
+                        ->modalContent(function (MatrixRecord $record): HtmlString {
+                            if (blank($record->map_loc)) { return new HtmlString('<p class="text-center">No map link provided.</p>'); }
+                            $iframeCode = $record->map_loc;
+                            $responsiveIframeCode = str_replace('width="600"', 'width="100%"', $iframeCode);
+                            $responsiveIframeCode = str_replace('height="450"', 'height="450px"', $responsiveIframeCode);
+                            return new HtmlString($responsiveIframeCode);
+                        })
+                )
+                    ->searchable()
+                    ->toggleable(),
+                IconColumn::make('vid_clip')
+                    ->label('Video Clip')
+                    ->action(
+                    Action::make('Show Youtube Video')
+                        ->modalHeading(false)->modalFooter(null)
+                        ->modalContent(fn (MatrixRecord $record): HtmlString => new HtmlString(
+                            $record->vid_clip
+                                ? '<iframe src="' . e($record->getCleanYoutubeUrl('vid_clip')) . '" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
+                                : '<p class="text-center">No video link provided.</p>'
+                        ))
+                )
+                    ->searchable()
+                    ->toggleable()
             ])
             
             ->filters([

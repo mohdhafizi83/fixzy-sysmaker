@@ -35,6 +35,12 @@ return new class extends Migration
             $table->foreignId('lk_radios')->nullable();
             $table->json('rep_simple')->nullable();
             $table->json('rep_complex')->nullable();
+            $table->string('img_profile', 255)->nullable();
+            $table->string('img_avatar', 255)->nullable();
+            $table->string('file_doc', 255)->nullable();
+            $table->text('file_multi')->nullable();
+            $table->string('map_loc', 255)->nullable();
+            $table->string('vid_clip', 255)->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

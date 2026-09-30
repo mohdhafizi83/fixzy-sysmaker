@@ -74,6 +74,13 @@ DB_PASSWORD=
                     To insert the admin user and base data:
                     <pre class="bg-black text-green-400 p-2 rounded mt-1"><code>php artisan db:seed</code></pre>
                 </li>
+                <li>
+                    <strong>Link Public Storage (required for image/file uploads):</strong><br>
+                    Uploaded media is stored in <code>storage/app/public</code>. Expose it via a symlink so browsers can display it:
+                    <pre class="bg-black text-green-400 p-2 rounded mt-1"><code>php artisan storage:link</code></pre>
+                    On shared hosting without shell access, create a symlink from
+                    <code>public/storage</code> to <code>storage/app/public</code> via your file manager.
+                </li>
             </ol>
         </div>
     </x-filament::section>

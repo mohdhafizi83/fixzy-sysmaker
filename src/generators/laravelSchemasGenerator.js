@@ -295,9 +295,26 @@ function generateFieldCodesForList(visibleFields, tableData, relationships, tabl
 
         else if (field.media_type === 'upload') {
             const kebabFieldName = field.field_name.replace(/_/g, '-');
+            // FileUpload::acceptedFileTypes validates MIME types, not file
+            // extensions — passing 'pdf' silently rejects every upload
+            // (found via media round-trip browser test, 2026-09-30).
+            const MIME_MAP = {
+                pdf: 'application/pdf', txt: 'text/plain', csv: 'text/csv',
+                png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+                gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml',
+                doc: 'application/msword',
+                docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                xls: 'application/vnd.ms-excel',
+                xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                zip: 'application/zip', mp4: 'video/mp4', mp3: 'audio/mpeg',
+            };
+            const toMime = (t) => {
+                const ext = String(t).trim().toLowerCase().replace(/^\./, '');
+                return MIME_MAP[ext] || (ext.includes('/') ? ext : null);
+            };
             let acceptedTypes = '';
             if (field.file_types) {
-                acceptedTypes = field.file_types.split(',').map(t => `'${t.trim()}'`).join(', ');
+                acceptedTypes = field.file_types.split(',').map(toMime).filter(Boolean).map(t => `'${t}'`).join(', ');
             }
             let uploadCode = `FileUpload::make('${field.field_name}')
     ->label(${labelPhp(field.caption || toTitleCase(field.field_name), field, tableName, localizationEnabled)})
@@ -330,7 +347,19 @@ function generateFieldCodesForList(visibleFields, tableData, relationships, tabl
     ->visibility('private')
     ->columnSpanFull(),`;
             if (types.length > 0) {
-                attachCode = attachCode.replace(/,$/, `\n    ->acceptedFileTypes([${types.map(t => `'${t}'`).join(', ')}]),`);
+                // same MIME conversion as media_type=upload above
+                const MIME_MAP2 = {
+                    pdf: 'application/pdf', txt: 'text/plain', csv: 'text/csv',
+                    png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+                    gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml',
+                    doc: 'application/msword',
+                    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    xls: 'application/vnd.ms-excel',
+                    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    zip: 'application/zip', mp4: 'video/mp4', mp3: 'audio/mpeg',
+                };
+                const mimes = types.map(t => MIME_MAP2[t] || (t.includes('/') ? t : null)).filter(Boolean);
+                attachCode = attachCode.replace(/,$/, `\n    ->acceptedFileTypes([${mimes.map(t => `'${t}'`).join(', ')}]),`);
             }
             if (field.is_forced_readonly) {
                  attachCode = attachCode.replace(/,$/, '->disabled()->dehydrated(false),');

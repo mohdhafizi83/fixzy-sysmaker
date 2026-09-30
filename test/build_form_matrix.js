@@ -89,6 +89,13 @@ const matrixFields = [
     F('rep_complex', 'Repeater Complex', 'JSON', { extra: { display_type: 'repeater',
         repeater_1_display_as: 'text_input', repeater_1_format_as: 'email',
         repeater_2_display_as: 'dropdown_list', repeater_2_list_values: 'rendah;;tinggi' } }),
+    // media (added 2026-09-30 media audit)
+    F('img_profile', 'Profile Picture', 'VARCHAR', { extra: { media_type: 'image', allow_image_uploads: 1, image_storage_provider: 'public', dv_thumb_shape: 'square' } }),
+    F('img_avatar', 'Avatar Circular', 'VARCHAR', { extra: { media_type: 'image', allow_image_uploads: 1, image_storage_provider: 'public', dv_thumb_shape: 'circular' } }),
+    F('file_doc', 'Document', 'VARCHAR', { extra: { media_type: 'upload', allow_file_uploads: 1, file_storage_provider: 'public', file_types: 'pdf,txt' } }),
+    F('file_multi', 'Attachments', 'VARCHAR', { extra: { media_type: 'attachments', allow_file_uploads: 1, attach_max_files: 3, attach_types: 'pdf,txt,png', attach_max_size: 2048 } }),
+    F('map_loc', 'Location Map', 'VARCHAR', { extra: { media_type: 'gmap', display_gmap: 1 } }),
+    F('vid_clip', 'Video Clip', 'VARCHAR', { extra: { media_type: 'youtube', accept_video_url: 1 } }),
 ];
 
 // ---- relation-manager family (added 2026-09-30 for RM audit) ----

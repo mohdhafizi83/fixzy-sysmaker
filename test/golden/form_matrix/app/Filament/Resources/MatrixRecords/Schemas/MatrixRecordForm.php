@@ -12,10 +12,12 @@ namespace App\Filament\Resources\MatrixRecords\Schemas;
 use Illuminate\Contracts\View\View;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\ViewField;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Checkbox;
@@ -140,6 +142,50 @@ class MatrixRecordForm
             ->label('Item 2')->options(['rendah' => 'Rendah', 'tinggi' => 'Tinggi']),
     ])
     ->reorderable(false),
+                FileUpload::make('img_profile')
+    ->label('Profile Picture')
+    ->image()
+    ->imageEditor()
+    ->directory('img-profile')
+    ->disk('public')
+    ->downloadable(),
+                FileUpload::make('img_avatar')
+    ->label('Avatar Circular')
+    ->image()
+    ->avatar()->circleCropper()
+    ->imageEditor()
+    ->directory('img-avatar')
+    ->disk('public')
+    ->downloadable(),
+                FileUpload::make('file_doc')
+    ->label('Document')
+    ->directory('file-doc')
+    ->disk('public')
+    ->acceptedFileTypes(['application/pdf', 'text/plain'])
+    ->downloadable()
+    ->openable(),
+                FileUpload::make('file_multi')
+    ->label('Attachments')
+    ->multiple()
+    ->maxFiles(3)
+    ->maxSize(2048)
+    ->directory('attachments/file-multi')
+    ->disk('local')
+    ->visibility('private')
+    ->columnSpanFull()
+    ->acceptedFileTypes(['application/pdf', 'text/plain', 'image/png']),
+                TextInput::make('map_loc')
+    ->label('Location Map')
+    ->columnSpanFull(),
+ViewField::make('map_loc')
+    ->view('filament.forms.components.map-viewer')
+    ->columnSpanFull(),
+                TextInput::make('vid_clip')
+    ->label('Video Clip')
+    ->columnSpanFull(),
+ViewField::make('vid_clip')
+    ->view('filament.forms.components.video-viewer')
+    ->columnSpanFull(),
                 ])
                 ->columnSpanFull(),
         ]);

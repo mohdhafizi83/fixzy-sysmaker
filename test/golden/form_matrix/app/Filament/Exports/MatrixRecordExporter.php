@@ -49,6 +49,12 @@ class MatrixRecordExporter extends Exporter
             ExportColumn::make('character.nama_watak')->limit(50)->label('Nama Watak'),
             ExportColumn::make('rep_simple')->limit(50)->listAsJson()->label('Repeater Simple'),
             ExportColumn::make('rep_complex')->limit(50)->listAsJson()->label('Repeater Complex'),
+            ExportColumn::make('img_profile')->limit(50)->label('Profile Picture'),
+            ExportColumn::make('img_avatar')->limit(50)->label('Avatar Circular'),
+            ExportColumn::make('file_doc')->limit(50)->label('Document'),
+            ExportColumn::make('file_multi')->limit(50)->label('Attachments'),
+            ExportColumn::make('map_loc')->limit(50)->label('Location Map'),
+            ExportColumn::make('vid_clip')->limit(50)->label('Video Clip'),
         ];
     }
 

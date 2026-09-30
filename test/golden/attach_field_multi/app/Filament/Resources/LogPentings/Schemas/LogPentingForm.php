@@ -76,7 +76,7 @@ class LogPentingForm
     ->disk('local')
     ->visibility('private')
     ->columnSpanFull()
-    ->acceptedFileTypes(['pdf', 'jpg', 'png']),
+    ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png']),
                 ])
                 ->columnSpanFull(),
         ]);

@@ -65,7 +65,13 @@ class MatrixRecord extends Model
         'lk_dropdown',
         'lk_radios',
         'rep_simple',
-        'rep_complex'
+        'rep_complex',
+        'img_profile',
+        'img_avatar',
+        'file_doc',
+        'file_multi',
+        'map_loc',
+        'vid_clip'
     
     ];
     
@@ -78,6 +84,7 @@ class MatrixRecord extends Model
             'opt_multi' => 'array',
             'rep_simple' => 'array',
             'rep_complex' => 'array',
+            'file_multi' => 'array',
         ];
     }
     
@@ -94,5 +101,21 @@ class MatrixRecord extends Model
 
 
 
+
+    public function getCleanYoutubeUrl(string $fieldName): string
+    {
+        $url = $this->{$fieldName};
+        if (blank($url)) {
+            return '';
+        }
+
+        preg_match('/(?:v=|\/v\/|watch\?v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/', $url, $matches);
+
+        if (isset($matches[1])) {
+            return 'https://www.youtube.com/embed/' . $matches[1];
+        }
+
+        return $url;
+    }
 
 }

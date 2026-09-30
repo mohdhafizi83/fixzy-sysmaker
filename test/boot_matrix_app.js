@@ -60,5 +60,6 @@ fs.rmSync(appDir, { recursive: true, force: true });
     }
     run(`php ${path.join(REPO, 'bin', 'composer.phar')} dump-autoload --no-scripts -q`, { cwd: appDir });
     run('php artisan migrate:fresh --seed --force', { cwd: appDir });
+    run('php artisan storage:link', { cwd: appDir });
     console.log('matrix app ready at ' + appDir);
 })().catch((e) => { console.error('FATAL:', e.message); process.exit(1); });

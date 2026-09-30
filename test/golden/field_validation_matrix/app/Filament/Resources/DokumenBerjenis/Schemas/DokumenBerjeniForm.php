@@ -78,7 +78,7 @@ class DokumenBerjeniForm
     ->disk('local')
     ->visibility('private')
     ->columnSpanFull()
-    ->acceptedFileTypes(['pdf', 'png', 'docx']),
+    ->acceptedFileTypes(['application/pdf', 'image/png', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']),
                 Select::make('pemilik')
     ->required()->markAsRequired()
     ->label('Pemilik')
