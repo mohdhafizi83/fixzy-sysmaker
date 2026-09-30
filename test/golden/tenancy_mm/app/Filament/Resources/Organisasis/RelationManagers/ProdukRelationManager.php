@@ -20,6 +20,9 @@ class ProdukRelationManager extends RelationManager
 {
     protected static string $relationship = 'produks';
     
+    protected static ?string $title = 'Produk';
+    
+    
     protected static ?string $relatedResource = ProdukResource::class;
 
     /**

@@ -20,6 +20,9 @@ class TempahanRelationManager extends RelationManager
 {
     protected static string $relationship = 'tempahans';
     
+    protected static ?string $title = 'Slot';
+    
+    
     protected static ?string $relatedResource = TempahanResource::class;
 
     /**

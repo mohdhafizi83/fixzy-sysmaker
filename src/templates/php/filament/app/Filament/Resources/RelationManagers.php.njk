@@ -30,6 +30,9 @@ use Filament\Forms\Components\TimePicker;
 class {{ manager_class }}RelationManager extends RelationManager
 {
     protected static string $relationship = '{{ relationship_name }}';
+    {% if tab_title %}
+    protected static ?string $title = '{{ tab_title }}';
+    {% endif %}
     
     protected static ?string $relatedResource = {{ child_singular }}Resource::class;
 

@@ -116,6 +116,17 @@ function generateSingleRelationManager(rel, basePath, fullSchema) {
             if (colsCode) {
                 tableOverrideLines = `\n            ->columns([\n                ${colsCode}\n            ])`;
                 layoutImports = tvLayout.layoutImports || [];
+                // The RM template only imports layout classes by default; the
+                // column classes referenced in colsCode need explicit imports
+                // or the RM tab fatals with "Class ... not found" (2026-09-30).
+                const colClasses = new Set();
+                const re = /\b([A-Z][A-Za-z]*Column)::make/g;
+                let m;
+                while ((m = re.exec(colsCode)) !== null) colClasses.add(m[1]);
+                colClasses.forEach((c) => {
+                    const fq = 'Filament\\Tables\\Columns\\' + c;
+                    if (!layoutImports.includes(fq)) layoutImports = layoutImports.concat(fq);
+                });
             }
             // Card grid effect needs contentGrid (same rule as the main Table generator).
             if (layout.tv_template === 'card') {
@@ -175,6 +186,7 @@ function generateSingleRelationManager(rel, basePath, fullSchema) {
         child_singular: childTableSingular,
         manager_class: managerClassBase,
         relationship_name: relationshipName,
+        tab_title: (rel.tab_title || '').replace(/'/g, "\\'"),
         table_override_lines: tableOverrideLines,
         layout_imports: layoutImports.map((i) => `use ${i};`).join('\n'),
         form_override: formOverride,

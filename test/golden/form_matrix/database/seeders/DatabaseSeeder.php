@@ -10,6 +10,10 @@ use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Character;
 use App\Models\MatrixRecord;
+use App\Models\Induk;
+use App\Models\Anak;
+use App\Models\AnakKad;
+use App\Models\IndukExtra;
 
 class DatabaseSeeder extends Seeder {
     public function run(): void {
@@ -42,6 +46,50 @@ class DatabaseSeeder extends Seeder {
                 MatrixRecord::factory()->create([
                     'lk_dropdown' => Character::inRandomOrder()->first()?->id ?? null,
                     'lk_radios' => Character::inRandomOrder()->first()?->id ?? null
+                ]);
+            } catch (\Exception $e) {
+                // Ignore if data is duplicated or violates a Unique Constraint
+            }
+        }
+
+        // Seed Induk (Kalis Ralat Unique Constraint)
+        for ($i = 0; $i < 20; $i++) {
+            try {
+                Induk::factory()->create([
+                    'lk_watak' => Character::inRandomOrder()->first()?->id ?? null
+                ]);
+            } catch (\Exception $e) {
+                // Ignore if data is duplicated or violates a Unique Constraint
+            }
+        }
+
+        // Seed Anak (Kalis Ralat Unique Constraint)
+        for ($i = 0; $i < 20; $i++) {
+            try {
+                Anak::factory()->create([
+                    'fk_induk' => Induk::inRandomOrder()->first()?->id ?? null
+                ]);
+            } catch (\Exception $e) {
+                // Ignore if data is duplicated or violates a Unique Constraint
+            }
+        }
+
+        // Seed AnakKad (Kalis Ralat Unique Constraint)
+        for ($i = 0; $i < 20; $i++) {
+            try {
+                AnakKad::factory()->create([
+                    'fk_induk' => Induk::inRandomOrder()->first()?->id ?? null
+                ]);
+            } catch (\Exception $e) {
+                // Ignore if data is duplicated or violates a Unique Constraint
+            }
+        }
+
+        // Seed IndukExtra (Kalis Ralat Unique Constraint)
+        for ($i = 0; $i < 20; $i++) {
+            try {
+                IndukExtra::factory()->create([
+                    'fk_induk' => Induk::inRandomOrder()->first()?->id ?? null
                 ]);
             } catch (\Exception $e) {
                 // Ignore if data is duplicated or violates a Unique Constraint

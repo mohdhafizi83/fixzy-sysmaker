@@ -20,6 +20,9 @@ class StudentRelationManager extends RelationManager
 {
     protected static string $relationship = 'students';
     
+    protected static ?string $title = 'Pelajar';
+    
+    
     protected static ?string $relatedResource = StudentResource::class;
 
     /**

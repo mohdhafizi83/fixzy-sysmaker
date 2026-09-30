@@ -28,6 +28,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\Layout\Grid;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
 /**
@@ -36,6 +37,9 @@ use Filament\Tables\Table;
 class TugasRelationManager extends RelationManager
 {
     protected static string $relationship = 'tugases';
+    
+    protected static ?string $title = 'Tugas';
+    
     
     protected static ?string $relatedResource = TugasResource::class;
 

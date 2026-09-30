@@ -20,6 +20,7 @@ class ActivityRelationManager extends RelationManager
 {
     protected static string $relationship = 'activities';
     
+    
     protected static ?string $relatedResource = ActivityResource::class;
 
     /**

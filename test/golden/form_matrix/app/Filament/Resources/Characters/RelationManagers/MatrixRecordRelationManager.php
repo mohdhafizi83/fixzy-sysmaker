@@ -20,6 +20,7 @@ class MatrixRecordRelationManager extends RelationManager
 {
     protected static string $relationship = 'matrixRecords';
     
+    
     protected static ?string $relatedResource = MatrixRecordResource::class;
 
     /**

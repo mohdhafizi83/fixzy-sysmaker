@@ -20,6 +20,9 @@ class KursusRelationManager extends RelationManager
 {
     protected static string $relationship = 'children';
     
+    protected static ?string $title = 'Kursus';
+    
+    
     protected static ?string $relatedResource = KursusResource::class;
 
     /**

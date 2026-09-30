@@ -60,6 +60,10 @@ class Character extends Model
     public function matrixRecordsLkRadios()
     {
         return $this->hasMany(MatrixRecord::class, 'lk_radios', 'id');
+    }
+    public function induks()
+    {
+        return $this->hasMany(Induk::class, 'lk_watak', 'id');
     }	
 
 

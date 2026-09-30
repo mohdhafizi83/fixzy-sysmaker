@@ -20,6 +20,9 @@ class ItemTempahanRelationManager extends RelationManager
 {
     protected static string $relationship = 'itemTempahans';
     
+    protected static ?string $title = 'Item Tempahan';
+    
+    
     protected static ?string $relatedResource = ItemTempahanResource::class;
 
     /**

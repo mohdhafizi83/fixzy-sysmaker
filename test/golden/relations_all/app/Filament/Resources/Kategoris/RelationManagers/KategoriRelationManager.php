@@ -20,6 +20,9 @@ class KategoriRelationManager extends RelationManager
 {
     protected static string $relationship = 'children';
     
+    protected static ?string $title = 'Kategori';
+    
+    
     protected static ?string $relatedResource = KategoriResource::class;
 
     /**

@@ -20,6 +20,7 @@ class LeadRelationManager extends RelationManager
 {
     protected static string $relationship = 'leads';
     
+    
     protected static ?string $relatedResource = LeadResource::class;
 
     /**

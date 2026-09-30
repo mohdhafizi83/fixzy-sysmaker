@@ -91,6 +91,52 @@ const matrixFields = [
         repeater_2_display_as: 'dropdown_list', repeater_2_list_values: 'rendah;;tinggi' } }),
 ];
 
+// ---- relation-manager family (added 2026-09-30 for RM audit) ----
+// induk = parent; anak = hasMany child (default RM); anak_kad = hasMany
+// child with card tv_template override; induk_extra = one-to-one (must NOT
+// produce a relation manager tab).
+const indukFields = [
+    F('id', 'ID', 'INT', { extra: { primary_key: 1, auto_increment: 1 } }),
+    F('nama_induk', 'Parent Name', 'VARCHAR', { required: 1 }),
+    F('meta_decimal', 'Meta Decimal', 'DECIMAL', { length: 8, precision: 2 }),
+    F('meta_date', 'Meta Date', 'DATE', { extra: { display_type: 'datetime_input' } }),
+    F('lk_watak', 'Lookup Character', 'INT', { extra: { lookup_parent_table: 'watak', lookup_caption_1: 'nama_watak', lookup_display_as: 'dropdown' } }),
+];
+const anakFields = [
+    F('id', 'ID', 'INT', { extra: { primary_key: 1, auto_increment: 1 } }),
+    F('nama_anak', 'Child Name', 'VARCHAR', { required: 1 }),
+    F('fk_induk', 'Parent', 'INT', { extra: { lookup_parent_table: 'induk', lookup_caption_1: 'nama_induk', lookup_display_as: 'dropdown' } }),
+    F('status_opt', 'Status', 'VARCHAR', { extra: { display_type: 'options_list', options_display: 'dropdown', options_list_values: 'baru;;proses;;selesai' } }),
+    F('qty', 'Quantity', 'INT', {}),
+];
+const anakKadFields = [
+    F('id', 'ID', 'INT', { extra: { primary_key: 1, auto_increment: 1 } }),
+    F('tajuk_kad', 'Card Title', 'VARCHAR', { required: 1 }),
+    F('fk_induk', 'Parent', 'INT', { extra: { lookup_parent_table: 'induk', lookup_caption_1: 'nama_induk', lookup_display_as: 'dropdown' } }),
+];
+const indukExtraFields = [
+    F('id', 'ID', 'INT', { extra: { primary_key: 1, auto_increment: 1 } }),
+    F('catatan', 'Note', 'VARCHAR', { required: 1 }),
+    F('fk_induk', 'Parent', 'INT', { extra: { lookup_parent_table: 'induk', lookup_caption_1: 'nama_induk', lookup_display_as: 'dropdown', unique: 1 } }),
+];
+
+function plainTable(tableId, name, module, fields, order) {
+    return {
+        table_id: tableId, project_id: 1, table_name: name, table_order: order, module_name: module,
+        table_view_title: module, table_description: null, show_quick_search: 1,
+        allow_pagination: 1, pagination_type: 'simple', default_sort_by: null, sort_descending: 0,
+        allow_csv_export: 1, allow_csv_import: 1, allow_print_view: 0, allow_mass_delete: 1,
+        show_edit_button: 1, show_delete_button: 1, allow_restore_delete: 1, allow_force_delete: 0,
+        tv_template: null, hide_field_captions: 0, use_first_field_as_title: 1,
+        table_view_classes_input: null, detail_view_classes_input: null, detail_view_title: null,
+        record_owner: null, owner_fk_value: null, default_focus: null, redirect_after_insert: null,
+        enable_detail_view: 1, delete_with_children: 0, dv_allow_print_view: 0, dv_separate_page: 0,
+        dv_hide_save_as_copy: 0, dv_sticky_buttons: 0, dv_allow_add_from_homepage: 0,
+        column_grid_type: 'auto', static_grid_columns: 2, table_hook_workflow: null,
+        feature_source: null, fields, custom_modules: {}, constraints: [],
+    };
+}
+
 // users table comes from the existing fixture (project:create always adds it)
 const baseFixture = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'field_types_all.json'), 'utf8'));
 const usersTable = JSON.parse(JSON.stringify(baseFixture.database.table.users));
@@ -154,6 +200,10 @@ const fixture = {
                 ],
                 constraints: [],
             },
+            induk: plainTable(4, 'induk', 'Induks', indukFields, 2),
+            anak: plainTable(5, 'anak', 'Anaks', anakFields, 3),
+            anak_kad: plainTable(6, 'anak_kad', 'AnakKads', anakKadFields, 4),
+            induk_extra: plainTable(7, 'induk_extra', 'IndukExtras', indukExtraFields, 5),
         },
         relationships: [
             {
@@ -171,6 +221,39 @@ const fixture = {
                 show_link_above: 0, show_count_in_tv: 0, allow_add_from_tv: 0,
                 on_delete: 'CASCADE', on_update: 'CASCADE',
                 parent_table_name: 'watak', child_table_name: 'matriks',
+            },
+            {
+                relationship_id: 3, parent_table_id: 4, child_table_id: 5,
+                fk_child_field: 'fk_induk', parent_field: 'id', relationship_type: 'one-to-many',
+                show_tab: 1, show_icon: 1, autoclose_modal: 0, tab_title: 'Children', copy_records: 0,
+                show_link_above: 0, show_count_in_tv: 1, allow_add_from_tv: 0,
+                on_delete: 'CASCADE', on_update: 'CASCADE',
+                parent_table_name: 'induk', child_table_name: 'anak',
+            },
+            {
+                relationship_id: 4, parent_table_id: 4, child_table_id: 6,
+                fk_child_field: 'fk_induk', parent_field: 'id', relationship_type: 'one-to-many',
+                show_tab: 1, show_icon: 0, autoclose_modal: 0, tab_title: 'Cards', copy_records: 0,
+                show_link_above: 0, show_count_in_tv: 0, allow_add_from_tv: 0,
+                on_delete: 'CASCADE', on_update: 'CASCADE',
+                parent_table_name: 'induk', child_table_name: 'anak_kad',
+                tv_template: 'card',
+            },
+            {
+                relationship_id: 5, parent_table_id: 4, child_table_id: 7,
+                fk_child_field: 'fk_induk', parent_field: 'id', relationship_type: 'one-to-one',
+                show_tab: 1, show_icon: 0, autoclose_modal: 0, tab_title: 'OneOne', copy_records: 0,
+                show_link_above: 0, show_count_in_tv: 0, allow_add_from_tv: 0,
+                on_delete: 'CASCADE', on_update: 'CASCADE',
+                parent_table_name: 'induk', child_table_name: 'induk_extra',
+            },
+            {
+                relationship_id: 6, parent_table_id: 1, child_table_id: 4,
+                fk_child_field: 'lk_watak', parent_field: 'id', relationship_type: 'many-to-one',
+                show_tab: 0, show_icon: 0, autoclose_modal: 0, tab_title: null, copy_records: 0,
+                show_link_above: 0, show_count_in_tv: 0, allow_add_from_tv: 0,
+                on_delete: 'CASCADE', on_update: 'CASCADE',
+                parent_table_name: 'watak', child_table_name: 'induk',
             },
         ],
         unified_menu: [],

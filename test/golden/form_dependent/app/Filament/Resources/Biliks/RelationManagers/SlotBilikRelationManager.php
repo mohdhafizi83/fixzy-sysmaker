@@ -20,6 +20,9 @@ class SlotBilikRelationManager extends RelationManager
 {
     protected static string $relationship = 'slotBiliks';
     
+    protected static ?string $title = 'Slots';
+    
+    
     protected static ?string $relatedResource = SlotBilikResource::class;
 
     /**

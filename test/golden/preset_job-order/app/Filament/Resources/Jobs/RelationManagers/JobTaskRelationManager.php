@@ -20,6 +20,7 @@ class JobTaskRelationManager extends RelationManager
 {
     protected static string $relationship = 'jobTasks';
     
+    
     protected static ?string $relatedResource = JobTaskResource::class;
 
     /**

@@ -12,6 +12,7 @@ use App\Filament\Resources\Kategoris\KategoriResource;
 use Filament\Actions\CreateAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\Layout\Panel;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
 /**
@@ -20,6 +21,9 @@ use Filament\Tables\Table;
 class KategoriRelationManager extends RelationManager
 {
     protected static string $relationship = 'children';
+    
+    protected static ?string $title = 'Kategori';
+    
     
     protected static ?string $relatedResource = KategoriResource::class;
 

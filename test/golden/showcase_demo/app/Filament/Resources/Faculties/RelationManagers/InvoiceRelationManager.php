@@ -20,6 +20,9 @@ class InvoiceRelationManager extends RelationManager
 {
     protected static string $relationship = 'invoices';
     
+    protected static ?string $title = 'Invoice';
+    
+    
     protected static ?string $relatedResource = InvoiceResource::class;
 
     /**

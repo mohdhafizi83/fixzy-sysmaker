@@ -20,6 +20,9 @@ class KelaRelationManager extends RelationManager
 {
     protected static string $relationship = 'kelas';
     
+    protected static ?string $title = 'Kelas';
+    
+    
     protected static ?string $relatedResource = KelaResource::class;
 
     /**

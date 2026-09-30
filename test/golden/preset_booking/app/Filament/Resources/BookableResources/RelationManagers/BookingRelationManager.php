@@ -20,6 +20,7 @@ class BookingRelationManager extends RelationManager
 {
     protected static string $relationship = 'bookings';
     
+    
     protected static ?string $relatedResource = BookingResource::class;
 
     /**

@@ -20,6 +20,9 @@ class KontrakRelationManager extends RelationManager
 {
     protected static string $relationship = 'kontraks';
     
+    protected static ?string $title = 'Kontrak';
+    
+    
     protected static ?string $relatedResource = KontrakResource::class;
 
     /**

@@ -20,6 +20,9 @@ class ExamResultRelationManager extends RelationManager
 {
     protected static string $relationship = 'examResults';
     
+    protected static ?string $title = 'Keputusan Ujian';
+    
+    
     protected static ?string $relatedResource = ExamResultResource::class;
 
     /**

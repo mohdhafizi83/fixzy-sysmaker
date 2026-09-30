@@ -20,6 +20,9 @@ class TugasRelationManager extends RelationManager
 {
     protected static string $relationship = 'tugases';
     
+    protected static ?string $title = 'Tugas';
+    
+    
     protected static ?string $relatedResource = TugasResource::class;
 
     /**

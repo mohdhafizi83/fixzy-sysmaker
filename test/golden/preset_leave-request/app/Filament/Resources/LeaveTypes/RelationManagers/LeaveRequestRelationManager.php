@@ -20,6 +20,7 @@ class LeaveRequestRelationManager extends RelationManager
 {
     protected static string $relationship = 'leaveRequests';
     
+    
     protected static ?string $relatedResource = LeaveRequestResource::class;
 
     /**

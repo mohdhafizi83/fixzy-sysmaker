@@ -20,6 +20,7 @@ class TicketReplyRelationManager extends RelationManager
 {
     protected static string $relationship = 'ticketReplies';
     
+    
     protected static ?string $relatedResource = TicketReplyResource::class;
 
     /**
