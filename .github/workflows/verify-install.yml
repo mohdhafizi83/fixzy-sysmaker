@@ -1,0 +1,91 @@
+name: Verify Installer (real Windows)
+
+# End-to-end proof that the shipped Windows installer works:
+# downloads the release artifact, installs silently, verifies files,
+# launches the app, confirms the process lives, then uninstalls.
+# Trigger manually: gh workflow run verify-install.yml -f version=v1.0.0
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release tag to verify'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  verify-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Download installer from Release
+        shell: pwsh
+        run: |
+          $ver = "${{ github.event.inputs.version }}"
+          $url = "https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/$ver/Fixzy.SysMaker.Setup.$($ver.TrimStart('v')).exe"
+          Write-Host "Downloading $url"
+          Invoke-WebRequest -Uri $url -OutFile "$env:RUNNER_TEMP\setup.exe"
+          $size = (Get-Item "$env:RUNNER_TEMP\setup.exe").Length
+          Write-Host "Downloaded: $size bytes"
+          if ($size -lt 50000000) { throw "installer too small: $size" }
+
+      - name: Verify checksum against release SHA256SUMS
+        shell: pwsh
+        run: |
+          $ver = "${{ github.event.inputs.version }}"
+          Invoke-WebRequest -Uri "https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/$ver/SHA256SUMS.txt" -OutFile "$env:RUNNER_TEMP\sums.txt"
+          $expected = (Get-Content "$env:RUNNER_TEMP\sums.txt" | Where-Object { $_ -match 'Setup' }) -split '\s+' | Select-Object -First 1
+          $actual = (Get-FileHash "$env:RUNNER_TEMP\setup.exe" -Algorithm SHA256).Hash.ToLower()
+          Write-Host "expected: $expected"
+          Write-Host "actual:   $actual"
+          if ($expected -ne $actual) { throw "CHECKSUM MISMATCH" }
+          Write-Host "CHECKSUM OK"
+
+      - name: Silent install
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath "$env:RUNNER_TEMP\setup.exe" -ArgumentList '/S' -Wait -PassThru
+          Write-Host "installer exit code: $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { throw "installer failed with $($p.ExitCode)" }
+
+      - name: Verify installed files
+        shell: pwsh
+        run: |
+          $dir = "$env:LOCALAPPDATA\Programs\Fixzy SysMaker"
+          if (-not (Test-Path $dir)) { throw "install dir missing: $dir" }
+          $exe = "$dir\Fixzy SysMaker.exe"
+          if (-not (Test-Path $exe)) { throw "main exe missing: $exe" }
+          $asar = "$dir\resources\app.asar"
+          if (-not (Test-Path $asar)) { throw "app.asar missing" }
+          $node = "$dir\resources\app.asar.unpacked\node_modules\better-sqlite3\build\Release\better_sqlite3.node"
+          if (-not (Test-Path $node)) { throw "native sqlite module missing" }
+          $count = (Get-ChildItem $dir -Recurse -File).Count
+          $size = [math]::Round((Get-ChildItem $dir -Recurse -File | Measure-Object Length -Sum).Sum / 1MB, 1)
+          Write-Host "INSTALLED: $count files, $size MB at $dir"
+          if ($count -lt 150) { throw "suspiciously few files: $count" }
+
+      - name: Launch app and confirm it runs
+        shell: pwsh
+        run: |
+          $exe = "$env:LOCALAPPDATA\Programs\Fixzy SysMaker\Fixzy SysMaker.exe"
+          $proc = Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 12
+          if ($proc.HasExited) { throw "app exited early with code $($proc.ExitCode)" }
+          Write-Host "APP RUNNING: pid $($proc.Id), window title: '$($proc.MainWindowTitle)'"
+          # check the local web server / renderer came up: process tree should have helpers
+          $helpers = Get-Process | Where-Object { $_.ProcessName -like 'Fixzy SysMaker Helper*' }
+          Write-Host ("helper processes: " + @($helpers).Count)
+          if (@($helpers).Count -lt 1) { throw "no helper processes — app did not fully start" }
+          Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+          Get-Process | Where-Object { $_.ProcessName -like 'Fixzy SysMaker*' } | Stop-Process -Force -ErrorAction SilentlyContinue
+          Write-Host "APP STARTED AND STOPPED OK"
+
+      - name: Uninstall and confirm removal
+        shell: pwsh
+        run: |
+          $dir = "$env:LOCALAPPDATA\Programs\Fixzy SysMaker"
+          $unins = "$dir\Uninstall Fixzy SysMaker.exe"
+          if (-not (Test-Path $unins)) { throw "uninstaller missing" }
+          Start-Process -FilePath $unins -ArgumentList '/S' -Wait
+          Start-Sleep -Seconds 5
+          if (Test-Path "$dir\Fixzy SysMaker.exe") { throw "exe still present after uninstall" }
+          Write-Host "UNINSTALL OK"
