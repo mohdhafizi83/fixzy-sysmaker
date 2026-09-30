@@ -67,7 +67,7 @@ function buildInlineEditColumnPhp(field, fieldName, tableName, authorizationEnab
     const esc = (s) => String(s).replace(/'/g, "\\'");
     const lines = [];
     const authGuard = authorizationEnabled
-        ? `if (! auth()->user()?->can('update', $record)) {\n                        abort(403);\n                    }\n                    `
+        ? `// Match Filament resource authorization semantics: deny only when a\n                    // policy exists and denies. Raw Gate::can() denies when NO\n                    // policy exists, which 403'd every inline edit while the\n                    // resource's own canEdit() allowed it (grid audit 2026-09-30).\n                    if (\\Illuminate\\Support\\Facades\\Gate::getPolicyFor($record) && ! auth()->user()?->can('update', $record)) {\n                        abort(403);\n                    }\n                    `
         : '';
     /** Build the ->updateStateUsing(...) closure with optional auth guard. @param {string} cast cast expression applied to $state @returns {string} PHP closure code */
     const saveClosure = (cast) => `->updateStateUsing(function ($record, $state) {\n                    ${authGuard}if (is_null($state)) {\n                        $record->${field.field_name} = null;\n                    } else {\n                        $record->${field.field_name} = ${cast.replace('$state', '$state')};\n                    }\n                    $record->save();\n                    return $record;\n                })`;

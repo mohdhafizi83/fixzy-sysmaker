@@ -8,7 +8,7 @@
 
 namespace App\Filament\Pages;
 
-use App\Models\FakultiBoard;
+use App\Models\Fakulti;
 use App\Filament\Resources\FakultiBoards\FakultiBoardResource;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -63,7 +63,7 @@ class FakultiBoardBoard extends Page
             $this->loadBoard();
             return;
         }
-        $record = FakultiBoard::find($recordId);
+        $record = Fakulti::find($recordId);
         if (! $record) {
             Notification::make()->danger()->title('Record not found.')->send();
             $this->loadBoard();
@@ -100,7 +100,7 @@ class FakultiBoardBoard extends Page
 
     protected function loadBoard(): void
     {
-        $records = FakultiBoard::all();
+        $records = Fakulti::all();
         $columns = [];
         foreach (self::COLUMN_ORDER as $status) {
             $columns[$status] = [];

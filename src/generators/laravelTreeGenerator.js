@@ -42,16 +42,19 @@ function parseTreeConfig(tableData) {
 async function generateTreePages(fullSchema, basePath) {
     const { database: { table: tables } } = fullSchema;
     let count = 0;
-    for (const { nameSource, tableData } of collectFeatureSources(tables, parseTreeConfig, 'grid_tree_enabled')) {
+    for (const { nameSource, modelSource, tableData } of collectFeatureSources(tables, parseTreeConfig, 'grid_tree_enabled')) {
         const cfg = parseTreeConfig(tableData);
         const clean = nameSource.replace(/[^a-zA-Z0-9]/g, '');
-        const modelSingular = toSingularPascalCase(clean);
+        // Page identity from the feature source; Eloquent model from the BASE
+        // table (custom modules share the base model — grid audit 2026-09-30).
+        const pageName = toSingularPascalCase(clean);
+        const modelSingular = toSingularPascalCase((modelSource || nameSource).replace(/[^a-zA-Z0-9]/g, ''));
         const resourceFolder = toPluralPascalCase(clean);
         const pageTitle = tableData.table_view_title || resourceFolder;
 
         const php = renderTemplate('app/Filament/Pages/TreePage.php.njk', {
-            page_class: `${modelSingular}Tree`,
-            blade_name: `${modelSingular.toLowerCase()}-tree`,
+            page_class: `${pageName}Tree`,
+            blade_name: `${pageName.toLowerCase()}-tree`,
             model_class: modelSingular,
             page_title: `${pageTitle} Hierarchy`,
             slug: `${resourceFolder.toLowerCase()}-tree`,
@@ -63,8 +66,8 @@ async function generateTreePages(fullSchema, basePath) {
         const viewsDir = path.join(basePath, 'resources', 'views', 'filament', 'pages');
         fs.mkdirSync(pagesDir, { recursive: true });
         fs.mkdirSync(viewsDir, { recursive: true });
-        fs.writeFileSync(path.join(pagesDir, `${modelSingular}Tree.php`), php);
-        fs.writeFileSync(path.join(viewsDir, `${modelSingular.toLowerCase()}-tree.blade.php`), blade);
+        fs.writeFileSync(path.join(pagesDir, `${pageName}Tree.php`), php);
+        fs.writeFileSync(path.join(viewsDir, `${pageName.toLowerCase()}-tree.blade.php`), blade);
         count++;
     }
     return { success: true, message: `${count} tree pages generated.` };

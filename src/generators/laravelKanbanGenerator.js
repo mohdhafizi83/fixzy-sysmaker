@@ -60,19 +60,23 @@ function parseKanbanConfig(tableData) {
 async function generateKanbanPages(fullSchema, basePath) {
     const { database: { table: tables } } = fullSchema;
     let count = 0;
-    for (const { nameSource, tableData } of collectFeatureSources(tables, parseKanbanConfig, 'grid_kanban_enabled')) {
+    for (const { nameSource, modelSource, tableData } of collectFeatureSources(tables, parseKanbanConfig, 'grid_kanban_enabled')) {
         const cfg = parseKanbanConfig(tableData);
-        const modelSingular = toSingularPascalCase(nameSource.replace(/[^a-zA-Z0-9]/g, ''));
+        // Page identity comes from the feature source (custom module name);
+        // the Eloquent model/resource always come from the BASE table —
+        // custom modules share the base model (grid audit 2026-09-30).
+        const pageName = toSingularPascalCase(nameSource.replace(/[^a-zA-Z0-9]/g, ''));
+        const modelSingular = toSingularPascalCase((modelSource || nameSource).replace(/[^a-zA-Z0-9]/g, ''));
         const resourceFolder = toPluralPascalCase(nameSource.replace(/[^a-zA-Z0-9]/g, ''));
         const pageTitle = tableData.table_view_title || resourceFolder;
 
         /** Escape a value for a single-quoted PHP string literal. @param {*} v @returns {string} */
         const phpLiteral = (v) => `'${String(v).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
         const php = renderTemplate('app/Filament/Pages/KanbanPage.php.njk', {
-            page_class: `${modelSingular}Board`,
-            blade_name: `${modelSingular.toLowerCase()}-board`,
+            page_class: `${pageName}Board`,
+            blade_name: `${pageName.toLowerCase()}-board`,
             model_class: modelSingular,
-            resource_class: `${modelSingular}Resource`,
+            resource_class: `${pageName}Resource`,
             resource_folder: resourceFolder,
             page_title: `${pageTitle} Board`,
             slug: `${resourceFolder.toLowerCase()}-board`,
@@ -90,8 +94,8 @@ async function generateKanbanPages(fullSchema, basePath) {
         const viewsDir = path.join(basePath, 'resources', 'views', 'filament', 'pages');
         fs.mkdirSync(pagesDir, { recursive: true });
         fs.mkdirSync(viewsDir, { recursive: true });
-        fs.writeFileSync(path.join(pagesDir, `${modelSingular}Board.php`), php);
-        fs.writeFileSync(path.join(viewsDir, `${modelSingular.toLowerCase()}-board.blade.php`), blade);
+        fs.writeFileSync(path.join(pagesDir, `${pageName}Board.php`), php);
+        fs.writeFileSync(path.join(viewsDir, `${pageName.toLowerCase()}-board.blade.php`), blade);
         count++;
     }
     return { success: true, message: `${count} kanban board pages generated.` };

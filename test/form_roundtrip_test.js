@@ -117,9 +117,16 @@ async function dbRow(appDir, id) {
     // 14. radios
     await page.locator('input[value="tengah"]').first().check({ force: true });
     await sleep(300);
-    // 15. checkbox list
-    await page.locator('input[value="merah"]').first().check({ force: true });
-    await page.locator('input[value="biru"]').first().check({ force: true });
+    // 15. checkbox list (hide the php debugbar first — its fixed header can
+    // overlay checkboxes lower on tall pages and swallow Playwright clicks;
+    // JS click also avoids the Livewire roundtrip race that reverts state)
+    await page.addStyleTag({ content: '#phpdebugbar, #debugbar { display:none !important; }' });
+    await page.evaluate(() => {
+      ['merah', 'biru'].forEach((v) => {
+        const cb = document.querySelector(`input[value="${v}"]`);
+        if (cb && !cb.checked) cb.click();
+      });
+    });
     await sleep(300);
     // 16. multi select (custom combobox button — click then pick options)
     await page.click('#form\\.opt_multi');

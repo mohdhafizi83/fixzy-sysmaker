@@ -22,6 +22,10 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
+use Filament\Tables\Columns\Summarizers\Sum;
+use Filament\Tables\Columns\Summarizers\Average;
+use Filament\Tables\Columns\Layout\Panel;
+use Filament\Tables\Columns\TextInputColumn;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Illuminate\Contracts\View\View;
@@ -47,91 +51,107 @@ class MatrixRecordsTable
             
             ->recordUrl(null)
             ->description('')
-            ->columns([
-                TextColumn::make('id')
+            ->contentGrid((request()->query('view', 'card')) === 'card' ? ['md' => 2, 'xl' => 3] : null)
+            ->columns((request()->query('view', 'card')) === 'card' ? [Panel::make([
+                    TextColumn::make('id')
                     ->label('Id')
                     ->sortable()
                     ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable()
                     ->numeric(),
-                TextColumn::make('txt_plain')
+                    TextInputColumn::make('txt_plain')
                     ->label('Plain Text')
-                    ->sortable()
-                    ->limit(50, end: ' (more)')
-                    ->searchable()
-                    ->toggleable(),
-                TextColumn::make('txt_email')
+                    ->rules(['max:255'])
+                    ->updateStateUsing(function ($record, $state) {
+                    // Match Filament resource authorization semantics: deny only when a
+                    // policy exists and denies. Raw Gate::can() denies when NO
+                    // policy exists, which 403'd every inline edit while the
+                    // resource's own canEdit() allowed it (grid audit 2026-09-30).
+                    if (\Illuminate\Support\Facades\Gate::getPolicyFor($record) && ! auth()->user()?->can('update', $record)) {
+                        abort(403);
+                    }
+                    if (is_null($state)) {
+                        $record->txt_plain = null;
+                    } else {
+                        $record->txt_plain = $state;
+                    }
+                    $record->save();
+                    return $record;
+                }),
+                    TextColumn::make('txt_email')
                     ->label('Email')
                     ->sortable()
                     ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable(),
-                TextColumn::make('txt_url')
+                    TextColumn::make('txt_url')
                     ->label('Url')
                     ->sortable()
                     ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable(),
-                TextColumn::make('txt_tel')
+                    TextColumn::make('txt_tel')
                     ->label('Telephone')
                     ->sortable()
                     ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable(),
-                TextColumn::make('txt_password')
+                    TextColumn::make('txt_password')
                     ->label('Password')
                     ->sortable()
                     ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable(),
-                TextColumn::make('num_int')
+                    TextColumn::make('num_int')
                     ->label('Integer')
                     ->sortable()
                     ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable()
-                    ->numeric(),
-                TextColumn::make('num_decimal')
+                    ->numeric()
+                    ->summarize(\Filament\Tables\Columns\Summarizers\Sum::make()->label('Total Integer')),
+                    TextColumn::make('num_decimal')
                     ->label('Decimal')
                     ->sortable()
                     ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable()
-                    ->numeric(),
-                TextColumn::make('dt_date')
+                    ->numeric()
+                    ->summarize(\Filament\Tables\Columns\Summarizers\Average::make()->label('Average Decimal')),
+                    TextColumn::make('dt_date')
                     ->label('Date')
                     ->sortable()
                     ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable()
                     ->dateTime('d F Y'),
-                TextColumn::make('dt_datetime')
+                    TextColumn::make('dt_datetime')
                     ->label('Datetime')
                     ->sortable()
                     ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable()
                     ->dateTime('d F Y h:i A'),
-                TextColumn::make('txt_area')
+                    TextColumn::make('txt_area')
                     ->label('Text Area')
                     ->sortable()
                     ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable(),
-                TextColumn::make('txt_rich')
+                    TextColumn::make('txt_rich')
                     ->label('Rich Editor')
                     ->sortable()
                     ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable()
                     ->html(),
-                IconColumn::make('bool_check')
+                    IconColumn::make('bool_check')
                     ->label('Checkbox')
                     ->boolean()
                     ->searchable()
                     ->toggleable(),
-                TextColumn::make('opt_dropdown')
+                    TextColumn::make('opt_dropdown')
                     ->label('Options Dropdown')
                     ->sortable()
                     ->limit(50, end: ' (more)')
@@ -142,7 +162,7 @@ class MatrixRecordsTable
         'dua' => 'info',
         'tiga' => 'primary',
         }),
-                TextColumn::make('opt_radios')
+                    TextColumn::make('opt_radios')
                     ->label('Options Radios')
                     ->sortable()
                     ->limit(50, end: ' (more)')
@@ -153,7 +173,7 @@ class MatrixRecordsTable
         'tengah' => 'info',
         'kanan' => 'primary',
         }),
-                TextColumn::make('opt_checkboxes')
+                    TextColumn::make('opt_checkboxes')
                     ->label('Options Checkboxes')
                     ->sortable()
                     ->limit(50, end: ' (more)')
@@ -164,7 +184,7 @@ class MatrixRecordsTable
         'hijau' => 'info',
         'biru' => 'primary',
         }),
-                TextColumn::make('opt_multi')
+                    TextColumn::make('opt_multi')
                     ->label('Options Multi')
                     ->sortable()
                     ->limit(50, end: ' (more)')
@@ -175,21 +195,21 @@ class MatrixRecordsTable
         'tengah' => 'info',
         'akhir' => 'primary',
         }),
-                TextColumn::make('character.nama_watak')
+                    TextColumn::make('character.nama_watak')
                     ->label('Lookup Dropdown')
                     ->sortable()
                     ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable()
                     ->numeric(),
-                TextColumn::make('character.nama_watak')
+                    TextColumn::make('character.nama_watak')
                     ->label('Lookup Radios')
                     ->sortable()
                     ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable()
                     ->numeric(),
-                TextColumn::make('rep_simple')
+                    TextColumn::make('rep_simple')
                     ->label('Repeater Simple')
                     ->sortable()
                     ->limit(50, end: ' (more)')
@@ -229,7 +249,7 @@ class MatrixRecordsTable
             
             return '';
         }),
-                TextColumn::make('rep_complex')
+                    TextColumn::make('rep_complex')
                     ->label('Repeater Complex')
                     ->sortable()
                     ->limit(50, end: ' (more)')
@@ -269,7 +289,7 @@ class MatrixRecordsTable
             
             return '';
         }),
-                ImageColumn::make('img_profile')
+                    ImageColumn::make('img_profile')
                     ->label('Profile Picture')
                     ->square()
                     ->imageWidth(50)
@@ -277,7 +297,7 @@ class MatrixRecordsTable
                     ->disk('public')
                     ->searchable()
                     ->toggleable(),
-                ImageColumn::make('img_avatar')
+                    ImageColumn::make('img_avatar')
                     ->label('Avatar Circular')
                     ->square()
                     ->imageWidth(50)
@@ -285,13 +305,13 @@ class MatrixRecordsTable
                     ->disk('public')
                     ->searchable()
                     ->toggleable(),
-                IconColumn::make('file_doc')
+                    IconColumn::make('file_doc')
                     ->label('Document')
                     ->icon(fn ($state): ?string => $state ? 'heroicon-o-document-arrow-down' : null)
                     ->url(fn (?MatrixRecord $record) => $record?->file_doc ? Storage::disk('public')->url($record->file_doc) : null, shouldOpenInNewTab: true)
                     ->searchable()
                     ->toggleable(),
-                TextColumn::make('file_multi')
+                    TextColumn::make('file_multi')
                     ->label('Attachments')
                     ->formatStateUsing(function ($state): string { $n = is_array($state) ? count($state) : (filled($state) ? 1 : 0); return $n === 1 ? '1 file' : $n . ' files'; })
                     ->badge()
@@ -300,8 +320,10 @@ class MatrixRecordsTable
                     ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable(),
-                IconColumn::make('map_loc')
+                    IconColumn::make('map_loc')
                     ->label('Location Map')
+                    ->icon('heroicon-o-map-pin')
+                    ->color('danger')
                     ->action(
                     Action::make('Show Google Map')
                         ->modalHeading(false)->modalFooter(null)
@@ -315,8 +337,10 @@ class MatrixRecordsTable
                 )
                     ->searchable()
                     ->toggleable(),
-                IconColumn::make('vid_clip')
+                    IconColumn::make('vid_clip')
                     ->label('Video Clip')
+                    ->icon('heroicon-o-play-circle')
+                    ->color('info')
                     ->action(
                     Action::make('Show Youtube Video')
                         ->modalHeading(false)->modalFooter(null)
@@ -328,7 +352,307 @@ class MatrixRecordsTable
                 )
                     ->searchable()
                     ->toggleable()
-            ])
+                ])] : [
+                    TextColumn::make('id')
+                    ->label('Id')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                    TextInputColumn::make('txt_plain')
+                    ->label('Plain Text')
+                    ->rules(['max:255'])
+                    ->updateStateUsing(function ($record, $state) {
+                    // Match Filament resource authorization semantics: deny only when a
+                    // policy exists and denies. Raw Gate::can() denies when NO
+                    // policy exists, which 403'd every inline edit while the
+                    // resource's own canEdit() allowed it (grid audit 2026-09-30).
+                    if (\Illuminate\Support\Facades\Gate::getPolicyFor($record) && ! auth()->user()?->can('update', $record)) {
+                        abort(403);
+                    }
+                    if (is_null($state)) {
+                        $record->txt_plain = null;
+                    } else {
+                        $record->txt_plain = $state;
+                    }
+                    $record->save();
+                    return $record;
+                }),
+                    TextColumn::make('txt_email')
+                    ->label('Email')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                    TextColumn::make('txt_url')
+                    ->label('Url')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                    TextColumn::make('txt_tel')
+                    ->label('Telephone')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                    TextColumn::make('txt_password')
+                    ->label('Password')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                    TextColumn::make('num_int')
+                    ->label('Integer')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric()
+                    ->summarize(\Filament\Tables\Columns\Summarizers\Sum::make()->label('Total Integer')),
+                    TextColumn::make('num_decimal')
+                    ->label('Decimal')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric()
+                    ->summarize(\Filament\Tables\Columns\Summarizers\Average::make()->label('Average Decimal')),
+                    TextColumn::make('dt_date')
+                    ->label('Date')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->dateTime('d F Y'),
+                    TextColumn::make('dt_datetime')
+                    ->label('Datetime')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->dateTime('d F Y h:i A'),
+                    TextColumn::make('txt_area')
+                    ->label('Text Area')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                    TextColumn::make('txt_rich')
+                    ->label('Rich Editor')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->html(),
+                    IconColumn::make('bool_check')
+                    ->label('Checkbox')
+                    ->boolean()
+                    ->searchable()
+                    ->toggleable(),
+                    TextColumn::make('opt_dropdown')
+                    ->label('Options Dropdown')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->badge()->color(fn (string $state): string => match ($state) {
+        'satu' => 'gray',
+        'dua' => 'info',
+        'tiga' => 'primary',
+        }),
+                    TextColumn::make('opt_radios')
+                    ->label('Options Radios')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->badge()->color(fn (string $state): string => match ($state) {
+        'kiri' => 'gray',
+        'tengah' => 'info',
+        'kanan' => 'primary',
+        }),
+                    TextColumn::make('opt_checkboxes')
+                    ->label('Options Checkboxes')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->badge()->color(fn (string $state): string => match ($state) {
+        'merah' => 'gray',
+        'hijau' => 'info',
+        'biru' => 'primary',
+        }),
+                    TextColumn::make('opt_multi')
+                    ->label('Options Multi')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->badge()->color(fn (string $state): string => match ($state) {
+        'awal' => 'gray',
+        'tengah' => 'info',
+        'akhir' => 'primary',
+        }),
+                    TextColumn::make('character.nama_watak')
+                    ->label('Lookup Dropdown')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                    TextColumn::make('character.nama_watak')
+                    ->label('Lookup Radios')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->numeric(),
+                    TextColumn::make('rep_simple')
+                    ->label('Repeater Simple')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->formatStateUsing(function (array|string|null $state): ?string {
+            if (blank($state)) { return null; }
+            
+            // Safety net: if Eloquent returns a String (auto-cast failed), decode manually
+            if (is_string($state)) {
+                $decoded = json_decode($state, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $state = $decoded;
+                } else {
+                    return $state; // Jika bukan JSON, pulangkan teks mentah
+                }
+            }
+            
+            // Process data verified to be an Array
+            if (is_array($state)) {
+                // Senario A: Baca format Repeater Simple / Tags (Flat Array)
+                // Cth: ["ali@gmail.com", "abu@gmail.com"]
+                if (isset($state[0]) && !is_array($state[0])) {
+                    return implode(', ', $state);
+                }
+                
+                // Senario B: Baca format Repeater (Array of Objects)
+                // Cth: [["email_1" => "ali..."], ["email_1" => "abu..."]]
+                $values = [];
+                foreach ($state as $item) {
+                    if (is_array($item)) {
+                        $values = array_merge($values, array_values($item));
+                    }
+                }
+                return implode(', ', array_filter($values));
+            }
+            
+            return '';
+        }),
+                    TextColumn::make('rep_complex')
+                    ->label('Repeater Complex')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable()
+                    ->formatStateUsing(function (array|string|null $state): ?string {
+            if (blank($state)) { return null; }
+            
+            // Safety net: if Eloquent returns a String (auto-cast failed), decode manually
+            if (is_string($state)) {
+                $decoded = json_decode($state, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $state = $decoded;
+                } else {
+                    return $state; // Jika bukan JSON, pulangkan teks mentah
+                }
+            }
+            
+            // Process data verified to be an Array
+            if (is_array($state)) {
+                // Senario A: Baca format Repeater Simple / Tags (Flat Array)
+                // Cth: ["ali@gmail.com", "abu@gmail.com"]
+                if (isset($state[0]) && !is_array($state[0])) {
+                    return implode(', ', $state);
+                }
+                
+                // Senario B: Baca format Repeater (Array of Objects)
+                // Cth: [["email_1" => "ali..."], ["email_1" => "abu..."]]
+                $values = [];
+                foreach ($state as $item) {
+                    if (is_array($item)) {
+                        $values = array_merge($values, array_values($item));
+                    }
+                }
+                return implode(', ', array_filter($values));
+            }
+            
+            return '';
+        }),
+                    ImageColumn::make('img_profile')
+                    ->label('Profile Picture')
+                    ->square()
+                    ->imageWidth(50)
+                    ->imageHeight(50)
+                    ->disk('public')
+                    ->searchable()
+                    ->toggleable(),
+                    ImageColumn::make('img_avatar')
+                    ->label('Avatar Circular')
+                    ->square()
+                    ->imageWidth(50)
+                    ->imageHeight(50)
+                    ->disk('public')
+                    ->searchable()
+                    ->toggleable(),
+                    IconColumn::make('file_doc')
+                    ->label('Document')
+                    ->icon(fn ($state): ?string => $state ? 'heroicon-o-document-arrow-down' : null)
+                    ->url(fn (?MatrixRecord $record) => $record?->file_doc ? Storage::disk('public')->url($record->file_doc) : null, shouldOpenInNewTab: true)
+                    ->searchable()
+                    ->toggleable(),
+                    TextColumn::make('file_multi')
+                    ->label('Attachments')
+                    ->formatStateUsing(function ($state): string { $n = is_array($state) ? count($state) : (filled($state) ? 1 : 0); return $n === 1 ? '1 file' : $n . ' files'; })
+                    ->badge()
+                    ->color('gray')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
+                    ->searchable()
+                    ->toggleable(),
+                    IconColumn::make('map_loc')
+                    ->label('Location Map')
+                    ->icon('heroicon-o-map-pin')
+                    ->color('danger')
+                    ->action(
+                    Action::make('Show Google Map')
+                        ->modalHeading(false)->modalFooter(null)
+                        ->modalContent(function (MatrixRecord $record): HtmlString {
+                            if (blank($record->map_loc)) { return new HtmlString('<p class="text-center">No map link provided.</p>'); }
+                            $iframeCode = $record->map_loc;
+                            $responsiveIframeCode = str_replace('width="600"', 'width="100%"', $iframeCode);
+                            $responsiveIframeCode = str_replace('height="450"', 'height="450px"', $responsiveIframeCode);
+                            return new HtmlString($responsiveIframeCode);
+                        })
+                )
+                    ->searchable()
+                    ->toggleable(),
+                    IconColumn::make('vid_clip')
+                    ->label('Video Clip')
+                    ->icon('heroicon-o-play-circle')
+                    ->color('info')
+                    ->action(
+                    Action::make('Show Youtube Video')
+                        ->modalHeading(false)->modalFooter(null)
+                        ->modalContent(fn (MatrixRecord $record): HtmlString => new HtmlString(
+                            $record->vid_clip
+                                ? '<iframe src="' . e($record->getCleanYoutubeUrl('vid_clip')) . '" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
+                                : '<p class="text-center">No video link provided.</p>'
+                        ))
+                )
+                    ->searchable()
+                    ->toggleable()
+                ])
             
             ->filters([
                 TrashedFilter::make(),
@@ -343,6 +667,8 @@ class MatrixRecordsTable
                 RestoreAction::make(),
             ])
             ->toolbarActions([
+                Action::make('switchToTable')->link()->label('Table view')->url(fn (): string => request()->fullUrlWithQuery(['view' => 'table']))->hidden(fn (): bool => (request()->query('view', 'card')) === 'table'),
+                Action::make('switchToCard')->link()->label('Card view')->url(fn (): string => request()->fullUrlWithQuery(['view' => 'card']))->hidden(fn (): bool => (request()->query('view', 'card')) === 'card'),
                 BulkActionGroup::make([
                 DeleteBulkAction::make(),
             ]),

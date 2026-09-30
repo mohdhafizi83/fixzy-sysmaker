@@ -52,7 +52,11 @@ class FakultisTable
                     ->label('Nama Fakulti')
                     ->rules(['max:255'])
                     ->updateStateUsing(function ($record, $state) {
-                    if (! auth()->user()?->can('update', $record)) {
+                    // Match Filament resource authorization semantics: deny only when a
+                    // policy exists and denies. Raw Gate::can() denies when NO
+                    // policy exists, which 403'd every inline edit while the
+                    // resource's own canEdit() allowed it (grid audit 2026-09-30).
+                    if (\Illuminate\Support\Facades\Gate::getPolicyFor($record) && ! auth()->user()?->can('update', $record)) {
                         abort(403);
                     }
                     if (is_null($state)) {
@@ -67,7 +71,11 @@ class FakultisTable
                     ->label('Aktif')
                     ->rules(['boolean'])
                     ->updateStateUsing(function ($record, $state) {
-                    if (! auth()->user()?->can('update', $record)) {
+                    // Match Filament resource authorization semantics: deny only when a
+                    // policy exists and denies. Raw Gate::can() denies when NO
+                    // policy exists, which 403'd every inline edit while the
+                    // resource's own canEdit() allowed it (grid audit 2026-09-30).
+                    if (\Illuminate\Support\Facades\Gate::getPolicyFor($record) && ! auth()->user()?->can('update', $record)) {
                         abort(403);
                     }
                     if (is_null($state)) {
@@ -83,7 +91,11 @@ class FakultisTable
                     ->label('Nama Fakulti')
                     ->rules(['max:255'])
                     ->updateStateUsing(function ($record, $state) {
-                    if (! auth()->user()?->can('update', $record)) {
+                    // Match Filament resource authorization semantics: deny only when a
+                    // policy exists and denies. Raw Gate::can() denies when NO
+                    // policy exists, which 403'd every inline edit while the
+                    // resource's own canEdit() allowed it (grid audit 2026-09-30).
+                    if (\Illuminate\Support\Facades\Gate::getPolicyFor($record) && ! auth()->user()?->can('update', $record)) {
                         abort(403);
                     }
                     if (is_null($state)) {
@@ -98,7 +110,11 @@ class FakultisTable
                     ->label('Aktif')
                     ->rules(['boolean'])
                     ->updateStateUsing(function ($record, $state) {
-                    if (! auth()->user()?->can('update', $record)) {
+                    // Match Filament resource authorization semantics: deny only when a
+                    // policy exists and denies. Raw Gate::can() denies when NO
+                    // policy exists, which 403'd every inline edit while the
+                    // resource's own canEdit() allowed it (grid audit 2026-09-30).
+                    if (\Illuminate\Support\Facades\Gate::getPolicyFor($record) && ! auth()->user()?->can('update', $record)) {
                         abort(403);
                     }
                     if (is_null($state)) {

@@ -30,7 +30,7 @@ class AnakImporter extends Importer
     public static function getColumns(): array
     {
         return [
-            ImportColumn::make('0')
+            ImportColumn::make('id')
                 ->label('ID')
                 ->numeric()
                 ->integer()
@@ -39,7 +39,7 @@ class AnakImporter extends Importer
                 ->examples(['1', '2'])
                 ->exampleHeader('ID'),
 
-            ImportColumn::make('1')
+            ImportColumn::make('nama_anak')
                 ->label('Child Name')
                 ->requiredMapping()
                 ->ignoreBlankState()
@@ -57,14 +57,14 @@ class AnakImporter extends Importer
                 ->examples(['1', '2'])
                 ->exampleHeader('nama_induk'),
 
-            ImportColumn::make('3')
+            ImportColumn::make('status_opt')
                 ->label('Status')
                 ->ignoreBlankState()
                 ->rules(['max:255'])
                 ->examples(['Sample Status 1', 'Sample Status 2'])
                 ->exampleHeader('Status'),
 
-            ImportColumn::make('4')
+            ImportColumn::make('qty')
                 ->label('Quantity')
                 ->numeric()
                 ->integer()
@@ -73,21 +73,21 @@ class AnakImporter extends Importer
                 ->examples(['1', '2'])
                 ->exampleHeader('Quantity'),
 
-            ImportColumn::make('5')
+            ImportColumn::make('note_txt')
                 ->label('Note')
                 ->ignoreBlankState()
                 ->rules(['max:255'])
                 ->examples(['Sample Note 1', 'Sample Note 2'])
                 ->exampleHeader('Note'),
 
-            ImportColumn::make('6')
+            ImportColumn::make('rich_desc')
                 ->label('Rich Description')
                 ->ignoreBlankState()
                 ->rules(['max:255'])
                 ->examples(['Sample Rich Description 1', 'Sample Rich Description 2'])
                 ->exampleHeader('Rich Description'),
 
-            ImportColumn::make('7')
+            ImportColumn::make('is_active')
                 ->label('Active')
                 ->boolean()
                 ->ignoreBlankState()
@@ -95,21 +95,21 @@ class AnakImporter extends Importer
                 ->examples(['1', '2'])
                 ->exampleHeader('Active'),
 
-            ImportColumn::make('8')
+            ImportColumn::make('prio_radio')
                 ->label('Priority')
                 ->ignoreBlankState()
                 ->rules(['max:255'])
                 ->examples(['Sample Priority 1', 'Sample Priority 2'])
                 ->exampleHeader('Priority'),
 
-            ImportColumn::make('9')
+            ImportColumn::make('due_dt')
                 ->label('Due Date')
                 ->ignoreBlankState()
                 ->rules(['max:255', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Due Date'),
 
-            ImportColumn::make('10')
+            ImportColumn::make('amount_dec')
                 ->label('Amount')
                 ->numeric()
                 ->ignoreBlankState()
@@ -117,35 +117,35 @@ class AnakImporter extends Importer
                 ->examples(['Sample Amount 1', 'Sample Amount 2'])
                 ->exampleHeader('Amount'),
 
-            ImportColumn::make('11')
+            ImportColumn::make('child_photo')
                 ->label('Photo')
                 ->ignoreBlankState()
                 ->rules(['max:255'])
                 ->examples(['Sample Photo 1', 'Sample Photo 2'])
                 ->exampleHeader('Photo'),
 
-            ImportColumn::make('12')
+            ImportColumn::make('child_doc')
                 ->label('Document')
                 ->ignoreBlankState()
                 ->rules(['max:255'])
                 ->examples(['Sample Document 1', 'Sample Document 2'])
                 ->exampleHeader('Document'),
 
-            ImportColumn::make('13')
+            ImportColumn::make('child_files')
                 ->label('Files')
                 ->ignoreBlankState()
                 ->rules(['max:255'])
                 ->examples(['Sample Files 1', 'Sample Files 2'])
                 ->exampleHeader('Files'),
 
-            ImportColumn::make('14')
+            ImportColumn::make('child_map')
                 ->label('Map')
                 ->ignoreBlankState()
                 ->rules(['max:255'])
                 ->examples(['Sample Map 1', 'Sample Map 2'])
                 ->exampleHeader('Map'),
 
-            ImportColumn::make('15')
+            ImportColumn::make('child_video')
                 ->label('Video')
                 ->ignoreBlankState()
                 ->rules(['max:255'])

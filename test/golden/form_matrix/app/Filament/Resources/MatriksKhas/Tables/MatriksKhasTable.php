@@ -22,6 +22,9 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
+use Filament\Tables\Columns\Summarizers\Sum;
+use Filament\Tables\Columns\Summarizers\Average;
+use Filament\Tables\Columns\TextInputColumn;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Illuminate\Contracts\View\View;
@@ -55,12 +58,25 @@ class MatriksKhasTable
                     ->searchable()
                     ->toggleable()
                     ->numeric(),
-                TextColumn::make('txt_plain')
+                TextInputColumn::make('txt_plain')
                     ->label('Plain Text')
-                    ->sortable()
-                    ->limit(50, end: ' (more)')
-                    ->searchable()
-                    ->toggleable(),
+                    ->rules(['max:255'])
+                    ->updateStateUsing(function ($record, $state) {
+                    // Match Filament resource authorization semantics: deny only when a
+                    // policy exists and denies. Raw Gate::can() denies when NO
+                    // policy exists, which 403'd every inline edit while the
+                    // resource's own canEdit() allowed it (grid audit 2026-09-30).
+                    if (\Illuminate\Support\Facades\Gate::getPolicyFor($record) && ! auth()->user()?->can('update', $record)) {
+                        abort(403);
+                    }
+                    if (is_null($state)) {
+                        $record->txt_plain = null;
+                    } else {
+                        $record->txt_plain = $state;
+                    }
+                    $record->save();
+                    return $record;
+                }),
                 TextColumn::make('txt_email')
                     ->label('Email')
                     ->sortable()
@@ -91,14 +107,16 @@ class MatriksKhasTable
                     ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable()
-                    ->numeric(),
+                    ->numeric()
+                    ->summarize(\Filament\Tables\Columns\Summarizers\Sum::make()->label('Total Integer')),
                 TextColumn::make('num_decimal')
                     ->label('Decimal')
                     ->sortable()
                     ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable()
-                    ->numeric(),
+                    ->numeric()
+                    ->summarize(\Filament\Tables\Columns\Summarizers\Average::make()->label('Average Decimal')),
                 TextColumn::make('dt_date')
                     ->label('Date')
                     ->sortable()
@@ -295,6 +313,8 @@ class MatriksKhasTable
                     ->toggleable(),
                 IconColumn::make('map_loc')
                     ->label('Location Map')
+                    ->icon('heroicon-o-map-pin')
+                    ->color('danger')
                     ->action(
                     Action::make('Show Google Map')
                         ->modalHeading(false)->modalFooter(null)
@@ -310,6 +330,8 @@ class MatriksKhasTable
                     ->toggleable(),
                 IconColumn::make('vid_clip')
                     ->label('Video Clip')
+                    ->icon('heroicon-o-play-circle')
+                    ->color('info')
                     ->action(
                     Action::make('Show Youtube Video')
                         ->modalHeading(false)->modalFooter(null)

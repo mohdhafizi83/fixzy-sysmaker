@@ -59,7 +59,10 @@ This attribution banner must not be removed or altered. --}}
     <script>
         window.__kanbanDrop = function (toStatus, recordId) {
             if (!recordId) return;
-            var comp = window.Livewire && window.Livewire.first();
+            // Target THIS page's Livewire component explicitly — Livewire.first()
+            // returns the Topbar component, which has no moveRecord method
+            // (grid view browser audit, 2026-09-30).
+            var comp = window.Livewire && window.Livewire.find('{{ $this->getId() }}');
             if (comp) comp.call('moveRecord', recordId, toStatus);
         };
         // Show the Move picker only on touch devices (mouse users drag the cards).

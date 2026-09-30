@@ -9,20 +9,27 @@
 'use strict';
 
 /**
- * Returns [{ nameSource, tableData }] for:
+ * Returns [{ nameSource, modelSource, tableData }] for:
  *  - each base table where parseFn(tableData) is truthy
  *  - each custom module whose OWN settings_override contains enabledKey
  *    and where parseFn({...tableData, ...overrides}) is truthy
+ *
+ * modelSource = the module_name of the BASE table (the Eloquent model that
+ * actually exists). Custom modules share the base table's model — naming a
+ * page's model after the custom module name (e.g. MatriksPapan) produces
+ * "Class App\Models\MatriksPapan not found" at page load (found via grid
+ * view browser audit, 2026-09-30).
  */
 function collectFeatureSources(tables, parseFn, enabledKey) {
     const sources = [];
     for (const tableName in tables) {
         if (tableName === 'users') continue;
         const tableData = tables[tableName];
+        const baseModelSource = (tableData.module_name && tableData.module_name.trim() !== '')
+            ? tableData.module_name : tableName;
         if (parseFn(tableData)) {
-            const nameSource = (tableData.module_name && tableData.module_name.trim() !== '')
-                ? tableData.module_name : tableName;
-            sources.push({ nameSource, tableData });
+            const nameSource = baseModelSource;
+            sources.push({ nameSource, modelSource: baseModelSource, tableData });
         }
         if (Array.isArray(tableData.custom_modules)) {
             for (const mod of tableData.custom_modules) {
@@ -31,7 +38,7 @@ function collectFeatureSources(tables, parseFn, enabledKey) {
                 if (overrides[enabledKey] === undefined) continue; // module did not opt in
                 const virtualTable = { ...tableData, ...overrides };
                 if (parseFn(virtualTable)) {
-                    sources.push({ nameSource: mod.module_name, tableData: virtualTable });
+                    sources.push({ nameSource: mod.module_name, modelSource: baseModelSource, tableData: virtualTable });
                 }
             }
         }

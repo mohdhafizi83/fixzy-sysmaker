@@ -30,7 +30,7 @@ class AnakKadImporter extends Importer
     public static function getColumns(): array
     {
         return [
-            ImportColumn::make('0')
+            ImportColumn::make('id')
                 ->label('ID')
                 ->numeric()
                 ->integer()
@@ -39,7 +39,7 @@ class AnakKadImporter extends Importer
                 ->examples(['1', '2'])
                 ->exampleHeader('ID'),
 
-            ImportColumn::make('1')
+            ImportColumn::make('tajuk_kad')
                 ->label('Card Title')
                 ->requiredMapping()
                 ->ignoreBlankState()

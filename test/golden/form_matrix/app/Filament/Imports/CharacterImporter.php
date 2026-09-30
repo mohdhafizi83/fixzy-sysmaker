@@ -30,7 +30,7 @@ class CharacterImporter extends Importer
     public static function getColumns(): array
     {
         return [
-            ImportColumn::make('0')
+            ImportColumn::make('id')
                 ->label('ID')
                 ->numeric()
                 ->integer()
@@ -39,7 +39,7 @@ class CharacterImporter extends Importer
                 ->examples(['1', '2'])
                 ->exampleHeader('ID'),
 
-            ImportColumn::make('1')
+            ImportColumn::make('nama_watak')
                 ->label('Character Name')
                 ->requiredMapping()
                 ->ignoreBlankState()

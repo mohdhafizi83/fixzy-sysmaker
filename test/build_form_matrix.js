@@ -60,7 +60,7 @@ const parentFields = [
 const matrixFields = [
     F('id', 'ID', 'INT', { extra: { primary_key: 1, auto_increment: 1 } }),
     // text formats
-    F('txt_plain', 'Plain Text', 'VARCHAR', { required: 1 }),
+    F('txt_plain', 'Plain Text', 'VARCHAR', { required: 1, extra: { editable_in_tv: 1 } }),
     F('txt_email', 'Email', 'VARCHAR', { extra: { format_as: 'email' } }),
     F('txt_url', 'URL', 'VARCHAR', { extra: { format_as: 'url' } }),
     F('txt_tel', 'Telephone', 'VARCHAR', { extra: { format_as: 'tel' } }),
@@ -94,8 +94,15 @@ const matrixFields = [
     F('img_avatar', 'Avatar Circular', 'VARCHAR', { extra: { media_type: 'image', allow_image_uploads: 1, image_storage_provider: 'public', dv_thumb_shape: 'circular' } }),
     F('file_doc', 'Document', 'VARCHAR', { extra: { media_type: 'upload', allow_file_uploads: 1, file_storage_provider: 'public', file_types: 'pdf,txt' } }),
     F('file_multi', 'Attachments', 'VARCHAR', { extra: { media_type: 'attachments', allow_file_uploads: 1, attach_max_files: 3, attach_types: 'pdf,txt,png', attach_max_size: 2048 } }),
-    F('map_loc', 'Location Map', 'VARCHAR', { extra: { media_type: 'gmap', display_gmap: 1 } }),
-    F('vid_clip', 'Video Clip', 'VARCHAR', { extra: { media_type: 'youtube', accept_video_url: 1 } }),
+    F('map_loc', 'Location Map', 'VARCHAR', { extra: { media_type: 'gmap', display_gmap: 1, tv_icon: 'map-pin', tv_icon_color: 'danger' } }),
+    F('vid_clip', 'Video Clip', 'VARCHAR', { extra: { media_type: 'youtube', accept_video_url: 1, tv_icon: 'play-circle', tv_icon_color: 'info' } }),
+];
+
+// ---- tree-view table (self-referencing hierarchy) ----
+const pokokFields = [
+    F('id', 'ID', 'INT', { extra: { primary_key: 1, auto_increment: 1 } }),
+    F('nama_pokok', 'Node Name', 'VARCHAR', { required: 1 }),
+    F('parent_id', 'Parent Node', 'INT', { extra: { lookup_parent_table: 'pokok', lookup_caption_1: 'nama_pokok', lookup_display_as: 'dropdown' } }),
 ];
 
 // ---- relation-manager family (added 2026-09-30 for RM audit) ----
@@ -152,7 +159,14 @@ function plainTable(tableId, name, module, fields, order) {
         enable_detail_view: 1, delete_with_children: 0, dv_allow_print_view: 0, dv_separate_page: 0,
         dv_hide_save_as_copy: 0, dv_sticky_buttons: 0, dv_allow_add_from_homepage: 0,
         column_grid_type: 'auto', static_grid_columns: 2, table_hook_workflow: null,
-        feature_source: null, fields, custom_modules: {}, constraints: [],
+        feature_source: null,
+        fields: Object.fromEntries(fields.map((f) => [f.field_name, f])),
+        constraints: [],
+        // grid-view options passthrough (added 2026-09-30 grid audit)
+        grid_multi_view: null, grid_view_default: null, grid_inline_edit: null,
+        grid_summaries: null, grid_calendar_enabled: null, grid_calendar_config: null,
+        grid_tree_enabled: null, grid_tree_config: null,
+        grid_kanban_enabled: null, grid_kanban_config: null, card_columns: 3, card_columns_tablet: 2,
     };
 }
 
@@ -205,6 +219,11 @@ const fixture = {
                 dv_hide_save_as_copy: 0, dv_sticky_buttons: 0, dv_allow_add_from_homepage: 0,
                 column_grid_type: 'auto', static_grid_columns: 2, table_hook_workflow: null,
                 feature_source: null, fields: matrixFields,
+                // grid-view options (added 2026-09-30 grid audit): table<->card
+                // switcher default card, inline edit on, numeric summary row.
+                grid_multi_view: 1, grid_view_default: 'card', grid_inline_edit: 1,
+                grid_summaries: JSON.stringify({ num_int: 'sum', num_decimal: 'avg' }),
+                card_columns: 3, card_columns_tablet: 2,
                 custom_modules: [
                     {
                         module_id: 91, project_id: 1, table_id: 2,
@@ -216,9 +235,34 @@ const fixture = {
                             { field_id: 20, settings_override: JSON.stringify({ hide_in_tv: 1 }) },
                         ],
                     },
+                    {
+                        module_id: 92, project_id: 1, table_id: 2,
+                        module_name: 'MatriksPapan', module_order: 1, menu_icon: 'fas fa-columns',
+                        filter_rules: JSON.stringify({ condition: 'AND', rules: [{ column: 'id', operator: '>', value: '0' }] }),
+                        included_relations: null,
+                        settings_override: JSON.stringify({
+                            grid_view_default: 'card',
+                            grid_kanban_enabled: 1,
+                            grid_kanban_config: JSON.stringify({
+                                group_field: 'opt_dropdown',
+                                card_fields: ['txt_plain', 'num_int', 'img_profile'],
+                                allowed_transitions: { satu: ['dua'], dua: ['satu', 'tiga'] },
+                            }),
+                            grid_calendar_enabled: 1,
+                            grid_calendar_config: JSON.stringify({
+                                start_field: 'dt_date', end_field: 'dt_datetime',
+                                title_field: 'txt_plain', color_field: 'opt_dropdown',
+                            }),
+                        }),
+                        fields: [],
+                    },
                 ],
                 constraints: [],
             },
+            pokok: Object.assign(plainTable(8, 'pokok', 'Pokoks', pokokFields, 6), {
+                grid_tree_enabled: 1,
+                grid_tree_config: JSON.stringify({ parent_field: 'parent_id', label_field: 'nama_pokok' }),
+            }),
             induk: plainTable(4, 'induk', 'Induks', indukFields, 2),
             anak: plainTable(5, 'anak', 'Anaks', anakFields, 3),
             anak_kad: plainTable(6, 'anak_kad', 'AnakKads', anakKadFields, 4),
@@ -267,6 +311,14 @@ const fixture = {
                 parent_table_name: 'induk', child_table_name: 'induk_extra',
             },
             {
+                relationship_id: 7, parent_table_id: 8, child_table_id: 8,
+                fk_child_field: 'parent_id', parent_field: 'id', relationship_type: 'one-to-many',
+                show_tab: 0, show_icon: 0, autoclose_modal: 0, tab_title: null, copy_records: 0,
+                show_link_above: 0, show_count_in_tv: 0, allow_add_from_tv: 0,
+                on_delete: 'SET NULL', on_update: 'CASCADE',
+                parent_table_name: 'pokok', child_table_name: 'pokok',
+            },
+            {
                 relationship_id: 6, parent_table_id: 1, child_table_id: 4,
                 fk_child_field: 'lk_watak', parent_field: 'id', relationship_type: 'many-to-one',
                 show_tab: 0, show_icon: 0, autoclose_modal: 0, tab_title: null, copy_records: 0,
@@ -280,5 +332,13 @@ const fixture = {
 };
 
 const out = path.join(__dirname, 'fixtures', 'form_matrix.json');
+// Normalize every table's fields to a dict keyed by field_name (GUI shape).
+// Standalone page generators (tree/kanban/calendar) do fields[name] lookups
+// and silently skip tables whose fields are arrays.
+Object.values(fixture.database.table).forEach((td) => {
+    if (Array.isArray(td.fields)) {
+        td.fields = Object.fromEntries(td.fields.map((f) => [f.field_name, f]));
+    }
+});
 fs.writeFileSync(out, JSON.stringify(fixture, null, 2));
 console.log('wrote', out, '- fields:', matrixFields.length + parentFields.length);

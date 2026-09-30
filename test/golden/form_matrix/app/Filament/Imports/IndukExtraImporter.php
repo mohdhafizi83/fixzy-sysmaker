@@ -30,7 +30,7 @@ class IndukExtraImporter extends Importer
     public static function getColumns(): array
     {
         return [
-            ImportColumn::make('0')
+            ImportColumn::make('id')
                 ->label('ID')
                 ->numeric()
                 ->integer()
@@ -39,7 +39,7 @@ class IndukExtraImporter extends Importer
                 ->examples(['1', '2'])
                 ->exampleHeader('ID'),
 
-            ImportColumn::make('1')
+            ImportColumn::make('catatan')
                 ->label('Note')
                 ->requiredMapping()
                 ->ignoreBlankState()
@@ -66,8 +66,14 @@ class IndukExtraImporter extends Importer
     public function resolveRecord(): ?IndukExtra
     {
     
+        $induk = Induk::firstWhere('nama_induk', $this->data['induk'] ?? null);
+
+        if (!$induk) {
+            return null;
+        }
+
         return IndukExtra::firstOrNew([
-            
+            'fk_induk' => $induk->id
         ]);
     }
 

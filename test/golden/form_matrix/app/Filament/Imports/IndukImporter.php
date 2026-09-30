@@ -30,7 +30,7 @@ class IndukImporter extends Importer
     public static function getColumns(): array
     {
         return [
-            ImportColumn::make('0')
+            ImportColumn::make('id')
                 ->label('ID')
                 ->numeric()
                 ->integer()
@@ -39,7 +39,7 @@ class IndukImporter extends Importer
                 ->examples(['1', '2'])
                 ->exampleHeader('ID'),
 
-            ImportColumn::make('1')
+            ImportColumn::make('nama_induk')
                 ->label('Parent Name')
                 ->requiredMapping()
                 ->ignoreBlankState()
@@ -47,7 +47,7 @@ class IndukImporter extends Importer
                 ->examples(['Sample Parent Name 1', 'Sample Parent Name 2'])
                 ->exampleHeader('Parent Name'),
 
-            ImportColumn::make('2')
+            ImportColumn::make('meta_decimal')
                 ->label('Meta Decimal')
                 ->numeric()
                 ->ignoreBlankState()
@@ -55,7 +55,7 @@ class IndukImporter extends Importer
                 ->examples(['Sample Meta Decimal 1', 'Sample Meta Decimal 2'])
                 ->exampleHeader('Meta Decimal'),
 
-            ImportColumn::make('3')
+            ImportColumn::make('meta_date')
                 ->label('Meta Date')
                 ->ignoreBlankState()
                 ->rules(['max:255', 'date'])

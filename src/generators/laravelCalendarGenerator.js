@@ -45,16 +45,19 @@ function parseCalendarConfig(tableData) {
 async function generateCalendarPages(fullSchema, basePath) {
     const { database: { table: tables } } = fullSchema;
     let count = 0;
-    for (const { nameSource, tableData } of collectFeatureSources(tables, parseCalendarConfig, 'grid_calendar_enabled')) {
+    for (const { nameSource, modelSource, tableData } of collectFeatureSources(tables, parseCalendarConfig, 'grid_calendar_enabled')) {
         const cfg = parseCalendarConfig(tableData);
         const clean = nameSource.replace(/[^a-zA-Z0-9]/g, '');
-        const modelSingular = toSingularPascalCase(clean);
+        // Page identity from the feature source; Eloquent model from the BASE
+        // table (custom modules share the base model — grid audit 2026-09-30).
+        const pageName = toSingularPascalCase(clean);
+        const modelSingular = toSingularPascalCase((modelSource || nameSource).replace(/[^a-zA-Z0-9]/g, ''));
         const resourceFolder = toPluralPascalCase(clean);
         const pageTitle = tableData.table_view_title || resourceFolder;
 
         const php = renderTemplate('app/Filament/Pages/CalendarPage.php.njk', {
-            page_class: `${modelSingular}Calendar`,
-            blade_name: `${modelSingular.toLowerCase()}-calendar`,
+            page_class: `${pageName}Calendar`,
+            blade_name: `${pageName.toLowerCase()}-calendar`,
             model_class: modelSingular,
             resource_folder: resourceFolder,
             page_title: `${pageTitle} Calendar`,
@@ -62,15 +65,15 @@ async function generateCalendarPages(fullSchema, basePath) {
             ...cfg,
         });
         const blade = renderTemplate('resources/views/filament/pages/calendar.blade.php.njk', {
-            page_class: `${modelSingular}Calendar`,
+            page_class: `${pageName}Calendar`,
         });
 
         const pagesDir = path.join(basePath, 'app', 'Filament', 'Pages');
         const viewsDir = path.join(basePath, 'resources', 'views', 'filament', 'pages');
         fs.mkdirSync(pagesDir, { recursive: true });
         fs.mkdirSync(viewsDir, { recursive: true });
-        fs.writeFileSync(path.join(pagesDir, `${modelSingular}Calendar.php`), php);
-        fs.writeFileSync(path.join(viewsDir, `${modelSingular.toLowerCase()}-calendar.blade.php`), blade);
+        fs.writeFileSync(path.join(pagesDir, `${pageName}Calendar.php`), php);
+        fs.writeFileSync(path.join(viewsDir, `${pageName.toLowerCase()}-calendar.blade.php`), blade);
         count++;
     }
     return { success: true, message: `${count} calendar pages generated.` };
