@@ -80,10 +80,15 @@ function generateSingleRelationManager(rel, basePath, fullSchema) {
     const childTableSingular = toSingularPascalCase(childNameSource);
 
     // --- 2. TENTUKAN NAMA FUNGSI HUBUNGAN (RELATIONSHIP NAME) ---
-    // If self-referencing (Parent -> Children), use 'children'
-    const relationshipName = rel.parent_table_name === rel.child_table_name
-        ? 'children'
-        : toPluralCamelCase(childNameSource);
+    // Shared with the model generator so $relationship always matches the
+    // actual model method, including multi-FK disambiguation (2026-09-30).
+    const { computeModelRelationNames } = require('./laravelDatabaseGenerator');
+    const allTables = (fullSchema.database && fullSchema.database.table) || {};
+    const allRels = (fullSchema.database && fullSchema.database.relationships) || [];
+    const naming = computeModelRelationNames(rel.parent_table_name, allRels, allTables);
+    const relationshipName = naming.parent.get(rel) ||
+        (rel.parent_table_name === rel.child_table_name ? 'children' : toPluralCamelCase(childNameSource));
+    const managerClassBase = naming.managerClass.get(rel) || childTableSingular;
 
     // --- 2b. LAYOUT OVERRIDE RESOLUTION (2026-09-26) ---
     // The RM table() hook runs AFTER the related Resource's configureTable(),
@@ -168,6 +173,7 @@ function generateSingleRelationManager(rel, basePath, fullSchema) {
         parent_plural: parentTablePlural,
         child_plural: childTablePlural,
         child_singular: childTableSingular,
+        manager_class: managerClassBase,
         relationship_name: relationshipName,
         table_override_lines: tableOverrideLines,
         layout_imports: layoutImports.map((i) => `use ${i};`).join('\n'),
@@ -179,7 +185,7 @@ function generateSingleRelationManager(rel, basePath, fullSchema) {
     const outputFolderPath = path.join(basePath, 'app', 'Filament', 'Resources', parentTablePlural, 'RelationManagers');
     fs.mkdirSync(outputFolderPath, { recursive: true });
 
-    const outputFilePath = path.join(outputFolderPath, `${childTableSingular}RelationManager.php`);
+    const outputFilePath = path.join(outputFolderPath, `${managerClassBase}RelationManager.php`);
     fs.writeFileSync(outputFilePath, managerContent);
     console.log(`Relation Manager generated: ${outputFilePath}`);
 }

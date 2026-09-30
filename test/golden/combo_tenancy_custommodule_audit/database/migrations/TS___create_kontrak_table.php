@@ -17,7 +17,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('syarikat_id');
             $table->string('no_rujukan', 50)->unique();
-            $table->decimal('nilai', 10, 2);
+            $table->decimal('nilai', 12, 2);
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('deleted_by')->nullable();

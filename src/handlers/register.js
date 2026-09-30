@@ -3466,7 +3466,7 @@ function importSchema(sql, projectId, dialect) {
         const getMaxMenuOrderStmt = db.prepare('SELECT MAX(item_order) as max_order FROM menu_items WHERE project_id = ? AND menu_group_id IS NULL');
         const insertMenuItemStmt = db.prepare('INSERT INTO menu_items (project_id, table_id, item_label, item_detail, item_order, menu_group_id) VALUES (?, ?, ?, ?, ?, NULL)');
         // Inside the importSchema function
-        const insertFieldStmt = db.prepare(`INSERT INTO fields (table_id, field_name, data_type, length, precision, required, auto_increment, unsigned, zero_fill, primary_key, "unique", not_null, is_indexed, read_only, default_value, caption, field_order) VALUES (@table_id, @field_name, @data_type, @length, @precision, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @not_null, @is_indexed, @read_only, @default_value, @caption, @field_order)`);
+        const insertFieldStmt = db.prepare(`INSERT INTO fields (table_id, field_name, data_type, length, precision, required, auto_increment, unsigned, zero_fill, primary_key, "unique", not_null, is_indexed, read_only, default_value, caption, field_order, hide_in_tv, hide_in_dv, tv_wrap_text) VALUES (@table_id, @field_name, @data_type, @length, @precision, @required, @auto_increment, @unsigned, @zero_fill, @primary_key, @unique, @not_null, @is_indexed, @read_only, @default_value, @caption, @field_order, @hide_in_tv, @hide_in_dv, @tv_wrap_text)`);
 
         
         const foreignKeysToProcess = [];
@@ -3499,11 +3499,15 @@ function importSchema(sql, projectId, dialect) {
                     let rawDataType = (definition.definition.dataType || '').trim().toUpperCase();
                     const isSerial = ['SERIAL', 'BIGSERIAL'].includes(rawDataType);
                     let normalizedDataType = dataTypeNormalizationMap[rawDataType] || rawDataType;
-                    
+                    let suffixUnsigned = 0, suffixZerofill = 0;
                     if (Array.isArray(definition.definition.suffix) && definition.definition.suffix.length > 0) {
                         const suffixStr = definition.definition.suffix.join(' ').toUpperCase();
-                        if (suffixStr === 'UNSIGNED') {
-                            normalizedDataType += ' ' + suffixStr;
+                        if (suffixStr.includes('UNSIGNED')) {
+                            normalizedDataType += ' UNSIGNED';
+                            suffixUnsigned = 1;
+                        }
+                        if (suffixStr.includes('ZEROFILL')) {
+                            suffixZerofill = 1;
                         }
                     }
                     if (!normalizedDataType) normalizedDataType = 'TEXT';
@@ -3517,9 +3521,10 @@ function importSchema(sql, projectId, dialect) {
                         data_type: normalizedDataType,
                         length: definition.definition.length || null,
                         precision: definition.definition.scale || null,
-                        required: 0, auto_increment: 0, unsigned: 0, zero_fill: 0, primary_key: 0, "unique": 0,
+                        required: 0, auto_increment: 0, unsigned: suffixUnsigned, zero_fill: suffixZerofill, primary_key: 0, "unique": 0,
                         not_null: 0, // <--- ADD THIS
                         is_indexed: 0, read_only: 0, default_value: null,
+                        hide_in_tv: 0, hide_in_dv: 0, tv_wrap_text: 0,
                     };
                     
                     if (definition.auto_increment || definition.autoincrement || isSerial) fieldData.auto_increment = 1;

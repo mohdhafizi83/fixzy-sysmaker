@@ -148,14 +148,18 @@ function toSingularCamelCase(str) {
 
 function getFieldDefinitionForMigration(field) {
     const name = field.field_name;
-    const type = field.data_type.toUpperCase();
+    // Strip UNSIGNED/ZEROFILL tokens so exact type matching still works
+    // (imported SQL keeps them inside data_type, e.g. "DECIMAL UNSIGNED").
+    const rawType = field.data_type ? field.data_type.toUpperCase() : '';
+    const unsigned = /UNSIGNED/.test(rawType) || Number(field.unsigned) === 1;
+    const type = rawType.replace(/\s+(UNSIGNED|ZEROFILL)/g, '').trim();
     const length = field.length;
 
     // Data Type Mapping
-    if (type === 'INT' || type === 'INTEGER') return `$table->integer('${name}')`;
-    if (type === 'BIGINT') return `$table->bigInteger('${name}')`;
-    if (type === 'TINYINT') return (length == 1) ? `$table->boolean('${name}')` : `$table->tinyInteger('${name}')`;
-    if (type === 'SMALLINT') return `$table->smallInteger('${name}')`;
+    if (type === 'INT' || type === 'INTEGER') return unsigned ? `$table->unsignedInteger('${name}')` : `$table->integer('${name}')`;
+    if (type === 'BIGINT') return unsigned ? `$table->unsignedBigInteger('${name}')` : `$table->bigInteger('${name}')`;
+    if (type === 'TINYINT') return (length == 1) ? `$table->boolean('${name}')` : (unsigned ? `$table->unsignedTinyInteger('${name}')` : `$table->tinyInteger('${name}')`);
+    if (type === 'SMALLINT') return unsigned ? `$table->unsignedSmallInteger('${name}')` : `$table->smallInteger('${name}')`;
     if (type === 'VARCHAR') return `$table->string('${name}', ${length || 255})`;
     if (type === 'CHAR') return `$table->char('${name}', ${length || 255})`;
     if (type === 'TEXT') return `$table->text('${name}')`;
@@ -165,9 +169,16 @@ function getFieldDefinitionForMigration(field) {
     if (type === 'DATETIME') return `$table->dateTime('${name}')`;
     if (type === 'TIMESTAMP') return `$table->timestamp('${name}')`;
     if (type === 'TIME') return `$table->time('${name}')`;
-    if (type === 'DECIMAL') return `$table->decimal('${name}', 10, 2)`; // Default precision
-    if (type === 'FLOAT') return `$table->float('${name}')`;
-    if (type === 'DOUBLE') return `$table->double('${name}')`;
+    if (type === 'DECIMAL') {
+        // MySQL DECIMAL precision caps at 65; ignore bogus lengths from
+        // varchar-style metadata (e.g. 255) and fall back to 10.
+        const rawLen = (field.length != null && parseInt(field.length) > 0) ? parseInt(field.length) : 10;
+        const decLen = rawLen <= 65 ? rawLen : 10;
+        const decPrec = (field.precision != null && parseInt(field.precision) >= 0) ? parseInt(field.precision) : 2;
+        return unsigned ? `$table->unsignedDecimal('${name}', ${decLen}, ${decPrec})` : `$table->decimal('${name}', ${decLen}, ${decPrec})`;
+    }
+    if (type === 'FLOAT') return unsigned ? `$table->unsignedFloat('${name}')` : `$table->float('${name}')`;
+    if (type === 'DOUBLE') return unsigned ? `$table->unsignedDouble('${name}')` : `$table->double('${name}')`;
     if (type === 'BOOLEAN') return `$table->boolean('${name}')`;
     if (type === 'JSON') return `$table->json('${name}')`;
     

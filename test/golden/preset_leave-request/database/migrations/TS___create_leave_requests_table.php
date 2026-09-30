@@ -20,7 +20,7 @@ return new class extends Migration
             $table->foreignId('leave_type_id')->nullable();
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
-            $table->decimal('days_requested', 10, 2)->nullable();
+            $table->decimal('days_requested', 8, 4)->nullable();
             $table->text('reason')->nullable();
             $table->string('approval_status', 30)->nullable()->default('draft');
             $table->unsignedBigInteger('created_by')->nullable();

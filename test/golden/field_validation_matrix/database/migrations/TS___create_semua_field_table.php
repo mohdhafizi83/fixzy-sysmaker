@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('pautan', 255);
             $table->string('berkas_topeng', 20);
             $table->integer('umur');
-            $table->decimal('gaji', 10, 2);
+            $table->decimal('gaji', 12, 2);
             $table->integer('kod_zero');
             $table->string('unik_kod', 40)->unique();
             $table->text('cerita');

@@ -225,12 +225,18 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
                         : tableName;
         const originalResourceFolder = toPluralPascalCase(baseNameSource);
 
+        // Shared naming with the model + RelationManager generators so the
+        // imported class names match the files actually written (multi-FK
+        // disambiguation, 2026-09-30).
+        const { computeModelRelationNames } = require('./laravelDatabaseGenerator');
+        const naming = computeModelRelationNames(tableName, relationships, allTables);
+
         importRelationManagers = childrenForRelationManager.map(r => {
             const childTableData = allTables[r.child_table_name];
             const childNameSource = (childTableData && childTableData.module_name && childTableData.module_name.trim() !== '')
                                     ? childTableData.module_name
                                     : r.child_table_name;
-            const childManagerClass = `${toSingularPascalCase(childNameSource)}RelationManager`;
+            const childManagerClass = (naming.managerClass.get(r) || toSingularPascalCase(childNameSource)) + 'RelationManager';
             return `use App\\Filament\\Resources\\${originalResourceFolder}\\RelationManagers\\${childManagerClass};`;
         }).join('\n');
 
@@ -239,7 +245,7 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
             const childNameSource = (childTableData && childTableData.module_name && childTableData.module_name.trim() !== '')
                                     ? childTableData.module_name
                                     : r.child_table_name;
-            const childManagerClass = `${toSingularPascalCase(childNameSource)}RelationManager`;
+            const childManagerClass = (naming.managerClass.get(r) || toSingularPascalCase(childNameSource)) + 'RelationManager';
             return `            ${childManagerClass}::class,`;
         }).join('\n');
     }

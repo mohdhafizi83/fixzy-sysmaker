@@ -17,7 +17,7 @@ return new class extends Migration
             $table->id();
             $table->string('nama_fakulti', 255)->nullable();
             $table->boolean('is_aktif')->nullable();
-            $table->integer('bil_pelajar')->nullable();
+            $table->unsignedInteger('bil_pelajar')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

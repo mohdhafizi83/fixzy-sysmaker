@@ -55,6 +55,90 @@ function getRelationFunctionName(tableName, tables, isPlural = false) {
     return isPlural ? toPluralCamelCase(nameSource) : toSingularCamelCase(nameSource);
 }
 
+/**
+ * Compute collision-free relation function names for one model.
+ *
+ * A table can have MULTIPLE FKs to the same other table (e.g.
+ * prerequisites.course_id + prerequisites.prereq_course_id both point at
+ * courses). The plain module-name relation function then collides ->
+ * "Cannot redeclare". The FIRST occurrence keeps the plain name (so
+ * existing generated apps stay byte-identical); the 2nd+ occurrence is
+ * disambiguated with the FK column name.
+ *
+ * Shared by the Model, RelationManager and Resource generators so the
+ * emitted $relationship strings and manager class names stay in sync.
+ *
+ * @param {string} tableName the model's table
+ * @param {Array} relationships all project relationships
+ * @param {object} tables map of table name -> table data
+ * @returns {{parent: Map<object,string>, child: Map<object,string>}}
+ *          parent: rel -> hasMany/hasOne function name (this model is parent)
+ *          child:  rel -> belongsTo function name (this model is child)
+ */
+function computeModelRelationNames(tableName, relationships, tables) {
+    const parent = new Map();
+    const child = new Map();
+    const managerClass = new Map();
+    const used = new Set();
+    const usedManagerClasses = new Set();
+
+    /**
+     * Pick a unique relation function name for one relationship.
+     * @param {string} base the plain module-derived relation name
+     * @param {object} rel the relationship record (for FK fallback)
+     * @returns {string} a collision-free function name
+     */
+    const uniqueName = (base, rel) => {
+        if (!used.has(base)) { used.add(base); return base; }
+        const alt = base + toPascalCase(rel.fk_child_field || 'related');
+        if (!used.has(alt)) { used.add(alt); return alt; }
+        let n = 2;
+        while (used.has(alt + n)) n++;
+        used.add(alt + n);
+        return alt + n;
+    };
+
+    // Parent side first (hasMany/hasOne), then child side (belongsTo) —
+    // matching the emission order in generateFilamentModels.
+    relationships.filter(r => r.parent_table_name === tableName).forEach(rel => {
+        let name;
+        if (rel.parent_table_name === rel.child_table_name) {
+            name = rel.relationship_type === 'one-to-one' ? 'child' : 'children';
+        } else {
+            name = getRelationFunctionName(rel.child_table_name, tables, rel.relationship_type !== 'one-to-one');
+            name = uniqueName(name, rel);
+        }
+        parent.set(rel, name);
+
+        // RelationManager class name: first occurrence keeps the plain
+        // <ChildSingular>RelationManager; duplicates (same parent+child
+        // pair via different FKs) get the FK column woven in so two
+        // managers never overwrite each other's file.
+        const childData = tables[rel.child_table_name];
+        const childNameSource = (childData && childData.module_name && childData.module_name.trim() !== '')
+            ? childData.module_name : rel.child_table_name;
+        let mgr = toSingularPascalCase(childNameSource);
+        if (usedManagerClasses.has(mgr)) {
+            mgr = mgr + toPascalCase(rel.fk_child_field || 'related');
+        }
+        usedManagerClasses.add(mgr);
+        managerClass.set(rel, mgr);
+    });
+
+    relationships.filter(r => r.child_table_name === tableName).forEach(rel => {
+        let name;
+        if (rel.parent_table_name === rel.child_table_name) {
+            name = 'parent';
+        } else {
+            name = getRelationFunctionName(rel.parent_table_name, tables, false);
+            name = uniqueName(name, rel);
+        }
+        child.set(rel, name);
+    });
+
+    return { parent, child, managerClass };
+}
+
 
 /**
  * Generate Laravel Filament Model files from the database schema.
@@ -128,28 +212,18 @@ async function generateFilamentModels(fullSchema, basePath) {
             // ▼▼▼ BLOK HUBUNGAN (DIKEMASKINI GUNA MODULE NAME) ▼▼▼
             let relationshipFunctions = [];
 
+            // Shared naming with the RelationManager/Resource generators so
+            // $relationship strings and manager class names stay in sync.
+            const relNaming = computeModelRelationNames(tableName, relationships, tables);
+
             // A. Hubungan PARENT (Model ini ada hasMany/hasOne ke Child)
             relationships.filter(r => r.parent_table_name === tableName).forEach(rel => {
                 const childClassName = getModelClassName(rel.child_table_name, tables);
                 const foreignKey = rel.fk_child_field; // Nama column sebenar di DB
                 const localKey = rel.parent_field;     // Nama column sebenar di DB
-                let functionName;
-
-                if (rel.parent_table_name === rel.child_table_name) {
-                    // Self-referencing (Parent -> Children)
-                    functionName = 'children'; 
-                } else {
-                    // Use Module Name for the function name (e.g. studentInfos)
-                    functionName = getRelationFunctionName(rel.child_table_name, tables, true); 
-                    // For One-to-One, use Singular
-                    if (rel.relationship_type === 'one-to-one') {
-                         functionName = getRelationFunctionName(rel.child_table_name, tables, false);
-                    }
-                }
+                const functionName = relNaming.parent.get(rel);
 
                 if (rel.relationship_type === 'one-to-one') {
-                    // Jika self-ref singular
-                    if (rel.parent_table_name === rel.child_table_name) functionName = 'child'; 
                     relationshipFunctions.push(`\n    public function ${functionName}()\n    {\n        return \$this->hasOne(${childClassName}::class, '${foreignKey}', '${localKey}');\n    }`);
                 } else {
                     relationshipFunctions.push(`\n    public function ${functionName}()\n    {\n        return \$this->hasMany(${childClassName}::class, '${foreignKey}', '${localKey}');\n    }`);
@@ -161,16 +235,8 @@ async function generateFilamentModels(fullSchema, basePath) {
                 const parentClassName = getModelClassName(rel.parent_table_name, tables);
                 const foreignKey = rel.fk_child_field;
                 const ownerKey = rel.parent_field;
-                let functionName;
+                const functionName = relNaming.child.get(rel);
 
-                if (rel.parent_table_name === rel.child_table_name) {
-                    // Self-referencing (Child -> Parent)
-                    functionName = 'parent'; 
-                } else {
-                    // Guna Module Name (cth: department)
-                    functionName = getRelationFunctionName(rel.parent_table_name, tables, false);
-                }
-                
                 relationshipFunctions.push(`\n    public function ${functionName}()\n    {\n        return \$this->belongsTo(${parentClassName}::class, '${foreignKey}', '${ownerKey}');\n    }`);
             });
             // ▲▲▲ TAMAT BLOK UBAH SUAI ▲▲▲
@@ -501,7 +567,8 @@ async function generateLaravelMigrations(fullSchema, outputBasePath) {
             
             let content = `<?php\nuse Illuminate\\Database\\Migrations\\Migration;\nuse Illuminate\\Database\\Schema\\Blueprint;\nuse Illuminate\\Support\\Facades\\Schema;\n\nreturn new class extends Migration\n{\n    public function up(): void\n    {\n        Schema::create('${tableName}', function (Blueprint $table) {\n`;
             if (pkField) {
-                if (['INT', 'INTEGER', 'BIGINT', 'TINYINT'].includes(pkField.data_type.toUpperCase())) {
+                const pkType = (pkField.data_type || '').toUpperCase().replace(/\s+(UNSIGNED|ZEROFILL)/g, '').trim();
+                if (['INT', 'INTEGER', 'BIGINT', 'TINYINT'].includes(pkType)) {
                     content += pkField.field_name === 'id' ? `            $table->id();\n` : `            $table->id('${pkField.field_name}');\n`;
                 } else {
                     content += `            $table->string('${pkField.field_name}')->primary();\n`;
@@ -510,7 +577,7 @@ async function generateLaravelMigrations(fullSchema, outputBasePath) {
             regularFields.forEach(field => {
                 const isForeignKey = relationships.some(r => r.child_table_name === tableName && r.fk_child_field === field.field_name);
                 let line = '';
-                const upperType = field.data_type ? field.data_type.toUpperCase() : 'VARCHAR';
+                const upperType = field.data_type ? field.data_type.toUpperCase().replace(/\s+(UNSIGNED|ZEROFILL)/g, '').trim() : 'VARCHAR';
                 if (field.media_type === 'attachments') {
                     // Multi-file attachments: JSON array of stored paths.
                     line = `            $table->text('${field.field_name}')`;
@@ -652,7 +719,7 @@ async function generateLaravelUserMigration(fullSchema, basePath) {
 
                 const isForeignKey = relationships.some(r => r.child_table_name === 'users' && r.fk_child_field === field.field_name);
                 let line = '';
-                const upperType = field.data_type ? field.data_type.toUpperCase() : 'VARCHAR';
+                const upperType = field.data_type ? field.data_type.toUpperCase().replace(/\s+(UNSIGNED|ZEROFILL)/g, '').trim() : 'VARCHAR';
 
                 // Logik janaan padanan jenis data (sama seperti migrasi biasa)
                 if (isForeignKey && ['INT', 'INTEGER', 'BIGINT'].includes(upperType)) {
@@ -1011,5 +1078,6 @@ module.exports = {
     generateLaravelDatabaseSeeder,
     generateNativeAuditFiles,
     getRelationFunctionName,
+    computeModelRelationNames,
     getModelClassName
 };
