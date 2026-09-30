@@ -38,7 +38,10 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Node 22 = ABI 127: better-sqlite3 12.11.1 ships prebuilds for this
+          # ABI on all three OSes, so prebuild-install succeeds and node-gyp
+          # never runs (node-gyp 9.x is broken on Python 3.12+ anyway).
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
