@@ -70,6 +70,7 @@ class PendaftaranKursusForm
     ->searchable()
     ->preload()
     ->relationship('pelajar', 'nama_penuh')
+    ->live()
     ->suffixActions([
     Action::make('view_pelajar')
         ->icon('heroicon-o-eye')
@@ -90,6 +91,7 @@ class PendaftaranKursusForm
     ->searchable()
     ->preload()
     ->relationship('kursus', 'nama_kursus')
+    ->live()
     ->suffixActions([
     Action::make('view_kursus')
         ->icon('heroicon-o-eye')

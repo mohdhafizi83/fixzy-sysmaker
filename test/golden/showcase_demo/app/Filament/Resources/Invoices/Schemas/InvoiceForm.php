@@ -62,6 +62,7 @@ class InvoiceForm
     ->searchable()
     ->preload()
     ->relationship('faculty', 'nama_fakulti')
+    ->live()
     ->suffixActions([
     Action::make('view_fakulti')
         ->icon('heroicon-o-eye')

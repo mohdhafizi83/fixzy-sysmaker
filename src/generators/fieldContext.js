@@ -124,6 +124,16 @@ function buildFormFieldContext(field, elementType, opts = {}) {
         ctx.options_list_dropdown = optionsCode;
     }
 
+    // Suffix actions (view/create parent) read the selection via $get()
+    // SERVER-side. With Livewire's default deferred entanglement the new
+    // selection never reaches the server until save, so the eye button
+    // would never appear. Make the select live whenever link actions exist.
+    // NOTE: the actual append happens AFTER the depends_on (E5) block below,
+    // because E5 rewrites the closing paren of relationship() — appending
+    // ->live() before E5 would corrupt it into ->live(, fn...).
+    const linkBehavior = field.lookup_link_behavior || '';
+    const needsLive = linkBehavior === 'modal' && !!opts.parentResourceSingular;
+
     // Relationship (lookup) fields
     if (field.lookup_parent_table) {
         const caption1 = field.lookup_caption_1;
@@ -149,7 +159,14 @@ function buildFormFieldContext(field, elementType, opts = {}) {
         if (field.lookup_searchable === 1) ctx.is_searchable = '->searchable()';
         if (field.lookup_preload === 1) ctx.is_preload = '->preload()';
 
-        if (field.lookup_link_behavior === 'modal' && opts.parentResourceSingular) {
+        // Suffix actions (view/create parent) read the selection via $get()
+        // SERVER-side. With Livewire's default deferred entanglement the new
+        // selection never reaches the server until save, so the eye button
+        // would never appear. Make the select live whenever link actions exist.
+        // NOTE: the actual append happens AFTER the depends_on (E5) block below,
+        // because E5 rewrites the closing paren of relationship() — appending
+        // ->live() before E5 would corrupt it into ->live(, fn...).
+        if (linkBehavior === 'modal' && opts.parentResourceSingular) {
             const res = opts.parentResourceSingular;
             ctx.link_to_parent_record = `->suffixActions([\n    Action::make('view_${opts.parentTable}')\n        ->icon('heroicon-o-eye')\n        ->modalContent(fn (Get $get): ?View => $get('${field.field_name}') ? view('filament.components.modal-iframe', ['src' => ${res}Resource::getUrl('edit', ['record' => $get('${field.field_name}')]) . '?iframe=1']) : null)\n        ->modalWidth('6xl')\n        ->modalSubmitAction(false)\n        ->hidden(fn (Get $get): bool => !$get('${field.field_name}')),\n\n    Action::make('create_${opts.parentTable}')\n        ->icon('heroicon-o-plus')\n        ->modalContent(fn (): View => view('filament.components.modal-iframe', ['src' => ${res}Resource::getUrl('create') . '?iframe=1']))\n        ->modalWidth('6xl')\n        ->modalSubmitAction(false),\n])`;
         }
@@ -261,6 +278,13 @@ function buildFormFieldContext(field, elementType, opts = {}) {
             const helperPrefix = field.helper_text ? `'${phpStr(field.helper_text)} — ' . ` : '';
             ctx.is_helper_text = `->helperText(fn (Get $get) => filled($get('${depField}')) ? (${helperPrefix}\\App\\Models\\${dep.model_class}::find($get('${depField}'))?->${countCol} . ' available') : (${field.helper_text ? `'${phpStr(field.helper_text)}'` : 'null'}))`;
         }
+    }
+
+    // Append ->live() AFTER the E5 rewrite above (see note in the lookup block):
+    // server-side $get() in suffix actions needs the selection synced live.
+    if (needsLive) {
+        if (ctx.is_relationship_normal) ctx.is_relationship_normal += "\n    ->live()";
+        else if (ctx.is_relationship_self_ref) ctx.is_relationship_self_ref += "\n    ->live()";
     }
 
     return ctx;

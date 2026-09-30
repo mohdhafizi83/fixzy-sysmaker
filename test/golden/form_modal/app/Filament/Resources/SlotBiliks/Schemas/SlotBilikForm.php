@@ -75,6 +75,7 @@ class SlotBilikForm
     ->searchable()
     ->preload()
     ->relationship('bilik', 'no_bilik')
+    ->live()
     ->suffixActions([
     Action::make('view_bilik')
         ->icon('heroicon-o-eye')

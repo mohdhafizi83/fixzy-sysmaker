@@ -96,6 +96,7 @@ class KursusForm
     titleAttribute: 'nama_kursus',
     modifyQueryUsing: fn (Builder $query, ?Model $record) => $query->where('id', '!=', $record?->id)
 )
+    ->live()
     ->suffixActions([
     Action::make('view_kursus')
         ->icon('heroicon-o-eye')

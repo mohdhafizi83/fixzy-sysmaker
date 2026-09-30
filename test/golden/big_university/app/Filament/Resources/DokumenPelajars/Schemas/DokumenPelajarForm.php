@@ -70,6 +70,7 @@ class DokumenPelajarForm
     ->preload()
     ->disabled(session('foreignkey') === 'pelajar_id')
     ->relationship('pelajar', 'nama_penuh')
+    ->live()
     ->suffixActions([
     Action::make('view_pelajar')
         ->icon('heroicon-o-eye')

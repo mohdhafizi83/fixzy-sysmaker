@@ -62,6 +62,7 @@ class ExamResultForm
     ->searchable()
     ->preload()
     ->relationship('student', 'nama_penuh')
+    ->live()
     ->suffixActions([
     Action::make('view_pelajar')
         ->icon('heroicon-o-eye')

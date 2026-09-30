@@ -71,6 +71,7 @@ class PengesahanPendaftaranForm
     ->searchable()
     ->preload()
     ->relationship('pendaftaranKursus', 'tarikh_pendaftaran')
+    ->live()
     ->suffixActions([
     Action::make('view_pendaftaran_kursus')
         ->icon('heroicon-o-eye')
@@ -91,6 +92,7 @@ class PengesahanPendaftaranForm
     ->searchable()
     ->preload()
     ->relationship('user', 'name')
+    ->live()
     ->suffixActions([
     Action::make('view_users')
         ->icon('heroicon-o-eye')

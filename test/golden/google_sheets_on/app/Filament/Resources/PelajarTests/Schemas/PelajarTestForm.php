@@ -54,6 +54,7 @@ class PelajarTestForm
     ->searchable()
     ->preload()
     ->relationship('fakulti', 'nama_fakulti')
+    ->live()
     ->suffixActions([
     Action::make('view_fakulti')
         ->icon('heroicon-o-eye')

@@ -77,6 +77,7 @@ class TempahanForm
     ->searchable()
     ->preload()
     ->relationship('bilik', 'no_bilik')
+    ->live()
     ->suffixActions([
     Action::make('view_bilik')
         ->icon('heroicon-o-eye')
@@ -100,6 +101,7 @@ class TempahanForm
     ->searchable()
     ->preload()
     ->relationship('slotBilik', 'slot_label', fn (Builder $query, Get $get) => filled($get('room_number')) ? $query->where('bilik_id', $get('room_number')) : $query)
+    ->live()
     ->suffixActions([
     Action::make('view_slot_bilik')
         ->icon('heroicon-o-eye')
