@@ -233,6 +233,13 @@ class MatrixRecordImporter extends Importer
                 ->rules(['max:255'])
                 ->examples(['Sample Video Clip 1', 'Sample Video Clip 2'])
                 ->exampleHeader('Video Clip'),
+
+            ImportColumn::make('color_hex')
+                ->label('Event Color')
+                ->ignoreBlankState()
+                ->rules(['max:255'])
+                ->examples(['Sample Event Color 1', 'Sample Event Color 2'])
+                ->exampleHeader('Event Color'),
         ];
     }
 

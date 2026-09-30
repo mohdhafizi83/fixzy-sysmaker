@@ -32,7 +32,7 @@ class MatrixRecordExporter extends Exporter
             ExportColumn::make('txt_plain')->limit(50)->label('Plain Text'),
             ExportColumn::make('txt_email')->limit(50)->label('Email'),
             ExportColumn::make('txt_url')->limit(50)->label('Url'),
-            ExportColumn::make('txt_tel')->limit(50)->label('Telephone'),
+            ExportColumn::make('txt_tel')->limit(8)->label('Telephone'),
             ExportColumn::make('txt_password')->limit(50)->label('Password'),
             ExportColumn::make('num_int')->limit(50)->label('Integer'),
             ExportColumn::make('num_decimal')->limit(50)->label('Decimal'),
@@ -55,6 +55,7 @@ class MatrixRecordExporter extends Exporter
             ExportColumn::make('file_multi')->limit(50)->label('Attachments'),
             ExportColumn::make('map_loc')->limit(50)->label('Location Map'),
             ExportColumn::make('vid_clip')->limit(50)->label('Video Clip'),
+            ExportColumn::make('color_hex')->limit(50)->label('Event Color'),
         ];
     }
 

@@ -102,6 +102,13 @@ function buildInlineEditColumnPhp(field, fieldName, tableName, authorizationEnab
         lines.push(`->rules(['max:${maxLen}'])`);
         lines.push(saveClosure('$state'));
     }
+    // Common modifiers must apply to inline-edit columns too — the
+    // editable branch returns early and previously dropped searchable,
+    // so a field with enable_global_filter=1 + editable_in_tv=1 lost
+    // search entirely (grid audit round 2, 2026-09-30).
+    if (field.enable_global_filter === 1 && !field.enable_individual_filter) lines.push('->searchable()');
+    if (!field.enable_global_filter && field.enable_individual_filter === 1) lines.push('->searchable(isIndividual: true, isGlobal: false)');
+    if (field.enable_global_filter === 1 && field.enable_individual_filter === 1) lines.push('->searchable(isIndividual: true)');
     return lines.join('\n                    ');
 }
 

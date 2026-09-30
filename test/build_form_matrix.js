@@ -61,12 +61,12 @@ const matrixFields = [
     F('id', 'ID', 'INT', { extra: { primary_key: 1, auto_increment: 1 } }),
     // text formats
     F('txt_plain', 'Plain Text', 'VARCHAR', { required: 1, extra: { editable_in_tv: 1 } }),
-    F('txt_email', 'Email', 'VARCHAR', { extra: { format_as: 'email' } }),
-    F('txt_url', 'URL', 'VARCHAR', { extra: { format_as: 'url' } }),
-    F('txt_tel', 'Telephone', 'VARCHAR', { extra: { format_as: 'tel' } }),
+    F('txt_email', 'Email', 'VARCHAR', { extra: { format_as: 'email', tv_font_weight: 'Bold' } }),
+    F('txt_url', 'URL', 'VARCHAR', { extra: { format_as: 'url', tv_text_size: 'Large', tv_alignment: 'center' } }),
+    F('txt_tel', 'Telephone', 'VARCHAR', { extra: { format_as: 'tel', tv_wrap_text: 1, tv_text_limit: 8 } }),
     F('txt_password', 'Password', 'VARCHAR', { extra: { format_as: 'password' } }),
     // numeric
-    F('num_int', 'Integer', 'INT', {}),
+    F('num_int', 'Integer', 'INT', { extra: { tv_currency_code: 'MYR' } }),
     F('num_decimal', 'Decimal', 'DECIMAL', { length: 10, precision: 2 }),
     // date / datetime
     F('dt_date', 'Date', 'DATE', { extra: { display_type: 'datetime_input' } }),
@@ -91,11 +91,13 @@ const matrixFields = [
         repeater_2_display_as: 'dropdown_list', repeater_2_list_values: 'rendah;;tinggi' } }),
     // media (added 2026-09-30 media audit)
     F('img_profile', 'Profile Picture', 'VARCHAR', { extra: { media_type: 'image', allow_image_uploads: 1, image_storage_provider: 'public', dv_thumb_shape: 'square' } }),
-    F('img_avatar', 'Avatar Circular', 'VARCHAR', { extra: { media_type: 'image', allow_image_uploads: 1, image_storage_provider: 'public', dv_thumb_shape: 'circular' } }),
+    F('img_avatar', 'Avatar Circular', 'VARCHAR', { extra: { media_type: 'image', allow_image_uploads: 1, image_storage_provider: 'public', dv_thumb_shape: 'circular', tv_thumb_shape: 'circular', tv_thumb_width: 40, tv_thumb_height: 40 } }),
     F('file_doc', 'Document', 'VARCHAR', { extra: { media_type: 'upload', allow_file_uploads: 1, file_storage_provider: 'public', file_types: 'pdf,txt' } }),
     F('file_multi', 'Attachments', 'VARCHAR', { extra: { media_type: 'attachments', allow_file_uploads: 1, attach_max_files: 3, attach_types: 'pdf,txt,png', attach_max_size: 2048 } }),
     F('map_loc', 'Location Map', 'VARCHAR', { extra: { media_type: 'gmap', display_gmap: 1, tv_icon: 'map-pin', tv_icon_color: 'danger' } }),
     F('vid_clip', 'Video Clip', 'VARCHAR', { extra: { media_type: 'youtube', accept_video_url: 1, tv_icon: 'play-circle', tv_icon_color: 'info' } }),
+    // calendar color source (hex value)
+    F('color_hex', 'Event Color', 'VARCHAR', { extra: {} }),
 ];
 
 // ---- tree-view table (self-referencing hierarchy) ----
@@ -251,7 +253,7 @@ const fixture = {
                             grid_calendar_enabled: 1,
                             grid_calendar_config: JSON.stringify({
                                 start_field: 'dt_date', end_field: 'dt_datetime',
-                                title_field: 'txt_plain', color_field: 'opt_dropdown',
+                                title_field: 'txt_plain', color_field: 'color_hex',
                             }),
                         }),
                         fields: [],

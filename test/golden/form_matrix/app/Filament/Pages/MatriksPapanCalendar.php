@@ -133,7 +133,7 @@ class MatriksPapanCalendar extends Page
     protected function recordColor($record): string
     {
         
-        $c = (string) ($record->opt_dropdown ?? '');
+        $c = (string) ($record->color_hex ?? '');
         // Only allow safe CSS color chars to avoid attribute injection.
         return preg_match('/^#[0-9a-fA-F]{3,8}$/', $c) ? $c : '#6366f1';
         

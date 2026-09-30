@@ -183,6 +183,10 @@ ViewField::make('map_loc')
 ViewField::make('vid_clip')
     ->view('filament.forms.components.video-viewer')
     ->columnSpanFull(),
+                TextInput::make('color_hex')
+    ->maxLength(255)
+    ->label('Event Color')
+    ->trim(),
                 ])
                 ->columnSpanFull(),
         ]);

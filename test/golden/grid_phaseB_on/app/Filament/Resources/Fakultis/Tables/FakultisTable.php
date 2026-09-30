@@ -66,6 +66,7 @@ class FakultisTable
                     $record->save();
                     return $record;
                 })
+                    ->searchable()
                 ]),
                 ColumnGroup::make('Status', [
                     ToggleColumn::make('is_aktif')
@@ -87,6 +88,7 @@ class FakultisTable
                     $record->save();
                     return $record;
                 })
+                    ->searchable()
                 ])
             ])
             ->when((bool) request()->query('print'), fn (Table $table) => $table->paginated(false),)

@@ -41,6 +41,7 @@ return new class extends Migration
             $table->text('file_multi')->nullable();
             $table->string('map_loc', 255)->nullable();
             $table->string('vid_clip', 255)->nullable();
+            $table->string('color_hex', 255)->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

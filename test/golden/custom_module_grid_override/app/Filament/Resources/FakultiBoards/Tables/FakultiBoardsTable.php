@@ -65,7 +65,8 @@ class FakultiBoardsTable
                     }
                     $record->save();
                     return $record;
-                }),
+                })
+                    ->searchable(),
                 ToggleColumn::make('is_aktif')
                     ->label('Aktif')
                     ->rules(['boolean'])
@@ -84,7 +85,8 @@ class FakultiBoardsTable
                     }
                     $record->save();
                     return $record;
-                }),
+                })
+                    ->searchable(),
                 TextColumn::make('status_kerja')
                     ->label('Status')
                     ->sortable()

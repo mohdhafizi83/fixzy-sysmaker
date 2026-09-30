@@ -71,7 +71,8 @@ class MatrixRecord extends Model
         'file_doc',
         'file_multi',
         'map_loc',
-        'vid_clip'
+        'vid_clip',
+        'color_hex'
     
     ];
     

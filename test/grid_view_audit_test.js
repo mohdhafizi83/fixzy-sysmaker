@@ -37,10 +37,10 @@ ${code}
   execSync(`mkdir -p ${APPDIR}/storage/app/public/img-profile && cp ${path.join(__dirname, 'fixtures', 'media_test.png')} ${APPDIR}/storage/app/public/img-profile/seed1.png`, { stdio: 'ignore' });
   php(`
     \\App\\Models\\MatrixRecord::truncate();
-    \\App\\Models\\MatrixRecord::create(['txt_plain'=>'Alpha One','opt_dropdown'=>'satu','num_int'=>10,'num_decimal'=>1.5,'dt_date'=>'2026-10-05','dt_datetime'=>'2026-10-06 09:00:00','img_profile'=>'img-profile/seed1.png']);
-    \\App\\Models\\MatrixRecord::create(['txt_plain'=>'Bravo Two','opt_dropdown'=>'dua','num_int'=>20,'num_decimal'=>2.5,'dt_date'=>'2026-10-12','dt_datetime'=>'2026-10-13 09:00:00']);
-    \\App\\Models\\MatrixRecord::create(['txt_plain'=>'Charlie Three','opt_dropdown'=>'tiga','num_int'=>30,'num_decimal'=>3.5,'dt_date'=>'2026-10-20','dt_datetime'=>'2026-10-21 09:00:00']);
-    \\App\\Models\\MatrixRecord::create(['txt_plain'=>'DragTest','opt_dropdown'=>'satu','num_int'=>9,'dt_date'=>'2026-10-08','dt_datetime'=>'2026-10-09 09:00:00']);
+    \\App\\Models\\MatrixRecord::create(['txt_plain'=>'Alpha One','opt_dropdown'=>'satu','num_int'=>10,'num_decimal'=>1.5,'dt_date'=>'2026-10-05','dt_datetime'=>'2026-10-06 09:00:00','img_profile'=>'img-profile/seed1.png','img_avatar'=>'img-profile/seed1.png','file_doc'=>'file-doc/seed.pdf','map_loc'=>'<iframe src=\"https://maps.google.com/maps?q=KL&output=embed\" width=\"600\" height=\"450\"></iframe>','vid_clip'=>'https://www.youtube.com/watch?v=dQw4w9WgXcQ','bool_check'=>1,'txt_email'=>'a@b.com','txt_url'=>'https://fixzy.test','txt_tel'=>'0123456789','color_hex'=>'#ff0000']);
+    \\App\\Models\\MatrixRecord::create(['txt_plain'=>'Bravo Two','opt_dropdown'=>'dua','num_int'=>20,'num_decimal'=>2.5,'dt_date'=>'2026-10-12','dt_datetime'=>'2026-10-13 09:00:00','color_hex'=>'#00ff00']);
+    \\App\\Models\\MatrixRecord::create(['txt_plain'=>'Charlie Three','opt_dropdown'=>'tiga','num_int'=>30,'num_decimal'=>3.5,'dt_date'=>'2026-10-20','dt_datetime'=>'2026-10-21 09:00:00','color_hex'=>'#0000ff']);
+    \\App\\Models\\MatrixRecord::create(['txt_plain'=>'DragTest','opt_dropdown'=>'satu','num_int'=>9,'dt_date'=>'2026-10-08','dt_datetime'=>'2026-10-09 09:00:00','color_hex'=>'#ff0000']);
     \\App\\Models\\Pokok::truncate();
     $root = \\App\\Models\\Pokok::create(['nama_pokok'=>'Root Node']);
     \\App\\Models\\Pokok::create(['nama_pokok'=>'Child Alpha','parent_id'=>$root->id]);
@@ -196,6 +196,139 @@ ${code}
     check('GV15. RM grid renders image column', false, 'no parent row');
     check('GV16. RM grid renders icon columns (upload etc)', false, 'no parent row');
   }
+
+  // ================= tv_* per-variable visual sweep =================
+  // (table view of the standard module — every column rule asserted from
+  // the variable set on the field, per grid audit round 2, 2026-09-30)
+  await page.goto(APP + '/admin/matrixrecords?view=table', { waitUntil: 'networkidle' });
+  await sleep(2500);
+
+  // helper: find the td for a column by header text, return inner element facts
+  async function cellInfo(headerText, rowText) {
+    return page.evaluate(({ headerText, rowText }) => {
+      const ths = Array.from(document.querySelectorAll('table thead th'));
+      const idx = ths.findIndex(h => (h.innerText || '').trim().toLowerCase().includes(headerText.toLowerCase()));
+      if (idx < 0) return null;
+      const rows = Array.from(document.querySelectorAll('table tbody tr'));
+      const row = rows.find(r => {
+        const t = (r.innerText || '');
+        if (t.includes(rowText)) return true;
+        // inline-edit columns hold values in <input>, not innerText
+        return Array.from(r.querySelectorAll('input[type=text]')).some(i => (i.value || '').includes(rowText));
+      });
+      if (!row) return null;
+      const td = row.children[idx];
+      if (!td) return null;
+      // Filament v5: text -> .fi-ta-text-item, icon -> .fi-ta-icon, image -> img
+      const textEl = td.querySelector('.fi-ta-text-item');
+      const iconEl = td.querySelector('.fi-ta-icon');
+      const imgEl = td.querySelector('img');
+      const cs = textEl ? getComputedStyle(textEl) : null;
+      const ics = iconEl ? getComputedStyle(iconEl) : null;
+      return {
+        text: (td.innerText || '').trim(),
+        hasText: !!textEl,
+        fontWeight: cs ? cs.fontWeight : null,
+        fontSize: cs ? cs.fontSize : null,
+        textAlign: cs ? (cs.textAlign || cs.getPropertyValue('text-align')) : null,
+        hasIcon: !!iconEl,
+        iconColor: ics ? ics.color : null,
+        iconMask: ics ? (ics.maskImage || ics.webkitMaskImage || '') : '',
+        imgSrc: imgEl ? imgEl.src : null,
+        imgRadius: imgEl ? getComputedStyle(imgEl).borderRadius : null,
+        imgW: imgEl ? imgEl.width : null,
+      };
+    }, { headerText, rowText });
+  }
+
+  // GV17: tv_font_weight Bold on txt_email
+  const cEmail = await cellInfo('Email', 'Alpha');
+  check('GV17. tv_font_weight=Bold applies (txt_email)', cEmail && (cEmail.fontWeight === '700' || cEmail.fontWeight === 'bold'), cEmail ? cEmail.fontWeight : 'no cell');
+
+  // GV18: tv_text_size=Large on txt_url
+  const cUrl = await cellInfo('URL', 'Alpha');
+  check('GV18. tv_text_size=Large applies (txt_url)', cUrl && parseFloat(cUrl.fontSize) >= 16, cUrl ? cUrl.fontSize : 'no cell');
+
+  // GV19: tv_alignment=center on txt_url
+  check('GV19. tv_alignment=center applies (txt_url)', cUrl && /center/.test(cUrl.textAlign), cUrl ? cUrl.textAlign : 'no cell');
+
+  // GV20: tv_text_limit=8 truncates txt_tel with (more)
+  const cTel = await cellInfo('Telephone', 'Alpha');
+  check('GV20. tv_text_limit truncates with (more) (txt_tel)', cTel && /\(more\)/.test(cTel.text) && !/0123456789$/.test(cTel.text), cTel ? cTel.text : 'no cell');
+
+  // GV21: tv_currency_code on num_int -> money format (RM)
+  const cInt = await cellInfo('Integer', 'Alpha');
+  check('GV21. tv_currency_code formats money (num_int)', cInt && /RM|MYR/.test(cInt.text), cInt ? cInt.text : 'no cell');
+
+  // GV22: image column renders img (img_profile)
+  const cImg = await cellInfo('Profile Picture', 'Alpha');
+  check('GV22. image column renders img (img_profile)', cImg && !!cImg.imgSrc && cImg.imgSrc.includes('seed1.png'), cImg ? String(cImg.imgSrc).slice(0, 60) : 'no cell');
+
+  // GV23: tv_thumb_shape circular (img_avatar) vs square (img_profile)
+  const cAva = await cellInfo('Avatar Circular', 'Alpha');
+  const round = cAva && cAva.imgRadius && (parseFloat(cAva.imgRadius) >= 999 || /9999|50%/.test(cAva.imgRadius));
+  const square = cImg && cImg.imgRadius && parseFloat(cImg.imgRadius) < 10;
+  check('GV23. tv_thumb_shape circular vs square', !!round && !!square, 'ava=' + (cAva ? cAva.imgRadius : 'none') + ' prof=' + (cImg ? cImg.imgRadius : 'none'));
+
+  // GV24: tv_thumb_width honored (40px)
+  check('GV24. tv_thumb_width=40 applies (img_avatar)', cAva && cAva.imgW === 40, cAva ? String(cAva.imgW) : 'none');
+
+  // GV25: gmap icon column present (map_loc)
+  const cMap = await cellInfo('Location Map', 'Alpha');
+  check('GV25. gmap icon column present (map_loc)', cMap && cMap.hasIcon, cMap ? 'icon=' + cMap.hasIcon : 'no cell');
+
+  // GV26: youtube icon column present
+  const cVid = await cellInfo('Video Clip', 'Alpha');
+  check('GV26. youtube icon column present (vid_clip)', cVid && cVid.hasIcon, cVid ? 'icon=' + cVid.hasIcon : 'no cell');
+
+  // GV27: boolean column renders icon (bool_check)
+  const cBool = await cellInfo('Checkbox', 'Alpha');
+  check('GV27. boolean icon column present (bool_check)', cBool && cBool.hasIcon, cBool ? 'icon=' + cBool.hasIcon : 'no cell');
+
+  // GV28: sortable column — click header reorders
+  const before = await page.evaluate(() => Array.from(document.querySelectorAll('table tbody tr')).map(r => r.innerText.split('\n')[0]).slice(0, 3).join(','));
+  const idHeader = page.locator('table thead th', { hasText: 'ID' }).first();
+  const sortBtn = idHeader.locator('button, a').first();
+  if (await sortBtn.count()) {
+    await sortBtn.click();
+    await sleep(2500);
+    const after = await page.evaluate(() => Array.from(document.querySelectorAll('table tbody tr')).map(r => r.innerText.split('\n')[0]).slice(0, 3).join(','));
+    check('GV28. allow_sorting sorts on header click', before !== after, 'before=' + before + ' after=' + after);
+  } else { check('GV28. allow_sorting sorts on header click', false, 'no sort control on ID header'); }
+
+  // GV29: global search filters rows
+  await page.goto(APP + '/admin/matrixrecords?view=table', { waitUntil: 'networkidle' });
+  await sleep(2000);
+  const search = page.locator('input[type=search], .fi-global-search-input, input[placeholder*="Search" i]').first();
+  if (await search.count()) {
+    await search.fill('Bravo');
+    await sleep(3000);
+    // Robust proof the filter narrowed the dataset: the summary row
+    // recomputes over the FILTERED records. All rows sum num_int=10+20+30+9=69;
+    // only Bravo (20) should remain.
+    const sumTxt = await page.evaluate(() => {
+      const sr = document.querySelector('.fi-ta-summary-row, tr[class*=summary]');
+      return sr ? sr.innerText.replace(/\s+/g, ' ') : '';
+    });
+    const totalMatch = sumTxt.match(/Total Integer\D+(\d+)/);
+    const total = totalMatch ? parseInt(totalMatch[1], 10) : -1;
+    check('GV29. global search filters dataset (summary=Bravo only, 20 not 69)', total === 20, 'summary=' + sumTxt.slice(0, 80));
+  } else { check('GV29. global search filters dataset (summary=Bravo only, 20 not 69)', false, 'no search input'); }
+
+  // GV30: calendar color_field hex applied to event chip
+  await page.goto(APP + '/admin/matrikspapans-calendar', { waitUntil: 'networkidle' });
+  await sleep(2000);
+  await page.locator('text=Next').first().click();
+  await sleep(2500);
+  const chip = await page.evaluate(() => {
+    const chips = Array.from(document.querySelectorAll('[style*="background"]')).filter(e => {
+      const bg = (e.style.background || e.style.backgroundColor || '');
+      return /Alpha|Bravo|Charlie/.test(e.innerText) && !/255, 255, 255|white|#fff/i.test(bg);
+    });
+    return chips.slice(0, 4).map(c => ({ t: c.innerText.slice(0, 12), bg: c.style.background || c.style.backgroundColor }));
+  });
+  const colorOk = chip.length >= 2 && chip.some(c => /ff0000|red|255, 0, 0/i.test(c.bg)) && chip.some(c => /00ff00|0000ff|blue|green|0, 255|0, 0, 255/i.test(c.bg));
+  check('GV30. calendar color_field hex applied to chips', colorOk, JSON.stringify(chip).slice(0, 140));
 
   console.log('\nRESULT: ' + pass + ' pass, ' + fail + ' fail');
   if (failures.length) console.log('FAILURES:\n  ' + failures.join('\n  '));

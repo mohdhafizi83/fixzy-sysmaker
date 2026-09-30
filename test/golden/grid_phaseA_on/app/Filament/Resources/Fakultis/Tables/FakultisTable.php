@@ -67,7 +67,8 @@ class FakultisTable
                     }
                     $record->save();
                     return $record;
-                }),
+                })
+                    ->searchable(),
                 ToggleColumn::make('is_aktif')
                     ->label('Aktif')
                     ->rules(['boolean'])
@@ -86,7 +87,8 @@ class FakultisTable
                     }
                     $record->save();
                     return $record;
-                }),
+                })
+                    ->searchable(),
                 TextColumn::make('bil_pelajar')
                     ->label('Bil Pelajar')
                     ->sortable()

@@ -64,7 +64,8 @@ class FakultisTable
                     }
                     $record->save();
                     return $record;
-                }),
+                })
+                    ->searchable(),
                 ToggleColumn::make('is_aktif')
                     ->label('Aktif')
                     ->rules(['boolean'])
@@ -84,6 +85,7 @@ class FakultisTable
                     $record->save();
                     return $record;
                 })
+                    ->searchable()
             ])
             ->when((bool) request()->query('print'), fn (Table $table) => $table->paginated(false),)
             ->filters([

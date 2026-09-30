@@ -25,6 +25,8 @@ use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\Summarizers\Average;
 use Filament\Tables\Columns\TextInputColumn;
+use Filament\Support\Enums\TextSize;
+use Filament\Support\Enums\FontWeight;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Illuminate\Contracts\View\View;
@@ -76,10 +78,12 @@ class MatriksKhasTable
                     }
                     $record->save();
                     return $record;
-                }),
+                })
+                    ->searchable(),
                 TextColumn::make('txt_email')
                     ->label('Email')
                     ->sortable()
+                    ->weight(FontWeight::Bold)
                     ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable(),
@@ -87,12 +91,15 @@ class MatriksKhasTable
                     ->label('Url')
                     ->sortable()
                     ->limit(50, end: ' (more)')
+                    ->size(TextSize::Large)
                     ->searchable()
-                    ->toggleable(),
+                    ->toggleable()
+                    ->alignCenter(),
                 TextColumn::make('txt_tel')
                     ->label('Telephone')
                     ->sortable()
-                    ->limit(50, end: ' (more)')
+                    ->wrap()
+                    ->limit(8, end: ' (more)')
                     ->searchable()
                     ->toggleable(),
                 TextColumn::make('txt_password')
@@ -107,7 +114,7 @@ class MatriksKhasTable
                     ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable()
-                    ->numeric()
+                    ->money('MYR')
                     ->summarize(\Filament\Tables\Columns\Summarizers\Sum::make()->label('Total Integer')),
                 TextColumn::make('num_decimal')
                     ->label('Decimal')
@@ -290,9 +297,9 @@ class MatriksKhasTable
                     ->toggleable(),
                 ImageColumn::make('img_avatar')
                     ->label('Avatar Circular')
-                    ->square()
-                    ->imageWidth(50)
-                    ->imageHeight(50)
+                    ->circular()
+                    ->imageWidth(40)
+                    ->imageHeight(40)
                     ->disk('public')
                     ->searchable()
                     ->toggleable(),
@@ -341,6 +348,12 @@ class MatriksKhasTable
                                 : '<p class="text-center">No video link provided.</p>'
                         ))
                 )
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('color_hex')
+                    ->label('Event Color')
+                    ->sortable()
+                    ->limit(50, end: ' (more)')
                     ->searchable()
                     ->toggleable()
             ])

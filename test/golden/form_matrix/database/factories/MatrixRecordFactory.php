@@ -45,6 +45,7 @@ class MatrixRecordFactory extends Factory
             'file_multi' => fake()->word(),
             'map_loc' => fake()->word(),
             'vid_clip' => fake()->word(),
+            'color_hex' => fake()->word(),
         ];
     }
 }
