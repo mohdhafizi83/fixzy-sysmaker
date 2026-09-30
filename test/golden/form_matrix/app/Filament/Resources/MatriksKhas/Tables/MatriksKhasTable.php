@@ -6,7 +6,7 @@
  * This attribution banner must not be removed or altered.
  */
 
-namespace App\Filament\Resources\MatrixRecords\Tables;
+namespace App\Filament\Resources\MatriksKhas\Tables;
 
 
 
@@ -25,7 +25,7 @@ use Illuminate\Contracts\View\View;
 /**
  * Generated table configuration fragment for this table.
  */
-class MatrixRecordsTable
+class MatriksKhasTable
 {
     /**
      * Apply pagination, columns and display options to the table.
@@ -170,13 +170,6 @@ class MatrixRecordsTable
         'tengah' => 'info',
         'akhir' => 'primary',
         }),
-                TextColumn::make('character.nama_watak')
-                    ->label('Lookup Dropdown')
-                    ->sortable()
-                    ->limit(50, end: ' (more)')
-                    ->searchable()
-                    ->toggleable()
-                    ->numeric(),
                 TextColumn::make('character.nama_watak')
                     ->label('Lookup Radios')
                     ->sortable()

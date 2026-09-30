@@ -37,7 +37,7 @@ class CharactersTable
     {
         return $table
             
-            ->paginationMode('simple')
+            ->paginationMode(\Filament\Tables\Enums\PaginationMode::Simple)
             
             
             ->recordUrl(null)

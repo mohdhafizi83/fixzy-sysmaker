@@ -13,7 +13,8 @@ function baseField(name, caption, dataType, opts = {}) {
         field_id: opts.id || 1, table_id: 1, field_name: name, field_order: opts.order || 0,
         caption, description: null, data_type: dataType, length: opts.length ?? 255, precision: opts.precision ?? null,
         max_chars_in_tv: 50, alignment: 'left', default_value: null, read_only: 0, primary_key: 0, zero_fill: 0,
-        required: opts.required || 0, display_type: 'text_input', auto_increment: 0, unique: 0, is_indexed: 0,
+        required: opts.required || 0, not_null: opts.required ? 1 : 0,
+        display_type: 'text_input', auto_increment: 0, unique: 0, is_indexed: 0,
         show_sum: 0, allow_sorting: 1, tv_wrap_header: 0, tv_wrap_text: 0, tv_enable_toggle: 0,
         tv_description_tooltips: 0, tv_text_limit: 50, tv_text_size: 'Normal', tv_font_weight: 'Regular',
         tv_date_time_format: 'date_and_time', tv_alignment: 'left', tv_text_color: null, tv_icon: null,
@@ -138,7 +139,20 @@ const fixture = {
                 enable_detail_view: 1, delete_with_children: 0, dv_allow_print_view: 0, dv_separate_page: 0,
                 dv_hide_save_as_copy: 0, dv_sticky_buttons: 0, dv_allow_add_from_homepage: 0,
                 column_grid_type: 'auto', static_grid_columns: 2, table_hook_workflow: null,
-                feature_source: null, fields: matrixFields, custom_modules: {}, constraints: [],
+                feature_source: null, fields: matrixFields,
+                custom_modules: [
+                    {
+                        module_id: 91, project_id: 1, table_id: 2,
+                        module_name: 'MatriksKhas', module_order: 0, menu_icon: 'fas fa-star',
+                        filter_rules: JSON.stringify({ condition: 'AND', rules: [{ column: 'id', operator: '>', value: '0' }] }),
+                        included_relations: null, settings_override: null,
+                        fields: [
+                            { field_id: 10, is_readonly: 1 },
+                            { field_id: 20, settings_override: JSON.stringify({ hide_in_tv: 1 }) },
+                        ],
+                    },
+                ],
+                constraints: [],
             },
         },
         relationships: [

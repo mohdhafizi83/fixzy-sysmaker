@@ -670,7 +670,10 @@ function buildTableSettingsContext(tableData, relationships, tableName, projectS
         ctx.action_edit_button = '';
     }
 
-    if (tableData.pagination_type === 'simple') ctx.pagination_type = "->paginationMode('simple')";
+    // Filament v5: paginationMode() requires the PaginationMode enum;
+    // passing the raw string 'simple' throws TypeError at list-page load
+    // (found via custom-module round-trip browser test).
+    if (tableData.pagination_type === 'simple') ctx.pagination_type = "->paginationMode(\\Filament\\Tables\\Enums\\PaginationMode::Simple)";
     else if (tableData.pagination_type === 'extreme') ctx.pagination_type = '->extremePaginationLinks()';
     else ctx.pagination_type = '';
 
