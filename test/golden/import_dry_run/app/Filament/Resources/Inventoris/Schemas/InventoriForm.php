@@ -72,8 +72,7 @@ class InventoriForm
     ->label('Kuantiti')
     ->trim(),
                 TextInput::make('harga_seunit')
-    ->numeric()
-    ->maxLength(10)
+    ->numeric()->rule('decimal:0,2')
     ->label('Harga Seunit')
     ->trim(),
                 ])

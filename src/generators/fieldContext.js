@@ -75,7 +75,11 @@ function buildFormFieldContext(field, elementType, opts = {}) {
     }
 
     // Length modifiers (legacy: only text-ish components)
-    if (['TextInput', 'Textarea', 'RichEditor'].includes(elementType)) {
+    // DECIMAL fields must NOT carry maxLength: Filament converts it to
+    // Laravel's max_digits rule which rejects ANY value containing a
+    // decimal point (preg '/[^0-9]/'), breaking every DECIMAL form input
+    // (found via form-matrix round-trip test).
+    if (['TextInput', 'Textarea', 'RichEditor'].includes(elementType) && field.data_type !== 'DECIMAL') {
         if (field.min_length && field.min_length === field.length) {
             ctx.is_fixed_length = `->length(${field.min_length})`;
         } else {
@@ -93,11 +97,19 @@ function buildFormFieldContext(field, elementType, opts = {}) {
         if (field.read_only === 1) ctx.is_readonly = '->readOnly()';
         if (field.required === 1) ctx.is_required = '->required()->markAsRequired()';
         if (['INT', 'BIGINT'].includes(field.data_type)) ctx.is_integer = '->integer()';
-        if (field.data_type === 'DECIMAL') ctx.is_numeric = '->numeric()';
+        if (field.data_type === 'DECIMAL') {
+            ctx.is_numeric = '->numeric()';
+            // Validate decimal places against the column precision
+            // (decimal:0,N allows 0..N fractional digits).
+            const precision = Number.isFinite(field.precision) ? field.precision : 2;
+            ctx.is_numeric = `->numeric()->rule('decimal:0,${precision}')`;
+        }
         if (field.off_autocomplete === 1) ctx.is_off_autocomplete = '->autocomplete(false)';
     }
 
     if (field.helper_text) ctx.is_helper_text = `->helperText('${field.helper_text}')`;
+
+    // (DateTimePicker carries the time component natively in Filament v5.)
     if (['text_input', 'text_area', 'rich_html'].includes(field.display_type) && field.placeholder) {
         ctx.is_placeholder = `->placeholder('${field.placeholder}')`;
     }
@@ -142,22 +154,37 @@ function buildFormFieldContext(field, elementType, opts = {}) {
         if (opts.isSelfRef) {
             const parentIdField = 'id';
             ctx.is_relationship_self_ref = `->relationship(\n    name: 'parent',\n    titleAttribute: '${caption1}',\n    modifyQueryUsing: fn (Builder $query, ?Model $record) => $query->where('${parentIdField}', '!=', $record?->${parentIdField})\n)`;
+        } else if (elementType === 'Radio') {
+            // Filament v5 Radio has no ->relationship() (BadMethodCallException
+            // at page load — found via form-matrix browser test). Back the
+            // options with a pluck from the parent model instead.
+            const res = opts.parentResourceSingular;
+            ctx.is_relationship_normal = `->options(fn () => \\App\\Models\\${res}::orderBy('${caption1}')->pluck('${caption1}', 'id'))`;
         } else {
             ctx.is_relationship_normal = `->relationship('${relationshipName}', '${caption1}')`;
         }
 
-        if (field.lookup_caption_2) {
+        if (field.lookup_caption_2 && elementType !== 'Radio') {
             const caption2 = field.lookup_caption_2;
             const separator = field.lookup_separator || ' ';
             ctx.parent_fields_caption = `->getOptionLabelFromRecordUsing(fn (Model $record) => "{$record->${caption1}} ${separator} {$record->${caption2}}")`;
+        } else if (field.lookup_caption_2 && elementType === 'Radio') {
+            // Radio has no getOptionLabelFromRecordUsing — fold caption 2 into
+            // the plucked label instead.
+            const caption2 = field.lookup_caption_2;
+            const separator = field.lookup_separator || ' ';
+            const res = opts.parentResourceSingular;
+            ctx.is_relationship_normal = `->options(fn () => \\App\\Models\\${res}::orderBy('${caption1}')
+        ->get()
+        ->mapWithKeys(fn ($r) => [$r->id => $r->${caption1} . '${separator}' . $r->${caption2}]))`;
         }
 
         if (opts.parentRelation && opts.parentRelation.show_count_in_tv === 1) {
             ctx.disabled_edit_dropdown_relationship = `->disabled(session('foreignkey') === '${field.field_name}')`;
         }
 
-        if (field.lookup_searchable === 1) ctx.is_searchable = '->searchable()';
-        if (field.lookup_preload === 1) ctx.is_preload = '->preload()';
+        if (field.lookup_searchable === 1 && elementType === 'Select') ctx.is_searchable = '->searchable()';
+        if (field.lookup_preload === 1 && elementType === 'Select') ctx.is_preload = '->preload()';
 
         // Suffix actions (view/create parent) read the selection via $get()
         // SERVER-side. With Livewire's default deferred entanglement the new
@@ -223,13 +250,20 @@ function buildFormFieldContext(field, elementType, opts = {}) {
     }
 
     // Non-text elements don't get ->trim()
-    if (['Select', 'Checkbox', 'Radio', 'CheckboxList', 'DatePicker', 'RichEditor'].includes(elementType)) {
+    if (['Select', 'Checkbox', 'Radio', 'CheckboxList', 'DatePicker', 'DateTimePicker', 'TimePicker', 'RichEditor'].includes(elementType)) {
         ctx.keep_trim = false;
     }
 
-    // Select never carries ->integer() (legacy post-processing)
-    if (elementType === 'Select') {
+    // Select never carries ->integer() (legacy post-processing).
+    // Radio/CheckboxList/Checkbox/DatePicker also have no ->integer()/->numeric()
+    // in Filament v5 — calling them throws BadMethodCallException at page load
+    // (found via form-matrix browser test: lookup-as-radios INT field crashed
+    // the whole create page). Only TextInput carries numeric modifiers.
+    if (elementType !== 'TextInput') {
         ctx.is_integer = '';
+        ctx.is_numeric = '';
+        ctx.is_min_value = '';
+        ctx.is_max_value = '';
     }
 
     // --- Form Design & Layout (phase E) ---

@@ -45,8 +45,7 @@ class KontrakNilaiTinggiForm
     ->label('No Rujukan')
     ->trim(),
                 TextInput::make('nilai')
-    ->numeric()
-    ->maxLength(12)
+    ->numeric()->rule('decimal:0,2')
     ->label('Nilai')
     ->trim(),
                 TextInput::make('created_by')

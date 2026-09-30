@@ -67,8 +67,7 @@ class ProdukForm
     ->label('Nama Produk')
     ->trim(),
                 TextInput::make('harga')
-    ->numeric()
-    ->maxLength(10)
+    ->numeric()->rule('decimal:0,2')
     ->label('Harga')
     ->trim(),
                 ])

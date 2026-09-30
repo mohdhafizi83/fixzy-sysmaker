@@ -14,7 +14,7 @@ use Filament\Schemas\Schema;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Actions\Action;
-use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\FileUpload;
@@ -105,8 +105,7 @@ class SemuaFieldForm
     ->label('Umur')
     ->trim(),
                 TextInput::make('gaji')
-    ->numeric()
-    ->maxLength(12)
+    ->numeric()->rule('decimal:0,2')
     ->label('Gaji')
     ->trim(),
                 TextInput::make('kod_zero')
@@ -142,7 +141,7 @@ class SemuaFieldForm
     ->multiple()
 ->options(['penting' => 'Penting', 'segera' => 'Segera', 'biasa' => 'Biasa'])
     ,
-                DatePicker::make('tarikh_masa')
+                DateTimePicker::make('tarikh_masa')
     ->label('Tarikh Masa')
     ,
                 Repeater::make('emel_berulang')

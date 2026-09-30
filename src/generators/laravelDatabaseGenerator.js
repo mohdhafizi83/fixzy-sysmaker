@@ -185,6 +185,8 @@ async function generateFilamentModels(fullSchema, basePath) {
                 (field.data_type === 'BOOLEAN' && field.display_type === 'check_box') ||
                 // Add a check for UI components that produce an Array
                 ['repeater', 'repeater_simple'].includes(field.display_type) ||
+                // CheckboxList / Select-multiple submit PHP arrays
+                (field.display_type === 'options_list' && ['checkboxes', 'multi'].includes(field.options_display)) ||
                 // Multi-file attachments store a JSON array of paths
                 field.media_type === 'attachments'
             );
@@ -200,6 +202,11 @@ async function generateFilamentModels(fullSchema, basePath) {
                         castType = 'array';
                     } else if (field.data_type === 'BOOLEAN' && field.display_type === 'check_box') {
                         castType = 'boolean';
+                    } else if (field.display_type === 'options_list' && ['checkboxes', 'multi'].includes(field.options_display)) {
+                        // CheckboxList / Select-multiple submit PHP arrays;
+                        // without an 'array' cast the INSERT dies with
+                        // "Array to string conversion" (form-matrix test).
+                        castType = 'array';
                     }
                     
                     return `\n            '${field.field_name}' => '${castType}',`;

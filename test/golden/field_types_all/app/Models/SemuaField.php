@@ -74,6 +74,7 @@ class SemuaField extends Model
     {
         return [
             'aktif' => 'boolean',
+            'tag_multi' => 'array',
             'emel_berulang' => 'array',
             'butiran' => 'array',
         ];

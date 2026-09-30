@@ -111,8 +111,7 @@ class LeadForm
     ->options(['new|contacted|qualified|proposal|won|lost' => 'New|contacted|qualified|proposal|won|lost'])
     ,
                 TextInput::make('estimated_value')
-    ->numeric()
-    ->maxLength(12)
+    ->numeric()->rule('decimal:0,2')
     ->label('Estimated Value')
     ->trim(),
                 TextInput::make('expected_close_date')

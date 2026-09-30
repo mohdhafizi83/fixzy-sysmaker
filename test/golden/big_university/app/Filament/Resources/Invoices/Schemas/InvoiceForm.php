@@ -78,8 +78,7 @@ class InvoiceForm
 ])
     ,
                 TextInput::make('jumlah_bayaran')
-    ->numeric()
-    ->maxLength(255)
+    ->numeric()->rule('decimal:0,2')
     ->label('Jumlah Bayaran')
     ->trim(),
                 ])

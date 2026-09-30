@@ -93,8 +93,7 @@ class PendingApprovalForm
     ->label('End Date')
     ->trim(),
                 TextInput::make('days_requested')
-    ->numeric()
-    ->maxLength(8)
+    ->numeric()->rule('decimal:0,4')
     ->label('Days Requested')
     ->trim(),
                 Textarea::make('reason')

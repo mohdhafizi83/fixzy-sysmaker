@@ -14,7 +14,7 @@ use Filament\Schemas\Schema;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Actions\Action;
-use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\TextInput;
 
 /**
@@ -62,7 +62,7 @@ class LaporanHarianForm
     ->maxLength(255)
     ->label('Id')
     ->trim(),
-                DatePicker::make('tarikh_laporan')
+                DateTimePicker::make('tarikh_laporan')
     ->label('Tarikh Laporan')
     ,
                 ])

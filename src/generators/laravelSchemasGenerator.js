@@ -219,7 +219,12 @@ function generateFieldCodesForList(visibleFields, tableData, relationships, tabl
                 if (field.lookup_display_as === 'radios') elementType = 'Radio';
                 else elementType = 'Select';
             } else {
-                if (field.display_type === 'datetime_input') elementType = 'DatePicker';
+                if (field.display_type === 'datetime_input') {
+                    // Filament v5: DatePicker = date only (hasTime()=false);
+                    // DATETIME columns need DateTimePicker or the time
+                    // component is silently lost (form-matrix browser test).
+                    elementType = field.data_type === 'DATETIME' ? 'DateTimePicker' : 'DatePicker';
+                }
                 else if (field.display_type === 'text_area') elementType = 'Textarea';
                 else if (field.display_type === 'rich_html') elementType = 'RichEditor';
                 else if (field.display_type === 'check_box') elementType = 'Checkbox';
@@ -470,8 +475,12 @@ async function generateFilamentSchemasForm(fullSchema, basePath) {
                 }
             });
             
-            // GRID LOGIC
-            const gridType = tableData.column_grid_type || 'dynamic';
+            // GRID LOGIC — must match the page templates' condition
+            // (dynamic_grid = column_grid_type === 'dynamic'). Any other value
+            // (auto/null) would emit $livewire->gridColumns on pages that never
+            // declare the property -> PropertyNotFoundException at page load
+            // (found via form-matrix browser test).
+            const gridType = tableData.column_grid_type === 'dynamic' ? 'dynamic' : 'static';
             let gridColumnControl;
             if (gridType === 'static') {
                 const columns = parseInt(tableData.static_grid_columns) || 2;
