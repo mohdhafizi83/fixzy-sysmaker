@@ -35,7 +35,25 @@ mac:
     - target: dmg
       arch: [x64, arm64]
   category: public.app-category.developer-tools
+  icon: build/icon.icns
   # identity: null  # unsigned; set to sign when owner has a Developer ID
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+  icon: build/icon.png
+  category: Development
+  maintainer: "Mohd Hafizi Mohammad Nor <mohdhafizi83@gmail.com>"
+  synopsis: "Visual database designer that generates Laravel + Filament admin systems"
+  description: "Design your database visually or import an existing SQL dump and get a complete Laravel + Filament admin system: migrations, models, resources, dashboards and deployment docs. Includes a headless CLI and an MCP server for AI agents."
+  desktop:
+    entry:
+      Name: Fixzy SysMaker
+      Comment: "Visual database designer for Laravel + Filament"
+      Categories: "Development;IDE;"
 
 nsis:
   oneClick: false

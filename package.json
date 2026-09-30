@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Visual database designer that builds your admin back office — a multi-stack code generator; Laravel + Filament is the first production-ready target.",
   "main": "src/main.js",
+  "desktopName": "com.fixzy.app",
   "scripts": {
     "start": "electron .",
     "setup:binaries": "node scripts/setup-binaries.js"

@@ -65,9 +65,17 @@ Kiosk mode — auto-rotating full-screen wall display:
 
 1. Download the installer for your OS from the
    [Releases](../../releases) page:
-   - **Windows**: `Fixzy SysMaker Setup x.x.x.exe` (NSIS installer)
-   - **macOS**: `Fixzy SysMaker x.x.x.dmg` (x64 and Apple Silicon)
+   - **Windows 10/11 (x64)**: `Fixzy SysMaker Setup x.x.x.exe` (NSIS installer)
+   - **macOS (Intel + Apple Silicon)**: `Fixzy SysMaker-x.x.x.dmg`
+   - **Ubuntu/Debian (x64)**: `fixzy-sysmaker_x.x.x_amd64.deb`
+     (`sudo apt install ./fixzy-sysmaker_x.x.x_amd64.deb`)
+   - **Any Linux (x64)**: `Fixzy SysMaker-x.x.x.AppImage` (`chmod +x` and run)
 2. Install and launch the app.
+
+> **Unsigned builds:** installers are not code-signed yet. On Windows, if
+> SmartScreen warns, click "More info" → "Run anyway". On macOS, right-click
+> the app → "Open" on first launch. Verify any download against
+> `SHA256SUMS.txt` in the release.
 3. On first launch, the **Setup Wizard** checks your computer and installs
    everything it needs with one click — no command line required. The
    Laravel + Filament preview environment is **downloaded on first run**

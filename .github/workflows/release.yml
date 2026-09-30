@@ -1,0 +1,111 @@
+name: Release
+
+# Builds desktop installers for Windows, macOS (Intel + Apple Silicon) and Linux,
+# then attaches them to a GitHub Release. Triggered by pushing a version tag:
+#   git tag v1.0.0 && git push origin v1.0.0
+#
+# Notes:
+# - macOS must build on a macos runner: better-sqlite3 is a native module and
+#   node-gyp cannot cross-compile arm64 from Linux. prebuild-install fetches the
+#   matching Electron-ABI prebuilds (v143 for Electron 40) on each native OS.
+# - Installers are UNSIGNED. Windows SmartScreen will warn (no code-signing cert);
+#   macOS Gatekeeper requires right-click > Open on first launch (no Developer ID /
+#   notarization). Both are owner decisions requiring paid certificates.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            builder: --win nsis
+          - os: ubuntu-latest
+            builder: --linux AppImage deb
+          - os: macos-latest
+            builder: --mac dmg --x64 --arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build installers
+        run: npx electron-builder ${{ matrix.builder }} --publish never
+
+      - name: Collect artifacts
+        shell: bash
+        run: |
+          mkdir -p release-artifacts
+          shopt -s nullglob
+          cp dist/*.exe dist/*.dmg dist/*.AppImage dist/*.deb release-artifacts/ 2>/dev/null || true
+          # latest.yml / latest-mac.yml for auto-update metadata, if produced
+          cp dist/latest*.yml release-artifacts/ 2>/dev/null || true
+          ls -la release-artifacts/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.os }}
+          path: release-artifacts/*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: installers-windows-latest
+          path: artifacts/win
+      - uses: actions/download-artifact@v4
+        with:
+          name: installers-ubuntu-latest
+          path: artifacts/linux
+      - uses: actions/download-artifact@v4
+        with:
+          name: installers-macos-latest
+          path: artifacts/mac
+
+      - name: Checksums
+        run: |
+          cd artifacts
+          find . -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.deb' \) -exec sha256sum {} \; | sed 's|\./||' > ../SHA256SUMS.txt
+          cat ../SHA256SUMS.txt
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/win/*
+            artifacts/linux/*
+            artifacts/mac/*
+            SHA256SUMS.txt
+          generate_release_notes: true
+          body: |
+            ## Fixzy SysMaker ${{ github.ref_name }}
+
+            Desktop installers (source-available, free for personal & educational use):
+
+            | Platform | File | Notes |
+            |---|---|---|
+            | Windows 10/11 (x64) | `Fixzy SysMaker Setup <ver>.exe` | Unsigned — SmartScreen: "More info" → "Run anyway" |
+            | macOS (Intel + Apple Silicon) | `Fixzy SysMaker-<ver>.dmg` | Unsigned — first launch: right-click → Open |
+            | Ubuntu/Debian (x64) | `fixzy-sysmaker_<ver>_amd64.deb` | `sudo apt install ./fixzy-sysmaker_*.deb` |
+            | Any Linux (x64) | `Fixzy SysMaker-<ver>.AppImage` | `chmod +x` and run |
+
+            On first run the Setup Wizard provisions the PHP runtime + Composer
+            automatically (or point it at your own install). Verify downloads with
+            `SHA256SUMS.txt`.
