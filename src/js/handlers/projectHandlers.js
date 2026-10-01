@@ -71,49 +71,6 @@ export function initializeLocalizationHandlers() {
 }
 
 /**
- * Wires the security tab: hide-login warning dialog and open-browser button for the app URL.
- * @returns {void}
- */
-export function initializeSecurityTabHandlers() {
-    const openBrowserBtn = document.getElementById('open-browser-btn');
-    const appUrlInput = document.getElementById('app-url');
-
-    const hideLoginCheckbox = document.getElementById('app-hide_login');
-
-    if (hideLoginCheckbox) {
-        hideLoginCheckbox.addEventListener('change', () => {
-            if (hideLoginCheckbox.checked) {
-                const message = "This will hide the 'Sign in' links and any membership features from visitors. " +
-                    "However, you might still need to log in to the admin area to set the desired " +
-                    "permissions for anonymous users. This is necessary sometimes when visitors " +
-                    "are unable to access some tables.";
-                showCustomDialog({ title: "Important Note!", message: message });
-            }
-        });
-    }
-	
-    if (!openBrowserBtn || !appUrlInput) {
-        console.warn("Security tab elements not found. Skipping initialization.");
-        return;
-    }
-
-    openBrowserBtn.addEventListener('click', () => {
-        const url = appUrlInput.value.trim();
-
-        // Make sure the URL isn't empty before trying to open it
-        if (url) {
-            // Call the function exposed by preload.js
-            window.electronAPI.openUrl(url);
-        } else {
-                showCustomDialog({
-                    title: "Input Error",
-                    message: "Application URL is empty."
-                });
-        }
-    });
-}
-
-/**
  * Copies preset CSS class selections into the table/detail view class inputs for both view types.
  * @returns {void}
  */

@@ -7,7 +7,6 @@ import {
     initializeLocalizationHandlers,
 	initializeThemeHandlers,
     initializeMenuManagementHandlers,
-    initializeSecurityTabHandlers,
     initializeClassSelectorHandlers,
     initializeAutoDefaultHandlers,
     initializeLinkOptionsHandlers,
@@ -475,7 +474,6 @@ window.addEventListener('beforeunload', (event) => {
 	initializeStackSelectorHandlers();
 	initializeAuthRadioLogic();
 	
-	initializeSecurityTabHandlers();
 	initializeClassSelectorHandlers();
 	initializeAutoDefaultHandlers();
 	initializeLinkOptionsHandlers();

@@ -101,10 +101,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await shot('06_dashboard_builder');
   await page.setViewportSize({ width: 1440, height: 900 });
 
-  // 7. Security & technical
-  await clickTab('tab-security');
-  await sleep(500);
-  await shot('07_security');
+  // 7. Security & technical — tab removed 2026-10-01 (rebuilt later).
 
   console.log('errors:', errors.length ? errors.slice(0, 5).join(' | ') : 'none');
   await browser.close();

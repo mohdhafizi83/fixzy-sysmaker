@@ -153,15 +153,8 @@ export function populateMainDashboard(projectData) {
     setRadioValue('app-extra-wide', projectData.extra_wide);
     setElementValue('app-panel-height', projectData.panel_height);
     
-    // Tab: Security & technical
-    setElementValue('app-hide_login', projectData.hide_login);
-    setElementValue('app-allow_sql_tool', projectData.allow_sql_tool);
-    setElementValue('app-allow_server_status', projectData.allow_server_status);
-    setElementValue('app-admins_group_access', projectData.admins_group_access);
-    setElementValue('app-allow_table_view_sql', projectData.allow_table_view_sql);
-    setElementValue('app-copy_children_async', projectData.copy_children_async);
-    setElementValue('app-allow_pwa_install', projectData.allow_pwa_install);
-    setElementValue('app-url', projectData.url);
+    // Tab: Security & technical — removed 2026-10-01 (options not yet
+    // implemented in generated apps; returning in a future release).
     setElementValue('app-hook-logic', projectData.project_hook_workflow); 
     
     // Fire events

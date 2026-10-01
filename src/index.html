@@ -134,7 +134,6 @@
                 
                 <button class="tab-link" data-tab="tab-dashboard-builder" id="app-tab_dashboard_builder" name="app-tab_dashboard_builder">Dashboard Builder</button>
                 <button class="tab-link" data-tab="tab-architecture" id="app-tab_architecture" name="app-tab_architecture">Architecture & Multi-Tenancy</button>
-                <button class="tab-link" data-tab="tab-security" id="app-tab_security" name="app-tab_security">Security & technical</button>
                 <button class="tab-link" data-tab="tab-hooks">Hooks (Optional - for complex App)</button>
             </div>
 
@@ -3630,23 +3629,7 @@
                 <div id="tab-security" class="tab-pane">
                     <div class="card">
                         <div class="card-body">
-                            <div class="checkbox-grid">
-                                <label class="checkbox-label"><input type="checkbox" id="app-hide_login" name="app-hide_login"> Hide the login/membership system</label>
-                                <label class="checkbox-label"><input type="checkbox" id="app-allow_sql_tool" name="app-allow_sql_tool" checked> Allow admin access to interactive SQL tool</label>
-                                <label class="checkbox-label"><input type="checkbox" id="app-allow_server_status" name="app-allow_server_status"> Allow admin access to server status page</label>
-                                <label class="checkbox-label"><input type="checkbox" id="app-admins_group_access" name="app-admins_group_access" checked> All members of 'Admins' group can access the admin area</label>
-                                <label class="checkbox-label"><input type="checkbox" id="app-allow_table_view_sql" name="app-allow_table_view_sql"> Allow admin access to 'Table List' SQL</label>
-                                <label class="checkbox-label"><input type="checkbox" id="app-copy_children_async" name="app-copy_children_async" checked> Copy children asynchronously using curl</label>
-                                <label class="checkbox-label"><input type="checkbox" id="app-allow_pwa_install" name="app-allow_pwa_install" checked> Allow users to install app on mobile (PWA)</label>
-                            </div>
-
-                            <div class="form-group mt-2">
-                                <label for="app-url">Application URL</label>
-                                <div class="input-group">
-                                    <input type="text" id="app-url" name="app-url" placeholder="http://localhost/">
-                                    <button class="btn" id="open-browser-btn" name="open-browser-btn">Open in browser</button>
-                                </div>
-                            </div>
+                            <p style="color:var(--text-muted,#888)">Security options are being rebuilt and will return in a future release. Your existing settings are preserved.</p>
                         </div>
                     </div>
                 </div>

@@ -36,10 +36,7 @@ export const HELP_TABS = {
     title: 'Architecture & Multi-Tenancy',
     body: 'Configure multi-tenant architecture: which table represents the tenant, and which tables are scoped so each tenant only sees its own records.'
   },
-  'tab-security': {
-    title: 'Security & technical',
-    body: 'Hardening and technical switches: login visibility, SQL tools access, PWA install, default field settings, encoding and application URLs.'
-  },
+
   'tab-hooks': {
     title: 'Hooks',
     body: 'Optional custom logic that runs on project events. For advanced use — most apps never need this.'
@@ -422,14 +419,8 @@ export const HELP_ENTRIES = {
   'btn-edit-tenancy': { title: 'Edit tenancy', body: 'Change the tenancy configuration for this project.' },
 
   // ============ Security & technical ============
-  'app-hide_login': { title: 'Hide login system', body: 'Hides the login/membership UI — for internal or single-user deployments. Data is still protected server-side.' },
-  'app-allow_sql_tool': { title: 'Interactive SQL tool', body: 'Gives admins an in-app SQL console. Powerful but dangerous — enable only for trusted admins.' },
-  'app-allow_server_status': { title: 'Server status page', body: 'Exposes a server status page (PHP version, memory, extensions) to admins.' },
-  'app-admins_group_access': { title: 'Admins group access', body: 'All members of the Admins group can access the admin area without per-user permission checks.' },
-  'app-allow_table_view_sql': { title: 'Table List SQL', body: 'Lets admins view the raw SQL behind any Table List. Debugging aid — restrict in production.' },
-  'app-copy_children_async': { title: 'Copy children async', body: 'When copying a record with children, the copy runs in the background via curl so the UI doesn\'t block.' },
-  'app-allow_pwa_install': { title: 'PWA install', body: 'Makes the app installable as a Progressive Web App (installable icon, offline shell).' },
-  'app-url': { title: 'Application URL', body: 'The base URL the app is served from. Used for links, emails and OAuth callbacks.' },
+  // (Security & technical options removed 2026-10-01 — they were never
+  //  implemented in generated apps; help entries return with the rebuilt tab.)
   'fixzy-check-updates': { title: 'Check for updates', body: 'SysMaker checks for newer versions on startup and notifies you.' },
   'fixzy-autosave-interval': { title: 'Auto-save interval (minutes)', body: 'How often your project is saved automatically when auto-save is on.' },
   'fixzy-show-begin-box': { title: 'Show beginner box', body: 'Shows the beginner guidance box for new projects.' },
