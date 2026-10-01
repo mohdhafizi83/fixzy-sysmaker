@@ -58,7 +58,7 @@ function buildRegistry(fullSchema) {
             const settings = parseFieldFormSettings(field);
             const rules = validationRulesFor(field);
             // Lookup fields: chat input must reference an existing parent row.
-            if (field.lookup_parent_table) {
+            if (field.lookup_parent_table && !rules.some((r) => r.startsWith('exists:'))) {
                 const parentTableData = tables[field.lookup_parent_table];
                 const parentTableName = (parentTableData && parentTableData.table_name) || field.lookup_parent_table;
                 rules.push(`exists:${parentTableName},id`);

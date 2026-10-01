@@ -30,6 +30,16 @@ This attribution banner must not be removed or altered. --}}
         .lookup-link { display: block; margin-top: 20px; font-size: 14px; color: #f97316; }
         .errors-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
         button:active { transform: translateY(1px); }
+        select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 15px; background: #fff; }
+        .optgrid { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 4px; }
+        .opt { display: inline-flex; align-items: center; gap: 6px; font-weight: 400; margin: 0; }
+        .opt input { width: auto; }
+        .chk { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+        .chk input[type=checkbox] { width: 18px; height: 18px; }
+        .rep-row { display: flex; gap: 8px; margin-bottom: 6px; }
+        .rep-row input { flex: 1; }
+        .rep-add { margin-top: 2px; background: #e5e7eb; color: #1f2937; border: 0; border-radius: 6px; padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .rep-add:hover { background: #d1d5db; }
         @media (max-width: 640px) {
             body { padding: 12px; }
             .card { padding: 20px 16px; border-radius: 10px; }
@@ -55,7 +65,7 @@ This attribution banner must not be removed or altered. --}}
     <h1>{{ $form['intro'] ?: 'Submission Form' }}</h1>
     @if($form['intro'])<p class="intro">{{ $form['intro'] }}</p>@endif
 
-    <form method="POST" action="{{ route('public.form.submit', ['slug' => $slug]) }}">
+    <form method="POST" action="{{ route('public.form.submit', ['slug' => $slug]) }}" enctype="multipart/form-data">
         @csrf
         {{-- Honeypot: hidden from humans, tempting for bots --}}
         <div class="hp" aria-hidden="true">
@@ -64,8 +74,97 @@ This attribution banner must not be removed or altered. --}}
         </div>
 
         @foreach($form['fields'] as $f)
+            @php $ctrl = $f['control'] ?? 'text'; @endphp
             <label for="fld-{{ $f['name'] }}">{{ $f['label'] }}@if($f['required']) <span class="req">*</span>@endif</label>
-            <input type="{{ $f['type'] }}" id="fld-{{ $f['name'] }}" name="{{ $f['name'] }}" value="{{ old($f['name']) }}">
+
+            @if($ctrl === 'textarea')
+                <textarea id="fld-{{ $f['name'] }}" name="{{ $f['name'] }}" rows="5">{{ old($f['name']) }}</textarea>
+
+            @elseif($ctrl === 'checkbox')
+                <div class="chk">
+                    <input type="hidden" name="{{ $f['name'] }}" value="0">
+                    <input type="checkbox" id="fld-{{ $f['name'] }}" name="{{ $f['name'] }}" value="1" @checked(old($f['name']))>
+                    <span class="chk-label">Yes</span>
+                </div>
+
+            @elseif($ctrl === 'select' || $ctrl === 'select_lookup')
+                <select id="fld-{{ $f['name'] }}" name="{{ $f['name'] }}">
+                    <option value="">— select —</option>
+                    @if($ctrl === 'select_lookup')
+                        @foreach(($lookupOptions[$f['name']] ?? []) as $optId => $optLabel)
+                            <option value="{{ $optId }}" @selected((string) old($f['name']) === (string) $optId)>{{ $optLabel }}</option>
+                        @endforeach
+                    @else
+                        @foreach(($f['options'] ?? []) as $opt)
+                            <option value="{{ $opt['value'] }}" @selected(old($f['name']) === $opt['value'])>{{ $opt['label'] }}</option>
+                        @endforeach
+                    @endif
+                </select>
+
+            @elseif($ctrl === 'multiselect')
+                <div class="optgrid">
+                    @foreach(($f['options'] ?? []) as $opt)
+                        <label class="opt">
+                            <input type="checkbox" name="{{ $f['name'] }}[]" value="{{ $opt['value'] }}"
+                                @checked(in_array($opt['value'], (array) old($f['name'], []), true))>
+                            <span>{{ $opt['label'] }}</span>
+                        </label>
+                    @endforeach
+                </div>
+
+            @elseif($ctrl === 'radios' || $ctrl === 'radio_lookup')
+                <div class="optgrid">
+                    @php
+                        $opts = $ctrl === 'radio_lookup'
+                            ? collect($lookupOptions[$f['name']] ?? [])->map(fn ($lbl, $id) => ['value' => $id, 'label' => $lbl])->all()
+                            : ($f['options'] ?? []);
+                    @endphp
+                    @foreach($opts as $opt)
+                        <label class="opt">
+                            <input type="radio" name="{{ $f['name'] }}" value="{{ $opt['value'] }}"
+                                @checked((string) old($f['name']) === (string) $opt['value'])>
+                            <span>{{ $opt['label'] }}</span>
+                        </label>
+                    @endforeach
+                </div>
+
+            @elseif($ctrl === 'repeater')
+                <div class="rep" data-field="{{ $f['name'] }}">
+                    @php $oldItems = (array) old($f['name'], []); @endphp
+                    @if(empty($oldItems))
+                        <div class="rep-row"><input type="text" name="{{ $f['name'] }}[]"></div>
+                    @else
+                        @foreach($oldItems as $it)
+                            <div class="rep-row"><input type="text" name="{{ $f['name'] }}[]" value="{{ $it }}"></div>
+                        @endforeach
+                    @endif
+                    <button type="button" class="rep-add">+ Add</button>
+                </div>
+
+            @elseif($ctrl === 'image' || $ctrl === 'file')
+                <input type="file" id="fld-{{ $f['name'] }}" name="{{ $f['name'] }}"
+                    @if(($f['control'] ?? '') === 'image') accept="image/*"
+                    @elseif(!empty($f['types'])) accept="{{ collect($f['types'])->map(fn($t) => '.' . $t)->implode(',') }}" @endif>
+
+            @elseif($ctrl === 'files')
+                <input type="file" id="fld-{{ $f['name'] }}" name="{{ $f['name'] }}[]" multiple
+                    @if(!empty($f['types'])) accept="{{ collect($f['types'])->map(fn($t) => '.' . $t)->implode(',') }}" @endif>
+
+            @elseif($ctrl === 'embed')
+                <input type="text" id="fld-{{ $f['name'] }}" name="{{ $f['name'] }}" value="{{ old($f['name']) }}"
+                    placeholder="Paste embed code (iframe) or URL">
+
+            @elseif($ctrl === 'datetime')
+                <input type="datetime-local" id="fld-{{ $f['name'] }}" name="{{ $f['name'] }}" value="{{ old($f['name']) }}">
+
+            @elseif($ctrl === 'decimal')
+                <input type="number" step="0.01" id="fld-{{ $f['name'] }}" name="{{ $f['name'] }}" value="{{ old($f['name']) }}">
+
+            @else
+                <input type="{{ $ctrl }}" id="fld-{{ $f['name'] }}" name="{{ $f['name'] }}" value="{{ old($f['name']) }}">
+            @endif
+
+            @error($f['name'])<div class="err">{{ $message }}</div>@enderror
         @endforeach
 
         @if($form['captcha'])
@@ -80,6 +179,21 @@ This attribution banner must not be removed or altered. --}}
         <a class="lookup-link" href="{{ route('public.form.lookup', ['slug' => $slug]) }}">Check your submission status →</a>
     @endif
 </div>
+<script>
+    document.querySelectorAll('.rep-add').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var rep = btn.closest('.rep');
+            var row = document.createElement('div');
+            row.className = 'rep-row';
+            var inp = document.createElement('input');
+            inp.type = 'text';
+            inp.name = rep.dataset.field + '[]';
+            row.appendChild(inp);
+            rep.insertBefore(row, btn);
+            inp.focus();
+        });
+    });
+</script>
 </body>
 </html>
 

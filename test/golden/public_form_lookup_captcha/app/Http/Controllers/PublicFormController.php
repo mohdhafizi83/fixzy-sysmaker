@@ -40,8 +40,8 @@ class PublicFormController extends Controller
             'intro' => 'Submit a claim',
             'success' => 'Claim received.',
             'fields' => [
-                ['name' => 'perihal', 'label' => 'Perihal', 'type' => 'text', 'required' => true, 'rules' => ['required', 'string', 'max:200']],
-                ['name' => 'email_pengadu', 'label' => 'Your Email', 'type' => 'email', 'required' => true, 'rules' => ['required', 'email', 'max:255']],
+                ['name' => 'perihal', 'label' => 'Perihal', 'type' => 'text', 'control' => 'text', 'required' => true, 'rules' => ['required', 'string', 'max:200'], 'item_rules' => [], 'options' => null, 'lookup' => null],
+                ['name' => 'email_pengadu', 'label' => 'Your Email', 'type' => 'email', 'control' => 'text', 'required' => true, 'rules' => ['required', 'email', 'max:255'], 'item_rules' => [], 'options' => null, 'lookup' => null],
             ],
         ],
     ];
@@ -66,7 +66,25 @@ class PublicFormController extends Controller
             'slug' => $slug,
             'form' => $form,
             'captcha' => $captcha,
+            'lookupOptions' => $this->lookupOptionsFor($form),
         ]);
+    }
+
+    /**
+     * Load select/radio options for lookup (FK) fields from the parent
+     * tables. Keyed by field name => [id => label].
+     */
+    protected function lookupOptionsFor(array $form): array
+    {
+        $out = [];
+        foreach ($form['fields'] as $f) {
+            if (!empty($f['lookup'])) {
+                $table = $f['lookup']['table'];
+                $caption = $f['lookup']['caption'];
+                $out[$f['name']] = DB::table($table)->orderBy($caption)->pluck($caption, 'id')->all();
+            }
+        }
+        return $out;
     }
 
     /**
@@ -107,17 +125,57 @@ class PublicFormController extends Controller
 
         // Server-side validation mirroring the table schema (allowlist only).
         $rules = [];
+        $attributes = [];
         foreach ($form['fields'] as $f) {
             $rules[$f['name']] = $f['rules'];
+            if (!empty($f['item_rules'])) {
+                $rules[$f['name'] . '.*'] = $f['item_rules'];
+            }
+            $attributes[$f['name']] = $f['label'];
         }
-        $validated = $request->validate($rules);
+        $validated = $request->validate($rules, [], $attributes);
 
         // Build insert payload from the allowlist ONLY (never trust input keys).
         $payload = [];
         foreach ($form['fields'] as $f) {
-            if (array_key_exists($f['name'], $validated)) {
-                $payload[$f['name']] = $validated[$f['name']];
+            if (!array_key_exists($f['name'], $validated)) {
+                continue;
             }
+            $value = $validated[$f['name']];
+            $ctrl = $f['control'] ?? '';
+
+            // Uploaded files: store on the configured disk, save the path.
+            if ($ctrl === 'image' || $ctrl === 'file') {
+                if ($value instanceof \Illuminate\Http\UploadedFile) {
+                    $disk = $f['storage'] ?? 'public';
+                    $payload[$f['name']] = $value->store('public-form/' . $slug . '/' . $f['name'], $disk);
+                }
+                continue;
+            }
+            if ($ctrl === 'files') {
+                $paths = [];
+                foreach ((array) $value as $file) {
+                    if ($file instanceof \Illuminate\Http\UploadedFile) {
+                        $paths[] = $file->store('public-form/' . $slug . '/' . $f['name'], $f['storage'] ?? 'local');
+                    }
+                }
+                // The model carries an 'array' cast for attachment columns —
+                // pass the PHP array and let Eloquent serialize (json_encode
+                // here would double-encode).
+                $payload[$f['name']] = $paths ?: null;
+                continue;
+            }
+
+            // Normalize datetime-local input ("2026-10-01T14:30") to a
+            // storable "Y-m-d H:i:s" — raw T-form strings bypass
+            // Carbon parsing and land in the DB unconverted.
+            if ($ctrl === 'datetime' && is_string($value) && $value !== '') {
+                $value = str_replace('T', ' ', $value);
+                if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $value)) {
+                    $value .= ':00';
+                }
+            }
+            $payload[$f['name']] = $value;
         }
 
         // Status default (e.g. "pending") if the table has a status column.

@@ -1,0 +1,9 @@
+{
+  "composer": [],
+  "php_extensions": [],
+  "npm": [],
+  "providers": [
+    "App\\Providers\\AttachmentServiceProvider",
+    "App\\Providers\\PublicFormServiceProvider"
+  ]
+}

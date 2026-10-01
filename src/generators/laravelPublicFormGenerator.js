@@ -25,7 +25,34 @@ function validationRulesFor(field) {
     const name = (field.field_name || '').toLowerCase();
     const required = field.required === 1 || field.required === true || field.not_null === 1;
     rules.push(required ? 'required' : 'nullable');
-    if (name.includes('email') || dt === 'EMAIL') rules.push('email', 'max:255');
+    if (field.media_type === 'image') {
+        const kb = Math.max(1, parseInt(field.max_file_size, 10) || 2048);
+        rules.push('image', `max:${kb}`);
+    } else if (field.media_type === 'upload') {
+        const kb = Math.max(1, parseInt(field.file_max_size, 10) || 2048);
+        rules.push('file', `max:${kb}`);
+        const exts = String(field.file_types || '').split(',').map((t) => t.trim().toLowerCase().replace(/^\./, '')).filter(Boolean);
+        if (exts.length) rules.push(`mimes:${exts.join(',')}`);
+    } else if (field.media_type === 'attachments') {
+        const maxFiles = Math.min(50, Math.max(1, parseInt(field.attach_max_files, 10) || 10));
+        rules.push('array', `max:${maxFiles}`);
+    } else if (field.media_type === 'gmap' || field.media_type === 'youtube') {
+        rules.push('string', 'max:2000');
+    } else if (field.lookup_parent_table) {
+        // FK fields: must reference an existing parent row.
+        rules.push('integer', `exists:${field.lookup_parent_table},id`);
+    } else if (field.display_type === 'options_list') {
+        const vals = parseOptionsList(field).map((o) => o.value);
+        if (field.options_display === 'multi') {
+            rules.push('array');
+        } else if (vals.length) {
+            rules.push(`in:${vals.join(',')}`);
+        } else {
+            rules.push('string', 'max:255');
+        }
+    } else if (field.display_type === 'repeater_simple') {
+        rules.push('array');
+    } else if (name.includes('email') || dt === 'EMAIL') rules.push('email', 'max:255');
     else if (/^(INT|BIGINT|SMALLINT)$/.test(dt)) rules.push('integer');
     else if (/^(DECIMAL|NUMERIC|FLOAT|DOUBLE)$/.test(dt)) rules.push('numeric');
     else if (/^(DATE|DATETIME|TIMESTAMP|TIME)$/.test(dt)) rules.push('date');
@@ -35,6 +62,67 @@ function validationRulesFor(field) {
         rules.push('string', `max:${Math.min(Number(len) || 255, 2000)}`);
     }
     return rules;
+}
+
+/** Per-item validation rules for array-shaped controls (multi-select, repeater). @param {object} field @returns {string[]} */
+function itemRulesFor(field) {
+    if (field.media_type === 'attachments') {
+        const kb = Math.max(1, parseInt(field.attach_max_size, 10) || 10240);
+        const exts = String(field.attach_types || '').split(',').map((t) => t.trim().toLowerCase().replace(/^\./, '')).filter(Boolean);
+        const r = ['file', `max:${kb}`];
+        if (exts.length) r.push(`mimes:${exts.join(',')}`);
+        return r;
+    }
+    if (field.display_type === 'options_list' && field.options_display === 'multi') {
+        const vals = parseOptionsList(field).map((o) => o.value);
+        return vals.length ? [`in:${vals.join(',')}`] : ['string'];
+    }
+    if (field.display_type === 'repeater_simple') {
+        const fmt = (field.repeater_simple_format_as || '').toLowerCase();
+        if (fmt === 'email') return ['email'];
+        if (fmt === 'url') return ['url'];
+        return ['string', 'max:255'];
+    }
+    return [];
+}
+
+/** Parse `a;;b;;c` option list values into {value,label} pairs. @param {object} field @returns {Array<{value:string,label:string}>} */
+function parseOptionsList(field) {
+    return String(field.options_list_values || '').split(';;').map((s) => s.trim()).filter(Boolean)
+        .map((v) => ({ value: v, label: v }));
+}
+
+/** Resolve the public-form control descriptor for a field. @param {object} field @param {object} tables @returns {{control:string, options?:Array, lookup?:{table:string,caption:string}}} */
+function computeControl(field, tables) {
+    const dt = (field.data_type || '').toUpperCase();
+    const fmt = (field.format_as || '').toLowerCase();
+    const disp = field.display_type;
+    const od = field.options_display;
+    if (field.lookup_parent_table) {
+        const caption = field.lookup_caption_1 || 'id';
+        return { control: od === 'radios' || field.lookup_display_as === 'radios' ? 'radio_lookup' : 'select_lookup', lookup: { table: field.lookup_parent_table, caption } };
+    }
+    if (disp === 'text_area' || disp === 'rich_html') return { control: 'textarea' };
+    if (disp === 'check_box') return { control: 'checkbox' };
+    if (field.media_type === 'image') return { control: 'image', storage: field.image_storage_provider || 'public', maxKb: Math.max(1, parseInt(field.max_file_size, 10) || 2048) };
+    if (field.media_type === 'upload') return { control: 'file', storage: field.file_storage_provider || 'public', maxKb: Math.max(1, parseInt(field.file_max_size, 10) || 2048), types: (field.file_types || '').split(',').map((t) => t.trim().toLowerCase().replace(/^\./, '')).filter(Boolean) };
+    if (field.media_type === 'attachments') return { control: 'files', storage: 'local', maxKb: Math.max(1, parseInt(field.attach_max_size, 10) || 10240), maxFiles: Math.min(50, Math.max(1, parseInt(field.attach_max_files, 10) || 10)), types: (field.attach_types || '').split(',').map((t) => t.trim().toLowerCase().replace(/^\./, '')).filter(Boolean) };
+    if (field.media_type === 'gmap' || field.media_type === 'youtube') return { control: 'embed' };
+    if (disp === 'options_list') {
+        if (od === 'multi') return { control: 'multiselect', options: parseOptionsList(field) };
+        if (od === 'radios') return { control: 'radios', options: parseOptionsList(field) };
+        return { control: 'select', options: parseOptionsList(field) };
+    }
+    if (disp === 'repeater_simple') return { control: 'repeater' };
+    if (fmt === 'email') return { control: 'email' };
+    if (fmt === 'url') return { control: 'url' };
+    if (fmt === 'tel') return { control: 'tel' };
+    if (fmt === 'password') return { control: 'password' };
+    if (dt === 'DATE') return { control: 'date' };
+    if (dt === 'DATETIME' || dt === 'TIMESTAMP') return { control: 'datetime' };
+    if (/^(INT|BIGINT|SMALLINT)$/.test(dt)) return { control: 'number' };
+    if (/^(DECIMAL|NUMERIC|FLOAT|DOUBLE)$/.test(dt)) return { control: 'decimal' };
+    return { control: 'text' };
 }
 
 /**
@@ -68,10 +156,19 @@ function generatePublicFormModule(fullSchema, outputDir) {
                 const rules = validationRulesFor(field);
                 const isEmail = (fname.toLowerCase().includes('email') || (field.data_type || '').toUpperCase() === 'EMAIL');
                 if (isEmail && !emailField) emailField = fname;
+                const control = computeControl(field, tables);
                 fields.push({
                     name: fname,
                     label: field.caption || fname,
                     rules,
+                    itemRules: itemRulesFor(field),
+                    control: control.control,
+                    options: control.options || null,
+                    lookup: control.lookup || null,
+                    storage: control.storage || null,
+                    maxKb: control.maxKb || null,
+                    maxFiles: control.maxFiles || null,
+                    types: control.types || null,
                     type: isEmail ? 'email' : (/^(DATE|DATETIME|TIMESTAMP)$/.test((field.data_type || '').toUpperCase()) ? 'date' : (/^(INT|BIGINT|SMALLINT|DECIMAL|NUMERIC|FLOAT|DOUBLE)$/.test((field.data_type || '').toUpperCase()) ? 'number' : 'text')),
                     required: field.required === 1 || field.required === true || field.not_null === 1,
                 });
@@ -112,7 +209,12 @@ function generatePublicFormModule(fullSchema, outputDir) {
             'resources/views/public/lookup.blade.php.njk');
 
         // Migration: add public_reference to each enabled table.
-        const ts = getFormattedTimestamp(new Date(), 2);
+        // Timestamp must sort AFTER every create_* migration of this run:
+        // with equal hhmmss, "add_public_reference..." sorts before
+        // "create_<table>..." alphabetically, so the hasTable guard would
+        // silently skip adding the column (live browser test, 2026-10-01:
+        // every public insert died with "no column named public_reference").
+        const ts = getFormattedTimestamp(new Date(Date.now() + 60_000), 1);
         const migName = `${ts}_add_public_reference_to_public_forms.php`;
         emit(path.join('database', 'migrations', migName),
             'database/migrations/add_public_reference.php.njk',
@@ -171,7 +273,12 @@ function exportPhpArray(obj) {
         lines.push(`            'success' => '${esc(r.success)}',`);
         lines.push(`            'fields' => [`);
         r.fields.forEach((f) => {
-            lines.push(`                ['name' => '${esc(f.name)}', 'label' => '${esc(f.label)}', 'type' => '${esc(f.type)}', 'required' => ${f.required ? 'true' : 'false'}, 'rules' => ['${f.rules.join("', '")}']],`);
+            const extra = [];
+            if (f.storage) extra.push(`'storage' => '${esc(f.storage)}'`);
+            if (f.maxKb) extra.push(`'max_kb' => ${f.maxKb}`);
+            if (f.maxFiles) extra.push(`'max_files' => ${f.maxFiles}`);
+            if (f.types) extra.push(`'types' => ['${f.types.join("', '")}']`);
+            lines.push(`                ['name' => '${esc(f.name)}', 'label' => '${esc(f.label)}', 'type' => '${esc(f.type)}', 'control' => '${esc(f.control)}', 'required' => ${f.required ? 'true' : 'false'}, 'rules' => ['${f.rules.join("', '")}'], 'item_rules' => [${f.itemRules.length ? `'${f.itemRules.join("', '")}'` : ''}], 'options' => ${f.options ? `[${f.options.map((o) => `['value' => '${esc(o.value)}', 'label' => '${esc(o.label)}']`).join(', ')}]` : 'null'}, 'lookup' => ${f.lookup ? `['table' => '${esc(f.lookup.table)}', 'caption' => '${esc(f.lookup.caption)}']` : 'null'}${extra.length ? ", " + extra.join(', ') : ''}],`);
         });
         lines.push(`            ],`);
         lines.push(`        ],`);
