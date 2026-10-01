@@ -153,8 +153,12 @@ export function populateMainDashboard(projectData) {
     setRadioValue('app-extra-wide', projectData.extra_wide);
     setElementValue('app-panel-height', projectData.panel_height);
     
-    // Tab: Security & technical — removed 2026-10-01 (options not yet
-    // implemented in generated apps; returning in a future release).
+    // Tab: Security & technical (rebuilt 2026-10-01 — all three options
+    // are implemented in the generated app; see laravelSystemToolsGenerator
+    // and the DatabaseSeeder admins-role block).
+    setElementValue('app-admins_group_access', projectData.admins_group_access);
+    setElementValue('app-allow_server_status', projectData.allow_server_status);
+    setElementValue('app-allow_pwa_install', projectData.allow_pwa_install);
     setElementValue('app-hook-logic', projectData.project_hook_workflow); 
     
     // Fire events

@@ -37,6 +37,10 @@ export const HELP_TABS = {
     body: 'Configure multi-tenant architecture: which table represents the tenant, and which tables are scoped so each tenant only sees its own records.'
   },
 
+  'tab-security': {
+    title: 'Security & technical',
+    body: 'Generated-app security switches: admins group access (Shield), a read-only server status page, and PWA install for the admin panel.'
+  },
   'tab-hooks': {
     title: 'Hooks',
     body: 'Optional custom logic that runs on project events. For advanced use — most apps never need this.'
@@ -418,9 +422,10 @@ export const HELP_ENTRIES = {
   'btn-configure-tenancy': { title: 'Configure tenancy', body: 'Opens the multi-tenancy configuration: choose the tenant table and which tables are tenant-scoped.' },
   'btn-edit-tenancy': { title: 'Edit tenancy', body: 'Change the tenancy configuration for this project.' },
 
-  // ============ Security & technical ============
-  // (Security & technical options removed 2026-10-01 — they were never
-  //  implemented in generated apps; help entries return with the rebuilt tab.)
+  // ============ Security & technical (rebuilt 2026-10-01) ============
+  'app-admins_group_access': { title: 'Admins group access', body: 'Creates an "admins" Shield role holding every permission. Any user assigned to it gets full admin-area access — no per-user permission work needed.' },
+  'app-allow_server_status': { title: 'Server status page', body: 'Adds a read-only /admin/server-status page: PHP version and limits, required extensions, Laravel environment, disk and memory headroom, queue backlog. Admins only.' },
+  'app-allow_pwa_install': { title: 'PWA install', body: 'Generates a web manifest + service worker so the admin panel installs like a native app on phones and desktops, using your theme color and app icons.' },
   'fixzy-check-updates': { title: 'Check for updates', body: 'SysMaker checks for newer versions on startup and notifies you.' },
   'fixzy-autosave-interval': { title: 'Auto-save interval (minutes)', body: 'How often your project is saved automatically when auto-save is on.' },
   'fixzy-show-begin-box': { title: 'Show beginner box', body: 'Shows the beginner guidance box for new projects.' },

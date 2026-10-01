@@ -46,7 +46,19 @@ class DatabaseSeeder extends Seeder {
             }
         }
 
+        // Generate Shield permissions (non-interactive).
+        \Illuminate\Support\Facades\Artisan::call('shield:generate', [
+            '--all' => true, '--panel' => 'admin', '--option' => 'permissions',
+        ]);
+
         // Filament Shield Security
         $this->call(ShieldSeeder::class);
+
+        // Admins group: full panel access via Shield role
+        $adminsRole = \Spatie\Permission\Models\Role::firstOrCreate([
+            'name' => 'admins',
+            'guard_name' => 'web'
+        ]);
+        $adminsRole->syncPermissions(\Spatie\Permission\Models\Permission::all());
     }
 }

@@ -86,6 +86,10 @@ class AdminPanelProvider extends PanelProvider
                 'panels::styles.after',
                 fn () => Blade::render('@vite("resources/css/filament/admin/theme.css")'),
             )
+            ->renderHook(
+                'panels::head.start',
+                fn () => \Illuminate\Support\Facades\Blade::render('<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#f59e0b"><link rel="apple-touch-icon" href="/pwa-icon-192.png"><script>window.addEventListener("load",()=>{if("serviceWorker" in navigator)navigator.serviceWorker.register("/fixzy-pwa-sw.js").catch(()=>{});});</script>'),
+            )
                         ->sidebarCollapsibleOnDesktop()
 			            ->topNavigation();
     }

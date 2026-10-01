@@ -1,0 +1,156 @@
+<?php
+
+namespace App\Filament\Pages;
+
+use Filament\Pages\Page;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Server Status (Fixzy SysMaker generated code).
+ *
+ * Read-only health overview for admins: PHP runtime, required extensions,
+ * Laravel environment, disk and memory headroom, and queue backlog.
+ * Enabled by the "Server status page" option in Fixzy SysMaker.
+ *
+ * Access: super_admin always; with Shield, anyone granted
+ * view_any_server_status. Without Shield any signed-in user (they are
+ * effectively admins in that model).
+ */
+class ServerStatus extends Page
+{
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-signal';
+
+    protected static ?string $navigationLabel = 'Server Status';
+
+    protected static ?string $title = 'Server Status';
+
+    protected static ?string $slug = 'server-status';
+
+    protected static ?int $navigationSort = 993;
+
+    protected static string | \UnitEnum | null $navigationGroup = 'System';
+
+    protected string $view = 'filament.pages.server-status';
+
+    /** @var array<string, mixed> */
+    public array $php = [];
+
+    /** @var array<string, bool> */
+    public array $extensions = [];
+
+    /** @var array<string, mixed> */
+    public array $app = [];
+
+    /** @var array<string, mixed> */
+    public array $disk = [];
+
+    /** @var array<string, mixed> */
+    public array $memory = [];
+
+    /** @var array<string, mixed> */
+    public array $queue = [];
+
+    /**
+     * Access gate: super admins pass; with Shield others need
+     * view_any_server_status; without Shield any authenticated user.
+     *
+     * @return bool Whether the current user may view server status.
+     */
+    public static function canAccess(): bool
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return false;
+        }
+        if (method_exists($user, 'hasRole') && $user->hasRole('super_admin')) {
+            return true;
+        }
+        if (method_exists($user, 'can')) {
+            return $user->can('view_any_server_status');
+        }
+
+        return true;
+    }
+
+    /**
+     * Collect all status data on page open.
+     */
+    public function mount(): void
+    {
+        $this->refreshData();
+    }
+
+    /**
+     * Re-collect status data (also used by the refresh action).
+     */
+    public function refreshData(): void
+    {
+        $this->php = [
+            'version' => PHP_VERSION,
+            'memory_limit' => (string) ini_get('memory_limit'),
+            'upload_max_filesize' => (string) ini_get('upload_max_filesize'),
+            'post_max_size' => (string) ini_get('post_max_size'),
+            'max_execution_time' => (string) ini_get('max_execution_time'),
+            'opcache' => function_exists('opcache_get_status') && @opcache_get_status(false) !== false,
+        ];
+
+        $required = ['pdo', 'mbstring', 'openssl', 'ctype', 'json', 'fileinfo', 'tokenizer', 'xml', 'curl', 'zip'];
+        foreach ($required as $ext) {
+            $this->extensions[$ext] = extension_loaded($ext);
+        }
+
+        $this->app = [
+            'laravel_version' => app()->version(),
+            'environment' => app()->environment(),
+            'debug' => config('app.debug'),
+            'url' => (string) config('app.url'),
+            'timezone' => (string) config('app.timezone'),
+            'server_time' => now()->format('Y-m-d H:i:s T'),
+        ];
+
+        $total = @disk_total_space(base_path());
+        $free = @disk_free_space(base_path());
+        $this->disk = [
+            'total' => $total !== false ? $this->humanBytes($total) : 'n/a',
+            'free' => $free !== false ? $this->humanBytes($free) : 'n/a',
+            'used_percent' => ($total && $total > 0 && $free !== false)
+                ? round((($total - $free) / $total) * 100, 1)
+                : null,
+        ];
+
+        $this->memory = [
+            'current' => $this->humanBytes((int) memory_get_usage(true)),
+            'peak' => $this->humanBytes((int) memory_get_peak_usage(true)),
+        ];
+
+        $driver = (string) config('queue.default');
+        $this->queue = ['driver' => $driver, 'pending' => null, 'failed' => null];
+        try {
+            if ($driver === 'database') {
+                $this->queue['pending'] = DB::table('jobs')->count();
+                $this->queue['failed'] = DB::table('failed_jobs')->count();
+            }
+        } catch (\Throwable) {
+            // Tables missing (migrations not run) — leave nulls.
+        }
+    }
+
+    /**
+     * Format bytes into a human-readable string.
+     *
+     * @param  int|float  $bytes  Byte count.
+     * @return string  Human-readable size.
+     */
+    protected function humanBytes($bytes): string
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $i = 0;
+        while ($bytes >= 1024 && $i < count($units) - 1) {
+            $bytes /= 1024;
+            $i++;
+        }
+
+        return round($bytes, $i === 0 ? 0 : 1) . ' ' . $units[$i];
+    }
+}

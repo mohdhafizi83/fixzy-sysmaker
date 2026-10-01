@@ -134,6 +134,7 @@
                 
                 <button class="tab-link" data-tab="tab-dashboard-builder" id="app-tab_dashboard_builder" name="app-tab_dashboard_builder">Dashboard Builder</button>
                 <button class="tab-link" data-tab="tab-architecture" id="app-tab_architecture" name="app-tab_architecture">Architecture & Multi-Tenancy</button>
+                <button class="tab-link" data-tab="tab-security" id="app-tab_security" name="app-tab_security">Security & technical</button>
                 <button class="tab-link" data-tab="tab-hooks">Hooks (Optional - for complex App)</button>
             </div>
 
@@ -3629,7 +3630,16 @@
                 <div id="tab-security" class="tab-pane">
                     <div class="card">
                         <div class="card-body">
-                            <p style="color:var(--text-muted,#888)">Security options are being rebuilt and will return in a future release. Your existing settings are preserved.</p>
+                            <div class="checkbox-grid">
+                                <label class="checkbox-label"><input type="checkbox" id="app-admins_group_access" name="app-admins_group_access" checked> All members of 'admins' group get full admin access (Shield)</label>
+                                <label class="checkbox-label"><input type="checkbox" id="app-allow_server_status" name="app-allow_server_status"> Add a server status page for admins</label>
+                                <label class="checkbox-label"><input type="checkbox" id="app-allow_pwa_install" name="app-allow_pwa_install" checked> Allow users to install the admin as a PWA on mobile/desktop</label>
+                            </div>
+                            <p class="form-hint" style="margin-top: 12px; font-size: 12px; color: #888;">
+                                These options are generated into your app. The 'admins' Shield role receives every
+                                permission; the status page shows PHP, extensions, disk, memory and queue health;
+                                the PWA shell makes /admin installable with your theme color and icons.
+                            </p>
                         </div>
                     </div>
                 </div>

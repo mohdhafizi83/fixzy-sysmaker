@@ -100,7 +100,9 @@ jobs:
           body: |
             ## Fixzy SysMaker ${{ github.ref_name }}
 
-            Desktop installers (source-available, free for personal & educational use):
+            **Free and open source (Apache 2.0)** — commercial use welcome. Generated files are yours to keep, forever.
+
+            Desktop installers:
 
             | Platform | File | Notes |
             |---|---|---|

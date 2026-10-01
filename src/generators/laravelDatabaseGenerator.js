@@ -1011,8 +1011,28 @@ async function generateLaravelDatabaseSeeder(fullSchema, basePath) {
         });
 
         if (projectSettings.module_authorization === 1) {
+            // Generate Shield permissions non-interactively BEFORE the
+            // Shield seeder runs: a fresh install has zero permission
+            // rows until shield:generate executes, and the seeder's
+            // Permission::all() sync would otherwise grant nothing.
+            runContent.push(`\n        // Generate Shield permissions (non-interactive).`);
+            runContent.push(`        \\Illuminate\\Support\\Facades\\Artisan::call('shield:generate', [`);
+            runContent.push(`            '--all' => true, '--panel' => 'admin', '--option' => 'permissions',`);
+            runContent.push(`        ]);`);
             runContent.push(`\n        // Filament Shield Security`);
             runContent.push(`        $this->call(ShieldSeeder::class);`);
+
+            // Admins group access: every member of the 'admins' role gets
+            // the full permission set (same as super_admin) so group
+            // membership alone grants admin-area access.
+            if (Number(projectSettings.admins_group_access) === 1) {
+                runContent.push(`\n        // Admins group: full panel access via Shield role`);
+                runContent.push(`        $adminsRole = \\Spatie\\Permission\\Models\\Role::firstOrCreate([`);
+                runContent.push(`            'name' => 'admins',`);
+                runContent.push(`            'guard_name' => 'web'`);
+                runContent.push(`        ]);`);
+                runContent.push(`        $adminsRole->syncPermissions(\\Spatie\\Permission\\Models\\Permission::all());`);
+            }
         }
 
         const content = `<?php\nnamespace Database\\Seeders;\nuse Illuminate\\Database\\Seeder;\n${importStatements.join('\n')}\n\nclass DatabaseSeeder extends Seeder {\n    public function run(): void {\n${runContent.join('\n')}\n    }\n}`;

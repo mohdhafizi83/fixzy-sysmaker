@@ -18,6 +18,14 @@ function q(sql) {
   return JSON.parse(execSync(`php -r '$d=new PDO("sqlite:${DB}"); $r=$d->query(${JSON.stringify(sql)})->fetchAll(PDO::FETCH_ASSOC); echo json_encode($r);'`, { encoding: 'utf8' }));
 }
 async function login(p) {
+  // Deterministic network: abort any non-localhost request (Filament's
+  // default avatar provider dials ui-avatars.com; a slow/hung external
+  // service makes networkidle never fire).
+  await p.route('**', (route) => {
+    const u = route.request().url();
+    if (u.includes('127.0.0.1') || u.startsWith('data:') || u.startsWith('blob:')) return route.continue();
+    return route.abort();
+  });
   await p.goto(APP + '/admin/login', { waitUntil: 'networkidle' });
   await p.fill('input[type=email]', 'admin@admin.com');
   await p.fill('input[type=password]', 'password');

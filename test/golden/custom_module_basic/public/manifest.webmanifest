@@ -1,0 +1,24 @@
+{
+    "name": "Custom Module Basic",
+    "short_name": "Custom Module Basic",
+    "description": "Admin panel generated with Fixzy SysMaker",
+    "start_url": "/admin",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#f59e0b",
+    "icons": [
+        {
+            "src": "/pwa-icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/pwa-icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

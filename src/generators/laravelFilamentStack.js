@@ -106,6 +106,11 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
             console.log(`[scheduler] ${schedulerResult.schedules} schedule entr(ies) compiled`);
         }
 
+        // System tools module (server status page, PWA shell) — shared files.
+        const { generateSystemToolsModule } = require('./laravelSystemToolsGenerator');
+        const sysToolsResult = generateSystemToolsModule(fullSchema, outputDir);
+        if (!sysToolsResult.success) throw new Error(`System tools: ${sysToolsResult.message}`);
+
         // Attachments module (multi-file documents per record) — shared files.
         const { generateAttachmentModule } = require('./laravelAttachmentGenerator');
         const attachmentResult = generateAttachmentModule(fullSchema, outputDir);

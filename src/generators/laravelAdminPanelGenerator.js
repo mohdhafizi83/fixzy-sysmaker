@@ -83,6 +83,10 @@ async function generateAdminPanelProvider(fullSchema, basePath) {
                 : null,
             // Localization module (Malay): locale middleware + switcher.
             localization_enabled: require('./localizationConfig').isLocalizationEnabled(project),
+            // System tools module: PWA head tags (manifest + service worker
+            // registration). Theme hex is validated by resolveTheme().
+            pwa_enabled: require('./laravelSystemToolsGenerator').pwaEnabled(fullSchema),
+            pwa_theme_hex: require('../core/theme').resolveTheme(project.theme_config).primary,
             // Theme system v1: neutral theme -> Filament color expression.
             // Presets map to named Filament palette constants; custom themes
             // pass the validated hex string (Filament generates the full
