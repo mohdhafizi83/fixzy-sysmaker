@@ -17,7 +17,7 @@
     "low-code"
   ],
   "author": "Mohd Hafizi Mohammad Nor",
-  "license": "SEE LICENSE IN LICENSE.md",
+  "license": "Apache-2.0",
   "devDependencies": {
     "electron": "^40.1.0",
     "electron-builder": "^26.15.3",
