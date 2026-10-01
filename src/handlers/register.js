@@ -1063,16 +1063,45 @@ ipcMain.handle('table:update', async (event, data) => {
         const transaction = db.transaction(() => {
             let oldTableName = null;
 
+            // Keep the human-facing page title in sync with module renames:
+            // when the user renames the module and the view title was never
+            // customized (it still equals the auto-generated table/module
+            // name), follow the rename. Otherwise the generated app keeps
+            // showing the old random name. Runs whether or not table_name
+            // is in the same payload (GUI saves them separately).
+            if (fieldsToUpdate.module_name) {
+                const cur = db.prepare('SELECT table_name, module_name, table_view_title FROM tables WHERE table_id = ?').get(table_id);
+                if (cur) {
+                    const autoTitle = cur.table_view_title == null
+                        || cur.table_view_title === cur.table_name
+                        || cur.table_view_title === cur.module_name;
+                    if (autoTitle && fieldsToUpdate.module_name !== cur.module_name) {
+                        fieldsToUpdate.table_view_title = fieldsToUpdate.module_name;
+                    }
+                }
+            }
+
             // If the table name is to be changed, validate and prepare for the menu update
             if (fieldsToUpdate.hasOwnProperty('table_name')) {
                 const newTableName = fieldsToUpdate.table_name;
                 
                 // Get the old table name BEFORE it is updated
-                const tableInfo = db.prepare('SELECT table_name, project_id FROM tables WHERE table_id = ?').get(table_id);
+                const tableInfo = db.prepare('SELECT table_name, module_name, table_view_title, project_id FROM tables WHERE table_id = ?').get(table_id);
                 if (!tableInfo) {
                     throw new Error(`Table with ID ${table_id} not found.`);
                 }
                 oldTableName = tableInfo.table_name;
+
+                // Keep the human-facing page title in sync: when the user renames
+                // the module and the view title was never customized (it still
+                // equals the auto-generated table/module name), follow the rename.
+                // Otherwise the generated app keeps showing the old random name.
+                const autoTitle = tableInfo.table_view_title == null
+                    || tableInfo.table_view_title === tableInfo.table_name
+                    || tableInfo.table_view_title === tableInfo.module_name;
+                if (autoTitle && fieldsToUpdate.module_name && fieldsToUpdate.module_name !== tableInfo.module_name) {
+                    fieldsToUpdate.table_view_title = fieldsToUpdate.module_name;
+                }
 
                 let isNameValid = true;
                 if (!newTableName || newTableName.trim() === '') isNameValid = false;
