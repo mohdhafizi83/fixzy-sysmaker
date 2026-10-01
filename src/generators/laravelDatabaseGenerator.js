@@ -598,7 +598,7 @@ async function generateLaravelMigrations(fullSchema, outputBasePath) {
                     line = `            ${getFieldDefinitionForMigration(field)}`;
                 }
                 if (field.not_null !== undefined && field.not_null !== null) { if (Number(field.not_null) === 0) line += `->nullable()`; } else { if (field.is_nullable === 1) line += `->nullable()`; }
-                if (field.default_value) { if (field.default_value.toUpperCase() === 'CURRENT_TIMESTAMP') line += `->useCurrent()`; else line += `->default('${field.default_value}')`; }
+                if (field.default_value && String(field.default_value).toUpperCase() !== 'NULL') { if (field.default_value.toUpperCase() === 'CURRENT_TIMESTAMP') line += `->useCurrent()`; else line += `->default('${field.default_value}')`; }
                 if (field.is_unique === 1 || field.unique === 1) line += `->unique()`;
                 content += `${line};\n`;
             });
@@ -747,7 +747,7 @@ async function generateLaravelUserMigration(fullSchema, basePath) {
                 }
                 
                 // Logik Default Value
-                if (field.default_value) { 
+                if (field.default_value && String(field.default_value).toUpperCase() !== 'NULL') { 
                     if (field.default_value.toUpperCase() === 'CURRENT_TIMESTAMP') line += `->useCurrent()`; 
                     else line += `->default('${field.default_value}')`; 
                 }

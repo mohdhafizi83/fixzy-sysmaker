@@ -112,7 +112,6 @@ class PendaftaranKursusForm
     ->trim(),
                 TextInput::make('gred')
     ->maxLength(5)
-    ->default('NULL')
     ->label('Gred')
     ->trim(),
                 Select::make('dokumen_lengkap')

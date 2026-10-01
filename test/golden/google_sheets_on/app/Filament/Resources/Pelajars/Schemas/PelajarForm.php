@@ -104,7 +104,6 @@ class PelajarForm
     )
     ->reorderable(false),
                 TextInput::make('tarikh_daftar')
-    ->default('NULL')
     ->label('Tarikh Daftar')
     ->trim(),
                 FileUpload::make('gambar_profil')

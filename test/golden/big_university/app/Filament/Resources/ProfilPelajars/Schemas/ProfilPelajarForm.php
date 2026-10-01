@@ -90,15 +90,12 @@ class ProfilPelajarForm
     ->trim(),
                 TextInput::make('no_telefon')
     ->maxLength(20)
-    ->default('NULL')
     ->label('No Telefon')
     ->trim(),
                 TextInput::make('tarikh_lahir')
-    ->default('NULL')
     ->label('Tarikh Lahir')
     ->trim(),
                 Select::make('info_kecemasan')
-    ->default('NULL')
     ->label('Info Kecemasan')
     ->options(['Primary' => 'Primary', 'Secondary' => 'Secondary', 'Diploma' => 'Diploma', 'Degree' => 'Degree', 'Masters' => 'Masters', 'PhD' => 'Ph D'])
     ,

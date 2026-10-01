@@ -19,8 +19,8 @@ return new class extends Migration
             $table->string('nama_penuh', 150);
             $table->string('no_matrik', 20)->unique();
             $table->json('email')->unique();
-            $table->date('tarikh_daftar')->nullable()->default('NULL');
-            $table->string('gambar_profil', 255)->nullable()->default('NULL');
+            $table->date('tarikh_daftar')->nullable();
+            $table->string('gambar_profil', 255)->nullable();
             $table->string('surat_tawaran', 255)->nullable();
             $table->timestamps();
             $table->softDeletes();

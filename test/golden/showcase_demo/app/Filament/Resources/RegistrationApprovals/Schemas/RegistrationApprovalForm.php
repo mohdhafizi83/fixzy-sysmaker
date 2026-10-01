@@ -113,7 +113,6 @@ class RegistrationApprovalForm
     ->label('Status')
     ->trim(),
                 TextInput::make('catatan')
-    ->default('NULL')
     ->label('Notes')
     ->trim(),
                 TextInput::make('tarikh_tindakan')

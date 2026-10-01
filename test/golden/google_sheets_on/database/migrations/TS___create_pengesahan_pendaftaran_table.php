@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignId('pendaftaran_id')->unique();
             $table->foreignId('user_id');
             $table->string('status', 15);
-            $table->text('catatan')->nullable()->default('NULL');
+            $table->text('catatan')->nullable();
             $table->dateTime('tarikh_tindakan')->useCurrent();
             $table->timestamps();
             $table->softDeletes();

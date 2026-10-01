@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('kod_kursus', 10)->unique();
             $table->text('deskripsi')->nullable();
             $table->integer('jam_kredit')->nullable()->default('3');
-            $table->foreignId('prasyarat_kursus_id')->nullable()->default('NULL');
+            $table->foreignId('prasyarat_kursus_id')->nullable();
             $table->string('lokasi_kelas', 255)->nullable();
             $table->string('youtube_intro', 255)->nullable();
             $table->timestamps();

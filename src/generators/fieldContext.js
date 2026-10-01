@@ -117,7 +117,9 @@ function buildFormFieldContext(field, elementType, opts = {}) {
         ctx.is_column_span_full = '->columnSpanFull()';
     }
     if (field.unique === 1) ctx.is_unique = '->unique(ignoreRecord: true)';
-    if (field.default_value) ctx.is_default_value = `->default('${field.default_value}')`;
+    // A captured "NULL" default (e.g. from SQL import of `DEFAULT NULL`) means
+    // "no default" — emitting ->default('NULL') would store the literal string.
+    if (field.default_value && String(field.default_value).toUpperCase() !== 'NULL') ctx.is_default_value = `->default('${field.default_value}')`;
     ctx.is_caption = `->label(${require('./localizationConfig').labelPhp(field.caption || toTitleCase(field.field_name), field, opts.tableName, opts.localizationEnabled)})`;
 
     // Options list

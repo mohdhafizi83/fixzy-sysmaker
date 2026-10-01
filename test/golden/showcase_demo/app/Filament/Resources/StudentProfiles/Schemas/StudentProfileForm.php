@@ -90,15 +90,12 @@ class StudentProfileForm
     ->trim(),
                 TextInput::make('no_telefon')
     ->maxLength(20)
-    ->default('NULL')
     ->label('Phone Number')
     ->trim(),
                 TextInput::make('tarikh_lahir')
-    ->default('NULL')
     ->label('Date of Birth')
     ->trim(),
                 Select::make('info_kecemasan')
-    ->default('NULL')
     ->label('Emergency Info')
     ->options(['Primary' => 'Primary', 'Secondary' => 'Secondary', 'Diploma' => 'Diploma', 'Degree' => 'Degree', 'Masters' => 'Masters', 'PhD' => 'Ph D'])
     ,

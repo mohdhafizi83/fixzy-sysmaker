@@ -113,7 +113,6 @@ class PengesahanPendaftaranForm
     ->label('Status')
     ->trim(),
                 TextInput::make('catatan')
-    ->default('NULL')
     ->label('Catatan')
     ->trim(),
                 TextInput::make('tarikh_tindakan')

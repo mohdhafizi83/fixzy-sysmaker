@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignId('pelajar_id');
             $table->foreignId('kursus_id');
             $table->dateTime('tarikh_pendaftaran')->nullable()->useCurrent();
-            $table->string('gred', 5)->nullable()->default('NULL');
+            $table->string('gred', 5)->nullable();
             $table->boolean('dokumen_lengkap')->nullable();
             $table->unique(['pelajar_id', 'kursus_id']);
             $table->timestamps();

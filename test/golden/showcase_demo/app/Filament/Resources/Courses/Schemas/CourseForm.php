@@ -87,7 +87,6 @@ class CourseForm
     ->label('Credit Hours')
     ->trim(),
                 Select::make('prasyarat_kursus_id')
-    ->default('NULL')
     ->label('Prerequisite Course ID')
     ->searchable()
     ->preload()

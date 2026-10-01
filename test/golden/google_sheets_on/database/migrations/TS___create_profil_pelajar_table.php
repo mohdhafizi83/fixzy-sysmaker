@@ -17,9 +17,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('pelajar_id')->unique();
             $table->text('alamat')->nullable();
-            $table->string('no_telefon', 20)->nullable()->default('NULL');
-            $table->date('tarikh_lahir')->nullable()->default('NULL');
-            $table->string('info_kecemasan', 200)->nullable()->default('NULL');
+            $table->string('no_telefon', 20)->nullable();
+            $table->date('tarikh_lahir')->nullable();
+            $table->string('info_kecemasan', 200)->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

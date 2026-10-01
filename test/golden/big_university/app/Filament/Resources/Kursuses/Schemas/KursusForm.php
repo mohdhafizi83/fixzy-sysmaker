@@ -87,7 +87,6 @@ class KursusForm
     ->label('Jam Kredit')
     ->trim(),
                 Select::make('prasyarat_kursus_id')
-    ->default('NULL')
     ->label('Prasyarat Kursus Id')
     ->searchable()
     ->preload()
