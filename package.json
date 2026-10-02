@@ -1,6 +1,6 @@
 {
   "name": "fixzy-sysmaker",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Visual database designer that builds your admin back office — a multi-stack code generator; Laravel + Filament is the first production-ready target.",
   "main": "src/main.js",
   "desktopName": "com.fixzy.app",
