@@ -97,6 +97,10 @@ jobs:
             artifacts/mac/*
             SHA256SUMS.txt
           generate_release_notes: true
+          # Release-candidate tags (v1.0.8-rc) are marked prerelease so
+          # electron-updater clients on the stable channel do NOT auto-update
+          # to an rc. Stable tags (no '-') keep the current behaviour.
+          prerelease: ${{ contains(github.ref_name, '-') }}
           body: |
             ## Fixzy SysMaker ${{ github.ref_name }}
 
