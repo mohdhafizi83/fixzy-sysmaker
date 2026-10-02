@@ -8,6 +8,38 @@ import { appState } from './state.js';
 import { resolveVariables } from './utils.js';
 import { SaveManager } from './saveManager.js'; // ✅ Correct import (avoids circular dependency)
 
+// Reload hooks registered per hookType ('project' | 'table') by
+// setupBuilderInstance, so populate code can re-sync a canvas when the
+// surrounding table/project changes. See reloadWorkflowBuilder().
+const builderRegistry = {};
+
+/**
+ * Re-syncs a workflow canvas from its hidden input's current value.
+ * Call after populating #tbl-hook-logic / #app-hook-logic for a newly
+ * opened table/project; without this the canvas keeps the PREVIOUS
+ * table's blocks and the next save writes them onto the new table.
+ * @param {'project'|'table'} hookType Which builder to reload.
+ * @returns {void}
+ */
+export function reloadWorkflowBuilder(hookType) {
+    let fn = builderRegistry[hookType];
+    if (!fn && hookType === 'table') {
+        // Fresh-launch path: the user opened the hooks canvas through the
+        // Modules Setup workspace without ever showing #table-settings-page,
+        // so the lazy MutationObserver never fired. Initialize now and set
+        // the observer's guard flag so it won't double-initialize later.
+        const tablePage = document.getElementById('table-settings-page');
+        if (tablePage) tablePage.dataset.workflowInitialized = 'true';
+        setupBuilderInstance({
+            containerId: 'table-workflow-container',
+            hiddenInputId: 'tbl-hook-logic',
+            hookType: 'table'
+        });
+        fn = builderRegistry[hookType];
+    }
+    if (typeof fn === 'function') fn();
+}
+
 /**
  * Reusable core function that sets up one workflow builder instance.
  * @param {Object} config Builder config {containerId, hiddenInputId, hookType}.
@@ -1080,18 +1112,35 @@ function setupBuilderInstance(config) {
     }
 
     const hiddenInput = document.getElementById(config.hiddenInputId);
-    try {
-        const workflowData = JSON.parse(hiddenInput.value || '{}');
+    /**
+     * Clears the canvas and rebuilds every block/connection from the hidden
+     * input's current JSON. Called at setup and whenever the surrounding
+     * table/project changes (otherwise blocks from the previously opened
+     * table stay on the canvas and get saved onto the NEW table — found
+     * 2026-10-02 during the live hooks audit).
+     * @returns {void}
+     */
+    const reloadFromHiddenInput = () => {
+        state.canvas.innerHTML = '';
+        state.blocks = {};
+        state.connections = [];
+        state.selectedConnection = null;
+        let workflowData = {};
+        try {
+            workflowData = JSON.parse(hiddenInput.value || '{}');
+        } catch (e) {
+            console.warn(`🔍 DEBUG_HOOK: Failed to load workflow state for ${config.containerId}:`, e);
+            workflowData = {};
+        }
         if (workflowData.blocks) {
             state.blocks = workflowData.blocks;
-            
             for (const blockId in state.blocks) {
                 const blockInfo = state.blocks[blockId];
                 const newBlock = createWorkflowBlock(blockInfo.type, blockInfo.x, blockInfo.y, blockId);
 
                 if (blockInfo.configData && blockInfo.configData !== '[]') {
                     const btn = newBlock.querySelector('.configure-btn');
-                    if(btn) {
+                    if (btn) {
                         btn.textContent = 'Configured';
                         btn.classList.replace('btn-secondary', 'btn-success');
                     }
@@ -1100,11 +1149,13 @@ function setupBuilderInstance(config) {
             }
         }
         state.connections = workflowData.connections || [];
-    } catch (e) { 
-        console.warn(`🔍 DEBUG_HOOK: Failed to load workflow state for ${config.containerId}:`, e);
-        state.blocks = {};
-        state.connections = [];
-    }
+        redrawConnections();
+    };
+    reloadFromHiddenInput();
+
+    // Register the reload hook so page-populate code can re-sync the canvas
+    // when a different table/project is opened (see reloadWorkflowBuilder()).
+    builderRegistry[config.hookType] = reloadFromHiddenInput;
 
     const observer = new ResizeObserver(() => {
         if (state.canvas.offsetWidth > 0 && state.canvas.offsetHeight > 0) {

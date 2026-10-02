@@ -93,6 +93,19 @@ export function initializeTableSaveHandlers() {
                     value = input.value;
                 } else value = input.value;
 
+                // Hooks are TABLE-level by contract: the workflow generator
+                // reads tables.table_hook_workflow only. The DOM id
+                // tbl-hook-logic would otherwise derive the non-existent
+                // 'hook_logic' column and the backend whitelist would
+                // silently drop the whole workflow (found 2026-10-02).
+                if (key === 'hook_logic') key = 'table_hook_workflow';
+                if (isCustomModule && key === 'table_hook_workflow') {
+                    // Never route hook JSON into a module settings_override —
+                    // no generator consumes it there. Always the table row.
+                    SaveManager.addToQueue('table', tableId, { table_hook_workflow: value });
+                    return;
+                }
+
                 // ==========================================
                 // DATA SAVE ROUTING
                 // ==========================================

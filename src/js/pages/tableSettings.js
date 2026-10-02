@@ -1,6 +1,7 @@
 // js/pages/tableSettings.js
 
 import { setElementValue, setRadioValue } from '../ui/formHelpers.js'; 
+import { reloadWorkflowBuilder } from '../workflowBuilder.js';
 import { renderApprovalTab } from '../features/approvalManager.js';
 import { renderAutomationTab } from '../features/schedulerManager.js';
 import { renderPublicFormTab } from '../features/publicFormManager.js';
@@ -257,6 +258,10 @@ export function populateTableSettings(tableName) {
     }
     
     setElementValue('tbl-hook-logic', tableData.table_hook_workflow); // Populate workflow data
+    // Re-sync the hooks canvas from the freshly populated hidden input —
+    // otherwise blocks from the previously opened table stay on the canvas
+    // and get saved onto THIS table (live-audit bug 2026-10-02).
+    reloadWorkflowBuilder('table');
     setElementValue('tbl-approval-enabled', tableData.approval_enabled);
     setElementValue('tbl-attachments-enabled', tableData.attachments_enabled);
     setElementValue('tbl-numbering-enabled', tableData.numbering_enabled);

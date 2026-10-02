@@ -2,6 +2,7 @@
 
 // Import UI helpers
 import { setElementValue, setRadioValue } from '../ui/formHelpers.js';
+import { reloadWorkflowBuilder } from '../workflowBuilder.js';
 import { appState } from '../state.js';
 import { loadProjectData, SaveManager } from '../../renderer.js';
 import { loadThemeSettings } from '../features/themeManager.js';
@@ -168,7 +169,10 @@ export function populateMainDashboard(projectData) {
     setElementValue('app-admins_group_access', projectData.admins_group_access);
     setElementValue('app-allow_server_status', projectData.allow_server_status);
     setElementValue('app-allow_pwa_install', projectData.allow_pwa_install);
-    setElementValue('app-hook-logic', projectData.project_hook_workflow); 
+    setElementValue('app-hook-logic', projectData.project_hook_workflow);
+    // Re-sync the project hooks canvas from the freshly populated hidden
+    // input (same cross-context carry-over bug as the table canvas).
+    reloadWorkflowBuilder('project'); 
     
     // Fire events
     document.getElementById('app-date-order')?.dispatchEvent(new Event('change'));
