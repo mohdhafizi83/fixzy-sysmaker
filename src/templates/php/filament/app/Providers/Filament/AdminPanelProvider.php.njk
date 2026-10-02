@@ -9,6 +9,8 @@ use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 {% if dashboard_class %}use {{ dashboard_class }} as Dashboard;{% else %}use Filament\Pages\Dashboard;{% endif %}{% if localization_enabled %}
 use App\Http\Middleware\SetLocale;
+{% endif %}{% if homepage_enabled %}
+use App\Filament\Pages\FixzyHomepage;
 {% endif %}
 
 use Illuminate\Support\Facades\Blade;
@@ -44,7 +46,8 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login({% if login_class %}{{ login_class }}{% endif %})
-            ->profile()
+            {% if homepage_enabled %}->homeUrl(FixzyHomepage::class)
+            {% endif %}            ->profile()
             {% if realtime_enabled %}->databaseNotifications()
             {% endif %}{% if mfa_provider %}->multiFactorAuthentication({{ mfa_provider }})
             {% endif %}{% if tenant_model %}->tenant(\App\Models\{{ tenant_model }}::class){% endif %}

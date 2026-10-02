@@ -131,10 +131,24 @@ ExportAction::make()->exporter(StudentDocumentExporter::class)
      */
     public static function getPluralModelLabel(): string
     {
-        return 'Student Documents';
+        return 'Documents';
     }
 	
     
+    public static function getNavigationGroup(): string
+    {
+        return 'Administration';
+    }
 
     
+    public static function getNavigationSort(): int
+    {
+        return undefined;
+    }
+
+    
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) static::getEloquentQuery()->count();
+    }
 }

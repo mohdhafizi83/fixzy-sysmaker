@@ -256,12 +256,19 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
 
     for (const topLevelItem of unified_menu) {
         if (topLevelItem.type === 'group') {
-            const foundItem = topLevelItem.items.find(item =>
-                isCustomModule ? item.module_id == options.moduleId : item.table_id == tableData.table_id
-            );
+            const foundItem = topLevelItem.items.find(item => {
+                if (isCustomModule) return item.module_id == options.moduleId;
+                // Name match is authoritative: menu items carry table_name,
+                // and fixtures/imports can share table_id across items.
+                if (item.table_name) return item.table_name === tableName;
+                return item.table_id == tableData.table_id;
+            });
             if (foundItem) { menuItem = foundItem; menuGroup = topLevelItem; break; }
         } else {
-            const isMatch = isCustomModule ? topLevelItem.module_id == options.moduleId : topLevelItem.table_id == tableData.table_id;
+            let isMatch;
+            if (isCustomModule) isMatch = topLevelItem.module_id == options.moduleId;
+            else if (topLevelItem.table_name) isMatch = topLevelItem.table_name === tableName;
+            else isMatch = topLevelItem.table_id == tableData.table_id;
             if (isMatch) { menuItem = topLevelItem; break; }
         }
     }
@@ -281,6 +288,16 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         menuName = menuItem.item_label;
     } else {
         menuName = isCustomModule ? options.customModuleName : (tableData.table_view_title || toPluralPascalCase(nameSource));
+    }
+
+    // --- Navigation badge (Menu Management > Show record count) ---
+    // The menu item's show_record_count flag surfaces the total record
+    // count as a Filament navigation badge.
+    let functionNavigationBadge = '';
+    if (menuItem && Number(menuItem.show_record_count) === 1) {
+        // Count via getEloquentQuery() so tenant/owner/filter scoping is
+        // respected — the badge matches what the list page shows.
+        functionNavigationBadge = `\n    public static function getNavigationBadge(): ?string\n    {\n        return (string) static::getEloquentQuery()->count();\n    }`;
     }
 
     // --- Slug ---
@@ -323,6 +340,7 @@ async function generateSingleResource(tableName, tableData, fullSchema, basePath
         relation_relationmanagers: relationRelationManagers,
         function_getnavigationgroup: functionGetNavigationGroup,
         function_getnavigationsort: functionGetNavigationSort,
+        function_navigation_badge: functionNavigationBadge,
         shortcut_menu_order: shortcutMenuOrder,
         menu_name: menuName,
         relations_audit: relationsAudit,

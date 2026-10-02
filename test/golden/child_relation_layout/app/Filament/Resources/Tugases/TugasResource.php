@@ -41,7 +41,7 @@ class TugasResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    
+    protected static ?int $navigationSort = 2;
     
     
 
@@ -131,9 +131,11 @@ ExportAction::make()->exporter(TugasExporter::class)
      */
     public static function getPluralModelLabel(): string
     {
-        return 'Pelajar Fakulti Ekonomi';
+        return 'Tugas';
     }
 	
+    
+
     
 
     

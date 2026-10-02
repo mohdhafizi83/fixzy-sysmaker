@@ -41,7 +41,7 @@ class SyarikatResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    
+    protected static ?int $navigationSort = 1;
     
     
 
@@ -131,9 +131,11 @@ ExportAction::make()->exporter(SyarikatExporter::class)
      */
     public static function getPluralModelLabel(): string
     {
-        return 'Pelajar Fakulti Ekonomi';
+        return 'Syarikat';
     }
 	
+    
+
     
 
     

@@ -13,6 +13,8 @@ use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages\Dashboard;
+use App\Filament\Pages\FixzyHomepage;
+
 
 use Illuminate\Support\Facades\Blade;
 use Filament\Panel;
@@ -47,7 +49,8 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->profile()
+            ->homeUrl(FixzyHomepage::class)
+                        ->profile()
             
             ->colors([
                 'primary' => Color::Amber,

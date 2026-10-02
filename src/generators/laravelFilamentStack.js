@@ -136,6 +136,11 @@ async function generateLaravelFilamentStack(fullSchema, outputDir) {
         const reportResult = generateReportModule(fullSchema, outputDir);
         if (!reportResult.success) throw new Error(`Reports: ${reportResult.error || reportResult.message}`);
 
+        // Homepage grid + custom menu links (Menu Management tab).
+        const { generateHomepageModule } = require('./laravelHomepageGenerator');
+        const homepageResult = await generateHomepageModule(fullSchema, outputDir);
+        if (!homepageResult.success) throw new Error(`Homepage: ${homepageResult.error || homepageResult.message}`);
+
         // Localization module (Malay + English switcher).
         const { generateLocalizationModule } = require('./laravelLocalizationGenerator');
         const localizationResult = generateLocalizationModule(fullSchema, outputDir);

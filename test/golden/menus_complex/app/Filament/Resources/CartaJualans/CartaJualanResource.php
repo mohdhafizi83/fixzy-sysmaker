@@ -131,10 +131,24 @@ ExportAction::make()->exporter(CartaJualanExporter::class)
      */
     public static function getPluralModelLabel(): string
     {
-        return 'Pelajar Fakulti Ekonomi';
+        return 'Carta_Jualan';
     }
 	
     
+    public static function getNavigationGroup(): string
+    {
+        return 'Analitik';
+    }
 
     
+    public static function getNavigationSort(): int
+    {
+        return 0;
+    }
+
+    
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) static::getEloquentQuery()->count();
+    }
 }

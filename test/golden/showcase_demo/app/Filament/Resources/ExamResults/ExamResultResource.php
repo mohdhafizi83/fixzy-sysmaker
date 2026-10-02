@@ -135,6 +135,20 @@ ExportAction::make()->exporter(ExamResultExporter::class)
     }
 	
     
+    public static function getNavigationGroup(): string
+    {
+        return 'Academic';
+    }
 
     
+    public static function getNavigationSort(): int
+    {
+        return undefined;
+    }
+
+    
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) static::getEloquentQuery()->count();
+    }
 }

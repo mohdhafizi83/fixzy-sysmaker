@@ -139,10 +139,24 @@ ExportAction::make()->exporter(StudentExporter::class)
      */
     public static function getPluralModelLabel(): string
     {
-        return 'Student Enrolment';
+        return 'Students';
     }
 	
     
+    public static function getNavigationGroup(): string
+    {
+        return 'Academic';
+    }
 
     
+    public static function getNavigationSort(): int
+    {
+        return undefined;
+    }
+
+    
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) static::getEloquentQuery()->count();
+    }
 }

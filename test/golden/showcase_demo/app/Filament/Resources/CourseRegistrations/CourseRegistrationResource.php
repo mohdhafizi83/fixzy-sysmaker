@@ -131,10 +131,24 @@ ExportAction::make()->exporter(CourseRegistrationExporter::class)
      */
     public static function getPluralModelLabel(): string
     {
-        return 'Course Registration';
+        return 'Registrations';
     }
 	
     
+    public static function getNavigationGroup(): string
+    {
+        return 'Enrolment & Finance';
+    }
 
     
+    public static function getNavigationSort(): int
+    {
+        return undefined;
+    }
+
+    
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) static::getEloquentQuery()->count();
+    }
 }

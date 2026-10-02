@@ -2972,6 +2972,14 @@ ipcMain.handle('preview:instant-run', async (event) => {
             await generateFilamentResourcesCustomModules(fullSchema, previewPath);
             await generateFilamentExports(fullSchema, previewPath);
             await generateFilamentImporters(fullSchema, previewPath);
+
+            // Homepage grid + custom menu links (Menu Management) — must
+            // run BEFORE the panel provider, which references
+            // FixzyHomepage when "Menu at Homepage" is enabled.
+            const { generateHomepageModule } = require('../generators/laravelHomepageGenerator');
+            const hpRes = await generateHomepageModule(fullSchema, previewPath);
+            if (!hpRes.success) throw new Error(`Homepage: ${hpRes.error || hpRes.message}`);
+
             await generateAdminPanelProvider(fullSchema, previewPath);
 
             // Workflow hooks + SSO/LDAP integrations (live preview parity

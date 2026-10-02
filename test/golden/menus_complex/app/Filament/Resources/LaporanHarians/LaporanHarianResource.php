@@ -41,7 +41,7 @@ class LaporanHarianResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    
+    protected static ?int $navigationSort = 0;
     
     
 
@@ -131,10 +131,16 @@ ExportAction::make()->exporter(LaporanHarianExporter::class)
      */
     public static function getPluralModelLabel(): string
     {
-        return 'Pelajar Fakulti Ekonomi';
+        return 'Laporan_Harian';
     }
 	
     
 
     
+
+    
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) static::getEloquentQuery()->count();
+    }
 }

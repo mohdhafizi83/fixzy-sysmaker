@@ -144,4 +144,10 @@ ExportAction::make()->exporter(KontrakExporter::class)
     
 
     
+
+    
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) static::getEloquentQuery()->count();
+    }
 }

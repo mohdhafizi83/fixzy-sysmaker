@@ -15,6 +15,8 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages\Dashboard;
 use App\Http\Middleware\SetLocale;
 
+use App\Filament\Pages\FixzyHomepage;
+
 
 use Illuminate\Support\Facades\Blade;
 use Filament\Panel;
@@ -49,7 +51,8 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->profile()
+            ->homeUrl(FixzyHomepage::class)
+                        ->profile()
             
             ->colors([
                 'primary' => Color::Amber,

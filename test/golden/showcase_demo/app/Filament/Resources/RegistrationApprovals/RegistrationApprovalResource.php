@@ -131,10 +131,24 @@ ExportAction::make()->exporter(RegistrationApprovalExporter::class)
      */
     public static function getPluralModelLabel(): string
     {
-        return 'Registration Approval';
+        return 'Approvals';
     }
 	
     
+    public static function getNavigationGroup(): string
+    {
+        return 'Enrolment & Finance';
+    }
 
     
+    public static function getNavigationSort(): int
+    {
+        return undefined;
+    }
+
+    
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) static::getEloquentQuery()->count();
+    }
 }

@@ -42,7 +42,7 @@ class LogPentingResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    
+    protected static ?int $navigationSort = 1;
     
     
 
@@ -133,9 +133,11 @@ ExportAction::make()->exporter(LogPentingExporter::class)
      */
     public static function getPluralModelLabel(): string
     {
-        return 'Pelajar Fakulti Ekonomi';
+        return 'Log_Penting';
     }
 	
+    
+
     
 
     

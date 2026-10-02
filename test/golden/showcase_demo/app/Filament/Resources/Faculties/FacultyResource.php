@@ -137,6 +137,20 @@ ExportAction::make()->exporter(FacultyExporter::class)
     }
 	
     
+    public static function getNavigationGroup(): string
+    {
+        return 'Administration';
+    }
 
     
+    public static function getNavigationSort(): int
+    {
+        return undefined;
+    }
+
+    
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) static::getEloquentQuery()->count();
+    }
 }

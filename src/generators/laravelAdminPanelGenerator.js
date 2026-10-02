@@ -83,6 +83,9 @@ async function generateAdminPanelProvider(fullSchema, basePath) {
                 : null,
             // Localization module (Malay): locale middleware + switcher.
             localization_enabled: require('./localizationConfig').isLocalizationEnabled(project),
+            // Homepage grid (Menu Management): panel lands on the card
+            // grid when "Menu at Homepage" is on and there are modules.
+            homepage_enabled: require('./laravelHomepageGenerator').homepageEnabled(fullSchema),
             // System tools module: PWA head tags (manifest + service worker
             // registration). Theme hex is validated by resolveTheme().
             pwa_enabled: require('./laravelSystemToolsGenerator').pwaEnabled(fullSchema),

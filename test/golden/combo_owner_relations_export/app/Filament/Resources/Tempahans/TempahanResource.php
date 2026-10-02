@@ -41,7 +41,7 @@ class TempahanResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    
+    protected static ?int $navigationSort = 2;
     
     
     public static function getEloquentQuery(): Builder
@@ -136,9 +136,11 @@ ExportAction::make()->exporter(TempahanExporter::class)
      */
     public static function getPluralModelLabel(): string
     {
-        return 'Pelajar Fakulti Ekonomi';
+        return 'Tempahan';
     }
 	
+    
+
     
 
     
