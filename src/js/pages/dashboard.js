@@ -87,22 +87,12 @@ export function populateMainDashboard(projectData) {
     // ▼▼▼ START: ARCHITECTURE & TENANCY LOGIC ▼▼▼
     setRadioValue('app-tenancy_type', projectData.tenancy_type || 'standard');
 
-    // 1. Build the Tenant Table dropdown options based on the current table list
-    const tenantTableSelect = document.getElementById('app-tenant_table');
-    if (tenantTableSelect && appState.jsonData?.database?.table) {
-        tenantTableSelect.innerHTML = '<option value="">-- Please Select --</option>';
-        Object.keys(appState.jsonData.database.table).forEach(tableName => {
-            const option = document.createElement('option');
-            option.value = tableName;
-            option.textContent = tableName;
-            tenantTableSelect.appendChild(option);
-        });
-        // Set the value already stored in the DB
-        setElementValue('app-tenant_table', projectData.tenant_table || '');
-    }
+    // NOTE: the tenant table itself is chosen through the tenancy wizard
+    // (tenancyManager), not a dropdown here — the old 'app-tenant_table'
+    // select no longer exists in index.html.
 
-    // 2. Logic to show/hide the Tenant Table dropdown
-    // Tenant-table selector only shows for multi-tenant projects.
+    // Logic to show/hide the Tenant Configuration column
+    // Tenant config only shows for multi-tenant projects.
     const toggleTenantTableVisibility = () => {
         const fgTenant = document.getElementById('fg-tenant-table');
         const selectedTenancy = document.querySelector('input[name="app-tenancy_type"]:checked')?.value;

@@ -87,9 +87,18 @@ class TenancyManager {
         const tenantTable = appState.activeProject?.tenant_table;
         const tenancyType = appState.activeProject?.tenancy_type;
 
+        // Re-sync the internal tracker on every full project load. init() runs at
+        // DOMContentLoaded before activeProject exists, so without this the tracker
+        // stays 'standard' and cancelling the wizard would wrongly save 'standard'
+        // over a real multi-tenant project (inconsistent DB state).
+        this.currentTenancyType = tenancyType || 'standard';
+
         if (tenantTable && tenancyType !== 'standard') {
-            // Get the list of privacy tables dynamically
+            // Get the list of privacy tables dynamically (the auto-managed
+            // tenancy pivot is excluded — it is not a user-chosen table).
+            const pivotTableName = `${tenantTable}_user`;
             const securedTables = Object.keys(appState.jsonData?.database?.table || {}).filter(tableName => {
+                if (tableName === pivotTableName) return false;
                 const fields = appState.jsonData.database.table[tableName].fields || {};
                 return fields[`${tenantTable}_id`] !== undefined;
             });
@@ -238,7 +247,6 @@ if (tenancyType === 'standard') {
 
         const hasTable = document.querySelector('input[name="wizard_has_table"]:checked').value === 'yes';
         let tenantTable = '';
-        let tenantTableId = null; // Needed to register the Relationship
         const rawName = document.getElementById('wizard-new-table-name').value.trim();
         
         if (hasTable) {
@@ -292,13 +300,10 @@ if (tenancyType === 'standard') {
                 newTable.module_name = rawName;
                 newTable.feature_source = 'multi_tenancy';
                 await window.electronAPI.updateTable(newTable);
-                tenantTableId = newTable.table_id;
-                
+
                 await createAndSetupField(newTable.table_id, {
                     field_name: 'name', data_type: 'VARCHAR', length: 255, not_null: 1, caption: 'Name'
                 });
-            } else {
-                tenantTableId = appState.jsonData.database.table[tenantTable].table_id;
             }
 
             // C. Inject the FK into the privacy tables (hidden from the UI)
@@ -353,15 +358,14 @@ if (tenancyType === 'standard') {
                     });
 
                     // <--- IMPROVEMENT 2: Register the Relationship for the Pivot Table --->
+                    // NOTE: the relationship:upsert handler resolves tables by NAME
+                    // (parentTableName/childTableName), not by id — sending ids
+                    // made this call fail silently and the pivot tab never appeared.
                     if (window.electronAPI.upsertRelationship) {
                         await window.electronAPI.upsertRelationship({
-                            parent_table_id: tenantTableId,
-                            child_table_id: pivotTable.table_id,
-                            fk_child_field: fkFieldName,
-                            show_tab: 1, // Show the tab under the Parent form
-                            show_icon: 1,
-                            tab_title: 'User List',
-                            allow_add_from_tv: 1
+                            parentTableName: tenantTable,
+                            childTableName: pivotTableName,
+                            fk_child_field: fkFieldName
                         });
                         console.log(`[Auto-Inject] Relationship registered: ${tenantTable} -> ${pivotTableName}`);
                     }
