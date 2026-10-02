@@ -1038,7 +1038,7 @@ ipcMain.handle('project:update', async (event, data) => {
             'tables_per_row', 'extra_wide', 'panel_height', 'hide_login', 'allow_sql_tool',
             'allow_server_status', 'admins_group_access', 'allow_table_view_sql',
             'copy_children_async', 'allow_pwa_install', 'url', 'project_hook_workflow', 'stack_base', 'stack_database',
-			'stack_theme', 'module_auth_email_2fa', 'auth_2fa_mode', 'module_auth_email_captcha', 'auth_captcha_mode', 'module_auth_ldap',
+			'module_auth_email_2fa', 'auth_2fa_mode', 'module_auth_email_captcha', 'auth_captcha_mode', 'module_auth_ldap',
             'module_auth_google_sso', 'module_authorization', 'module_log_audit', 'module_log_activity', 'data_delete_type', 'module_fake_data', 'tenancy_type', 'tenant_table', 'debug_mode',
             'module_realtime', 'realtime_backend', 'module_google_sheets', 'module_scheduler', 'backup_config',
             'kiosk_enabled', 'kiosk_rotate_seconds', 'kiosk_page_size'

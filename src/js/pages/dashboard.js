@@ -41,9 +41,7 @@ export function populateMainDashboard(projectData) {
     }
     // Now set the values for the visible selects
     const dbSelect = document.getElementById('app-stack-database');
-    const themeSelect = document.getElementById('app-stack-theme');
     if(dbSelect) setElementValue('app-stack-database', projectData.stack_database);
-    if(themeSelect) setElementValue('app-stack-theme', projectData.stack_theme);
 	
 	setElementValue('app-module-auth-email-2fa', projectData.module_auth_email_2fa);
 	setElementValue('app-module-auth-email-captcha', projectData.module_auth_email_captcha);

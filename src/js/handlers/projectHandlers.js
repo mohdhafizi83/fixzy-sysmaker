@@ -264,10 +264,9 @@ export function initializeStackSelectorHandlers() {
         });
 
         // Rename the visible selects to be included in the save logic
-        document.querySelectorAll('.app-stack-database, .app-stack-theme').forEach(select => {
+        document.querySelectorAll('.app-stack-database').forEach(select => {
             if (select.closest('.stack-detail-group').style.display !== 'none') {
                  if(select.classList.contains('app-stack-database')) select.id = 'app-stack-database';
-                 if(select.classList.contains('app-stack-theme')) select.id = 'app-stack-theme';
             } else {
                 select.id = ''; // Remove ID to exclude from saving
             }
