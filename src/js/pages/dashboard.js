@@ -201,6 +201,13 @@ export function initializeProjectSaveHandlers() {
 
         const input = event.target;
 
+        // Field/table-level controls live inside #main-dashboard-page (the
+        // Modules Setup workspace nests them here). They are owned by the
+        // field/table save handlers — never route them into the project row,
+        // or a field edit would write a bogus column onto the project.
+        const idOrName = (input.id || input.name || '');
+        if (idOrName.startsWith('fld-') || idOrName.startsWith('tbl-')) return;
+
         // Backup settings: several inputs serialise into one backup_config JSON.
         if (input.id && input.id.startsWith('app-backup-')) {
             saveBackupSettings();

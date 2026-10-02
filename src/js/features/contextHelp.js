@@ -100,6 +100,11 @@ function showPanel(show) {
   if (!panel || !toggleBtn) return;
   panel.classList.toggle('fixzy-help-open', show);
   toggleBtn.classList.toggle('active', show);
+  // Reserve horizontal space while open: the panel is a fixed 340px overlay
+  // on the right edge; without this it covers the right column of the
+  // header/content (Auto >> button, checkboxes, tab buttons) and swallows
+  // their clicks.
+  document.body.classList.toggle('fixzy-help-open', show);
   try { localStorage.setItem(LS_VISIBLE, show ? '1' : '0'); } catch (e) { /* private mode */ }
 }
 
@@ -179,6 +184,7 @@ export function initContextHelp() {
   try { visible = localStorage.getItem(LS_VISIBLE) !== '0'; } catch (e) { /* default open */ }
   if (panel) panel.classList.toggle('fixzy-help-open', visible);
   if (toggleBtn) toggleBtn.classList.toggle('active', visible);
+  document.body.classList.toggle('fixzy-help-open', visible);
   if (visible) render(tabFallback(), null);
 
   // Focus tracking (capture phase so we see it before other handlers)

@@ -13,6 +13,15 @@ export const SaveManager = {
         _refreshProjectDataCallback = loadDataFunction;
     },
 
+    /**
+     * True when no pending saves are waiting in the queue. Used by the
+     * beforeunload safety net in renderer.js to warn about unsaved changes.
+     * @returns {boolean}
+     */
+    isQueueEmpty() {
+        return Object.keys(this.queue).length === 0;
+    },
+
 async refreshState() {
         if (_refreshProjectDataCallback) {
             console.log("[SaveManager] Reloading project data...");

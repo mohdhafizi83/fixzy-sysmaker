@@ -281,6 +281,20 @@ export function initializeDataTypeRules() {
             }
         }
         applyDataTypeRules();
+
+        // Auto-unsigned for INT must PERSIST. This lives in the user-driven
+        // change handler (NOT applyDataTypeRules, which also runs during
+        // field populate) so opening a field never overwrites a deliberate
+        // unsigned=0. A silent `.checked = true` never fires 'change', so
+        // the save handler never ran and the DB kept unsigned=0 while the
+        // UI showed a tick (UI/DB divergence). Dispatch change to queue it.
+        if (dataTypeSelect.value.toUpperCase() === 'INT') {
+            const unsignedEl = document.getElementById('fld-unsigned');
+            if (unsignedEl && !unsignedEl.checked) {
+                unsignedEl.checked = true;
+                unsignedEl.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
     });
 }
 
@@ -475,7 +489,6 @@ export function applyDataTypeRules() {
     }
 
     if (selectedType === 'VARCHAR' && !elements.length.value) elements.length.value = 255;
-    if (selectedType === 'INT') elements.unsigned.checked = true;
     if (selectedType === 'DECIMAL') {
         if (!elements.length.value) elements.length.value = 10;
         if (!elements.precision.value) elements.precision.value = 2;
@@ -1042,32 +1055,62 @@ export function initializeCalculatedFieldRules() {
     if (!enableCheckbox) return;
 
     // Collects validation errors for the calculated field configuration.
+    //
+    // IMPORTANT: several conflicting controls (read-only, required,
+    // options-list-values, format-as) live in the Modules Setup workspace
+    // (#module-field-settings), which is HIDDEN while the user works in
+    // Models Design. Reading their DOM state there returns a stale value
+    // from whichever field the module workspace last loaded — so the guard
+    // blocked valid fields and fired spurious modals. Validate against the
+    // actual field record in appState instead; fall back to the DOM only
+    // when the record is unavailable.
+    const currentFieldRecord = () => {
+        const titleEl = document.querySelector('#field-settings-page .field-name');
+        if (!titleEl) return null;
+        const parts = titleEl.textContent.trim().split('.');
+        if (parts.length < 2) return null;
+        return appState.jsonData?.database?.table?.[parts[0]]?.fields?.[parts[1]] || null;
+    };
+
     const validateConditions = () => {
+        const rec = currentFieldRecord();
         const getEl = (id) => document.getElementById(id); // shorthand element lookup
-        const getValue = (id) => getEl(id)?.value; // shorthand value read
-        const isChecked = (id) => getEl(id)?.checked; // shorthand checked read
+        // Read a checkbox: appState record first, DOM as fallback.
+        const isChecked = (key, domId) => {
+            if (rec && rec[key] !== undefined && rec[key] !== null) return rec[key] === 1 || rec[key] === true;
+            return !!getEl(domId)?.checked;
+        };
+        // Read a value: appState record first, DOM as fallback.
+        const getValue = (key, domId) => {
+            if (rec && rec[key] !== undefined) return rec[key];
+            return getEl(domId)?.value;
+        };
         const errors = [];
 
-        if (!isChecked('fld-read-only')) errors.push("Field must be set as 'Read Only'.");
-        if (isChecked('fld-primary-key')) errors.push("Field cannot be a 'Primary Key'.");
-        if (isChecked('fld-required')) errors.push("Field cannot be 'Required'.");
-        if (isChecked('fld-text-area') || isChecked('fld-rich-html')) errors.push("Field cannot be a 'Text area' or 'Rich (HTML) area'.");
-        if (isChecked('fld-auto-increment')) errors.push("Field cannot be 'Auto Increment'.");
-        if (isChecked('fld-unique')) errors.push("Field cannot be 'Unique'.");
-        const mediaLinkBehavior = getValue('fld-media-link-behavior');
+        if (!isChecked('read_only', 'fld-read-only')) errors.push("Field must be set as 'Read Only'.");
+        if (isChecked('primary_key', 'fld-primary-key')) errors.push("Field cannot be a 'Primary Key'.");
+        if (isChecked('required', 'fld-required')) errors.push("Field cannot be 'Required'.");
+        const displayType = (getValue('display_type', 'fld-display-type') || '').toString();
+        if (displayType === 'text_area' || displayType === 'rich_html') errors.push("Field cannot be a 'Text area' or 'Rich (HTML) area'.");
+        if (isChecked('auto_increment', 'fld-auto-increment')) errors.push("Field cannot be 'Auto Increment'.");
+        if (isChecked('unique', 'fld-unique')) errors.push("Field cannot be 'Unique'.");
+        const mediaLinkBehavior = getValue('media_link_behavior', 'fld-media-link-behavior');
         if (mediaLinkBehavior === 'web_link' || mediaLinkBehavior === 'email_link') errors.push("Field cannot be a 'Web/email link'.");
-        const mediaType = document.querySelector('input[name="fld-media-type"]:checked')?.value;
+        const mediaType = getValue('media_type', null)
+            || document.querySelector('input[name="fld-media-type"]:checked')?.value;
         if (['image', 'upload'].includes(mediaType)) errors.push("Field cannot be an 'Image/file upload' type.");
         if (['gmap', 'youtube'].includes(mediaType)) errors.push("Field cannot be a 'Map/video' type.");
-        if (getValue('fld-lookup-parent-table')) errors.push("Field cannot be a 'Lookup field'.");
-        if (getValue('fld-options-list-values')) errors.push("Field cannot be an 'Options list' field.");
-        if (getValue('fld-format-as') !== 'default') errors.push("Field cannot have a 'Data format' specified.");
-        if (getValue('fld-default-value')) errors.push("Field cannot have a 'Default value'.");
+        if (getValue('lookup_parent_table', 'fld-lookup-parent-table')) errors.push("Field cannot be a 'Lookup field'.");
+        if (getValue('options_list_values', 'fld-options-list-values')) errors.push("Field cannot be an 'Options list' field.");
+        const formatAs = getValue('format_as', 'fld-format-as');
+        if (formatAs && formatAs !== 'default') errors.push("Field cannot have a 'Data format' specified.");
+        if (getValue('default_value', 'fld-default-value')) errors.push("Field cannot have a 'Default value'.");
 
         return errors;
     };
 
     enableCheckbox.addEventListener('click', (event) => {
+        if (appState.isPopulatingData) return;
         if (enableCheckbox.checked) {
             const validationErrors = validateConditions();
             if (validationErrors.length > 0) {
@@ -1083,7 +1126,11 @@ export function initializeCalculatedFieldRules() {
     });
 
     // Reverts the calculated checkbox with a dialog when validation fails.
+    // Skipped while populating: fieldSettings dispatches synthetic 'change'
+    // events on the conflicting controls during load, which used to raise a
+    // modal on every field selection and freeze the toolbar behind it.
     const checkAndDisableCalculatedField = () => {
+        if (appState.isPopulatingData) return;
         if (!enableCheckbox.checked) return;
         const validationErrors = validateConditions();
         if (validationErrors.length > 0) {

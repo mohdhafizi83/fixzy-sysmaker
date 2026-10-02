@@ -324,6 +324,15 @@ html, body {
 #fixzy-help-panel.fixzy-help-open {
     transform: translateX(0);
 }
+/* While the help panel is open, reserve its 340px on the right of the
+   header and content so fixed-position overlay never covers controls
+   (Auto >> button, checkboxes, tab buttons were being click-swallowed). */
+body.fixzy-help-open .main-content {
+    padding-right: calc(2rem + 340px);
+}
+body.fixzy-help-open .main-header {
+    padding-right: calc(2rem + 340px);
+}
 .fixzy-help-header {
     display: flex;
     align-items: center;
