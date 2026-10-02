@@ -23,7 +23,37 @@ const { isLocalizationEnabled, defaultLocale, collectLocalizationStrings } = req
  */
 function generateLocalizationModule(fullSchema, outputDir) {
     try {
-        if (!isLocalizationEnabled(fullSchema.project || {})) {
+        const project = fullSchema.project || {};
+        const localizationOn = isLocalizationEnabled(project);
+
+        // The manifest ALWAYS carries the project's locale + timezone
+        // (Localization tab), even when the Malay switcher module is off:
+        // the deploy/update flow clones the skeleton AFTER generation, so
+        // the manifest is the only carrier that survives to the target
+        // project. See deploymentHandler.applyManifestLocalization().
+        const { languageToLocale, isValidTimezone } = require('./localizationConfig');
+        const locale = languageToLocale(project);
+        const timezone = isValidTimezone(project.timezone_select) ? project.timezone_select : 'UTC';
+
+        if (!localizationOn) {
+            // No switcher files, but still stamp locale/timezone on the manifest.
+            const manifestPath = path.join(outputDir, 'fixzy-manifest.json');
+            fs.mkdirSync(path.dirname(manifestPath), { recursive: true });
+            let manifest = { composer: [], php_extensions: [], npm: [], providers: [] };
+            if (fs.existsSync(manifestPath)) {
+                try {
+                    const existing = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+                    manifest = {
+                        composer: Array.isArray(existing.composer) ? existing.composer : [],
+                        php_extensions: Array.isArray(existing.php_extensions) ? existing.php_extensions : [],
+                        npm: Array.isArray(existing.npm) ? existing.npm : [],
+                        providers: Array.isArray(existing.providers) ? existing.providers : [],
+                    };
+                } catch (e) { /* corrupt manifest: start fresh */ }
+            }
+            manifest.locale = locale;
+            manifest.timezone = timezone;
+            fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
             return { success: true, files: [], skipped: true };
         }
 
@@ -86,6 +116,8 @@ function generateLocalizationModule(fullSchema, outputDir) {
         if (!manifest.providers.includes(providerClass)) {
             manifest.providers.push(providerClass);
         }
+        manifest.locale = locale;
+        manifest.timezone = timezone;
         fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 
         return { success: true, files: written };

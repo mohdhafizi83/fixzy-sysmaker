@@ -5,5 +5,7 @@
   "providers": [
     "App\\Providers\\AttachmentServiceProvider",
     "App\\Providers\\PublicFormServiceProvider"
-  ]
+  ],
+  "locale": "en",
+  "timezone": "Asia/Kuala_Lumpur"
 }

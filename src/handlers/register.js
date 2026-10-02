@@ -2780,12 +2780,47 @@ ipcMain.handle('preview:instant-run', async (event) => {
                     console.log(`[Preview] DEBUGBAR_ENABLED newly injected as: ${targetDebugMode}`);
                 }
 
-                // 3. Save the file if there were any changes
+                // 3. APP_LOCALE Update Logic (Localization tab). The
+                // language_select maps to a Laravel locale code; the
+                // generated app reads it via env('APP_LOCALE', 'en').
+                const { languageToLocale } = require('../generators/localizationConfig');
+                const targetLocale = languageToLocale(activeProject);
+                const currentLocaleMatch = envContent.match(/^APP_LOCALE=(.*)$/m);
+                const currentLocale = currentLocaleMatch ? currentLocaleMatch[1].trim() : null;
+                if (currentLocale !== targetLocale) {
+                    const localeRe = /^APP_LOCALE=.*$/m;
+                    if (localeRe.test(envContent)) envContent = envContent.replace(localeRe, `APP_LOCALE=${targetLocale}`);
+                    else envContent += `\nAPP_LOCALE=${targetLocale}\n`;
+                    envChanged = true;
+                    console.log(`[Preview] APP_LOCALE updated to: ${targetLocale}`);
+                }
+
+                // 4. Save the file if there were any changes
                 if (envChanged) {
                     fs.writeFileSync(envPath, envContent, 'utf8');
                 }
             }
             // --- END: UPDATE .ENV ---
+
+            // Localization: timezone in config/app.php (the skeleton
+            // hardcodes 'UTC'). Patched on every preview generation;
+            // a change forces a cache clear so Laravel reloads config.
+            const { isValidTimezone } = require('../generators/localizationConfig');
+            const targetTimezone = isValidTimezone(activeProject.timezone_select) ? activeProject.timezone_select : 'UTC';
+            const cfgAppPath = path.join(previewPath, 'config', 'app.php');
+            let tzChanged = false;
+            if (fs.existsSync(cfgAppPath)) {
+                const cfgSrc = fs.readFileSync(cfgAppPath, 'utf8');
+                const cfgPatched = cfgSrc.replace(
+                    /(['"])timezone\1(\s*=>\s*)['"][^'"]*['"]/,
+                    `'timezone'$2'${targetTimezone}'`
+                );
+                if (cfgPatched !== cfgSrc) {
+                    fs.writeFileSync(cfgAppPath, cfgPatched);
+                    tzChanged = true;
+                    console.log(`[Preview] config/app.php timezone set to: ${targetTimezone}`);
+                }
+            }
 
             // START IMPROVEMENT: Read from Hard Disk if RAM is empty (App just opened)
             const schemaCachePath = path.join(userDataPath, 'last_schema_cache.json');
@@ -2806,7 +2841,7 @@ ipcMain.handle('preview:instant-run', async (event) => {
             let targetedTables = diffResult.targets;
             
             // If .env changed, force the system into Scenario 2 so the 'optimize:clear' command clears the Laravel cache
-            if (scenario === 1 && envChanged) {
+            if (scenario === 1 && (envChanged || tzChanged)) {
                 scenario = 2;
                 console.log("[Preview] Forcing Scenario 2 (Clear Cache) because APP_NAME was updated.");
             }
@@ -2943,6 +2978,25 @@ ipcMain.handle('preview:instant-run', async (event) => {
             // with the full-stack generator).
             await generateWorkflowHooks(fullSchema, previewPath);
             await generateAuthIntegrations(fullSchema, previewPath);
+
+            // Localization module (Malay switcher + lang JSON) — live
+            // preview parity with the full-stack generator. No-op for
+            // non-Malay projects.
+            const { generateLocalizationModule } = require('../generators/laravelLocalizationGenerator');
+            const locRes = await generateLocalizationModule(fullSchema, previewPath);
+            if (!locRes.success) throw new Error(`Localization: ${locRes.error || locRes.message}`);
+            if (locRes.files && locRes.files.length) {
+                // New middleware/provider files: register the provider in
+                // the preview's bootstrap/providers.php (idempotent).
+                const provFile = path.join(previewPath, 'bootstrap', 'providers.php');
+                if (fs.existsSync(provFile)) {
+                    let provSrc = fs.readFileSync(provFile, 'utf8');
+                    if (!provSrc.includes('LocalizationServiceProvider')) {
+                        provSrc = provSrc.replace(/return\s*\[/, 'return [\n    App\\Providers\\LocalizationServiceProvider::class,');
+                        fs.writeFileSync(provFile, provSrc);
+                    }
+                }
+            }
 
             // Combined login page referenced by AdminPanelProvider when
             // captcha or LDAP is enabled. auth_captcha_mode selects basic

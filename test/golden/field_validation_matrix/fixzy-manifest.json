@@ -4,5 +4,7 @@
   "npm": [],
   "providers": [
     "App\\Providers\\AttachmentServiceProvider"
-  ]
+  ],
+  "locale": "en",
+  "timezone": "Asia/Kuala_Lumpur"
 }

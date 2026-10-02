@@ -4,5 +4,7 @@
   "npm": [],
   "providers": [
     "App\\Providers\\ConversationalFormServiceProvider"
-  ]
+  ],
+  "locale": "en",
+  "timezone": "Asia/Kuala_Lumpur"
 }

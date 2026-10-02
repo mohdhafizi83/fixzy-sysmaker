@@ -130,8 +130,29 @@ export function populateMainDashboard(projectData) {
 
     // Tab: Localization
     setElementValue('app-title', projectData.app_title);
-    setElementValue('app-date-format', projectData.date_format);
-    setElementValue('app-time-format', projectData.time_format);
+    // Date/time format selects are populated with the CURRENT year as the
+    // sample (e.g. "31/12/2026"), but stored values may carry any year.
+    // Match on the year-normalized pattern so a stored "31/12/2025"
+    // still selects the "31/12/<currentYear>" option instead of blanking.
+    /**
+     * Selects the option in a sample-year dropdown whose pattern matches
+     * the stored value (4-digit year treated as a wildcard). Falls back
+     * to leaving the select untouched when nothing matches.
+     * @param {string} id Select element id.
+     * @param {string} stored Stored format sample (any year).
+     * @returns {void}
+     */
+    const setFormatSelect = (id, stored) => {
+        const el = document.getElementById(id);
+        if (!el || !stored) return;
+        const norm = (s) => String(s).replace(/\d{4}/, '9999');
+        const target = norm(stored);
+        for (const opt of el.options) {
+            if (norm(opt.value) === target) { el.value = opt.value; return; }
+        }
+    };
+    setFormatSelect('app-date-format', projectData.date_format);
+    setFormatSelect('app-time-format', projectData.time_format);
     setElementValue('app-language-select', projectData.language_select);
     setElementValue('app-timezone-select', projectData.timezone_select);
 

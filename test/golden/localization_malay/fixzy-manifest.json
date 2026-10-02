@@ -4,5 +4,7 @@
   "npm": [],
   "providers": [
     "App\\Providers\\LocalizationServiceProvider"
-  ]
+  ],
+  "locale": "ms",
+  "timezone": "Asia/Kuala_Lumpur"
 }

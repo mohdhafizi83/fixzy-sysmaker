@@ -19,6 +19,84 @@ function isLocalizationEnabled(project) {
     return sel.includes('malay') || sel === 'ms';
 }
 
+// Full language -> locale-code map for the Localization tab dropdown
+// (src/index.html app-language-select, 43 options). Codes follow the
+// Filament v5 / Laravel lang-directory convention shipped in the
+// boilerplate vendor (64 locales). Every option maps to a real locale
+// code; Filament chrome falls back to English where it has no bundled
+// translation (af, si), which is still a valid Laravel locale.
+const LANGUAGE_LOCALES = {
+    'afrikaans': 'af',
+    'albanian': 'sq',
+    'arabic': 'ar',
+    'bosnian': 'bs',
+    'brazilian portuguese': 'pt_BR',
+    'bulgarian': 'bg',
+    'catalan': 'ca',
+    'chinese simplified': 'zh_CN',
+    'chinese traditional': 'zh_TW',
+    'croatian': 'hr',
+    'czech': 'cs',
+    'danish': 'da',
+    'dutch': 'nl',
+    'english': 'en',
+    'estonian': 'et',
+    'farsi': 'fa',
+    'finnish': 'fi',
+    'french': 'fr',
+    'georgian': 'ka',
+    'german': 'de',
+    'greek': 'el',
+    'hebrew': 'he',
+    'hungarian': 'hu',
+    'italian': 'it',
+    'japanese': 'ja',
+    'korean': 'ko',
+    'malay': 'ms',
+    'norwegian bokmal': 'nb',
+    'polish': 'pl',
+    'portuguese': 'pt',
+    'romanian': 'ro',
+    'russian': 'ru',
+    'serbian cyrillic': 'sr_Cyrl',
+    'serbian latin': 'sr_Latn',
+    'sinhala': 'si',
+    'slovakian': 'sk',
+    'slovenian': 'sl',
+    'spanish': 'es',
+    'swahili': 'sw',
+    'swedish': 'sv',
+    'turkish': 'tr',
+    'ukrainian': 'uk',
+    'urdu': 'ur',
+};
+
+/**
+ * Map the project's language_select to a Laravel/Filament locale code.
+ * Unknown or empty selections fall back to 'en' (never throws).
+ * @param {object} project project row with language_select
+ * @returns {string} locale code (e.g. 'fr', 'zh_CN', 'ms')
+ */
+function languageToLocale(project) {
+    const sel = ((project && project.language_select) || '').trim().toLowerCase();
+    return LANGUAGE_LOCALES[sel] || 'en';
+}
+
+/**
+ * Validate an IANA timezone identifier via the ICU database (no deps).
+ * @param {string} tz candidate timezone (e.g. 'Asia/Tokyo')
+ * @returns {boolean} true when the host ICU accepts it
+ */
+function isValidTimezone(tz) {
+    if (!tz || typeof tz !== 'string' || tz.length > 64) return false;
+    try {
+        new Intl.DateTimeFormat('en', { timeZone: tz });
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 /** @param {object} project @returns {'ms'|'en'} default locale for the generated app */
 function defaultLocale(project) {
     const sel = ((project && project.language_select) || '').toLowerCase();
@@ -89,6 +167,8 @@ function titleCase(s) {
 
 module.exports = {
     isLocalizationEnabled,
+    languageToLocale,
+    isValidTimezone,
     defaultLocale,
     supportedLocales,
     collectLocalizationStrings,

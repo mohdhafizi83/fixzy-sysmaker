@@ -508,8 +508,13 @@ async function tryGen(name, fn) {
     await tryGen('generateLocalizationModule (off)', () =>
         require('../src/generators/laravelLocalizationGenerator').generateLocalizationModule(locOffSchema, locOffOut));
     const locOffFiles = fs.existsSync(locOffOut) ? fs.readdirSync(locOffOut) : [];
-    if (locOffFiles.length > 0) {
-        results.push(['localization off-guard', 'FAIL', 'files emitted for English project']);
+    // The manifest is now the locale/timezone CARRIER for every project
+    // (deploy flow clones the skeleton after generation, so the manifest
+    // is the only survivor). The off-guard is about switcher/middleware/
+    // lang files, not the manifest itself.
+    const locOffReal = locOffFiles.filter(f => f !== 'fixzy-manifest.json');
+    if (locOffReal.length > 0) {
+        results.push(['localization off-guard', 'FAIL', 'files emitted for English project: ' + locOffReal.join(', ')]);
         console.log('FAIL localization off-guard');
     } else {
         results.push(['localization off-guard', 'OK', 0]);

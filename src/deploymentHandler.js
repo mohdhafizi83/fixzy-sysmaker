@@ -96,6 +96,77 @@ function registerManifestProviders(projectPath, win, logChannel) {
 }
 
 /**
+ * Apply the project's locale + timezone (Localization tab) to a full
+ * Laravel project. The generator stamps these on fixzy-manifest.json;
+ * this writes them where Laravel actually reads them:
+ *   - config/app.php: 'timezone' => '<tz>'   (skeleton hardcodes 'UTC')
+ *   - .env:           APP_LOCALE=<locale>    (replace or append)
+ * Idempotent. Called from deployApp/updateApp (values from the manifest)
+ * and from the live preview (values from the active project row).
+ * @param {string} projectPath Laravel project root
+ * @param {string} locale locale code (e.g. 'fr', 'zh_CN', 'ms')
+ * @param {string} timezone IANA timezone (e.g. 'Asia/Tokyo')
+ * @returns {{localeApplied: boolean, timezoneApplied: boolean}}
+ */
+function applyLocaleTimezone(projectPath, locale, timezone) {
+    const result = { localeApplied: false, timezoneApplied: false };
+
+    // Timezone: the skeleton's config/app.php hardcodes 'timezone' => 'UTC'.
+    if (timezone) {
+        const cfgApp = path.join(projectPath, 'config', 'app.php');
+        if (fs.existsSync(cfgApp)) {
+            const cfg = fs.readFileSync(cfgApp, 'utf8');
+            const patched = cfg.replace(
+                /(['"])timezone\1(\s*=>\s*)['"][^'"]*['"]/,
+                `'timezone'$2'${timezone}'`
+            );
+            if (patched !== cfg) {
+                fs.writeFileSync(cfgApp, patched);
+                result.timezoneApplied = true;
+            }
+        }
+    }
+
+    // Locale: APP_LOCALE in .env (config/app.php reads env('APP_LOCALE','en')).
+    if (locale) {
+        const envPath = path.join(projectPath, '.env');
+        if (fs.existsSync(envPath)) {
+            let env = fs.readFileSync(envPath, 'utf8');
+            const re = /^APP_LOCALE=.*$/m;
+            if (re.test(env)) env = env.replace(re, `APP_LOCALE=${locale}`);
+            else env += `\nAPP_LOCALE=${locale}\n`;
+            fs.writeFileSync(envPath, env);
+            result.localeApplied = true;
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Read locale/timezone from the copied fixzy-manifest.json and apply them.
+ * Silent no-op when the manifest is absent or carries no localization keys
+ * (older staging folders).
+ * @param {string} projectPath Laravel project root (manifest already copied in)
+ * @param {object} win Electron window for log lines (may be null)
+ * @param {string} logChannel log channel name
+ * @returns {void}
+ */
+function applyManifestLocalization(projectPath, win, logChannel) {
+    const manifestPath = path.join(projectPath, 'fixzy-manifest.json');
+    if (!fs.existsSync(manifestPath)) return;
+    try {
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+        if (!manifest.locale && !manifest.timezone) return;
+        const r = applyLocaleTimezone(projectPath, manifest.locale, manifest.timezone);
+        if (r.localeApplied && win) win.webContents.send(logChannel, `Locale set to: ${manifest.locale}`);
+        if (r.timezoneApplied && win) win.webContents.send(logChannel, `Timezone set to: ${manifest.timezone}`);
+    } catch (e) {
+        if (win) win.webContents.send(logChannel, `WARNING: Could not apply manifest localization: ${e.message}`);
+    }
+}
+
+/**
  * Function to DEPLOY (New Installation)
  */
 async function deployApp(event, deployConfig) {
@@ -173,6 +244,12 @@ async function deployApp(event, deployConfig) {
         } else {
             throw new Error('.env.example not found!');
         }
+
+        // Apply the project's Localization tab settings (locale + timezone)
+        // carried on the manifest: config/app.php timezone + .env APP_LOCALE.
+        // Runs AFTER the .env is written from .env.example so the values
+        // are not overwritten.
+        applyManifestLocalization(projectPath, win, LOG_CHANNEL);
 
         // --- STEP 4: Database Setup ---
         if (dbEngine === 'sqlite') {
@@ -342,6 +419,12 @@ async function updateApp(event, updateConfig) {
         // 3b. Register any new feature providers from the manifest (idempotent).
         registerManifestProviders(projectPath, win, LOG_CHANNEL);
 
+        // 3c. Re-apply the project's Localization tab settings (locale +
+        // timezone) from the manifest. .env is never overwritten on update,
+        // so APP_LOCALE is refreshed in place; config/app.php timezone is
+        // re-stamped in case the project setting changed.
+        applyManifestLocalization(projectPath, win, LOG_CHANNEL);
+
         // 4. Update Dependencies
         win.webContents.send(STATUS_CHANNEL, { step: 4, message: 'Updating Autoloader...' });
         await runCommand('composer', ['dump-autoload'], projectPath, win, LOG_CHANNEL);
@@ -378,4 +461,4 @@ async function updateApp(event, updateConfig) {
     }
 }
 
-module.exports = { deployApp, updateApp };
+module.exports = { deployApp, updateApp, applyLocaleTimezone };
