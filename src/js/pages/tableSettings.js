@@ -120,7 +120,15 @@ export function populateTableSettings(tableName) {
     setElementValue('tbl-grid-sticky-header', tableData.grid_sticky_header ?? 0);
     setElementValue('tbl-grid-row-density', tableData.grid_row_density || 'normal');
     setElementValue('tbl-grid-inline-edit', tableData.grid_inline_edit ?? 0);
-    setElementValue('tbl-grid-default-per-page', tableData.grid_default_per_page || 10);
+    // The saved value can be outside the preset choices (e.g. 150 from the
+    // global max_entries default). Insert it as an option so the select
+    // reflects the real value instead of silently showing blank.
+    const perPageSel = document.getElementById('tbl-grid-default-per-page');
+    const perPageVal = String(tableData.grid_default_per_page || 10);
+    if (perPageSel && ![...perPageSel.options].some(o => o.value === perPageVal)) {
+        perPageSel.appendChild(new Option(`${perPageVal} (saved value)`, perPageVal));
+    }
+    setElementValue('tbl-grid-default-per-page', perPageVal);
     setElementValue('tbl-grid-per-page-options', tableData.grid_per_page_options || '5,10,25,50');
 
     // Grid layout expansion phase A (2026-09-25)
@@ -190,9 +198,9 @@ export function populateTableSettings(tableName) {
 
     // ▼▼▼ CUSTOM MODULE: features not generated per custom module are
     // disabled with an explicit reason (silent-hide would look like a bug).
-    const cmWsActive = !document.getElementById('module-global-settings')?.classList.contains('hidden');
-    const cmBadge = document.getElementById('workspace-module-badge');
-    const cmIsCustom = cmWsActive && cmBadge && cmBadge.classList.contains('badge-custom');
+    // Use the explicit workspace context (state.js), not panel visibility.
+    const wsCtx = appState.moduleWorkspace;
+    const cmIsCustom = !!(wsCtx && wsCtx.mode === 'custom' && wsCtx.tableName);
     const unsupportedInCustom = {
         'tbl-approval-enabled': 'Approvals run per table (main module) and are not generated for Custom Modules.',
         'tbl-api-enabled': 'REST API is generated per table (main module), not per Custom Module.',

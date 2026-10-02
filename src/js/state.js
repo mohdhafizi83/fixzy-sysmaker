@@ -9,7 +9,13 @@ export const appState = {
     isAutoSaveEnabled: true,
     isPopulatingData: false, // Flag to prevent auto-save while loading
     lastActiveChildTable: null,
-    isAwaitingMenuGroupSave: false
+    isAwaitingMenuGroupSave: false,
+    // Explicit Modules Setup workspace context: { mode: 'create'|'default'|'custom',
+    // tableName: string, moduleId: number|null } or null when no workspace is open.
+    // Save routing MUST read this instead of inferring from panel visibility —
+    // visibility flips when the field panel replaces the global settings panel,
+    // which used to leak workspace edits into the last table shown in Models Design.
+    moduleWorkspace: null
 };
 
 // --- Helper functions for setting values (Setters) ---

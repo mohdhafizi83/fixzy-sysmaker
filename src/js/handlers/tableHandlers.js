@@ -37,10 +37,7 @@ export function initializeTableSaveHandlers() {
                 if (input.id && input.id.startsWith('parentchild-')) return;
                 
 // ▼▼▼ MAJOR BUG FIX: PREVENT OVERWRITE WHEN IN CREATE MODE ▼▼▼
-                const titleEl = document.getElementById('workspace-module-title');
-                const isCreateMode = titleEl && titleEl.textContent === "Create New Module";
-                
-                if (isCreateMode) {
+                if (appState.moduleWorkspace && appState.moduleWorkspace.mode === 'create') {
                     // Brand-new module: wait for the Create button — nothing to
                     // route to yet. (Custom EDIT mode is NOT returned here:
                     // the routing block below saves edits into the module's
@@ -59,13 +56,18 @@ export function initializeTableSaveHandlers() {
                 // ==========================================
                 // IDENTIFY THE CONTEXT (DEFAULT OR CUSTOM)
                 // ==========================================
+                // Route from the EXPLICIT workspace context, never from panel
+                // visibility: the field panel hides #module-global-settings,
+                // which used to make workspace edits fall through to whatever
+                // table Models Design last displayed (cross-table misroute).
+                const ws = appState.moduleWorkspace;
+                const isWorkspaceActive = !!(ws && ws.tableName);
+                const isCustomModule = isWorkspaceActive && ws.mode === 'custom';
+
                 let tableName = '';
-                const titleElWorkspace = document.getElementById('workspace-module-title');
-                const isWorkspaceActive = !document.getElementById('module-global-settings').classList.contains('hidden');
-                
                 if (isWorkspaceActive) {
                     // If editing from Modules Setup
-                    tableName = titleElWorkspace.dataset.tableName;
+                    tableName = ws.tableName;
                 } else {
                     // If editing from the old Models Design
                     const titleElTable = document.querySelector('#table-settings-page .table-name');
@@ -94,15 +96,11 @@ export function initializeTableSaveHandlers() {
                 // ==========================================
                 // DATA SAVE ROUTING
                 // ==========================================
-                const badgeText = document.getElementById('workspace-module-badge')?.textContent;
-                const isCustomModule = isWorkspaceActive && badgeText === 'Custom';
-
-if (isCustomModule) {
-                    const moduleId = parseInt(titleElWorkspace.dataset.moduleId);
+                if (isCustomModule) {
+                    const moduleId = ws.moduleId;
                     
                     // 1. Get the module data from AppState
-                    const tableData = appState.jsonData.database.table[tableName];
-                    const moduleIndex = tableData.custom_modules.findIndex(m => m.module_id === moduleId);
+                    const moduleIndex = (tableData.custom_modules || []).findIndex(m => m.module_id === moduleId);
                     
                     if (moduleIndex === -1) return;
 
@@ -171,10 +169,13 @@ if (isCustomModule) {
                         const titleTable = document.querySelector('#table-settings-page .table-name');
                         if (titleTable) titleTable.textContent = newName;
                         
+                        const titleElWorkspace = document.getElementById('workspace-module-title');
                         if (titleElWorkspace && titleElWorkspace.dataset.tableName === oldName) {
                             titleElWorkspace.textContent = newName;
                             titleElWorkspace.dataset.tableName = newName;
                         }
+                        // Keep the explicit workspace context in sync with the rename
+                        if (ws && ws.tableName === oldName) ws.tableName = newName;
                     }
                     // ▲▲▲ END SYNCHRONIZATION ▲▲▲
                 }
@@ -219,10 +220,13 @@ export function initializeRelationshipSaveHandlers() {
                 // ▼▼▼ UPDATE 2: Get the Parent Table Name from the correct DOM ▼▼▼
                 let currentTableName = '';
                 const titleElWorkspace = document.getElementById('workspace-module-title');
-                const isWorkspaceActive = !document.getElementById('module-global-settings').classList.contains('hidden');
+                // Route from the explicit workspace context (see state.js), not
+                // panel visibility — same cross-table misroute class as Bug 1.
+                const ws = appState.moduleWorkspace;
+                const isWorkspaceActive = !!(ws && ws.tableName);
                 
-                if (isWorkspaceActive && titleElWorkspace) {
-                    currentTableName = titleElWorkspace.dataset.tableName;
+                if (isWorkspaceActive) {
+                    currentTableName = ws.tableName;
                 } else {
                     currentTableName = document.querySelector('#table-settings-page .table-name')?.textContent.trim();
                 }
@@ -263,9 +267,8 @@ export function initializeRelationshipSaveHandlers() {
                 else value = input.value;
 
                 // ▼▼▼ ROUTING: CUSTOM MODULE VS DEFAULT MODULE ▼▼▼
-                const badgeText = document.getElementById('workspace-module-badge')?.textContent;
-                const isCustomModule = isWorkspaceActive && badgeText === 'Custom';
-                const isCreateMode = isWorkspaceActive && titleElWorkspace.textContent === "Create New Module";
+                const isCustomModule = isWorkspaceActive && ws.mode === 'custom';
+                const isCreateMode = isWorkspaceActive && ws.mode === 'create';
 
                 if (isCreateMode) {
                     showCustomDialog({ title: "Info", message: "Please save (Create) the module first before assigning Relation Managers." });
@@ -275,7 +278,7 @@ export function initializeRelationshipSaveHandlers() {
 
                 if (isCustomModule) {
                     if (key === 'show_tab') {
-                        const moduleId = parseInt(titleElWorkspace.dataset.moduleId, 10);
+                        const moduleId = ws.moduleId;
                         const tableData = appState.jsonData.database.table[currentTableName];
                         const modIndex = tableData.custom_modules.findIndex(m => m.module_id === moduleId);
 
@@ -1719,6 +1722,9 @@ export function initializeModulesSetupTab() {
     const btnBack = document.getElementById('btn-back-to-modules');
     if (btnBack) {
         btnBack.addEventListener('click', () => {
+            // Leave the workspace context so tbl-*/fld-* edits route back to
+            // Models Design instead of the closed workspace.
+            appState.moduleWorkspace = null;
             const workspace = document.getElementById('module-workspace');
             if (workspace) workspace.style.display = 'none'; // Hide the workspace
             
@@ -1889,6 +1895,12 @@ const tableData = appState.jsonData.database.table[baseTable];
  * @returns {void}
  */
 export function openModuleWorkspace(mode, tableName = null, moduleId = null) {
+    // Record the explicit workspace context for save routing (see state.js).
+    appState.moduleWorkspace = {
+        mode,
+        tableName: tableName || '',
+        moduleId: moduleId ? parseInt(moduleId, 10) : null
+    };
     // Safely hide the Dashboard
     const header = document.getElementById('modules-dashboard-header');
     if (header) header.style.display = 'none';
@@ -2199,6 +2211,11 @@ function applyFieldOverrides(tableName, fieldName, moduleId) {
             
             const el = document.getElementById(elementId);
             if (el) {
+                // Never clobber a field the user is actively editing: a pending
+                // re-apply (setTimeout after panel switch) used to paste the OLD
+                // override value over a freshly-typed input, which then flushed
+                // the stale value back to the DB on the next blur.
+                if (el === document.activeElement) return;
                 // Update the UI visually without triggering the 'change' event (so it doesn't loop back into a save)
                 if (el.type === 'checkbox') {
                     el.checked = (value === 1 || value === true);
@@ -2249,6 +2266,9 @@ function applyTableOverrides(tableName, moduleId) {
             const el = document.getElementById(elementId);
             
             if (el) {
+                // Never clobber a field the user is actively editing (same
+                // stale re-apply race as applyFieldOverrides).
+                if (el === document.activeElement) return;
                 // Update the visual UI
                 if (el.type === 'checkbox') {
                     el.checked = (value === 1 || value === true);
@@ -2268,6 +2288,11 @@ function applyTableOverrides(tableName, moduleId) {
                 const radioBtn = document.querySelector(radioSelector);
                 
                 if (radioBtn) {
+                    // Skip while any radio of this group holds focus (same
+                    // active-edit guard as above).
+                    const groupHasFocus = [...document.querySelectorAll(`input[name="${radioName}"]`)]
+                        .some(r => r === document.activeElement);
+                    if (groupHasFocus) return;
                     radioBtn.checked = true;
                     // For radios, we could mark the parent label if possible, or just leave it
                 }
@@ -2480,10 +2505,14 @@ export function setupCustomModuleSpecificSettings(tableName, moduleId, mode = 'e
             // ▼▼▼ READ TABLE-LEVEL OVERRIDES FOR AUTO-SAVE ▼▼▼
             // Merge into the EXISTING override JSON — never rebuild from scratch,
             // or other overrides (form_layout_config, grid settings, ...) get wiped.
+            // NOTE: do NOT re-read tbl-table-view-title from the DOM here. The
+            // main save handler (initializeTableSaveHandlers) already keeps
+            // modData.settings_override in sync in RAM on every edit. Reading
+            // the DOM raced with populateTableSettings, which pastes the base
+            // table's value over the input before this 600ms debounce fires —
+            // silently reverting a freshly-typed title to the old value.
             let tableOverrides = {};
             try { tableOverrides = JSON.parse(modData.settings_override || '{}'); } catch (e) { tableOverrides = {}; }
-            const titleVal = document.getElementById('tbl-table-view-title')?.value || '';
-            if (titleVal !== '') tableOverrides.table_view_title = titleVal;
             modData.settings_override = JSON.stringify(tableOverrides);
 
             const payload = {

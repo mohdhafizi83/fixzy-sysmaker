@@ -61,10 +61,13 @@ export function initializeFieldSaveHandlers() {
                 let tableName = '';
                 let fieldNameText = '';
                 const workspaceFieldEl = document.getElementById('current-module-field-name');
-                const isWorkspaceActive = !document.getElementById('module-field-settings').classList.contains('hidden');
+                // Route from the explicit workspace context (see state.js), not
+                // panel visibility — same cross-table misroute class as Bug 1.
+                const ws = appState.moduleWorkspace;
+                const isWorkspaceActive = !!(ws && ws.tableName);
 
                 if (isWorkspaceActive) {
-                    tableName = document.getElementById('workspace-module-title').dataset.tableName;
+                    tableName = ws.tableName;
                     fieldNameText = workspaceFieldEl.textContent.trim();
                 } else {
                     const titleEl = container.querySelector('.field-name');
@@ -94,11 +97,10 @@ export function initializeFieldSaveHandlers() {
                 // =========================================================
                 // DATA SAVE ROUTING (Default vs Custom)
                 // =========================================================
-                const badgeText = document.getElementById('workspace-module-badge')?.textContent;
-                const isCustomModule = isWorkspaceActive && badgeText === 'Custom';
+                const isCustomModule = isWorkspaceActive && ws.mode === 'custom';
 
                 if (isCustomModule) {
-                    const moduleId = parseInt(document.getElementById('workspace-module-title').dataset.moduleId);
+                    const moduleId = ws.moduleId;
                     
                     // 1. Get the module data from AppState
                     const tableData = appState.jsonData.database.table[tableName];

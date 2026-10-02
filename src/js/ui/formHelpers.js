@@ -13,7 +13,12 @@
  * @returns {void}
  */
 export function setRadioValue(name, value) {
+    // Never clobber a radio group the user is actively editing: a re-populate
+    // (e.g. master-click in the Modules Setup workspace) used to paste the
+    // base value over a freshly-chosen radio before the save flushed, silently
+    // reverting the user's selection.
     const radios = document.querySelectorAll(`input[name="${name}"]`);
+    if ([...radios].some(r => r === document.activeElement)) return;
     radios.forEach(radio => {
         // Compare as strings for safety
         radio.checked = (radio.value === String(value));
@@ -30,6 +35,9 @@ export function setRadioValue(name, value) {
 export function setElementValue(id, value) {
     const element = document.getElementById(id);
     if (element) {
+        // Never clobber the element the user is actively editing (see the
+        // setRadioValue note above for the same race).
+        if (element === document.activeElement) return;
         if (element.type === 'checkbox' || element.type === 'radio') {
             element.checked = !!value;
         } else if (element.multiple) {
