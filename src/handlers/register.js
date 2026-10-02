@@ -3249,7 +3249,7 @@ ipcMain.handle('widget:save', (event, data) => {
         let savedData;
         
         if (data.id) {
-            // Update - Add 5 new fields
+            // Update - all widget columns
             const stmt = db.prepare(`
                 UPDATE project_widgets 
                 SET title = ?, widget_type = ?, target_table = ?, aggregate_type = ?, target_field = ?, width_span = ?, color = ?, icon = ?,
@@ -3258,10 +3258,12 @@ ipcMain.handle('widget:save', (event, data) => {
 WHERE id = ? AND project_id = ?
             `);
             stmt.run(
+                data.title, data.widget_type, data.target_table, data.aggregate_type || null, data.target_field || null,
+                data.width_span || '1', data.color || 'primary', data.icon || null,
                 data.chart_label_column, data.filter_field, data.filter_operator, data.filter_value, data.timeframe_range, data.advanced_query,
                 data.chart_series_field, data.chart_size_field, data.series_aggregate_type,
                 data.refresh_mode || 'static', data.refresh_interval || 10,
-data.id, data.project_id
+                data.id, data.project_id
             );
             
             savedData = { ...data, id: parseInt(data.id) };
