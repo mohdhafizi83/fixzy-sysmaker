@@ -8,11 +8,11 @@
 
 | Platform | Installer |
 |---|---|
-| 🪟 **Windows 10/11 (x64)** | [Fixzy.SysMaker.Setup.1.0.2.exe](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.4/Fixzy.SysMaker.Setup.1.0.2.exe) (110 MB) |
-| 🍎 **macOS (Intel)** | [Fixzy.SysMaker-1.0.2.dmg](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.4/Fixzy.SysMaker-1.0.2.dmg) (132 MB) |
-| 🍎 **macOS (Apple Silicon)** | [Fixzy.SysMaker-1.0.2-arm64.dmg](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.4/Fixzy.SysMaker-1.0.2-arm64.dmg) (127 MB) |
-| 🐧 **Linux (any x64)** | [Fixzy.SysMaker-1.0.2.AppImage](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.4/Fixzy.SysMaker-1.0.2.AppImage) (130 MB) |
-| 🐧 **Ubuntu / Debian** | [fixzy-sysmaker_1.0.2_amd64.deb](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.4/fixzy-sysmaker_1.0.2_amd64.deb) (100 MB) |
+| 🪟 **Windows 10/11 (x64)** | [Fixzy.SysMaker.Setup.1.0.4.exe](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.4/Fixzy.SysMaker.Setup.1.0.4.exe) (110 MB) |
+| 🍎 **macOS (Intel)** | [Fixzy.SysMaker-1.0.4.dmg](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.4/Fixzy.SysMaker-1.0.4.dmg) (132 MB) |
+| 🍎 **macOS (Apple Silicon)** | [Fixzy.SysMaker-1.0.4-arm64.dmg](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.4/Fixzy.SysMaker-1.0.4-arm64.dmg) (127 MB) |
+| 🐧 **Linux (any x64)** | [Fixzy.SysMaker-1.0.4.AppImage](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.4/Fixzy.SysMaker-1.0.4.AppImage) (130 MB) |
+| 🐧 **Ubuntu / Debian** | [fixzy-sysmaker_1.0.4_amd64.deb](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.4/fixzy-sysmaker_1.0.4_amd64.deb) (100 MB) |
 
 All binaries are [SHA-256 checksummed](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.4/SHA256SUMS.txt) · [all releases](https://github.com/mohdhafizi83/fixzy-sysmaker/releases) · free & open source (Apache-2.0)
 
