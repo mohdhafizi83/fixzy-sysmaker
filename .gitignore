@@ -3,7 +3,8 @@
 *.ffs_db
 package-lock.json
 package-lock.json
-/assets
+/assets/*
+!/assets/pwa/
 /bin/php-8.4.12
 bin/composer.phar
 others/CMD-go-here.bat
