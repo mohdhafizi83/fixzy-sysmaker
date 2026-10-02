@@ -3686,10 +3686,6 @@
                                     <label class="checkbox-label"><input type="checkbox" id="fixzy-check-updates" name="fixzy-check-updates" checked> Check for program updates on start up</label>
                                 </div>
                                 <div class="form-group">
-                                    <label for="fixzy-autosave-interval">Auto-save interval (minutes)</label>
-                                    <input type="number" id="fixzy-autosave-interval" name="fixzy-autosave-interval" value="10" style="max-width: 100px;">
-                                </div>
-                                <div class="form-group">
                                     <label class="checkbox-label"><input type="checkbox" id="fixzy-show-begin-box" name="fixzy-show-begin-box" checked> Show 'How do you want to begin' box on start up</label>
                                 </div>
 
@@ -3773,8 +3769,7 @@
                     <div id="tab-table-defaults" class="tab-pane">
                         <p>The default settings that apply to new tables, and can be overridden individually.</p>
                         <div class="permission-grid">
-                            <label class="checkbox-label"><input type="checkbox" id="fixzy-table-suggest-icon" name="fixzy-table-suggest-icon" checked> Suggest a table icon based on table name</label>
-                            <label class="checkbox-label"><input type="checkbox" id="fixzy-table-allow-csv" name="fixzy-table-allow-csv" checked> Allow saving data to CSV files</label>
+                            <label class="checkbox-label"><input type="checkbox" id="fixzy-table-allow-csv" name="fixzy-table-allow-csv" checked> Allow CSV import and export</label>
                             <label class="checkbox-label"><input type="checkbox" id="fixzy-table-dv-separate-page" name="fixzy-table-dv-separate-page" checked> Display 'Record Form' in a separate page</label>
                             <label class="checkbox-label"><input type="checkbox" id="fixzy-table-hide-save-as-copy" name="fixzy-table-hide-save-as-copy"> Hide "Save as copy" when editing records</label>
                             <label class="checkbox-label"><input type="checkbox" id="fixzy-table-allow-add-from-homepage" name="fixzy-table-allow-add-from-homepage"> Allow adding new records from homepage</label>
@@ -3891,49 +3886,11 @@
                         </div>
                     </div>
                     <div id="tab-project-defaults" class="tab-pane">
+                        <p>Defaults applied to newly created tables and projects. Existing items keep their own settings.</p>
                         <div class="form-group">
-                            <label>Default character encoding</label>
-                            <div class="input-group">
-                                <select id="fixzy-project-encoding" name="fixzy-project-encoding">
-									<option selected>4-Byte Unicode UTF-8</option>
-                                    <option>3-Byte Unicode UTF-8</option>
-                                    <option>US Ascii / Western</option>
-                                    <option>Arabic (Windows)</option>
-                                    <option>Baltic (ISO)</option>
-                                    <option>Baltic (Windows)</option>
-                                    <option>Central European (ISO)</option>
-                                    <option>Central European (Windows)</option>
-                                    <option>Chinese - Simplified (GB2312)</option>
-                                    <option>Chinese - Simplified (HZ)</option>
-                                    <option>Chinese - Traditional (BIG5)</option>
-                                    <option>Cyrillic (KOI8-R)</option>
-                                    <option>Cyrillic (KOI8-U)</option>
-                                    <option>Cyrillic (Windows)</option>
-                                    <option>Greek (ISO)</option>
-                                    <option>Greek (Windows)</option>
-                                    <option>Japanese (EUC)</option>
-                                    <option>Japanese (JIS)</option>
-                                    <option>Japanese (Shift-JIS)</option>
-                                    <option>Korean (ISO)</option>
-                                    <option>Korean (KSC5601)</option>
-                                    <option>Hebrew (DOS)</option>
-                                    <option>Hebrew (ISO-Logical)</option>
-                                    <option>Hebrew (ISO-Visual)</option>
-                                    <option>Thai</option>
-                                    <option>Turkish (ISO)</option>
-                                    <option>Turkish (Windows)</option>
-                                    <option>Vietnamese</option>
-                                </select>
-                                <label class="checkbox-label" style="margin-left: 1rem;"><input type="checkbox" id="fixzy-project-rtl" name="fixzy-project-rtl"> Right to left</label>
-                            </div>
+                            <label for="fixzy-max-entries">Default records per page in generated tables</label>
+                            <input type="number" id="fixzy-max-entries" name="fixzy-max-entries" value="150" style="max-width: 100px;" min="10" max="500">
                         </div>
-                        <label class="checkbox-label"><input type="checkbox" id="fixzy-project-doxygen" name="fixzy-project-doxygen" checked> Generate Doxygen documentation for hook files</label>
-                        <label class="checkbox-label"><input type="checkbox" id="fixzy-project-hide-footer" name="fixzy-project-hide-footer"> Hide "Powered by Fixzy SysMaker" footer in generated applications</label>
-                        <div class="form-group mt-2">
-                            <label for="fixzy-max-entries">Maximum entries in "Go to page" dropdown</label>
-                            <input type="number" id="fixzy-max-entries" name="fixzy-max-entries" value="150" style="max-width: 100px;" min="10">
-                        </div>
-                        <label class="checkbox-label"><input type="checkbox" id="fixzy-project-no-trim" name="fixzy-project-no-trim"> Don't trim user input</label>
                     </div>
                 </div>
             </div>

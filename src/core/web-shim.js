@@ -106,6 +106,7 @@
         deleteWidget: 'widget:delete',
         setupCheck: 'setup:check',
         setupRun: 'setup:run',
+        checkForUpdate: 'app:check-update',
     };
 
     // Fire-and-forget (ipcRenderer.send in preload) — mirrored as POST, result ignored.

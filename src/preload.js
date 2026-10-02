@@ -91,5 +91,6 @@ updateIndividualMenuOrder: (data) => ipcRenderer.invoke('menu:update-individual-
   // --- SETUP WIZARD ---
   setupCheck: () => ipcRenderer.invoke('setup:check'),
   setupRun: () => ipcRenderer.invoke('setup:run'),
+  checkForUpdate: () => ipcRenderer.invoke('app:check-update'),
   onSetupLog: (callback) => ipcRenderer.on('setup-log', (event, line) => callback(line)),
 });

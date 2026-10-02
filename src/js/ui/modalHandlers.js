@@ -93,11 +93,10 @@ export function initializeModalHandlers() {
     const gatherFixzySettings = () => {
         const settings = {};
         const settingIds = [
-            'check-updates', 'autosave-interval', 'show-begin-box', 'doc-root',
-            'base-url', 'field-default-type', 'field-default-length', 'table-suggest-icon',
+            'check-updates', 'show-begin-box', 'doc-root',
+            'base-url', 'field-default-type', 'field-default-length',
             'table-allow-csv', 'table-dv-separate-page', 'table-hide-save-as-copy',
-            'table-allow-add-from-homepage', 'table-show-record-count', 'project-encoding',
-            'project-rtl', 'project-doxygen', 'project-hide-footer', 'max-entries', 'project-no-trim',
+            'table-allow-add-from-homepage', 'table-show-record-count', 'max-entries',
             'lock-core-components'
         ];
 
@@ -157,12 +156,11 @@ export function initializeModalHandlers() {
         // Simple loop to fill the data (refer to the original code for the full list if needed)
         // Summarized here for readability; you can copy the full logic from uiHandlers.js
         const settingIds = [
-            'check-updates', 'autosave-interval', 'show-begin-box', 'lock-core-components',
-            'doc-root', 'base-url', 'field-default-type', 'field-default-length', 
-            'table-suggest-icon', 'table-allow-csv', 'table-dv-separate-page', 
-            'table-hide-save-as-copy', 'table-allow-add-from-homepage', 'table-show-record-count',
-            'project-encoding', 'project-rtl', 'project-doxygen', 'project-hide-footer', 
-            'max-entries', 'project-no-trim'
+            'check-updates', 'show-begin-box', 'lock-core-components',
+            'doc-root', 'base-url', 'field-default-type', 'field-default-length',
+            'table-allow-csv', 'table-dv-separate-page',
+            'table-hide-save-as-copy', 'table-allow-add-from-homepage',
+            'table-show-record-count', 'max-entries'
         ];
         
         settingIds.forEach(id => setValue(`fixzy-${id}`, settings[id.replace(/-/g, '_')]));
@@ -286,53 +284,3 @@ export function initializeModalHandlers() {
     }
 }
 
-/**
- * Loads all app settings via IPC and populates the settings modal inputs.
- * @returns {Promise<void>}
- */
-async function populateSettingsModal() {
-    const settings = await window.electronAPI.getAllSettings();
-    if (!settings) {
-        console.error("Could not load settings.");
-        return;
-    }
-
-    // Sets one input's value, handling checkbox vs text controls.
-    const setValue = (id, value) => {
-        const element = document.getElementById(id);
-        if (element) {
-            if (element.type === 'checkbox') {
-                element.checked = value === '1';
-            } else {
-                element.value = value;
-            }
-        }
-    };
-    
-    // General
-    setValue('fixzy-check-updates', settings.check_updates);
-    setValue('fixzy-autosave-interval', settings.autosave_interval);
-    setValue('fixzy-show-begin-box', settings.show_begin_box);
-	setValue('fixzy-lock-core-components', settings.lock_core_components);
-    const fontSizeRadio = document.querySelector(`input[name="fixzy-font-size"][value="${settings.font_size}"]`);
-    if (fontSizeRadio) fontSizeRadio.checked = true;
-    setValue('fixzy-doc-root', settings.doc_root);
-    setValue('fixzy-base-url', settings.base_url);
-    // Field defaults
-    setValue('fixzy-field-default-type', settings.field_default_type);
-    setValue('fixzy-field-default-length', settings.field_default_length);
-    // Table defaults
-    setValue('fixzy-table-suggest-icon', settings.table_suggest_icon);
-    setValue('fixzy-table-allow-csv', settings.table_allow_csv);
-    setValue('fixzy-table-dv-separate-page', settings.table_dv_separate_page);
-    setValue('fixzy-table-hide-save-as-copy', settings.table_hide_save_as_copy);
-    setValue('fixzy-table-allow-add-from-homepage', settings.table_allow_add_from_homepage);
-    setValue('fixzy-table-show-record-count', settings.table_show_record_count);
-    // Project defaults
-    setValue('fixzy-project-encoding', settings.project_encoding);
-    setValue('fixzy-project-rtl', settings.project_rtl);
-    setValue('fixzy-project-doxygen', settings.project_doxygen);
-    setValue('fixzy-project-hide-footer', settings.project_hide_footer);
-    setValue('fixzy-max-entries', settings.max_entries);
-    setValue('fixzy-project-no-trim', settings.project_no_trim);
-}

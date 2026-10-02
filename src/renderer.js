@@ -309,6 +309,61 @@ function initializeFullscreenHandlers() {
     });
 }
 
+// --- STARTUP PREFERENCES (2026-10-02) --------------------------------------
+// Consumers for the 'check_updates' and 'show_begin_box' preferences that
+// used to be stored-but-ignored. Both are non-blocking and never throw.
+
+/**
+ * If the 'check_updates' preference is on, ask the main process whether a
+ * newer GitHub release exists and notify the user. Silent on any error
+ * (offline, rate-limited) — a failed update check must never block startup.
+ * @param {Object} settings All app settings from settings:get-all.
+ * @returns {Promise<void>}
+ */
+async function maybeCheckForUpdate(settings) {
+    if (!settings || settings.check_updates !== '1') return;
+    if (typeof window.electronAPI.checkForUpdate !== 'function') return;
+    try {
+        const res = await window.electronAPI.checkForUpdate();
+        if (res && res.available) {
+            showCustomDialog({
+                title: 'Update available',
+                message: `Fixzy SysMaker ${res.latest} is available (you are on ${res.current}).\nDownload it from the GitHub Releases page.`
+            });
+        }
+    } catch { /* offline / rate limited — stay silent */ }
+}
+
+/**
+ * If the 'show_begin_box' preference is on and no project is open yet,
+ * present the "How do you want to begin?" chooser. When a project is
+ * already active the box is skipped — the user is past the beginning.
+ * @param {Object} settings All app settings from settings:get-all.
+ * @returns {Promise<void>}
+ */
+async function maybeShowBeginBox(settings) {
+    if (!settings || settings.show_begin_box !== '1') return;
+    let hasActiveProject = false;
+    try {
+        const active = await window.electronAPI.getActiveProject();
+        hasActiveProject = !!(active && active.project_id);
+    } catch { hasActiveProject = false; }
+    if (hasActiveProject) return;
+    const begin = await showCustomDialog({
+        title: 'How do you want to begin?',
+        message: 'No project is open yet.\n\nOK — create a new project now.\nCancel — dismiss this box (you can start anytime from the Project menu).',
+        showCancelButton: true
+    });
+    if (begin) {
+        document.getElementById('new-project-modal')?.classList.remove('hidden');
+        setTimeout(() => document.getElementById('new-project-name')?.focus(), 100);
+    } else {
+        // loadProjectData auto-opens the New Project modal on a fresh
+        // start; dismissing the begin box dismisses that too.
+        document.getElementById('new-project-modal')?.classList.add('hidden');
+    }
+}
+
 // Initialize the app
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -712,6 +767,15 @@ const generateAppBtn = document.getElementById('app-generate_app');
     const project = await window.electronAPI.getActiveProject();
     SaveManager.init(loadProjectData);
     await loadProjectData(project);
+
+    // Startup preferences (2026-10-02): run AFTER loadProjectData so the
+    // begin box can override the auto-opened New Project modal.
+    try {
+        const bootSettings = await window.electronAPI.getAllSettings();
+        maybeCheckForUpdate(bootSettings);
+        await maybeShowBeginBox(bootSettings);
+    } catch { /* non-fatal */ }
+
 	initializeWorkflowBuilder();
     initializeFullscreenHandlers();
 

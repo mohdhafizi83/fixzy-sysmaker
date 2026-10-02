@@ -656,6 +656,18 @@ ipcMain.handle('table:create', async (event, projectId) => {
             db.prepare('UPDATE tables SET tv_template = ?, card_columns = ?, form_layout_config = ? WHERE table_id = ?')
                 .run(gDefaults.tv_template, gDefaults.card_columns, gDefaults.form_layout_config, tableId);
 
+            // New tables also inherit the global behaviour defaults
+            // (Preferences > Table defaults): CSV, detail-view placement,
+            // records-per-page. Per-table overrides still win afterwards.
+            const gTable = getGlobalTableDefaults();
+            db.prepare(`UPDATE tables SET allow_csv_export = ?, allow_csv_import = ?,
+                        dv_separate_page = ?, dv_hide_save_as_copy = ?,
+                        dv_allow_add_from_homepage = ?, grid_default_per_page = ?
+                       WHERE table_id = ?`)
+                .run(gTable.allow_csv_export, gTable.allow_csv_import,
+                     gTable.dv_separate_page, gTable.dv_hide_save_as_copy,
+                     gTable.dv_allow_add_from_homepage, gTable.grid_default_per_page, tableId);
+
 // Add `hide_in_tv` and `hide_in_dv` to the column list
             const insertFieldStmt = db.prepare(`
                 INSERT INTO fields (table_id, field_name, caption, data_type, length, primary_key, auto_increment, unsigned, read_only, field_order, hide_in_tv, hide_in_dv)
@@ -702,8 +714,8 @@ ipcMain.handle('table:create', async (event, projectId) => {
             
             const itemUrl = `${newName} Module`;
             db.prepare(
-                'INSERT INTO menu_items (project_id, table_id, item_label, item_detail, item_order, menu_group_id) VALUES (?, ?, ?, ?, ?, NULL)'
-            ).run(projectId, tableId, newName, itemUrl, nextMenuOrder);
+                'INSERT INTO menu_items (project_id, table_id, item_label, item_detail, item_order, menu_group_id, show_record_count) VALUES (?, ?, ?, ?, ?, NULL, ?)'
+            ).run(projectId, tableId, newName, itemUrl, nextMenuOrder, gTable.show_record_count);
             
             return tableId;
         });
@@ -773,8 +785,11 @@ ipcMain.handle("project:create", async (event, projectName) => {
         // 1. Set all other projects as inactive
         db.prepare("UPDATE projects SET is_active = 0").run();
 
-        // 2. Create the new project record
-        const projectInfo = db.prepare("INSERT INTO projects (app_title, is_active) VALUES (?, 1)").run(projectName);
+        // 2. Create the new project record. The Base URL preference
+        // (Preferences > General) becomes the project's initial URL so new
+        // projects don't start with an empty base URL.
+        const baseUrl = getGlobalBaseUrl();
+        const projectInfo = db.prepare("INSERT INTO projects (app_title, url, is_active) VALUES (?, ?, 1)").run(projectName, baseUrl);
         const projectId = projectInfo.lastInsertRowid;
 
         // ▼▼▼ START NEW LOGIC: Automatically create the 'users' table ▼▼▼
@@ -1334,6 +1349,87 @@ ipcMain.handle('settings:save-all', async (event, settingsData) => {
         return { success: false, message: error.message };
     }
 });
+
+// --- UPDATE CHECK (2026-10-02) ---------------------------------------------
+// 'check_updates' preference consumer. Runs in the MAIN process because the
+// renderer CSP forbids external fetches. Compares the packaged version with
+// the latest GitHub release tag (the same releases our release.yml publishes).
+// Never throws: callers get { error } and stay silent.
+const UPDATE_CHECK_URL = 'https://api.github.com/repos/mohdhafizi83/fixzy-sysmaker/releases/latest';
+
+ipcMain.handle('app:check-update', async () => {
+    try {
+        const currentVersion = require('../../package.json').version;
+        const res = await fetch(UPDATE_CHECK_URL, {
+            signal: AbortSignal.timeout(8000),
+            headers: { 'Accept': 'application/vnd.github+json', 'User-Agent': 'fixzy-sysmaker' }
+        });
+        if (!res.ok) return { error: `HTTP ${res.status}` };
+        const data = await res.json();
+        const latest = String(data.tag_name || '').replace(/^v/, '');
+        /** Compare dotted-numeric versions. @param {string} a @param {string} b @returns {number} -1/0/1 */
+        const cmp = (a, b) => {
+            const pa = String(a).split('.').map(n => parseInt(n, 10) || 0);
+            const pb = String(b).split('.').map(n => parseInt(n, 10) || 0);
+            for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+                const x = pa[i] || 0, y = pb[i] || 0;
+                if (x !== y) return x < y ? -1 : 1;
+            }
+            return 0;
+        };
+        return { current: currentVersion, latest, available: latest ? cmp(currentVersion, latest) < 0 : false };
+    } catch (error) {
+        return { error: error.message };
+    }
+});
+
+// --- GLOBAL TABLE / PROJECT DEFAULTS (2026-10-02) ---------------------------
+// Companion to getGlobalLayoutDefaults() below. These keys used to be stored
+// by the Preferences modal but read by nobody; they are now consumed as
+// defaults for newly created tables, menu items and projects. Existing rows
+// are never rewritten — same contract as the layout defaults.
+/**
+ * Read and normalise the global table-behaviour defaults.
+ * @returns {{allow_csv_export: number, allow_csv_import: number, dv_separate_page: number,
+ *            dv_hide_save_as_copy: number, dv_allow_add_from_homepage: number,
+ *            grid_default_per_page: number, show_record_count: number}} sanitized defaults
+ */
+function getGlobalTableDefaults() {
+    /** Fetch one setting value by name, null when absent. @param {string} name setting_name @returns {string|null} */
+    const get = (name) => {
+        const row = db.prepare('SELECT setting_value FROM fixzy_settings WHERE setting_name = ?').get(name);
+        return row ? row.setting_value : null;
+    };
+    /** Coerce a stored '0'/'1' to an integer flag. @param {string|null} v raw value @param {number} dflt fallback @returns {number} 0 or 1 */
+    const flag = (v, dflt) => (v === null || v === '' ? dflt : (String(v) === '1' || v === true || v === 1 ? 1 : 0));
+
+    // "Allow saving data to CSV" is one switch for both directions.
+    const csv = flag(get('table_allow_csv'), 1);
+
+    // max_entries is the "records per page" default; keep it inside the range
+    // the generator accepts (clampInt 1..500 in laravelTablesGenerator).
+    let perPage = parseInt(get('max_entries'), 10);
+    if (!Number.isInteger(perPage) || perPage < 1 || perPage > 500) perPage = 10;
+
+    return {
+        allow_csv_export: csv,
+        allow_csv_import: csv,
+        dv_separate_page: flag(get('table_dv_separate_page'), 0),
+        dv_hide_save_as_copy: flag(get('table_hide_save_as_copy'), 0),
+        dv_allow_add_from_homepage: flag(get('table_allow_add_from_homepage'), 0),
+        grid_default_per_page: perPage,
+        show_record_count: flag(get('table_show_record_count'), 0)
+    };
+}
+
+/**
+ * Read the Base URL preference used as the default URL for new projects.
+ * @returns {string} trimmed base URL ('' when unset)
+ */
+function getGlobalBaseUrl() {
+    const row = db.prepare("SELECT setting_value FROM fixzy_settings WHERE setting_name = 'base_url'").get();
+    return row ? String(row.setting_value || '').trim() : '';
+}
 
 // --- GLOBAL LAYOUT DEFAULTS (2026-09-26) ------------------------------------
 // Reads the global table-view / form-layout defaults from fixzy_settings and
@@ -3508,6 +3604,17 @@ function importSchema(sql, projectId, dialect) {
             
             const tableInfo = db.prepare("INSERT INTO tables (project_id, table_name, module_name, table_view_title, table_order) VALUES (?, ?, ?, ?, ?)").run(projectId, tableName, tableViewTitle, tableViewTitle, tableOrder++);
             const tableId = tableInfo.lastInsertRowid;
+
+            // Imported tables inherit the same global behaviour defaults as
+            // GUI-created tables (Preferences > Table defaults).
+            const gTable = getGlobalTableDefaults();
+            db.prepare(`UPDATE tables SET allow_csv_export = ?, allow_csv_import = ?,
+                        dv_separate_page = ?, dv_hide_save_as_copy = ?,
+                        dv_allow_add_from_homepage = ?, grid_default_per_page = ?
+                       WHERE table_id = ?`)
+                .run(gTable.allow_csv_export, gTable.allow_csv_import,
+                     gTable.dv_separate_page, gTable.dv_hide_save_as_copy,
+                     gTable.dv_allow_add_from_homepage, gTable.grid_default_per_page, tableId);
             tablesCreated++;
             tableMap[tableName] = tableId;
 
