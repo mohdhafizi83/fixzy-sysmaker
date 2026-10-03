@@ -167,6 +167,14 @@ function initNumberingSection() {
         enabledBox.addEventListener('change', () => {
             const panel = document.getElementById('numbering-panel');
             if (panel) panel.classList.toggle('hidden', !enabledBox.checked);
+            // Populate the field dropdown when the switch is turned on at runtime:
+            // renderNumberingSection early-returns while disabled, so without
+            // this the dropdown stays empty until the table is reopened
+            // (live-audit bug 2026-10-03).
+            if (enabledBox.checked) {
+                const tableData = currentTableData();
+                if (tableData) renderFieldSelect(tableData, '');
+            }
         });
     }
     ['num-field', 'num-prefix', 'num-token', 'num-width'].forEach((id) => {

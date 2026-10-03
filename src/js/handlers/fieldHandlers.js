@@ -61,10 +61,17 @@ export function initializeFieldSaveHandlers() {
                 let tableName = '';
                 let fieldNameText = '';
                 const workspaceFieldEl = document.getElementById('current-module-field-name');
+                const ws = appState.moduleWorkspace;
                 // Route from the explicit workspace context (see state.js), not
                 // panel visibility — same cross-table misroute class as Bug 1.
-                const ws = appState.moduleWorkspace;
-                const isWorkspaceActive = !!(ws && ws.tableName);
+                // EXCEPTION: events raised inside #field-settings-page (Models
+                // Design) must resolve from that page's own "table.field" title.
+                // The workspace context is stale there and used to route Models
+                // Design edits onto the last workspace field instead
+                // (live-audit bug 2026-10-03: image settings landed on the wrong
+                // field after visiting the workspace).
+                const fromModelsDesign = container.id === 'field-settings-page';
+                const isWorkspaceActive = !!(ws && ws.tableName) && !fromModelsDesign;
 
                 if (isWorkspaceActive) {
                     tableName = ws.tableName;
@@ -720,12 +727,22 @@ export function initializeImageOptionsHandlers() {
         if (tvShowFullSize && tvEnableZooming) {
             const isDisabled = tvShowFullSize.checked;
             tvEnableZooming.disabled = isDisabled;
-            if (isDisabled) tvEnableZooming.checked = false;
+            if (isDisabled && tvEnableZooming.checked) {
+                tvEnableZooming.checked = false;
+                // Persist the forced uncheck: a programmatic .checked change
+                // fires no event, so without this the DB kept zooming=1 while
+                // the UI showed 0 — a contradictory stored state that only
+                // surfaced after reload (live-audit bug 2026-10-03).
+                tvEnableZooming.dispatchEvent(new Event('change', { bubbles: true }));
+            }
         }
         if (dvShowFullSize && dvEnableZooming) {
             const isDisabled = dvShowFullSize.checked;
             dvEnableZooming.disabled = isDisabled;
-            if (isDisabled) dvEnableZooming.checked = false;
+            if (isDisabled && dvEnableZooming.checked) {
+                dvEnableZooming.checked = false;
+                dvEnableZooming.dispatchEvent(new Event('change', { bubbles: true }));
+            }
         }
     };
 

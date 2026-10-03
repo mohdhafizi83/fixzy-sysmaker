@@ -184,6 +184,14 @@ function initPublicFormTab() {
         enabledBox.addEventListener('change', () => {
             const panel = document.getElementById('public-form-panel');
             if (panel) panel.classList.toggle('hidden', !enabledBox.checked);
+            // Populate the field picker when the switch is turned on at runtime:
+            // renderPublicFormTab early-returns while disabled, so without this
+            // the picker stays empty until the table is reopened
+            // (live-audit bug 2026-10-03, same class as numbering/approvals).
+            if (enabledBox.checked) {
+                const tData = currentTableData();
+                if (tData) renderFieldPicker(tData, []);
+            }
         });
     }
     ['pf-slug', 'pf-intro', 'pf-success', 'pf-status-default'].forEach((id) => {

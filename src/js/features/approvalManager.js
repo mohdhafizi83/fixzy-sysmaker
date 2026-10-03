@@ -322,6 +322,16 @@ export function initApprovalTab() {
         enabledBox.addEventListener('change', () => {
             const panel = document.getElementById('approval-config-panel');
             panel.classList.toggle('hidden', !enabledBox.checked);
+            if (enabledBox.checked) {
+                // Populate the status-field dropdown when the switch is turned on
+                // at runtime: renderApprovalTab early-returns while disabled, so
+                // without this the dropdown stays empty until the table is
+                // reopened (live-audit bug 2026-10-03, same class as numbering).
+                const titleEl = document.getElementById('workspace-module-title');
+                const tName = titleEl && (titleEl.dataset.tableName || titleEl.textContent.trim());
+                const tData = tName && appState.jsonData?.database?.table?.[tName];
+                if (tData) renderStatusFieldSelect(tData, '');
+            }
             if (enabledBox.checked && document.querySelectorAll('#approval-status-rows tr').length === 0) {
                 loadPreset('simple'); // sensible starting point
             }

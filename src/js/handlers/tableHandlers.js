@@ -61,7 +61,13 @@ export function initializeTableSaveHandlers() {
                 // which used to make workspace edits fall through to whatever
                 // table Models Design last displayed (cross-table misroute).
                 const ws = appState.moduleWorkspace;
-                const isWorkspaceActive = !!(ws && ws.tableName);
+                // Events raised inside #table-settings-page (Models Design) must
+                // resolve from that page's own table-name title; the workspace
+                // context is stale there and would route Models Design edits
+                // onto the last workspace table (live-audit bug 2026-10-03,
+                // same class as the field-level misroute).
+                const fromModelsDesign = container.id === 'table-settings-page';
+                const isWorkspaceActive = !!(ws && ws.tableName) && !fromModelsDesign;
                 const isCustomModule = isWorkspaceActive && ws.mode === 'custom';
 
                 let tableName = '';
