@@ -191,8 +191,11 @@ export function initializeSidebarButtons() {
             const newTable = await window.electronAPI.createTable(appState.activeProject.project_id);
 
             if (newTable) {
-    // Reload the data AND pass the new table name to be selected
-    await loadProjectData(appState.activeProject, newTable.table_name);
+    // Reload the data AND pass the new table name to be selected.
+    // NOTE: second arg must be the options OBJECT — a bare string silently
+    // destructure-fails (tableToSelect stays null) so the new table never
+    // got focused (found 2026-10-03).
+    await loadProjectData(appState.activeProject, { tableToSelect: newTable.table_name });
             }
         });
     }
@@ -348,6 +351,22 @@ export async function generateSidebarMenu() {
         const tables = appState.jsonData.database.table;
         const menuListContainer = document.getElementById('table-list');
         if (!menuListContainer) return;
+
+        // Preserve the user's current selection across the rebuild: capture the
+        // active table/field by ID before the list is wiped, re-apply after.
+        // Without this, any loadProjectData() (constraint add/delete, custom
+        // module create) silently drops the left-list highlight.
+        const prevActive = menuListContainer.querySelector('a.active');
+        let restoreTableId = null;
+        let restoreFieldId = null;
+        if (prevActive) {
+            if (prevActive.closest('ul.submenu-level-3')) {
+                restoreFieldId = prevActive.closest('li')?.dataset.fieldId || null;
+            } else if (prevActive.parentElement.classList.contains('has-submenu')) {
+                restoreTableId = prevActive.parentElement.dataset.tableId || null;
+            }
+        }
+
         menuListContainer.innerHTML = '';
         for (const tableName in tables) {
             const fields = tables[tableName].fields;
@@ -378,6 +397,22 @@ export async function generateSidebarMenu() {
             tableLi.appendChild(tableLink);
             tableLi.appendChild(fieldsUl);
             menuListContainer.appendChild(tableLi);
+        }
+
+        // Re-apply the captured selection (see note above).
+        if (restoreFieldId) {
+            const fieldLi = menuListContainer.querySelector(`li[data-field-id="${restoreFieldId}"]`);
+            if (fieldLi) {
+                const parentLink = fieldLi.closest('li.has-submenu')?.querySelector('a');
+                if (parentLink) {
+                    parentLink.classList.add('open');
+                    if (parentLink.nextElementSibling) parentLink.nextElementSibling.style.display = 'block';
+                }
+                fieldLi.querySelector('a')?.classList.add('active');
+            }
+        } else if (restoreTableId) {
+            const tableLi = menuListContainer.querySelector(`li[data-table-id="${restoreTableId}"]`);
+            tableLi?.querySelector('a')?.classList.add('active');
         }
     } catch (error) {
         console.error("Failed to generate menu:", error);
