@@ -985,8 +985,73 @@ export function updateTableViewTemplatePreview() {
         return;
     }
 
-    const imagePath = `../assets/images/${selectedValue}.png`;
-    previewArea.innerHTML = `<img src="${imagePath}" alt="Preview for the ${selectedValue} template" style="width: 100%; object-fit: contain;">` + buildGridFeaturePreviewHtml();
+    // Live HTML mock of the selected layout (replaces the old static
+    // ../assets/images/<template>.png title-cards, which were never shipped
+    // in the packaged app and showed crude labels instead of real previews).
+    previewArea.innerHTML = buildTemplateMockHtml(selectedValue) + buildGridFeaturePreviewHtml();
+}
+
+/**
+ * [HELPER] Builds a live HTML mock for a Table List template so the user
+ * sees the actual record layout instead of a static image. Shared sample
+ * record: name, category, price, status — rendered per template variant.
+ * Unknown templates fall back to the horizontal mock (never a broken img).
+ * @param {string} template One of: horizontal, vertical_1, vertical_2,
+ *   left_image, right_image, card.
+ * @returns {string} Preview HTML for the template layout.
+ */
+function buildTemplateMockHtml(template) {
+    const labelStyle = 'font-size:0.65em; color:#64748B; text-transform:uppercase; letter-spacing:0.03em;';
+    const valueStyle = 'font-size:0.75em; color:#1E293B;';
+    const recordBox = 'border:1px solid #E2E8F0; border-radius:8px; background:#fff; padding:8px 10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);';
+    const thumb = (align) => `
+        <div style="width:56px; height:56px; flex:none; border-radius:6px; background:linear-gradient(135deg,#E0E7FF,#C7D2FE); display:flex; align-items:center; justify-content:center; color:#6366F1; font-size:0.6em; ${align === 'right' ? 'order:2;' : 'order:0;'}">img</div>`;
+    const textBlock = (title) => `
+        <div style="flex:1; min-width:0; order:1; display:flex; flex-direction:column; gap:3px;">
+            <div style="font-size:0.8em; font-weight:600; color:#0F172A;">${title}</div>
+            <div style="${labelStyle}">Category <span style="${valueStyle}; text-transform:none;">${title === 'Widget Alpha' ? 'Tools' : 'Gadgets'}</span></div>
+            <div style="${labelStyle}">Price <span style="${valueStyle}; font-weight:600;">RM ${(title === 'Widget Alpha' ? 25 : 42)}.00</span></div>
+        </div>`;
+
+    const heading = (t) => `<div style="font-size:0.8em; color:var(--secondary-color); margin-bottom:6px;">${t}</div>`;
+
+    if (template === 'vertical_1' || template === 'vertical_2') {
+        const perRow = template === 'vertical_1' ? 1 : 2;
+        const fields = [['Name', 'Widget Alpha'], ['Category', 'Tools'], ['Price', 'RM 25.00'], ['Status', 'Active']];
+        const rowsHtml = [];
+        for (let i = 0; i < fields.length; i += perRow) {
+            const pair = fields.slice(i, i + perRow);
+            rowsHtml.push(`<div style="display:grid; grid-template-columns:repeat(${perRow}, 1fr); gap:6px; margin-bottom:4px;">
+                ${pair.map(([l, v]) => `<div><div style="${labelStyle}">${l}</div><div style="${valueStyle}">${v}</div></div>`).join('')}
+            </div>`);
+        }
+        return `${heading(template === 'vertical_1' ? 'Vertical — one field per line' : 'Vertical — two fields per line')}
+            <div style="${recordBox} display:flex; flex-direction:column; gap:2px;">${rowsHtml.join('')}</div>
+            <div style="font-size:0.65em; color:#94A3B8; margin-top:4px; text-align:center;">each record renders as one block like this</div>`;
+    }
+
+    if (template === 'left_image' || template === 'right_image') {
+        const side = template === 'left_image' ? 'left' : 'right';
+        const record = (title) => `
+            <div style="${recordBox} display:flex; gap:10px; align-items:center; margin-bottom:6px;">
+                ${thumb(side)}${textBlock(title)}
+            </div>`;
+        return `${heading(side === 'left' ? 'Image on the left of each record' : 'Image on the right of each record')}
+            ${record('Widget Alpha')}${record('Widget Beta')}`;
+    }
+
+    // horizontal (default) + unknown fallback: fields as table columns.
+    return `${heading('Horizontal — fields as columns')}
+        <div style="border:1px solid #ddd; border-radius:6px; background:#fff; overflow:hidden;">
+            <table style="width:100%; border-collapse:collapse;">
+                <thead><tr>
+                    ${['Name', 'Category', 'Price', 'Status'].map(h => `<th style="padding:5px 8px; background:#EEF2FF; font-weight:600; font-size:0.7em; text-align:left; border-bottom:2px solid #C7D2FE;">${h}</th>`).join('')}
+                </tr></thead>
+                <tbody>
+                    ${[['Widget Alpha', 'Tools', 'RM 25.00', 'Active'], ['Widget Beta', 'Gadgets', 'RM 42.00', 'Pending'], ['Widget Gamma', 'Tools', 'RM 18.50', 'Active']].map(r => `<tr>${r.map(c => `<td style="padding:5px 8px; font-size:0.72em; border-bottom:1px solid #eee;">${c}</td>`).join('')}</tr>`).join('')}
+                </tbody>
+            </table>
+        </div>`;
 }
 
 /**

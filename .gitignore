@@ -5,6 +5,17 @@ package-lock.json
 package-lock.json
 /assets/*
 !/assets/pwa/
+!/assets/favicon.ico
+!/assets/favicon.png
+!/assets/fontawesome/
+/assets/fontawesome/*
+!/assets/fontawesome/LICENSE.txt
+!/assets/fontawesome/css/
+/assets/fontawesome/css/*
+!/assets/fontawesome/css/all.min.css
+!/assets/fontawesome/webfonts/
+/assets/fontawesome/webfonts/*
+!/assets/fontawesome/webfonts/*.woff2
 /bin/php-8.4.12
 bin/composer.phar
 others/CMD-go-here.bat

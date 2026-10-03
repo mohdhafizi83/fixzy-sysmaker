@@ -14,6 +14,15 @@ files:
   - src/**/*
   - resources/schema.sql
   - package.json
+  # Renderer static assets (index.html references ../assets/ from src/).
+  # Without these the packaged app shows broken favicon/icons (verified: v1.0.1
+  # asar shipped with zero assets entries). Minimum set only — full fontawesome
+  # tree is 44MB; we ship css/all.min.css + woff2 fonts (~800KB).
+  - assets/favicon.ico
+  - assets/favicon.png
+  - assets/fontawesome/css/all.min.css
+  - assets/fontawesome/webfonts/*.woff2
+  - assets/fontawesome/LICENSE.txt
   # preview_env is NOT bundled (download-on-first-run): the setup wizard fetches
   # the template from GitHub releases into ~/.fixzy/preview_env (see setupRunner.js).
   - "!**/*.bak*"
