@@ -34,28 +34,28 @@ class LeadImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('ID'),
 
             ImportColumn::make('created_at')
                 ->label('Created At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Created At'),
 
             ImportColumn::make('updated_at')
                 ->label('Updated At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Updated At'),
 
             ImportColumn::make('deleted_at')
                 ->label('Deleted At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Deleted At'),
 
@@ -64,7 +64,7 @@ class LeadImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Created By'),
 
@@ -73,7 +73,7 @@ class LeadImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Updated By'),
 
@@ -82,7 +82,7 @@ class LeadImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Deleted By'),
 
@@ -99,14 +99,14 @@ class LeadImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Contact'),
 
             ImportColumn::make('source')
                 ->label('Source')
                 ->ignoreBlankState()
-                ->rules(['max:100'])
+                ->rules(['nullable', 'max:100'])
                 ->examples(['Sample Source 1', 'Sample Source 2'])
                 ->exampleHeader('Source'),
 
@@ -122,21 +122,21 @@ class LeadImporter extends Importer
                 ->label('Estimated Value')
                 ->numeric()
                 ->ignoreBlankState()
-                ->rules(['max:12'])
+                ->rules(['nullable', 'max:12'])
                 ->examples(['Sample Estimated Value 1', 'Sample Estimated Value 2'])
                 ->exampleHeader('Estimated Value'),
 
             ImportColumn::make('expected_close_date')
                 ->label('Expected Close')
                 ->ignoreBlankState()
-                ->rules(['date'])
+                ->rules(['nullable', 'date'])
                 ->examples(['2024-01-01', '2024-12-31'])
                 ->exampleHeader('Expected Close'),
 
             ImportColumn::make('owner_name')
                 ->label('Owner')
                 ->ignoreBlankState()
-                ->rules(['max:150'])
+                ->rules(['nullable', 'max:150'])
                 ->examples(['Sample Owner 1', 'Sample Owner 2'])
                 ->exampleHeader('Owner'),
         ];

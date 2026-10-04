@@ -34,7 +34,7 @@ class FakultiImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Id'),
 
@@ -49,7 +49,7 @@ class FakultiImporter extends Importer
             ImportColumn::make('kod_fakulti')
                 ->label('Kod Fakulti')
                 ->ignoreBlankState()
-                ->rules(['max:20'])
+                ->rules(['nullable', 'max:20'])
                 ->examples(['Sample Kod Fakulti 1', 'Sample Kod Fakulti 2'])
                 ->exampleHeader('Kod Fakulti'),
         ];

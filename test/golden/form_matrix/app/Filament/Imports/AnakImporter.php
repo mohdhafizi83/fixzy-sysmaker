@@ -34,7 +34,7 @@ class AnakImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('ID'),
 
@@ -52,14 +52,14 @@ class AnakImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('nama_induk'),
 
             ImportColumn::make('status_opt')
                 ->label('Status')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Status 1', 'Sample Status 2'])
                 ->exampleHeader('Status'),
 
@@ -68,21 +68,21 @@ class AnakImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Quantity'),
 
             ImportColumn::make('note_txt')
                 ->label('Note')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Note 1', 'Sample Note 2'])
                 ->exampleHeader('Note'),
 
             ImportColumn::make('rich_desc')
                 ->label('Rich Description')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Rich Description 1', 'Sample Rich Description 2'])
                 ->exampleHeader('Rich Description'),
 
@@ -90,21 +90,21 @@ class AnakImporter extends Importer
                 ->label('Active')
                 ->boolean()
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Active'),
 
             ImportColumn::make('prio_radio')
                 ->label('Priority')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Priority 1', 'Sample Priority 2'])
                 ->exampleHeader('Priority'),
 
             ImportColumn::make('due_dt')
                 ->label('Due Date')
                 ->ignoreBlankState()
-                ->rules(['max:255', 'datetime'])
+                ->rules(['nullable', 'max:255', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Due Date'),
 
@@ -112,42 +112,42 @@ class AnakImporter extends Importer
                 ->label('Amount')
                 ->numeric()
                 ->ignoreBlankState()
-                ->rules(['max:10'])
+                ->rules(['nullable', 'max:10'])
                 ->examples(['Sample Amount 1', 'Sample Amount 2'])
                 ->exampleHeader('Amount'),
 
             ImportColumn::make('child_photo')
                 ->label('Photo')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Photo 1', 'Sample Photo 2'])
                 ->exampleHeader('Photo'),
 
             ImportColumn::make('child_doc')
                 ->label('Document')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Document 1', 'Sample Document 2'])
                 ->exampleHeader('Document'),
 
             ImportColumn::make('child_files')
                 ->label('Files')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Files 1', 'Sample Files 2'])
                 ->exampleHeader('Files'),
 
             ImportColumn::make('child_map')
                 ->label('Map')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Map 1', 'Sample Map 2'])
                 ->exampleHeader('Map'),
 
             ImportColumn::make('child_video')
                 ->label('Video')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Video 1', 'Sample Video 2'])
                 ->exampleHeader('Video'),
         ];

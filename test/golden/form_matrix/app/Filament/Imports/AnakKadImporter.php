@@ -34,7 +34,7 @@ class AnakKadImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('ID'),
 
@@ -52,7 +52,7 @@ class AnakKadImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('nama_induk'),
         ];

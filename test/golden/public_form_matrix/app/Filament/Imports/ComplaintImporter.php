@@ -34,7 +34,7 @@ class ComplaintImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('ID'),
 
@@ -57,14 +57,14 @@ class ComplaintImporter extends Importer
             ImportColumn::make('txt_area')
                 ->label('Description')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Description 1', 'Sample Description 2'])
                 ->exampleHeader('Description'),
 
             ImportColumn::make('txt_rich')
                 ->label('Rich Details')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Rich Details 1', 'Sample Rich Details 2'])
                 ->exampleHeader('Rich Details'),
 
@@ -72,28 +72,28 @@ class ComplaintImporter extends Importer
                 ->label('Urgent')
                 ->boolean()
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['1', '0'])
                 ->exampleHeader('Urgent'),
 
             ImportColumn::make('opt_category')
                 ->label('Category')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Category 1', 'Sample Category 2'])
                 ->exampleHeader('Category'),
 
             ImportColumn::make('opt_channels')
                 ->label('Contact Channels')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Contact Channels 1', 'Sample Contact Channels 2'])
                 ->exampleHeader('Contact Channels'),
 
             ImportColumn::make('opt_priority')
                 ->label('Priority')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Priority 1', 'Sample Priority 2'])
                 ->exampleHeader('Priority'),
 
@@ -103,7 +103,7 @@ class ComplaintImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('nama_watak'),
 
@@ -113,7 +113,7 @@ class ComplaintImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('nama_watak'),
 
@@ -121,7 +121,7 @@ class ComplaintImporter extends Importer
                 ->label('Extra Notes')
                 ->multiple(',')
                 ->ignoreBlankState()
-                ->rules(['max:255', 'array'])
+                ->rules(['nullable', 'max:255', 'array'])
                 ->examples(['Sample Extra Notes 1', 'Sample Extra Notes 2'])
                 ->exampleHeader('Extra Notes'),
 
@@ -129,28 +129,28 @@ class ComplaintImporter extends Importer
                 ->label('Claim Amount')
                 ->numeric()
                 ->ignoreBlankState()
-                ->rules(['max:10'])
+                ->rules(['nullable', 'max:10'])
                 ->examples(['Sample Claim Amount 1', 'Sample Claim Amount 2'])
                 ->exampleHeader('Claim Amount'),
 
             ImportColumn::make('dt_event')
                 ->label('Event Date')
                 ->ignoreBlankState()
-                ->rules(['max:255', 'date'])
+                ->rules(['nullable', 'max:255', 'date'])
                 ->examples(['2024-01-01', '2024-12-31'])
                 ->exampleHeader('Event Date'),
 
             ImportColumn::make('dt_report')
                 ->label('Report Datetime')
                 ->ignoreBlankState()
-                ->rules(['max:255', 'datetime'])
+                ->rules(['nullable', 'max:255', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Report Datetime'),
 
             ImportColumn::make('aduan_status')
                 ->label('Status')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Status 1', 'Sample Status 2'])
                 ->exampleHeader('Status'),
 
@@ -165,35 +165,35 @@ class ComplaintImporter extends Importer
             ImportColumn::make('doc_form')
                 ->label('Supporting Doc')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Supporting Doc 1', 'Sample Supporting Doc 2'])
                 ->exampleHeader('Supporting Doc'),
 
             ImportColumn::make('files_extra')
                 ->label('Extra Attachments')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Extra Attachments 1', 'Sample Extra Attachments 2'])
                 ->exampleHeader('Extra Attachments'),
 
             ImportColumn::make('map_place')
                 ->label('Location (embed)')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Location (embed) 1', 'Sample Location (embed) 2'])
                 ->exampleHeader('Location (embed)'),
 
             ImportColumn::make('vid_evidence')
                 ->label('Video (embed)')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Video (embed) 1', 'Sample Video (embed) 2'])
                 ->exampleHeader('Video (embed)'),
 
             ImportColumn::make('internal_note')
                 ->label('Internal Note')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Internal Note 1', 'Sample Internal Note 2'])
                 ->exampleHeader('Internal Note'),
         ];

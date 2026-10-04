@@ -34,28 +34,28 @@ class JobImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('ID'),
 
             ImportColumn::make('created_at')
                 ->label('Created At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Created At'),
 
             ImportColumn::make('updated_at')
                 ->label('Updated At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Updated At'),
 
             ImportColumn::make('deleted_at')
                 ->label('Deleted At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Deleted At'),
 
@@ -64,7 +64,7 @@ class JobImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Created By'),
 
@@ -73,7 +73,7 @@ class JobImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Updated By'),
 
@@ -82,7 +82,7 @@ class JobImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Deleted By'),
 
@@ -113,34 +113,35 @@ class JobImporter extends Importer
             ImportColumn::make('customer_phone')
                 ->label('Customer Phone')
                 ->ignoreBlankState()
-                ->rules(['max:30'])
+                ->rules(['nullable', 'max:30'])
                 ->examples(['Sample Customer Phone 1', 'Sample Customer Phone 2'])
                 ->exampleHeader('Customer Phone'),
 
             ImportColumn::make('site_address')
                 ->label('Site Address')
                 ->ignoreBlankState()
+                ->rules(['nullable'])
                 ->examples(['Sample Site Address 1', 'Sample Site Address 2'])
                 ->exampleHeader('Site Address'),
 
             ImportColumn::make('scheduled_date')
                 ->label('Scheduled Date')
                 ->ignoreBlankState()
-                ->rules(['date'])
+                ->rules(['nullable', 'date'])
                 ->examples(['2024-01-01', '2024-12-31'])
                 ->exampleHeader('Scheduled Date'),
 
             ImportColumn::make('due_date')
                 ->label('Due Date')
                 ->ignoreBlankState()
-                ->rules(['date'])
+                ->rules(['nullable', 'date'])
                 ->examples(['2024-01-01', '2024-12-31'])
                 ->exampleHeader('Due Date'),
 
             ImportColumn::make('assigned_technician')
                 ->label('Assigned Technician')
                 ->ignoreBlankState()
-                ->rules(['max:150'])
+                ->rules(['nullable', 'max:150'])
                 ->examples(['Sample Assigned Technician 1', 'Sample Assigned Technician 2'])
                 ->exampleHeader('Assigned Technician'),
 
@@ -155,6 +156,7 @@ class JobImporter extends Importer
             ImportColumn::make('completion_notes')
                 ->label('Completion Notes')
                 ->ignoreBlankState()
+                ->rules(['nullable'])
                 ->examples(['Sample Completion Notes 1', 'Sample Completion Notes 2'])
                 ->exampleHeader('Completion Notes'),
         ];

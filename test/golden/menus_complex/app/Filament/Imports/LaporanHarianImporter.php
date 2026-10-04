@@ -34,14 +34,14 @@ class LaporanHarianImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Id'),
 
             ImportColumn::make('tarikh_laporan')
                 ->label('Tarikh Laporan')
                 ->ignoreBlankState()
-                ->rules(['max:255', 'datetime'])
+                ->rules(['nullable', 'max:255', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Tarikh Laporan'),
         ];

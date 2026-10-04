@@ -34,7 +34,7 @@ class NotaImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Id'),
 
@@ -43,14 +43,14 @@ class NotaImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Projek Id'),
 
             ImportColumn::make('isi_nota')
                 ->label('Isi Nota')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Isi Nota 1', 'Sample Isi Nota 2'])
                 ->exampleHeader('Isi Nota'),
         ];

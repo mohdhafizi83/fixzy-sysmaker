@@ -34,7 +34,7 @@ class ExamResultImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('ID'),
 
@@ -42,35 +42,35 @@ class ExamResultImporter extends Importer
                 ->label('nama_penuh')
                 ->relationship(resolveUsing: ['nama_penuh'])
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample nama_penuh 1', 'Sample nama_penuh 2'])
                 ->exampleHeader('nama_penuh'),
 
             ImportColumn::make('test')
                 ->label('Exam')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Exam 1', 'Sample Exam 2'])
                 ->exampleHeader('Exam'),
 
             ImportColumn::make('created_at')
                 ->label('Created At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Created At'),
 
             ImportColumn::make('updated_at')
                 ->label('Updated At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Updated At'),
 
             ImportColumn::make('deleted_at')
                 ->label('Deleted At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Deleted At'),
 
@@ -79,7 +79,7 @@ class ExamResultImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Created By'),
 
@@ -88,7 +88,7 @@ class ExamResultImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Updated By'),
 
@@ -97,7 +97,7 @@ class ExamResultImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Deleted By'),
         ];

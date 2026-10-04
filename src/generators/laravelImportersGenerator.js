@@ -41,6 +41,7 @@ function buildColumnContext(fields, tables) {
         // Rules logic
         let rulesList = [];
         if (field.required == 1) rulesList.push("'required'");
+        else rulesList.push("'nullable'");
         if (displayType === 'text_input' && (dataType === 'INT' || dataType === 'BIGINT')) rulesList.push("'integer'");
 
         if (dataType === 'INT' || dataType === 'BIGINT') {

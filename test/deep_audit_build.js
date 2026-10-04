@@ -160,6 +160,32 @@ const TABLES = [
             // machinery (model creating/updating hooks) — do NOT declare them.
         ],
     },
+    {
+        // Fasa 22 — grid semantics: summaries, group-by, kanban,
+        // calendar, tree. Numeric fields for SUM/AVG/COUNT/MIN/MAX.
+        name: 'gridtest', module: 'Gridtest', title: 'Grid Test',
+        enable_row_actions: 1,
+        grid_summaries: '{"nilai": "sum", "skor": "avg", "kuantiti": "count", "tinggi": "min", "lebar": "max"}',
+        grid_group_by: 'kategori',
+        grid_kanban_enabled: 1,
+        grid_kanban_config: '{"group_field":"status_kerja","card_fields":["nama_item"],"allowed_transitions":{"Draft":["Review"],"Review":["Approved","Draft"]}}',
+        grid_calendar_enabled: 1,
+        grid_calendar_config: '{"start_field":"tarikh_hantar","end_field":"","title_field":"nama_item","color_field":""}',
+        grid_tree_enabled: 1,
+        grid_tree_config: '{"parent_field":"parent_id","label_field":"nama_item"}',
+        fields: [
+            mkField('nama_item', 'Nama Item', { data_type: 'VARCHAR', length: 100, required: 1, not_null: 1 }),
+            mkField('nilai', 'Nilai', { data_type: 'DECIMAL', length: 10, precision: 2 }),
+            mkField('skor', 'Skor', { data_type: 'INT' }),
+            mkField('kuantiti', 'Kuantiti', { data_type: 'INT' }),
+            mkField('tinggi', 'Tinggi', { data_type: 'INT' }),
+            mkField('lebar', 'Lebar', { data_type: 'INT' }),
+            mkField('kategori', 'Kategori', { data_type: 'VARCHAR', length: 20, display_type: 'options_list', options_display: 'dropdown', options_list_values: 'alpha;;beta;;gama' }),
+            mkField('status_kerja', 'Status Kerja', { data_type: 'VARCHAR', length: 20, display_type: 'options_list', options_display: 'dropdown', options_list_values: 'Draft;;Review;;Approved' }),
+            mkField('tarikh_hantar', 'Tarikh Hantar', { data_type: 'DATE', display_type: 'datetime_input' }),
+            mkField('parent_id', 'Parent', { data_type: 'INT' }),
+        ],
+    },
 ];
 
 (async () => {
@@ -193,6 +219,12 @@ const TABLES = [
             allow_csv_export: 1,
             allow_csv_import: 1,
             ...(spec.record_owner ? { record_owner: spec.record_owner } : {}),
+            ...(spec.grid_summaries ? { grid_summaries: spec.grid_summaries } : {}),
+            ...(spec.grid_group_by ? { grid_group_by: spec.grid_group_by } : {}),
+            ...(spec.grid_kanban_enabled ? { grid_kanban_enabled: 1, grid_kanban_config: spec.grid_kanban_config } : {}),
+            ...(spec.grid_calendar_enabled ? { grid_calendar_enabled: 1, grid_calendar_config: spec.grid_calendar_config } : {}),
+            ...(spec.grid_tree_enabled ? { grid_tree_enabled: 1, grid_tree_config: spec.grid_tree_config } : {}),
+            ...(spec.enable_row_actions ? { show_delete_button: 1, allow_restore_delete: 1, allow_force_delete: 1 } : {}),
         });
         check(`T1. table '${spec.name}' created+renamed`, upd && upd.success !== false);
         tableIds[spec.name] = t.table_id;
@@ -229,7 +261,7 @@ const TABLES = [
     // 5. Verify via the real schema assembly the generator consumes.
     const full = await call('project:get-full-schema', projectId);
     const tables = full && full.database && full.database.table || {};
-    check('S1. full schema has all 8 tables (7 + users)', Object.keys(tables).length === 8, Object.keys(tables).join(','));
+    check('S1. full schema has all 9 tables (8 + users)', Object.keys(tables).length === 9, Object.keys(tables).join(','));
     const rels = (full.database.relationships || []).filter(r => r.child_table_name === 'pendaftaran');
     check('S2. pendaftaran has 2 relationships in schema', rels.length === 2, 'n=' + rels.length);
     const pel = tables.pelajar || {};

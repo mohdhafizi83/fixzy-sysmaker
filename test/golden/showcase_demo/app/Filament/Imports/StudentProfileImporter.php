@@ -34,7 +34,7 @@ class StudentProfileImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('ID'),
 
@@ -52,48 +52,49 @@ class StudentProfileImporter extends Importer
             ImportColumn::make('alamat')
                 ->label('Address')
                 ->ignoreBlankState()
+                ->rules(['nullable'])
                 ->examples(['Sample Address 1', 'Sample Address 2'])
                 ->exampleHeader('Address'),
 
             ImportColumn::make('no_telefon')
                 ->label('Phone Number')
                 ->ignoreBlankState()
-                ->rules(['max:20'])
+                ->rules(['nullable', 'max:20'])
                 ->examples(['Sample Phone Number 1', 'Sample Phone Number 2'])
                 ->exampleHeader('Phone Number'),
 
             ImportColumn::make('tarikh_lahir')
                 ->label('Date of Birth')
                 ->ignoreBlankState()
-                ->rules(['date'])
+                ->rules(['nullable', 'date'])
                 ->examples(['2024-01-01', '2024-12-31'])
                 ->exampleHeader('Date of Birth'),
 
             ImportColumn::make('info_kecemasan')
                 ->label('Emergency Info')
                 ->ignoreBlankState()
-                ->rules(['max:200'])
+                ->rules(['nullable', 'max:200'])
                 ->examples(['Sample Emergency Info 1', 'Sample Emergency Info 2'])
                 ->exampleHeader('Emergency Info'),
 
             ImportColumn::make('created_at')
                 ->label('Created At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Created At'),
 
             ImportColumn::make('updated_at')
                 ->label('Updated At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Updated At'),
 
             ImportColumn::make('deleted_at')
                 ->label('Deleted At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Deleted At'),
         ];

@@ -34,28 +34,28 @@ class LeaveRequestImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('ID'),
 
             ImportColumn::make('created_at')
                 ->label('Created At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Created At'),
 
             ImportColumn::make('updated_at')
                 ->label('Updated At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Updated At'),
 
             ImportColumn::make('deleted_at')
                 ->label('Deleted At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Deleted At'),
 
@@ -64,7 +64,7 @@ class LeaveRequestImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Created By'),
 
@@ -73,7 +73,7 @@ class LeaveRequestImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Updated By'),
 
@@ -82,7 +82,7 @@ class LeaveRequestImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Deleted By'),
 
@@ -97,7 +97,7 @@ class LeaveRequestImporter extends Importer
             ImportColumn::make('employee_email')
                 ->label('Employee Email')
                 ->ignoreBlankState()
-                ->rules(['max:150'])
+                ->rules(['nullable', 'max:150'])
                 ->examples(['Sample Employee Email 1', 'Sample Employee Email 2'])
                 ->exampleHeader('Employee Email'),
 
@@ -131,7 +131,7 @@ class LeaveRequestImporter extends Importer
                 ->label('Days Requested')
                 ->numeric()
                 ->ignoreBlankState()
-                ->rules(['max:8'])
+                ->rules(['nullable', 'max:8'])
                 ->examples(['Sample Days Requested 1', 'Sample Days Requested 2'])
                 ->exampleHeader('Days Requested'),
 

@@ -34,14 +34,14 @@ class MesyuaratImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('ID'),
 
             ImportColumn::make('tarikh_mula')
                 ->label('Tarikh Mula')
                 ->ignoreBlankState()
-                ->rules(['date'])
+                ->rules(['nullable', 'date'])
                 ->examples(['2024-01-01', '2024-12-31'])
                 ->exampleHeader('Tarikh Mula'),
         ];

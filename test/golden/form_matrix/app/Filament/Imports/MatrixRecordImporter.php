@@ -34,7 +34,7 @@ class MatrixRecordImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('ID'),
 
@@ -49,28 +49,28 @@ class MatrixRecordImporter extends Importer
             ImportColumn::make('txt_email')
                 ->label('Email')
                 ->ignoreBlankState()
-                ->rules(['max:255', 'email'])
+                ->rules(['nullable', 'max:255', 'email'])
                 ->examples(['user1@example.com', 'user2@example.com'])
                 ->exampleHeader('Email'),
 
             ImportColumn::make('txt_url')
                 ->label('URL')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample URL 1', 'Sample URL 2'])
                 ->exampleHeader('URL'),
 
             ImportColumn::make('txt_tel')
                 ->label('Telephone')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Telephone 1', 'Sample Telephone 2'])
                 ->exampleHeader('Telephone'),
 
             ImportColumn::make('txt_password')
                 ->label('Password')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Password 1', 'Sample Password 2'])
                 ->exampleHeader('Password'),
 
@@ -79,7 +79,7 @@ class MatrixRecordImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Integer'),
 
@@ -87,35 +87,35 @@ class MatrixRecordImporter extends Importer
                 ->label('Decimal')
                 ->numeric()
                 ->ignoreBlankState()
-                ->rules(['max:10'])
+                ->rules(['nullable', 'max:10'])
                 ->examples(['Sample Decimal 1', 'Sample Decimal 2'])
                 ->exampleHeader('Decimal'),
 
             ImportColumn::make('dt_date')
                 ->label('Date')
                 ->ignoreBlankState()
-                ->rules(['max:255', 'date'])
+                ->rules(['nullable', 'max:255', 'date'])
                 ->examples(['2024-01-01', '2024-12-31'])
                 ->exampleHeader('Date'),
 
             ImportColumn::make('dt_datetime')
                 ->label('Datetime')
                 ->ignoreBlankState()
-                ->rules(['max:255', 'datetime'])
+                ->rules(['nullable', 'max:255', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Datetime'),
 
             ImportColumn::make('txt_area')
                 ->label('Text Area')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Text Area 1', 'Sample Text Area 2'])
                 ->exampleHeader('Text Area'),
 
             ImportColumn::make('txt_rich')
                 ->label('Rich Editor')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Rich Editor 1', 'Sample Rich Editor 2'])
                 ->exampleHeader('Rich Editor'),
 
@@ -123,35 +123,35 @@ class MatrixRecordImporter extends Importer
                 ->label('Checkbox')
                 ->boolean()
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['1', '0'])
                 ->exampleHeader('Checkbox'),
 
             ImportColumn::make('opt_dropdown')
                 ->label('Options Dropdown')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Options Dropdown 1', 'Sample Options Dropdown 2'])
                 ->exampleHeader('Options Dropdown'),
 
             ImportColumn::make('opt_radios')
                 ->label('Options Radios')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Options Radios 1', 'Sample Options Radios 2'])
                 ->exampleHeader('Options Radios'),
 
             ImportColumn::make('opt_checkboxes')
                 ->label('Options Checkboxes')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Options Checkboxes 1', 'Sample Options Checkboxes 2'])
                 ->exampleHeader('Options Checkboxes'),
 
             ImportColumn::make('opt_multi')
                 ->label('Options Multi')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Options Multi 1', 'Sample Options Multi 2'])
                 ->exampleHeader('Options Multi'),
 
@@ -161,7 +161,7 @@ class MatrixRecordImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('nama_watak'),
 
@@ -171,7 +171,7 @@ class MatrixRecordImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('nama_watak'),
 
@@ -179,7 +179,7 @@ class MatrixRecordImporter extends Importer
                 ->label('Repeater Simple')
                 ->multiple(',')
                 ->ignoreBlankState()
-                ->rules(['max:255', 'array'])
+                ->rules(['nullable', 'max:255', 'array'])
                 ->examples(['Sample Repeater Simple 1', 'Sample Repeater Simple 2'])
                 ->exampleHeader('Repeater Simple'),
 
@@ -187,56 +187,56 @@ class MatrixRecordImporter extends Importer
                 ->label('Repeater Complex')
                 ->multiple(',')
                 ->ignoreBlankState()
-                ->rules(['max:255', 'array'])
+                ->rules(['nullable', 'max:255', 'array'])
                 ->examples(['Sample Repeater Complex 1', 'Sample Repeater Complex 2'])
                 ->exampleHeader('Repeater Complex'),
 
             ImportColumn::make('img_profile')
                 ->label('Profile Picture')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Profile Picture 1', 'Sample Profile Picture 2'])
                 ->exampleHeader('Profile Picture'),
 
             ImportColumn::make('img_avatar')
                 ->label('Avatar Circular')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Avatar Circular 1', 'Sample Avatar Circular 2'])
                 ->exampleHeader('Avatar Circular'),
 
             ImportColumn::make('file_doc')
                 ->label('Document')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Document 1', 'Sample Document 2'])
                 ->exampleHeader('Document'),
 
             ImportColumn::make('file_multi')
                 ->label('Attachments')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Attachments 1', 'Sample Attachments 2'])
                 ->exampleHeader('Attachments'),
 
             ImportColumn::make('map_loc')
                 ->label('Location Map')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Location Map 1', 'Sample Location Map 2'])
                 ->exampleHeader('Location Map'),
 
             ImportColumn::make('vid_clip')
                 ->label('Video Clip')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Video Clip 1', 'Sample Video Clip 2'])
                 ->exampleHeader('Video Clip'),
 
             ImportColumn::make('color_hex')
                 ->label('Event Color')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['Sample Event Color 1', 'Sample Event Color 2'])
                 ->exampleHeader('Event Color'),
         ];

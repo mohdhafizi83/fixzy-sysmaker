@@ -35,7 +35,7 @@ class PendaftaranKursusImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Id'),
 
@@ -64,42 +64,42 @@ class PendaftaranKursusImporter extends Importer
             ImportColumn::make('tarikh_pendaftaran')
                 ->label('Tarikh Pendaftaran')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Tarikh Pendaftaran'),
 
             ImportColumn::make('gred')
                 ->label('Gred')
                 ->ignoreBlankState()
-                ->rules(['max:5'])
+                ->rules(['nullable', 'max:5'])
                 ->examples(['Sample Gred 1', 'Sample Gred 2'])
                 ->exampleHeader('Gred'),
 
             ImportColumn::make('dokumen_lengkap')
                 ->label('Dokumen Lengkap')
                 ->ignoreBlankState()
-                ->rules(['max:255'])
+                ->rules(['nullable', 'max:255'])
                 ->examples(['1', '0'])
                 ->exampleHeader('Dokumen Lengkap'),
 
             ImportColumn::make('created_at')
                 ->label('Created At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Created At'),
 
             ImportColumn::make('updated_at')
                 ->label('Updated At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Updated At'),
 
             ImportColumn::make('deleted_at')
                 ->label('Deleted At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Deleted At'),
         ];

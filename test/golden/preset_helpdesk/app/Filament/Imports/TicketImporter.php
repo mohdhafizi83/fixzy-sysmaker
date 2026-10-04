@@ -34,28 +34,28 @@ class TicketImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('ID'),
 
             ImportColumn::make('created_at')
                 ->label('Created At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Created At'),
 
             ImportColumn::make('updated_at')
                 ->label('Updated At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Updated At'),
 
             ImportColumn::make('deleted_at')
                 ->label('Deleted At')
                 ->ignoreBlankState()
-                ->rules(['datetime'])
+                ->rules(['nullable', 'datetime'])
                 ->examples(['2024-01-01 22:56:00', '2024-12-31 22:56:00'])
                 ->exampleHeader('Deleted At'),
 
@@ -64,7 +64,7 @@ class TicketImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Created By'),
 
@@ -73,7 +73,7 @@ class TicketImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Updated By'),
 
@@ -82,7 +82,7 @@ class TicketImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Deleted By'),
 
@@ -113,7 +113,7 @@ class TicketImporter extends Importer
             ImportColumn::make('requester_email')
                 ->label('Requester Email')
                 ->ignoreBlankState()
-                ->rules(['max:150'])
+                ->rules(['nullable', 'max:150'])
                 ->examples(['Sample Requester Email 1', 'Sample Requester Email 2'])
                 ->exampleHeader('Requester Email'),
 
@@ -136,7 +136,7 @@ class TicketImporter extends Importer
             ImportColumn::make('assigned_to')
                 ->label('Assigned Agent')
                 ->ignoreBlankState()
-                ->rules(['max:150'])
+                ->rules(['nullable', 'max:150'])
                 ->examples(['Sample Assigned Agent 1', 'Sample Assigned Agent 2'])
                 ->exampleHeader('Assigned Agent'),
 

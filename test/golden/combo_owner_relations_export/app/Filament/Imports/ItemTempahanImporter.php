@@ -34,7 +34,7 @@ class ItemTempahanImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Id'),
 
@@ -43,7 +43,7 @@ class ItemTempahanImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Tempahan Id'),
 
@@ -60,7 +60,7 @@ class ItemTempahanImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Kuantiti'),
 
@@ -68,7 +68,7 @@ class ItemTempahanImporter extends Importer
                 ->label('Harga')
                 ->numeric()
                 ->ignoreBlankState()
-                ->rules(['max:10'])
+                ->rules(['nullable', 'max:10'])
                 ->examples(['Sample Harga 1', 'Sample Harga 2'])
                 ->exampleHeader('Harga'),
         ];

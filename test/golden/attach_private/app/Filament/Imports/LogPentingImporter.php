@@ -34,7 +34,7 @@ class LogPentingImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Id'),
 
@@ -49,13 +49,14 @@ class LogPentingImporter extends Importer
             ImportColumn::make('perihal_status')
                 ->label('Status')
                 ->ignoreBlankState()
-                ->rules(['max:50'])
+                ->rules(['nullable', 'max:50'])
                 ->examples(['Sample Status 1', 'Sample Status 2'])
                 ->exampleHeader('Status'),
 
             ImportColumn::make('lampiran')
                 ->label('Lampiran')
                 ->ignoreBlankState()
+                ->rules(['nullable'])
                 ->examples(['Sample Lampiran 1', 'Sample Lampiran 2'])
                 ->exampleHeader('Lampiran'),
         ];

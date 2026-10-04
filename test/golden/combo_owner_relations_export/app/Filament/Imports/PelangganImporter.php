@@ -34,7 +34,7 @@ class PelangganImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Id'),
 
@@ -49,7 +49,7 @@ class PelangganImporter extends Importer
             ImportColumn::make('emel')
                 ->label('Emel')
                 ->ignoreBlankState()
-                ->rules(['max:150', 'email'])
+                ->rules(['nullable', 'max:150', 'email'])
                 ->examples(['user1@example.com', 'user2@example.com'])
                 ->exampleHeader('Emel'),
         ];

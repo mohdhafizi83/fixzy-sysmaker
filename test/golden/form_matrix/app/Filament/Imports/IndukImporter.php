@@ -34,7 +34,7 @@ class IndukImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('ID'),
 
@@ -50,14 +50,14 @@ class IndukImporter extends Importer
                 ->label('Meta Decimal')
                 ->numeric()
                 ->ignoreBlankState()
-                ->rules(['max:8'])
+                ->rules(['nullable', 'max:8'])
                 ->examples(['Sample Meta Decimal 1', 'Sample Meta Decimal 2'])
                 ->exampleHeader('Meta Decimal'),
 
             ImportColumn::make('meta_date')
                 ->label('Meta Date')
                 ->ignoreBlankState()
-                ->rules(['max:255', 'date'])
+                ->rules(['nullable', 'max:255', 'date'])
                 ->examples(['2024-01-01', '2024-12-31'])
                 ->exampleHeader('Meta Date'),
 
@@ -67,7 +67,7 @@ class IndukImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('nama_watak'),
         ];

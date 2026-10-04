@@ -34,7 +34,7 @@ class KontrakImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Id'),
 
@@ -43,7 +43,7 @@ class KontrakImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Syarikat Id'),
 
@@ -59,7 +59,7 @@ class KontrakImporter extends Importer
                 ->label('Nilai')
                 ->numeric()
                 ->ignoreBlankState()
-                ->rules(['max:12'])
+                ->rules(['nullable', 'max:12'])
                 ->examples(['Sample Nilai 1', 'Sample Nilai 2'])
                 ->exampleHeader('Nilai'),
 
@@ -68,7 +68,7 @@ class KontrakImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Created By'),
 
@@ -77,7 +77,7 @@ class KontrakImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Updated By'),
 
@@ -86,7 +86,7 @@ class KontrakImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Deleted By'),
         ];

@@ -34,7 +34,7 @@ class ProdukImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Id'),
 
@@ -50,7 +50,7 @@ class ProdukImporter extends Importer
                 ->label('Harga')
                 ->numeric()
                 ->ignoreBlankState()
-                ->rules(['max:10'])
+                ->rules(['nullable', 'max:10'])
                 ->examples(['Sample Harga 1', 'Sample Harga 2'])
                 ->exampleHeader('Harga'),
         ];

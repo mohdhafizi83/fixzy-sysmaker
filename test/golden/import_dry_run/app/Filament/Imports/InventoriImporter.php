@@ -42,7 +42,7 @@ class InventoriImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Id'),
 
@@ -59,7 +59,7 @@ class InventoriImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->ignoreBlankState()
-                ->rules(['integer'])
+                ->rules(['nullable', 'integer'])
                 ->examples(['1', '2'])
                 ->exampleHeader('Kuantiti'),
 
@@ -67,7 +67,7 @@ class InventoriImporter extends Importer
                 ->label('Harga Seunit')
                 ->numeric()
                 ->ignoreBlankState()
-                ->rules(['max:10'])
+                ->rules(['nullable', 'max:10'])
                 ->examples(['Sample Harga Seunit 1', 'Sample Harga Seunit 2'])
                 ->exampleHeader('Harga Seunit'),
         ];
