@@ -674,9 +674,9 @@ const TABLE_EVENT = {
 };
 
 const PROJECT_EVENT = {
-    after_login: ['Illuminate\\Auth\\Events\\Login::class', '$event->user'],
-    before_logout: ['Illuminate\\Auth\\Events\\Logout::class', '$event->user'],
-    on_login_failure: ['Illuminate\\Auth\\Events\\Failed::class', '$event->user'],
+    after_login: ['\\Illuminate\\Auth\\Events\\Login::class', '$event->user'],
+    before_logout: ['\\Illuminate\\Auth\\Events\\Logout::class', '$event->user'],
+    on_login_failure: ['\\Illuminate\\Auth\\Events\\Failed::class', '$event->user'],
     // Model-level events use Laravel's generic eloquent.* event names so the
     // hook fires on actual User model lifecycle, not registration only.
     after_user_created: ["'eloquent.created: App\\Models\\User'", '$event'],

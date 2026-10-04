@@ -319,7 +319,71 @@ const TABLES = [
             mkField('status_skop', 'Status Skop', { data_type: 'VARCHAR', length: 30, display_type: 'options_list', options_display: 'dropdown', options_list_values: 'Draft;;Review;;Approved' }),
         ],
     },
+    {
+        // Fasa 24 — table-level hooks: insert/update email, condition branch,
+        // soft-delete single fire.
+        name: 'hook', module: 'Hook', title: 'Hook',
+        table_hook_workflow: JSON.stringify({
+            blocks: {
+                t_ins: { type: 'hook_trigger', hook_type: 'after_insert', x: 50, y: 50 },
+                a_ins: { type: 'send_email', to: 'hookf24@test.my', subject: 'H1 INSERT fired', body: 'inserted', x: 250, y: 50 },
+                t_upd: { type: 'hook_trigger', hook_type: 'after_update', x: 50, y: 200 },
+                a_upd: { type: 'send_email', to: 'hookf24@test.my', subject: 'H2 UPDATE fired', body: 'updated', x: 250, y: 200 },
+                t_del: { type: 'hook_trigger', hook_type: 'after_delete', x: 50, y: 350 },
+                a_del: { type: 'send_email', to: 'hookf24@test.my', subject: 'H7 DELETE fired', body: 'deleted', x: 250, y: 350 },
+            },
+            connections: [
+                { fromBlock: 't_ins', fromPoint: 'out', toBlock: 'a_ins', toPoint: 'in' },
+                { fromBlock: 't_upd', fromPoint: 'out', toBlock: 'a_upd', toPoint: 'in' },
+                { fromBlock: 't_del', fromPoint: 'out', toBlock: 'a_del', toPoint: 'in' },
+            ],
+        }),
+        fields: [
+            mkField('nama', 'Nama', { data_type: 'VARCHAR', length: 100, required: 1, not_null: 1 }),
+            mkField('marka', 'Marka', { data_type: 'VARCHAR', length: 50 }),
+        ],
+    },
+    {
+        // Fasa 24 H3 — condition branch TRUE/FALSE on insert.
+        name: 'kondisi', module: 'Kondisi', title: 'Kondisi',
+        table_hook_workflow: JSON.stringify({
+            blocks: {
+                t1: { type: 'hook_trigger', hook_type: 'after_insert', x: 50, y: 50 },
+                c1: { type: 'condition', configData: JSON.stringify([
+                    { type: 'this_record_data', field: 'status_kondisi' },
+                    { type: 'comparison_operator', value: '==' },
+                    { type: 'string', value: 'TRIGGER' },
+                ]), x: 250, y: 50 },
+                a_yes: { type: 'send_email', to: 'kondisi@test.my', subject: 'H3 TRUE BRANCH', body: 'cond true', x: 450, y: 50 },
+                a_no: { type: 'send_email', to: 'kondisi@test.my', subject: 'H3 FALSE BRANCH', body: 'cond false', x: 450, y: 200 },
+            },
+            connections: [
+                { fromBlock: 't1', fromPoint: 'out', toBlock: 'c1', toPoint: 'in' },
+                { fromBlock: 'c1', fromPoint: 'out-true', toBlock: 'a_yes', toPoint: 'in' },
+                { fromBlock: 'c1', fromPoint: 'out-false', toBlock: 'a_no', toPoint: 'in' },
+            ],
+        }),
+        fields: [
+            mkField('nama_kondisi', 'Nama Kondisi', { data_type: 'VARCHAR', length: 100, required: 1, not_null: 1 }),
+            mkField('status_kondisi', 'Status Kondisi', { data_type: 'VARCHAR', length: 30 }),
+        ],
+    },
 ];
+
+// Fasa 24 H4/H6 — project-level hooks (after_login fires for every table's
+// auth flow; on_scheduled_task compiles to fixzy:scheduled-workflow).
+const PROJECT_HOOK_WORKFLOW = JSON.stringify({
+    blocks: {
+        p_login: { type: 'hook_trigger', hook_type: 'after_login', x: 50, y: 50 },
+        p_mail: { type: 'send_email', to: 'projhook@test.my', subject: 'H4 LOGIN', body: 'a user logged in', x: 250, y: 50 },
+        p_sched: { type: 'hook_trigger', hook_type: 'on_scheduled_task', x: 50, y: 200 },
+        p_smail: { type: 'send_email', to: 'schedhook@test.my', subject: 'H6 SCHEDULED', body: 'scheduled run', x: 250, y: 200 },
+    },
+    connections: [
+        { fromBlock: 'p_login', fromPoint: 'out', toBlock: 'p_mail', toPoint: 'in' },
+        { fromBlock: 'p_sched', fromPoint: 'out', toBlock: 'p_smail', toPoint: 'in' },
+    ],
+});
 
 (async () => {
     // 1. Project (project:create also seeds the users table — expected).
@@ -335,6 +399,7 @@ const TABLES = [
         language_select: 'Malay',
         timezone_select: 'Asia/Kuala_Lumpur',
         module_fake_data: 0,
+        project_hook_workflow: PROJECT_HOOK_WORKFLOW,
     });
     check('P2. project flags saved (soft delete, MS, KL tz, no fake data)', pu && pu.success === true);
 
@@ -400,7 +465,7 @@ const TABLES = [
     // 5. Verify via the real schema assembly the generator consumes.
     const full = await call('project:get-full-schema', projectId);
     const tables = full && full.database && full.database.table || {};
-    check('S1. full schema has all 15 tables (14 + users)', Object.keys(tables).length === 15, Object.keys(tables).join(','));
+    check('S1. full schema has all 17 tables (16 + users)', Object.keys(tables).length === 17, Object.keys(tables).join(','));
     const rels = (full.database.relationships || []).filter(r => r.child_table_name === 'pendaftaran');
     check('S2. pendaftaran has 2 relationships in schema', rels.length === 2, 'n=' + rels.length);
     const pel = tables.pelajar || {};

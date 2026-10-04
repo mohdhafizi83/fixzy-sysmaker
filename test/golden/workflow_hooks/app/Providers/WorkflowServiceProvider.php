@@ -21,7 +21,7 @@ class WorkflowServiceProvider extends ServiceProvider
         // on_startup workflow (runs once when the app boots).
         $this->runStartupWorkflow();
         \App\Models\User::observe(\App\Observers\UserWorkflowObserver::class);
-        Event::listen(Illuminate\Auth\Events\Login::class, \App\Listeners\ProjectWorkflowListener::class . '@afterLogin');
+        Event::listen(\Illuminate\Auth\Events\Login::class, \App\Listeners\ProjectWorkflowListener::class . '@afterLogin');
         Schedule::command('fixzy:scheduled-workflow')->everyMinute();
         $this->applyMailSettings();
     }
