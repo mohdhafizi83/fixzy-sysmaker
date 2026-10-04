@@ -5,6 +5,7 @@
   "php_extensions": [],
   "npm": [],
   "providers": [
-    "App\\Providers\\ApiServiceProvider"
+    "App\\Providers\\ApiServiceProvider",
+    "App\\Providers\\WorkflowServiceProvider"
   ]
 }

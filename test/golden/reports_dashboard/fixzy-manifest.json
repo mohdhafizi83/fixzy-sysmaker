@@ -9,6 +9,7 @@
   ],
   "providers": [
     "App\\Providers\\LiveDashboardServiceProvider",
+    "App\\Providers\\WorkflowServiceProvider",
     "App\\Providers\\RealtimeServiceProvider"
   ]
 }

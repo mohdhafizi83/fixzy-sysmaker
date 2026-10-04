@@ -829,8 +829,12 @@ function buildProviderPhp(tableObservers, projectHooks, hasScheduled, startupBod
     parts.push('     */');
     parts.push('    protected function applyMailSettings(): void');
     parts.push('    {');
-    parts.push('        if (!\\Illuminate\\Support\\Facades\\Schema::hasTable("fixzy_settings")) {');
-    parts.push('            return; // migrate:fresh not done yet');
+    parts.push('        try {');
+    parts.push('            if (!\\Illuminate\\Support\\Facades\\Schema::hasTable("fixzy_settings")) {');
+    parts.push('                return; // migrate:fresh not done yet');
+    parts.push('            }');
+    parts.push('        } catch (\\Throwable) {');
+    parts.push('            return; // database not reachable yet (e.g. sqlite file missing during key:generate)');
     parts.push('        }');
     parts.push('        $s = fn (string $k, $d = null) => \\App\\Models\\FixzySetting::get($k, $d);');
     parts.push('        if ($s("mail_host")) {');
@@ -1051,6 +1055,28 @@ async function generateWorkflowHooks(fullSchema, outputDir) {
                 fs.writeFileSync(providersFile, contents);
             }
         }
+
+        // Manifest: the deploy/preview flow registers providers from
+        // fixzy-manifest.json into the staging app's bootstrap/providers.php.
+        // Without this, workflow observers never boot in staged apps.
+        const manifestPath = path.join(outputDir, 'fixzy-manifest.json');
+        let manifest = { composer: [], php_extensions: [], npm: [], providers: [] };
+        if (fs.existsSync(manifestPath)) {
+            try {
+                const existing = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+                manifest = {
+                    composer: Array.isArray(existing.composer) ? existing.composer : [],
+                    php_extensions: Array.isArray(existing.php_extensions) ? existing.php_extensions : [],
+                    npm: Array.isArray(existing.npm) ? existing.npm : [],
+                    providers: Array.isArray(existing.providers) ? existing.providers : [],
+                };
+            } catch (e) { /* corrupt manifest: start fresh */ }
+        }
+        const wfProviderClass = 'App\\Providers\\WorkflowServiceProvider';
+        if (!manifest.providers.includes(wfProviderClass)) {
+            manifest.providers.push(wfProviderClass);
+        }
+        fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 
         return {
             success: true,

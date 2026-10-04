@@ -4,8 +4,7 @@
   "npm": [],
   "providers": [
     "App\\Providers\\ActivityLogServiceProvider",
-    "App\\Providers\\PublicFormServiceProvider"
-  ],
-  "locale": "en",
-  "timezone": "Asia/Kuala_Lumpur"
+    "App\\Providers\\PublicFormServiceProvider",
+    "App\\Providers\\WorkflowServiceProvider"
+  ]
 }

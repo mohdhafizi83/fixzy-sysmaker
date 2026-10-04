@@ -3,8 +3,7 @@
   "php_extensions": [],
   "npm": [],
   "providers": [
-    "App\\Providers\\LocalizationServiceProvider"
-  ],
-  "locale": "ms",
-  "timezone": "Asia/Kuala_Lumpur"
+    "App\\Providers\\LocalizationServiceProvider",
+    "App\\Providers\\WorkflowServiceProvider"
+  ]
 }

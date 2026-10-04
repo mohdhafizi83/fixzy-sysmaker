@@ -62,7 +62,7 @@ class MatriksPapanBoard extends Page
             $this->loadBoard();
             return;
         }
-        $record = MatrixRecord::find($recordId);
+        $record = MatriksPapanResource::getEloquentQuery()->find($recordId);
         if (! $record) {
             Notification::make()->danger()->title('Record not found.')->send();
             $this->loadBoard();
@@ -99,7 +99,7 @@ class MatriksPapanBoard extends Page
 
     protected function loadBoard(): void
     {
-        $records = MatrixRecord::all();
+        $records = MatriksPapanResource::getEloquentQuery()->get();
         $columns = [];
         foreach (self::COLUMN_ORDER as $status) {
             $columns[$status] = [];

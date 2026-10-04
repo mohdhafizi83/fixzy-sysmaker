@@ -2,7 +2,7 @@
   "composer": [],
   "php_extensions": [],
   "npm": [],
-  "providers": [],
-  "locale": "en",
-  "timezone": "Asia/Kuala_Lumpur"
+  "providers": [
+    "App\\Providers\\WorkflowServiceProvider"
+  ]
 }

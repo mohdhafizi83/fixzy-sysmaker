@@ -1,7 +1,9 @@
 {
   "composer": [],
   "php_extensions": [],
+  "npm": [],
   "providers": [
-    "App\\Providers\\AuthIntegrationsServiceProvider"
+    "App\\Providers\\AuthIntegrationsServiceProvider",
+    "App\\Providers\\WorkflowServiceProvider"
   ]
 }

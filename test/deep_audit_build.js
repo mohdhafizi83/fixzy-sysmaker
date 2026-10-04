@@ -256,6 +256,69 @@ const TABLES = [
             mkField('status_aduan', 'Status Aduan', { data_type: 'VARCHAR', length: 30, default_value: 'pending' }),
         ],
     },
+    {
+        // Fasa 25 M1 — ALL features active on ONE table:
+        // numbering + approval + kanban + summaries + calculated +
+        // lookup + hook (send_email on insert) + public form.
+        name: 'gabungan', module: 'Gabungan', title: 'Gabungan',
+        numbering_enabled: 1,
+        numbering_config: JSON.stringify({ field: 'rujukan', prefix: 'GB', date_token: 'YYYYMM', width: 3, reset: 'monthly' }),
+        approval_enabled: 1,
+        approval_config: JSON.stringify({
+            statusField: 'status_gabung',
+            initial: 'draft',
+            statuses: [
+                { key: 'draft', label: 'Draft', color: 'gray' },
+                { key: 'pending', label: 'Pending', color: 'warning' },
+                { key: 'approved', label: 'Approved', color: 'success', final: true },
+            ],
+            transitions: [
+                { from: 'draft', to: 'pending', label: 'Submit', roles: '', require_comment: false, notify: 'approver' },
+                { from: 'pending', to: 'approved', label: 'Approve', roles: 'approver', require_comment: false, notify: 'submitter' },
+            ],
+        }),
+        grid_kanban_enabled: 1,
+        grid_kanban_config: '{"group_field":"status_gabung","card_fields":["nama_gabung"],"allowed_transitions":{"draft":["pending"],"pending":["approved","draft"]}}',
+        grid_summaries: '{"jumlah": "sum"}',
+        table_hook_workflow: JSON.stringify({
+            blocks: {
+                h1: { type: 'hook_trigger', hook_type: 'after_insert', x: 50, y: 50 },
+                h2: { type: 'send_email', to: 'hooktest@test.my', subject: 'Gabungan created', body: 'A combined-feature record was inserted.', x: 250, y: 50 },
+            },
+            connections: [{ fromBlock: 'h1', fromPoint: 'out', toBlock: 'h2', toPoint: 'in' }],
+        }),
+        public_form_enabled: 1,
+        public_form_config: JSON.stringify({
+            slug: 'gabung',
+            allowed_fields: ['nama_gabung', 'bil_a', 'bil_b'],
+            intro_text: 'Borang gabungan',
+            success_text: 'OK',
+            captcha_required: false,
+            status_field_default: 'pending',
+            lookup_enabled: false,
+        }),
+        fields: [
+            mkField('nama_gabung', 'Nama Gabung', { data_type: 'VARCHAR', length: 100, required: 1, not_null: 1 }),
+            mkField('bil_a', 'Bil A', { data_type: 'INT' }),
+            mkField('bil_b', 'Bil B', { data_type: 'INT' }),
+            mkField('jumlah', 'Jumlah', { data_type: 'INT' }),
+            mkField('jumlah_kira', 'Jumlah Kira', { data_type: 'INT', calculated_enable: 1, calculated_query: 'SELECT COALESCE(SUM(`bil_a` + `bil_b`), 0)\nFROM `gabungan`\nWHERE `gabungan`.`id` = ##ID##;' }),
+            mkField('pelajar_id', 'Pelajar', { data_type: 'INT', lookup_parent_table: 'pelajar', lookup_caption_1: 'nama', lookup_display_as: 'dropdown' }),
+            mkField('rujukan', 'Rujukan', { data_type: 'VARCHAR', length: 50 }),
+            mkField('status_gabung', 'Status Gabung', { data_type: 'VARCHAR', length: 30, display_type: 'options_list', options_display: 'dropdown', options_list_values: 'Draft;;Pending;;Approved' }),
+        ],
+    },
+    {
+        // Fasa 25 M4 — scoping + kanban together.
+        name: 'skopkanban', module: 'Skopkanban', title: 'Skop Kanban',
+        record_owner: 'current_user',
+        grid_kanban_enabled: 1,
+        grid_kanban_config: '{"group_field":"status_skop","card_fields":["nama_skop"],"allowed_transitions":{"Draft":["Review"],"Review":["Approved","Draft"]}}',
+        fields: [
+            mkField('nama_skop', 'Nama Skop', { data_type: 'VARCHAR', length: 100, required: 1, not_null: 1 }),
+            mkField('status_skop', 'Status Skop', { data_type: 'VARCHAR', length: 30, display_type: 'options_list', options_display: 'dropdown', options_list_values: 'Draft;;Review;;Approved' }),
+        ],
+    },
 ];
 
 (async () => {
@@ -298,8 +361,9 @@ const TABLES = [
             ...(spec.approval_enabled ? { approval_enabled: 1, approval_config: spec.approval_config } : {}),
             ...(spec.numbering_enabled ? { numbering_enabled: 1, numbering_config: spec.numbering_config } : {}),
             ...(spec.public_form_enabled ? { public_form_enabled: 1, public_form_config: spec.public_form_config } : {}),
+            ...(spec.table_hook_workflow ? { table_hook_workflow: spec.table_hook_workflow } : {}),
         });
-        check(`T1. table '${spec.name}' created+renamed`, upd && upd.success !== false);
+        check(`T1. table '${spec.name}' created+renamed`, upd && upd.success !== false, JSON.stringify(upd).slice(0, 200));
         tableIds[spec.name] = t.table_id;
         // Keep the menu label in sync with the rename (GUI does this in its own flow).
         db.prepare('UPDATE menu_items SET item_label = ? WHERE project_id = ? AND table_id = ?')
@@ -327,14 +391,16 @@ const TABLES = [
     const rel1 = await call('relationship:upsert', { parentTableName: 'pelajar', childTableName: 'pendaftaran', fk_child_field: 'pelajar_id' });
     const rel2 = await call('relationship:upsert', { parentTableName: 'kursus', childTableName: 'pendaftaran', fk_child_field: 'kursus_id' });
     const rel3 = await call('relationship:upsert', { parentTableName: 'pelajar', childTableName: 'spesial', fk_child_field: 'pelajar_ganda' });
+    const rel4 = await call('relationship:upsert', { parentTableName: 'pelajar', childTableName: 'gabungan', fk_child_field: 'pelajar_id' });
     check('R1. pendaftaran->pelajar relationship', rel1 && rel1.success === true);
     check('R2. pendaftaran->kursus relationship', rel2 && rel2.success === true);
     check('R3. spesial->pelajar (ganda) relationship', rel3 && rel3.success === true);
+    check('R4. gabungan->pelajar relationship', rel4 && rel4.success === true);
 
     // 5. Verify via the real schema assembly the generator consumes.
     const full = await call('project:get-full-schema', projectId);
     const tables = full && full.database && full.database.table || {};
-    check('S1. full schema has all 13 tables (12 + users)', Object.keys(tables).length === 13, Object.keys(tables).join(','));
+    check('S1. full schema has all 15 tables (14 + users)', Object.keys(tables).length === 15, Object.keys(tables).join(','));
     const rels = (full.database.relationships || []).filter(r => r.child_table_name === 'pendaftaran');
     check('S2. pendaftaran has 2 relationships in schema', rels.length === 2, 'n=' + rels.length);
     const pel = tables.pelajar || {};

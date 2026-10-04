@@ -3,8 +3,7 @@
   "php_extensions": [],
   "npm": [],
   "providers": [
-    "App\\Providers\\ConversationalFormServiceProvider"
-  ],
-  "locale": "en",
-  "timezone": "Asia/Kuala_Lumpur"
+    "App\\Providers\\ConversationalFormServiceProvider",
+    "App\\Providers\\WorkflowServiceProvider"
+  ]
 }

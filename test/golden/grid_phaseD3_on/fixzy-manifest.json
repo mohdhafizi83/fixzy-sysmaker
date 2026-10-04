@@ -3,6 +3,7 @@
   "php_extensions": [],
   "npm": [],
   "providers": [
-    "App\\Providers\\FixzyGridServiceProvider"
+    "App\\Providers\\FixzyGridServiceProvider",
+    "App\\Providers\\WorkflowServiceProvider"
   ]
 }

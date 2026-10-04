@@ -57,7 +57,7 @@ class {{ page_class }} extends Page
             $this->loadBoard();
             return;
         }
-        $record = {{ model_class }}::find($recordId);
+        $record = {{ resource_class }}::getEloquentQuery()->find($recordId);
         if (! $record) {
             Notification::make()->danger()->title('Record not found.')->send();
             $this->loadBoard();
@@ -94,7 +94,7 @@ class {{ page_class }} extends Page
 
     protected function loadBoard(): void
     {
-        $records = {{ model_class }}::all();
+        $records = {{ resource_class }}::getEloquentQuery()->get();
         $columns = [];
         foreach (self::COLUMN_ORDER as $status) {
             $columns[$status] = [];

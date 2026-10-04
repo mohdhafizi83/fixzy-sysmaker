@@ -32,8 +32,12 @@ class WorkflowServiceProvider extends ServiceProvider
      */
     protected function applyMailSettings(): void
     {
-        if (!\Illuminate\Support\Facades\Schema::hasTable("fixzy_settings")) {
-            return; // migrate:fresh not done yet
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasTable("fixzy_settings")) {
+                return; // migrate:fresh not done yet
+            }
+        } catch (\Throwable) {
+            return; // database not reachable yet (e.g. sqlite file missing during key:generate)
         }
         $s = fn (string $k, $d = null) => \App\Models\FixzySetting::get($k, $d);
         if ($s("mail_host")) {

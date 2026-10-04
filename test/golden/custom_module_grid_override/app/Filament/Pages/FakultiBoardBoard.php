@@ -62,7 +62,7 @@ class FakultiBoardBoard extends Page
             $this->loadBoard();
             return;
         }
-        $record = Fakulti::find($recordId);
+        $record = FakultiBoardResource::getEloquentQuery()->find($recordId);
         if (! $record) {
             Notification::make()->danger()->title('Record not found.')->send();
             $this->loadBoard();
@@ -99,7 +99,7 @@ class FakultiBoardBoard extends Page
 
     protected function loadBoard(): void
     {
-        $records = Fakulti::all();
+        $records = FakultiBoardResource::getEloquentQuery()->get();
         $columns = [];
         foreach (self::COLUMN_ORDER as $status) {
             $columns[$status] = [];
