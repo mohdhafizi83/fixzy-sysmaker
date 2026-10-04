@@ -4,17 +4,17 @@
 
 **Visual database designer that builds your admin back office.**
 
-### ⬇ Download v1.0.12-rc (release candidate)
+### ⬇ Download v1.0.13-rc (release candidate)
 
 | Platform | Installer |
 |---|---|
-| 🪟 **Windows 10/11 (x64)** | [Fixzy.SysMaker.Setup.1.0.12-rc.exe](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.12-rc/Fixzy.SysMaker.Setup.1.0.12-rc.exe) (110 MB) |
-| 🍎 **macOS (Intel)** | [Fixzy.SysMaker-1.0.12-rc.dmg](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.12-rc/Fixzy.SysMaker-1.0.12-rc.dmg) (132 MB) |
-| 🍎 **macOS (Apple Silicon)** | [Fixzy.SysMaker-1.0.12-rc-arm64.dmg](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.12-rc/Fixzy.SysMaker-1.0.12-rc-arm64.dmg) (128 MB) |
-| 🐧 **Linux (any x64)** | [Fixzy.SysMaker-1.0.12-rc.AppImage](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.12-rc/Fixzy.SysMaker-1.0.12-rc.AppImage) (131 MB) |
-| 🐧 **Ubuntu / Debian** | [fixzy-sysmaker_1.0.12-rc_amd64.deb](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.12-rc/fixzy-sysmaker_1.0.12-rc_amd64.deb) (100 MB) |
+| 🪟 **Windows 10/11 (x64)** | [Fixzy.SysMaker.Setup.1.0.13-rc.exe](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.13-rc/Fixzy.SysMaker.Setup.1.0.13-rc.exe) (110 MB) |
+| 🍎 **macOS (Intel)** | [Fixzy.SysMaker-1.0.13-rc.dmg](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.13-rc/Fixzy.SysMaker-1.0.13-rc.dmg) (132 MB) |
+| 🍎 **macOS (Apple Silicon)** | [Fixzy.SysMaker-1.0.13-rc-arm64.dmg](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.13-rc/Fixzy.SysMaker-1.0.13-rc-arm64.dmg) (127 MB) |
+| 🐧 **Linux (any x64)** | [Fixzy.SysMaker-1.0.13-rc.AppImage](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.13-rc/Fixzy.SysMaker-1.0.13-rc.AppImage) (130 MB) |
+| 🐧 **Ubuntu / Debian** | [fixzy-sysmaker_1.0.13-rc_amd64.deb](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.13-rc/fixzy-sysmaker_1.0.13-rc_amd64.deb) (99 MB) |
 
-All binaries are [SHA-256 checksummed](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.12-rc/SHA256SUMS.txt) · [all releases](https://github.com/mohdhafizi83/fixzy-sysmaker/releases) · free & open source (Apache-2.0)
+All binaries are [SHA-256 checksummed](https://github.com/mohdhafizi83/fixzy-sysmaker/releases/download/v1.0.13-rc/SHA256SUMS.txt) · [all releases](https://github.com/mohdhafizi83/fixzy-sysmaker/releases) · free & open source (Apache-2.0)
 
 Describe your database — visually, or by importing an existing SQL dump — and get
 a complete, production-ready admin system: migrations, models, resources, forms,
