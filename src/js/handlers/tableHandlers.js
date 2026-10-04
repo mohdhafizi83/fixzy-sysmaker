@@ -497,10 +497,19 @@ function buildSummaryRow(field, agg) {
  * @returns {string} Table name, or '' when unknown.
  */
 function currentGridTableName() {
+    // Route from the EXPLICIT workspace context first. The Models Design title
+    // (#table-settings-page .table-name) persists in the DOM after leaving that
+    // page, so reading it first made grid summary/group-by pickers list the
+    // LAST table opened in Models Design instead of the table open in the
+    // Modules Setup workspace (live-audit bug 2026-10-03: summary select showed
+    // 'users' fields while editing 'orders' — same misroute class as the
+    // table/field save handlers fixed earlier).
+    const ws = appState.moduleWorkspace;
+    if (ws && ws.tableName && ws.mode !== 'create') return ws.tableName;
     const titleEl = document.querySelector('#table-settings-page .table-name');
     if (titleEl) return titleEl.textContent.trim();
-    const ws = document.getElementById('workspace-module-title');
-    return ws ? ws.dataset.tableName : '';
+    const ws2 = document.getElementById('workspace-module-title');
+    return ws2 ? ws2.dataset.tableName : '';
 }
 
 /**

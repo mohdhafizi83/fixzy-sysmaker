@@ -377,7 +377,11 @@ function openCustomMenuModal(itemEl = null) {
         const result = await window.electronAPI.saveCustomMenuItem(dataToSave);
         if (result.success) { closeModal(); await loadProjectData(appState.activeProject); }
         else { showCustomDialog({ title: "Error", message: `Failed to save menu item: ${result.message}` }); }
-    }, { once: true });
+    }); // NOT { once: true } — a validation-failure click must not consume the
+        // listener: previously the first rejected click (e.g. empty label)
+        // removed the handler and the OK button silently died for the rest of
+        // the modal's lifetime (live-audit bug 2026-10-03). The button is
+        // cloned on every modal open, so duplicate listeners cannot stack.
     modal.classList.remove('hidden');
 }
 

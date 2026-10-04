@@ -91,6 +91,7 @@ export function initializeFieldSaveHandlers() {
 
                 let key = '';
                 if (input.id === 'fld-lookup-parent-table') key = 'lookup_parent_table';
+                else if (input.id === 'fld-lookup-custom-query-hidden') key = 'lookup_custom_query';
                 else if (input.type === 'radio') key = input.name.replace('fld-', '').replace(/-/g, '_');
                 else key = input.id.replace('fld-', '').replace(/-/g, '_');
 
@@ -622,6 +623,12 @@ export function initializeAutoDefaultHandlers() {
     btnOk.addEventListener('click', () => {
         defaultValueInput.value = selectValue.value;
         defaultValueInput.dispatchEvent(new Event('input', { bubbles: true }));
+        // The generic field autosave deliberately ignores 'change' for
+        // text/textarea/number inputs and commits them on 'focusout' only.
+        // The picker sets the value programmatically (the input never had
+        // focus), so without an explicit focusout the token lands in the
+        // UI but is never persisted (live-audit bug 2026-10-03).
+        defaultValueInput.dispatchEvent(new Event('focusout', { bubbles: true }));
         closeModal();
     });
 
@@ -1050,8 +1057,14 @@ export function initializeAdvancedLookupHandlers() {
     const closeModal = () => modal.classList.add('hidden');
 
     // Persists the textarea contents into the hidden query input, then closes.
+    // The hidden input lives inside the generic fld-* autosave container, but a
+    // programmatic .value assignment fires no event — without dispatching
+    // 'change' the SaveManager never queues lookup_custom_query and the query
+    // is silently lost (live-audit bug 2026-10-03: modal OK updated the DOM
+    // only; DB stayed empty until reload wiped the value).
     const saveAndClose = () => {
         hiddenQueryInput.value = queryTextarea.value;
+        hiddenQueryInput.dispatchEvent(new Event('change', { bubbles: true }));
         closeModal();
     };
 
