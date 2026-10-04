@@ -282,6 +282,26 @@ let helperMethods = [];
             const hasUpdatedBy = Object.values(tableData.fields).some(f => f.field_name === 'updated_by');
             const hasDeletedBy = Object.values(tableData.fields).some(f => f.field_name === 'deleted_by');
 
+            // Fasa 21: calculated fields. The GUI calculation builder stores a
+            // canonical query (SELECT <agg> FROM <t> WHERE <t>.<pk> = ##ID##)
+            // in calculated_query but NOTHING executed it — the value stayed
+            // null forever. Emit a saved() hook that runs the query with the
+            // record id substituted and writes the scalar result back.
+            // saved()+saveQuietly because ##ID## needs the PK, which only
+            // exists after insert.
+            const calcFields = Object.values(tableData.fields).filter(
+                (f) => f.calculated_enable === 1 && f.calculated_query && String(f.calculated_query).trim() !== ''
+            );
+            let calcSavedHook = '';
+            if (calcFields.length > 0) {
+                const calcLines = calcFields.map((f) => {
+                    const q = String(f.calculated_query).replace(/;\s*$/, '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, ' ');
+                    return `            $v = \\DB::selectOne(str_replace('##ID##', (string) $model->getKey(), '${q}'));
+            if ($v !== null) { $model->{'${f.field_name}'} = array_values((array) $v)[0] ?? null; }`;
+                }).join('\n');
+                calcSavedHook = `\n        static::saved(function ($model) {\n${calcLines}\n            $model->saveQuietly();\n        });\n`;
+            }
+
             // Apply Tenant FK (for one_to_many)
             const isOneToMany = projectSettings.tenancy_type === 'one_to_many';
             const tenantTable = projectSettings.tenant_table;
@@ -297,8 +317,11 @@ let helperMethods = [];
                 }
             }
 
-            if (hasCreatedBy || hasUpdatedBy || hasDeletedBy) {
+            if (hasCreatedBy || hasUpdatedBy || hasDeletedBy || calcSavedHook) {
                 let bootMethodContent = `\n    protected static function boot()\n    {\n        parent::boot();\n`;
+                if (calcSavedHook) {
+                    bootMethodContent += calcSavedHook;
+                }
                 
                 if (hasCreatedBy || hasUpdatedBy) {
                     bootMethodContent += `\n        static::creating(function ($model) {`;

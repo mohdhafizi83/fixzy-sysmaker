@@ -100,7 +100,7 @@ class StudentDocumentForm
     ->label('Document Type')
     ->trim(),
                 TextInput::make('tarikh_muatnaik')
-    ->default('CURRENT_TIMESTAMP')
+    ->default(fn () => \Illuminate\Support\Facades\Date::now())
     ->label('Upload Date')
     ->trim(),
                 TextInput::make('created_at')

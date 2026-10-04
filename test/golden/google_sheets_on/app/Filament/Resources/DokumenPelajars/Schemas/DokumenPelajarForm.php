@@ -100,7 +100,7 @@ class DokumenPelajarForm
     ->label('Jenis Dokumen')
     ->trim(),
                 TextInput::make('tarikh_muatnaik')
-    ->default('CURRENT_TIMESTAMP')
+    ->default(fn () => \Illuminate\Support\Facades\Date::now())
     ->label('Tarikh Muatnaik')
     ->trim(),
                 TextInput::make('created_at')

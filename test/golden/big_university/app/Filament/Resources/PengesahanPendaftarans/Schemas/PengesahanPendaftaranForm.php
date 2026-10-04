@@ -116,7 +116,7 @@ class PengesahanPendaftaranForm
     ->trim(),
                 TextInput::make('tarikh_tindakan')
     ->required()->markAsRequired()
-    ->default('CURRENT_TIMESTAMP')
+    ->default(fn () => \Illuminate\Support\Facades\Date::now())
     ->label('Tarikh Tindakan')
     ->trim(),
                 TextInput::make('created_at')

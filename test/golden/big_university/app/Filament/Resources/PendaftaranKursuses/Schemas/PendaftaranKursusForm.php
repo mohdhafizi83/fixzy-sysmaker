@@ -106,7 +106,7 @@ class PendaftaranKursusForm
 ])
     ,
                 TextInput::make('tarikh_pendaftaran')
-    ->default('CURRENT_TIMESTAMP')
+    ->default(fn () => \Illuminate\Support\Facades\Date::now())
     ->label('Tarikh Pendaftaran')
     ->trim(),
                 TextInput::make('gred')

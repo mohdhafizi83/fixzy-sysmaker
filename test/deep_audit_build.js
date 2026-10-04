@@ -142,6 +142,24 @@ const TABLES = [
             mkField('dikunci', 'Dikunci', { data_type: 'BOOLEAN', display_type: 'check_box', read_only: 1 }),
         ],
     },
+    {
+        // Fasa 21 — special fields: calculated, algorithm, defaults, owner,
+        // read-only text, lookup with caption separator.
+        name: 'spesial', module: 'Spesial', title: 'Spesial', record_owner: 'current_user',
+        fields: [
+            mkField('nama_spesial', 'Nama Spesial', { data_type: 'VARCHAR', length: 100, required: 1, not_null: 1 }),
+            mkField('bil_a', 'Bil A', { data_type: 'INT' }),
+            mkField('bil_b', 'Bil B', { data_type: 'INT' }),
+            mkField('jumlah_kira', 'Jumlah Kira', { data_type: 'INT', calculated_enable: 1, calculated_query: 'SELECT COALESCE(SUM(`bil_a` + `bil_b`), 0)\nFROM `spesial`\nWHERE `spesial`.`id` = ##ID##;' }),
+            mkField('status_algo', 'Status Algo', { data_type: 'VARCHAR', length: 50, algorithm_enable: 1, algorithm_logic: 'sum' }),
+            mkField('no_rujukan', 'No Rujukan', { data_type: 'VARCHAR', length: 50, default_value: 'AUTO-123' }),
+            mkField('tarikh_daftar', 'Tarikh Daftar', { data_type: 'DATETIME', display_type: 'datetime_input', default_value: 'CURRENT_TIMESTAMP' }),
+            mkField('kod_kunci', 'Kod Kunci', { data_type: 'VARCHAR', length: 50, read_only: 1, default_value: 'ASAL' }),
+            mkField('pelajar_ganda', 'Pelajar Ganda', { data_type: 'INT', lookup_parent_table: 'pelajar', lookup_caption_1: 'nama', lookup_separator: ' - ', lookup_caption_2: 'email', lookup_display_as: 'dropdown' }),
+            // created_by / updated_by are auto-added by the record_owner
+            // machinery (model creating/updating hooks) — do NOT declare them.
+        ],
+    },
 ];
 
 (async () => {
@@ -174,6 +192,7 @@ const TABLES = [
             enable_detail_view: 1,
             allow_csv_export: 1,
             allow_csv_import: 1,
+            ...(spec.record_owner ? { record_owner: spec.record_owner } : {}),
         });
         check(`T1. table '${spec.name}' created+renamed`, upd && upd.success !== false);
         tableIds[spec.name] = t.table_id;
@@ -202,13 +221,15 @@ const TABLES = [
     // 4. Relationships for the lookup fields (required by generated forms).
     const rel1 = await call('relationship:upsert', { parentTableName: 'pelajar', childTableName: 'pendaftaran', fk_child_field: 'pelajar_id' });
     const rel2 = await call('relationship:upsert', { parentTableName: 'kursus', childTableName: 'pendaftaran', fk_child_field: 'kursus_id' });
+    const rel3 = await call('relationship:upsert', { parentTableName: 'pelajar', childTableName: 'spesial', fk_child_field: 'pelajar_ganda' });
     check('R1. pendaftaran->pelajar relationship', rel1 && rel1.success === true);
     check('R2. pendaftaran->kursus relationship', rel2 && rel2.success === true);
+    check('R3. spesial->pelajar (ganda) relationship', rel3 && rel3.success === true);
 
     // 5. Verify via the real schema assembly the generator consumes.
     const full = await call('project:get-full-schema', projectId);
     const tables = full && full.database && full.database.table || {};
-    check('S1. full schema has all 7 tables (6 + users)', Object.keys(tables).length === 7, Object.keys(tables).join(','));
+    check('S1. full schema has all 8 tables (7 + users)', Object.keys(tables).length === 8, Object.keys(tables).join(','));
     const rels = (full.database.relationships || []).filter(r => r.child_table_name === 'pendaftaran');
     check('S2. pendaftaran has 2 relationships in schema', rels.length === 2, 'n=' + rels.length);
     const pel = tables.pelajar || {};

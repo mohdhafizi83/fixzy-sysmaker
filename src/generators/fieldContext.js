@@ -119,6 +119,13 @@ function buildFormFieldContext(field, elementType, opts = {}) {
         ctx.is_readonly = '->disabled()->dehydrated(false)';
     }
 
+    // Calculated/algorithm fields are computed server-side (Fasa 21 audit).
+    // The form must never let the user type into them: ->disabled() blocks
+    // the UI, ->dehydrated(false) blocks POST smuggling of a forged value.
+    if ((field.calculated_enable === 1 || field.algorithm_enable === 1) && !ctx.is_readonly) {
+        ctx.is_readonly = '->disabled()->dehydrated(false)';
+    }
+
     // (DateTimePicker carries the time component natively in Filament v5.)
     if (['text_input', 'text_area', 'rich_html'].includes(field.display_type) && field.placeholder) {
         ctx.is_placeholder = `->placeholder('${field.placeholder}')`;
@@ -129,7 +136,15 @@ function buildFormFieldContext(field, elementType, opts = {}) {
     if (field.unique === 1) ctx.is_unique = '->unique(ignoreRecord: true)';
     // A captured "NULL" default (e.g. from SQL import of `DEFAULT NULL`) means
     // "no default" — emitting ->default('NULL') would store the literal string.
-    if (field.default_value && String(field.default_value).toUpperCase() !== 'NULL') ctx.is_default_value = `->default('${field.default_value}')`;
+    // CURRENT_TIMESTAMP must become a live now() closure: ->default('CURRENT_TIMESTAMP')
+    // fills the form with the literal word and fails date validation on save
+    // (Fasa 21 audit: tarikh_daftar=null, picker showed garbage).
+    if (field.default_value && String(field.default_value).toUpperCase() !== 'NULL') {
+        const dv = String(field.default_value);
+        ctx.is_default_value = /^CURRENT_TIMESTAMP$/i.test(dv.trim())
+            ? '->default(fn () => \\Illuminate\\Support\\Facades\\Date::now())'
+            : `->default('${dv}')`;
+    }
     ctx.is_caption = `->label(${require('./localizationConfig').labelPhp(field.caption || toTitleCase(field.field_name), field, opts.tableName, opts.localizationEnabled)})`;
 
     // Options list

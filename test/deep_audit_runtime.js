@@ -593,6 +593,80 @@ const GMAP_EMBED = '<iframe src="https://www.google.com/maps/embed?pb=!1m14!1m8!
     check('R1c. read-only dikunci NOT settable via POST (stays 0)', String(arow.dikunci) === '0' || arow.dikunci === null || arow.dikunci === 0,
         `dikunci=${JSON.stringify(arow.dikunci)}`);
 
+    // ================================================================
+    // FASA 21 — TABLE spesial: calculated / algorithm / lookup sep /
+    // defaults / owner auto-fill / read-only text
+    // ================================================================
+    await page.goto(APP + '/admin/spesial/create', { waitUntil: 'networkidle' });
+    await sleep(1200);
+
+    // DOM state of the special controls (evidence for C2/R1)
+    const spDom = await page.evaluate(() => {
+        const g = (f) => { const el = document.querySelector('#form\\.' + f); return el ? { tag: el.tagName, disabled: el.disabled === true, readonly: el.readOnly === true } : null; };
+        return { jumlah_kira: g('jumlah_kira'), status_algo: g('status_algo'), kod_kunci: g('kod_kunci') };
+    });
+    check('C2. calculated field read-only on form (disabled)', !!spDom.jumlah_kira && spDom.jumlah_kira.disabled === true, JSON.stringify(spDom.jumlah_kira));
+    check('A0. algorithm field read-only on form (disabled)', !!spDom.status_algo && spDom.status_algo.disabled === true, JSON.stringify(spDom.status_algo));
+    check('R1d. read-only text field locked (readonly or disabled)', !!spDom.kod_kunci && (spDom.kod_kunci.disabled === true || spDom.kod_kunci.readonly === true), JSON.stringify(spDom.kod_kunci));
+
+    // D1. static default prefills the create form
+    const defPrefill = await page.evaluate(() => { const el = document.querySelector('#form\\.no_rujukan'); return el ? el.value : null; });
+    check('D1a. default value prefills form', defPrefill === 'AUTO-123', JSON.stringify(defPrefill));
+
+    // L1. lookup caption separator in dropdown options
+    const gandaOpts = await comboOptions(page, 'pelajar_ganda');
+    check('L1a. lookup separator in caption', gandaOpts.some((o) => o.includes(' - ')), JSON.stringify(gandaOpts).slice(0, 160));
+
+    // L2. non-existent parent FK via Livewire state (select can't pick it) ->
+    // Filament Exists validation must reject; no row, no 500.
+    const beforeL2 = dbCount('spesial');
+    await lvSet(page, 'pelajar_ganda', 9999);
+    await fill(page, 'nama_spesial', 'L2 forged');
+    await fill(page, 'bil_a', '1');
+    await fill(page, 'bil_b', '1');
+    const l2s = await submitCreate(page);
+    const afterL2 = dbCount('spesial');
+    check('L2. non-existent parent FK rejected (no row)',
+        afterL2 === beforeL2 && l2s.stillCreate && l2s.errs.length > 0,
+        `rows=${beforeL2}->${afterL2} errs=${JSON.stringify(l2s.errs).slice(0, 120)}`);
+
+    // C1/A1. normal create with inputs -> computed values?
+    await fill(page, 'nama_spesial', 'Rekod Fasa21');
+    await fill(page, 'bil_a', '7');
+    await fill(page, 'bil_b', '5');
+    await pickCombo(page, 'pelajar_ganda', 'Ahmad Bin Ali');
+    const cSp = await submitCreate(page);
+    check('SP1. spesial create submitted', !cSp.stillCreate && cSp.errs.length === 0, JSON.stringify(cSp.errs).slice(0, 140));
+    const sp = dbRow('spesial', lastId('spesial')) || {};
+    check('C1. calculated jumlah_kira = 7+5 = 12 in DB', Number(sp.jumlah_kira) === 12, `jumlah_kira=${JSON.stringify(sp.jumlah_kira)}`);
+    note('A1 contract: algorithm builder (canvas steps) has NO runtime engine in codegen — algorithm_enable only locks the field (disabled+dehydrated(false)); the value is never computed. Recorded as a product gap, not a test failure.');
+    check('A1b. algorithm field value not user-settable (stays null, not forged)', sp.status_algo === null, `status_algo=${JSON.stringify(sp.status_algo)}`);
+    check('D1b. untouched default saved to DB', sp.no_rujukan === 'AUTO-123', `no_rujukan=${JSON.stringify(sp.no_rujukan)}`);
+    check('D2a. CURRENT_TIMESTAMP default saved as real timestamp', !!sp.tarikh_daftar && sp.tarikh_daftar !== 'CURRENT_TIMESTAMP'
+        && Math.abs(Date.now() - Date.parse(String(sp.tarikh_daftar).replace(' ', 'T'))) < 86400000, `tarikh_daftar=${JSON.stringify(sp.tarikh_daftar)}`);
+    check('D2b. created_by auto-filled with auth user id', Number(sp.created_by) === 1, `created_by=${JSON.stringify(sp.created_by)}`);
+    check('L1b. lookup FK saved to real parent', !!sp.pelajar_ganda && q(`SELECT nama FROM pelajar WHERE id=${Number(sp.pelajar_ganda)}`).length === 1, `pelajar_ganda=${JSON.stringify(sp.pelajar_ganda)}`);
+
+    // C2b/R1e. smuggling via Livewire state on disabled fields: set forged
+    // values programmatically then submit. dehydrated(false) must drop them.
+    await page.goto(APP + '/admin/spesial/create', { waitUntil: 'networkidle' });
+    await sleep(1000);
+    await fill(page, 'nama_spesial', 'Smuggle test');
+    await fill(page, 'bil_a', '1');
+    await fill(page, 'bil_b', '1');
+    await pickCombo(page, 'pelajar_ganda', 'Ahmad Bin Ali');
+    await lvSet(page, 'jumlah_kira', 999);
+    await lvSet(page, 'status_algo', 'HACKED');
+    await lvSet(page, 'kod_kunci', 'BYPASS');
+    const sm = await submitCreate(page);
+    const smRow = dbCount('spesial') > afterL2 ? dbRow('spesial', lastId('spesial')) : null;
+    check('C2b. forged jumlah_kira via Livewire state not stored as 999',
+        !smRow ? sm.stillCreate : Number(smRow.jumlah_kira) !== 999,
+        smRow ? `db=${JSON.stringify(smRow.jumlah_kira)}` : 'no row created (blocked)');
+    check('R1e. forged kod_kunci via Livewire state not stored as BYPASS',
+        !smRow ? sm.stillCreate : smRow.kod_kunci !== 'BYPASS',
+        smRow ? `db=${JSON.stringify(smRow.kod_kunci)}` : 'no row created (blocked)');
+
     // ---- summary ----
     console.log('\n================ FASA 20 RUNTIME SUMMARY ================');
     console.log(`${pass} PASS / ${fail} FAIL`);

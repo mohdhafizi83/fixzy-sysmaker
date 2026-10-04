@@ -72,6 +72,7 @@ class JanaBilForm
     ->trim(),
                 TextInput::make('jumlah')
     ->integer()
+    ->disabled()->dehydrated(false)
     ->maxLength(255)
     ->label('Jumlah')
     ->trim(),

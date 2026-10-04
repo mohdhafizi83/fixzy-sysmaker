@@ -116,7 +116,7 @@ class RegistrationApprovalForm
     ->trim(),
                 TextInput::make('tarikh_tindakan')
     ->required()->markAsRequired()
-    ->default('CURRENT_TIMESTAMP')
+    ->default(fn () => \Illuminate\Support\Facades\Date::now())
     ->label('Action Date')
     ->trim(),
                 TextInput::make('created_at')

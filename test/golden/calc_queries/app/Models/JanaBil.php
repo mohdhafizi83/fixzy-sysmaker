@@ -57,4 +57,15 @@ class JanaBil extends Model
 
 
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saved(function ($model) {
+            $v = \DB::selectOne(str_replace('##ID##', (string) $model->getKey(), 'SELECT {bil_1} + {bil_2}'));
+            if ($v !== null) { $model->{'jumlah'} = array_values((array) $v)[0] ?? null; }
+            $model->saveQuietly();
+        });
+    }
+
 }
