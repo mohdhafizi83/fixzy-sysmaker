@@ -186,6 +186,76 @@ const TABLES = [
             mkField('parent_id', 'Parent', { data_type: 'INT' }),
         ],
     },
+    {
+        // Fasa 23 — approvals: draft -> pending -> approved/rejected
+        // with role-gated transitions + comment + notify.
+        name: 'kelulusan', module: 'Kelulusan', title: 'Kelulusan',
+        approval_enabled: 1,
+        approval_config: JSON.stringify({
+            statusField: 'status_kelulusan',
+            initial: 'draft',
+            statuses: [
+                { key: 'draft', label: 'Draft', color: 'gray' },
+                { key: 'pending', label: 'Pending', color: 'warning' },
+                { key: 'approved', label: 'Approved', color: 'success', final: true },
+                { key: 'rejected', label: 'Rejected', color: 'danger', final: true },
+            ],
+            transitions: [
+                { from: 'draft', to: 'pending', label: 'Submit', roles: '', require_comment: false, notify: 'approver' },
+                { from: 'pending', to: 'approved', label: 'Approve', roles: 'approver', require_comment: true, notify: 'submitter' },
+                { from: 'pending', to: 'rejected', label: 'Reject', roles: 'approver', require_comment: true, notify: 'submitter' },
+            ],
+        }),
+        fields: [
+            mkField('tajuk', 'Tajuk', { data_type: 'VARCHAR', length: 100, required: 1, not_null: 1 }),
+            mkField('butiran', 'Butiran', { data_type: 'TEXT' }),
+            mkField('status_kelulusan', 'Status Kelulusan', { data_type: 'VARCHAR', length: 30 }),
+        ],
+    },
+    {
+        // Fasa 23 — auto numbering INV-YYYYMM-0001 (monthly reset).
+        name: 'invois', module: 'Invois', title: 'Invois',
+        numbering_enabled: 1,
+        numbering_config: JSON.stringify({ field: 'invoice_no', prefix: 'INV', date_token: 'YYYYMM', width: 4, reset: 'monthly' }),
+        fields: [
+            mkField('pelanggan', 'Pelanggan', { data_type: 'VARCHAR', length: 100, required: 1, not_null: 1 }),
+            mkField('jumlah', 'Jumlah', { data_type: 'DECIMAL', length: 10, precision: 2 }),
+            mkField('invoice_no', 'Invoice No', { data_type: 'VARCHAR', length: 50 }),
+        ],
+    },
+    {
+        // Fasa 23 — second numbering table, different prefix (NB2).
+        name: 'tempahan', module: 'Tempahan', title: 'Tempahan',
+        numbering_enabled: 1,
+        numbering_config: JSON.stringify({ field: 'res_no', prefix: 'TMP', date_token: 'YYYYMMDD', width: 3, reset: 'daily' }),
+        fields: [
+            mkField('produk', 'Produk', { data_type: 'VARCHAR', length: 100, required: 1, not_null: 1 }),
+            mkField('res_no', 'Res No', { data_type: 'VARCHAR', length: 50 }),
+        ],
+    },
+    {
+        // Fasa 23 — public intake form /f/aduan + approval + numbering combo.
+        name: 'aduan', module: 'Aduan', title: 'Aduan',
+        public_form_enabled: 1,
+        public_form_config: JSON.stringify({
+            slug: 'aduan',
+            allowed_fields: ['nama_penadu', 'eMel', 'kandungan'],
+            intro_text: 'Borang aduan awam',
+            success_text: 'Terima kasih',
+            captcha_required: false,
+            status_field_default: 'pending',
+            lookup_enabled: false,
+        }),
+        numbering_enabled: 1,
+        numbering_config: JSON.stringify({ field: 'rujukan_aduan', prefix: 'ADU', date_token: '', width: 4, reset: 'never' }),
+        fields: [
+            mkField('nama_penadu', 'Nama Penadu', { data_type: 'VARCHAR', length: 100, required: 1, not_null: 1 }),
+            mkField('eMel', 'EMel', { data_type: 'VARCHAR', length: 150, format_as: 'email' }),
+            mkField('kandungan', 'Kandungan', { data_type: 'TEXT' }),
+            mkField('rujukan_aduan', 'Rujukan Aduan', { data_type: 'VARCHAR', length: 50 }),
+            mkField('status_aduan', 'Status Aduan', { data_type: 'VARCHAR', length: 30, default_value: 'pending' }),
+        ],
+    },
 ];
 
 (async () => {
@@ -225,6 +295,9 @@ const TABLES = [
             ...(spec.grid_calendar_enabled ? { grid_calendar_enabled: 1, grid_calendar_config: spec.grid_calendar_config } : {}),
             ...(spec.grid_tree_enabled ? { grid_tree_enabled: 1, grid_tree_config: spec.grid_tree_config } : {}),
             ...(spec.enable_row_actions ? { show_delete_button: 1, allow_restore_delete: 1, allow_force_delete: 1 } : {}),
+            ...(spec.approval_enabled ? { approval_enabled: 1, approval_config: spec.approval_config } : {}),
+            ...(spec.numbering_enabled ? { numbering_enabled: 1, numbering_config: spec.numbering_config } : {}),
+            ...(spec.public_form_enabled ? { public_form_enabled: 1, public_form_config: spec.public_form_config } : {}),
         });
         check(`T1. table '${spec.name}' created+renamed`, upd && upd.success !== false);
         tableIds[spec.name] = t.table_id;
@@ -261,7 +334,7 @@ const TABLES = [
     // 5. Verify via the real schema assembly the generator consumes.
     const full = await call('project:get-full-schema', projectId);
     const tables = full && full.database && full.database.table || {};
-    check('S1. full schema has all 9 tables (8 + users)', Object.keys(tables).length === 9, Object.keys(tables).join(','));
+    check('S1. full schema has all 13 tables (12 + users)', Object.keys(tables).length === 13, Object.keys(tables).join(','));
     const rels = (full.database.relationships || []).filter(r => r.child_table_name === 'pendaftaran');
     check('S2. pendaftaran has 2 relationships in schema', rels.length === 2, 'n=' + rels.length);
     const pel = tables.pelajar || {};
