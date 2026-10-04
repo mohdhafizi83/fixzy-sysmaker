@@ -219,7 +219,7 @@ class ComplaintsTable
                     ->toggleable(),
                 TextColumn::make('files_extra')
                     ->label('Extra Attachments')
-                    ->formatStateUsing(function ($state): string { $n = is_array($state) ? count($state) : (filled($state) ? 1 : 0); return $n === 1 ? '1 file' : $n . ' files'; })
+                    ->getStateUsing(function ($record): ?string { $v = $record->files_extra; $n = is_array($v) ? count($v) : (filled($v) ? 1 : 0); return $n === 0 ? null : ($n === 1 ? '1 file' : $n . ' files'); })
                     ->badge()
                     ->color('gray')
                     ->sortable()

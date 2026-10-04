@@ -109,6 +109,16 @@ function buildFormFieldContext(field, elementType, opts = {}) {
 
     if (field.helper_text) ctx.is_helper_text = `->helperText('${field.helper_text}')`;
 
+    // Read-only enforcement (Fasa 20 audit): ->readOnly() only exists on
+    // TextInput/Textarea/DateTimePicker. For every other component
+    // (Checkbox, Select, Radio, CheckboxList, FileUpload, RichEditor, ...)
+    // the read_only flag was silently DROPPED — the control rendered fully
+    // editable. Emit the same pattern the forced-readonly views use:
+    // ->disabled() blocks the UI, ->dehydrated(false) blocks POST smuggling.
+    if (field.read_only === 1 && !ctx.is_readonly) {
+        ctx.is_readonly = '->disabled()->dehydrated(false)';
+    }
+
     // (DateTimePicker carries the time component natively in Filament v5.)
     if (['text_input', 'text_area', 'rich_html'].includes(field.display_type) && field.placeholder) {
         ctx.is_placeholder = `->placeholder('${field.placeholder}')`;

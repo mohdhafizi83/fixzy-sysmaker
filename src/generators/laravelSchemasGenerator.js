@@ -286,7 +286,7 @@ function generateFieldCodesForList(visibleFields, tableData, relationships, tabl
                 disk: field.image_storage_provider || 'public',
             }).replace(/^\s*[\r\n]/gm, '').replace(/\n+$/, '');
 
-            if (field.is_forced_readonly) {
+            if (field.is_forced_readonly || field.read_only === 1) {
                  imageCode = imageCode.replace(',', '->disabled()->dehydrated(false),');
             }
 
@@ -324,7 +324,7 @@ function generateFieldCodesForList(visibleFields, tableData, relationships, tabl
     ->downloadable()
     ->openable(),`;
             
-            if (field.is_forced_readonly) {
+            if (field.is_forced_readonly || field.read_only === 1) {
                  uploadCode = uploadCode.replace(',', '->disabled()->dehydrated(false),');
             }
 
@@ -361,7 +361,7 @@ function generateFieldCodesForList(visibleFields, tableData, relationships, tabl
                 const mimes = types.map(t => MIME_MAP2[t] || (t.includes('/') ? t : null)).filter(Boolean);
                 attachCode = attachCode.replace(/,$/, `\n    ->acceptedFileTypes([${mimes.map(t => `'${t}'`).join(', ')}]),`);
             }
-            if (field.is_forced_readonly) {
+            if (field.is_forced_readonly || field.read_only === 1) {
                  attachCode = attachCode.replace(/,$/, '->disabled()->dehydrated(false),');
             }
             formFieldsCode.push(applyFormModifiers(attachCode, formSettings, defaultLabelDisplay, 'FileUpload'));
@@ -376,6 +376,10 @@ ViewField::make('${field.field_name}')
     ->view('filament.forms.components.${viewerType}-viewer')
     ->columnSpanFull(),`;
             mediaViewCode = mediaViewCode.replace(/<<.*?>>/g, '').replace(/^\s*[\r\n]/gm, '');
+            if (field.is_forced_readonly || field.read_only === 1) {
+                // Lock the editable TextInput (the viewer field is display-only).
+                mediaViewCode = mediaViewCode.replace("->columnSpanFull(),\nViewField", "->columnSpanFull()->disabled()->dehydrated(false),\nViewField");
+            }
             formFieldsCode.push(applyFormModifiers(mediaViewCode, formSettings, defaultLabelDisplay, 'TextInput'));
         }
 
@@ -407,7 +411,7 @@ ViewField::make('${field.field_name}')
     )
     ->reorderable(false),`;
             
-            if (field.is_forced_readonly) {
+            if (field.is_forced_readonly || field.read_only === 1) {
                  repeaterCode = repeaterCode.replace(',', '->disabled()->dehydrated(false),');
             }
 
@@ -455,7 +459,7 @@ ViewField::make('${field.field_name}')
     ])
     ->reorderable(false),`;
             
-            if (field.is_forced_readonly) {
+            if (field.is_forced_readonly || field.read_only === 1) {
                  repeaterCode = repeaterCode.replace(',', '->disabled()->dehydrated(false),');
             }
 

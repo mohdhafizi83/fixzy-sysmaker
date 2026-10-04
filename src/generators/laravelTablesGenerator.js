@@ -231,7 +231,11 @@ function generateTableColumnsParts(tableData, relationships, tableName, projectS
         let lines = [`${controller}::make('${fieldName}')`];
         lines.push(`->label(${labelPhp(toTitleCase(field.caption || field.field_name), field, tableName, localizationEnabled)})`);
         if (isAttachments) {
-            lines.push(`->formatStateUsing(function ($state): string { $n = is_array($state) ? count($state) : (filled($state) ? 1 : 0); return $n === 1 ? '1 file' : $n . ' files'; })`);
+            // Collapse the JSON array state into ONE count string BEFORE the
+            // badge renders. Filament v5 ->badge() splits an array state into
+            // one badge per element, so the old per-element formatStateUsing
+            // produced "1 file 1 file" for a 2-file gallery (Fasa 20 audit).
+            lines.push(`->getStateUsing(function ($record): ?string { $v = $record->${field.field_name}; $n = is_array($v) ? count($v) : (filled($v) ? 1 : 0); return $n === 0 ? null : ($n === 1 ? '1 file' : $n . ' files'); })`);
             lines.push(`->badge()`);
             lines.push(`->color('gray')`);
         }
