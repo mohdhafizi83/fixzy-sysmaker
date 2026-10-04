@@ -82,11 +82,6 @@
         <input type="text" id="app-title" name="app-title" value="Project Name">
     </div>
 <div class="header-actions">
-<label class="checkbox-label hidden" title="Toggle auto-save ON/OFF" style="font-weight: 500;">
-        <input type="checkbox" id="toggle-autosave-btn">
-        Auto-Save
-    </label>
-
     <div style="grid-area: buttons; display: flex; gap: 0.5rem;">
         <div class="main-menu-dropdown" id="project-dropdown-container">
             <button class="btn btn-secondary" id="project-menu-btn" style="height: 100%;"><i class="fas fa-folder-open"></i> Open Project</button>
@@ -102,7 +97,6 @@
                 <a href="#" id="import-sql-paste-btn">Copy/Paste</a>
             </div>
         </div>
-        <button class="btn hidden" id="btn-save-all"><i class="fas fa-save"></i> Save Project</button>
         <span class="preview-btn-group">
             <button id="btn-show-preview" class="btn btn-success">
     <i class="fas fa-play-circle"></i> Show Preview
@@ -2139,14 +2133,7 @@
                 </select>
             </div>
             
-            <div class="form-group hidden" id="fg-owner-by-fk">
-                <label for="tbl-owner-by-fk">Select Parent Record</label>
-                <select id="tbl-owner-by-fk" class="form-control">
-                    <option value="">-- Please Select --</option>
-                </select>
-                <small class="form-text text-muted">Select a specific record from the reference table (Parent Table) as the owner of this data.</small>
-            </div>
-                                        <div class="form-group">
+            <div class="form-group">
                                             <label for="tbl-default-focus">Default focus field</label>
                                             <select id="tbl-default-focus" name="tbl-default-focus">
                                                 <option>First editable field (jenis_bilik_id)</option>

@@ -252,7 +252,6 @@ export const HELP_ENTRIES = {
   'detail-view-classes-select': { title: 'Record Form classes', body: 'Pick from available style classes for the Record Form.' },
   'tbl-detail-view-title': { title: 'Record Form title', body: 'The heading shown on the record form.' },
   'tbl-record-owner': { title: 'Data Accessibility (Scoping)', body: 'Restricts which records a user sees based on ownership — e.g. only their own records, or their group\'s.' },
-  'tbl-owner-by-fk': { title: 'Select Parent Record', body: 'The parent relation used to scope records (e.g. records belonging to the user\'s tenant/department).' },
   'tbl-default-focus': { title: 'Default focus field', body: 'The field focused when the record form opens — speeds up data entry.' },
   'tbl-redirect-after-insert': { title: 'Redirect after insert', body: 'After saving a new record, go back to the list instead of staying on the form.' },
   'tbl-enable-detail-view': { title: 'Enable Record Form', body: 'Turns the detail/record form on or off for this table.' },
