@@ -7,11 +7,14 @@ function resolveWindow(event) {
     try {
         if (event && event.sender) {
             const { BrowserWindow } = require('electron');
-            const win = resolveWindow(event);
+            // NOTE: was `resolveWindow(event)` — infinite self-recursion
+            // (RangeError swallowed by the catch) so real Electron windows
+            // never received deploy/update progress; only the console stub ran.
+            const win = BrowserWindow.fromWebContents(event.sender);
             if (win) return win;
         }
     } catch {
-        // electron not available (headless/CLI/web mode)
+        // electron not available (headless/web mode)
     }
     return {
         webContents: {
@@ -56,6 +59,15 @@ function runCommand(command, args, cwd, win, logChannel) {
         child.on('close', (code) => {
             if (code === 0) resolve();
             else reject(new Error(`Command failed with code ${code}`));
+        });
+
+        // Spawn failures (missing cwd, missing binary) emit 'error', NOT
+        // 'close' — without this handler the event is unhandled and crashes
+        // the whole main process (live-audit bug 2026-10-04: update on a
+        // missing folder killed Electron via spawn /bin/sh ENOENT).
+        child.on('error', (err) => {
+            win.webContents.send(logChannel, `ERROR: ${err.message}`);
+            reject(err);
         });
     });
 }
@@ -181,9 +193,17 @@ async function deployApp(event, deployConfig) {
         dbConfig 
     } = deployConfig;
     // DB support Tier 1+2: engine comes from the project's stack_database
-    // (normalized via src/core/dbSupport.js). Unknown engines throw loud.
-    const { normalizeEngine } = require('./core/dbSupport');
-    const dbEngine = normalizeEngine(dbConfig && dbConfig.engine);
+    // (normalized via src/core/dbSupport.js). Unknown engines must fail as
+    // a clean {success:false} result, not an uncaught throw (live-audit
+    // 2026-10-04: normalizeEngine ran BEFORE the try block so an unknown
+    // engine crashed the caller instead of the error channel).
+    let dbEngine;
+    try {
+        const { normalizeEngine } = require('./core/dbSupport');
+        dbEngine = normalizeEngine(dbConfig && dbConfig.engine);
+    } catch (e) {
+        return { success: false, message: e.message };
+    }
 
     try {
         win.webContents.send(STATUS_CHANNEL, { step: 1, message: 'Downloading Template...' });
@@ -352,9 +372,19 @@ async function deployApp(event, deployConfig) {
         await runCommand('php', ['artisan', 'db:seed'], projectPath, win, LOG_CHANNEL);
 
         // --- STEP 7: NPM ---
-        win.webContents.send(STATUS_CHANNEL, { step: 7, message: 'Build Frontend Assets...' });
-        await runCommand('npm', ['install'], projectPath, win, LOG_CHANNEL);
-        await runCommand('npm', ['run', 'build'], projectPath, win, LOG_CHANNEL);
+        // Template ships PREBUILT frontend assets (public/build committed in
+        // the template). Only run the npm toolchain when the template
+        // actually carries a package.json — otherwise `npm install` fails
+        // with ENOENT and kills an otherwise-successful deploy
+        // (live-audit bug 2026-10-04).
+        const hasNodePkg = fs.existsSync(path.join(projectPath, 'package.json'));
+        if (hasNodePkg) {
+            win.webContents.send(STATUS_CHANNEL, { step: 7, message: 'Build Frontend Assets...' });
+            await runCommand('npm', ['install'], projectPath, win, LOG_CHANNEL);
+            await runCommand('npm', ['run', 'build'], projectPath, win, LOG_CHANNEL);
+        } else {
+            win.webContents.send(LOG_CHANNEL, 'No package.json in template — using prebuilt assets (skipping npm build).');
+        }
 
         // --- STEP 8: Optimize ---
         win.webContents.send(STATUS_CHANNEL, { step: 8, message: 'Optimizing Application...' });

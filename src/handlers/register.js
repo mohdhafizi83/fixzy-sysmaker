@@ -2295,7 +2295,7 @@ ipcMain.handle('generate-app', async (event) => { // Note 'event' added here
             const dbPass = 'password123'; // IDEALLY: Generate a random password or take it from settings
 
             const deployConfig = {
-                gitRepoUrl: config.git_repo_url || 'https://github.com/mohdhafizi83/Fixzy SysMaker-Laravel-Filament-Boilerplate.git', // Default if no setting exists
+                gitRepoUrl: config.git_repo_url || 'https://github.com/mohdhafizi83/FiziSysMaker-Laravel-Filament-Boilerplate.git', // Default if no setting exists
                 projectPath: destinationPath,
                 generatedPath: stagingPath,
                 dbConfig: {
