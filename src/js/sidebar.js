@@ -180,22 +180,30 @@ export function initializeSidebarButtons() {
     if (moveDownBtn) moveDownBtn.addEventListener('click', () => handleMove('down'));
 	
     if (newTableBtn) {
+        // In-flight guard: rapid double-clicks used to fire two concurrent
+        // createTable calls and create two tables (found 2026-10-04, Fasa 26).
+        let creatingTable = false;
         newTableBtn.addEventListener('click', async () => {
+            if (creatingTable) return;
             if (!appState.activeProject) {
                 // May need to show a notification
                 console.error("No active project to add a table to.");
                 return;
             }
+            creatingTable = true;
+            try {
+                // Call the backend to create a table
+                const newTable = await window.electronAPI.createTable(appState.activeProject.project_id);
 
-            // Call the backend to create a table
-            const newTable = await window.electronAPI.createTable(appState.activeProject.project_id);
-
-            if (newTable) {
-    // Reload the data AND pass the new table name to be selected.
-    // NOTE: second arg must be the options OBJECT — a bare string silently
-    // destructure-fails (tableToSelect stays null) so the new table never
-    // got focused (found 2026-10-03).
-    await loadProjectData(appState.activeProject, { tableToSelect: newTable.table_name });
+                if (newTable) {
+        // Reload the data AND pass the new table name to be selected.
+        // NOTE: second arg must be the options OBJECT — a bare string silently
+        // destructure-fails (tableToSelect stays null) so the new table never
+        // got focused (found 2026-10-03).
+        await loadProjectData(appState.activeProject, { tableToSelect: newTable.table_name });
+                }
+            } finally {
+                creatingTable = false;
             }
         });
     }
@@ -320,7 +328,10 @@ const performDelete = async (tablesToDelete) => {
     }
 
     if (newFieldBtn) {
+        // In-flight guard (same double-click class as btn-new-table, Fasa 26).
+        let creatingField = false;
         newFieldBtn.addEventListener('click', async () => {
+            if (creatingField) return;
             const activeLink = document.querySelector('#table-list a.active');
             if (!activeLink || !appState.activeProject) return;
 
@@ -329,12 +340,17 @@ const performDelete = async (tablesToDelete) => {
             const tableData = appState.jsonData.database.table[tableName];
 
             if (tableData) {
-                const newField = await window.electronAPI.createField(tableData.table_id);
-                if (newField) {
-                    // 1. Reload the data first
-                    await loadProjectData(appState.activeProject);
-                    // 2. After the UI is updated, call the focus function
-                    focusOnSidebarField(tableName, newField.field_name);
+                creatingField = true;
+                try {
+                    const newField = await window.electronAPI.createField(tableData.table_id);
+                    if (newField) {
+                        // 1. Reload the data first
+                        await loadProjectData(appState.activeProject);
+                        // 2. After the UI is updated, call the focus function
+                        focusOnSidebarField(tableName, newField.field_name);
+                    }
+                } finally {
+                    creatingField = false;
                 }
             }
         });
