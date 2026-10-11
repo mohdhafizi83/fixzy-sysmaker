@@ -34,9 +34,49 @@ Out of scope:
 
 ## Security design notes
 
+**Fixzy SysMaker itself (the generator):**
 - The local web UI binds to `127.0.0.1` only unless `FSM_ALLOW_REMOTE=1`
+  (the web mode has no auth by design — it is a single-user local tool;
+  never expose it on an untrusted network)
+- Requests carrying a browser `Origin` header are rejected unless the
+  origin matches `Host` (DNS-rebinding / cross-site POST defence);
+  security headers (`nosniff`, `X-Frame-Options: DENY`) on every response
 - Generated-code output paths are allowlisted (`FSM_OUTPUT_ROOTS`); path
   traversal and symlink escapes are rejected and unit-tested
+- The static file server in web mode is path-contained (no reads outside
+  the app/src directories); request bodies are capped at 50 MB
 - Electron runs with `contextIsolation` enabled and no `nodeIntegration`;
-  all native access goes through a minimal `contextBridge` preload
+  all native access goes through a minimal `contextBridge` preload; a CSP
+  meta tag restricts the renderer to self + localhost frames
 - External URL opening is validated to `http`/`https` only
+- No secrets are shipped in source: the preview environment's `APP_KEY`
+  is generated locally by `npm run setup:binaries` (`artisan key:generate`)
+  and `.env` is gitignored; `.env.example` ships with an empty key
+
+**Code the generator produces (Laravel + Filament):**
+- Admin panel is behind Filament/Filament-Shield auth; the generated REST
+  API requires Sanctum bearer tokens plus per-table role authorization
+- Public forms are intentionally unauthenticated (that is their purpose)
+  but are rate-limited per IP, CSRF-protected via the `web` middleware
+  group, and validated server-side
+- Private attachment downloads use Laravel signed URLs with a
+  defence-in-depth traversal check before touching disk
+- Blade templates in generated output use escaped `{{ }}` echo for all
+  user-controlled data (no `{!! !!}` raw output of user input)
+- **The generated application's security after export is the user's
+  responsibility**: choosing strong credentials, running `key:generate`
+  with a unique `APP_KEY`, setting `APP_DEBUG=false` in production,
+  HTTPS deployment, and keeping Laravel/Filament patched. The generator
+  provisions a working starting point, not a hardened production deploy.
+
+## Supply chain
+
+- All GitHub Actions in `ci.yml`, `release.yml`, and `verify-install.yml`
+  are pinned to full commit SHAs
+- CI runs gitleaks (v3, config in `.gitleaks.toml`) over full history,
+  `composer audit --locked` on the generated-app template lockfile, and
+  `npm audit --omit=dev --audit-level=high` on runtime dependencies
+- Release installers are published with a `SHA256SUMS.txt`; the
+  `verify-install.yml` workflow re-verifies the checksum end-to-end
+- Installers are unsigned (no code-signing certificate); this is a known,
+  documented trade-off, not a vulnerability in the artifact itself

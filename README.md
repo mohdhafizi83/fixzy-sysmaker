@@ -813,8 +813,15 @@ engine, four shells.
 ## Security
 
 - Binds to `127.0.0.1` by default; remote binding requires an explicit opt-in
+- Cross-origin browser requests are rejected (Origin must match Host);
+  `nosniff` + `X-Frame-Options: DENY` on all local-server responses
 - Output paths are allowlisted; traversal/symlink escapes are rejected
 - Electron `contextIsolation` on, no `nodeIntegration`, CSP localhost-only
+- CI supply chain: SHA-pinned actions, gitleaks secret scan,
+  `composer audit` + `npm audit` on every push
+- Generated apps ship Sanctum-auth APIs, signed-URL private downloads,
+  and rate-limited public forms — production hardening after export is
+  yours (see `SECURITY.md` for the honest scope)
 - Report vulnerabilities privately — see `SECURITY.md`
 
 ## License
