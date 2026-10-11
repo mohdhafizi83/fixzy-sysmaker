@@ -168,6 +168,22 @@ function createWebServer(opts = {}) {
     const server = http.createServer(async (req, res) => {
         const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
 
+        // Defence-in-depth against DNS rebinding / cross-site POSTs: a
+        // browser always sends Origin on cross-origin requests, so reject
+        // any request whose Origin scheme+host disagrees with Host.
+        // Server-to-server callers (Node fetch, curl) send no Origin and
+        // are unaffected.
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('X-Frame-Options', 'DENY');
+        const origin = req.headers.origin;
+        if (origin) {
+            let oh;
+            try { oh = new URL(origin); } catch { oh = null; }
+            if (!oh || oh.host !== req.headers.host) {
+                return sendJson(res, 403, { error: 'cross-origin request rejected' });
+            }
+        }
+
         // SSE event stream
         if (req.method === 'GET' && url.pathname === '/events') {
             res.writeHead(200, {
