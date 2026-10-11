@@ -1,0 +1,21 @@
+# Gitleaks config for fixzy-sysmaker.
+#
+# The repo intentionally tracks resources/preview_env/vendor/ (vendored
+# Composer packages shipped with the desktop app) and build output under
+# dist*/ — both produce well-known false positives (sample keys in vendor
+# docs/tests, packed app.asar binaries). They are excluded below; all first
+# -party source, templates, and config are scanned with default rules.
+title = "fixzy-sysmaker gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "vendored third-party code and build artifacts"
+paths = [
+  '''resources/preview_env/vendor/''',
+  '''(^|/)dist(/|\.|$)''',
+  '''(^|/)node_modules/''',
+  '''\.asar$''',
+  '''\.bak-''',
+]

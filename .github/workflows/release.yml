@@ -34,9 +34,9 @@ jobs:
             builder: --mac dmg --x64 --arm64
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           # Node 22 = ABI 127: better-sqlite3 12.11.1 ships prebuilds for this
           # ABI on all three OSes, so prebuild-install succeeds and node-gyp
@@ -60,7 +60,7 @@ jobs:
           cp dist/latest*.yml release-artifacts/ 2>/dev/null || true
           ls -la release-artifacts/
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: installers-${{ matrix.os }}
           path: release-artifacts/*
@@ -70,15 +70,15 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: installers-windows-latest
           path: artifacts/win
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: installers-ubuntu-latest
           path: artifacts/linux
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: installers-macos-latest
           path: artifacts/mac
@@ -89,7 +89,7 @@ jobs:
           find . -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.deb' \) -exec sha256sum {} \; | sed 's|\./||' > ../SHA256SUMS.txt
           cat ../SHA256SUMS.txt
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           files: |
             artifacts/win/*

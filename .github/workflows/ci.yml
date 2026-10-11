@@ -6,6 +6,32 @@ on:
   pull_request:
 
 jobs:
+  security:
+    # Supply-chain guard: secret scan + dependency vulnerability audit.
+    # Runs on ubuntu only; independent of the golden matrix.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0 # gitleaks scans full history
+
+      - name: gitleaks (secret scan)
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        # Personal (user-owned) repo: no GITLEAKS_LICENSE required.
+        # Config: .gitleaks.toml (v3 format; allowlists vendored vendor/ + dist/).
+
+      - name: Set up PHP (composer audit)
+        uses: shivammathur/setup-php@d52fc211a0436f8839a587b3b5b8efddab4744ea # v2
+        with:
+          php-version: '8.3'
+
+      - name: Composer audit (generated-app template lockfile)
+        working-directory: resources/preview_env
+        run: composer audit --locked
+
+      - name: npm audit (runtime deps, high+)
+        run: npm audit --omit=dev --audit-level=high
+
   golden:
     strategy:
       fail-fast: false
@@ -15,15 +41,15 @@ jobs:
         os: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
 
       - name: Set up PHP (lint + generator validation)
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@d52fc211a0436f8839a587b3b5b8efddab4744ea # v2
         with:
           php-version: '8.3'
 
