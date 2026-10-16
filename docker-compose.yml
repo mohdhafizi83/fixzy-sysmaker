@@ -1,0 +1,32 @@
+# Fixzy SysMaker — headless web shell (browser UI + code generator, no Electron).
+#
+#   docker compose up -d
+#   open http://127.0.0.1:7788
+#
+# The port is published on 127.0.0.1 only because the web shell has no
+# authentication (v1). To expose it on a LAN or the internet, put a reverse
+# proxy with authentication + TLS in front (see docs/HEADLESS_WEB.md).
+
+services:
+  fixzy:
+    build: .
+    image: fixzy-sysmaker:local
+    ports:
+      - "127.0.0.1:7788:7788"
+    environment:
+      # Required for the container to bind 0.0.0.0 inside its network ns.
+      FSM_ALLOW_REMOTE: "1"
+      # Generated projects land under /data/output (inside FSM_OUTPUT_ROOTS).
+      FSM_OUTPUT_ROOTS: /data/output
+    volumes:
+      - fsm-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:7788/"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  fsm-data:
