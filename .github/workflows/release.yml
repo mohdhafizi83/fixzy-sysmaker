@@ -89,6 +89,40 @@ jobs:
           find . -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.deb' \) -exec sha256sum {} \; | sed 's|\./||' > ../SHA256SUMS.txt
           cat ../SHA256SUMS.txt
 
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Generate release notes from CHANGELOG
+        run: |
+          TAG=${GITHUB_REF_NAME}
+          VER=${GITHUB_REF_NAME#v}   # CHANGELOG guna [1.2.3] tanpa 'v'
+          if [ -f CHANGELOG.md ]; then
+            awk -v tag="$VER" -v tagv="$TAG" '
+              ($0 ~ "## \\[" tagv || $0 ~ "## \\[" tag) {found=1; next}
+              found && /^## \[/ {exit}
+              found {print}
+            ' CHANGELOG.md > release_notes.md
+            [ -s release_notes.md ] || echo "Release $TAG" > release_notes.md
+          else
+            echo "Release $TAG" > release_notes.md
+          fi
+          cat >> release_notes.md <<'BOILER'
+
+          **Free and open source (Apache 2.0)** — commercial use welcome. Generated files are yours to keep, forever.
+
+          Desktop installers:
+
+          | Platform | File | Notes |
+          |---|---|---|
+          | Windows 10/11 (x64) | `Fixzy SysMaker Setup <ver>.exe` | Unsigned — SmartScreen: "More info" → "Run anyway" |
+          | macOS (Intel + Apple Silicon) | `Fixzy SysMaker-<ver>.dmg` | Unsigned — first launch: right-click → Open |
+          | Ubuntu/Debian (x64) | `fixzy-sysmaker_<ver>_amd64.deb` | `sudo apt install ./fixzy-sysmaker_*.deb` |
+          | Any Linux (x64) | `Fixzy SysMaker-<ver>.AppImage` | `chmod +x` and run |
+
+          On first run the Setup Wizard provisions the PHP runtime + Composer
+          automatically (or point it at your own install). Verify downloads with
+          `SHA256SUMS.txt`.
+          BOILER
+
       - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           files: |
@@ -101,20 +135,4 @@ jobs:
           # electron-updater clients on the stable channel do NOT auto-update
           # to an rc. Stable tags (no '-') keep the current behaviour.
           prerelease: ${{ contains(github.ref_name, '-') }}
-          body: |
-            ## Fixzy SysMaker ${{ github.ref_name }}
-
-            **Free and open source (Apache 2.0)** — commercial use welcome. Generated files are yours to keep, forever.
-
-            Desktop installers:
-
-            | Platform | File | Notes |
-            |---|---|---|
-            | Windows 10/11 (x64) | `Fixzy SysMaker Setup <ver>.exe` | Unsigned — SmartScreen: "More info" → "Run anyway" |
-            | macOS (Intel + Apple Silicon) | `Fixzy SysMaker-<ver>.dmg` | Unsigned — first launch: right-click → Open |
-            | Ubuntu/Debian (x64) | `fixzy-sysmaker_<ver>_amd64.deb` | `sudo apt install ./fixzy-sysmaker_*.deb` |
-            | Any Linux (x64) | `Fixzy SysMaker-<ver>.AppImage` | `chmod +x` and run |
-
-            On first run the Setup Wizard provisions the PHP runtime + Composer
-            automatically (or point it at your own install). Verify downloads with
-            `SHA256SUMS.txt`.
+          body_path: release_notes.md
